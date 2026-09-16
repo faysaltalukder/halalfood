@@ -242,6 +242,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const data = Object.fromEntries(new FormData(form).entries());
       data.quantity = String(Math.max(1, Number(data.quantity) || 1));
+      const isCartOrder = Boolean(window.HALAL_CART_MODE);
+      const cartItems = isCartOrder && window.HALAL_CART_API ? window.HALAL_CART_API.read() : [];
+      if (isCartOrder && !cartItems.length) {
+        error.textContent = "আপনার কার্ট খালি। আগে পণ্য যোগ করুন।";
+        error.style.display = "block";
+        submit.disabled = false;
+        submit.textContent = "Submit Order";
+        return;
+      }
+      if (isCartOrder) {
+        data.orderId = `HF-${Date.now()}-${Math.floor(Math.random() * 900 + 100)}`;
+        data.items = cartItems.map((item) => ({
+          product: item.name,
+          quantity: String(Math.max(1, Number(item.qty) || 1)),
+          price: String(Number(item.price) || 0)
+        }));
+        data.product = cartItems.map((item) => `${item.name} × ${item.qty}`).join(" | ");
+        data.quantity = String(window.HALAL_CART_API.totalQty(cartItems));
+      }
 
       try {
         if (!GOOGLE_APPS_SCRIPT_URL || GOOGLE_APPS_SCRIPT_URL.includes("PASTE_YOUR")) {
@@ -253,6 +272,12 @@ document.addEventListener("DOMContentLoaded", () => {
           headers: {"Content-Type": "application/json"},
           body: JSON.stringify(data)
         });
+        if (isCartOrder) {
+          window.HALAL_CART_API?.clear();
+          window.history.replaceState({}, document.title, "order.html");
+          const summary = document.querySelector("[data-cart-checkout-summary]");
+          if (summary) summary.innerHTML = '<div class="cart-success-state"><strong>Order received</strong><p>ধন্যবাদ! আপনার কার্ট অর্ডারটি গ্রহণ করা হয়েছে। শীঘ্রই যোগাযোগ করা হবে।</p></div>';
+        }
         form.reset();
         if (productDisplay && params.get("product")) productDisplay.textContent = params.get("product");
         syncQuantity(1);
