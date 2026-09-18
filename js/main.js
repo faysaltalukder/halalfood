@@ -334,3 +334,101 @@ function initLocationCombobox(id, initialOptions, onSelect) {
     if (!box.contains(event.target)) { list.classList.remove("open"); input.setAttribute("aria-expanded", "false"); }
   });
 }
+
+// ---------------------------------------------------------------------------
+// v3 redesign: merchandising-row carousels (5-visible, draggable, dotted,
+// slower auto-advance than the hero) + Just-For-You "Load More".
+// ---------------------------------------------------------------------------
+document.addEventListener("DOMContentLoaded", () => {
+  document.querySelectorAll("[data-mrow]").forEach((wrap) => {
+    const track = wrap.querySelector("[data-mrow-track]");
+    const dotsBox = wrap.parentElement.querySelector("[data-mrow-dots]");
+    const cards = Array.from(track.children);
+    if (!cards.length) return;
+
+    const visibleCount = () => (window.innerWidth <= 600 ? 2 : window.innerWidth <= 900 ? 3 : 5);
+    const pageCount = () => Math.max(1, Math.ceil(cards.length / visibleCount()));
+
+    const buildDots = () => {
+      dotsBox.innerHTML = "";
+      const pages = pageCount();
+      for (let i = 0; i < pages; i++) {
+        const dot = document.createElement("button");
+        dot.type = "button";
+        dot.setAttribute("aria-label", `Go to slide group ${i + 1}`);
+        if (i === 0) dot.classList.add("active");
+        dot.addEventListener("click", () => {
+          const cardWidth = cards[0].getBoundingClientRect().width + 16;
+          track.scrollTo({ left: i * visibleCount() * cardWidth, behavior: "smooth" });
+        });
+        dotsBox.appendChild(dot);
+      }
+    };
+    buildDots();
+    window.addEventListener("resize", () => { buildDots(); });
+
+    const updateActiveDot = () => {
+      const cardWidth = cards[0].getBoundingClientRect().width + 16;
+      const page = Math.round(track.scrollLeft / (visibleCount() * cardWidth));
+      Array.from(dotsBox.children).forEach((d, i) => d.classList.toggle("active", i === page));
+    };
+    track.addEventListener("scroll", () => {
+      window.requestAnimationFrame(updateActiveDot);
+    }, { passive: true });
+
+    // Drag-to-scroll with click-vs-drag distinction (same safe pattern used elsewhere on this site).
+    let dragging = false, dragMoved = false, dragStartX = 0, dragStartScroll = 0;
+    const DRAG_THRESHOLD = 6;
+    track.addEventListener("pointerdown", (event) => {
+      if (event.pointerType !== "mouse") return;
+      dragging = true; dragMoved = false;
+      dragStartX = event.clientX; dragStartScroll = track.scrollLeft;
+    });
+    track.addEventListener("pointermove", (event) => {
+      if (!dragging) return;
+      const delta = event.clientX - dragStartX;
+      if (!dragMoved && Math.abs(delta) > DRAG_THRESHOLD) {
+        dragMoved = true;
+        track.classList.add("dragging");
+        track.setPointerCapture?.(event.pointerId);
+      }
+      if (dragMoved) track.scrollLeft = dragStartScroll - delta;
+    });
+    ["pointerup", "pointercancel", "lostpointercapture"].forEach((type) => {
+      track.addEventListener(type, () => { dragging = false; track.classList.remove("dragging"); });
+    });
+    track.addEventListener("click", (event) => {
+      if (dragMoved) { event.preventDefault(); dragMoved = false; }
+    }, true);
+
+    // Slow auto-advance (noticeably slower than the hero carousel's own timer).
+    let auto = setInterval(() => {
+      const cardWidth = cards[0].getBoundingClientRect().width + 16;
+      const maxScroll = track.scrollWidth - track.clientWidth;
+      const next = track.scrollLeft + visibleCount() * cardWidth;
+      track.scrollTo({ left: next > maxScroll - 4 ? 0 : next, behavior: "smooth" });
+    }, 6500);
+    wrap.addEventListener("mouseenter", () => clearInterval(auto));
+    wrap.addEventListener("mouseleave", () => {
+      auto = setInterval(() => {
+        const cardWidth = cards[0].getBoundingClientRect().width + 16;
+        const maxScroll = track.scrollWidth - track.clientWidth;
+        const next = track.scrollLeft + visibleCount() * cardWidth;
+        track.scrollTo({ left: next > maxScroll - 4 ? 0 : next, behavior: "smooth" });
+      }, 6500);
+    });
+  });
+
+  // Just For You — Load More reveals the remaining pre-rendered products (no duplicates).
+  const loadMoreBtn = document.querySelector("[data-jfy-load-more]");
+  if (loadMoreBtn) {
+    loadMoreBtn.addEventListener("click", () => {
+      const hidden = document.querySelector("[data-jfy-hidden]");
+      if (hidden) {
+        hidden.hidden = false;
+        hidden.classList.add("jfy-shown");
+      }
+      loadMoreBtn.remove();
+    });
+  }
+});
