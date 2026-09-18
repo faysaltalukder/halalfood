@@ -492,3 +492,108 @@ footer .footer-grid ul { max-height:none; }
 .cart-success-state { padding:16px; background:var(--cream); border:1px solid var(--line); }
 .cart-success-state strong { color:var(--navy); font-size:1.05rem; }
 .cart-success-state p { margin-top:4px; }
+
+/* ============ v3 redesign additions ============ */
+
+/* Hero: text column removed, banners widened */
+.hero-visual-only { padding: 28px 0 40px; }
+.hero-visual-only .wrap { max-width: 1320px; }
+.hero-visual-only .hero-media-grid { grid-template-columns: minmax(0,2.3fr) minmax(260px,1fr); }
+
+/* Category cards: image box instead of emoji, hover zoom */
+.cat-card { padding:0; overflow:hidden; border-radius:10px; background:var(--white); border:1px solid var(--line); transition:transform .22s ease, box-shadow .22s ease; }
+.cat-card:hover { transform:translateY(-4px); box-shadow:0 14px 30px rgba(43,42,61,.12); border-color:var(--line); }
+.cat-card-img { display:block; aspect-ratio:1/1; overflow:hidden; background:var(--cream-deep); }
+.cat-card-img img { width:100%; height:100%; object-fit:cover; transition:transform .35s ease; }
+.cat-card:hover .cat-card-img img { transform:scale(1.08); }
+.cat-card h3 { font-size:1rem; margin:12px 14px 16px; text-align:center; }
+
+/* Product card: single Add-to-Cart button, full width, brand-coloured, icon inline */
+.product-foot { flex-direction:column; align-items:stretch; gap:10px; }
+.product-foot .price { font-size:1.05rem; font-weight:700; color:var(--navy); text-align:center; }
+.cart-add-btn { display:flex; align-items:center; justify-content:center; gap:8px; width:100%; border:1.5px solid var(--orange); background:var(--white); color:var(--orange); border-radius:8px; padding:11px 14px; font-weight:700; transition:background .18s ease, color .18s ease, transform .12s ease; }
+.cart-add-btn:hover, .cart-add-btn:focus-visible { background:var(--orange); color:var(--white); transform:translateY(-1px); }
+.cart-add-btn .btn-icon { width:18px; height:18px; flex-shrink:0; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+.cart-detail-add { display:inline-flex; align-items:center; gap:8px; }
+.cart-detail-add .btn-icon,.btn-primary .btn-icon,.btn-secondary .btn-icon { width:17px; height:17px; fill:none; stroke:currentColor; stroke-width:1.8; }
+
+/* Product-card image box: consistent aspect ratio, never crop badly (contain within a fixed box) */
+.product-image { aspect-ratio:1/1; background:var(--cream-deep); display:flex; align-items:center; justify-content:center; overflow:hidden; }
+.product-image img { width:100%; height:100%; object-fit:cover; transition:transform .3s ease; }
+.product-card:hover .product-image img { transform:scale(1.06); }
+
+/* Detail-page action row: colourful, icon-led buttons */
+.product-detail-actions .btn-primary { background:var(--orange); border-color:var(--orange); color:var(--white); }
+.product-detail-actions a[href^="https://wa.me"] { background:#e9f7ef; border:1px solid #25d366; color:#128c3e; }
+.product-detail-actions a[href^="https://wa.me"]:hover { background:#25d366; color:var(--white); }
+.product-detail-actions a[href^="tel:"] { background:var(--cream-deep); border:1px solid var(--navy-soft); color:var(--navy); }
+.product-detail-actions a[href^="tel:"]:hover { background:var(--navy); color:var(--cream); }
+.product-detail-actions .cart-detail-add { background:var(--white); border:1.5px solid var(--orange); color:var(--orange); }
+.product-detail-actions .cart-detail-add:hover { background:var(--orange); color:var(--white); }
+
+/* Merchandising rows: Honey / Dates / Cooking Essentials / Organic — 5 visible, draggable, dotted pagination */
+.merch-row-head { display:flex; align-items:baseline; justify-content:space-between; gap:16px; margin-bottom:18px; flex-wrap:wrap; }
+.merch-row-head h2 { font-size:1.5rem; }
+.merch-view-all { color:var(--orange); font-weight:700; white-space:nowrap; }
+.merch-view-all:hover { color:var(--navy); }
+.mrow-wrap { position:relative; }
+.mrow-track { display:flex; gap:16px; overflow-x:auto; scroll-snap-type:x proximity; scrollbar-width:none; cursor:grab; padding-bottom:4px; }
+.mrow-track::-webkit-scrollbar { display:none; }
+.mrow-track.dragging { cursor:grabbing; scroll-behavior:auto; }
+.mrow-card { flex:0 0 calc((100% - 4*16px)/5); min-width:150px; scroll-snap-align:start; background:var(--white); border:1px solid var(--line); border-radius:10px; padding:12px; display:flex; flex-direction:column; gap:8px; transition:transform .25s ease, box-shadow .25s ease; }
+.mrow-card:hover { transform:translateY(-4px) scale(1.015); box-shadow:0 14px 28px rgba(43,42,61,.12); }
+.mrow-image { display:block; aspect-ratio:1/1; overflow:hidden; border-radius:6px; background:var(--cream-deep); }
+.mrow-image img { width:100%; height:100%; object-fit:cover; transition:transform .3s ease; }
+.mrow-card:hover .mrow-image img { transform:scale(1.08); }
+.mrow-name-link h4 { font-size:.92rem; line-height:1.3; min-height:2.4em; }
+.mrow-price { font-weight:700; color:var(--navy); }
+.mrow-cart-btn { margin-top:auto; }
+.mrow-dots { display:flex; justify-content:center; gap:8px; margin-top:16px; }
+.mrow-dots button { width:8px; height:8px; border-radius:50%; border:none; background:var(--line); padding:0; cursor:pointer; transition:background .2s ease, transform .2s ease; }
+.mrow-dots button.active { background:var(--orange); transform:scale(1.25); }
+
+/* Just For You grid */
+.jfy-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:18px; }
+.jfy-grid.jfy-hidden { display:none; }
+.jfy-grid.jfy-hidden.jfy-shown { display:grid; margin-top:18px; }
+.jfy-card { background:var(--white); border:1px solid var(--line); border-radius:10px; padding:12px; display:flex; flex-direction:column; gap:8px; transition:transform .25s ease, box-shadow .25s ease; }
+.jfy-card:hover { transform:translateY(-4px); box-shadow:0 14px 28px rgba(43,42,61,.12); }
+.jfy-image { display:block; aspect-ratio:1/1; overflow:hidden; border-radius:6px; background:var(--cream-deep); }
+.jfy-image img { width:100%; height:100%; object-fit:cover; transition:transform .3s ease; }
+.jfy-card:hover .jfy-image img { transform:scale(1.08); }
+.jfy-name-link h4 { font-size:.92rem; line-height:1.3; min-height:2.4em; }
+.jfy-price { font-weight:700; color:var(--navy); }
+.jfy-cart-btn { margin-top:auto; }
+.jfy-load-more-wrap { text-align:center; margin-top:28px; }
+
+/* Blog cards */
+.blog-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:24px; }
+.blog-card { background:var(--white); border:1px solid var(--line); border-radius:10px; overflow:hidden; transition:transform .22s ease, box-shadow .22s ease; }
+.blog-card:hover { transform:translateY(-4px); box-shadow:0 14px 28px rgba(43,42,61,.12); }
+.blog-card-img { display:block; aspect-ratio:16/9; overflow:hidden; background:var(--cream-deep); }
+.blog-card-img img { width:100%; height:100%; object-fit:cover; transition:transform .3s ease; }
+.blog-card:hover .blog-card-img img { transform:scale(1.06); }
+.blog-card-body { padding:16px; }
+.blog-card-body .tag { display:inline-block; margin-bottom:8px; }
+.blog-card-body h3 { font-size:1.05rem; margin-bottom:8px; }
+.blog-card-body p { color:var(--navy-soft); font-size:.9rem; }
+.blog-read-more { color:var(--orange); font-weight:700; display:inline-block; margin-top:10px; }
+.blog-hero { padding:48px 0 24px; }
+.blog-post-body { max-width:760px; margin:0 auto; }
+.blog-post-body img { border-radius:10px; margin-bottom:24px; aspect-ratio:16/9; object-fit:cover; width:100%; }
+.blog-post-body h1 { margin-bottom:14px; }
+.blog-post-body p { margin-bottom:16px; color:var(--navy-soft); line-height:1.75; }
+
+@media (max-width:900px) {
+  .hero-visual-only .hero-media-grid { grid-template-columns:1fr; }
+  .hero-visual-only .hero-honey-banner { display:none; }
+  .mrow-card { flex:0 0 calc((100% - 2*16px)/3); }
+  .jfy-grid { grid-template-columns:repeat(3,1fr); }
+  .blog-grid { grid-template-columns:repeat(2,1fr); }
+}
+@media (max-width:600px) {
+  .mrow-card { flex:0 0 calc((100% - 16px)/2); min-width:130px; }
+  .jfy-grid { grid-template-columns:repeat(2,1fr); }
+  .blog-grid { grid-template-columns:1fr; }
+  .merch-row-head h2 { font-size:1.25rem; }
+}
