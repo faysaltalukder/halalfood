@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://faysaltalukder36-arch.github.io/halal-food/sitemap.xml
+Sitemap: https://faysaltalukder.github.io/halalfood/sitemap.xml
