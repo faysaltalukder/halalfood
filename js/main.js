@@ -231,24 +231,30 @@ document.addEventListener("DOMContentLoaded", () => {
       event.preventDefault();
       const success = document.querySelector("#form-success");
       const error = document.querySelector("#form-error");
-      success.style.display = "none";
-      error.style.display = "none";
+      if (success) success.style.display = "none";
+      if (error) error.style.display = "none";
 
       if (!form.reportValidity()) return;
 
-      const submit = form.querySelector("button[type='submit']");
-      submit.disabled = true;
-      submit.textContent = "Sending...";
+      const submit = form.querySelector("button[type='submit']") || form.querySelector("button");
+      if (submit) {
+        submit.disabled = true;
+        submit.textContent = "Sending...";
+      }
 
       const data = Object.fromEntries(new FormData(form).entries());
       data.quantity = String(Math.max(1, Number(data.quantity) || 1));
       const isCartOrder = Boolean(window.HALAL_CART_MODE);
       const cartItems = isCartOrder && window.HALAL_CART_API ? window.HALAL_CART_API.read() : [];
       if (isCartOrder && !cartItems.length) {
-        error.textContent = "আপনার কার্ট খালি। আগে পণ্য যোগ করুন।";
-        error.style.display = "block";
-        submit.disabled = false;
-        submit.textContent = "Submit Order";
+        if (error) {
+          error.textContent = "আপনার কার্ট খালি। আগে পণ্য যোগ করুন।";
+          error.style.display = "block";
+        }
+        if (submit) {
+          submit.disabled = false;
+          submit.textContent = "Submit Order";
+        }
         return;
       }
       if (isCartOrder) {
@@ -280,13 +286,17 @@ document.addEventListener("DOMContentLoaded", () => {
         form.reset();
         if (productDisplay && params.get("product")) productDisplay.textContent = params.get("product");
         syncQuantity(1);
-        success.style.display = "block";
+        if (success) success.style.display = "block";
       } catch (err) {
-        error.textContent = "অর্ডার পাঠানো যায়নি। অনুগ্রহ করে সরাসরি যোগাযোগ করুন।";
-        error.style.display = "block";
+        if (error) {
+          error.textContent = "অর্ডার পাঠানো যায়নি। অনুগ্রহ করে সরাসরি যোগাযোগ করুন।";
+          error.style.display = "block";
+        }
       } finally {
-        submit.disabled = false;
-        submit.textContent = "Submit Order";
+        if (submit) {
+          submit.disabled = false;
+          submit.textContent = "Submit Order";
+        }
       }
     });
   }
