@@ -500,17 +500,15 @@ footer .footer-grid ul { max-height:none; }
 
 /* Hero: no text column, bigger banners, never crop (contain + neutral backdrop) */
 .hero-visual-only { padding: 28px 0 40px; }
-/* Hero banner alignment and sizing */
 .hero-visual-only .wrap {
   max-width: 1360px;
-  padding-left: 10px;
-  padding-right: 10px;
+  width: calc(100% - 24px);
+  margin: 0 auto;
 }
 
 .hero-visual-only .hero-media-grid {
-  grid-template-columns: minmax(0, 3.5fr) minmax(180px, 0.5fr);
+  grid-template-columns: minmax(0,3.3fr) minmax(200px,0.7fr);
   gap: 18px;
-  align-items: stretch;
 }
 
 .hero-carousel,
