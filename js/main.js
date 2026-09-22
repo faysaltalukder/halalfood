@@ -336,7 +336,7 @@ function initLocationCombobox(id, initialOptions, onSelect) {
 }
 
 // ---------------------------------------------------------------------------
-// v3 redesign: merchandising-row carousels (5-visible, draggable, dotted,
+// v3/v4 redesign: merchandising-row carousels (5-visible, draggable, dotted,
 // slower auto-advance than the hero) + Just-For-You "Load More".
 // ---------------------------------------------------------------------------
 document.addEventListener("DOMContentLoaded", () => {
@@ -358,7 +358,7 @@ document.addEventListener("DOMContentLoaded", () => {
         dot.setAttribute("aria-label", `Go to slide group ${i + 1}`);
         if (i === 0) dot.classList.add("active");
         dot.addEventListener("click", () => {
-          const cardWidth = cards[0].getBoundingClientRect().width + 16;
+          const cardWidth = cards[0].getBoundingClientRect().width + 18;
           track.scrollTo({ left: i * visibleCount() * cardWidth, behavior: "smooth" });
         });
         dotsBox.appendChild(dot);
@@ -368,7 +368,7 @@ document.addEventListener("DOMContentLoaded", () => {
     window.addEventListener("resize", () => { buildDots(); });
 
     const updateActiveDot = () => {
-      const cardWidth = cards[0].getBoundingClientRect().width + 16;
+      const cardWidth = cards[0].getBoundingClientRect().width + 18;
       const page = Math.round(track.scrollLeft / (visibleCount() * cardWidth));
       Array.from(dotsBox.children).forEach((d, i) => d.classList.toggle("active", i === page));
     };
@@ -376,7 +376,6 @@ document.addEventListener("DOMContentLoaded", () => {
       window.requestAnimationFrame(updateActiveDot);
     }, { passive: true });
 
-    // Drag-to-scroll with click-vs-drag distinction (same safe pattern used elsewhere on this site).
     let dragging = false, dragMoved = false, dragStartX = 0, dragStartScroll = 0;
     const DRAG_THRESHOLD = 6;
     track.addEventListener("pointerdown", (event) => {
@@ -401,25 +400,17 @@ document.addEventListener("DOMContentLoaded", () => {
       if (dragMoved) { event.preventDefault(); dragMoved = false; }
     }, true);
 
-    // Slow auto-advance (noticeably slower than the hero carousel's own timer).
-    let auto = setInterval(() => {
-      const cardWidth = cards[0].getBoundingClientRect().width + 16;
+    let auto = setInterval(advance, 5500);
+    function advance() {
+      const cardWidth = cards[0].getBoundingClientRect().width + 18;
       const maxScroll = track.scrollWidth - track.clientWidth;
       const next = track.scrollLeft + visibleCount() * cardWidth;
       track.scrollTo({ left: next > maxScroll - 4 ? 0 : next, behavior: "smooth" });
-    }, 6500);
+    }
     wrap.addEventListener("mouseenter", () => clearInterval(auto));
-    wrap.addEventListener("mouseleave", () => {
-      auto = setInterval(() => {
-        const cardWidth = cards[0].getBoundingClientRect().width + 16;
-        const maxScroll = track.scrollWidth - track.clientWidth;
-        const next = track.scrollLeft + visibleCount() * cardWidth;
-        track.scrollTo({ left: next > maxScroll - 4 ? 0 : next, behavior: "smooth" });
-      }, 6500);
-    });
+    wrap.addEventListener("mouseleave", () => { clearInterval(auto); auto = setInterval(advance, 5500); });
   });
 
-  // Just For You — Load More reveals the remaining pre-rendered products (no duplicates).
   const loadMoreBtn = document.querySelector("[data-jfy-load-more]");
   if (loadMoreBtn) {
     loadMoreBtn.addEventListener("click", () => {
