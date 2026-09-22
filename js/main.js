@@ -277,20 +277,35 @@ document.addEventListener("DOMContentLoaded", () => {
           headers: { "Content-Type": "text/plain;charset=utf-8" },
           body: JSON.stringify(data)
         });
+
         if (isCartOrder) {
           window.HALAL_CART_API?.clear();
           window.history.replaceState({}, document.title, "order.html");
           const summary = document.querySelector("[data-cart-checkout-summary]");
           if (summary) summary.innerHTML = '<div class="cart-success-state"><strong>Order received</strong><p>ধন্যবাদ! আপনার কার্ট অর্ডারটি গ্রহণ করা হয়েছে। শীঘ্রই যোগাযোগ করা হবে।</p></div>';
         }
+
         form.reset();
         if (productDisplay && params.get("product")) productDisplay.textContent = params.get("product");
         syncQuantity(1);
-        if (success) success.style.display = "block";
+
+        if (success) {
+          success.innerHTML = "<strong>ধন্যবাদ!</strong> আপনার অর্ডারটি সফলভাবে গ্রহণ করা হয়েছে। খুব শীঘ্রই আপনার সাথে যোগাযোগ করা হবে।";
+          success.style.display = "block";
+          success.style.color = "#155724";
+          success.style.backgroundColor = "#d4edda";
+          success.style.padding = "15px";
+          success.style.borderRadius = "8px";
+          success.style.marginTop = "15px";
+        } else {
+          alert("ধন্যবাদ! আপনার অর্ডারটি গ্রহণ করা হয়েছে। খুব শীঘ্রই আপনার সাথে যোগাযোগ করা হবে।");
+        }
       } catch (err) {
         if (error) {
           error.textContent = "অর্ডার পাঠানো যায়নি। অনুগ্রহ করে সরাসরি যোগাযোগ করুন।";
           error.style.display = "block";
+        } else {
+          alert("অর্ডার পাঠানো যায়নি। অনুগ্রহ করে পুনরায় চেষ্টা করুন।");
         }
       } finally {
         if (submit) {
@@ -345,8 +360,7 @@ function initLocationCombobox(id, initialOptions, onSelect) {
 }
 
 // ---------------------------------------------------------------------------
-// v3/v4 redesign: merchandising-row carousels (5-visible, draggable, dotted,
-// slower auto-advance than the hero) + Just-For-You "Load More".
+// v3/v4 redesign: merchandising-row carousels
 // ---------------------------------------------------------------------------
 document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll("[data-mrow]").forEach((wrap) => {
