@@ -649,3 +649,47 @@ footer .footer-grid ul { max-height:none; }
   .blog-grid { grid-template-columns:1fr; }
   .merch-row-head h2 { font-size:1.25rem; }
 }
+/* =========================
+   Mobile Hero Fix
+   ========================= */
+@media (max-width: 600px) {
+
+  .hero {
+    padding: 28px 0 40px;
+  }
+
+  .hero-media-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .hero-carousel {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+  }
+
+  .hero-slide img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* Mobile-এ ডান পাশের আলাদা Banner দেখাবে না */
+  .hero-honey-banner {
+    display: none;
+  }
+
+  .hero-carousel-arrow {
+    width: 42px;
+    height: 42px;
+    font-size: 1.5rem;
+  }
+
+  .hero-carousel-prev {
+    left: 10px;
+  }
+
+  .hero-carousel-next {
+    right: 10px;
+  }
+}
