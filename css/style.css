@@ -500,10 +500,32 @@ footer .footer-grid ul { max-height:none; }
 
 /* Hero: no text column, bigger banners, never crop (contain + neutral backdrop) */
 .hero-visual-only { padding: 28px 0 40px; }
-.hero-visual-only .wrap { max-width: 1360px; }
-.hero-visual-only .hero-media-grid { grid-template-columns: minmax(0,2.7fr) minmax(230px,0.85fr); gap: 18px; }
-.hero-carousel, .hero-honey-banner { aspect-ratio: 2.15/1; background: var(--cream-deep); }
-.hero-slide img, .hero-honey-banner img { object-fit: cover; background: var(--cream-deep); }
+/* Hero banner alignment and sizing */
+.hero-visual-only .wrap {
+  max-width: 1360px;
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+.hero-visual-only .hero-media-grid {
+  grid-template-columns: minmax(0, 3.3fr) minmax(200px, 0.7fr);
+  gap: 18px;
+  align-items: stretch;
+}
+
+.hero-carousel,
+.hero-honey-banner {
+  aspect-ratio: 2.15/1;
+  background: var(--cream-deep);
+}
+
+.hero-slide img,
+.hero-honey-banner img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: var(--cream-deep);
+}
 .hero-carousel-arrow { opacity: 0; transition: opacity .2s ease, background .2s ease; pointer-events: none; }
 .hero-carousel:hover .hero-carousel-arrow, .hero-carousel:focus-within .hero-carousel-arrow { opacity: 1; pointer-events: auto; }
 
