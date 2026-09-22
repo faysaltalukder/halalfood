@@ -643,53 +643,114 @@ footer .footer-grid ul { max-height:none; }
   .blog-grid { grid-template-columns:repeat(2,1fr); }
 }
 @media (max-width:600px) {
-  .featured-grid-4 { grid-template-columns: 1fr; }
-  .mrow-card { flex:0 0 calc((100% - 18px)/2); min-width:150px; }
-  .jfy-grid { grid-template-columns:repeat(2,1fr); }
-  .blog-grid { grid-template-columns:1fr; }
-  .merch-row-head h2 { font-size:1.25rem; }
+  /* Two-column product cards: easier browsing on phones */
+  .product-grid,
+  .featured-grid-4 {
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:12px;
+  }
+
+  .featured-grid-4 .product-foot {
+    flex-direction:column;
+    align-items:stretch;
+  }
+
+  .product-body {
+    padding:14px;
+  }
+
+  .product-body h3 {
+    font-size:1rem;
+  }
+
+  .product-body p {
+    font-size:.84rem;
+    line-height:1.5;
+  }
+
+  .mrow-card {
+    flex:0 0 calc((100% - 18px)/2);
+    min-width:150px;
+  }
+
+  .jfy-grid {
+    grid-template-columns:repeat(2,1fr);
+  }
+
+  .blog-grid {
+    grid-template-columns:1fr;
+  }
+
+  .merch-row-head h2 {
+    font-size:1.25rem;
+  }
 }
-/* =========================
-   Mobile Hero Fix
-   ========================= */
-@media (max-width: 600px) {
 
-  .hero {
-    padding: 28px 0 40px;
+
+
+/* ==========================================================================
+   MOBILE OPTIMIZATION — Hero Banner
+   Desktop layout above is intentionally unchanged.
+   ========================================================================== */
+@media (max-width:600px) {
+
+  /* Keep the hero compact on phones */
+  .hero-visual-only {
+    padding:24px 0 34px;
   }
 
-  .hero-media-grid {
-    grid-template-columns: 1fr;
-    gap: 12px;
+  .hero-visual-only .wrap {
+    width:100%;
+    padding-left:14px;
+    padding-right:14px;
   }
 
-  .hero-carousel {
-    width: 100%;
-    aspect-ratio: 16 / 9;
+  /* One clean banner on mobile */
+  .hero-visual-only .hero-media-grid {
+    display:block;
   }
 
-  .hero-slide img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+  .hero-visual-only .hero-carousel {
+    width:100%;
+    height:clamp(210px,58vw,300px);
+    aspect-ratio:auto;
   }
 
-  /* Mobile-এ ডান পাশের আলাদা Banner দেখাবে না */
-  .hero-honey-banner {
-    display: none;
+  .hero-visual-only .hero-carousel-track,
+  .hero-visual-only .hero-slide {
+    width:100%;
+    height:100%;
   }
 
-  .hero-carousel-arrow {
-    width: 42px;
-    height: 42px;
-    font-size: 1.5rem;
+  .hero-visual-only .hero-slide img {
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    object-position:center;
   }
 
-  .hero-carousel-prev {
-    left: 10px;
+  /* The secondary honey banner is desktop-only */
+  .hero-visual-only .hero-honey-banner {
+    display:none;
   }
 
-  .hero-carousel-next {
-    right: 10px;
+  .hero-visual-only .hero-carousel-arrow {
+    opacity:1;
+    pointer-events:auto;
+    width:42px;
+    height:42px;
+    font-size:1.45rem;
+  }
+
+  .hero-visual-only .hero-carousel-prev {
+    left:9px;
+  }
+
+  .hero-visual-only .hero-carousel-next {
+    right:9px;
+  }
+
+  .hero-visual-only .hero-carousel-dots {
+    bottom:8px;
   }
 }
