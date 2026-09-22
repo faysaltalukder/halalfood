@@ -504,18 +504,18 @@ footer .footer-grid ul { max-height:none; }
   max-width: none;
   width: 100%;
   margin: 0;
-  padding-left: 15px;
-  padding-right: 15px;
+  padding-left: 20px;
+  padding-right: 20px;
   box-sizing: border-box;
 }
 .hero-visual-only .hero-media-grid {
-  grid-template-columns: minmax(0,3.2fr) minmax(240px,1fr);
-  gap: 18px;
+  grid-template-columns: minmax(0,3fr) minmax(240px,1.2fr);
+  gap: 15px;
   align-items: stretch;
 }
 .hero-carousel,
 .hero-honey-banner {
-  height: 450px;
+  height: 470px;
   aspect-ratio: auto;
   background: var(--cream-deep);
 }
