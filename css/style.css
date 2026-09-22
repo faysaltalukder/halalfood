@@ -515,7 +515,7 @@ footer .footer-grid ul { max-height:none; }
 }
 .hero-carousel,
 .hero-honey-banner {
-  height: 280px;
+  height: 300px;
   aspect-ratio: auto;
   background: var(--cream-deep);
 }
