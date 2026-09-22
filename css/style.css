@@ -509,7 +509,7 @@ footer .footer-grid ul { max-height:none; }
   box-sizing: border-box;
 }
 .hero-visual-only .hero-media-grid {
-  grid-template-columns: minmax(0,2.8fr) minmax(240px,1fr);
+  grid-template-columns: minmax(0,2.5fr) minmax(240px,1fr);
   gap: 18px;
   align-items: stretch;
 }
