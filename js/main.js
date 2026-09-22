@@ -140,7 +140,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.querySelector("[data-category-prev]")?.addEventListener("click", () => categoryRail.scrollBy({ left: -step(), behavior: "smooth" }));
     document.querySelector("[data-category-next]")?.addEventListener("click", () => categoryRail.scrollBy({ left: step(), behavior: "smooth" }));
 
-        let dragging = false;
+    let dragging = false;
     let dragMoved = false;
     let dragStartX = 0;
     let dragStartScroll = 0;
@@ -268,22 +268,21 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         await fetch(GOOGLE_APPS_SCRIPT_URL, {
           method: "POST",
-          mode: "no-cors",
-          headers: {"Content-Type": "application/json"},
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
           body: JSON.stringify(data)
         });
         if (isCartOrder) {
           window.HALAL_CART_API?.clear();
           window.history.replaceState({}, document.title, "order.html");
           const summary = document.querySelector("[data-cart-checkout-summary]");
-          if (summary) summary.innerHTML = '<div class="cart-success-state"><strong>Order received</strong><p>ধন্যবাদ! আপনার কার্ট অর্ডারটি গ্রহণ করা হয়েছে। শীঘ্রই যোগাযোগ করা হবে।</p></div>';
+          if (summary) summary.innerHTML = '<div class="cart-success-state"><strong>Order received</strong><p>ধন্যবাদ! আপনার কার্ট অর্ডারটি গ্রহণ করা হয়েছে। শীঘ্রই যোগাযোগ করা হবে।</p></div>';
         }
         form.reset();
         if (productDisplay && params.get("product")) productDisplay.textContent = params.get("product");
         syncQuantity(1);
         success.style.display = "block";
       } catch (err) {
-        error.textContent = "অর্ডার পাঠানো যায়নি। অনুগ্রহ করে সরাসরি যোগাযোগ করুন।";
+        error.textContent = "অর্ডার পাঠানো যায়নি। অনুগ্রহ করে সরাসরি যোগাযোগ করুন।";
         error.style.display = "block";
       } finally {
         submit.disabled = false;
