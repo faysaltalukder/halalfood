@@ -390,7 +390,7 @@ footer .footer-grid ul { max-height:none; }
 @media (max-width:600px) {
   .mobile-menu-toggle { width:40px; height:40px; }
   .hero h1 { font-size:2rem; }
-  .hero-carousel { aspect-ratio:2.15/1; }
+  .hero-carousel { aspect-ratio:2.15/1; height:auto; }
   .hero-carousel-arrow { width:44px; height:44px; }
   .hero-slide-caption { left:10px; bottom:10px; font-size:.82rem; padding:6px 9px; }
   .hero-carousel-dots button { width:44px; }
@@ -499,6 +499,7 @@ footer .footer-grid ul { max-height:none; }
 .wrap { max-width: 1280px; }
 
 /* Hero: no text column, bigger banners, never crop (contain + neutral backdrop) */
+.hero-visual-only { padding: 28px 0 40px; }
 .hero-visual-only .wrap {
   max-width: none;
   width: 100%;
@@ -507,19 +508,17 @@ footer .footer-grid ul { max-height:none; }
   padding-right: 12px;
   box-sizing: border-box;
 }
-
 .hero-visual-only .hero-media-grid {
-  grid-template-columns: minmax(0, 3.3fr) minmax(200px, 0.7fr);
+  grid-template-columns: minmax(0,2.8fr) minmax(240px,1fr);
   gap: 18px;
   align-items: stretch;
 }
-
 .hero-carousel,
 .hero-honey-banner {
-  aspect-ratio: 2.15/1;
+  height: 280px;
+  aspect-ratio: auto;
   background: var(--cream-deep);
 }
-
 .hero-slide img,
 .hero-honey-banner img {
   width: 100%;
