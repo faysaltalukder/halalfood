@@ -1,5 +1,5 @@
 // Central product data for the dynamic product detail page.
-const PRODUCTS_DATA = [
+window.PRODUCTS_DATA = [
   {
     "slug": "ajwa-dates",
     "name": "Premium Ajwa Dates",

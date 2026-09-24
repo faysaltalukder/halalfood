@@ -9,7 +9,20 @@
   function read() {
     try {
       const value = JSON.parse(localStorage.getItem(CART_KEY) || "[]");
-      return Array.isArray(value) ? value.filter(item => item && item.slug && item.name) : [];
+      if (!Array.isArray(value)) return [];
+      const products = Array.isArray(window.PRODUCTS_DATA) ? window.PRODUCTS_DATA : [];
+      return value.filter(item => item && item.slug && item.name).map(item => {
+        const source = products.find(p => String(p.slug || "") === String(item.slug || ""));
+        if (!source) return item;
+        return {
+          ...item,
+          name: String(source.name || item.name),
+          price: priceNumber(source.price || item.price),
+          displayPrice: String(source.price || item.displayPrice || item.price || ""),
+          image: String(source.image || item.image || ""),
+          category: String(source.category || item.category || "")
+        };
+      });
     } catch (_) { return []; }
   }
   function write(items) {
