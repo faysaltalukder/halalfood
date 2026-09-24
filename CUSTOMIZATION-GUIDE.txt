@@ -1,0 +1,34 @@
+HALAL FOOD — SIMPLE UPDATE GUIDE
+=================================
+
+LOGO / FAVICON
+--------------
+images/logo-favicon/logo.png
+images/logo-favicon/favicon.png
+images/logo-favicon/apple-touch-icon.png
+
+Replace those PNG files with your own files using the same filenames.
+
+LAYOUT
+------
+css/style.css
+The "HALAL FOOD — UPDATE 2026" section near the end contains the
+new category, featured-product, category-page, contact, FAQ and
+mobile-only adjustments.
+
+MOBILE
+------
+The mobile rules are inside @media (max-width: 768px) so desktop
+and mobile adjustments can be changed independently.
+
+LINKS
+-----
+Existing internal URLs were preserved. The header's How to Order
+link now opens order.html instead of a homepage anchor.
+
+SEO
+---
+Existing titles, descriptions, canonical URLs, structured data,
+alt text and internal URLs were preserved. The update adds cleaner
+page structure and removes visual breadcrumb clutter without
+removing the site's existing pages.
