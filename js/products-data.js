@@ -7,8 +7,8 @@ const PRODUCTS_DATA = [
     "categorySlug": "dates",
     "price": "৳ 850 / kg",
     "image": "images/dates/ajwa-dates.jpg",
-    "shortDescription": "Premium Ajwa Dates from the Halal Food Dates collection. View the current price and order or contact us for availability and delivery details.",
-    "fullDescription": "Premium Ajwa Dates from the Halal Food Dates collection. View the current price and order or contact us for availability and delivery details."
+    "shortDescription": "Premium Ajwa Dates — Dates product from Halal Food. Check the current listed price, product details and Cash on Delivery ordering information.",
+    "fullDescription": "Premium Ajwa Dates is a naturally sweet dried fruit commonly enjoyed as a snack and used in desserts, breakfast bowls and everyday recipes. Halal Food lists the current price as ৳ 850 / kg and the product is presented in the Dates collection. For practical use, choose the quantity that matches your household needs and keep the product stored according to its packaging instructions. Dates can contribute natural carbohydrates, dietary fibre and small amounts of minerals to a balanced diet. Delivery is available across Bangladesh, with the exact arrival time depending on destination, order confirmation and product availability. Payment is Cash on Delivery only: customers should not send money before receiving the products. If you need to confirm stock, packaging, the available quantity (kg), or delivery timing for your address, contact Halal Food by phone, WhatsApp or email before ordering."
   },
   {
     "slug": "medjool-dates",
@@ -17,8 +17,8 @@ const PRODUCTS_DATA = [
     "categorySlug": "dates",
     "price": "৳ 900 / kg",
     "image": "images/dates/medjool-dates.jpg",
-    "shortDescription": "Medjool Dates from the Halal Food Dates collection. View the current price and order or contact us for availability and delivery details.",
-    "fullDescription": "Medjool Dates from the Halal Food Dates collection. View the current price and order or contact us for availability and delivery details."
+    "shortDescription": "Medjool Dates — Dates product from Halal Food. Check the current listed price, product details and Cash on Delivery ordering information.",
+    "fullDescription": "Medjool Dates is a naturally sweet dried fruit commonly enjoyed as a snack and used in desserts, breakfast bowls and everyday recipes. Halal Food lists the current price as ৳ 900 / kg and the product is presented in the Dates collection. For practical use, choose the quantity that matches your household needs and keep the product stored according to its packaging instructions. Dates can contribute natural carbohydrates, dietary fibre and small amounts of minerals to a balanced diet. Delivery is available across Bangladesh, with the exact arrival time depending on destination, order confirmation and product availability. Payment is Cash on Delivery only: customers should not send money before receiving the products. If you need to confirm stock, packaging, the available quantity (kg), or delivery timing for your address, contact Halal Food by phone, WhatsApp or email before ordering."
   },
   {
     "slug": "safawi-dates",
@@ -27,8 +27,8 @@ const PRODUCTS_DATA = [
     "categorySlug": "dates",
     "price": "৳ 800 / kg",
     "image": "images/dates/safawi-dates.jpg",
-    "shortDescription": "Safawi Dates from the Halal Food Dates collection. View the current price and order or contact us for availability and delivery details.",
-    "fullDescription": "Safawi Dates from the Halal Food Dates collection. View the current price and order or contact us for availability and delivery details."
+    "shortDescription": "Safawi Dates — Dates product from Halal Food. Check the current listed price, product details and Cash on Delivery ordering information.",
+    "fullDescription": "Safawi Dates is a naturally sweet dried fruit commonly enjoyed as a snack and used in desserts, breakfast bowls and everyday recipes. Halal Food lists the current price as ৳ 800 / kg and the product is presented in the Dates collection. For practical use, choose the quantity that matches your household needs and keep the product stored according to its packaging instructions. Dates can contribute natural carbohydrates, dietary fibre and small amounts of minerals to a balanced diet. Delivery is available across Bangladesh, with the exact arrival time depending on destination, order confirmation and product availability. Payment is Cash on Delivery only: customers should not send money before receiving the products. If you need to confirm stock, packaging, the available quantity (kg), or delivery timing for your address, contact Halal Food by phone, WhatsApp or email before ordering."
   },
   {
     "slug": "date-syrup",
@@ -37,8 +37,8 @@ const PRODUCTS_DATA = [
     "categorySlug": "dates",
     "price": "৳ 350 / bottle",
     "image": "images/dates/date-syrup.jpg",
-    "shortDescription": "Date Syrup from the Halal Food Dates collection. View the current price and order or contact us for availability and delivery details.",
-    "fullDescription": "Date Syrup from the Halal Food Dates collection. View the current price and order or contact us for availability and delivery details."
+    "shortDescription": "Date Syrup — Dates product from Halal Food. Check the current listed price, product details and Cash on Delivery ordering information.",
+    "fullDescription": "Date Syrup is a naturally sweet dried fruit commonly enjoyed as a snack and used in desserts, breakfast bowls and everyday recipes. Halal Food lists the current price as ৳ 350 / bottle and the product is presented in the Dates collection. For practical use, choose the quantity that matches your household needs and keep the product stored according to its packaging instructions. Dates can contribute natural carbohydrates, dietary fibre and small amounts of minerals to a balanced diet. Delivery is available across Bangladesh, with the exact arrival time depending on destination, order confirmation and product availability. Payment is Cash on Delivery only: customers should not send money before receiving the products. If you need to confirm stock, packaging, the available quantity (bottle), or delivery timing for your address, contact Halal Food by phone, WhatsApp or email before ordering."
   },
   {
     "slug": "basmati-rice",
@@ -47,8 +47,8 @@ const PRODUCTS_DATA = [
     "categorySlug": "dry-food",
     "price": "৳ 850 / kg",
     "image": "images/dry-food/basmati-rice.jpg",
-    "shortDescription": "Basmati Rice from the Halal Food Dry Food collection. View the current price and order or contact us for availability and delivery details.",
-    "fullDescription": "Basmati Rice from the Halal Food Dry Food collection. View the current price and order or contact us for availability and delivery details."
+    "shortDescription": "Basmati Rice — Dry Food product from Halal Food. Check the current listed price, product details and Cash on Delivery ordering information.",
+    "fullDescription": "Basmati Rice is a pantry staple selected for everyday cooking and meal preparation. Halal Food lists the current price as ৳ 850 / kg and the product is presented in the Dry Food collection. For practical use, choose the quantity that matches your household needs and keep the product stored according to its packaging instructions. Its nutritional value depends on the specific ingredient and how it is prepared as part of the overall meal. Delivery is available across Bangladesh, with the exact arrival time depending on destination, order confirmation and product availability. Payment is Cash on Delivery only: customers should not send money before receiving the products. If you need to confirm stock, packaging, the available quantity (kg), or delivery timing for your address, contact Halal Food by phone, WhatsApp or email before ordering."
   },
   {
     "slug": "chickpeas",
@@ -57,8 +57,8 @@ const PRODUCTS_DATA = [
     "categorySlug": "dry-food",
     "price": "৳ 900 / kg",
     "image": "images/dry-food/chickpeas.jpg",
-    "shortDescription": "Chickpeas from the Halal Food Dry Food collection. View the current price and order or contact us for availability and delivery details.",
-    "fullDescription": "Chickpeas from the Halal Food Dry Food collection. View the current price and order or contact us for availability and delivery details."
+    "shortDescription": "Chickpeas — Dry Food product from Halal Food. Check the current listed price, product details and Cash on Delivery ordering information.",
+    "fullDescription": "Chickpeas is a pantry staple selected for everyday cooking and meal preparation. Halal Food lists the current price as ৳ 900 / kg and the product is presented in the Dry Food collection. For practical use, choose the quantity that matches your household needs and keep the product stored according to its packaging instructions. Its nutritional value depends on the specific ingredient and how it is prepared as part of the overall meal. Delivery is available across Bangladesh, with the exact arrival time depending on destination, order confirmation and product availability. Payment is Cash on Delivery only: customers should not send money before receiving the products. If you need to confirm stock, packaging, the available quantity (kg), or delivery timing for your address, contact Halal Food by phone, WhatsApp or email before ordering."
   },
   {
     "slug": "red-lentils",
@@ -67,8 +67,8 @@ const PRODUCTS_DATA = [
     "categorySlug": "dry-food",
     "price": "৳ 800 / kg",
     "image": "images/dry-food/red-lentils.jpg",
-    "shortDescription": "Red Lentils from the Halal Food Dry Food collection. View the current price and order or contact us for availability and delivery details.",
-    "fullDescription": "Red Lentils from the Halal Food Dry Food collection. View the current price and order or contact us for availability and delivery details."
+    "shortDescription": "Red Lentils — Dry Food product from Halal Food. Check the current listed price, product details and Cash on Delivery ordering information.",
+    "fullDescription": "Red Lentils is a pantry staple selected for everyday cooking and meal preparation. Halal Food lists the current price as ৳ 800 / kg and the product is presented in the Dry Food collection. For practical use, choose the quantity that matches your household needs and keep the product stored according to its packaging instructions. Its nutritional value depends on the specific ingredient and how it is prepared as part of the overall meal. Delivery is available across Bangladesh, with the exact arrival time depending on destination, order confirmation and product availability. Payment is Cash on Delivery only: customers should not send money before receiving the products. If you need to confirm stock, packaging, the available quantity (kg), or delivery timing for your address, contact Halal Food by phone, WhatsApp or email before ordering."
   },
   {
     "slug": "roasted-chana",
@@ -77,8 +77,8 @@ const PRODUCTS_DATA = [
     "categorySlug": "dry-food",
     "price": "৳ 350 / bottle",
     "image": "images/dry-food/roasted-chana.jpg",
-    "shortDescription": "Roasted Chana from the Halal Food Dry Food collection. View the current price and order or contact us for availability and delivery details.",
-    "fullDescription": "Roasted Chana from the Halal Food Dry Food collection. View the current price and order or contact us for availability and delivery details."
+    "shortDescription": "Roasted Chana — Dry Food product from Halal Food. Check the current listed price, product details and Cash on Delivery ordering information.",
+    "fullDescription": "Roasted Chana is a pantry staple selected for everyday cooking and meal preparation. Halal Food lists the current price as ৳ 350 / bottle and the product is presented in the Dry Food collection. For practical use, choose the quantity that matches your household needs and keep the product stored according to its packaging instructions. Its nutritional value depends on the specific ingredient and how it is prepared as part of the overall meal. Delivery is available across Bangladesh, with the exact arrival time depending on destination, order confirmation and product availability. Payment is Cash on Delivery only: customers should not send money before receiving the products. If you need to confirm stock, packaging, the available quantity (bottle), or delivery timing for your address, contact Halal Food by phone, WhatsApp or email before ordering."
   },
   {
     "slug": "beef-cuts",
@@ -87,8 +87,8 @@ const PRODUCTS_DATA = [
     "categorySlug": "fresh-meat",
     "price": "৳ 850 / kg",
     "image": "images/fresh-meat/beef-cuts.jpg",
-    "shortDescription": "Fresh Beef Cuts from the Halal Food Fresh Meat collection. View the current price and order or contact us for availability and delivery details.",
-    "fullDescription": "Fresh Beef Cuts from the Halal Food Fresh Meat collection. View the current price and order or contact us for availability and delivery details."
+    "shortDescription": "Fresh Beef Cuts — Fresh Meat product from Halal Food. Check the current listed price, product details and Cash on Delivery ordering information.",
+    "fullDescription": "Fresh Beef Cuts is a fresh meat option intended for home cooking and family meals. Halal Food lists the current price as ৳ 850 / kg and the product is presented in the Fresh Meat collection. For practical use, choose the quantity that matches your household needs and keep the product stored according to its packaging instructions. Meat can provide protein and a range of nutrients; portion size, preparation and overall diet still matter. Delivery is available across Bangladesh, with the exact arrival time depending on destination, order confirmation and product availability. Payment is Cash on Delivery only: customers should not send money before receiving the products. If you need to confirm stock, packaging, the available quantity (kg), or delivery timing for your address, contact Halal Food by phone, WhatsApp or email before ordering."
   },
   {
     "slug": "beef-boneless",
@@ -97,8 +97,8 @@ const PRODUCTS_DATA = [
     "categorySlug": "fresh-meat",
     "price": "৳ 900 / kg",
     "image": "images/fresh-meat/beef-boneless.jpg",
-    "shortDescription": "Beef Boneless from the Halal Food Fresh Meat collection. View the current price and order or contact us for availability and delivery details.",
-    "fullDescription": "Beef Boneless from the Halal Food Fresh Meat collection. View the current price and order or contact us for availability and delivery details."
+    "shortDescription": "Beef Boneless — Fresh Meat product from Halal Food. Check the current listed price, product details and Cash on Delivery ordering information.",
+    "fullDescription": "Beef Boneless is a fresh meat option intended for home cooking and family meals. Halal Food lists the current price as ৳ 900 / kg and the product is presented in the Fresh Meat collection. For practical use, choose the quantity that matches your household needs and keep the product stored according to its packaging instructions. Meat can provide protein and a range of nutrients; portion size, preparation and overall diet still matter. Delivery is available across Bangladesh, with the exact arrival time depending on destination, order confirmation and product availability. Payment is Cash on Delivery only: customers should not send money before receiving the products. If you need to confirm stock, packaging, the available quantity (kg), or delivery timing for your address, contact Halal Food by phone, WhatsApp or email before ordering."
   },
   {
     "slug": "beef-curry-cut",
@@ -107,8 +107,8 @@ const PRODUCTS_DATA = [
     "categorySlug": "fresh-meat",
     "price": "৳ 800 / kg",
     "image": "images/fresh-meat/beef-curry-cut.jpg",
-    "shortDescription": "Beef Curry Cut from the Halal Food Fresh Meat collection. View the current price and order or contact us for availability and delivery details.",
-    "fullDescription": "Beef Curry Cut from the Halal Food Fresh Meat collection. View the current price and order or contact us for availability and delivery details."
+    "shortDescription": "Beef Curry Cut — Fresh Meat product from Halal Food. Check the current listed price, product details and Cash on Delivery ordering information.",
+    "fullDescription": "Beef Curry Cut is a fresh meat option intended for home cooking and family meals. Halal Food lists the current price as ৳ 800 / kg and the product is presented in the Fresh Meat collection. For practical use, choose the quantity that matches your household needs and keep the product stored according to its packaging instructions. Meat can provide protein and a range of nutrients; portion size, preparation and overall diet still matter. Delivery is available across Bangladesh, with the exact arrival time depending on destination, order confirmation and product availability. Payment is Cash on Delivery only: customers should not send money before receiving the products. If you need to confirm stock, packaging, the available quantity (kg), or delivery timing for your address, contact Halal Food by phone, WhatsApp or email before ordering."
   },
   {
     "slug": "fresh-mutton",
@@ -117,8 +117,8 @@ const PRODUCTS_DATA = [
     "categorySlug": "fresh-meat",
     "price": "৳ 350 / kg",
     "image": "images/fresh-meat/fresh-mutton.jpg",
-    "shortDescription": "Fresh Mutton from the Halal Food Fresh Meat collection. View the current price and order or contact us for availability and delivery details.",
-    "fullDescription": "Fresh Mutton from the Halal Food Fresh Meat collection. View the current price and order or contact us for availability and delivery details."
+    "shortDescription": "Fresh Mutton — Fresh Meat product from Halal Food. Check the current listed price, product details and Cash on Delivery ordering information.",
+    "fullDescription": "Fresh Mutton is a fresh meat option intended for home cooking and family meals. Halal Food lists the current price as ৳ 350 / kg and the product is presented in the Fresh Meat collection. For practical use, choose the quantity that matches your household needs and keep the product stored according to its packaging instructions. Meat can provide protein and a range of nutrients; portion size, preparation and overall diet still matter. Delivery is available across Bangladesh, with the exact arrival time depending on destination, order confirmation and product availability. Payment is Cash on Delivery only: customers should not send money before receiving the products. If you need to confirm stock, packaging, the available quantity (kg), or delivery timing for your address, contact Halal Food by phone, WhatsApp or email before ordering."
   },
   {
     "slug": "wild-forest-honey",
@@ -127,8 +127,8 @@ const PRODUCTS_DATA = [
     "categorySlug": "honey",
     "price": "৳ 850 / kg",
     "image": "images/honey/wild-forest-honey.jpg",
-    "shortDescription": "Wild Forest Honey from the Halal Food Honey collection. View the current price and order or contact us for availability and delivery details.",
-    "fullDescription": "Wild Forest Honey from the Halal Food Honey collection. View the current price and order or contact us for availability and delivery details."
+    "shortDescription": "Wild Forest Honey — Honey product from Halal Food. Check the current listed price, product details and Cash on Delivery ordering information.",
+    "fullDescription": "Wild Forest Honey is a naturally sweet pantry ingredient used in drinks, breakfast foods, desserts and recipes. Halal Food lists the current price as ৳ 850 / kg and the product is presented in the Honey collection. For practical use, choose the quantity that matches your household needs and keep the product stored according to its packaging instructions. Honey is primarily a source of sugars and is best used as part of a balanced diet rather than as a medical treatment. Delivery is available across Bangladesh, with the exact arrival time depending on destination, order confirmation and product availability. Payment is Cash on Delivery only: customers should not send money before receiving the products. If you need to confirm stock, packaging, the available quantity (kg), or delivery timing for your address, contact Halal Food by phone, WhatsApp or email before ordering."
   },
   {
     "slug": "black-seed-honey",
@@ -137,8 +137,8 @@ const PRODUCTS_DATA = [
     "categorySlug": "honey",
     "price": "৳ 900 / kg",
     "image": "images/honey/black-seed-honey.jpg",
-    "shortDescription": "Black Seed Honey from the Halal Food Honey collection. View the current price and order or contact us for availability and delivery details.",
-    "fullDescription": "Black Seed Honey from the Halal Food Honey collection. View the current price and order or contact us for availability and delivery details."
+    "shortDescription": "Black Seed Honey — Honey product from Halal Food. Check the current listed price, product details and Cash on Delivery ordering information.",
+    "fullDescription": "Black Seed Honey is a naturally sweet pantry ingredient used in drinks, breakfast foods, desserts and recipes. Halal Food lists the current price as ৳ 900 / kg and the product is presented in the Honey collection. For practical use, choose the quantity that matches your household needs and keep the product stored according to its packaging instructions. Honey is primarily a source of sugars and is best used as part of a balanced diet rather than as a medical treatment. Delivery is available across Bangladesh, with the exact arrival time depending on destination, order confirmation and product availability. Payment is Cash on Delivery only: customers should not send money before receiving the products. If you need to confirm stock, packaging, the available quantity (kg), or delivery timing for your address, contact Halal Food by phone, WhatsApp or email before ordering."
   },
   {
     "slug": "litchi-honey",
@@ -147,8 +147,8 @@ const PRODUCTS_DATA = [
     "categorySlug": "honey",
     "price": "৳ 800 / kg",
     "image": "images/honey/litchi-honey.jpg",
-    "shortDescription": "Litchi Honey from the Halal Food Honey collection. View the current price and order or contact us for availability and delivery details.",
-    "fullDescription": "Litchi Honey from the Halal Food Honey collection. View the current price and order or contact us for availability and delivery details."
+    "shortDescription": "Litchi Honey — Honey product from Halal Food. Check the current listed price, product details and Cash on Delivery ordering information.",
+    "fullDescription": "Litchi Honey is a naturally sweet pantry ingredient used in drinks, breakfast foods, desserts and recipes. Halal Food lists the current price as ৳ 800 / kg and the product is presented in the Honey collection. For practical use, choose the quantity that matches your household needs and keep the product stored according to its packaging instructions. Honey is primarily a source of sugars and is best used as part of a balanced diet rather than as a medical treatment. Delivery is available across Bangladesh, with the exact arrival time depending on destination, order confirmation and product availability. Payment is Cash on Delivery only: customers should not send money before receiving the products. If you need to confirm stock, packaging, the available quantity (kg), or delivery timing for your address, contact Halal Food by phone, WhatsApp or email before ordering."
   },
   {
     "slug": "mustard-flower-honey",
@@ -157,8 +157,8 @@ const PRODUCTS_DATA = [
     "categorySlug": "honey",
     "price": "৳ 350 / bottle",
     "image": "images/honey/mustard-flower-honey.jpg",
-    "shortDescription": "Mustard Flower Honey from the Halal Food Honey collection. View the current price and order or contact us for availability and delivery details.",
-    "fullDescription": "Mustard Flower Honey from the Halal Food Honey collection. View the current price and order or contact us for availability and delivery details."
+    "shortDescription": "Mustard Flower Honey — Honey product from Halal Food. Check the current listed price, product details and Cash on Delivery ordering information.",
+    "fullDescription": "Mustard Flower Honey is a naturally sweet pantry ingredient used in drinks, breakfast foods, desserts and recipes. Halal Food lists the current price as ৳ 350 / bottle and the product is presented in the Honey collection. For practical use, choose the quantity that matches your household needs and keep the product stored according to its packaging instructions. Honey is primarily a source of sugars and is best used as part of a balanced diet rather than as a medical treatment. Delivery is available across Bangladesh, with the exact arrival time depending on destination, order confirmation and product availability. Payment is Cash on Delivery only: customers should not send money before receiving the products. If you need to confirm stock, packaging, the available quantity (bottle), or delivery timing for your address, contact Halal Food by phone, WhatsApp or email before ordering."
   },
   {
     "slug": "garlic-honey-mix",
@@ -167,8 +167,8 @@ const PRODUCTS_DATA = [
     "categorySlug": "mix-food",
     "price": "৳ 850 / kg",
     "image": "images/mix-food/garlic-honey-mix.jpg",
-    "shortDescription": "Garlic &amp; Honey Mix from the Halal Food Mix Food collection. View the current price and order or contact us for availability and delivery details.",
-    "fullDescription": "Garlic &amp; Honey Mix from the Halal Food Mix Food collection. View the current price and order or contact us for availability and delivery details."
+    "shortDescription": "Garlic & Honey Mix — Mix Food product from Halal Food. Check the current listed price, product details and Cash on Delivery ordering information.",
+    "fullDescription": "Garlic & Honey Mix is a ready-to-use food combination designed for convenient snacking or everyday serving. Halal Food lists the current price as ৳ 850 / kg and the product is presented in the Mix Food collection. For practical use, choose the quantity that matches your household needs and keep the product stored according to its packaging instructions. The nutritional profile depends on the ingredients in the blend, so the full ingredient list and portion size are important. Delivery is available across Bangladesh, with the exact arrival time depending on destination, order confirmation and product availability. Payment is Cash on Delivery only: customers should not send money before receiving the products. If you need to confirm stock, packaging, the available quantity (kg), or delivery timing for your address, contact Halal Food by phone, WhatsApp or email before ordering."
   },
   {
     "slug": "honey-nut-mix",
@@ -177,8 +177,8 @@ const PRODUCTS_DATA = [
     "categorySlug": "mix-food",
     "price": "৳ 900 / kg",
     "image": "images/mix-food/honey-nut-mix.jpg",
-    "shortDescription": "Honey Nut Mix from the Halal Food Mix Food collection. View the current price and order or contact us for availability and delivery details.",
-    "fullDescription": "Honey Nut Mix from the Halal Food Mix Food collection. View the current price and order or contact us for availability and delivery details."
+    "shortDescription": "Honey Nut Mix — Mix Food product from Halal Food. Check the current listed price, product details and Cash on Delivery ordering information.",
+    "fullDescription": "Honey Nut Mix is a ready-to-use food combination designed for convenient snacking or everyday serving. Halal Food lists the current price as ৳ 900 / kg and the product is presented in the Mix Food collection. For practical use, choose the quantity that matches your household needs and keep the product stored according to its packaging instructions. The nutritional profile depends on the ingredients in the blend, so the full ingredient list and portion size are important. Delivery is available across Bangladesh, with the exact arrival time depending on destination, order confirmation and product availability. Payment is Cash on Delivery only: customers should not send money before receiving the products. If you need to confirm stock, packaging, the available quantity (kg), or delivery timing for your address, contact Halal Food by phone, WhatsApp or email before ordering."
   },
   {
     "slug": "date-nut-mix",
@@ -187,8 +187,8 @@ const PRODUCTS_DATA = [
     "categorySlug": "mix-food",
     "price": "৳ 800 / kg",
     "image": "images/mix-food/date-nut-mix.jpg",
-    "shortDescription": "Date &amp; Nut Mix from the Halal Food Mix Food collection. View the current price and order or contact us for availability and delivery details.",
-    "fullDescription": "Date &amp; Nut Mix from the Halal Food Mix Food collection. View the current price and order or contact us for availability and delivery details."
+    "shortDescription": "Date & Nut Mix — Mix Food product from Halal Food. Check the current listed price, product details and Cash on Delivery ordering information.",
+    "fullDescription": "Date & Nut Mix is a ready-to-use food combination designed for convenient snacking or everyday serving. Halal Food lists the current price as ৳ 800 / kg and the product is presented in the Mix Food collection. For practical use, choose the quantity that matches your household needs and keep the product stored according to its packaging instructions. The nutritional profile depends on the ingredients in the blend, so the full ingredient list and portion size are important. Delivery is available across Bangladesh, with the exact arrival time depending on destination, order confirmation and product availability. Payment is Cash on Delivery only: customers should not send money before receiving the products. If you need to confirm stock, packaging, the available quantity (kg), or delivery timing for your address, contact Halal Food by phone, WhatsApp or email before ordering."
   },
   {
     "slug": "dry-fruit-mix",
@@ -197,8 +197,8 @@ const PRODUCTS_DATA = [
     "categorySlug": "mix-food",
     "price": "৳ 350 / bottle",
     "image": "images/mix-food/dry-fruit-mix.jpg",
-    "shortDescription": "Dry Fruit Mix from the Halal Food Mix Food collection. View the current price and order or contact us for availability and delivery details.",
-    "fullDescription": "Dry Fruit Mix from the Halal Food Mix Food collection. View the current price and order or contact us for availability and delivery details."
+    "shortDescription": "Dry Fruit Mix — Mix Food product from Halal Food. Check the current listed price, product details and Cash on Delivery ordering information.",
+    "fullDescription": "Dry Fruit Mix is a ready-to-use food combination designed for convenient snacking or everyday serving. Halal Food lists the current price as ৳ 350 / bottle and the product is presented in the Mix Food collection. For practical use, choose the quantity that matches your household needs and keep the product stored according to its packaging instructions. The nutritional profile depends on the ingredients in the blend, so the full ingredient list and portion size are important. Delivery is available across Bangladesh, with the exact arrival time depending on destination, order confirmation and product availability. Payment is Cash on Delivery only: customers should not send money before receiving the products. If you need to confirm stock, packaging, the available quantity (bottle), or delivery timing for your address, contact Halal Food by phone, WhatsApp or email before ordering."
   },
   {
     "slug": "mixed-roasted-nuts",
@@ -207,8 +207,8 @@ const PRODUCTS_DATA = [
     "categorySlug": "nuts-seeds",
     "price": "৳ 850 / kg",
     "image": "images/nuts-seeds/mixed-roasted-nuts.jpg",
-    "shortDescription": "Mixed Roasted Nuts from the Halal Food Nuts &amp; Seeds collection. View the current price and order or contact us for availability and delivery details.",
-    "fullDescription": "Mixed Roasted Nuts from the Halal Food Nuts &amp; Seeds collection. View the current price and order or contact us for availability and delivery details."
+    "shortDescription": "Mixed Roasted Nuts — Nuts & Seeds product from Halal Food. Check the current listed price, product details and Cash on Delivery ordering information.",
+    "fullDescription": "Mixed Roasted Nuts is a pantry-friendly nut or seed product suited to snacking, toppings and everyday recipes. Halal Food lists the current price as ৳ 850 / kg and the product is presented in the Nuts & Seeds collection. For practical use, choose the quantity that matches your household needs and keep the product stored according to its packaging instructions. Nuts and seeds commonly provide protein, unsaturated fats, fibre and micronutrients, although the exact profile varies by item. Delivery is available across Bangladesh, with the exact arrival time depending on destination, order confirmation and product availability. Payment is Cash on Delivery only: customers should not send money before receiving the products. If you need to confirm stock, packaging, the available quantity (kg), or delivery timing for your address, contact Halal Food by phone, WhatsApp or email before ordering."
   },
   {
     "slug": "almonds",
@@ -217,8 +217,8 @@ const PRODUCTS_DATA = [
     "categorySlug": "nuts-seeds",
     "price": "৳ 900 / kg",
     "image": "images/nuts-seeds/almonds.jpg",
-    "shortDescription": "Almonds from the Halal Food Nuts &amp; Seeds collection. View the current price and order or contact us for availability and delivery details.",
-    "fullDescription": "Almonds from the Halal Food Nuts &amp; Seeds collection. View the current price and order or contact us for availability and delivery details."
+    "shortDescription": "Almonds — Nuts & Seeds product from Halal Food. Check the current listed price, product details and Cash on Delivery ordering information.",
+    "fullDescription": "Almonds is a pantry-friendly nut or seed product suited to snacking, toppings and everyday recipes. Halal Food lists the current price as ৳ 900 / kg and the product is presented in the Nuts & Seeds collection. For practical use, choose the quantity that matches your household needs and keep the product stored according to its packaging instructions. Nuts and seeds commonly provide protein, unsaturated fats, fibre and micronutrients, although the exact profile varies by item. Delivery is available across Bangladesh, with the exact arrival time depending on destination, order confirmation and product availability. Payment is Cash on Delivery only: customers should not send money before receiving the products. If you need to confirm stock, packaging, the available quantity (kg), or delivery timing for your address, contact Halal Food by phone, WhatsApp or email before ordering."
   },
   {
     "slug": "cashews",
@@ -227,8 +227,8 @@ const PRODUCTS_DATA = [
     "categorySlug": "nuts-seeds",
     "price": "৳ 800 / kg",
     "image": "images/nuts-seeds/cashews.jpg",
-    "shortDescription": "Cashews from the Halal Food Nuts &amp; Seeds collection. View the current price and order or contact us for availability and delivery details.",
-    "fullDescription": "Cashews from the Halal Food Nuts &amp; Seeds collection. View the current price and order or contact us for availability and delivery details."
+    "shortDescription": "Cashews — Nuts & Seeds product from Halal Food. Check the current listed price, product details and Cash on Delivery ordering information.",
+    "fullDescription": "Cashews is a pantry-friendly nut or seed product suited to snacking, toppings and everyday recipes. Halal Food lists the current price as ৳ 800 / kg and the product is presented in the Nuts & Seeds collection. For practical use, choose the quantity that matches your household needs and keep the product stored according to its packaging instructions. Nuts and seeds commonly provide protein, unsaturated fats, fibre and micronutrients, although the exact profile varies by item. Delivery is available across Bangladesh, with the exact arrival time depending on destination, order confirmation and product availability. Payment is Cash on Delivery only: customers should not send money before receiving the products. If you need to confirm stock, packaging, the available quantity (kg), or delivery timing for your address, contact Halal Food by phone, WhatsApp or email before ordering."
   },
   {
     "slug": "pumpkin-seeds",
@@ -237,8 +237,8 @@ const PRODUCTS_DATA = [
     "categorySlug": "nuts-seeds",
     "price": "৳ 350 / bottle",
     "image": "images/nuts-seeds/pumpkin-seeds.jpg",
-    "shortDescription": "Pumpkin Seeds from the Halal Food Nuts &amp; Seeds collection. View the current price and order or contact us for availability and delivery details.",
-    "fullDescription": "Pumpkin Seeds from the Halal Food Nuts &amp; Seeds collection. View the current price and order or contact us for availability and delivery details."
+    "shortDescription": "Pumpkin Seeds — Nuts & Seeds product from Halal Food. Check the current listed price, product details and Cash on Delivery ordering information.",
+    "fullDescription": "Pumpkin Seeds is a pantry-friendly nut or seed product suited to snacking, toppings and everyday recipes. Halal Food lists the current price as ৳ 350 / bottle and the product is presented in the Nuts & Seeds collection. For practical use, choose the quantity that matches your household needs and keep the product stored according to its packaging instructions. Nuts and seeds commonly provide protein, unsaturated fats, fibre and micronutrients, although the exact profile varies by item. Delivery is available across Bangladesh, with the exact arrival time depending on destination, order confirmation and product availability. Payment is Cash on Delivery only: customers should not send money before receiving the products. If you need to confirm stock, packaging, the available quantity (bottle), or delivery timing for your address, contact Halal Food by phone, WhatsApp or email before ordering."
   },
   {
     "slug": "house-biryani-masala",
@@ -247,8 +247,8 @@ const PRODUCTS_DATA = [
     "categorySlug": "special-masala",
     "price": "৳ 850 / kg",
     "image": "images/special-masala/house-biryani-masala.jpg",
-    "shortDescription": "House Biryani Masala from the Halal Food Special Masala collection. View the current price and order or contact us for availability and delivery details.",
-    "fullDescription": "House Biryani Masala from the Halal Food Special Masala collection. View the current price and order or contact us for availability and delivery details."
+    "shortDescription": "House Biryani Masala — Special Masala product from Halal Food. Check the current listed price, product details and Cash on Delivery ordering information.",
+    "fullDescription": "House Biryani Masala is a spice blend prepared to make everyday cooking more convenient and flavourful. Halal Food lists the current price as ৳ 850 / kg and the product is presented in the Special Masala collection. For practical use, choose the quantity that matches your household needs and keep the product stored according to its packaging instructions. Spices are generally used in small portions; their main role here is flavour, aroma and cooking convenience. Delivery is available across Bangladesh, with the exact arrival time depending on destination, order confirmation and product availability. Payment is Cash on Delivery only: customers should not send money before receiving the products. If you need to confirm stock, packaging, the available quantity (kg), or delivery timing for your address, contact Halal Food by phone, WhatsApp or email before ordering."
   },
   {
     "slug": "beef-masala",
@@ -257,8 +257,8 @@ const PRODUCTS_DATA = [
     "categorySlug": "special-masala",
     "price": "৳ 900 / kg",
     "image": "images/special-masala/beef-masala.jpg",
-    "shortDescription": "Beef Masala from the Halal Food Special Masala collection. View the current price and order or contact us for availability and delivery details.",
-    "fullDescription": "Beef Masala from the Halal Food Special Masala collection. View the current price and order or contact us for availability and delivery details."
+    "shortDescription": "Beef Masala — Special Masala product from Halal Food. Check the current listed price, product details and Cash on Delivery ordering information.",
+    "fullDescription": "Beef Masala is a spice blend prepared to make everyday cooking more convenient and flavourful. Halal Food lists the current price as ৳ 900 / kg and the product is presented in the Special Masala collection. For practical use, choose the quantity that matches your household needs and keep the product stored according to its packaging instructions. Spices are generally used in small portions; their main role here is flavour, aroma and cooking convenience. Delivery is available across Bangladesh, with the exact arrival time depending on destination, order confirmation and product availability. Payment is Cash on Delivery only: customers should not send money before receiving the products. If you need to confirm stock, packaging, the available quantity (kg), or delivery timing for your address, contact Halal Food by phone, WhatsApp or email before ordering."
   },
   {
     "slug": "chicken-masala",
@@ -267,8 +267,8 @@ const PRODUCTS_DATA = [
     "categorySlug": "special-masala",
     "price": "৳ 800 / kg",
     "image": "images/special-masala/chicken-masala.jpg",
-    "shortDescription": "Chicken Masala from the Halal Food Special Masala collection. View the current price and order or contact us for availability and delivery details.",
-    "fullDescription": "Chicken Masala from the Halal Food Special Masala collection. View the current price and order or contact us for availability and delivery details."
+    "shortDescription": "Chicken Masala — Special Masala product from Halal Food. Check the current listed price, product details and Cash on Delivery ordering information.",
+    "fullDescription": "Chicken Masala is a spice blend prepared to make everyday cooking more convenient and flavourful. Halal Food lists the current price as ৳ 800 / kg and the product is presented in the Special Masala collection. For practical use, choose the quantity that matches your household needs and keep the product stored according to its packaging instructions. Spices are generally used in small portions; their main role here is flavour, aroma and cooking convenience. Delivery is available across Bangladesh, with the exact arrival time depending on destination, order confirmation and product availability. Payment is Cash on Delivery only: customers should not send money before receiving the products. If you need to confirm stock, packaging, the available quantity (kg), or delivery timing for your address, contact Halal Food by phone, WhatsApp or email before ordering."
   },
   {
     "slug": "fish-masala",
@@ -277,8 +277,8 @@ const PRODUCTS_DATA = [
     "categorySlug": "special-masala",
     "price": "৳ 350 / bottle",
     "image": "images/special-masala/fish-masala.jpg",
-    "shortDescription": "Fish Masala from the Halal Food Special Masala collection. View the current price and order or contact us for availability and delivery details.",
-    "fullDescription": "Fish Masala from the Halal Food Special Masala collection. View the current price and order or contact us for availability and delivery details."
+    "shortDescription": "Fish Masala — Special Masala product from Halal Food. Check the current listed price, product details and Cash on Delivery ordering information.",
+    "fullDescription": "Fish Masala is a spice blend prepared to make everyday cooking more convenient and flavourful. Halal Food lists the current price as ৳ 350 / bottle and the product is presented in the Special Masala collection. For practical use, choose the quantity that matches your household needs and keep the product stored according to its packaging instructions. Spices are generally used in small portions; their main role here is flavour, aroma and cooking convenience. Delivery is available across Bangladesh, with the exact arrival time depending on destination, order confirmation and product availability. Payment is Cash on Delivery only: customers should not send money before receiving the products. If you need to confirm stock, packaging, the available quantity (bottle), or delivery timing for your address, contact Halal Food by phone, WhatsApp or email before ordering."
   },
   {
     "slug": "classic-black-tea",
@@ -287,8 +287,8 @@ const PRODUCTS_DATA = [
     "categorySlug": "tea",
     "price": "৳ 850 / kg",
     "image": "images/tea/classic-black-tea.jpg",
-    "shortDescription": "Classic Black Tea from the Halal Food Tea collection. View the current price and order or contact us for availability and delivery details.",
-    "fullDescription": "Classic Black Tea from the Halal Food Tea collection. View the current price and order or contact us for availability and delivery details."
+    "shortDescription": "Classic Black Tea — Tea product from Halal Food. Check the current listed price, product details and Cash on Delivery ordering information.",
+    "fullDescription": "Classic Black Tea is a tea selection for everyday hot or iced drinks. Halal Food lists the current price as ৳ 850 / kg and the product is presented in the Tea collection. For practical use, choose the quantity that matches your household needs and keep the product stored according to its packaging instructions. Tea naturally contains plant compounds, and some varieties contain caffeine; strength and serving size affect the final drink. Delivery is available across Bangladesh, with the exact arrival time depending on destination, order confirmation and product availability. Payment is Cash on Delivery only: customers should not send money before receiving the products. If you need to confirm stock, packaging, the available quantity (kg), or delivery timing for your address, contact Halal Food by phone, WhatsApp or email before ordering."
   },
   {
     "slug": "green-tea",
@@ -297,8 +297,8 @@ const PRODUCTS_DATA = [
     "categorySlug": "tea",
     "price": "৳ 900 / kg",
     "image": "images/tea/green-tea.jpg",
-    "shortDescription": "Green Tea from the Halal Food Tea collection. View the current price and order or contact us for availability and delivery details.",
-    "fullDescription": "Green Tea from the Halal Food Tea collection. View the current price and order or contact us for availability and delivery details."
+    "shortDescription": "Green Tea — Tea product from Halal Food. Check the current listed price, product details and Cash on Delivery ordering information.",
+    "fullDescription": "Green Tea is a tea selection for everyday hot or iced drinks. Halal Food lists the current price as ৳ 900 / kg and the product is presented in the Tea collection. For practical use, choose the quantity that matches your household needs and keep the product stored according to its packaging instructions. Tea naturally contains plant compounds, and some varieties contain caffeine; strength and serving size affect the final drink. Delivery is available across Bangladesh, with the exact arrival time depending on destination, order confirmation and product availability. Payment is Cash on Delivery only: customers should not send money before receiving the products. If you need to confirm stock, packaging, the available quantity (kg), or delivery timing for your address, contact Halal Food by phone, WhatsApp or email before ordering."
   },
   {
     "slug": "ginger-tea",
@@ -307,8 +307,8 @@ const PRODUCTS_DATA = [
     "categorySlug": "tea",
     "price": "৳ 800 / kg",
     "image": "images/tea/ginger-tea.jpg",
-    "shortDescription": "Ginger Tea from the Halal Food Tea collection. View the current price and order or contact us for availability and delivery details.",
-    "fullDescription": "Ginger Tea from the Halal Food Tea collection. View the current price and order or contact us for availability and delivery details."
+    "shortDescription": "Ginger Tea — Tea product from Halal Food. Check the current listed price, product details and Cash on Delivery ordering information.",
+    "fullDescription": "Ginger Tea is a tea selection for everyday hot or iced drinks. Halal Food lists the current price as ৳ 800 / kg and the product is presented in the Tea collection. For practical use, choose the quantity that matches your household needs and keep the product stored according to its packaging instructions. Tea naturally contains plant compounds, and some varieties contain caffeine; strength and serving size affect the final drink. Delivery is available across Bangladesh, with the exact arrival time depending on destination, order confirmation and product availability. Payment is Cash on Delivery only: customers should not send money before receiving the products. If you need to confirm stock, packaging, the available quantity (kg), or delivery timing for your address, contact Halal Food by phone, WhatsApp or email before ordering."
   },
   {
     "slug": "herbal-tea",
@@ -317,8 +317,8 @@ const PRODUCTS_DATA = [
     "categorySlug": "tea",
     "price": "৳ 350 / bottle",
     "image": "images/tea/herbal-tea.jpg",
-    "shortDescription": "Herbal Tea from the Halal Food Tea collection. View the current price and order or contact us for availability and delivery details.",
-    "fullDescription": "Herbal Tea from the Halal Food Tea collection. View the current price and order or contact us for availability and delivery details."
+    "shortDescription": "Herbal Tea — Tea product from Halal Food. Check the current listed price, product details and Cash on Delivery ordering information.",
+    "fullDescription": "Herbal Tea is a tea selection for everyday hot or iced drinks. Halal Food lists the current price as ৳ 350 / bottle and the product is presented in the Tea collection. For practical use, choose the quantity that matches your household needs and keep the product stored according to its packaging instructions. Tea naturally contains plant compounds, and some varieties contain caffeine; strength and serving size affect the final drink. Delivery is available across Bangladesh, with the exact arrival time depending on destination, order confirmation and product availability. Payment is Cash on Delivery only: customers should not send money before receiving the products. If you need to confirm stock, packaging, the available quantity (bottle), or delivery timing for your address, contact Halal Food by phone, WhatsApp or email before ordering."
   },
   {
     "slug": "kalmi-dates",
@@ -327,8 +327,8 @@ const PRODUCTS_DATA = [
     "categorySlug": "dates",
     "price": "৳ 780 / kg",
     "image": "images/dates/kalmi-dates.jpg",
-    "shortDescription": "Kalmi Dates from the Halal Food Dates collection. View the current price and order or contact us for availability and delivery details.",
-    "fullDescription": "Kalmi Dates from the Halal Food Dates collection. View the current price and order or contact us for availability and delivery details."
+    "shortDescription": "Kalmi Dates — Dates product from Halal Food. Check the current listed price, product details and Cash on Delivery ordering information.",
+    "fullDescription": "Kalmi Dates is a naturally sweet dried fruit commonly enjoyed as a snack and used in desserts, breakfast bowls and everyday recipes. Halal Food lists the current price as ৳ 780 / kg and the product is presented in the Dates collection. For practical use, choose the quantity that matches your household needs and keep the product stored according to its packaging instructions. Dates can contribute natural carbohydrates, dietary fibre and small amounts of minerals to a balanced diet. Delivery is available across Bangladesh, with the exact arrival time depending on destination, order confirmation and product availability. Payment is Cash on Delivery only: customers should not send money before receiving the products. If you need to confirm stock, packaging, the available quantity (kg), or delivery timing for your address, contact Halal Food by phone, WhatsApp or email before ordering."
   },
   {
     "slug": "sukkari-dates",
@@ -337,8 +337,8 @@ const PRODUCTS_DATA = [
     "categorySlug": "dates",
     "price": "৳ 950 / kg",
     "image": "images/dates/sukkari-dates.jpg",
-    "shortDescription": "Sukkari Dates from the Halal Food Dates collection. View the current price and order or contact us for availability and delivery details.",
-    "fullDescription": "Sukkari Dates from the Halal Food Dates collection. View the current price and order or contact us for availability and delivery details."
+    "shortDescription": "Sukkari Dates — Dates product from Halal Food. Check the current listed price, product details and Cash on Delivery ordering information.",
+    "fullDescription": "Sukkari Dates is a naturally sweet dried fruit commonly enjoyed as a snack and used in desserts, breakfast bowls and everyday recipes. Halal Food lists the current price as ৳ 950 / kg and the product is presented in the Dates collection. For practical use, choose the quantity that matches your household needs and keep the product stored according to its packaging instructions. Dates can contribute natural carbohydrates, dietary fibre and small amounts of minerals to a balanced diet. Delivery is available across Bangladesh, with the exact arrival time depending on destination, order confirmation and product availability. Payment is Cash on Delivery only: customers should not send money before receiving the products. If you need to confirm stock, packaging, the available quantity (kg), or delivery timing for your address, contact Halal Food by phone, WhatsApp or email before ordering."
   },
   {
     "slug": "brown-lentils",
@@ -347,8 +347,8 @@ const PRODUCTS_DATA = [
     "categorySlug": "dry-food",
     "price": "৳ 180 / kg",
     "image": "images/dry-food/brown-lentils.jpg",
-    "shortDescription": "Brown Lentils (Whole Masoor) from the Halal Food Dry Food collection. View the current price and order or contact us for availability and delivery details.",
-    "fullDescription": "Brown Lentils (Whole Masoor) from the Halal Food Dry Food collection. View the current price and order or contact us for availability and delivery details."
+    "shortDescription": "Brown Lentils (Whole Masoor) — Dry Food product from Halal Food. Check the current listed price, product details and Cash on Delivery ordering information.",
+    "fullDescription": "Brown Lentils (Whole Masoor) is a pantry staple selected for everyday cooking and meal preparation. Halal Food lists the current price as ৳ 180 / kg and the product is presented in the Dry Food collection. For practical use, choose the quantity that matches your household needs and keep the product stored according to its packaging instructions. Its nutritional value depends on the specific ingredient and how it is prepared as part of the overall meal. Delivery is available across Bangladesh, with the exact arrival time depending on destination, order confirmation and product availability. Payment is Cash on Delivery only: customers should not send money before receiving the products. If you need to confirm stock, packaging, the available quantity (kg), or delivery timing for your address, contact Halal Food by phone, WhatsApp or email before ordering."
   },
   {
     "slug": "toor-dal",
@@ -357,8 +357,8 @@ const PRODUCTS_DATA = [
     "categorySlug": "dry-food",
     "price": "৳ 190 / kg",
     "image": "images/dry-food/toor-dal.jpg",
-    "shortDescription": "Toor Dal (Arhar Dal) from the Halal Food Dry Food collection. View the current price and order or contact us for availability and delivery details.",
-    "fullDescription": "Toor Dal (Arhar Dal) from the Halal Food Dry Food collection. View the current price and order or contact us for availability and delivery details."
+    "shortDescription": "Toor Dal (Arhar Dal) — Dry Food product from Halal Food. Check the current listed price, product details and Cash on Delivery ordering information.",
+    "fullDescription": "Toor Dal (Arhar Dal) is a pantry staple selected for everyday cooking and meal preparation. Halal Food lists the current price as ৳ 190 / kg and the product is presented in the Dry Food collection. For practical use, choose the quantity that matches your household needs and keep the product stored according to its packaging instructions. Its nutritional value depends on the specific ingredient and how it is prepared as part of the overall meal. Delivery is available across Bangladesh, with the exact arrival time depending on destination, order confirmation and product availability. Payment is Cash on Delivery only: customers should not send money before receiving the products. If you need to confirm stock, packaging, the available quantity (kg), or delivery timing for your address, contact Halal Food by phone, WhatsApp or email before ordering."
   },
   {
     "slug": "sundarban-honey",
@@ -367,8 +367,8 @@ const PRODUCTS_DATA = [
     "categorySlug": "honey",
     "price": "৳ 750 / 500g",
     "image": "images/honey/sundarban-honey.jpg",
-    "shortDescription": "Sundarban Honey from the Halal Food Honey collection. View the current price and order or contact us for availability and delivery details.",
-    "fullDescription": "Sundarban Honey from the Halal Food Honey collection. View the current price and order or contact us for availability and delivery details."
+    "shortDescription": "Sundarban Honey — Honey product from Halal Food. Check the current listed price, product details and Cash on Delivery ordering information.",
+    "fullDescription": "Sundarban Honey is a naturally sweet pantry ingredient used in drinks, breakfast foods, desserts and recipes. Halal Food lists the current price as ৳ 750 / 500g and the product is presented in the Honey collection. For practical use, choose the quantity that matches your household needs and keep the product stored according to its packaging instructions. Honey is primarily a source of sugars and is best used as part of a balanced diet rather than as a medical treatment. Delivery is available across Bangladesh, with the exact arrival time depending on destination, order confirmation and product availability. Payment is Cash on Delivery only: customers should not send money before receiving the products. If you need to confirm stock, packaging, the available quantity (500g), or delivery timing for your address, contact Halal Food by phone, WhatsApp or email before ordering."
   },
   {
     "slug": "kashmiri-sidr-honey",
@@ -377,8 +377,8 @@ const PRODUCTS_DATA = [
     "categorySlug": "honey",
     "price": "৳ 1,200 / 800g",
     "image": "images/honey/kashmiri-sidr-honey.jpg",
-    "shortDescription": "Kashmiri Sidr Honey from the Halal Food Honey collection. View the current price and order or contact us for availability and delivery details.",
-    "fullDescription": "Kashmiri Sidr Honey from the Halal Food Honey collection. View the current price and order or contact us for availability and delivery details."
+    "shortDescription": "Kashmiri Sidr Honey — Honey product from Halal Food. Check the current listed price, product details and Cash on Delivery ordering information.",
+    "fullDescription": "Kashmiri Sidr Honey is a naturally sweet pantry ingredient used in drinks, breakfast foods, desserts and recipes. Halal Food lists the current price as ৳ 1,200 / 800g and the product is presented in the Honey collection. For practical use, choose the quantity that matches your household needs and keep the product stored according to its packaging instructions. Honey is primarily a source of sugars and is best used as part of a balanced diet rather than as a medical treatment. Delivery is available across Bangladesh, with the exact arrival time depending on destination, order confirmation and product availability. Payment is Cash on Delivery only: customers should not send money before receiving the products. If you need to confirm stock, packaging, the available quantity (800g), or delivery timing for your address, contact Halal Food by phone, WhatsApp or email before ordering."
   },
   {
     "slug": "nuts-seeds-mix",
@@ -387,8 +387,8 @@ const PRODUCTS_DATA = [
     "categorySlug": "mix-food",
     "price": "৳ 650 / kg",
     "image": "images/mix-food/nuts-seeds-mix.jpg",
-    "shortDescription": "Nuts & Seeds Mix from the Halal Food Mix Food collection. View the current price and order or contact us for availability and delivery details.",
-    "fullDescription": "Nuts & Seeds Mix from the Halal Food Mix Food collection. View the current price and order or contact us for availability and delivery details."
+    "shortDescription": "Nuts & Seeds Mix — Mix Food product from Halal Food. Check the current listed price, product details and Cash on Delivery ordering information.",
+    "fullDescription": "Nuts & Seeds Mix is a ready-to-use food combination designed for convenient snacking or everyday serving. Halal Food lists the current price as ৳ 650 / kg and the product is presented in the Mix Food collection. For practical use, choose the quantity that matches your household needs and keep the product stored according to its packaging instructions. The nutritional profile depends on the ingredients in the blend, so the full ingredient list and portion size are important. Delivery is available across Bangladesh, with the exact arrival time depending on destination, order confirmation and product availability. Payment is Cash on Delivery only: customers should not send money before receiving the products. If you need to confirm stock, packaging, the available quantity (kg), or delivery timing for your address, contact Halal Food by phone, WhatsApp or email before ordering."
   },
   {
     "slug": "trail-mix",
@@ -397,8 +397,8 @@ const PRODUCTS_DATA = [
     "categorySlug": "mix-food",
     "price": "৳ 600 / kg",
     "image": "images/mix-food/trail-mix.jpg",
-    "shortDescription": "Trail Mix (Dried Fruit & Nut) from the Halal Food Mix Food collection. View the current price and order or contact us for availability and delivery details.",
-    "fullDescription": "Trail Mix (Dried Fruit & Nut) from the Halal Food Mix Food collection. View the current price and order or contact us for availability and delivery details."
+    "shortDescription": "Trail Mix (Dried Fruit & Nut) — Mix Food product from Halal Food. Check the current listed price, product details and Cash on Delivery ordering information.",
+    "fullDescription": "Trail Mix (Dried Fruit & Nut) is a ready-to-use food combination designed for convenient snacking or everyday serving. Halal Food lists the current price as ৳ 600 / kg and the product is presented in the Mix Food collection. For practical use, choose the quantity that matches your household needs and keep the product stored according to its packaging instructions. The nutritional profile depends on the ingredients in the blend, so the full ingredient list and portion size are important. Delivery is available across Bangladesh, with the exact arrival time depending on destination, order confirmation and product availability. Payment is Cash on Delivery only: customers should not send money before receiving the products. If you need to confirm stock, packaging, the available quantity (kg), or delivery timing for your address, contact Halal Food by phone, WhatsApp or email before ordering."
   },
   {
     "slug": "walnuts",
@@ -407,8 +407,8 @@ const PRODUCTS_DATA = [
     "categorySlug": "nuts-seeds",
     "price": "৳ 1,100 / kg",
     "image": "images/nuts-seeds/walnuts.jpg",
-    "shortDescription": "Walnuts from the Halal Food Nuts & Seeds collection. View the current price and order or contact us for availability and delivery details.",
-    "fullDescription": "Walnuts from the Halal Food Nuts & Seeds collection. View the current price and order or contact us for availability and delivery details."
+    "shortDescription": "Walnuts — Nuts & Seeds product from Halal Food. Check the current listed price, product details and Cash on Delivery ordering information.",
+    "fullDescription": "Walnuts is a pantry-friendly nut or seed product suited to snacking, toppings and everyday recipes. Halal Food lists the current price as ৳ 1,100 / kg and the product is presented in the Nuts & Seeds collection. For practical use, choose the quantity that matches your household needs and keep the product stored according to its packaging instructions. Nuts and seeds commonly provide protein, unsaturated fats, fibre and micronutrients, although the exact profile varies by item. Delivery is available across Bangladesh, with the exact arrival time depending on destination, order confirmation and product availability. Payment is Cash on Delivery only: customers should not send money before receiving the products. If you need to confirm stock, packaging, the available quantity (kg), or delivery timing for your address, contact Halal Food by phone, WhatsApp or email before ordering."
   },
   {
     "slug": "pistachios",
@@ -417,8 +417,8 @@ const PRODUCTS_DATA = [
     "categorySlug": "nuts-seeds",
     "price": "৳ 1,800 / kg",
     "image": "images/nuts-seeds/pistachios.jpg",
-    "shortDescription": "Pistachios from the Halal Food Nuts & Seeds collection. View the current price and order or contact us for availability and delivery details.",
-    "fullDescription": "Pistachios from the Halal Food Nuts & Seeds collection. View the current price and order or contact us for availability and delivery details."
+    "shortDescription": "Pistachios — Nuts & Seeds product from Halal Food. Check the current listed price, product details and Cash on Delivery ordering information.",
+    "fullDescription": "Pistachios is a pantry-friendly nut or seed product suited to snacking, toppings and everyday recipes. Halal Food lists the current price as ৳ 1,800 / kg and the product is presented in the Nuts & Seeds collection. For practical use, choose the quantity that matches your household needs and keep the product stored according to its packaging instructions. Nuts and seeds commonly provide protein, unsaturated fats, fibre and micronutrients, although the exact profile varies by item. Delivery is available across Bangladesh, with the exact arrival time depending on destination, order confirmation and product availability. Payment is Cash on Delivery only: customers should not send money before receiving the products. If you need to confirm stock, packaging, the available quantity (kg), or delivery timing for your address, contact Halal Food by phone, WhatsApp or email before ordering."
   },
   {
     "slug": "mutton-masala",
@@ -427,8 +427,8 @@ const PRODUCTS_DATA = [
     "categorySlug": "special-masala",
     "price": "৳ 240 / 200g",
     "image": "images/special-masala/mutton-masala.jpg",
-    "shortDescription": "Mutton Masala from the Halal Food Special Masala collection. View the current price and order or contact us for availability and delivery details.",
-    "fullDescription": "Mutton Masala from the Halal Food Special Masala collection. View the current price and order or contact us for availability and delivery details."
+    "shortDescription": "Mutton Masala — Special Masala product from Halal Food. Check the current listed price, product details and Cash on Delivery ordering information.",
+    "fullDescription": "Mutton Masala is a spice blend prepared to make everyday cooking more convenient and flavourful. Halal Food lists the current price as ৳ 240 / 200g and the product is presented in the Special Masala collection. For practical use, choose the quantity that matches your household needs and keep the product stored according to its packaging instructions. Spices are generally used in small portions; their main role here is flavour, aroma and cooking convenience. Delivery is available across Bangladesh, with the exact arrival time depending on destination, order confirmation and product availability. Payment is Cash on Delivery only: customers should not send money before receiving the products. If you need to confirm stock, packaging, the available quantity (200g), or delivery timing for your address, contact Halal Food by phone, WhatsApp or email before ordering."
   },
   {
     "slug": "korma-masala",
@@ -437,8 +437,8 @@ const PRODUCTS_DATA = [
     "categorySlug": "special-masala",
     "price": "৳ 200 / 200g",
     "image": "images/special-masala/korma-masala.jpg",
-    "shortDescription": "Korma Masala from the Halal Food Special Masala collection. View the current price and order or contact us for availability and delivery details.",
-    "fullDescription": "Korma Masala from the Halal Food Special Masala collection. View the current price and order or contact us for availability and delivery details."
+    "shortDescription": "Korma Masala — Special Masala product from Halal Food. Check the current listed price, product details and Cash on Delivery ordering information.",
+    "fullDescription": "Korma Masala is a spice blend prepared to make everyday cooking more convenient and flavourful. Halal Food lists the current price as ৳ 200 / 200g and the product is presented in the Special Masala collection. For practical use, choose the quantity that matches your household needs and keep the product stored according to its packaging instructions. Spices are generally used in small portions; their main role here is flavour, aroma and cooking convenience. Delivery is available across Bangladesh, with the exact arrival time depending on destination, order confirmation and product availability. Payment is Cash on Delivery only: customers should not send money before receiving the products. If you need to confirm stock, packaging, the available quantity (200g), or delivery timing for your address, contact Halal Food by phone, WhatsApp or email before ordering."
   },
   {
     "slug": "lemon-tea",
@@ -447,8 +447,8 @@ const PRODUCTS_DATA = [
     "categorySlug": "tea",
     "price": "৳ 180 / 100g",
     "image": "images/tea/lemon-tea.jpg",
-    "shortDescription": "Lemon Tea from the Halal Food Tea collection. View the current price and order or contact us for availability and delivery details.",
-    "fullDescription": "Lemon Tea from the Halal Food Tea collection. View the current price and order or contact us for availability and delivery details."
+    "shortDescription": "Lemon Tea — Tea product from Halal Food. Check the current listed price, product details and Cash on Delivery ordering information.",
+    "fullDescription": "Lemon Tea is a tea selection for everyday hot or iced drinks. Halal Food lists the current price as ৳ 180 / 100g and the product is presented in the Tea collection. For practical use, choose the quantity that matches your household needs and keep the product stored according to its packaging instructions. Tea naturally contains plant compounds, and some varieties contain caffeine; strength and serving size affect the final drink. Delivery is available across Bangladesh, with the exact arrival time depending on destination, order confirmation and product availability. Payment is Cash on Delivery only: customers should not send money before receiving the products. If you need to confirm stock, packaging, the available quantity (100g), or delivery timing for your address, contact Halal Food by phone, WhatsApp or email before ordering."
   },
   {
     "slug": "masala-tea",
@@ -457,8 +457,8 @@ const PRODUCTS_DATA = [
     "categorySlug": "tea",
     "price": "৳ 220 / 200g",
     "image": "images/tea/masala-tea.jpg",
-    "shortDescription": "Masala Chai Mix from the Halal Food Tea collection. View the current price and order or contact us for availability and delivery details.",
-    "fullDescription": "Masala Chai Mix from the Halal Food Tea collection. View the current price and order or contact us for availability and delivery details."
+    "shortDescription": "Masala Chai Mix — Tea product from Halal Food. Check the current listed price, product details and Cash on Delivery ordering information.",
+    "fullDescription": "Masala Chai Mix is a tea selection for everyday hot or iced drinks. Halal Food lists the current price as ৳ 220 / 200g and the product is presented in the Tea collection. For practical use, choose the quantity that matches your household needs and keep the product stored according to its packaging instructions. Tea naturally contains plant compounds, and some varieties contain caffeine; strength and serving size affect the final drink. Delivery is available across Bangladesh, with the exact arrival time depending on destination, order confirmation and product availability. Payment is Cash on Delivery only: customers should not send money before receiving the products. If you need to confirm stock, packaging, the available quantity (200g), or delivery timing for your address, contact Halal Food by phone, WhatsApp or email before ordering."
   },
   {
     "slug": "fresh-chicken",
@@ -467,8 +467,8 @@ const PRODUCTS_DATA = [
     "categorySlug": "fresh-meat",
     "price": "৳ 220 / kg",
     "image": "images/fresh-meat/fresh-chicken.jpg",
-    "shortDescription": "Fresh Chicken (Broiler) from the Halal Food Fresh Meat collection. View the current price and order or contact us for availability and delivery details.",
-    "fullDescription": "Fresh Chicken (Broiler) from the Halal Food Fresh Meat collection. View the current price and order or contact us for availability and delivery details."
+    "shortDescription": "Fresh Chicken (Broiler) — Fresh Meat product from Halal Food. Check the current listed price, product details and Cash on Delivery ordering information.",
+    "fullDescription": "Fresh Chicken (Broiler) is a fresh meat option intended for home cooking and family meals. Halal Food lists the current price as ৳ 220 / kg and the product is presented in the Fresh Meat collection. For practical use, choose the quantity that matches your household needs and keep the product stored according to its packaging instructions. Meat can provide protein and a range of nutrients; portion size, preparation and overall diet still matter. Delivery is available across Bangladesh, with the exact arrival time depending on destination, order confirmation and product availability. Payment is Cash on Delivery only: customers should not send money before receiving the products. If you need to confirm stock, packaging, the available quantity (kg), or delivery timing for your address, contact Halal Food by phone, WhatsApp or email before ordering."
   },
   {
     "slug": "beef-bone-in",
@@ -477,8 +477,8 @@ const PRODUCTS_DATA = [
     "categorySlug": "fresh-meat",
     "price": "৳ 780 / kg",
     "image": "images/fresh-meat/beef-bone-in.jpg",
-    "shortDescription": "Beef Bone-In Cuts from the Halal Food Fresh Meat collection. View the current price and order or contact us for availability and delivery details.",
-    "fullDescription": "Beef Bone-In Cuts from the Halal Food Fresh Meat collection. View the current price and order or contact us for availability and delivery details."
+    "shortDescription": "Beef Bone-In Cuts — Fresh Meat product from Halal Food. Check the current listed price, product details and Cash on Delivery ordering information.",
+    "fullDescription": "Beef Bone-In Cuts is a fresh meat option intended for home cooking and family meals. Halal Food lists the current price as ৳ 780 / kg and the product is presented in the Fresh Meat collection. For practical use, choose the quantity that matches your household needs and keep the product stored according to its packaging instructions. Meat can provide protein and a range of nutrients; portion size, preparation and overall diet still matter. Delivery is available across Bangladesh, with the exact arrival time depending on destination, order confirmation and product availability. Payment is Cash on Delivery only: customers should not send money before receiving the products. If you need to confirm stock, packaging, the available quantity (kg), or delivery timing for your address, contact Halal Food by phone, WhatsApp or email before ordering."
   },
   {
     "slug": "mustard-oil",
@@ -487,8 +487,8 @@ const PRODUCTS_DATA = [
     "categorySlug": "oil",
     "price": "৳ 320 / liter",
     "image": "images/oil/mustard-oil.jpg",
-    "shortDescription": "Pure Mustard Oil (Sorisha Tel) from the Halal Food Oil collection. View the current price and order or contact us for availability and delivery details.",
-    "fullDescription": "Pure Mustard Oil (Sorisha Tel) from the Halal Food Oil collection. View the current price and order or contact us for availability and delivery details."
+    "shortDescription": "Pure Mustard Oil (Sorisha Tel) — Oil product from Halal Food. Check the current listed price, product details and Cash on Delivery ordering information.",
+    "fullDescription": "Pure Mustard Oil (Sorisha Tel) is a cooking oil selected for everyday kitchen use. Halal Food lists the current price as ৳ 320 / liter and the product is presented in the Oil collection. For practical use, choose the quantity that matches your household needs and keep the product stored according to its packaging instructions. Different oils have different fatty-acid profiles and cooking characteristics, so the right choice depends on the recipe and personal dietary needs. Delivery is available across Bangladesh, with the exact arrival time depending on destination, order confirmation and product availability. Payment is Cash on Delivery only: customers should not send money before receiving the products. If you need to confirm stock, packaging, the available quantity (liter), or delivery timing for your address, contact Halal Food by phone, WhatsApp or email before ordering."
   },
   {
     "slug": "olive-oil",
@@ -497,8 +497,8 @@ const PRODUCTS_DATA = [
     "categorySlug": "oil",
     "price": "৳ 1,450 / 500ml",
     "image": "images/oil/olive-oil.jpg",
-    "shortDescription": "Extra Virgin Olive Oil from the Halal Food Oil collection. View the current price and order or contact us for availability and delivery details.",
-    "fullDescription": "Extra Virgin Olive Oil from the Halal Food Oil collection. View the current price and order or contact us for availability and delivery details."
+    "shortDescription": "Extra Virgin Olive Oil — Oil product from Halal Food. Check the current listed price, product details and Cash on Delivery ordering information.",
+    "fullDescription": "Extra Virgin Olive Oil is a cooking oil selected for everyday kitchen use. Halal Food lists the current price as ৳ 1,450 / 500ml and the product is presented in the Oil collection. For practical use, choose the quantity that matches your household needs and keep the product stored according to its packaging instructions. Different oils have different fatty-acid profiles and cooking characteristics, so the right choice depends on the recipe and personal dietary needs. Delivery is available across Bangladesh, with the exact arrival time depending on destination, order confirmation and product availability. Payment is Cash on Delivery only: customers should not send money before receiving the products. If you need to confirm stock, packaging, the available quantity (500ml), or delivery timing for your address, contact Halal Food by phone, WhatsApp or email before ordering."
   },
   {
     "slug": "coconut-oil",
@@ -507,8 +507,8 @@ const PRODUCTS_DATA = [
     "categorySlug": "oil",
     "price": "৳ 480 / 500ml",
     "image": "images/oil/coconut-oil.jpg",
-    "shortDescription": "Virgin Coconut Oil from the Halal Food Oil collection. View the current price and order or contact us for availability and delivery details.",
-    "fullDescription": "Virgin Coconut Oil from the Halal Food Oil collection. View the current price and order or contact us for availability and delivery details."
+    "shortDescription": "Virgin Coconut Oil — Oil product from Halal Food. Check the current listed price, product details and Cash on Delivery ordering information.",
+    "fullDescription": "Virgin Coconut Oil is a cooking oil selected for everyday kitchen use. Halal Food lists the current price as ৳ 480 / 500ml and the product is presented in the Oil collection. For practical use, choose the quantity that matches your household needs and keep the product stored according to its packaging instructions. Different oils have different fatty-acid profiles and cooking characteristics, so the right choice depends on the recipe and personal dietary needs. Delivery is available across Bangladesh, with the exact arrival time depending on destination, order confirmation and product availability. Payment is Cash on Delivery only: customers should not send money before receiving the products. If you need to confirm stock, packaging, the available quantity (500ml), or delivery timing for your address, contact Halal Food by phone, WhatsApp or email before ordering."
   },
   {
     "slug": "sunflower-oil",
@@ -517,8 +517,8 @@ const PRODUCTS_DATA = [
     "categorySlug": "oil",
     "price": "৳ 290 / liter",
     "image": "images/oil/sunflower-oil.jpg",
-    "shortDescription": "Sunflower Oil from the Halal Food Oil collection. View the current price and order or contact us for availability and delivery details.",
-    "fullDescription": "Sunflower Oil from the Halal Food Oil collection. View the current price and order or contact us for availability and delivery details."
+    "shortDescription": "Sunflower Oil — Oil product from Halal Food. Check the current listed price, product details and Cash on Delivery ordering information.",
+    "fullDescription": "Sunflower Oil is a cooking oil selected for everyday kitchen use. Halal Food lists the current price as ৳ 290 / liter and the product is presented in the Oil collection. For practical use, choose the quantity that matches your household needs and keep the product stored according to its packaging instructions. Different oils have different fatty-acid profiles and cooking characteristics, so the right choice depends on the recipe and personal dietary needs. Delivery is available across Bangladesh, with the exact arrival time depending on destination, order confirmation and product availability. Payment is Cash on Delivery only: customers should not send money before receiving the products. If you need to confirm stock, packaging, the available quantity (liter), or delivery timing for your address, contact Halal Food by phone, WhatsApp or email before ordering."
   },
   {
     "slug": "sesame-oil",
@@ -527,8 +527,8 @@ const PRODUCTS_DATA = [
     "categorySlug": "oil",
     "price": "৳ 550 / 500ml",
     "image": "images/oil/sesame-oil.jpg",
-    "shortDescription": "Sesame Oil (Til Tel) from the Halal Food Oil collection. View the current price and order or contact us for availability and delivery details.",
-    "fullDescription": "Sesame Oil (Til Tel) from the Halal Food Oil collection. View the current price and order or contact us for availability and delivery details."
+    "shortDescription": "Sesame Oil (Til Tel) — Oil product from Halal Food. Check the current listed price, product details and Cash on Delivery ordering information.",
+    "fullDescription": "Sesame Oil (Til Tel) is a cooking oil selected for everyday kitchen use. Halal Food lists the current price as ৳ 550 / 500ml and the product is presented in the Oil collection. For practical use, choose the quantity that matches your household needs and keep the product stored according to its packaging instructions. Different oils have different fatty-acid profiles and cooking characteristics, so the right choice depends on the recipe and personal dietary needs. Delivery is available across Bangladesh, with the exact arrival time depending on destination, order confirmation and product availability. Payment is Cash on Delivery only: customers should not send money before receiving the products. If you need to confirm stock, packaging, the available quantity (500ml), or delivery timing for your address, contact Halal Food by phone, WhatsApp or email before ordering."
   },
   {
     "slug": "soybean-oil",
@@ -537,8 +537,8 @@ const PRODUCTS_DATA = [
     "categorySlug": "oil",
     "price": "৳ 185 / liter",
     "image": "images/oil/soybean-oil.jpg",
-    "shortDescription": "Soybean Oil from the Halal Food Oil collection. View the current price and order or contact us for availability and delivery details.",
-    "fullDescription": "Soybean Oil from the Halal Food Oil collection. View the current price and order or contact us for availability and delivery details."
+    "shortDescription": "Soybean Oil — Oil product from Halal Food. Check the current listed price, product details and Cash on Delivery ordering information.",
+    "fullDescription": "Soybean Oil is a cooking oil selected for everyday kitchen use. Halal Food lists the current price as ৳ 185 / liter and the product is presented in the Oil collection. For practical use, choose the quantity that matches your household needs and keep the product stored according to its packaging instructions. Different oils have different fatty-acid profiles and cooking characteristics, so the right choice depends on the recipe and personal dietary needs. Delivery is available across Bangladesh, with the exact arrival time depending on destination, order confirmation and product availability. Payment is Cash on Delivery only: customers should not send money before receiving the products. If you need to confirm stock, packaging, the available quantity (liter), or delivery timing for your address, contact Halal Food by phone, WhatsApp or email before ordering."
   },
   {
     "slug": "cow-ghee",
@@ -547,8 +547,8 @@ const PRODUCTS_DATA = [
     "categorySlug": "ghee",
     "price": "৳ 950 / 500g",
     "image": "images/ghee/cow-ghee.jpg",
-    "shortDescription": "Pure Cow Ghee from the Halal Food Ghee collection. View the current price and order or contact us for availability and delivery details.",
-    "fullDescription": "Pure Cow Ghee from the Halal Food Ghee collection. View the current price and order or contact us for availability and delivery details."
+    "shortDescription": "Pure Cow Ghee — Ghee product from Halal Food. Check the current listed price, product details and Cash on Delivery ordering information.",
+    "fullDescription": "Pure Cow Ghee is a clarified butter product used for cooking, frying and adding richness to meals. Halal Food lists the current price as ৳ 950 / 500g and the product is presented in the Ghee collection. For practical use, choose the quantity that matches your household needs and keep the product stored according to its packaging instructions. Ghee is energy-dense and contains mostly fat, so sensible portions are appropriate within a balanced diet. Delivery is available across Bangladesh, with the exact arrival time depending on destination, order confirmation and product availability. Payment is Cash on Delivery only: customers should not send money before receiving the products. If you need to confirm stock, packaging, the available quantity (500g), or delivery timing for your address, contact Halal Food by phone, WhatsApp or email before ordering."
   },
   {
     "slug": "buffalo-ghee",
@@ -557,8 +557,8 @@ const PRODUCTS_DATA = [
     "categorySlug": "ghee",
     "price": "৳ 1,050 / 500g",
     "image": "images/ghee/buffalo-ghee.jpg",
-    "shortDescription": "Buffalo Ghee from the Halal Food Ghee collection. View the current price and order or contact us for availability and delivery details.",
-    "fullDescription": "Buffalo Ghee from the Halal Food Ghee collection. View the current price and order or contact us for availability and delivery details."
+    "shortDescription": "Buffalo Ghee — Ghee product from Halal Food. Check the current listed price, product details and Cash on Delivery ordering information.",
+    "fullDescription": "Buffalo Ghee is a clarified butter product used for cooking, frying and adding richness to meals. Halal Food lists the current price as ৳ 1,050 / 500g and the product is presented in the Ghee collection. For practical use, choose the quantity that matches your household needs and keep the product stored according to its packaging instructions. Ghee is energy-dense and contains mostly fat, so sensible portions are appropriate within a balanced diet. Delivery is available across Bangladesh, with the exact arrival time depending on destination, order confirmation and product availability. Payment is Cash on Delivery only: customers should not send money before receiving the products. If you need to confirm stock, packaging, the available quantity (500g), or delivery timing for your address, contact Halal Food by phone, WhatsApp or email before ordering."
   },
   {
     "slug": "organic-a2-ghee",
@@ -567,8 +567,8 @@ const PRODUCTS_DATA = [
     "categorySlug": "ghee",
     "price": "৳ 1,400 / 500g",
     "image": "images/ghee/organic-a2-ghee.jpg",
-    "shortDescription": "Organic A2 Ghee from the Halal Food Ghee collection. View the current price and order or contact us for availability and delivery details.",
-    "fullDescription": "Organic A2 Ghee from the Halal Food Ghee collection. View the current price and order or contact us for availability and delivery details."
+    "shortDescription": "Organic A2 Ghee — Ghee product from Halal Food. Check the current listed price, product details and Cash on Delivery ordering information.",
+    "fullDescription": "Organic A2 Ghee is a clarified butter product used for cooking, frying and adding richness to meals. Halal Food lists the current price as ৳ 1,400 / 500g and the product is presented in the Ghee collection. For practical use, choose the quantity that matches your household needs and keep the product stored according to its packaging instructions. Ghee is energy-dense and contains mostly fat, so sensible portions are appropriate within a balanced diet. Delivery is available across Bangladesh, with the exact arrival time depending on destination, order confirmation and product availability. Payment is Cash on Delivery only: customers should not send money before receiving the products. If you need to confirm stock, packaging, the available quantity (500g), or delivery timing for your address, contact Halal Food by phone, WhatsApp or email before ordering."
   },
   {
     "slug": "desi-ghee",
@@ -577,8 +577,8 @@ const PRODUCTS_DATA = [
     "categorySlug": "ghee",
     "price": "৳ 900 / 500g",
     "image": "images/ghee/desi-ghee.jpg",
-    "shortDescription": "Traditional Desi Ghee from the Halal Food Ghee collection. View the current price and order or contact us for availability and delivery details.",
-    "fullDescription": "Traditional Desi Ghee from the Halal Food Ghee collection. View the current price and order or contact us for availability and delivery details."
+    "shortDescription": "Traditional Desi Ghee — Ghee product from Halal Food. Check the current listed price, product details and Cash on Delivery ordering information.",
+    "fullDescription": "Traditional Desi Ghee is a clarified butter product used for cooking, frying and adding richness to meals. Halal Food lists the current price as ৳ 900 / 500g and the product is presented in the Ghee collection. For practical use, choose the quantity that matches your household needs and keep the product stored according to its packaging instructions. Ghee is energy-dense and contains mostly fat, so sensible portions are appropriate within a balanced diet. Delivery is available across Bangladesh, with the exact arrival time depending on destination, order confirmation and product availability. Payment is Cash on Delivery only: customers should not send money before receiving the products. If you need to confirm stock, packaging, the available quantity (500g), or delivery timing for your address, contact Halal Food by phone, WhatsApp or email before ordering."
   },
   {
     "slug": "white-butter-ghee",
@@ -587,8 +587,8 @@ const PRODUCTS_DATA = [
     "categorySlug": "ghee",
     "price": "৳ 850 / 400g",
     "image": "images/ghee/white-butter-ghee.jpg",
-    "shortDescription": "White Butter Ghee from the Halal Food Ghee collection. View the current price and order or contact us for availability and delivery details.",
-    "fullDescription": "White Butter Ghee from the Halal Food Ghee collection. View the current price and order or contact us for availability and delivery details."
+    "shortDescription": "White Butter Ghee — Ghee product from Halal Food. Check the current listed price, product details and Cash on Delivery ordering information.",
+    "fullDescription": "White Butter Ghee is a clarified butter product used for cooking, frying and adding richness to meals. Halal Food lists the current price as ৳ 850 / 400g and the product is presented in the Ghee collection. For practical use, choose the quantity that matches your household needs and keep the product stored according to its packaging instructions. Ghee is energy-dense and contains mostly fat, so sensible portions are appropriate within a balanced diet. Delivery is available across Bangladesh, with the exact arrival time depending on destination, order confirmation and product availability. Payment is Cash on Delivery only: customers should not send money before receiving the products. If you need to confirm stock, packaging, the available quantity (400g), or delivery timing for your address, contact Halal Food by phone, WhatsApp or email before ordering."
   },
   {
     "slug": "premium-ghee-tin",
@@ -597,7 +597,7 @@ const PRODUCTS_DATA = [
     "categorySlug": "ghee",
     "price": "৳ 2,200 / 1kg",
     "image": "images/ghee/premium-ghee-tin.jpg",
-    "shortDescription": "Premium Ghee Tin from the Halal Food Ghee collection. View the current price and order or contact us for availability and delivery details.",
-    "fullDescription": "Premium Ghee Tin from the Halal Food Ghee collection. View the current price and order or contact us for availability and delivery details."
+    "shortDescription": "Premium Ghee Tin — Ghee product from Halal Food. Check the current listed price, product details and Cash on Delivery ordering information.",
+    "fullDescription": "Premium Ghee Tin is a clarified butter product used for cooking, frying and adding richness to meals. Halal Food lists the current price as ৳ 2,200 / 1kg and the product is presented in the Ghee collection. For practical use, choose the quantity that matches your household needs and keep the product stored according to its packaging instructions. Ghee is energy-dense and contains mostly fat, so sensible portions are appropriate within a balanced diet. Delivery is available across Bangladesh, with the exact arrival time depending on destination, order confirmation and product availability. Payment is Cash on Delivery only: customers should not send money before receiving the products. If you need to confirm stock, packaging, the available quantity (1kg), or delivery timing for your address, contact Halal Food by phone, WhatsApp or email before ordering."
   }
 ];
