@@ -1084,3 +1084,20 @@ footer .footer-grid ul { max-height:none; }
     margin-top: 26px;
   }
 }
+
+/* SEO/content UI additions — intentionally isolated from the existing layout. */
+.sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important;}
+.narrow-content{max-width:980px;margin-inline:auto;}
+.faq-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:28px;}
+.faq-card{background:var(--warm-white,#fffdf8);border:1px solid var(--line);border-radius:14px;padding:0;overflow:hidden;transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease;}
+.faq-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(43,42,61,.08);border-color:var(--orange);}
+.faq-card summary{cursor:pointer;list-style:none;padding:20px 22px;font-weight:700;color:var(--navy);position:relative;padding-right:52px;}
+.faq-card summary::-webkit-details-marker{display:none;}
+.faq-card summary::after{content:'+';position:absolute;right:20px;top:50%;transform:translateY(-50%);font-size:1.35rem;color:var(--orange);}
+.faq-card[open] summary::after{content:'−';}
+.faq-card p{padding:0 22px 20px;margin:0;color:var(--navy-soft);line-height:1.8;}
+.comparison-table{width:100%;border-collapse:collapse;margin:26px 0;background:var(--warm-white,#fffdf8);border:1px solid var(--line);border-radius:12px;overflow:hidden;}
+.comparison-table th,.comparison-table td{padding:14px 15px;border-bottom:1px solid var(--line);vertical-align:top;text-align:left;line-height:1.65;}
+.comparison-table th{font-weight:700;background:var(--cream-deep,#e8e5dc);color:var(--navy);}
+.comparison-table tr:last-child td{border-bottom:0;}
+@media (max-width:700px){.faq-grid{grid-template-columns:1fr;gap:12px}.faq-card summary{padding:17px 18px;padding-right:46px}.faq-card p{padding:0 18px 18px}.comparison-table{font-size:.9rem;display:block;overflow-x:auto;white-space:normal}.comparison-table th,.comparison-table td{min-width:170px;padding:12px}}
