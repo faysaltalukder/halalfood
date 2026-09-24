@@ -182,20 +182,54 @@ document.addEventListener("DOMContentLoaded", () => {
   const params = new URLSearchParams(window.location.search);
   const productInput = document.querySelector("#product");
   const productDisplay = document.querySelector("#product-display");
-  if (productInput && params.get("product")) {
-    const product = params.get("product");
-    productInput.value = product;
-    if (productDisplay) productDisplay.textContent = product;
-  }
-
+  const productImageWrap = document.querySelector("#product-image-wrap");
+  const productImage = document.querySelector("#product-image");
+  const productPrice = document.querySelector("#product-price");
+  const productLineTotal = document.querySelector("#product-line-total");
   const quantityInput = document.querySelector("#quantity");
   const quantityDisplay = document.querySelector("#quantity-display");
   const quantityMinus = document.querySelector("[data-quantity-minus]");
   const quantityPlus = document.querySelector("[data-quantity-plus]");
+
+  const priceNumber = (value) => {
+    const n = Number(String(value || "").replace(/[^0-9.]/g, ""));
+    return Number.isFinite(n) ? n : 0;
+  };
+  const money = (value) => `৳ ${Math.round(Number(value) || 0).toLocaleString("en-BD")}`;
+  const singleProductName = params.get("product") || "";
+  let singleProduct = null;
+
+  if (singleProductName) {
+    productInput && (productInput.value = singleProductName);
+    productDisplay && (productDisplay.textContent = singleProductName);
+    const source = Array.isArray(window.PRODUCTS_DATA) ? window.PRODUCTS_DATA : [];
+    const normalized = singleProductName.trim().toLowerCase();
+    singleProduct = source.find((item) =>
+      String(item.slug || "").toLowerCase() === normalized ||
+      String(item.name || "").toLowerCase() === normalized
+    ) || null;
+
+    if (singleProduct) {
+      productInput && (productInput.value = singleProduct.name);
+      productDisplay && (productDisplay.textContent = singleProduct.name);
+      const price = priceNumber(singleProduct.price);
+      productPrice && (productPrice.textContent = singleProduct.price || money(price));
+      if (productImage && singleProduct.image) {
+        productImage.src = singleProduct.image;
+        productImage.alt = singleProduct.name || "Selected product";
+        productImageWrap && (productImageWrap.hidden = false);
+      }
+      if (productLineTotal) productLineTotal.textContent = money(price);
+    }
+  }
+
   const syncQuantity = (value) => {
     const n = Math.max(1, Math.min(99, Number(value) || 1));
     if (quantityInput) quantityInput.value = String(n);
     if (quantityDisplay) quantityDisplay.textContent = String(n);
+    if (productLineTotal && singleProduct) {
+      productLineTotal.textContent = money(priceNumber(singleProduct.price) * n);
+    }
     return n;
   };
   if (quantityInput) syncQuantity(quantityInput.value);
@@ -231,21 +265,31 @@ document.addEventListener("DOMContentLoaded", () => {
       event.preventDefault();
       const success = document.querySelector("#form-success");
       const error = document.querySelector("#form-error");
-      if (success) success.style.display = "none";
-      if (error) error.style.display = "none";
+      const submit = document.querySelector("#order-submit") || form.querySelector("button[type='submit']");
+      const submitLabel = submit?.querySelector(".order-submit-label");
+
+      if (success) {
+        success.style.display = "none";
+        success.innerHTML = "";
+      }
+      if (error) {
+        error.style.display = "none";
+        error.textContent = "";
+      }
 
       if (!form.reportValidity()) return;
 
-      const submit = form.querySelector("button[type='submit']") || form.querySelector("button");
       if (submit) {
         submit.disabled = true;
-        submit.textContent = "Sending...";
+        submit.classList.add("is-loading");
+        if (submitLabel) submitLabel.textContent = "অর্ডার পাঠানো হচ্ছে...";
       }
 
       const data = Object.fromEntries(new FormData(form).entries());
       data.quantity = String(Math.max(1, Number(data.quantity) || 1));
       const isCartOrder = Boolean(window.HALAL_CART_MODE);
       const cartItems = isCartOrder && window.HALAL_CART_API ? window.HALAL_CART_API.read() : [];
+
       if (isCartOrder && !cartItems.length) {
         if (error) {
           error.textContent = "আপনার কার্ট খালি। আগে পণ্য যোগ করুন।";
@@ -253,10 +297,25 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         if (submit) {
           submit.disabled = false;
-          submit.textContent = "Submit Order";
+          submit.classList.remove("is-loading");
+          if (submitLabel) submitLabel.textContent = "Submit Order";
         }
         return;
       }
+
+      if (!isCartOrder && !singleProductName) {
+        if (error) {
+          error.textContent = "কোনো পণ্য নির্বাচন করা হয়নি। আবার পণ্য নির্বাচন করুন।";
+          error.style.display = "block";
+        }
+        if (submit) {
+          submit.disabled = false;
+          submit.classList.remove("is-loading");
+          if (submitLabel) submitLabel.textContent = "Submit Order";
+        }
+        return;
+      }
+
       if (isCartOrder) {
         data.orderId = `HF-${Date.now()}-${Math.floor(Math.random() * 900 + 100)}`;
         data.items = cartItems.map((item) => ({
@@ -266,51 +325,61 @@ document.addEventListener("DOMContentLoaded", () => {
         }));
         data.product = cartItems.map((item) => `${item.name} × ${item.qty}`).join(" | ");
         data.quantity = String(window.HALAL_CART_API.totalQty(cartItems));
+      } else {
+        data.product = singleProduct?.name || singleProductName;
+        data.orderId = `HF-${Date.now()}-${Math.floor(Math.random() * 900 + 100)}`;
+        if (singleProduct) data.price = String(priceNumber(singleProduct.price));
       }
 
       try {
         if (!GOOGLE_APPS_SCRIPT_URL || GOOGLE_APPS_SCRIPT_URL.includes("PASTE_YOUR")) {
           throw new Error("Google Apps Script URL is not configured yet.");
         }
-        await fetch(GOOGLE_APPS_SCRIPT_URL, {
+
+        const response = await fetch(GOOGLE_APPS_SCRIPT_URL, {
           method: "POST",
           headers: { "Content-Type": "text/plain;charset=utf-8" },
           body: JSON.stringify(data)
         });
 
+        if (!response.ok) {
+          throw new Error(`Order submission failed with HTTP ${response.status}`);
+        }
+
+        let result = null;
+        try { result = await response.json(); } catch (_) { /* Apps Script responses can be text-like after redirects. */ }
+        if (result && result.success === false) {
+          throw new Error("Google Apps Script rejected the order.");
+        }
+
         if (isCartOrder) {
           window.HALAL_CART_API?.clear();
           window.history.replaceState({}, document.title, "order.html");
           const summary = document.querySelector("[data-cart-checkout-summary]");
-          if (summary) summary.innerHTML = '<div class="cart-success-state"><strong>Order received</strong><p>ধন্যবাদ! আপনার কার্ট অর্ডারটি গ্রহণ করা হয়েছে। শীঘ্রই যোগাযোগ করা হবে।</p></div>';
+          if (summary) summary.innerHTML = '<div class="cart-success-state"><strong>অর্ডার গ্রহণ করা হয়েছে</strong><p>আপনার অর্ডারটি সফলভাবে কনফার্ম হয়েছে। খুব শীঘ্রই আপনার সাথে যোগাযোগ করা হবে।</p></div>';
+        }
+
+        if (success) {
+          success.innerHTML = '<strong>ধন্যবাদ!</strong><br>আপনার অর্ডারটি সফলভাবে কনফার্ম করা হয়েছে। খুব শীঘ্রই আপনার সাথে যোগাযোগ করা হবে।';
+          success.style.display = "block";
+          success.scrollIntoView({ behavior: "smooth", block: "center" });
         }
 
         form.reset();
-        if (productDisplay && params.get("product")) productDisplay.textContent = params.get("product");
+        if (productInput) productInput.value = isCartOrder ? "" : (singleProduct?.name || singleProductName);
+        if (productDisplay && !isCartOrder) productDisplay.textContent = singleProduct?.name || singleProductName;
         syncQuantity(1);
-
-        if (success) {
-          success.innerHTML = "<strong>ধন্যবাদ!</strong> আপনার অর্ডারটি সফলভাবে গ্রহণ করা হয়েছে। খুব শীঘ্রই আপনার সাথে যোগাযোগ করা হবে।";
-          success.style.display = "block";
-          success.style.color = "#155724";
-          success.style.backgroundColor = "#d4edda";
-          success.style.padding = "15px";
-          success.style.borderRadius = "8px";
-          success.style.marginTop = "15px";
-        } else {
-          alert("ধন্যবাদ! আপনার অর্ডারটি গ্রহণ করা হয়েছে। খুব শীঘ্রই আপনার সাথে যোগাযোগ করা হবে।");
-        }
       } catch (err) {
+        console.error("Order submission failed:", err);
         if (error) {
-          error.textContent = "অর্ডার পাঠানো যায়নি। অনুগ্রহ করে সরাসরি যোগাযোগ করুন।";
+          error.textContent = "অর্ডার পাঠানো যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন। Google Sheet সংযোগটি পরীক্ষা করুন।";
           error.style.display = "block";
-        } else {
-          alert("অর্ডার পাঠানো যায়নি। অনুগ্রহ করে পুনরায় চেষ্টা করুন।");
         }
       } finally {
         if (submit) {
           submit.disabled = false;
-          submit.textContent = "Submit Order";
+          submit.classList.remove("is-loading");
+          if (submitLabel) submitLabel.textContent = "Submit Order";
         }
       }
     });

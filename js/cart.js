@@ -99,8 +99,8 @@
     const line = Number(item.price || 0) * Number(item.qty || 0);
     return `<div class="cart-item" data-cart-item="${html.escape(item.slug)}">
       <a class="cart-item-image" href="${html.escape(new URL("products/" + item.slug + ".html", siteBase).href)}"><img src="${html.escape(imageUrl(item.image))}" alt="${html.escape(item.name)}"></a>
-      <div class="cart-item-info"><a class="cart-item-name" href="${html.escape(new URL("products/" + item.slug + ".html", siteBase).href)}">${html.escape(item.name)}</a><span class="cart-item-price">${html.escape(item.displayPrice || money(item.price))}</span>
-      ${compact ? `<div class="cart-item-line-total">${money(line)}</div>` : `<div class="cart-qty"><button type="button" data-cart-dec="${html.escape(item.slug)}" aria-label="Decrease quantity">−</button><span>${item.qty}</span><button type="button" data-cart-inc="${html.escape(item.slug)}" aria-label="Increase quantity">+</button></div>`}</div>
+      <div class="cart-item-info"><a class="cart-item-name" href="${html.escape(new URL("products/" + item.slug + ".html", siteBase).href)}">${html.escape(item.name)}</a><span class="cart-item-price">${html.escape(item.displayPrice || money(item.price))} × ${item.qty}</span>
+      ${compact ? "" : `<div class="cart-qty"><button type="button" data-cart-dec="${html.escape(item.slug)}" aria-label="Decrease quantity">−</button><span>${item.qty}</span><button type="button" data-cart-inc="${html.escape(item.slug)}" aria-label="Increase quantity">+</button></div>`}</div>
       <div class="cart-item-actions">${compact ? `<span class="cart-item-line-total">${money(line)}</span>` : `<button type="button" class="cart-remove" data-cart-remove="${html.escape(item.slug)}" aria-label="Remove ${html.escape(item.name)}">Remove</button>`}</div>
     </div>`;
   }
