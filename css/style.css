@@ -754,3 +754,333 @@ footer .footer-grid ul { max-height:none; }
     bottom:8px;
   }
 }
+
+
+/* ================================================================
+   HALAL FOOD — UPDATE 2026
+   Easy-to-edit layout controls
+   ================================================================ */
+
+/* ---------- Featured Categories ---------- */
+.category-rail {
+  gap: 16px;
+  padding: 4px 4px 8px;
+}
+
+.category-rail .cat-card {
+  flex: 0 0 158px;
+  min-width: 150px;
+  padding: 0;
+  border: 0 !important;
+  border-radius: 10px;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.category-rail .cat-card:hover {
+  border: 0 !important;
+  box-shadow: none !important;
+  transform: translateY(-3px);
+}
+
+.category-rail .cat-card-img {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border: 0 !important;
+  border-radius: 10px;
+  background: transparent;
+  overflow: hidden;
+}
+
+.category-rail .cat-card-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border: 0 !important;
+  display: block;
+}
+
+.category-rail .cat-card h3 {
+  margin: 9px 4px 2px;
+  font-size: .92rem;
+  line-height: 1.25;
+  font-weight: 700;
+}
+
+.section-head-center {
+  margin-bottom: 20px;
+}
+
+.section-head-center h2 {
+  font-size: 1.65rem;
+  line-height: 1.2;
+}
+
+/* ---------- Featured Products ---------- */
+#products .section-head {
+  margin-bottom: 22px;
+}
+
+#products .section-head .section-eyebrow,
+#products .section-head > p:not(.section-eyebrow) {
+  display: none;
+}
+
+#products .section-head h2 {
+  font-size: 2rem;
+  line-height: 1.2;
+  margin: 0;
+}
+
+#products {
+  padding-top: 28px;
+  padding-bottom: 48px;
+}
+
+/* ---------- Category pages ---------- */
+.category-page-heading {
+  padding: 26px 0 20px;
+}
+
+.category-page-heading h1 {
+  margin: 0;
+  font-size: 2.15rem;
+  line-height: 1.15;
+}
+
+.category-page-products {
+  padding-top: 0;
+}
+
+.category-page-products .category-note {
+  display: none;
+}
+
+.category-page-products.products-bg {
+  background: transparent;
+}
+
+.category-page-products .product-grid {
+  padding-top: 0;
+}
+
+/* No breadcrumb bars anywhere: navigation is handled by the header. */
+.breadcrumb {
+  display: none !important;
+}
+
+/* ---------- Contact ---------- */
+.contact-details-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 26px;
+}
+
+.contact-detail-card {
+  padding: 20px;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.contact-detail-card h2 {
+  font-size: 1rem;
+  margin-bottom: 8px;
+}
+
+.contact-detail-card p,
+.contact-detail-card a {
+  color: var(--navy-soft);
+  overflow-wrap: anywhere;
+}
+
+.contact-detail-card a:hover {
+  color: var(--orange);
+}
+
+/* ---------- How to order ---------- */
+.order-guide {
+  margin: 0 0 28px;
+  padding: 22px;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.order-guide h2 {
+  margin-bottom: 10px;
+  font-size: 1.35rem;
+}
+
+.order-guide ol {
+  margin: 0;
+  padding-left: 22px;
+}
+
+.order-guide li + li {
+  margin-top: 8px;
+}
+
+.cash-on-delivery-notice {
+  margin-top: 18px;
+  padding: 16px 18px;
+  background: var(--cream-deep);
+  border-left: 4px solid var(--orange);
+  border-radius: 6px;
+}
+
+/* ---------- Footer FAQ ---------- */
+.footer-faq {
+  margin: 34px 0 28px;
+  padding-top: 26px;
+  border-top: 1px solid var(--line);
+}
+
+.footer-faq h3 {
+  margin-bottom: 14px;
+  font-size: 1.15rem;
+}
+
+.footer-faq details {
+  padding: 11px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.footer-faq summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--navy);
+}
+
+.footer-faq p {
+  margin: 8px 0 0;
+  color: var(--navy-soft);
+}
+
+/* ---------- Search icon ---------- */
+.search-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+}
+
+.search-toggle svg {
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ---------- Logo ---------- */
+.brand-logo {
+  object-fit: contain;
+}
+
+/* ================================================================
+   MOBILE ONLY — deliberately isolated from desktop rules
+   ================================================================ */
+@media (max-width: 768px) {
+  .category-rail {
+    gap: 12px;
+    padding-left: 2px;
+    padding-right: 2px;
+  }
+
+  .category-rail .cat-card {
+    flex: 0 0 142px;
+    min-width: 145px;
+  }
+
+  .category-rail .cat-card-img {
+    aspect-ratio: 1 / 1;
+  }
+
+  .section-head-center {
+    margin-bottom: 16px;
+  }
+
+  .section-head-center h2 {
+    font-size: 1.45rem;
+  }
+
+  #products {
+    padding-top: 22px;
+    padding-bottom: 38px;
+  }
+
+  #products .section-head h2 {
+    font-size: 1.6rem;
+  }
+
+  .featured-grid-4,
+  .product-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  /* The source banner is 1200x400 (3:1). Preserve that ratio and
+     never crop it on phones. */
+  .hero-visual-only {
+    padding: 16px 0 24px;
+  }
+
+  .hero-visual-only .wrap {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .hero-visual-only .hero-carousel {
+    height: auto;
+    aspect-ratio: 3 / 1;
+    background: var(--cream-deep);
+  }
+
+  .hero-visual-only .hero-carousel-track,
+  .hero-visual-only .hero-slide {
+    height: 100%;
+  }
+
+  .hero-visual-only .hero-slide img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center;
+    background: var(--cream-deep);
+  }
+
+  .hero-visual-only .hero-honey-banner {
+    display: none;
+  }
+
+  .category-page-heading {
+    padding: 20px 0 14px;
+  }
+
+  .category-page-heading h1 {
+    font-size: 1.75rem;
+  }
+
+  .category-page-products {
+    padding-top: 0;
+  }
+
+  .contact-details-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .order-guide {
+    padding: 18px;
+  }
+
+  .footer-faq {
+    margin-top: 26px;
+  }
+}
