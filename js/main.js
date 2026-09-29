@@ -21,7 +21,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const favicon = document.createElement("link");
   favicon.rel = "icon";
   favicon.type = "image/png";
-  favicon.href = "/halal-food/images/favicon.png";
+  favicon.href = "/halalfood/images/favicon.png";
   document.head.appendChild(favicon);
 
   // Search
