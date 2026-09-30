@@ -1194,3 +1194,10 @@ footer .footer-grid ul { max-height:none; }
   .order-line-total { text-align:left; min-width:80px; }
   .order-submit-btn { width:100%; }
 }
+
+
+/* Homepage featured product actions: keep price above the two action buttons. */
+.featured-grid-4 .product-foot{flex-direction:column;align-items:stretch;justify-content:flex-start;gap:9px;}
+.featured-grid-4 .product-foot .price{order:0;width:100%;text-align:center;padding-bottom:2px;}
+.featured-grid-4 .product-foot .order-btn{order:1;width:100%;box-sizing:border-box;text-align:center;}
+.featured-grid-4 .product-foot .cart-add-btn{order:2;width:100%;box-sizing:border-box;}
