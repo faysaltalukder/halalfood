@@ -59,6 +59,13 @@
       category: String(item.category || "") , qty: amount
     });
     write(items); renderAll();
+    if(window.halalTrack){
+      const trackedItem={...item,quantity:amount};
+      const value=(Number(item.price)||0)*amount;
+      window.halalTrack("add_to_cart",{currency:"BDT",value:value,items:window.halalTrackItems([trackedItem])},"AddToCart",{
+        content_ids:[String(item.slug||"")],contents:[{id:String(item.slug||""),quantity:amount,item_price:Number(item.price)||0}],content_type:"product",value:value,currency:"BDT"
+      });
+    }
   }
   function setQty(slug, qty) {
     const items = read();
@@ -69,7 +76,11 @@
     else { item.qty = n; write(items); }
     renderAll();
   }
-  function remove(slug) { write(read().filter(x => x.slug !== slug)); renderAll(); }
+  function remove(slug) {
+    const item=read().find(x=>x.slug===slug);
+    write(read().filter(x => x.slug !== slug)); renderAll();
+    if(item && window.halalTrack) window.halalTrack("remove_from_cart",{currency:"BDT",value:(Number(item.price)||0)*Math.max(1,Number(item.qty)||1),items:window.halalTrackItems([item])});
+  }
   function clear() { write([]); renderAll(); }
 
   function ensureHeaderButton() {
@@ -131,6 +142,11 @@
     const totalEl = document.querySelector("[data-cart-drawer-total]"); if (totalEl) totalEl.textContent = money(total(items));
   }
   function renderPage() {
+    const cartPageItems=read();
+    if(document.querySelector("[data-cart-page]") && cartPageItems.length && !window.__HALAL_VIEW_CART_TRACKED__){
+      window.__HALAL_VIEW_CART_TRACKED__=true;
+      window.halalTrack?.("view_cart",{currency:"BDT",value:total(cartPageItems),items:window.halalTrackItems(cartPageItems)});
+    }
     const box = document.querySelector("[data-cart-page-items]");
     if (!box) return;
     const items = read();
