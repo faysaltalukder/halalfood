@@ -38,7 +38,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Product selection from cards / product links.
   document.addEventListener("click",(event)=>{
     const add=event.target.closest("[data-add-to-cart]");
-    const link=event.target.closest("a[href*="products/"]");
+    const link=event.target.closest('a[href*="products/"]');
     const el=add||link;
     if(el){
       const p=add?productFromElement(add):{slug:(el.getAttribute("href").match(/products\/([^/?#]+)\.html/)||[])[1]||"",name:el.dataset.name||el.querySelector("h3")?.textContent?.trim()||"",price:0,category:el.dataset.category||""};
