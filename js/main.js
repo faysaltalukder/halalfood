@@ -534,3 +534,17 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 });
+
+
+/* HALAL TRACKING: GTM */
+(function(){
+  if(window.__HALAL_GTM_LOADED__) return;
+  window.__HALAL_GTM_LOADED__=true;
+  window.dataLayer=window.dataLayer||[];
+  window.dataLayer.push({'gtm.start':new Date().getTime(),event:'gtm.js'});
+  var s=document.createElement('script');
+  s.async=true;
+  s.src='https://www.googletagmanager.com/gtm.js?id=GTM-5TW678CX';
+  document.head.appendChild(s);
+})();
+/* END HALAL TRACKING: GTM */
