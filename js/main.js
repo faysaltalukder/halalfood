@@ -663,6 +663,8 @@ document.addEventListener("DOMContentLoaded", () => {
   }(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
   window.fbq('init','28564665756499119');
   window.fbq('track','PageView');
+  /* Keep gtag event commands queued even if the GTM Google tag is still loading. */
+  window.gtag=window.gtag||function(){window.dataLayer.push(arguments);};
 
   window.halalTrack=function(eventName,params,metaEvent,metaParams){
     var safeParams=params||{};
