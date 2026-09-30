@@ -352,23 +352,42 @@ document.addEventListener("DOMContentLoaded", () => {
           throw new Error("Google Apps Script rejected the order.");
         }
 
+        // Build the confirmation payload before clearing the cart or leaving checkout.
+        const confirmedOrderId = result && result.orderId ? String(result.orderId) : String(data.orderId || "");
+        const confirmedItems = Array.isArray(data.items) && data.items.length
+          ? data.items
+          : [{
+              product: data.product || singleProduct?.name || singleProductName,
+              quantity: data.quantity || "1",
+              price: data.price || (singleProduct ? String(priceNumber(singleProduct.price)) : "0")
+            }];
+        const confirmedTotal = result && Number.isFinite(Number(result.orderTotal))
+          ? Number(result.orderTotal)
+          : confirmedItems.reduce((sum, item) => {
+              const price = Number(item.price) || 0;
+              const qty = Math.max(1, Number(item.quantity) || 1);
+              return sum + price * qty;
+            }, 0);
+
+        try {
+          sessionStorage.setItem("HALAL_ORDER_CONFIRMATION", JSON.stringify({
+            orderId: confirmedOrderId,
+            orderTotal: confirmedTotal,
+            items: confirmedItems,
+            customerName: data.name || "",
+            confirmedAt: new Date().toISOString()
+          }));
+        } catch (storageError) {
+          console.warn("Could not save local order confirmation state:", storageError);
+        }
+
         if (isCartOrder) {
           window.HALAL_CART_API?.clear();
-          window.history.replaceState({}, document.title, "order.html");
-          const summary = document.querySelector("[data-cart-checkout-summary]");
-          if (summary) summary.innerHTML = '<div class="cart-success-state"><strong>অর্ডার গ্রহণ করা হয়েছে</strong><p>আপনার অর্ডারটি সফলভাবে কনফার্ম হয়েছে। খুব শীঘ্রই আপনার সাথে যোগাযোগ করা হবে।</p></div>';
         }
 
-        if (success) {
-          success.innerHTML = '<strong>ধন্যবাদ!</strong><br>আপনার অর্ডারটি সফলভাবে কনফার্ম করা হয়েছে। খুব শীঘ্রই আপনার সাথে যোগাযোগ করা হবে।';
-          success.style.display = "block";
-          success.scrollIntoView({ behavior: "smooth", block: "center" });
-        }
-
-        form.reset();
-        if (productInput) productInput.value = isCartOrder ? "" : (singleProduct?.name || singleProductName);
-        if (productDisplay && !isCartOrder) productDisplay.textContent = singleProduct?.name || singleProductName;
-        syncQuantity(1);
+        // A successful order has its own confirmation page. The checkout form is
+        // never shown as the final success state.
+        window.location.replace("thank-you.html");
       } catch (err) {
         console.error("Order submission failed:", err);
         if (error) {
