@@ -11,14 +11,24 @@ function whatsappLink(productName = "") {
 document.addEventListener("DOMContentLoaded", () => {
   const track=window.halalTrack||function(){};
   const trackItems=window.halalTrackItems||function(items){return items||[];};
+  const parseProductPrice=(value,displayValue="")=>{
+    const displayMatch=String(displayValue||"").match(/(?:৳|BDT)?\s*([0-9][0-9,]*(?:\.[0-9]+)?)/i);
+    if(displayMatch){
+      const parsed=Number(displayMatch[1].replace(/,/g,""));
+      if(Number.isFinite(parsed)) return parsed;
+    }
+    const raw=String(value??"").replace(/,/g,"").match(/[0-9]+(?:\.[0-9]+)?/);
+    const parsed=raw?Number(raw[0]):0;
+    return Number.isFinite(parsed)?parsed:0;
+  };
   const productFromElement=(el)=>({
-    slug:el?.dataset?.slug||"", name:el?.dataset?.name||"", price:Number(el?.dataset?.price)||0,
+    slug:el?.dataset?.slug||"", name:el?.dataset?.name||"", price:parseProductPrice(el?.dataset?.price,el?.dataset?.displayPrice),
     category:el?.dataset?.category||"", image:el?.dataset?.image||""
   });
   const pageProduct={
     slug:(location.pathname.match(/products\/([^/]+)\.html$/)||[])[1]||"",
     name:document.querySelector(".cart-detail-add")?.dataset?.name||document.querySelector(".product-detail-info h1")?.textContent?.replace(/\s+Online in Bangladesh\s*$/i,"").trim()||"",
-    price:Number(document.querySelector(".cart-detail-add")?.dataset?.price)||0,
+    price:parseProductPrice(document.querySelector(".cart-detail-add")?.dataset?.price,document.querySelector(".cart-detail-add")?.dataset?.displayPrice),
     category:document.querySelector(".cart-detail-add")?.dataset?.category||document.querySelector(".product-detail-info .tag")?.textContent?.trim()||""
   };
 
@@ -677,7 +687,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   window.halalTrackItems=function(items){
     return (Array.isArray(items)?items:[]).map(function(item){
-      var price=Number(item.price)||0;
+      var price=parseProductPrice(item.price,item.displayPrice);
       var quantity=Math.max(1,Number(item.quantity!=null?item.quantity:item.qty)||1);
       return {
         item_id:String(item.slug||item.id||item.product_id||item.name||''),
