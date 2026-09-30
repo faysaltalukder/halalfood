@@ -33,7 +33,8 @@
     return "৳ " + Number(value || 0).toLocaleString("en-BD", { maximumFractionDigits: 0 });
   }
   function priceNumber(text) {
-    const n = Number(String(text || "").replace(/[^0-9.]/g, ""));
+    const match = String(text || "").match(/(?:৳|BDT)?\s*([0-9][0-9,]*(?:\.[0-9]+)?)/i);
+    const n = match ? Number(match[1].replace(/,/g, "")) : 0;
     return Number.isFinite(n) ? n : 0;
   }
   function imageUrl(path) {
