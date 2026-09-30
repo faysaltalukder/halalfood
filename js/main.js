@@ -9,6 +9,78 @@ function whatsappLink(productName = "") {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  const track=window.halalTrack||function(){};
+  const trackItems=window.halalTrackItems||function(items){return items||[];};
+  const productFromElement=(el)=>({
+    slug:el?.dataset?.slug||"", name:el?.dataset?.name||"", price:Number(el?.dataset?.price)||0,
+    category:el?.dataset?.category||"", image:el?.dataset?.image||""
+  });
+  const pageProduct={
+    slug:(location.pathname.match(/products\/([^/]+)\.html$/)||[])[1]||"",
+    name:document.querySelector(".cart-detail-add")?.dataset?.name||document.querySelector(".product-detail-info h1")?.textContent?.replace(/\s+Online in Bangladesh\s*$/i,"").trim()||"",
+    price:Number(document.querySelector(".cart-detail-add")?.dataset?.price)||0,
+    category:document.querySelector(".cart-detail-add")?.dataset?.category||document.querySelector(".product-detail-info .tag")?.textContent?.trim()||""
+  };
+
+  // Product detail view + product-list impression.
+  if(pageProduct.slug && pageProduct.name){
+    const item=trackItems([pageProduct]);
+    track("view_item",{currency:"BDT",value:pageProduct.price,items:item},"ViewContent",{
+      content_ids:[pageProduct.slug],content_name:pageProduct.name,content_type:"product",value:pageProduct.price,currency:"BDT"
+    });
+  } else {
+    const listItems=[...document.querySelectorAll("[data-add-to-cart]")].map(productFromElement).filter(x=>x.slug&&x.name);
+    if(listItems.length){
+      track("view_item_list",{item_list_name:document.title||location.pathname,items:trackItems(listItems)});
+    }
+  }
+
+  // Product selection from cards / product links.
+  document.addEventListener("click",(event)=>{
+    const add=event.target.closest("[data-add-to-cart]");
+    const link=event.target.closest("a[href*="products/"]");
+    const el=add||link;
+    if(el){
+      const p=add?productFromElement(add):{slug:(el.getAttribute("href").match(/products\/([^/?#]+)\.html/)||[])[1]||"",name:el.dataset.name||el.querySelector("h3")?.textContent?.trim()||"",price:0,category:el.dataset.category||""};
+      if(p.slug||p.name) track("select_item",{item_list_name:document.title||location.pathname,items:trackItems([p])});
+    }
+  },true);
+
+  // Search intent — send once the user pauses typing.
+  const searchInput=document.querySelector("#product-search");
+  if(searchInput){
+    let searchTimer;
+    searchInput.addEventListener("input",()=>{
+      clearTimeout(searchTimer);
+      const term=searchInput.value.trim();
+      if(!term) return;
+      searchTimer=setTimeout(()=>track("search",{search_term:term},"Search",{search_string:term}),700);
+    });
+  }
+
+  // WhatsApp / phone intent tracking. No customer PII is sent.
+  document.addEventListener("click",(event)=>{
+    const whatsapp=event.target.closest('a[href*="wa.me"],a[data-whatsapp]');
+    const phone=event.target.closest('a[href^="tel:"]');
+    if(whatsapp){
+      track("whatsapp_click",{page_location:location.href,page_title:document.title},"Contact",{contact_method:"whatsapp"});
+    } else if(phone){
+      track("phone_click",{page_location:location.href,page_title:document.title},"Contact",{contact_method:"phone"});
+    }
+  },true);
+
+  // Contact / checkout intent.
+  if(document.querySelector("#order-form")){
+    const isCart=new URLSearchParams(location.search).get("cart")==="1";
+    const cartItems=isCart && window.HALAL_CART_API ? window.HALAL_CART_API.read() : [];
+    const items=isCart ? cartItems : (pageProduct.name ? [{...pageProduct,quantity:1}] : []);
+    const value=items.reduce((s,x)=>s+(Number(x.price)||0)*Math.max(1,Number(x.quantity||x.qty)||1),0);
+    if(items.length){
+      track("begin_checkout",{currency:"BDT",value:value,items:trackItems(items)}, "InitiateCheckout",{currency:"BDT",value:value,contents:trackItems(items).map(x=>({id:x.item_id,quantity:x.quantity})),content_type:"product"});
+    }
+  }
+
+
   // Existing WhatsApp pattern — same number and deep-link format.
   document.querySelectorAll("[data-whatsapp]").forEach((link) => {
     const productName = link.dataset.whatsapp || "";
@@ -331,6 +403,15 @@ document.addEventListener("DOMContentLoaded", () => {
         if (singleProduct) data.price = String(priceNumber(singleProduct.price));
       }
 
+      const checkoutItems = Array.isArray(data.items) && data.items.length ? data.items : [{
+        product:data.product || singleProduct?.name || singleProductName,
+        quantity:data.quantity || "1",
+        price:data.price || (singleProduct ? String(priceNumber(singleProduct.price)) : "0")
+      }];
+      const checkoutValue=checkoutItems.reduce((sum,item)=>sum+(Number(item.price)||0)*Math.max(1,Number(item.quantity)||1),0);
+      track("add_shipping_info",{currency:"BDT",value:checkoutValue,shipping_tier:"Cash on Delivery",items:trackItems(checkoutItems)});
+      track("order_submit",{currency:"BDT",value:checkoutValue,items:trackItems(checkoutItems)});
+
       try {
         if (!GOOGLE_APPS_SCRIPT_URL || GOOGLE_APPS_SCRIPT_URL.includes("PASTE_YOUR")) {
           throw new Error("Google Apps Script URL is not configured yet.");
@@ -368,6 +449,26 @@ document.addEventListener("DOMContentLoaded", () => {
               const qty = Math.max(1, Number(item.quantity) || 1);
               return sum + price * qty;
             }, 0);
+
+        const purchaseKey="HALAL_PURCHASE_RECORDED_"+confirmedOrderId;
+        let alreadyTracked=false;
+        try { alreadyTracked=sessionStorage.getItem(purchaseKey)==="1"; } catch (_) {}
+        if(!alreadyTracked){
+          track("purchase",{
+            transaction_id:confirmedOrderId,
+            value:confirmedTotal,
+            currency:"BDT",
+            items:trackItems(confirmedItems)
+          },"Purchase",{
+            value:confirmedTotal,
+            currency:"BDT",
+            content_ids:trackItems(confirmedItems).map(i=>i.item_id),
+            contents:trackItems(confirmedItems).map(i=>({id:i.item_id,quantity:i.quantity,item_price:i.price})),
+            content_type:"product",
+            order_id:confirmedOrderId
+          });
+          try { sessionStorage.setItem(purchaseKey,"1"); } catch (_) {}
+        }
 
         try {
           sessionStorage.setItem("HALAL_ORDER_CONFIRMATION", JSON.stringify({
@@ -536,15 +637,56 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 
-/* HALAL TRACKING: GTM */
+/* HALAL TRACKING: GA4 + META + GTM */
 (function(){
-  if(window.__HALAL_GTM_LOADED__) return;
-  window.__HALAL_GTM_LOADED__=true;
+  if(window.__HALAL_TRACKING_BOOTSTRAPPED__) return;
+  window.__HALAL_TRACKING_BOOTSTRAPPED__=true;
+
   window.dataLayer=window.dataLayer||[];
   window.dataLayer.push({'gtm.start':new Date().getTime(),event:'gtm.js'});
-  var s=document.createElement('script');
-  s.async=true;
-  s.src='https://www.googletagmanager.com/gtm.js?id=GTM-5TW678CX';
-  document.head.appendChild(s);
+
+  (function(){
+    var s=document.createElement('script');
+    s.async=true;
+    s.src='https://www.googletagmanager.com/gtm.js?id=GTM-5TW678CX';
+    document.head.appendChild(s);
+  })();
+
+  /* Meta Pixel — sitewide */
+  !function(f,b,e,v,n,t,s){
+    if(f.fbq)return;
+    n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+    if(!f._fbq)f._fbq=n;
+    n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];
+    t=b.createElement(e);t.async=!0;t.src=v;
+    s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)
+  }(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+  window.fbq('init','28564665756499119');
+  window.fbq('track','PageView');
+
+  window.halalTrack=function(eventName,params,metaEvent,metaParams){
+    var safeParams=params||{};
+    window.dataLayer.push(Object.assign({event:eventName},safeParams));
+    if(typeof window.gtag==='function') window.gtag('event',eventName,safeParams);
+    if(typeof window.fbq==='function' && metaEvent){
+      window.fbq('track',metaEvent,metaParams||safeParams);
+    }
+  };
+
+  window.halalTrackItems=function(items){
+    return (Array.isArray(items)?items:[]).map(function(item){
+      var price=Number(item.price)||0;
+      var quantity=Math.max(1,Number(item.quantity!=null?item.quantity:item.qty)||1);
+      return {
+        item_id:String(item.slug||item.id||item.product_id||item.name||''),
+        item_name:String(item.name||item.product||''),
+        item_category:String(item.category||item.catLabel||''),
+        price:price,
+        quantity:quantity
+      };
+    });
+  };
 })();
-/* END HALAL TRACKING: GTM */
+/* END HALAL TRACKING */
+
+
