@@ -687,7 +687,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   window.halalTrackItems=function(items){
     return (Array.isArray(items)?items:[]).map(function(item){
-      var price=parseProductPrice(item.price,item.displayPrice);
+      var displayMatch=String(item.displayPrice||"").match(/(?:৳|BDT)?\s*([0-9][0-9,]*(?:\.[0-9]+)?)/i);
+      var rawMatch=String(item.price??"").replace(/,/g,"").match(/[0-9]+(?:\.[0-9]+)?/);
+      var price=displayMatch?Number(displayMatch[1].replace(/,/g,"")):(rawMatch?Number(rawMatch[0]):0);
+      if(!Number.isFinite(price)) price=0;
       var quantity=Math.max(1,Number(item.quantity!=null?item.quantity:item.qty)||1);
       return {
         item_id:String(item.slug||item.id||item.product_id||item.name||''),
