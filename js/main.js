@@ -274,7 +274,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const quantityPlus = document.querySelector("[data-quantity-plus]");
 
   const priceNumber = (value) => {
-    const n = Number(String(value || "").replace(/[^0-9.]/g, ""));
+    // Product prices may be displayed as "৳ 750 / 500g". Extract only
+    // the first numeric amount; never concatenate the package weight.
+    const match = String(value || "").match(/(?:৳|BDT)?\s*([0-9][0-9,]*(?:\.[0-9]+)?)/i);
+    const n = match ? Number(match[1].replace(/,/g, "")) : 0;
     return Number.isFinite(n) ? n : 0;
   };
   const money = (value) => `৳ ${Math.round(Number(value) || 0).toLocaleString("en-BD")}`;
