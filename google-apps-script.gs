@@ -11,7 +11,7 @@
 const SHEET_NAME = "Orders";
 const TEST_MODE = true;
 const TEST_RECIPIENT_EMAIL = "halalfoodbd.official@gmail.com";
-const LOGO_URL = "https://raw.githubusercontent.com/faysaltalukder/halalfood/main/images/logo-favicon/halal-food-official-logo.jpg";
+const LOGO_URL = "https://raw.githubusercontent.com/faysaltalukder/halalfood/main/images/logo-favicon/halal-food-official-logo.svg";
 const SITE_URL = "https://faysaltalukder.github.io/halalfood/";
 
 const HEADERS = [
