@@ -290,14 +290,16 @@ function fetchAssets_(items) {
       candidates.push(raw);
     } else {
       const path = raw.replace(/^\/+/, "");
-      if (/^halalfood\//i.test(path)) {
+      // Resolve website-relative product paths to the live GitHub Pages URL first.
+      // Example: images/dates/ajwa-dates.jpg
+      // -> https://faysaltalukder.github.io/halalfood/images/dates/ajwa-dates.jpg
+      if (/^halalfood\\//i.test(path)) {
         candidates.push("https://faysaltalukder.github.io/" + path);
       } else {
-        // Product files in the repo are more reliably fetched by Apps Script
-        // from raw.githubusercontent.com than through GitHub Pages.
+        candidates.push(SITE_URL.replace(/\\/$/, "") + "/" + path);
+        // Raw GitHub remains a fallback for Apps Script fetch reliability.
         candidates.push(RAW_GITHUB_BASE + path);
-        candidates.push(SITE_URL.replace(/\/$/,"") + "/" + path);
-      }
+      }      }
     }
 
     for (let i = 0; i < candidates.length && !result.productBlob; i++) {
