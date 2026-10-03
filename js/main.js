@@ -1,5 +1,5 @@
 // Google Apps Script Web App URL: unchanged — keep the deployed endpoint stable.
-const GOOGLE_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzShx69e71dZWyF8MN3ZWJSN5rTdeizgsFoN-ElkZzs2_j_gncTeGfpZiDm3YiZskGQ/exec";
+const GOOGLE_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyrxkA4-FVMoGlvMgXAj9AiRKSg7mfBngqm2aCs3nANXW4nkktt861FaEodi4pnu12QJg/exec";
 
 function whatsappLink(productName = "") {
   const message = productName
