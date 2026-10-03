@@ -50,13 +50,15 @@ function doPost(e) {
     const row = new Array(sh.getLastColumn()).fill("");
     setCell_(row,m,"Timestamp",new Date());
     setCell_(row,m,"Order ID",orderId);
-    setCell_(row,m,"Product",item.product);
+    // Write to the exact existing Orders-sheet columns, including the legacy
+    // duplicate fields at the right side. Blank spacer columns are untouched.
+    setCellsByHeaders_(row,m,["Product Name","Product"],item.product);
     setCell_(row,m,"Unit Price",item.price);
     setCell_(row,m,"Line Total",item.lineTotal);
-    setCell_(row,m,"Name",d.name || "");
-    setCell_(row,m,"Mobile",d.mobile || d.phone || "");
-    setCell_(row,m,"Email",email);
-    setCell_(row,m,"Address",d.address || "");
+    setCellsByHeaders_(row,m,["Full Name","Name"],d.name || "");
+    setCellsByHeaders_(row,m,["Mobile Number","Mobile"],d.mobile || d.phone || "");
+    setCellsByHeaders_(row,m,["Email"],email);
+    setCellsByHeaders_(row,m,["Full Address","Address"],d.address || "");
     setCell_(row,m,"District",d.district || "");
     setCell_(row,m,"Upazila",d.upazila || "");
     setCell_(row,m,"Quantity",item.quantity);
@@ -565,6 +567,15 @@ function getHeaderMap_(sh) {
 
 function setCell_(row,map,header,value) {
   if (map[header] !== undefined) row[map[header]] = value;
+}
+
+// Write one incoming value to every matching header. This is intentional:
+// the current sheet contains both the original customer columns (B-H) and
+// legacy duplicate columns (T-Y), and both sets should remain synchronized.
+function setCellsByHeaders_(row,map,headers,value) {
+  headers.forEach(function(header){
+    if (map[header] !== undefined) row[map[header]] = value;
+  });
 }
 
 function money_(value) {
