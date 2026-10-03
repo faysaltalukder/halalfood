@@ -12,6 +12,7 @@ const TEST_MODE = true;
 const TEST_RECIPIENT_EMAIL = "halalfoodbd.official@gmail.com";
 
 const SITE_URL = "https://faysaltalukder.github.io/halalfood/";
+const RAW_GITHUB_BASE = "https://raw.githubusercontent.com/faysaltalukder/halalfood/main/";
 const COMPANY_EMAIL = "halalfoodbd.official@gmail.com";
 const CARD_PHONE = "01842031164";
 const CARD_SYSTEM_VERSION = "v4";
@@ -39,7 +40,7 @@ function doPost(e) {
     d = (e && e.parameter) || {};
   }
 
-  const orderId = String(d.orderId || ("HFB-" + Date.now()));
+  const orderId = createShortOrderId_(sh);
   const items = normalizeItems_(d);
   const total = items.reduce((sum, x) => sum + x.lineTotal, 0);
   const email = String(d.email || d.customerEmail || "").trim();
@@ -131,6 +132,28 @@ function doPost(e) {
       cardUrl:cardUrl || null
     }))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+function createShortOrderId_(sh) {
+  const map = getHeaderMap_(sh);
+  const orderCol = map["Order ID"];
+  const used = {};
+
+  if (orderCol !== undefined && sh.getLastRow() >= 2) {
+    const values = sh.getRange(2, orderCol + 1, sh.getLastRow() - 1, 1).getDisplayValues();
+    values.forEach(function(row) {
+      const id = String(row[0] || "").trim();
+      if (/^HF-\d{4}$/.test(id)) used[id] = true;
+    });
+  }
+
+  for (let i = 0; i < 200; i++) {
+    const n = Math.floor(Math.random() * 9000) + 1000;
+    const id = "HF-" + n;
+    if (!used[id]) return id;
+  }
+
+  return "HF-" + String(Date.now()).slice(-4);
 }
 
 function getCardWebAppUrl_() {
@@ -227,65 +250,85 @@ function fetchAssets_(items) {
     productDataUri:""
   };
 
-  // First try the complete official logo and rasterize it for email.
+  // Keep the complete official logo as SVG data for the customer card.
+  // This avoids losing the emblem when Apps Script cannot rasterize SVG.
   try {
     const response = UrlFetchApp.fetch(LOGO_SVG_URL,{
       muteHttpExceptions:true,
       followRedirects:true
     });
+
     if (response.getResponseCode() >= 200 && response.getResponseCode() < 300) {
+      const svgText = response.getContentText();
+      result.logoDataUri =
+        "data:image/svg+xml;base64," +
+        Utilities.base64Encode(
+          Utilities.newBlob(svgText,"image/svg+xml").getBytes()
+        );
+
       const svgBlob = response.getBlob().setName("halal-food-logo.svg");
       try {
         result.logoBlob = svgBlob.getAs(MimeType.PNG).setName("halal-food-logo.png");
       } catch (_) {
-        // Some Apps Script runtimes cannot rasterize SVG. Fall back to the
-        // emblem PNG; the email template supplies the brand text separately.
-        const png = UrlFetchApp.fetch(LOGO_PNG_URL,{
+        try {
+          const png = UrlFetchApp.fetch(LOGO_PNG_URL,{
+            muteHttpExceptions:true,
+            followRedirects:true
+          });
+          if (png.getResponseCode() >= 200 && png.getResponseCode() < 300) {
+            result.logoBlob = png.getBlob().setName("halal-food-emblem.png");
+          }
+        } catch (_) {}
+      }
+    }
+  } catch (err) {
+    console.log("Logo fetch failed: " + String(err && err.message || err));
+  }
+
+  const raw = String(items[0] && items[0].image || "").trim();
+  if (raw) {
+    const candidates = [];
+
+    if (/^https?:\/\//i.test(raw)) {
+      candidates.push(raw);
+    } else {
+      const path = raw.replace(/^\/+/, "");
+      if (/^halalfood\//i.test(path)) {
+        candidates.push("https://faysaltalukder.github.io/" + path);
+      } else {
+        // Product files in the repo are more reliably fetched by Apps Script
+        // from raw.githubusercontent.com than through GitHub Pages.
+        candidates.push(RAW_GITHUB_BASE + path);
+        candidates.push(SITE_URL.replace(/\/$/,"") + "/" + path);
+      }
+    }
+
+    for (let i = 0; i < candidates.length && !result.productBlob; i++) {
+      try {
+        const url = candidates[i];
+        const response = UrlFetchApp.fetch(url,{
           muteHttpExceptions:true,
           followRedirects:true
         });
-        if (png.getResponseCode() >= 200 && png.getResponseCode() < 300) {
-          result.logoBlob = png.getBlob().setName("halal-food-emblem.png");
-        }
-      }
 
-      // Never expose SVG to the mobile card page. Use the raster image blob
-      // so browsers and mail clients get a normal PNG/JPG image.
-      if (result.logoBlob) {
-        result.logoDataUri =
-          "data:" + (result.logoBlob.getContentType() || "image/png") +
-          ";base64," + Utilities.base64Encode(result.logoBlob.getBytes());
+        if (response.getResponseCode() >= 200 && response.getResponseCode() < 300) {
+          let blob = response.getBlob();
+
+          try {
+            blob = blob.getAs(MimeType.PNG);
+          } catch (_) {}
+
+          result.productBlob = blob.setName("halal-food-product.png");
+          result.productDataUri =
+            "data:" + (blob.getContentType() || "image/png") +
+            ";base64," + Utilities.base64Encode(blob.getBytes());
+        } else {
+          console.log("Product image fetch failed (" + response.getResponseCode() + "): " + url);
+        }
+      } catch (err) {
+        console.log("Product image fetch error: " + String(err && err.message || err));
       }
     }
-  } catch (_) {}
-
-  const raw = String(items[0] && items[0].image || "");
-  if (raw) {
-    try {
-      const url = /^https?:\/\//i.test(raw)
-        ? raw
-        : SITE_URL.replace(/\/$/,"") + "/" + raw.replace(/^\/+/, "");
-
-      const response = UrlFetchApp.fetch(url,{
-        muteHttpExceptions:true,
-        followRedirects:true
-      });
-
-      if (response.getResponseCode() >= 200 && response.getResponseCode() < 300) {
-        let blob = response.getBlob();
-
-        // Convert to PNG where Apps Script supports it, making the email
-        // image broadly compatible with mobile mail clients.
-        try {
-          blob = blob.getAs(MimeType.PNG);
-        } catch (_) {}
-
-        result.productBlob = blob.setName("halal-food-product.png");
-        result.productDataUri =
-          "data:" + (blob.getContentType() || "image/png") +
-          ";base64," + Utilities.base64Encode(blob.getBytes());
-      }
-    } catch (_) {}
   }
 
   return result;
@@ -410,7 +453,7 @@ function buildCardPage_(customer,items,orderId,total,assets) {
     ".logo{display:block;width:180px;height:145px;object-fit:contain;background:#FFFDF7;border-radius:14px;margin:auto}" +
     ".brand{font-size:29px;font-weight:800;color:#fff;margin-top:9px}.sub{font-size:10px;letter-spacing:3px;color:#E8D39A;margin-top:5px}" +
     ".body{text-align:center;padding:28px 18px}.thank{font:italic 55px Georgia,serif;font-weight:700}.for{font-size:12px;letter-spacing:4px;font-weight:700;color:#6D6875;margin-top:5px}.gold{width:75px;height:3px;background:#C99220;margin:17px auto}.dear{font-size:22px;font-weight:700}.intro{max-width:590px;margin:10px auto 22px;color:#5D5964;line-height:1.8;font-size:15px}" +
-    ".details{max-width:610px;margin:auto;background:#F8F1E2;border:1px solid #E4D8BF;border-radius:19px;padding:18px;display:grid;grid-template-columns:200px 1fr;gap:22px;text-align:left;box-sizing:border-box}.photo{width:200px;height:200px;object-fit:contain;background:#F7F2E8;border-radius:17px}.lab{font-size:10px;letter-spacing:2px;color:#7B7480;font-weight:700}.oid{font-size:26px;font-weight:800;margin:5px 0 17px}.prod{font-size:19px;font-weight:700;line-height:1.35}.qty{font-size:14px;color:#6D6875;margin-top:5px}.price{font-size:29px;color:#C99220;font-weight:800;margin-top:13px}.total{max-width:610px;margin:16px auto;font-size:20px;font-weight:800;text-align:right}.message{max-width:610px;margin:20px auto;color:#6D6875;line-height:1.8;font-size:14px}.footer{color:#7B7480;font-size:12px;line-height:1.7}.actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;padding:18px}.actions button{border:0;border-radius:999px;padding:13px 19px;font-size:15px;font-weight:700;cursor:pointer}.primary{background:#17233C;color:#fff}.secondary{background:#fff;color:#17233C;border:1px solid #D8D0C1!important}@media(max-width:600px){.wrap{padding:7px}.hero{padding:16px 10px}.logo{width:155px;height:125px}.body{padding:24px 12px}.thank{font-size:45px}.details{grid-template-columns:1fr;text-align:center;padding:15px}.photo{width:180px;height:180px;margin:auto}.total{text-align:center;font-size:18px}.prod{font-size:17px}.actions{padding:15px 5px}}" +
+    ".details{max-width:610px;margin:auto;background:#F8F1E2;border:1px solid #E4D8BF;border-radius:19px;padding:18px;display:grid;grid-template-columns:200px 1fr;gap:22px;text-align:left;box-sizing:border-box}.photo{width:200px;height:200px;object-fit:contain;background:#F7F2E8;border-radius:17px}.lab{font-size:10px;letter-spacing:2px;color:#7B7480;font-weight:700}.oid{font-size:22px;font-weight:800;margin:5px 0 17px;word-break:break-word}.prod{font-size:19px;font-weight:700;line-height:1.35}.qty{font-size:14px;color:#6D6875;margin-top:5px}.price{font-size:29px;color:#C99220;font-weight:800;margin-top:13px}.total{max-width:610px;margin:16px auto;font-size:20px;font-weight:800;text-align:right}.message{max-width:610px;margin:20px auto;color:#6D6875;line-height:1.8;font-size:14px}.footer{color:#7B7480;font-size:12px;line-height:1.7}.actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;padding:18px}.actions button{border:0;border-radius:999px;padding:13px 19px;font-size:15px;font-weight:700;cursor:pointer}.primary{background:#17233C;color:#fff}.secondary{background:#fff;color:#17233C;border:1px solid #D8D0C1!important}@media(max-width:600px){.wrap{padding:7px}.hero{padding:16px 10px}.logo{width:155px;height:125px}.body{padding:24px 12px}.thank{font-size:45px}.details{grid-template-columns:1fr;text-align:center;padding:15px}.photo{width:180px;height:180px;margin:auto}.total{text-align:center;font-size:18px}.prod{font-size:17px}.actions{padding:15px 5px}}" +
     "</style></head><body>" +
     "<div class='wrap'><div class='card'>" +
     "<div class='hero'><img id='logo' class='logo' alt='Halal Food'><div class='brand'>Halal Food</div><div class='sub'>PREMIUM PRODUCTS</div></div>" +
@@ -460,7 +503,7 @@ function buildCardPage_(customer,items,orderId,total,assets) {
       "x.fillStyle='#F8F1E2';roundRect(x,135,785,1330,370,32);x.fill();"+
       "var img=await loadImage(D.image);if(img)x.drawImage(img,185,835,270,270);"+
       "x.textAlign='left';x.fillStyle='#7B7480';x.font='700 20px Arial';x.fillText('ORDER ID',540,845);"+
-      "x.fillStyle='#17233C';x.font='800 38px Arial';x.fillText(D.orderId,540,895);"+
+      "x.fillStyle='#17233C';x.font='800 34px Arial';x.fillText(D.orderId,540,895);"+
       "x.fillStyle='#7B7480';x.font='700 20px Arial';x.fillText('PRODUCT',540,955);"+
       "x.fillStyle='#17233C';x.font='700 29px Arial';x.fillText(D.product,540,995);"+
       "x.fillStyle='#6D6875';x.font='22px Arial';x.fillText('Quantity: '+D.quantity,540,1035);"+
