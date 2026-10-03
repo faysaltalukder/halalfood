@@ -14,7 +14,8 @@ const TEST_RECIPIENT_EMAIL = "halalfoodbd.official@gmail.com";
 const SITE_URL = "https://faysaltalukder.github.io/halalfood/";
 const COMPANY_EMAIL = "halalfoodbd.official@gmail.com";
 const CARD_PHONE = "01842031164";
-const CARD_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzShx69e71dZWyF8MN3ZWJSN5rTdeizgsFoN-ElkZzs2_j_gncTeGfpZiDm3YiZskGQ/exec";
+const CARD_SYSTEM_VERSION = "v4";
+const CARD_WEB_APP_URL_FALLBACK = "https://script.google.com/macros/s/AKfycbzShx69e71dZWyF8MN3ZWJSN5rTdeizgsFoN-ElkZzs2_j_gncTeGfpZiDm3YiZskGQ/exec";
 
 const LOGO_SVG_URL = "https://raw.githubusercontent.com/faysaltalukder/halalfood/main/images/logo-favicon/halal-food-official-logo.svg";
 const LOGO_PNG_URL = "https://raw.githubusercontent.com/faysaltalukder/halalfood/main/images/logo-favicon/logo.png";
@@ -73,7 +74,8 @@ function doPost(e) {
 
   if (email) {
     const token = Utilities.getUuid().replace(/-/g,"");
-    cardUrl = CARD_WEB_APP_URL + "?card=" + encodeURIComponent(token);
+    const cardBaseUrl = getCardWebAppUrl_();
+    cardUrl = cardBaseUrl + "?card=" + encodeURIComponent(token) + "&v=" + encodeURIComponent(CARD_SYSTEM_VERSION);
 
     const tokenCol = getHeaderMap_(sh)["Card Token"];
     if (tokenCol !== undefined) {
@@ -92,7 +94,7 @@ function doPost(e) {
 
       MailApp.sendEmail({
         to: recipient,
-        subject: (TEST_MODE ? "[TEST] " : "") +
+        subject: (TEST_MODE ? "[TEST] " : "") + "[" + CARD_SYSTEM_VERSION + "] " +
           "Thank You, " + (d.name || "Customer") +
           " — Halal Food | " + orderId,
         htmlBody: html,
@@ -129,6 +131,14 @@ function doPost(e) {
       cardUrl:cardUrl || null
     }))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+function getCardWebAppUrl_() {
+  try {
+    const url = String(ScriptApp.getService().getUrl() || "").trim();
+    if (/^https:\/\/script\.google\.com\/macros\/s\//i.test(url)) return url;
+  } catch (_) {}
+  return CARD_WEB_APP_URL_FALLBACK;
 }
 
 function doGet(e) {
@@ -239,10 +249,13 @@ function fetchAssets_(items) {
         }
       }
 
-      // Browser card page can safely use the complete SVG as a data URI.
-      result.logoDataUri =
-        "data:image/svg+xml;base64," +
-        Utilities.base64Encode(response.getContentText("UTF-8"));
+      // Never expose SVG to the mobile card page. Use the raster image blob
+      // so browsers and mail clients get a normal PNG/JPG image.
+      if (result.logoBlob) {
+        result.logoDataUri =
+          "data:" + (result.logoBlob.getContentType() || "image/png") +
+          ";base64," + Utilities.base64Encode(result.logoBlob.getBytes());
+      }
     }
   } catch (_) {}
 
@@ -295,7 +308,7 @@ function buildEmailCard_(d,items,orderId,total,cardUrl,isTest,assets) {
     : "<div style='width:190px;height:190px;background:#F7F2E8;border-radius:18px;line-height:190px;text-align:center;color:#8A8490'>Product</div>";
 
   const testNotice = isTest
-    ? "<tr><td style='padding:10px 20px 0'><div style='background:#FFF4D6;border:1px solid #E2C56A;border-radius:10px;padding:9px 12px;color:#6A5310;font:13px Arial,sans-serif'><b>TEST MODE</b> — এই emailটি পরীক্ষার জন্য পাঠানো হয়েছে।</div></td></tr>"
+    ? "<tr><td style='padding:10px 20px 0'><div style='background:#FFF4D6;border:1px solid #E2C56A;border-radius:10px;padding:9px 12px;color:#6A5310;font:13px Arial,sans-serif'><b>TEST MODE • ' + CARD_SYSTEM_VERSION + '</b> — এই emailটি পরীক্ষার জন্য পাঠানো হয়েছে।</div></td></tr>"
     : "";
 
   const productRows = items.map(function(x) {
@@ -430,7 +443,7 @@ function buildCardPage_(customer,items,orderId,total,assets) {
     "if(D.logo)document.getElementById('logo').src=D.logo;else document.getElementById('logo').style.display='none';" +
     "if(D.image)document.getElementById('img').src=D.image;else document.getElementById('img').style.display='none';" +
 
-    "function loadImage(src){return new Promise(function(resolve,reject){if(!src){resolve(null);return}var im=new Image();im.onload=function(){resolve(im)};im.onerror=reject;im.src=src})}" +
+    "function loadImage(src){return new Promise(function(resolve){if(!src){resolve(null);return}var im=new Image();im.onload=function(){resolve(im)};im.onerror=function(){resolve(null)};im.src=src})}" +
     "function roundRect(ctx,x,y,w,h,r){ctx.beginPath();ctx.roundRect(x,y,w,h,r);}" +
 
     "async function renderPNG(){"+
