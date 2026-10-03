@@ -8,7 +8,7 @@
  */
 
 const SHEET_NAME = "Orders";
-const TEST_MODE = true;
+const TEST_MODE = false;
 const TEST_RECIPIENT_EMAIL = "halalfoodbd.official@gmail.com";
 
 const SITE_URL = "https://faysaltalukder.github.io/halalfood/";
