@@ -13,6 +13,7 @@ const TEST_MODE = true;
 const TEST_RECIPIENT_EMAIL = "halalfoodbd.official@gmail.com";
 const LOGO_URL = "https://raw.githubusercontent.com/faysaltalukder/halalfood/main/images/logo-favicon/halal-food-official-logo.svg";
 const SITE_URL = "https://faysaltalukder.github.io/halalfood/";
+const COMPANY_EMAIL = "halalfoodbd.official@gmail.com";
 
 const HEADERS = [
   "Timestamp", "Order ID", "Product", "Unit Price", "Line Total",
@@ -284,7 +285,7 @@ function doPost(e) {
     var sh=SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME)||SpreadsheetApp.getActiveSpreadsheet().insertSheet(SHEET_NAME);
     ensureCardTokenHeader_(sh);
     var data={}; try{data=JSON.parse(e.postData.contents);}catch(_){data=e.parameter||{};}
-    var items=Array.isArray(data.items)&&data.items.length?data.items:[{name:data.product||"",qty:data.quantity||1,price:data.price||0}];
+    var items=Array.isArray(data.items)&&data.items.length?data.items:[{name:data.product||"",qty:data.quantity||1,price:data.price||0,image:data.image||"",slug:data.slug||""}];
     var orderId=data.orderId||("HFB-"+Date.now());
     var total=items.reduce(function(sum,it){return sum+Number(it.price||it.unitPrice||0)*Math.max(1,Number(it.qty||it.quantity||1));},0);
     var email=String(data.email||data.customerEmail||"").trim(), token=email?Utilities.getUuid().replace(/-/g,""):"", m=getHeaderMap_(sh);
@@ -308,12 +309,106 @@ function doPost(e) {
 function ensureCardTokenHeader_(sh){var last=sh.getLastColumn(),h=last?sh.getRange(1,1,1,last).getValues()[0].map(String):[];if(!h.length){sh.getRange(1,1,1,16).setValues([["Timestamp","Order ID","Product","Unit Price","Line Total","Name","Mobile","Email","Address","District","Upazila","Quantity","Notes","Order Total","Thank You Email Status","Card Token"]]);}else{if(h.indexOf("Thank You Email Status")===-1)sh.getRange(1,sh.getLastColumn()+1).setValue("Thank You Email Status");if(h.indexOf("Card Token")===-1)sh.getRange(1,sh.getLastColumn()+1).setValue("Card Token");}}
 
 function buildCardSvg_(data,items,orderId,total){
-  var logo="";try{var r=UrlFetchApp.fetch(LOGO_URL,{muteHttpExceptions:true});if(r.getResponseCode()>=200&&r.getResponseCode()<300){var b=r.getBlob();logo='<image href="data:'+(b.getContentType()||"image/jpeg")+';base64,'+Utilities.base64Encode(b.getBytes())+'" x="520" y="55" width="560" height="300" preserveAspectRatio="xMidYMid meet"/>';}}catch(_){}
-  if(!logo)logo='<text x="800" y="220" text-anchor="middle" class="brand">Halal Food</text>';
-  var products="";items.slice(0,5).forEach(function(it,i){products+='<text x="800" y="'+(790+i*55)+'" text-anchor="middle" class="item">'+escapeXml_(it.name||it.product||"Product")+" × "+Math.max(1,Number(it.qty||it.quantity||1))+"</text>";});
-  return '<?xml version="1.0" encoding="UTF-8"?><svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1600" viewBox="0 0 1600 1600"><rect width="1600" height="1600" fill="#F7F2E8"/><rect x="45" y="45" width="1510" height="1510" rx="42" fill="#fff" stroke="#17233C" stroke-width="5"/><rect x="80" y="80" width="1440" height="1440" rx="30" fill="none" stroke="#D9C79B" stroke-width="2"/>'+logo+'<text x="800" y="430" text-anchor="middle" class="eyebrow">A PERSONAL THANK-YOU FROM</text><text x="800" y="515" text-anchor="middle" class="title">Halal Food</text><text x="800" y="595" text-anchor="middle" class="name">Thank You, '+escapeXml_(data.name||"Friend")+' ❤️</text><line x1="300" y1="640" x2="1300" y2="640" stroke="#D9D2C4" stroke-width="2"/><text x="800" y="700" text-anchor="middle" class="section">YOUR ORDER</text>'+products+'<text x="800" y="1080" text-anchor="middle" class="order">Order ID: '+escapeXml_(orderId)+'</text><text x="800" y="1140" text-anchor="middle" class="total">৳ '+Math.round(total).toLocaleString("en-BD")+'</text><text x="800" y="1210" text-anchor="middle" class="message">আপনার ভালোবাসা, আস্থা ও মূল্যবান সময়ের জন্য</text><text x="800" y="1255" text-anchor="middle" class="message">Halal Food আপনাকে আন্তরিকভাবে ধন্যবাদ জানায়।</text><text x="800" y="1310" text-anchor="middle" class="small">আপনার প্রতিটি order আমাদের আরও ভালো customer experience</text><text x="800" y="1345" text-anchor="middle" class="small">এবং একটি বিশ্বাসযোগ্য food brand তৈরি করতে অনুপ্রাণিত করে।</text><text x="800" y="1410" text-anchor="middle" class="contact">'+escapeXml_(SITE_URL.replace(/^https?:\/\//,""))+'</text><text x="800" y="1445" text-anchor="middle" class="contact">'+escapeXml_(COMPANY_EMAIL)+' • '+CARD_PHONE+'</text><text x="800" y="1490" text-anchor="middle" class="signature">— Team Halal Food</text><style>.brand{font-family:Arial;font-size:70px;font-weight:700;fill:#17233C}.eyebrow{font-family:Arial;font-size:24px;letter-spacing:5px;fill:#6D6875}.title{font-family:Arial;font-size:56px;font-weight:700;fill:#17233C}.name{font-family:Arial,"Noto Sans Bengali",sans-serif;font-size:48px;font-weight:700;fill:#17233C}.section{font-family:Arial;font-size:25px;font-weight:700;letter-spacing:4px;fill:#6D6875}.item{font-family:Arial,"Noto Sans Bengali",sans-serif;font-size:30px;font-weight:600;fill:#17233C}.order{font-family:Arial;font-size:25px;font-weight:700;fill:#6D6875}.total{font-family:Arial;font-size:34px;font-weight:700;fill:#17233C}.message{font-family:Arial,"Noto Sans Bengali",sans-serif;font-size:27px;fill:#17233C}.small{font-family:Arial,"Noto Sans Bengali",sans-serif;font-size:21px;fill:#6D6875}.contact{font-family:Arial;font-size:20px;fill:#6D6875}.signature{font-family:Arial;font-size:23px;font-weight:700;fill:#17233C}</style></svg>';
-}
+  // Fixed premium template. Only customer/order/product data changes.
+  var logo="";
+  try{
+    var lr=UrlFetchApp.fetch(LOGO_URL,{muteHttpExceptions:true});
+    if(lr.getResponseCode()>=200&&lr.getResponseCode()<300){
+      var lb=lr.getBlob();
+      logo='<image href="data:'+(lb.getContentType()||"image/svg+xml")+';base64,'+Utilities.base64Encode(lb.getBytes())+'" x="105" y="80" width="430" height="210" preserveAspectRatio="xMidYMid meet"/>';
+    }
+  }catch(_){}
 
+  var hero=items[0]||{};
+  var productName=String(hero.name||hero.product||"Product");
+  var qty=Math.max(1,Number(hero.qty||hero.quantity||1));
+  var price=Number(hero.price||hero.unitPrice||0);
+  var productImage="";
+  try{
+    var raw=String(hero.image||"");
+    var imageUrl=raw;
+    if(raw && !/^https?:\\/\\//i.test(raw)){
+      imageUrl=SITE_URL.replace(/\\/$/,"")+"/"+raw.replace(/^\\/+/, "");
+    }
+    if(imageUrl){
+      var ir=UrlFetchApp.fetch(imageUrl,{muteHttpExceptions:true,followRedirects:true});
+      if(ir.getResponseCode()>=200&&ir.getResponseCode()<300){
+        var ib=ir.getBlob();
+        productImage='<image href="data:'+(ib.getContentType()||"image/jpeg")+';base64,'+Utilities.base64Encode(ib.getBytes())+'" x="1085" y="345" width="380" height="380" preserveAspectRatio="xMidYMid meet" clip-path="url(#productClip)"/>';
+      }
+    }
+  }catch(_){}
+
+  var allProducts=items.slice(0,4).map(function(it){
+    var n=escapeXml_(it.name||it.product||"Product");
+    var q=Math.max(1,Number(it.qty||it.quantity||1));
+    var p=Number(it.price||it.unitPrice||0);
+    return '<text x="180" y="'+(1160+items.indexOf(it)*48)+'" class="detail">'+n+' × '+q+' — ৳ '+Math.round(p).toLocaleString("en-BD")+'</text>';
+  }).join("");
+
+  return '<?xml version="1.0" encoding="UTF-8"?>'+
+  '<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1600" viewBox="0 0 1600 1600">'+
+  '<defs>'+
+    '<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFFDF7"/><stop offset="1" stop-color="#F5EBD4"/></linearGradient>'+
+    '<linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F4C75E"/><stop offset="1" stop-color="#C99220"/></linearGradient>'+
+    '<filter id="shadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="12" stdDeviation="18" flood-color="#17233C" flood-opacity=".14"/></filter>'+
+    '<clipPath id="productClip"><rect x="1085" y="345" width="380" height="380" rx="28"/></clipPath>'+
+  '</defs>'+
+  '<rect width="1600" height="1600" fill="url(#bg)"/>'+
+  '<circle cx="1450" cy="145" r="210" fill="#E9D49B" opacity=".22"/>'+
+  '<circle cx="80" cy="1510" r="250" fill="#17233C" opacity=".07"/>'+
+  '<path d="M0 0H1600V315C1320 255 1080 285 800 330C500 378 250 350 0 285Z" fill="#17233C"/>'+
+  '<path d="M0 286C270 352 520 375 800 330C1090 284 1330 250 1600 315" fill="none" stroke="url(#gold)" stroke-width="10"/>'+
+  logo+
+  '<text x="1390" y="118" text-anchor="middle" class="tagline">PURE FOOD</text>'+
+  '<text x="1390" y="158" text-anchor="middle" class="tagline">HEALTHY LIFE</text>'+
+  '<text x="800" y="455" text-anchor="middle" class="thank">Thank You</text>'+
+  '<text x="800" y="520" text-anchor="middle" class="for">FOR YOUR ORDER</text>'+
+  '<path d="M585 555H1015" stroke="url(#gold)" stroke-width="4"/>'+
+  '<text x="800" y="625" text-anchor="middle" class="dear">প্রিয় '+escapeXml_(data.name||"Friend")+'</text>'+
+  '<text x="800" y="680" text-anchor="middle" class="thanks">আপনার আস্থা ও ভালোবাসার জন্য আন্তরিক ধন্যবাদ।</text>'+
+  '<g filter="url(#shadow)">'+
+    '<rect x="125" y="755" width="1350" height="310" rx="34" fill="#FFFFFF"/>'+
+  '</g>'+
+  '<rect x="155" y="785" width="570" height="250" rx="24" fill="#F8F1E2"/>'+
+  '<text x="205" y="835" class="label">ORDER ID</text>'+
+  '<text x="205" y="890" class="value">'+escapeXml_(orderId)+'</text>'+
+  '<text x="205" y="950" class="label">PRODUCT</text>'+
+  '<text x="205" y="997" class="product">'+escapeXml_(productName)+'</text>'+
+  '<text x="205" y="1032" class="quantity">Quantity: '+qty+'</text>'+
+  '<text x="795" y="835" class="label">ORDER TOTAL</text>'+
+  '<text x="795" y="905" class="price">৳ '+Math.round(Number(total)||price).toLocaleString("en-BD")+'</text>'+
+  '<text x="795" y="958" class="label">PRODUCT PRICE</text>'+
+  '<text x="795" y="1008" class="productPrice">৳ '+Math.round(price).toLocaleString("en-BD")+'</text>'+
+  '<rect x="1070" y="805" width="410" height="210" rx="28" fill="#F7F2E8" stroke="#D9C79B" stroke-width="3"/>'+
+  productImage+
+  '<text x="1275" y="1045" text-anchor="middle" class="photoLabel">YOUR PRODUCT</text>'+
+  '<text x="800" y="1130" text-anchor="middle" class="section">YOUR ORDER DETAILS</text>'+
+  allProducts+
+  '<path d="M250 1385H1350" stroke="#D9C79B" stroke-width="2"/>'+
+  '<text x="800" y="1435" text-anchor="middle" class="message">Thank you for being part of the Halal Food journey.</text>'+
+  '<text x="800" y="1480" text-anchor="middle" class="contact">'+escapeXml_(SITE_URL.replace(/^https?:\\/\\//,""))+'  •  '+escapeXml_(COMPANY_EMAIL)+'</text>'+
+  '<text x="800" y="1520" text-anchor="middle" class="signature">— Team Halal Food —</text>'+
+  '<style>'+
+  '.tagline{font-family:Arial,sans-serif;font-size:23px;letter-spacing:4px;fill:#EBD79E;font-weight:700}'+
+  '.thank{font-family:Georgia,serif;font-size:108px;font-style:italic;font-weight:700;fill:#17233C}'+
+  '.for{font-family:Arial,sans-serif;font-size:29px;letter-spacing:8px;font-weight:700;fill:#17233C}'+
+  '.dear{font-family:Arial,"Noto Sans Bengali",sans-serif;font-size:39px;font-weight:700;fill:#17233C}'+
+  '.thanks{font-family:Arial,"Noto Sans Bengali",sans-serif;font-size:25px;fill:#686575}'+
+  '.label{font-family:Arial,sans-serif;font-size:20px;letter-spacing:3px;font-weight:700;fill:#7B7480}'+
+  '.value{font-family:Arial,sans-serif;font-size:38px;font-weight:800;fill:#17233C}'+
+  '.product{font-family:Arial,"Noto Sans Bengali",sans-serif;font-size:28px;font-weight:700;fill:#17233C}'+
+  '.quantity{font-family:Arial,sans-serif;font-size:21px;fill:#686575}'+
+  '.price{font-family:Arial,sans-serif;font-size:54px;font-weight:800;fill:#C99220}'+
+  '.productPrice{font-family:Arial,sans-serif;font-size:32px;font-weight:700;fill:#17233C}'+
+  '.photoLabel{font-family:Arial,sans-serif;font-size:17px;letter-spacing:3px;font-weight:700;fill:#7B7480}'+
+  '.section{font-family:Arial,sans-serif;font-size:22px;letter-spacing:4px;font-weight:800;fill:#17233C}'+
+  '.detail{font-family:Arial,"Noto Sans Bengali",sans-serif;font-size:23px;font-weight:600;fill:#17233C}'+
+  '.message{font-family:Arial,sans-serif;font-size:22px;fill:#686575}'+
+  '.contact{font-family:Arial,sans-serif;font-size:19px;fill:#7B7480}'+
+  '.signature{font-family:Georgia,serif;font-size:23px;font-style:italic;font-weight:700;fill:#17233C}'+
+  '</style></svg>';
+}
 function buildCardPage_(svg,name,orderId){
   var b64=Utilities.base64Encode(Utilities.newBlob(svg,"image/svg+xml").getBytes()),n=escapeHtml_(name||"Friend"),id=escapeHtml_(orderId||"");
   return '<!doctype html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;background:#F7F2E8;color:#17233C;font-family:Arial}.wrap{max-width:760px;margin:auto;padding:18px 14px 40px}.head{text-align:center}.card{background:#fff;padding:12px;border-radius:18px;box-shadow:0 8px 30px rgba(23,35,60,.1)}.card img{width:100%;display:block;border-radius:10px}.actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:18px}button{border:0;border-radius:999px;padding:13px 20px;font-weight:700;font-size:15px}.p{background:#17233C;color:#fff}.s{background:#fff;color:#17233C;border:1px solid #D9D2C4}.note{text-align:center;color:#6D6875;font-size:13px;line-height:1.6;margin-top:16px}</style></head><body><div class="wrap"><div class="head"><h1>Halal Food</h1><p>একটি বিশেষ Thank-You Card — '+n+'</p></div><div class="card"><img src="data:image/svg+xml;base64,'+b64+'" alt="Halal Food Thank You Card"><div class="actions"><button class="p" onclick="png()">⬇ Download PNG</button><button class="s" onclick="svg()">⬇ Download SVG</button><button class="s" onclick="share()">↗ Share</button></div><div class="note">Order '+id+'<br>PNG download করে Facebook, Instagram বা WhatsApp-এ share করতে পারবেন।</div></div></div><script>var B="'+b64+'";function T(){var s=atob(B),a=new Uint8Array(s.length);for(var i=0;i<s.length;i++)a[i]=s.charCodeAt(i);return new TextDecoder("utf-8").decode(a)}function save(n,t){var u=URL.createObjectURL(new Blob([T()],{type:t})),a=document.createElement("a");a.href=u;a.download=n;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(u)},1000)}function svg(){save("Halal-Food-Thank-You-'+id+'.svg","image/svg+xml")}function png(){var u=URL.createObjectURL(new Blob([T()],{type:"image/svg+xml"})),im=new Image();im.onload=function(){var c=document.createElement("canvas");c.width=1600;c.height=1600;c.getContext("2d").drawImage(im,0,0,1600,1600);URL.revokeObjectURL(u);c.toBlob(function(p){var x=URL.createObjectURL(p),a=document.createElement("a");a.href=x;a.download="Halal-Food-Thank-You-'+id+'.png";document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(x)},1000)},"image/png")};im.src=u}function share(){if(navigator.share)navigator.share({title:"Halal Food Thank-You Card",text:"Thank you, Halal Food ❤️",url:location.href});else navigator.clipboard.writeText(location.href).then(function(){alert("Card link copied.")})}</script></body></html>';
