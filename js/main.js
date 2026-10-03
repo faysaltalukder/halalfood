@@ -406,14 +406,20 @@ document.addEventListener("DOMContentLoaded", () => {
         data.items = cartItems.map((item) => ({
           product: item.name,
           quantity: String(Math.max(1, Number(item.qty) || 1)),
-          price: String(Number(item.price) || 0)
+          price: String(Number(item.price) || 0),
+          image: String(item.image || ""),
+          slug: String(item.slug || "")
         }));
         data.product = cartItems.map((item) => `${item.name} × ${item.qty}`).join(" | ");
         data.quantity = String(window.HALAL_CART_API.totalQty(cartItems));
       } else {
         data.product = singleProduct?.name || singleProductName;
         data.orderId = `HF-${Date.now()}-${Math.floor(Math.random() * 900 + 100)}`;
-        if (singleProduct) data.price = String(priceNumber(singleProduct.price));
+        if (singleProduct) {
+          data.price = String(priceNumber(singleProduct.price));
+          data.image = String(singleProduct.image || "");
+          data.slug = String(singleProduct.slug || "");
+        }
       }
 
       const checkoutItems = Array.isArray(data.items) && data.items.length ? data.items : [{
