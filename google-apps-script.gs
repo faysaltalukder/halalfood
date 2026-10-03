@@ -15,7 +15,7 @@ const SITE_URL = "https://faysaltalukder.github.io/halalfood/";
 const RAW_GITHUB_BASE = "https://raw.githubusercontent.com/faysaltalukder/halalfood/main/";
 const COMPANY_EMAIL = "halalfoodbd.official@gmail.com";
 const CARD_PHONE = "01842031164";
-const CARD_SYSTEM_VERSION = "v4";
+const CARD_SYSTEM_VERSION = "v6";
 const CARD_WEB_APP_URL_FALLBACK = "https://script.google.com/macros/s/AKfycbzShx69e71dZWyF8MN3ZWJSN5rTdeizgsFoN-ElkZzs2_j_gncTeGfpZiDm3YiZskGQ/exec";
 
 const LOGO_SVG_URL = "https://raw.githubusercontent.com/faysaltalukder/halalfood/main/images/logo-favicon/halal-food-official-logo.svg";
