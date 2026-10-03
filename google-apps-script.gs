@@ -308,7 +308,7 @@ function buildEmailCard_(d,items,orderId,total,cardUrl,isTest,assets) {
     : "<div style='width:190px;height:190px;background:#F7F2E8;border-radius:18px;line-height:190px;text-align:center;color:#8A8490'>Product</div>";
 
   const testNotice = isTest
-    ? "<tr><td style='padding:10px 20px 0'><div style='background:#FFF4D6;border:1px solid #E2C56A;border-radius:10px;padding:9px 12px;color:#6A5310;font:13px Arial,sans-serif'><b>TEST MODE • ' + CARD_SYSTEM_VERSION + '</b> — এই emailটি পরীক্ষার জন্য পাঠানো হয়েছে।</div></td></tr>"
+    ? "<tr><td style='padding:10px 20px 0'><div style='background:#FFF4D6;border:1px solid #E2C56A;border-radius:10px;padding:9px 12px;color:#6A5310;font:13px Arial,sans-serif'><b>TEST MODE • " + CARD_SYSTEM_VERSION + "</b> — এই emailটি পরীক্ষার জন্য পাঠানো হয়েছে।</div></td></tr>"
     : "";
 
   const productRows = items.map(function(x) {
