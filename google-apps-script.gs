@@ -15,7 +15,7 @@ const SITE_URL = "https://faysaltalukder.github.io/halalfood/";
 const RAW_GITHUB_BASE = "https://raw.githubusercontent.com/faysaltalukder/halalfood/main/";
 const COMPANY_EMAIL = "halalfoodbd.official@gmail.com";
 const CARD_PHONE = "01842031164";
-const CARD_SYSTEM_VERSION = "v6";
+const CARD_SYSTEM_VERSION = "v7";
 const CARD_WEB_APP_URL_FALLBACK = "https://script.google.com/macros/s/AKfycbzShx69e71dZWyF8MN3ZWJSN5rTdeizgsFoN-ElkZzs2_j_gncTeGfpZiDm3YiZskGQ/exec";
 
 const LOGO_SVG_URL = "https://raw.githubusercontent.com/faysaltalukder/halalfood/main/images/logo-favicon/halal-food-official-logo.svg";
@@ -246,8 +246,10 @@ function fetchAssets_(items) {
   const result = {
     logoBlob:null,
     logoDataUri:"",
+    logoUrl:LOGO_SVG_URL,
     productBlob:null,
-    productDataUri:""
+    productDataUri:"",
+    productUrl:""
   };
 
   // Keep the complete official logo as SVG data for the customer card.
@@ -259,13 +261,6 @@ function fetchAssets_(items) {
     });
 
     if (response.getResponseCode() >= 200 && response.getResponseCode() < 300) {
-      const svgText = response.getContentText();
-      result.logoDataUri =
-        "data:image/svg+xml;base64," +
-        Utilities.base64Encode(
-          Utilities.newBlob(svgText,"image/svg+xml").getBytes()
-        );
-
       const svgBlob = response.getBlob().setName("halal-food-logo.svg");
       try {
         result.logoBlob = svgBlob.getAs(MimeType.PNG).setName("halal-food-logo.png");
@@ -312,6 +307,7 @@ function fetchAssets_(items) {
         });
 
         if (response.getResponseCode() >= 200 && response.getResponseCode() < 300) {
+          result.productUrl = url;
           let blob = response.getBlob();
 
           try {
@@ -429,8 +425,8 @@ function buildCardPage_(customer,items,orderId,total,assets) {
     product:first.product || "Product",
     quantity:first.quantity || 1,
     price:Math.round(first.price || 0),
-    logo:assets.logoDataUri || "",
-    image:assets.productDataUri || "",
+    logo:assets.logoUrl || LOGO_SVG_URL,
+    image:assets.productUrl || "",
     site:"faysaltalukder.github.io/halalfood/",
     email:COMPANY_EMAIL,
     phone:CARD_PHONE
@@ -486,7 +482,7 @@ function buildCardPage_(customer,items,orderId,total,assets) {
     "if(D.logo)document.getElementById('logo').src=D.logo;else document.getElementById('logo').style.display='none';" +
     "if(D.image)document.getElementById('img').src=D.image;else document.getElementById('img').style.display='none';" +
 
-    "function loadImage(src){return new Promise(function(resolve){if(!src){resolve(null);return}var im=new Image();im.onload=function(){resolve(im)};im.onerror=function(){resolve(null)};im.src=src})}" +
+    "function loadImage(src){return new Promise(function(resolve){if(!src){resolve(null);return}var im=new Image();im.crossOrigin='anonymous';im.onload=function(){resolve(im)};im.onerror=function(){resolve(null)};im.src=src})}" +
     "function roundRect(ctx,x,y,w,h,r){ctx.beginPath();ctx.roundRect(x,y,w,h,r);}" +
 
     "async function renderPNG(){"+
@@ -494,14 +490,14 @@ function buildCardPage_(customer,items,orderId,total,assets) {
       "x.fillStyle='#F4EBD8';x.fillRect(0,0,1600,1600);"+
       "x.fillStyle='#FFFDF7';roundRect(x,45,45,1510,1510,46);x.fill();"+
       "x.save();roundRect(x,45,45,1510,315,46);x.clip();x.fillStyle='#17233C';x.fillRect(45,45,1510,315);x.restore();"+
-      "var logo=await loadImage(D.logo);if(logo)x.drawImage(logo,560,70,480,220);"+
+      "var logo=await loadImage(D.logo);if(logo){x.drawImage(logo,560,70,480,220);}else{x.fillStyle='#FFFFFF';x.font='800 54px Arial';x.fillText('Halal Food',800,175);x.fillStyle='#E8D39A';x.font='700 18px Arial';x.fillText('PREMIUM PRODUCTS',800,215);}"+
       "x.textAlign='center';x.fillStyle='#17233C';x.font='italic 104px Georgia,serif';x.fillText('Thank You',800,505);"+
       "x.font='700 30px Arial';x.fillStyle='#6D6875';x.fillText('FOR YOUR ORDER',800,558);"+
       "x.fillStyle='#C99220';x.fillRect(750,588,100,4);"+
       "x.fillStyle='#17233C';x.font='700 42px Arial';x.fillText('প্রিয় '+D.name,800,665);"+
       "x.fillStyle='#5D5964';x.font='25px Arial';x.fillText('আপনার আস্থা ও ভালোবাসার জন্য আন্তরিক ধন্যবাদ।',800,715);"+
       "x.fillStyle='#F8F1E2';roundRect(x,135,785,1330,370,32);x.fill();"+
-      "var img=await loadImage(D.image);if(img)x.drawImage(img,185,835,270,270);"+
+      "var img=await loadImage(D.image);if(img){x.drawImage(img,185,835,270,270);}else{x.fillStyle='#EEE5D4';roundRect(x,185,835,270,270,24);x.fill();x.fillStyle='#7B7480';x.font='700 20px Arial';x.textAlign='center';x.fillText('Product Image',320,975);}"+
       "x.textAlign='left';x.fillStyle='#7B7480';x.font='700 20px Arial';x.fillText('ORDER ID',540,845);"+
       "x.fillStyle='#17233C';x.font='800 34px Arial';x.fillText(D.orderId,540,895);"+
       "x.fillStyle='#7B7480';x.font='700 20px Arial';x.fillText('PRODUCT',540,955);"+
