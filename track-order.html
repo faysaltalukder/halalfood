@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,follow">
+<title>Track Your Order — Halal Food</title>
+<link rel="icon" type="image/png" href="images/logo-favicon/favicon.png">
+<style>
+:root{--navy:#17233C;--cream:#F4EBD8;--card:#FFFDF7;--gold:#C99220;--muted:#6D6875;--line:#E4D8BF}
+*{box-sizing:border-box}body{margin:0;background:var(--cream);color:var(--navy);font-family:Arial,"Noto Sans Bengali",sans-serif}.wrap{width:min(760px,calc(100% - 28px));margin:auto}.top{padding:18px 0}.brand{display:flex;align-items:center;gap:10px;color:var(--navy);text-decoration:none;font-weight:800;font-size:22px}.brand img{width:52px;height:42px;object-fit:contain}.card{background:var(--card);border:1px solid var(--line);border-radius:24px;padding:28px;box-shadow:0 15px 45px rgba(23,35,60,.10)}h1{margin:0 0 8px;font-size:32px}.lead{margin:0 0 24px;color:var(--muted);line-height:1.7}.field{margin:15px 0}.field label{display:block;font-weight:700;margin-bottom:7px}.field input{width:100%;padding:14px 15px;border:1px solid #D8D0C1;border-radius:12px;font-size:16px;background:#fff}.btn{width:100%;border:0;border-radius:999px;padding:14px 18px;background:var(--navy);color:#fff;font-size:16px;font-weight:800;cursor:pointer;margin-top:8px}.error{display:none;margin-top:16px;padding:12px 14px;border-radius:12px;background:#FFF0EF;color:#9B2C25}.result{display:none;margin-top:26px}.summary{background:#F8F1E2;border:1px solid var(--line);border-radius:18px;padding:18px}.row{display:flex;justify-content:space-between;gap:16px;padding:8px 0}.label{color:var(--muted);font-size:13px}.value{font-weight:800;text-align:right}.status{margin:18px 0 8px;font-weight:800}.timeline{display:grid;gap:0;margin-top:8px}.step{position:relative;padding:11px 12px 11px 34px;border-left:3px solid #D8D0C1;color:#8A8490}.step:before{content:"";position:absolute;left:-8px;top:13px;width:11px;height:11px;border-radius:50%;background:#D8D0C1}.step.done{color:var(--navy);font-weight:700;border-left-color:var(--gold)}.step.done:before{background:var(--gold)}.items{margin-top:18px;border-top:1px solid var(--line)}.item{display:flex;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}.muted{color:var(--muted)}.back{display:inline-block;margin-top:18px;color:var(--navy);font-weight:700;text-decoration:none}@media(max-width:520px){.card{padding:20px}h1{font-size:27px}.row{display:block}.value{text-align:left;margin-top:3px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><a class="brand" href="index.html"><img src="images/logo-favicon/logo.png" alt="Halal Food logo"><span>Halal Food</span></a></div>
+  <main class="card">
+    <h1>Track Your Order</h1>
+    <p class="lead">অর্ডারের বর্তমান অবস্থা দেখতে আপনার <b>Order ID</b> এবং অর্ডারে ব্যবহৃত <b>Mobile Number</b> দিন।</p>
+    <form id="track-form">
+      <div class="field"><label for="order-id">Order ID</label><input id="order-id" placeholder="যেমন: HF-1234" required autocomplete="off"></div>
+      <div class="field"><label for="mobile">Mobile Number</label><input id="mobile" inputmode="numeric" maxlength="11" placeholder="01XXXXXXXXX" required autocomplete="tel"></div>
+      <button class="btn" id="track-btn" type="submit">Track Order</button>
+    </form>
+    <div class="error" id="error" aria-live="polite"></div>
+    <section class="result" id="result" aria-live="polite">
+      <div class="summary">
+        <div class="row"><span class="label">Order ID</span><span class="value" id="r-id"></span></div>
+        <div class="row"><span class="label">Customer</span><span class="value" id="r-name"></span></div>
+        <div class="row"><span class="label">Order Total</span><span class="value" id="r-total"></span></div>
+        <div class="row"><span class="label">Courier</span><span class="value" id="r-courier">Not assigned yet</span></div>
+        <div class="row"><span class="label">Tracking Number</span><span class="value" id="r-tracking">Not assigned yet</span></div>
+        <div class="status" id="r-status"></div>
+        <div class="timeline" id="timeline"></div>
+        <div class="items" id="items"></div>
+        <div class="muted" id="updated" style="margin-top:14px;font-size:12px"></div>
+      </div>
+    </section>
+    <a class="back" href="index.html">← Back to Halal Food</a>
+  </main>
+</div>
+<script>
+const API="https://script.google.com/macros/s/AKfycbzSf6OzjwGNBSmaZBNxBf5zL8z5wkf3tY7QtSqRUGrjZj2eWLN4DsGw1WQwkPhTqmSzrw/exec";
+const steps=["Order Received","Confirmed","Processing","Packed","Shipped","Out for Delivery","Delivered"];
+const $=s=>document.querySelector(s);
+function money(v){return "৳ "+Number(v||0).toLocaleString("en-BD");}
+function esc(v){const d=document.createElement("div");d.textContent=String(v??"");return d.innerHTML;}
+function normalizeMobile(v){v=String(v||"").replace(/[^0-9+]/g,"");if(v.startsWith("+880"))return "0"+v.slice(4);if(v.startsWith("880")&&v.length===13)return "0"+v.slice(3);return v;}
+function render(data){
+  $("#r-id").textContent=data.orderId;$("#r-name").textContent=data.customerName||"Customer";$("#r-total").textContent=money(data.orderTotal);
+  $("#r-courier").textContent=data.courier||"Not assigned yet";$("#r-tracking").textContent=data.trackingNumber||"Not assigned yet";$("#r-status").textContent="Current Status: "+(data.status||"Order Received");
+  const current=steps.indexOf(data.status);const timeline=$("#timeline");timeline.innerHTML="";
+  steps.forEach((s,i)=>{const el=document.createElement("div");el.className="step"+(i<=current?" done":"");el.textContent=s;timeline.appendChild(el);});
+  $("#items").innerHTML=(data.items||[]).map(x=>'<div class="item"><span>'+esc(x.product)+' × '+Number(x.quantity||1)+'</span><b>'+money(x.lineTotal)+'</b></div>').join("");
+  $("#updated").textContent=data.lastUpdated?"Last updated: "+new Date(data.lastUpdated).toLocaleString("en-BD"):"";
+  $("#result").style.display="block";
+}
+$("#track-form").addEventListener("submit",async e=>{e.preventDefault();$("#error").style.display="none";$("#result").style.display="none";const btn=$("#track-btn");btn.disabled=true;btn.textContent="Checking...";try{const id=$("#order-id").value.trim();const mobile=normalizeMobile($("#mobile").value);const url=API+"?track="+encodeURIComponent(id)+"&mobile="+encodeURIComponent(mobile);const r=await fetch(url,{method:"GET"});const data=await r.json();if(!data.success)throw new Error(data.error||"Order not found.");render(data);}catch(err){$("#error").textContent=err.message||"অর্ডারের তথ্য পাওয়া যায়নি।";$("#error").style.display="block";}finally{btn.disabled=false;btn.textContent="Track Order";}});
+</script>
+</body></html>
