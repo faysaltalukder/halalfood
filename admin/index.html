@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Halal Food Admin</title>
+<style>
+:root{--navy:#17263c;--cream:#f7f3eb;--white:#fff;--muted:#667085;--border:#e7e2d9}
+*{box-sizing:border-box}body{margin:0;background:var(--cream);font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;color:var(--navy)}
+header{background:var(--navy);color:#fff;padding:18px 24px;display:flex;justify-content:space-between;align-items:center}
+main{max-width:1200px;margin:28px auto;padding:0 18px}.card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:22px;box-shadow:0 6px 24px #17263c0d}
+h1,h2{margin:0 0 12px}.muted{color:var(--muted)}input,button,select{font:inherit;padding:11px 13px;border-radius:10px;border:1px solid var(--border)}
+button{background:var(--navy);color:#fff;border:0;cursor:pointer}.secondary{background:#eee;color:var(--navy)}
+form{display:grid;gap:12px;max-width:380px}.hidden{display:none!important}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:20px 0}.stat strong{display:block;font-size:28px;margin-top:8px}
+.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:12px;border-bottom:1px solid var(--border);white-space:nowrap}th{font-size:12px;text-transform:uppercase;color:var(--muted)}
+.badge{padding:5px 9px;border-radius:999px;background:#f0eee8;font-size:12px}.top{display:flex;justify-content:space-between;align-items:center;gap:12px}
+@media(max-width:800px){.stats{grid-template-columns:repeat(2,1fr)}}@media(max-width:520px){.stats{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header><strong>Halal Food — Admin</strong><button id="logout" class="secondary hidden">Logout</button></header>
+<main>
+<section id="loginCard" class="card">
+<h1>Admin Login</h1><p class="muted">Use the authorized Halal Food admin account.</p>
+<form id="loginForm"><input id="email" type="email" value="halalfoodbd.official@gmail.com" required><input id="password" type="password" placeholder="Password" required><button>Sign in</button></form>
+<p id="loginMsg" class="muted"></p>
+</section>
+<section id="dashboard" class="hidden">
+<div class="top"><div><h1>Dashboard</h1><p class="muted">Orders are stored separately from the existing Google Sheets workflow.</p></div><button id="refresh">Refresh</button></div>
+<div class="stats">
+<div class="card stat"><span class="muted">Orders</span><strong id="ordersCount">0</strong></div>
+<div class="card stat"><span class="muted">Pending</span><strong id="pendingCount">0</strong></div>
+<div class="card stat"><span class="muted">Delivered</span><strong id="deliveredCount">0</strong></div>
+<div class="card stat"><span class="muted">Revenue</span><strong id="revenue">৳0</strong></div>
+</div>
+<div class="card"><h2>Recent Orders</h2><div class="table-wrap"><table><thead><tr><th>Order</th><th>Customer</th><th>Phone</th><th>Total</th><th>Status</th><th>Time</th></tr></thead><tbody id="ordersBody"><tr><td colspan="6" class="muted">Loading…</td></tr></tbody></table></div></div>
+</section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL="https://qfwvrcfkrsydycbfjsxf.supabase.co";
+const SUPABASE_KEY="sb_publishable_X32Rb8W-axGIfgFuppdfZQ_jbc38pcL";
+const client=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const $=id=>document.getElementById(id);
+function money(n){return "৳"+Number(n||0).toLocaleString("en-BD",{maximumFractionDigits:2})}
+async function load(){
+ const {data,error}=await client.from("orders").select("id,order_number,customer_name,customer_phone,total,status,ordered_at").order("ordered_at",{ascending:false}).limit(100);
+ if(error){$("ordersBody").innerHTML='<tr><td colspan="6">'+error.message+'</td></tr>';return}
+ $("ordersCount").textContent=data.length;
+ $("pendingCount").textContent=data.filter(x=>x.status==="pending").length;
+ $("deliveredCount").textContent=data.filter(x=>x.status==="delivered").length;
+ $("revenue").textContent=money(data.filter(x=>x.status!=="cancelled").reduce((s,x)=>s+Number(x.total||0),0));
+ $("ordersBody").innerHTML=data.length?data.map(x=>'<tr><td>'+(x.order_number||x.id.slice(0,8))+'</td><td>'+escapeHtml(x.customer_name)+'</td><td>'+escapeHtml(x.customer_phone)+'</td><td>'+money(x.total)+'</td><td><span class="badge">'+x.status+'</span></td><td>'+new Date(x.ordered_at).toLocaleString("en-BD")+'</td></tr>').join(""):'<tr><td colspan="6" class="muted">No orders yet.</td></tr>';
+}
+function escapeHtml(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
+$("loginForm").addEventListener("submit",async e=>{e.preventDefault();$("loginMsg").textContent="Signing in…";const {error}=await client.auth.signInWithPassword({email:$("email").value.trim(),password:$("password").value});$("loginMsg").textContent=error?error.message:"";});
+$("logout").onclick=()=>client.auth.signOut();
+$("refresh").onclick=load;
+client.auth.onAuthStateChange((_event,session)=>{const ok=!!session;$("loginCard").classList.toggle("hidden",ok);$("dashboard").classList.toggle("hidden",!ok);$("logout").classList.toggle("hidden",!ok);if(ok)load()});
+client.auth.getSession().then(({data})=>{if(data.session)load()});
+</script>
+</body></html>
