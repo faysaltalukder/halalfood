@@ -86,6 +86,19 @@
 
   function ensureHeaderButton() {
     document.querySelectorAll(".header-actions").forEach(actions => {
+      const oldContact = actions.querySelector(".call-btn");
+      if (oldContact) oldContact.remove();
+
+      let trackButton = actions.querySelector(".header-track-order");
+      if (!trackButton) {
+        trackButton = document.createElement("a");
+        trackButton.className = "header-track-order";
+        trackButton.href = "track-order.html";
+        trackButton.setAttribute("aria-label", "Track Order");
+        trackButton.innerHTML = '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 7.5h11v9H3z"></path><path d="M14 10h3.5l3.5 3.5V16h-7z"></path><circle cx="7" cy="18" r="1.5"></circle><circle cx="18" cy="18" r="1.5"></circle><path d="M14 13h6"></path></svg><span>Track Order</span>';
+        actions.appendChild(trackButton);
+      }
+
       if (actions.querySelector("[data-cart-open]")) return;
       const link = document.createElement("a");
       link.className = "header-cart";
@@ -93,9 +106,7 @@
       link.setAttribute("data-cart-open", "true");
       link.setAttribute("aria-label", "Shopping cart");
       link.innerHTML = '<span class="header-cart-icon" aria-hidden="true">🛒</span><span class="header-cart-label">Cart</span><span class="cart-count" data-cart-count>0</span>';
-      const trackButton = actions.querySelector(".header-track-order");
-      if (trackButton) actions.insertBefore(link, trackButton);
-      else actions.appendChild(link);
+      actions.insertBefore(link, trackButton);
     });
   }
 
