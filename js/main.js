@@ -422,6 +422,15 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       }
 
+      const checkoutItems = Array.isArray(data.items) && data.items.length ? data.items : [{
+        product:data.product || singleProduct?.name || singleProductName,
+        quantity:data.quantity || "1",
+        price:data.price || (singleProduct ? String(priceNumber(singleProduct.price)) : "0")
+      }];
+      const checkoutValue=checkoutItems.reduce((sum,item)=>sum+(Number(item.price)||0)*Math.max(1,Number(item.quantity)||1),0);
+      track("add_shipping_info",{currency:"BDT",value:checkoutValue,shipping_tier:"Cash on Delivery",items:trackItems(checkoutItems)});
+      track("order_submit",{currency:"BDT",value:checkoutValue,items:trackItems(checkoutItems)});
+
       // Parallel backend sync: never block or replace the existing Google Apps Script order flow.
       // If this secondary path is temporarily unavailable, the original order submission still succeeds.
       fetch("https://qfwvrcfkrsydycbfjsxf.supabase.co/functions/v1/order-sync", {
@@ -432,15 +441,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }).then((r) => r.json().catch(() => null)).then((syncResult) => {
         if (!syncResult?.success) console.warn("Supabase parallel order sync:", syncResult?.error || "failed");
       }).catch((syncError) => console.warn("Supabase parallel order sync unavailable:", syncError));
-
-      const checkoutItems = Array.isArray(data.items) && data.items.length ? data.items : [{
-        product:data.product || singleProduct?.name || singleProductName,
-        quantity:data.quantity || "1",
-        price:data.price || (singleProduct ? String(priceNumber(singleProduct.price)) : "0")
-      }];
-      const checkoutValue=checkoutItems.reduce((sum,item)=>sum+(Number(item.price)||0)*Math.max(1,Number(item.quantity)||1),0);
-      track("add_shipping_info",{currency:"BDT",value:checkoutValue,shipping_tier:"Cash on Delivery",items:trackItems(checkoutItems)});
-      track("order_submit",{currency:"BDT",value:checkoutValue,items:trackItems(checkoutItems)});
 
       try {
         if (!GOOGLE_APPS_SCRIPT_URL || GOOGLE_APPS_SCRIPT_URL.includes("PASTE_YOUR")) {
