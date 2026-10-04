@@ -2,3 +2,29 @@
 
 /* Header Track Order button */
 .header-track-order{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:42px;padding:9px 16px;border:1.5px solid var(--orange);border-radius:8px;background:var(--orange);color:var(--white)!important;font-weight:800;text-decoration:none;box-shadow:0 5px 14px rgba(201,123,61,.18);transition:transform .18s ease,background-color .18s ease,box-shadow .18s ease}.header-track-order svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:0 0 17px}.header-track-order:hover,.header-track-order:focus-visible{background:var(--navy);border-color:var(--navy);color:var(--cream)!important;transform:translateY(-1px);box-shadow:0 8px 18px rgba(43,42,61,.18);outline:none}.header-actions .header-track-order{white-space:nowrap}@media(max-width:900px){.header-actions .header-track-order{display:none!important}}
+
+/* Halal Food — Light / Dark mode */
+.theme-toggle{width:42px;height:42px;padding:0;border:1px solid var(--line);border-radius:50%;background:var(--white);color:var(--navy);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;font-size:1.15rem;line-height:1;transition:background-color .18s ease,color .18s ease,border-color .18s ease,transform .18s ease,box-shadow .18s ease}
+.theme-toggle:hover,.theme-toggle:focus-visible{background:var(--orange);border-color:var(--orange);color:var(--white);transform:translateY(-1px);box-shadow:0 5px 12px rgba(201,123,61,.18);outline:none}
+.theme-toggle span{display:block;transform:translateY(-1px)}
+html.dark-mode{--cream:#15151b;--cream-deep:#1d1d25;--navy:#f3efe5;--navy-soft:#c4c0b7;--line:#383842;--white:#24242d}
+html.dark-mode body{background:var(--cream);color:var(--navy)}
+html.dark-mode header{background:#17171e;border-color:var(--line)}
+html.dark-mode .brand{color:var(--navy)}
+html.dark-mode .brand-logo{mix-blend-mode:normal}
+html.dark-mode .search-toggle{color:var(--navy);border-color:var(--line)}
+html.dark-mode .search-box{background:var(--white);border-color:var(--line)}
+html.dark-mode .search-box input{background:var(--cream);color:var(--navy);border-color:var(--line)}
+html.dark-mode .search-results li a:hover{background:var(--cream-deep)}
+html.dark-mode .product-card,html.dark-mode .form-card,html.dark-mode .review-card,html.dark-mode .cat-card,html.dark-mode .areas li{background:var(--white);border-color:var(--line)}
+html.dark-mode .product-image img{background:#1b1b22}
+html.dark-mode .products-bg{background:var(--cream-deep)}
+html.dark-mode .theme-toggle{background:#292932;color:#f3efe5;border-color:#454550}
+html.dark-mode .header-cart{background:#292932;border-color:#454550;color:#f3efe5!important}
+html.dark-mode .header-cart:hover,html.dark-mode .header-cart:focus-visible{background:var(--orange);border-color:var(--orange);color:#fff!important}
+html.dark-mode .header-track-order{color:#fff!important}
+html.dark-mode .nav-links a:hover,html.dark-mode .nav-links a:focus-visible,html.dark-mode .nav-links a:active{color:#fff!important}
+html.dark-mode .form-group input,html.dark-mode .form-group textarea,html.dark-mode .form-group select{background:#1d1d25;color:var(--navy);border-color:var(--line)}
+html.dark-mode footer{background:#101016!important;color:#f3efe5}
+html.dark-mode .mobile-bottom-nav{background:#17171e;border-color:var(--line)}
+@media(max-width:900px){.theme-toggle{width:40px;height:40px;font-size:1.05rem}}
