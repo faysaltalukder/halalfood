@@ -422,6 +422,17 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       }
 
+      // Parallel backend sync: never block or replace the existing Google Apps Script order flow.
+      // If this secondary path is temporarily unavailable, the original order submission still succeeds.
+      fetch("https://qfwvrcfkrsydycbfjsxf.supabase.co/functions/v1/order-sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+        keepalive: true
+      }).then((r) => r.json().catch(() => null)).then((syncResult) => {
+        if (!syncResult?.success) console.warn("Supabase parallel order sync:", syncResult?.error || "failed");
+      }).catch((syncError) => console.warn("Supabase parallel order sync unavailable:", syncError));
+
       const checkoutItems = Array.isArray(data.items) && data.items.length ? data.items : [{
         product:data.product || singleProduct?.name || singleProductName,
         quantity:data.quantity || "1",
