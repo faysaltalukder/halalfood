@@ -93,7 +93,9 @@
       link.setAttribute("data-cart-open", "true");
       link.setAttribute("aria-label", "Shopping cart");
       link.innerHTML = '<span class="header-cart-icon" aria-hidden="true">🛒</span><span class="header-cart-label">Cart</span><span class="cart-count" data-cart-count>0</span>';
-      actions.appendChild(link);
+      const trackButton = actions.querySelector(".header-track-order");
+      if (trackButton) actions.insertBefore(link, trackButton);
+      else actions.appendChild(link);
     });
   }
 
