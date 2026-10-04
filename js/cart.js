@@ -84,6 +84,45 @@
   }
   function clear() { write([]); renderAll(); }
 
+  function applyThemeMode(mode) {
+    const dark = mode === "dark";
+    document.documentElement.classList.toggle("dark-mode", dark);
+    document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+    const toggle = document.querySelector("[data-theme-toggle]");
+    if (toggle) {
+      toggle.setAttribute("aria-label", dark ? "Switch to light mode" : "Switch to dark mode");
+      toggle.setAttribute("title", dark ? "Light mode" : "Dark mode");
+      const icon = toggle.querySelector("[data-theme-icon]");
+      if (icon) icon.textContent = dark ? "☀" : "☾";
+    }
+  }
+
+  function ensureThemeToggle() {
+    document.querySelectorAll(".header-actions").forEach(actions => {
+      if (actions.querySelector("[data-theme-toggle]")) return;
+      const toggle = document.createElement("button");
+      toggle.type = "button";
+      toggle.className = "theme-toggle";
+      toggle.setAttribute("data-theme-toggle", "");
+      toggle.innerHTML = '<span data-theme-icon aria-hidden="true">☾</span>';
+      toggle.addEventListener("click", () => {
+        const next = document.documentElement.classList.contains("dark-mode") ? "light" : "dark";
+        localStorage.setItem("halal-food-theme", next);
+        applyThemeMode(next);
+      });
+      actions.insertBefore(toggle, actions.firstElementChild);
+    });
+  }
+
+  function initThemeMode() {
+    let saved = "";
+    try { saved = localStorage.getItem("halal-food-theme") || ""; } catch (_) {}
+    const mode = saved === "dark" ? "dark" : "light";
+    applyThemeMode(mode);
+    ensureThemeToggle();
+    applyThemeMode(mode);
+  }
+
   function ensureHeaderButton() {
     document.querySelectorAll(".header-actions").forEach(actions => {
       const oldContact = actions.querySelector(".call-btn");
@@ -214,7 +253,7 @@
   window.HALAL_CART_KEY = CART_KEY;
 
   document.addEventListener("DOMContentLoaded", () => {
-    ensureHeaderButton(); ensureDrawer(); renderAll();
+    initThemeMode(); ensureHeaderButton(); ensureDrawer(); renderAll();
     if (document.querySelector("[data-cart-page]")) renderPage();
     if (document.querySelector("[data-cart-checkout-summary]")) renderOrderSummary();
   });
