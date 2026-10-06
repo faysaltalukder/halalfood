@@ -40,7 +40,12 @@ function doPost(e) {
     d = (e && e.parameter) || {};
   }
 
-  const orderId = createShortOrderId_(sh);
+  // Prefer the short client order ID so the fast Supabase confirmation,
+  // Google Sheet, and Thank You page all show the same tracking number.
+  const requestedOrderId = String(d.orderId || "").trim();
+  const orderId = /^HF-\d{4}$/.test(requestedOrderId) && !orderIdExists_(sh, requestedOrderId)
+    ? requestedOrderId
+    : createShortOrderId_(sh);
   const items = normalizeItems_(d);
   const total = items.reduce((sum, x) => sum + x.lineTotal, 0);
   const email = String(d.email || d.customerEmail || "").trim();
@@ -134,6 +139,16 @@ function doPost(e) {
       cardUrl:cardUrl || null
     }))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+function orderIdExists_(sh, orderId) {
+  const map = getHeaderMap_(sh);
+  const orderCol = map["Order ID"];
+  if (orderCol === undefined || sh.getLastRow() < 2) return false;
+  const values = sh.getRange(2, orderCol + 1, sh.getLastRow() - 1, 1).getDisplayValues();
+  return values.some(function(row) {
+    return String(row[0] || "").trim() === orderId;
+  });
 }
 
 function createShortOrderId_(sh) {
