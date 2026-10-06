@@ -431,7 +431,7 @@ document.addEventListener("DOMContentLoaded", () => {
       track("add_shipping_info",{currency:"BDT",value:checkoutValue,shipping_tier:"Cash on Delivery",items:trackItems(checkoutItems)});
       track("order_submit",{currency:"BDT",value:checkoutValue,items:trackItems(checkoutItems)});
 
-      // Fast confirmation flow:
+      // Fast confirmation flow: Google Sheet is backup only; its response never blocks checkout.
       // Supabase and Google Sheets are both written in parallel. We no longer
       // make the customer wait for the slower Google Apps Script response
       // (email/card/admin work can take several seconds or trigger a browser
@@ -493,7 +493,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // Whichever backend confirms first is enough to take the customer to
         // Thank You. This keeps checkout fast while both persistence paths run.
         const timeoutPromise = new Promise((resolve) => {
-          setTimeout(() => resolve({ timeout: true }), 2500);
+          setTimeout(() => resolve({ timeout: true }), 100);
         });
 
         let winner;
