@@ -496,20 +496,23 @@ document.addEventListener("DOMContentLoaded", () => {
           setTimeout(() => resolve({ timeout: true }), 2500);
         });
 
-        const winner = await Promise.race([
-          googleSubmitPromise.catch((error) => ({ failed: true, source: "google", error })),
-          supabaseSubmitPromise.catch((error) => ({ failed: true, source: "supabase", error })),
-          timeoutPromise
-        ]);
+        let winner;
+        try {
+          // Promise.any ignores a single backend failure and waits for the
+          // first successful backend. This prevents one slow/broken path from
+          // blocking a successful order saved by the other path.
+          winner = await Promise.race([
+            Promise.any([googleSubmitPromise, supabaseSubmitPromise]),
+            timeoutPromise
+          ]);
+        } catch (backendError) {
+          // Both backends explicitly failed before the timeout.
+          throw backendError;
+        }
 
-        // If both explicit backend requests failed, show a real error. A
-        // timeout is NOT treated as failure because Google Apps Script can
-        // finish saving the Sheet after the browser has already moved on.
-        const bothFailed = winner?.failed &&
-          ((winner.source === "google" && (await supabaseSubmitPromise.catch(() => null))?.failed) ||
-           (winner.source === "supabase" && (await googleSubmitPromise.catch(() => null))?.failed));
-        if (bothFailed) throw winner.error || new Error("Both order backends failed.");
-
+        // A timeout is deliberately treated as pending/accepted rather than
+        // showing a scary failure message: Google Apps Script may already have
+        // written the Sheet row and simply be busy sending email/admin work.
         const confirmedOrderId = winner?.orderId
           ? String(winner.orderId)
           : String(data.orderId || "");
