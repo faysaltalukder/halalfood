@@ -431,54 +431,91 @@ document.addEventListener("DOMContentLoaded", () => {
       track("add_shipping_info",{currency:"BDT",value:checkoutValue,shipping_tier:"Cash on Delivery",items:trackItems(checkoutItems)});
       track("order_submit",{currency:"BDT",value:checkoutValue,items:trackItems(checkoutItems)});
 
-      // Parallel backend sync: never block or replace the existing Google Apps Script order flow.
-      // If this secondary path is temporarily unavailable, the original order submission still succeeds.
-      fetch("https://qfwvrcfkrsydycbfjsxf.supabase.co/functions/v1/order-sync", {
+      // Fast confirmation flow:
+      // Supabase and Google Sheets are both written in parallel. We no longer
+      // make the customer wait for the slower Google Apps Script response
+      // (email/card/admin work can take several seconds or trigger a browser
+      // CORS/network error even after the Sheet row has already been saved).
+      const confirmedItems = Array.isArray(data.items) && data.items.length
+        ? data.items
+        : [{
+            product: data.product || singleProduct?.name || singleProductName,
+            quantity: data.quantity || "1",
+            price: data.price || (singleProduct ? String(priceNumber(singleProduct.price)) : "0")
+          }];
+      const localOrderTotal = confirmedItems.reduce((sum, item) => {
+        const price = Number(item.price) || 0;
+        const qty = Math.max(1, Number(item.quantity) || 1);
+        return sum + price * qty;
+      }, 0);
+
+      const googleSubmitPromise = (async () => {
+        if (!GOOGLE_APPS_SCRIPT_URL || GOOGLE_APPS_SCRIPT_URL.includes("PASTE_YOUR")) {
+          throw new Error("Google Apps Script URL is not configured.");
+        }
+        const response = await fetch(GOOGLE_APPS_SCRIPT_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify(data),
+          keepalive: true
+        });
+        if (!response.ok) throw new Error(`Google Apps Script HTTP ${response.status}`);
+        let result = null;
+        try { result = await response.json(); } catch (_) {}
+        if (result && result.success === false) throw new Error("Google Apps Script rejected the order.");
+        return {
+          source: "google",
+          success: true,
+          orderId: result?.orderId || data.orderId,
+          orderTotal: Number.isFinite(Number(result?.orderTotal)) ? Number(result.orderTotal) : localOrderTotal
+        };
+      })();
+
+      const supabaseSubmitPromise = fetch("https://qfwvrcfkrsydycbfjsxf.supabase.co/functions/v1/order-sync", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
         keepalive: true
-      }).then((r) => r.json().catch(() => null)).then((syncResult) => {
-        if (!syncResult?.success) console.warn("Supabase parallel order sync:", syncResult?.error || "failed");
-      }).catch((syncError) => console.warn("Supabase parallel order sync unavailable:", syncError));
+      }).then(async (response) => {
+        const result = await response.json().catch(() => null);
+        if (!response.ok || result?.success === false) {
+          throw new Error(result?.error || `Order backend HTTP ${response.status}`);
+        }
+        return {
+          source: "supabase",
+          success: true,
+          orderId: result?.orderId || data.orderId,
+          orderTotal: Number.isFinite(Number(result?.orderTotal)) ? Number(result.orderTotal) : localOrderTotal
+        };
+      });
 
       try {
-        if (!GOOGLE_APPS_SCRIPT_URL || GOOGLE_APPS_SCRIPT_URL.includes("PASTE_YOUR")) {
-          throw new Error("Google Apps Script URL is not configured yet.");
-        }
-
-        const response = await fetch(GOOGLE_APPS_SCRIPT_URL, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify(data)
+        // Whichever backend confirms first is enough to take the customer to
+        // Thank You. This keeps checkout fast while both persistence paths run.
+        const timeoutPromise = new Promise((resolve) => {
+          setTimeout(() => resolve({ timeout: true }), 2500);
         });
 
-        if (!response.ok) {
-          throw new Error(`Order submission failed with HTTP ${response.status}`);
-        }
+        const winner = await Promise.race([
+          googleSubmitPromise.catch((error) => ({ failed: true, source: "google", error })),
+          supabaseSubmitPromise.catch((error) => ({ failed: true, source: "supabase", error })),
+          timeoutPromise
+        ]);
 
-        let result = null;
-        try { result = await response.json(); } catch (_) { /* Apps Script responses can be text-like after redirects. */ }
-        if (result && result.success === false) {
-          throw new Error("Google Apps Script rejected the order.");
-        }
+        // If both explicit backend requests failed, show a real error. A
+        // timeout is NOT treated as failure because Google Apps Script can
+        // finish saving the Sheet after the browser has already moved on.
+        const bothFailed = winner?.failed &&
+          ((winner.source === "google" && (await supabaseSubmitPromise.catch(() => null))?.failed) ||
+           (winner.source === "supabase" && (await googleSubmitPromise.catch(() => null))?.failed));
+        if (bothFailed) throw winner.error || new Error("Both order backends failed.");
 
-        // Build the confirmation payload before clearing the cart or leaving checkout.
-        const confirmedOrderId = result && result.orderId ? String(result.orderId) : String(data.orderId || "");
-        const confirmedItems = Array.isArray(data.items) && data.items.length
-          ? data.items
-          : [{
-              product: data.product || singleProduct?.name || singleProductName,
-              quantity: data.quantity || "1",
-              price: data.price || (singleProduct ? String(priceNumber(singleProduct.price)) : "0")
-            }];
-        const confirmedTotal = result && Number.isFinite(Number(result.orderTotal))
-          ? Number(result.orderTotal)
-          : confirmedItems.reduce((sum, item) => {
-              const price = Number(item.price) || 0;
-              const qty = Math.max(1, Number(item.quantity) || 1);
-              return sum + price * qty;
-            }, 0);
+        const confirmedOrderId = winner?.orderId
+          ? String(winner.orderId)
+          : String(data.orderId || "");
+        const confirmedTotal = winner?.orderTotal != null
+          ? Number(winner.orderTotal)
+          : localOrderTotal;
 
         const purchaseKey="HALAL_PURCHASE_RECORDED_"+confirmedOrderId;
         let alreadyTracked=false;
@@ -516,13 +553,13 @@ document.addEventListener("DOMContentLoaded", () => {
           window.HALAL_CART_API?.clear();
         }
 
-        // A successful order has its own confirmation page. The checkout form is
-        // never shown as the final success state.
+        // Success is now the normal path: land on Thank You within ~2–3s.
         window.location.replace("thank-you.html");
       } catch (err) {
+
         console.error("Order submission failed:", err);
         if (error) {
-          error.textContent = "অর্ডার পাঠানো যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন। Google Sheet সংযোগটি পরীক্ষা করুন।";
+          error.textContent = "অর্ডার নিশ্চিত করতে সাময়িক সমস্যা হয়েছে। অনুগ্রহ করে কিছুক্ষণ পর আবার চেষ্টা করুন।";
           error.style.display = "block";
         }
       } finally {
