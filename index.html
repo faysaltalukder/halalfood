@@ -33,6 +33,7 @@ html.hf-popup-lock,body.hf-popup-lock{overflow:hidden}
   if(!popup||!card||!closeBtn||!link)return;
   var STORAGE_KEY="halalFoodFirstOrderPopupSeen";
   function closePopup(){
+    try{sessionStorage.setItem(STORAGE_KEY,"1")}catch(_){}
     popup.classList.remove("is-open");
     document.documentElement.classList.remove("hf-popup-lock");
     document.body.classList.remove("hf-popup-lock");
