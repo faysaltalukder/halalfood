@@ -80,27 +80,3 @@ html.dark-mode .cart-add-btn,html.dark-mode .cart-detail-add{background:var(--or
 /* keep below-the-fold sections from being laid out until needed */
 .section:not(#categories):not(#products){content-visibility:auto;contain-intrinsic-size:auto 700px}
 footer{content-visibility:auto;contain-intrinsic-size:auto 600px}
-
-/* Halal Food brand CTA colour consistency: use the same orange as Track Order
-   across home, category, product, cart, and order pages. */
-:where(.call-btn,.btn-primary,.order-btn,.search-btn,.cart-add-btn,.cart-detail-add,.product-detail-actions .btn-secondary,.hero-actions .btn-secondary,.contact-actions a,.direct-contact a,.cart-checkout-btn,.checkout-btn,#order-form button[type="submit"],#cart-checkout,.cart-summary button,.cart-summary a.btn-primary,.form-card button[type="submit"],.order-page button[type="submit"],.cta-band .btn-primary){
-  background:var(--orange,#c97b3d)!important;
-  border-color:var(--orange,#c97b3d)!important;
-  color:var(--white,#fffdf8)!important;
-  transition:background-color .18s ease,border-color .18s ease,color .18s ease,box-shadow .18s ease,transform .18s ease;
-}
-:where(.call-btn,.btn-primary,.order-btn,.search-btn,.cart-add-btn,.cart-detail-add,.product-detail-actions .btn-secondary,.hero-actions .btn-secondary,.contact-actions a,.direct-contact a,.cart-checkout-btn,.checkout-btn,#order-form button[type="submit"],#cart-checkout,.cart-summary button,.cart-summary a.btn-primary,.form-card button[type="submit"],.order-page button[type="submit"],.cta-band .btn-primary):hover,
-:where(.call-btn,.btn-primary,.order-btn,.search-btn,.cart-add-btn,.cart-detail-add,.product-detail-actions .btn-secondary,.hero-actions .btn-secondary,.contact-actions a,.direct-contact a,.cart-checkout-btn,.checkout-btn,#order-form button[type="submit"],#cart-checkout,.cart-summary button,.cart-summary a.btn-primary,.form-card button[type="submit"],.order-page button[type="submit"],.cta-band .btn-primary):focus-visible{
-  background:#b86b32!important;
-  border-color:#b86b32!important;
-  color:var(--white,#fffdf8)!important;
-  box-shadow:0 4px 12px rgba(201,123,61,.20);
-}
-
-:where(.cart-clear,.cart-page-card .cart-clear){
-  background:var(--orange,#c97b3d)!important;border-color:var(--orange,#c97b3d)!important;color:var(--white,#fffdf8)!important;
-  transition:background-color .18s ease,border-color .18s ease,color .18s ease,box-shadow .18s ease;
-}
-:where(.cart-clear,.cart-page-card .cart-clear):hover,:where(.cart-clear,.cart-page-card .cart-clear):focus-visible{
-  background:#b86b32!important;border-color:#b86b32!important;color:var(--white,#fffdf8)!important;
-}
