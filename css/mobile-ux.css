@@ -32,3 +32,27 @@
   #just-for-you { contain-intrinsic-size: auto 1740px; }
   footer { contain-intrinsic-size: auto 850px; }
 }
+
+/* Mobile accessibility and rendering comfort. */
+@media (max-width: 900px) {
+  :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+    outline: 3px solid var(--orange, #c97b3d);
+    outline-offset: 3px;
+  }
+
+  /* Keep carousel controls easier to tap without changing their visual bar. */
+  .hero-carousel-dots button {
+    min-height: 24px;
+    align-self: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto !important; }
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
