@@ -80,3 +80,14 @@ html.dark-mode .cart-add-btn,html.dark-mode .cart-detail-add{background:var(--or
 /* keep below-the-fold sections from being laid out until needed */
 .section:not(#categories):not(#products){content-visibility:auto;contain-intrinsic-size:auto 700px}
 footer{content-visibility:auto;contain-intrinsic-size:auto 600px}
+
+/* Dark mode: featured product Order Now contrast */
+html.dark-mode .featured-grid-4 .order-btn{
+  color:#fffdf8!important;
+}
+html.dark-mode .featured-grid-4 .order-btn:hover,
+html.dark-mode .featured-grid-4 .order-btn:focus-visible{
+  background:#fffdf8!important;
+  border-color:#fffdf8!important;
+  color:#15151b!important;
+}
