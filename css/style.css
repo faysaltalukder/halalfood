@@ -52,3 +52,31 @@ html.dark-mode .cart-add-btn:hover,html.dark-mode .cart-detail-add:hover,html.da
   .mobile-menu-toggle{width:38px;height:38px;font-size:1.15rem}
   .nav{align-items:center}
 }
+/* ===== Performance + accessibility overrides (mobile PageSpeed pass) ===== */
+:root{--orange-strong:#975719}
+html.dark-mode{--orange-strong:#c97b3d}
+.featured-grid-4 .order-btn,.header-track-order,.product-detail-actions .btn-primary,.order-submit-btn,.cta-band,.category-rail-arrow,.cart-count,.nav-links a:hover,.nav-links a:focus-visible,.nav-links a:active{background:var(--orange-strong);border-color:var(--orange-strong)}
+.featured-grid-4 .order-btn:hover,.header-track-order:hover,.header-track-order:focus-visible,.order-submit-btn:hover,.order-submit-btn:focus-visible{background:var(--navy);border-color:var(--navy)}
+.cart-add-btn,.cart-detail-add,.product-detail-actions .cart-detail-add{border-color:var(--orange-strong);color:var(--orange-strong)}
+.cart-add-btn:hover,.cart-add-btn:focus-visible,.cart-detail-add:hover,.cart-detail-add:focus-visible,.product-detail-actions .cart-detail-add:hover{background:var(--orange-strong);border-color:var(--orange-strong);color:var(--white)}
+.merch-view-all,.blog-read-more,.product-detail-price,.hero h1 em,.form-success strong,.faq-card summary::after{color:var(--orange-strong)}
+.merch-view-all:hover{color:var(--navy)}
+html.dark-mode .cart-add-btn,html.dark-mode .cart-detail-add{background:var(--orange);border-color:var(--orange);color:#fff}
+/* product-card headings are h3 now (correct heading order) */
+.mrow-name-link h3,.jfy-name-link h3{font-size:.95rem;line-height:1.3;min-height:2.4em}
+.mrow-name-link:hover h3,.jfy-name-link:hover h3{color:var(--orange-strong)}
+/* touch targets: hero dots + product-row dots (visual size unchanged) */
+.hero-carousel-dots{gap:0;bottom:4px}
+.hero-carousel-dots button{position:relative;width:44px;height:28px;background:transparent!important;border-radius:0}
+.hero-carousel-dots button::before{content:"";position:absolute;left:2px;right:2px;top:50%;height:10px;margin-top:-5px;border-radius:10px;background:rgba(255,253,248,.7)}
+.hero-carousel-dots button.active::before{background:var(--orange)}
+.mrow-dots{gap:0}
+.mrow-dots button{position:relative;width:24px;height:24px;background:transparent!important;border-radius:0;transform:none!important}
+.mrow-dots button::before{content:"";position:absolute;left:50%;top:50%;width:8px;height:8px;margin:-4px 0 0 -4px;border-radius:50%;background:var(--line);transition:background .2s ease,transform .2s ease}
+.mrow-dots button.active::before{background:var(--orange-strong);transform:scale(1.25)}
+/* closed drawers leave the tab order and the screen-reader tree (replaces aria-hidden) */
+.mobile-drawer,.cart-drawer{visibility:hidden;transition:transform .22s ease,visibility 0s linear .22s}
+.mobile-drawer.open,.cart-drawer.open{visibility:visible;transition:transform .22s ease,visibility 0s}
+/* keep below-the-fold sections from being laid out until needed */
+.section:not(#categories):not(#products){content-visibility:auto;contain-intrinsic-size:auto 700px}
+footer{content-visibility:auto;contain-intrinsic-size:auto 600px}
