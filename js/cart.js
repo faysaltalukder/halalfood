@@ -154,7 +154,6 @@
     const drawer = document.createElement("aside");
     drawer.id = "cart-drawer";
     drawer.className = "cart-drawer";
-    drawer.setAttribute("aria-hidden", "true");
     drawer.innerHTML = `
       <div class="cart-drawer-head"><div><span class="section-eyebrow">Halal Food</span><h2>Your Cart</h2></div><button type="button" class="cart-close" data-cart-close aria-label="Close cart">×</button></div>
       <div class="cart-drawer-items" data-cart-drawer-items></div>
@@ -169,7 +168,6 @@
     const shade = document.querySelector(".cart-drawer-backdrop");
     if (!drawer) return;
     drawer.classList.toggle("open", open); shade?.classList.toggle("open", open);
-    drawer.setAttribute("aria-hidden", String(!open));
     document.body.classList.toggle("cart-open", open);
   }
   function itemMarkup(item, compact=false) {

@@ -125,7 +125,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!drawer) return;
     drawer.classList.toggle("open", open);
     backdrop?.classList.toggle("open", open);
-    drawer.setAttribute("aria-hidden", String(!open));
     menuButton?.setAttribute("aria-expanded", String(open));
     document.body.classList.toggle("drawer-open", open);
   };
@@ -174,7 +173,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const go = (nextIndex, smooth = true) => {
       index = (nextIndex + slides.length) % slides.length;
-      track.scrollTo({ left: track.clientWidth * index, behavior: smooth ? "smooth" : "auto" });
+      if (smooth || index !== 0) track.scrollTo({ left: track.clientWidth * index, behavior: smooth ? "smooth" : "auto" });
       dots?.querySelectorAll("button").forEach((dot, i) => {
         dot.classList.toggle("active", i === index);
         dot.setAttribute("aria-selected", String(i === index));
@@ -622,6 +621,7 @@ function initLocationCombobox(id, initialOptions, onSelect) {
 // v3/v4 redesign: merchandising-row carousels
 // ---------------------------------------------------------------------------
 document.addEventListener("DOMContentLoaded", () => {
+  const initMrow = () => {
   document.querySelectorAll("[data-mrow]").forEach((wrap) => {
     const track = wrap.querySelector("[data-mrow-track]");
     const dotsBox = wrap.parentElement.querySelector("[data-mrow-dots]");
@@ -693,11 +693,20 @@ document.addEventListener("DOMContentLoaded", () => {
     wrap.addEventListener("mouseleave", () => { clearInterval(auto); auto = setInterval(advance, 5500); });
   });
 
+  };
+  (window.requestIdleCallback ? window.requestIdleCallback(initMrow, { timeout: 1500 }) : setTimeout(initMrow, 200));
+
   const loadMoreBtn = document.querySelector("[data-jfy-load-more]");
   if (loadMoreBtn) {
     loadMoreBtn.addEventListener("click", () => {
       const hidden = document.querySelector("[data-jfy-hidden]");
-      if (hidden) {
+      if (hidden && hidden.tagName === "TEMPLATE") {
+        // Extra products are kept inside a <template> so they do not weigh down the page until requested.
+        const grid = document.createElement("div");
+        grid.className = "jfy-grid jfy-shown";
+        grid.appendChild(hidden.content.cloneNode(true));
+        hidden.replaceWith(grid);
+      } else if (hidden) {
         hidden.hidden = false;
         hidden.classList.add("jfy-shown");
       }
@@ -712,29 +721,55 @@ document.addEventListener("DOMContentLoaded", () => {
   if(window.__HALAL_TRACKING_BOOTSTRAPPED__) return;
   window.__HALAL_TRACKING_BOOTSTRAPPED__=true;
 
+  /* PERFORMANCE: the heavy tracking files (Google Tag Manager, Meta Pixel) are NOT downloaded
+     while the page is first painting. They load on the visitor's first interaction, or after
+     HALAL_TRACKING_DELAY_MS once the page has finished loading - whichever comes first.
+     Nothing is lost: every event is queued in dataLayer / the fbq queue and sent as soon as the
+     tracking files arrive. Order, cart, thank-you and track-order pages load tracking at once
+     so that purchase events are never delayed.
+     To change the wait time, edit the number below (milliseconds). */
+  var HALAL_TRACKING_DELAY_MS=5000;
+
   window.dataLayer=window.dataLayer||[];
-  window.dataLayer.push({'gtm.start':new Date().getTime(),event:'gtm.js'});
 
-  (function(){
-    var s=document.createElement('script');
-    s.async=true;
-    s.src='https://www.googletagmanager.com/gtm.js?id=GTM-5TW678CX';
-    document.head.appendChild(s);
-  })();
-
-  /* Meta Pixel — sitewide */
-  !function(f,b,e,v,n,t,s){
+  /* Meta Pixel: only the tiny queue stub now; fbevents.js itself is loaded later. */
+  !function(f,n){
     if(f.fbq)return;
     n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};
     if(!f._fbq)f._fbq=n;
     n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];
-    t=b.createElement(e);t.async=!0;t.src=v;
-    s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)
-  }(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+  }(window);
   window.fbq('init','28564665756499119');
   window.fbq('track','PageView');
   /* Keep gtag event commands queued even if the GTM Google tag is still loading. */
   window.gtag=window.gtag||function(){window.dataLayer.push(arguments);};
+
+  var trackersLoaded=false;
+  var triggerEvents=['pointerdown','touchstart','keydown','scroll','mousemove'];
+  function loadTrackers(){
+    if(trackersLoaded) return;
+    trackersLoaded=true;
+    triggerEvents.forEach(function(ev){window.removeEventListener(ev,loadTrackers,{passive:true});});
+    window.dataLayer.push({'gtm.start':new Date().getTime(),event:'gtm.js'});
+    var g=document.createElement('script');
+    g.async=true;
+    g.src='https://www.googletagmanager.com/gtm.js?id=GTM-5TW678CX';
+    document.head.appendChild(g);
+    var t=document.createElement('script');
+    t.async=true;
+    t.src='https://connect.facebook.net/en_US/fbevents.js';
+    document.head.appendChild(t);
+  }
+  window.halalLoadTrackers=loadTrackers;
+
+  var loadNow=/\/(order|cart|thank-you|track-order)(\.html)?\/?$/.test(location.pathname);
+  if(loadNow){
+    loadTrackers();
+  }else{
+    triggerEvents.forEach(function(ev){window.addEventListener(ev,loadTrackers,{passive:true});});
+    var armTimer=function(){setTimeout(loadTrackers,HALAL_TRACKING_DELAY_MS);};
+    if(document.readyState==='complete') armTimer(); else window.addEventListener('load',armTimer);
+  }
 
   window.halalTrack=function(eventName,params,metaEvent,metaParams){
     var safeParams=params||{};
