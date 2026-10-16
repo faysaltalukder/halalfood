@@ -91,3 +91,76 @@ html.dark-mode .featured-grid-4 .order-btn:focus-visible{
   border-color:#fffdf8!important;
   color:#15151b!important;
 }
+
+/* Dark mode accessibility: readable testing notice, form fields, and confirmation panels */
+html.dark-mode .testing-notice{
+  background:#342a20!important;
+  color:#fff1dc!important;
+  border:1px solid #c97b3d!important;
+}
+html.dark-mode .testing-notice strong,
+html.dark-mode .testing-notice p,
+html.dark-mode .testing-notice span{color:#fff1dc!important}
+html.dark-mode .confirm-item,
+html.dark-mode .summary-box,
+html.dark-mode .order-id-box{
+  background:#202029!important;
+  border-color:#454550!important;
+  color:#f3efe5!important;
+}
+html.dark-mode .confirm-item strong,
+html.dark-mode .confirm-item span,
+html.dark-mode .summary-box h2,
+html.dark-mode .summary-row,
+html.dark-mode .summary-row strong,
+html.dark-mode .summary-total,
+html.dark-mode .order-id-label,
+html.dark-mode .order-id,
+html.dark-mode .thankyou-lead,
+html.dark-mode .contact-note{color:#f3efe5!important}
+html.dark-mode .form-group input,
+html.dark-mode .form-group textarea,
+html.dark-mode .form-group select,
+html.dark-mode input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]),
+html.dark-mode textarea,
+html.dark-mode select{
+  background:#292932!important;
+  color:#fffdf8!important;
+  border-color:#626271!important;
+  caret-color:#fffdf8;
+}
+html.dark-mode .form-group input::placeholder,
+html.dark-mode .form-group textarea::placeholder,
+html.dark-mode input::placeholder,
+html.dark-mode textarea::placeholder{
+  color:#c4c0b7!important;opacity:1;
+}
+html.dark-mode .form-group input:focus,
+html.dark-mode .form-group textarea:focus,
+html.dark-mode .form-group select:focus,
+html.dark-mode input:focus-visible,
+html.dark-mode textarea:focus-visible,
+html.dark-mode select:focus-visible{
+  border-color:#c97b3d!important;
+  outline:2px solid rgba(201,123,61,.28);
+  outline-offset:1px;
+}
+html.dark-mode .thankyou-actions .primary{
+  background:#c97b3d!important;border-color:#c97b3d!important;color:#fffdf8!important;
+}
+html.dark-mode .thankyou-actions .primary:hover,
+html.dark-mode .thankyou-actions .primary:focus-visible{
+  background:#fffdf8!important;border-color:#fffdf8!important;color:#15151b!important;
+}
+html.dark-mode .thankyou-actions .secondary{
+  background:#292932!important;border-color:#626271!important;color:#f3efe5!important;
+}
+html.dark-mode .thankyou-actions .secondary:hover,
+html.dark-mode .thankyou-actions .secondary:focus-visible{
+  background:#c97b3d!important;border-color:#c97b3d!important;color:#fffdf8!important;
+}
+html.dark-mode .form-success{background:#242d26!important;color:#f3efe5!important;border-color:#5f765f!important}
+html.dark-mode .form-error{background:#302326!important;color:#ffe8eb!important;border-color:#9b626a!important}
+html.dark-mode input:disabled,
+html.dark-mode textarea:disabled,
+html.dark-mode select:disabled{opacity:.72}
