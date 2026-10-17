@@ -41,7 +41,7 @@ document.addEventListener("DOMContentLoaded", () => {
     <div class="product-detail-grid">
       <div class="product-detail-image-wrap">
         <button class="product-detail-image" type="button" aria-label="View ${product.name} image in full screen">
-          <img src="${product.image}" alt="${product.name}">
+          <img src="${String(product.image).replace(/\.(jpe?g|png)$/i, ".webp")}" alt="${product.name}">
           <span class="image-zoom-hint">Click image to enlarge</span>
         </button>
       </div>
@@ -85,7 +85,7 @@ document.addEventListener("DOMContentLoaded", () => {
       modal.setAttribute("aria-label", `${product.name} image viewer`);
       modal.innerHTML = `
         <button class="product-image-modal-close" type="button" aria-label="Close image viewer">&times;</button>
-        <img src="${product.image}" alt="${product.name}">
+        <img src="${String(product.image).replace(/\.(jpe?g|png)$/i, ".webp")}" alt="${product.name}">
       `;
       document.body.appendChild(modal);
       document.body.classList.add("image-modal-open");
@@ -121,7 +121,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return `
         <article class="product-card">
           <a href="${url}" class="product-image-link">
-            <div class="product-image"><img src="${item.image}" alt="${item.name}"></div>
+            <div class="product-image"><img src="${String(item.image).replace(/\.(jpe?g|png)$/i, ".webp")}" alt="${item.name}"></div>
           </a>
           <div class="product-body">
             <span class="tag">${item.category}</span>

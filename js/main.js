@@ -304,7 +304,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const price = priceNumber(singleProduct.price);
       productPrice && (productPrice.textContent = singleProduct.price || money(price));
       if (productImage && singleProduct.image) {
-        productImage.src = singleProduct.image;
+        productImage.src = String(singleProduct.image).replace(/\.(jpe?g|png)$/i, ".webp");
         productImage.alt = singleProduct.name || "Selected product";
         productImageWrap && (productImageWrap.hidden = false);
       }
