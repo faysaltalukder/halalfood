@@ -28,7 +28,7 @@ const HEADERS = [
   "Card Token","Product Image"
 ];
 
-function doPost(e) {
+function handlePost_(e) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sh = ss.getSheetByName(SHEET_NAME) || ss.insertSheet(SHEET_NAME);
   ensureHeaders_(sh);
@@ -39,6 +39,11 @@ function doPost(e) {
   } catch (_) {
     d = (e && e.parameter) || {};
   }
+
+  // VALIDATION — clean customer details and check the order rate.
+  const checked = validateOrder_(d);
+  checkRate_(checked.mobile);
+  Object.assign(d, checked);
 
   const orderId = createShortOrderId_(sh);
   const items = normalizeItems_(d);
@@ -145,12 +150,12 @@ function createShortOrderId_(sh) {
     const values = sh.getRange(2, orderCol + 1, sh.getLastRow() - 1, 1).getDisplayValues();
     values.forEach(function(row) {
       const id = String(row[0] || "").trim();
-      if (/^HF-\d{4}$/.test(id)) used[id] = true;
+      if (/^HF-\d{4,6}$/.test(id)) used[id] = true;
     });
   }
 
   for (let i = 0; i < 200; i++) {
-    const n = Math.floor(Math.random() * 9000) + 1000;
+    const n = Math.floor(Math.random() * 900000) + 100000;
     const id = "HF-" + n;
     if (!used[id]) return id;
   }
@@ -219,31 +224,6 @@ function doGet(e) {
   }
 }
 
-function normalizeItems_(d) {
-  const source = Array.isArray(d.items) && d.items.length
-    ? d.items
-    : [{
-        product:d.product || "",
-        quantity:d.quantity || 1,
-        price:d.price || 0,
-        image:d.image || ""
-      }];
-
-  return source.map(function(x) {
-    const quantity = Math.max(1,Number(x.quantity || x.qty || 1));
-    const priceRaw = Number(x.price || x.unitPrice || 0);
-    const price = isFinite(priceRaw) ? priceRaw : 0;
-
-    return {
-      product:String(x.product || x.name || "Product"),
-      quantity:quantity,
-      price:price,
-      lineTotal:price * quantity,
-      image:String(x.image || "")
-    };
-  });
-}
-
 function fetchAssets_(items) {
   const result = {
     logoBlob:null,
@@ -293,13 +273,13 @@ function fetchAssets_(items) {
       // Resolve website-relative product paths to the live GitHub Pages URL first.
       // Example: images/dates/ajwa-dates.jpg
       // -> https://faysaltalukder.github.io/halalfood/images/dates/ajwa-dates.jpg
-      if (/^halalfood\\//i.test(path)) {
+      if (/^halalfood\//i.test(path)) {
         candidates.push("https://faysaltalukder.github.io/" + path);
       } else {
-        candidates.push(SITE_URL.replace(/\\/$/, "") + "/" + path);
+        candidates.push(SITE_URL.replace(/\/$/, "") + "/" + path);
         // Raw GitHub remains a fallback for Apps Script fetch reliability.
         candidates.push(RAW_GITHUB_BASE + path);
-      }      }
+      }
     }
 
     for (let i = 0; i < candidates.length && !result.productBlob; i++) {
@@ -614,3 +594,208 @@ function simplePage_(title,message) {
     "<h2>" + escapeHtml_(title) + "</h2><p>" + escapeHtml_(message) + "</p></body></html>"
   );
 }
+
+
+
+// Server-side price list. The price comes from HERE, never from the browser.
+// Keep this in sync with js/products-data.js when you change a price.
+const PRICE_LIST = {
+  "Premium Ajwa Dates": 850,
+  "Medjool Dates": 900,
+  "Safawi Dates": 800,
+  "Date Syrup": 350,
+  "Basmati Rice": 850,
+  "Chickpeas": 900,
+  "Red Lentils": 800,
+  "Roasted Chana": 350,
+  "Fresh Beef Cuts": 850,
+  "Beef Boneless": 900,
+  "Beef Curry Cut": 800,
+  "Fresh Mutton": 350,
+  "Wild Forest Honey": 850,
+  "Black Seed Honey": 900,
+  "Litchi Honey": 800,
+  "Mustard Flower Honey": 350,
+  "Garlic & Honey Mix": 850,
+  "Honey Nut Mix": 900,
+  "Date & Nut Mix": 800,
+  "Dry Fruit Mix": 350,
+  "Mixed Roasted Nuts": 850,
+  "Almonds": 900,
+  "Cashews": 800,
+  "Pumpkin Seeds": 350,
+  "House Biryani Masala": 850,
+  "Beef Masala": 900,
+  "Chicken Masala": 800,
+  "Fish Masala": 350,
+  "Classic Black Tea": 850,
+  "Green Tea": 900,
+  "Ginger Tea": 800,
+  "Herbal Tea": 350,
+  "Kalmi Dates": 780,
+  "Sukkari Dates": 950,
+  "Brown Lentils (Whole Masoor)": 180,
+  "Toor Dal (Arhar Dal)": 190,
+  "Sundarban Honey": 750,
+  "Kashmiri Sidr Honey": 1200,
+  "Nuts & Seeds Mix": 650,
+  "Trail Mix (Dried Fruit & Nut)": 600,
+  "Walnuts": 1100,
+  "Pistachios": 1800,
+  "Mutton Masala": 240,
+  "Korma Masala": 200,
+  "Lemon Tea": 180,
+  "Masala Chai Mix": 220,
+  "Fresh Chicken (Broiler)": 220,
+  "Beef Bone-In Cuts": 780,
+  "Pure Mustard Oil (Sorisha Tel)": 320,
+  "Extra Virgin Olive Oil": 1450,
+  "Virgin Coconut Oil": 480,
+  "Sunflower Oil": 290,
+  "Sesame Oil (Til Tel)": 550,
+  "Soybean Oil": 185,
+  "Pure Cow Ghee": 950,
+  "Buffalo Ghee": 1050,
+  "Organic A2 Ghee": 1400,
+  "Traditional Desi Ghee": 900,
+  "White Butter Ghee": 850,
+  "Premium Ghee Tin": 2200
+};
+
+const SECURITY_LIMITS = {
+  maxLinesPerOrder: 30,
+  maxQtyPerLine: 99,
+  maxOrdersPerMobilePer10Min: 5
+};
+
+// NEW doPost wrapper: any error becomes a clean JSON message, never a crash.
+function doPost(e) {
+  try {
+    return handlePost_(e);
+  } catch (err) {
+    return jsonOut_({
+      success: false,
+      error: String(err && err.message || "Order could not be placed. Please try again or contact us by phone.")
+    });
+  }
+}
+
+function jsonOut_(obj) {
+  return ContentService
+    .createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function failOrder_(message) {
+  throw new Error(message);
+}
+
+// Remove control characters and cut to a safe length.
+function cleanText_(value, maxLen) {
+  return String(value == null ? "" : value)
+    .replace(/[\u0000-\u001F\u007F]/g, " ")
+    .trim()
+    .slice(0, maxLen);
+}
+
+// Stop Google Sheets from treating a cell as a formula (e.g. =HYPERLINK(...)).
+function safeCell_(value) {
+  const s = String(value == null ? "" : value);
+  return /^[=+\-@]/.test(s) ? "'" + s : s;
+}
+
+/*
+ * VALIDATION — checks the customer details. Call this from handlePost_.
+ * Returns a cleaned copy of the details.
+ */
+function validateOrder_(d) {
+  const name = cleanText_(d.name, 80);
+  if (name.length < 2) failOrder_("Please enter your full name.");
+
+  const mobile = String(d.mobile || d.phone || "").replace(/[\s-]/g, "");
+  if (!/^01\d{9}$/.test(mobile)) failOrder_("Please enter a valid 11-digit mobile number (01XXXXXXXXX).");
+
+  const email = cleanText_(d.email || d.customerEmail, 120);
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) failOrder_("Please enter a valid email address.");
+
+  const address = cleanText_(d.address, 300);
+  if (address.length < 5) failOrder_("Please enter your full address.");
+
+  return {
+    name: safeCell_(name),
+    mobile: mobile,
+    email: email,
+    address: safeCell_(address),
+    district: safeCell_(cleanText_(d.district, 80)),
+    upazila: safeCell_(cleanText_(d.upazila, 80)),
+    notes: safeCell_(cleanText_(d.notes, 500))
+  };
+}
+
+/*
+ * RATE LIMIT — stops one phone number from flooding the sheet and the email quota.
+ * Allows SECURITY_LIMITS.maxOrdersPerMobilePer10Min orders per 10 minutes.
+ */
+function checkRate_(mobile) {
+  const cache = CacheService.getScriptCache();
+  const key = "orders_" + mobile;
+  const count = Number(cache.get(key) || 0);
+  if (count >= SECURITY_LIMITS.maxOrdersPerMobilePer10Min) {
+    failOrder_("Too many orders from this number in a short time. Please contact us by phone.");
+  }
+  cache.put(key, String(count + 1), 600);
+}
+
+/*
+ * NEW normalizeItems_ — the PRICE comes from PRICE_LIST, not from the browser.
+ * The browser may send only the product name and quantity.
+ */
+function normalizeItems_(d) {
+  const source = Array.isArray(d.items) && d.items.length
+    ? d.items
+    : [{ product: d.product, quantity: d.quantity }];
+
+  if (source.length > SECURITY_LIMITS.maxLinesPerOrder) {
+    failOrder_("Too many items in one order.");
+  }
+
+  return source.map(function (x) {
+    const name = cleanText_(x.product || x.name, 120);
+    const unitPrice = PRICE_LIST[name];
+    if (unitPrice === undefined) {
+      failOrder_("Sorry, this product is not available: " + name);
+    }
+
+    const quantity = Math.floor(Number(x.quantity || x.qty || 1));
+    if (!(quantity >= 1 && quantity <= SECURITY_LIMITS.maxQtyPerLine)) {
+      failOrder_("Please enter a valid quantity.");
+    }
+
+    // Only allow image paths inside this site's images folder.
+    const image = String(x.image || "");
+    const safeImage = /^images\/[A-Za-z0-9_\-\/.]+$/.test(image) ? image : "";
+
+    return {
+      product: name,
+      quantity: quantity,
+      price: unitPrice,
+      lineTotal: unitPrice * quantity,
+      image: safeImage
+    };
+  });
+}
+
+/*
+ * ---------------------------------------------------------------------------
+ * PART B: THE TWO LINES TO ADD INSIDE handlePost_ (see step 3 above)
+ * Paste this block right after the "let d = {}; try {...} catch {...}" block:
+ * ---------------------------------------------------------------------------
+ *
+ *   // VALIDATION — clean customer details and check the order rate.
+ *   const checked = validateOrder_(d);
+ *   checkRate_(checked.mobile);
+ *   Object.assign(d, checked);
+ *
+ * After this, the existing code keeps working because d.name, d.mobile,
+ * d.email, d.address, d.notes, d.district and d.upazila are now clean.
+ */

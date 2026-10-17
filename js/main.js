@@ -1,3 +1,8 @@
+function makeOrderId() {
+  const a = new Uint32Array(1);
+  crypto.getRandomValues(a);
+  return "HF-" + String(100000 + (a[0] % 900000));
+}
 // Google Apps Script Web App URL: production endpoint.
 const GOOGLE_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzSf6OzjwGNBSmaZBNxBf5zL8z5wkf3tY7QtSqRUGrjZj2eWLN4DsGw1WQwkPhTqmSzrw/exec";
 
@@ -401,7 +406,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       if (isCartOrder) {
-        data.orderId = `HF-${Math.floor(Math.random() * 9000) + 1000}`;
+        data.orderId = makeOrderId();
         data.items = cartItems.map((item) => ({
           product: item.name,
           quantity: String(Math.max(1, Number(item.qty) || 1)),
@@ -413,7 +418,7 @@ document.addEventListener("DOMContentLoaded", () => {
         data.quantity = String(window.HALAL_CART_API.totalQty(cartItems));
       } else {
         data.product = singleProduct?.name || singleProductName;
-        data.orderId = `HF-${Math.floor(Math.random() * 9000) + 1000}`;
+        data.orderId = makeOrderId();
         if (singleProduct) {
           data.price = String(priceNumber(singleProduct.price));
           data.image = String(singleProduct.image || "");

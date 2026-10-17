@@ -164,3 +164,6 @@ html.dark-mode .form-error{background:#302326!important;color:#ffe8eb!important;
 html.dark-mode input:disabled,
 html.dark-mode textarea:disabled,
 html.dark-mode select:disabled{opacity:.72}
+
+/* picture wrapper must not change layout */
+picture{display:contents}
