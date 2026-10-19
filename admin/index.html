@@ -10,7 +10,7 @@ header{background:var(--navy);color:#fff;padding:16px 22px;display:flex;justify-
 main{max-width:1250px;margin:26px auto;padding:0 16px}.card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:20px;box-shadow:0 7px 28px #17263c0c}
 h1,h2{margin:0 0 8px}.muted{color:var(--muted)}form{display:grid;gap:11px;max-width:400px}
 input,button,select{font:inherit;padding:11px 13px;border-radius:10px;border:1px solid var(--border)}button{background:var(--navy);color:#fff;border:0;cursor:pointer}.secondary{background:#eee;color:var(--navy)}
-.link{background:none;color:var(--navy);padding:4px 0;text-align:left}.nav-link{display:inline-block;text-decoration:none;background:#f0eee8;color:var(--navy);padding:9px 11px;border-radius:10px;font-size:13px;font-weight:600}.hidden{display:none!important}.msg{min-height:22px;margin-top:10px}
+.link{background:none;color:var(--navy);padding:4px 0;text-align:left}.nav-link{display:inline-block;text-decoration:none;background:#f0eee8;color:var(--navy);padding:9px 11px;border-radius:10px;font-size:13px;font-weight:600}.hidden{display:none!important}.msg{min-height:22px;margin-top:10px}.mfa-box{max-width:460px;margin-top:18px}.mfa-box img{display:block;width:220px;height:220px;object-fit:contain;background:#fff;border:1px solid var(--border);border-radius:12px;padding:8px;margin:14px 0}.mfa-secret{overflow-wrap:anywhere;font-family:monospace;background:#f7f3eb;padding:10px;border-radius:8px}.mfa-form{margin-top:14px}
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:20px 0}.stat strong{display:block;font-size:28px;margin-top:7px}
 .top{display:flex;justify-content:space-between;align-items:center;gap:12px}.actions{display:flex;gap:8px;align-items:center}
 .table-wrap{overflow:auto}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:11px;border-bottom:1px solid var(--border);white-space:nowrap}th{font-size:11px;text-transform:uppercase;color:var(--muted)}
@@ -26,6 +26,30 @@ input,button,select{font:inherit;padding:11px 13px;border-radius:10px;border:1px
 <p class="muted">Authorized account: halalfoodbd.official@gmail.com</p>
 <form id="authForm"><input id="email" type="email" value="halalfoodbd.official@gmail.com" autocomplete="username" readonly required><input id="password" type="password" autocomplete="current-password" placeholder="Admin password" required><button id="authButton">Sign in</button></form>
 <p id="authMsg" class="msg muted"></p>
+</section>
+
+<section id="mfaCard" class="card hidden">
+<h1 id="mfaTitle">Secure admin sign-in</h1>
+<p id="mfaIntro" class="muted">Verify with your authenticator app to continue.</p>
+<div id="mfaEnrollPanel" class="mfa-box hidden">
+  <p>Scan this QR code using the authenticator app. This setup is for the Halal Food website admin login, separate from your Supabase Dashboard login.</p>
+  <img id="mfaQr" alt="Authenticator enrollment QR code">
+  <p class="muted">If QR scanning is unavailable, enter this setup key manually:</p>
+  <div id="mfaSecret" class="mfa-secret"></div>
+  <form id="mfaEnrollForm" class="mfa-form">
+    <input id="mfaEnrollCode" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" placeholder="6-digit authenticator code" required>
+    <button id="mfaEnrollButton">Verify and enable MFA</button>
+  </form>
+</div>
+<div id="mfaChallengePanel" class="mfa-box hidden">
+  <p>Enter the current 6-digit code from your authenticator app.</p>
+  <form id="mfaChallengeForm" class="mfa-form">
+    <input id="mfaChallengeCode" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" placeholder="6-digit authenticator code" required>
+    <button id="mfaChallengeButton">Verify code</button>
+  </form>
+</div>
+<p id="mfaMsg" class="msg muted" role="status" aria-live="polite"></p>
+<button id="mfaCancel" type="button" class="secondary">Cancel and sign out</button>
 </section>
 
 <section id="dashboard" class="hidden">
@@ -59,16 +83,107 @@ const SUPABASE_KEY="sb_publishable_X32Rb8W-axGIfgFuppdfZQ_jbc38pcL";
 const client=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const $=id=>document.getElementById(id);
 let cache=[];
+let pendingMfaFactorId=null;
+let routingSession=false;
+let mfaEnrolling=false;
 
 function money(n){return "৳"+Number(n||0).toLocaleString("en-BD",{maximumFractionDigits:2})}
 function escapeHtml(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
 $("authForm").addEventListener("submit",async e=>{
- e.preventDefault(); $("authMsg").textContent="Signing in…";
+ e.preventDefault(); $("authMsg").textContent="Signing in…"; $("authButton").disabled=true;
  const email=$("email").value.trim(),password=$("password").value;
- const result=await client.auth.signInWithPassword({email,password});
- if(result.error){$("authMsg").textContent="Sign-in failed. Check your password or account settings.";return}
- $("authMsg").textContent="";
+ try{
+  const result=await client.auth.signInWithPassword({email,password});
+  if(result.error)throw result.error;
+  $("authMsg").textContent="Password accepted. Checking MFA…";
+  await routeSession(result.data.session);
+ }catch(err){$("authMsg").textContent="Sign-in failed. Check your password or account settings."}
+ finally{$("authButton").disabled=false}
 });
+
+function showMfaOnly(){
+ $("authCard").classList.add("hidden");
+ $("dashboard").classList.add("hidden");
+ $("mfaCard").classList.remove("hidden");
+ $("logout").classList.add("hidden");
+}
+function setMfaMessage(text,isError=false){
+ $("mfaMsg").textContent=text;
+ $("mfaMsg").style.color=isError?"#9d2929":"";
+}
+async function routeSession(session){
+ if(routingSession)return;
+ routingSession=true;
+ try{
+  if(!session){
+   $("authCard").classList.remove("hidden");$("dashboard").classList.add("hidden");$("mfaCard").classList.add("hidden");$("logout").classList.add("hidden");return;
+  }
+  const email=String(session.user?.email||"").trim().toLowerCase();
+  if(email!=="halalfoodbd.official@gmail.com"){
+   $("authMsg").textContent="Access denied. This dashboard is restricted to the authorized admin account.";
+   await client.auth.signOut();return;
+  }
+  const aal=await client.auth.mfa.getAuthenticatorAssuranceLevel();
+  if(aal.error)throw aal.error;
+  const factorResult=await client.auth.mfa.listFactors();
+  if(factorResult.error)throw factorResult.error;
+  const verified=(factorResult.data?.totp||[]).filter(f=>f.status==="verified");
+  if(aal.data?.currentLevel==="aal2"){
+   $("authCard").classList.add("hidden");$("mfaCard").classList.add("hidden");$("dashboard").classList.remove("hidden");$("logout").classList.remove("hidden");
+   setMfaMessage("");load();loadCustomers();return;
+  }
+  showMfaOnly();
+  if(verified.length){
+   pendingMfaFactorId=verified[0].id;
+   $("mfaTitle").textContent="Two-step verification";
+   $("mfaIntro").textContent="Your password is accepted. Enter the authenticator code to open the admin panel.";
+   $("mfaEnrollPanel").classList.add("hidden");$("mfaChallengePanel").classList.remove("hidden");
+   setMfaMessage("MFA is required before any admin data can be loaded.");
+  }else{
+   $("mfaTitle").textContent="Enable admin MFA";
+   $("mfaIntro").textContent="Set up an authenticator for this Halal Food admin account.";
+   $("mfaChallengePanel").classList.add("hidden");$("mfaEnrollPanel").classList.remove("hidden");
+   if(!pendingMfaFactorId&&!mfaEnrolling){
+    mfaEnrolling=true;
+    try{
+     const existing=(factorResult.data?.all||[]).filter(f=>f.factor_type==="totp"&&f.status!=="verified");
+     for(const factor of existing){await client.auth.mfa.unenroll({factorId:factor.id})}
+     const enrolled=await client.auth.mfa.enroll({factorType:"totp",friendlyName:"Halal Food Admin"});
+     if(enrolled.error)throw enrolled.error;
+     pendingMfaFactorId=enrolled.data.id;
+     $("mfaQr").src=enrolled.data.totp.qr_code;
+     $("mfaSecret").textContent=enrolled.data.totp.secret;
+     setMfaMessage("Scan the QR code, then enter the current 6-digit code to finish setup.");
+    }catch(err){setMfaMessage("Could not start MFA setup. Refresh and try again.",true);console.error("MFA enrollment failed",err)}
+    finally{mfaEnrolling=false}
+   }
+  }
+ }catch(err){
+  $("authCard").classList.remove("hidden");$("dashboard").classList.add("hidden");$("mfaCard").classList.add("hidden");
+  $("authMsg").textContent="Security verification could not complete. Refresh and sign in again.";
+  console.error("Admin MFA check failed",err);
+ }finally{routingSession=false}
+}
+async function verifyMfa(form,codeInput,button){
+ const code=$(codeInput).value.trim();
+ if(!pendingMfaFactorId){setMfaMessage("MFA setup has expired. Refresh the page and sign in again.",true);return}
+ if(!/^[0-9]{6}$/.test(code)){setMfaMessage("Enter the 6-digit code from your authenticator app.",true);return}
+ button.disabled=true;setMfaMessage("Verifying authenticator code…");
+ try{
+  const result=await client.auth.mfa.challengeAndVerify({factorId:pendingMfaFactorId,code});
+  if(result.error)throw result.error;
+  $("mfaEnrollCode").value="";$("mfaChallengeCode").value="";
+  setMfaMessage("MFA verified. Opening admin panel…");
+  const current=await client.auth.getSession();
+  await routeSession(current.data.session);
+  if(!$("dashboard").classList.contains("hidden"))setMfaMessage("");
+ }catch(err){setMfaMessage("The code was not accepted. Check your phone's time and try the latest 6-digit code.",true);console.error("MFA verification failed",err)}
+ finally{button.disabled=false}
+}
+$("mfaEnrollForm").addEventListener("submit",e=>{e.preventDefault();verifyMfa(e,"mfaEnrollCode",$("mfaEnrollButton"))});
+$("mfaChallengeForm").addEventListener("submit",e=>{e.preventDefault();verifyMfa(e,"mfaChallengeCode",$("mfaChallengeButton"))});
+$("mfaCancel").addEventListener("click",async()=>{pendingMfaFactorId=null;await client.auth.signOut();$("authMsg").textContent="You have been signed out.";});
+
 
 async function loadAnalytics(){
  const since=new Date(Date.now()-7*24*60*60*1000).toISOString();
@@ -134,14 +249,8 @@ $("refreshCustomers").onclick=()=>loadCustomers();
 $("logout").onclick=()=>client.auth.signOut();
 
 client.auth.onAuthStateChange((_event,session)=>{
- const email=String(session?.user?.email||"").toLowerCase();
- const ok=!!session&&email==="halalfoodbd.official@gmail.com";
- $("authCard").classList.toggle("hidden",ok);
- $("dashboard").classList.toggle("hidden",!ok);
- $("logout").classList.toggle("hidden",!ok);
- if(session&&!ok){$("authMsg").textContent="Access denied. This dashboard is restricted to the authorized admin account.";client.auth.signOut();return}
- if(ok){load();loadCustomers()}
+ queueMicrotask(()=>routeSession(session));
 });
-client.auth.getSession().then(({data})=>{const session=data.session;if(session&&String(session.user?.email||"").toLowerCase()!=="halalfoodbd.official@gmail.com"){ $("authMsg").textContent="Access denied. This dashboard is restricted to the authorized admin account.";client.auth.signOut();return}if(session){load();loadCustomers()}});
+client.auth.getSession().then(({data})=>routeSession(data.session));
 </script>
 </body></html>
