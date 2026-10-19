@@ -805,3 +805,40 @@ document.addEventListener("DOMContentLoaded", () => {
 /* END HALAL TRACKING */
 
 
+
+/* Display prices without package/weight suffixes; preserve underlying cart/order data. */
+(function () {
+  const priceSelectors = '.price, .mrow-price, .jfy-price, .product-detail-price, .order-product-price';
+  function cleanVisiblePrices(root) {
+    const nodes = [];
+    if (root && root.nodeType === 1 && root.matches(priceSelectors)) nodes.push(root);
+    if (root && root.querySelectorAll) nodes.push(...root.querySelectorAll(priceSelectors));
+    nodes.forEach(function (node) {
+      if (node.dataset.priceSuffixCleaned === '1') return;
+      const original = node.textContent || '';
+      const cleaned = original.replace(/\s*\/\s*[^\n]+$/, '').trim();
+      if (cleaned !== original.trim()) node.textContent = cleaned;
+      node.dataset.priceSuffixCleaned = '1';
+    });
+  }
+  function initPriceDisplay() {
+    cleanVisiblePrices(document);
+    const observer = new MutationObserver(function (records) {
+      records.forEach(function (record) {
+        if (record.type === 'childList') record.addedNodes.forEach(function (node) {
+          if (node.nodeType === 1) cleanVisiblePrices(node);
+        });
+        if (record.type === 'characterData' && record.target.parentElement) {
+          const parent = record.target.parentElement;
+          if (parent.matches(priceSelectors)) {
+            delete parent.dataset.priceSuffixCleaned;
+            cleanVisiblePrices(parent);
+          }
+        }
+      });
+    });
+    observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initPriceDisplay, { once: true });
+  else initPriceDisplay();
+})();
