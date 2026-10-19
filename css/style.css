@@ -175,3 +175,30 @@ picture{display:contents}
 .product-body h3 { margin: 0 0 4px; line-height: 1.35; }
 .product-body .product-name-link { display: block; margin-bottom: 0; }
 .product-foot { margin-top: 0; padding-top: 10px; gap: 8px; }
+
+/* Align product prices with the product-name left edge on home and category cards. */
+.product-foot {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  justify-content: stretch;
+  align-items: center;
+  gap: 10px;
+}
+.product-foot .price {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  justify-self: start;
+  text-align: left;
+  margin: 0;
+}
+.product-foot .order-btn,
+.product-foot .cart-add-btn {
+  width: 100%;
+  min-width: 0;
+  grid-row: 2;
+}
+.product-foot .order-btn { grid-column: 1; }
+.product-foot .cart-add-btn { grid-column: 2; }
+@media (max-width: 420px) {
+  .product-foot { gap: 8px; }
+}
