@@ -839,3 +839,36 @@ a[href="account.html"]:not(.header-account-link):not(.mobile-account-link):focus
   outline: 2px solid #C97B3D;
   outline-offset: 2px;
 }
+
+
+/* Header navigation refinement: keep labels such as "How to Order" and "Price List" on one line.
+   At medium desktop widths, give navigation its own row instead of squeezing or wrapping labels. */
+@media (min-width: 901px) {
+  .nav-links {
+    flex-wrap: nowrap !important;
+    white-space: nowrap;
+    gap: clamp(10px, 1.45vw, 22px);
+    min-width: max-content;
+  }
+  .nav-links > a,
+  .nav-links .nav-category-trigger {
+    white-space: nowrap !important;
+    flex-shrink: 0;
+  }
+}
+@media (min-width: 901px) and (max-width: 1240px) {
+  header .nav {
+    flex-wrap: wrap;
+    row-gap: 10px;
+  }
+  header .nav-links {
+    order: 3;
+    flex: 1 0 100%;
+    justify-content: center;
+    gap: clamp(14px, 2vw, 25px);
+    padding-top: 2px;
+  }
+  header .header-actions {
+    margin-left: auto;
+  }
+}
