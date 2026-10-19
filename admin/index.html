@@ -46,6 +46,7 @@ input,button,select{font:inherit;padding:11px 13px;border-radius:10px;border:1px
   </div>
   <p id="analyticsMsg" class="muted">Loading analytics…</p>
 </div>
+<div class="card" style="margin-bottom:20px"><div class="top"><div><h2>Customer Accounts</h2><p class="muted">Registered customer profiles · visible to the authorized admin only</p></div><button id="refreshCustomers" class="secondary">Refresh customers</button></div><div class="table-wrap"><table><thead><tr><th>Customer name</th><th>Phone</th><th>Account ID</th><th>Registered</th></tr></thead><tbody id="customersBody"><tr><td colspan="4" class="muted">Loading customer accounts…</td></tr></tbody></table></div><p id="customersMsg" class="muted"></p></div>
 <div class="card"><div class="top"><h2>Orders</h2><span id="lastUpdated" class="muted"></span></div>
 <div class="table-wrap"><table><thead><tr><th>Order</th><th>Customer</th><th>Phone</th><th>Total</th><th>Status</th><th>Time</th><th></th></tr></thead><tbody id="ordersBody"><tr><td colspan="7" class="muted">Loading…</td></tr></tbody></table></div></div>
 </section>
@@ -84,6 +85,13 @@ async function loadAnalytics(){
  $("analyticsMsg").textContent=rows.length ? "Showing up to "+rows.length.toLocaleString("en-BD")+" recent events from the last 7 days. These are website events, not proof of completed sales." : "No analytics events recorded yet. Visit the website after deployment to begin collecting events.";
  $("analyticsUpdated").textContent="Updated "+new Date().toLocaleTimeString("en-BD");
 }
+async function loadCustomers(){
+ const body=$("customersBody");body.innerHTML='<tr><td colspan="4" class="muted">Loading customer accounts…</td></tr>';
+ const {data,error}=await client.from("customer_profiles").select("user_id,full_name,phone,created_at").order("created_at",{ascending:false}).limit(200);
+ if(error){body.innerHTML='<tr><td colspan="4">'+escapeHtml(error.message)+'</td></tr>';$("customersMsg").textContent="Could not load customer profiles. Check the admin profile-read policy.";return}
+ const rows=data||[];body.innerHTML=rows.length?rows.map(x=>'<tr><td>'+escapeHtml(x.full_name||"—")+'</td><td>'+escapeHtml(x.phone||"—")+'</td><td title="Customer user ID">'+escapeHtml(x.user_id)+'</td><td>'+(x.created_at?new Date(x.created_at).toLocaleString("en-BD"):"—")+'</td></tr>').join(""):'<tr><td colspan="4" class="muted">No customer profiles found yet.</td></tr>';
+ $("customersMsg").textContent="Showing "+rows.length+" registered profiles. Email addresses are intentionally not exposed by the profile table.";
+}
 async function load(){
  const {data,error}=await client.from("orders").select("id,order_number,customer_name,customer_phone,customer_email,delivery_address,total,status,ordered_at,order_items(id,product_name,quantity,unit,unit_price,line_total,product_image_url)").order("ordered_at",{ascending:false}).limit(100);
  if(error){$("ordersBody").innerHTML='<tr><td colspan="7">'+escapeHtml(error.message)+'</td></tr>';return}
@@ -106,16 +114,19 @@ async function updateStatus(id,status){
  if(error){alert(error.message);load();return}
  load();
 }
-$("refresh").onclick=()=>{load();loadAnalytics();};
+$("refresh").onclick=()=>{load();loadAnalytics();loadCustomers();};
+$("refreshCustomers").onclick=()=>loadCustomers();
 $("logout").onclick=()=>client.auth.signOut();
 
 client.auth.onAuthStateChange((_event,session)=>{
- const ok=!!session;
+ const email=String(session?.user?.email||"").toLowerCase();
+ const ok=!!session&&email==="halalfoodbd.official@gmail.com";
  $("authCard").classList.toggle("hidden",ok);
  $("dashboard").classList.toggle("hidden",!ok);
  $("logout").classList.toggle("hidden",!ok);
- if(ok)load();
+ if(session&&!ok){$("authMsg").textContent="Access denied. This dashboard is restricted to the authorized admin account.";client.auth.signOut();return}
+ if(ok){load();loadCustomers()}
 });
-client.auth.getSession().then(({data})=>{if(data.session)load()});
+client.auth.getSession().then(({data})=>{const session=data.session;if(session&&String(session.user?.email||"").toLowerCase()!=="halalfoodbd.official@gmail.com"){ $("authMsg").textContent="Access denied. This dashboard is restricted to the authorized admin account.";client.auth.signOut();return}if(session){load();loadCustomers()}});
 </script>
 </body></html>
