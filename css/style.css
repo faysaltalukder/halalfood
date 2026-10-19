@@ -552,3 +552,20 @@ picture{display:contents}
     white-space: nowrap;
   }
 }
+
+
+/* Mobile-only: Featured Products show a single full-width Add to Cart button. Desktop keeps both actions. */
+@media (max-width: 600px) {
+  .featured-grid-4 .product-foot .order-btn {
+    display: none;
+  }
+  .featured-grid-4 .product-foot .cart-add-btn {
+    display: flex;
+    flex: 1 1 100%;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    white-space: nowrap;
+  }
+}
