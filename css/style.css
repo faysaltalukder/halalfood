@@ -366,3 +366,85 @@ picture{display:contents}
     line-height: 1.25;
   }
 }
+
+
+/* Mobile-only usability fixes: preserve desktop layout. */
+@media (max-width: 600px) {
+  /* Keep featured product actions fully visible on narrow screens. */
+  .featured-grid-4 .product-foot {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 7px !important;
+    align-items: stretch;
+  }
+  .featured-grid-4 .product-foot .order-btn,
+  .featured-grid-4 .product-foot .cart-add-btn {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    min-height: 38px;
+    padding: 6px 3px !important;
+    gap: 3px;
+    font-size: 10.5px;
+    line-height: 1.1;
+    white-space: nowrap;
+    overflow: visible;
+    letter-spacing: -0.15px;
+  }
+  .featured-grid-4 .product-foot .order-btn .btn-icon,
+  .featured-grid-4 .product-foot .cart-add-btn .btn-icon {
+    width: 12px;
+    height: 12px;
+    flex: 0 0 12px;
+    margin: 0;
+  }
+  .featured-grid-4 .product-foot .order-btn > *,
+  .featured-grid-4 .product-foot .cart-add-btn > * {
+    min-width: 0;
+  }
+
+  /* Make category carousel buttons compact, with labels on one line. */
+  .mrow-cart-btn,
+  .jfy-cart-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-width: 0;
+    min-height: 38px;
+    padding: 6px 8px;
+    gap: 5px;
+    font-size: 12px;
+    line-height: 1.15;
+    white-space: nowrap;
+    overflow: visible;
+  }
+  .mrow-card,
+  .jfy-card {
+    min-width: 0;
+    gap: 7px;
+  }
+  .mrow-price,
+  .jfy-price {
+    margin: 0;
+    line-height: 1.2;
+  }
+
+  /* Ensure the bottom Search icon renders as a magnifying glass, not a dot. */
+  .mobile-bottom-nav [data-mobile-search] svg {
+    width: 24px;
+    height: 24px;
+    fill: none !important;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .mobile-bottom-nav [data-mobile-search] svg path {
+    fill: none !important;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+}
