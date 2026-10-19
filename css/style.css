@@ -288,3 +288,81 @@ picture{display:contents}
     flex-basis: 13px;
   }
 }
+
+
+/* Compact homepage product cards and reduce excessive vertical gaps. */
+#products {
+  padding-top: 24px;
+  padding-bottom: 28px;
+}
+#products .section-head {
+  margin-bottom: 16px;
+}
+.featured-grid-4 .product-body {
+  padding: 10px 12px 8px;
+}
+.featured-grid-4 .product-body h3 {
+  margin: 0 0 2px;
+  line-height: 1.3;
+}
+.featured-grid-4 .product-foot {
+  margin-top: 0;
+  padding-top: 4px;
+  row-gap: 5px;
+}
+.merch-row {
+  padding-top: 28px;
+  padding-bottom: 28px;
+}
+.merch-row-head {
+  margin-bottom: 12px;
+}
+.mrow-track {
+  padding-bottom: 2px;
+}
+.mrow-card,
+.jfy-card {
+  gap: 5px;
+  padding: 10px;
+}
+.mrow-name-link h4,
+.jfy-name-link h4 {
+  min-height: 0;
+  margin: 0;
+  line-height: 1.3;
+}
+.mrow-price,
+.jfy-price {
+  margin-top: 0;
+  line-height: 1.25;
+}
+.mrow-cart-btn,
+.jfy-cart-btn {
+  margin-top: 2px;
+}
+.mrow-dots {
+  margin-top: 10px;
+}
+@media (max-width: 768px) {
+  #products {
+    padding-top: 18px;
+    padding-bottom: 22px;
+  }
+  .merch-row {
+    padding-top: 20px;
+    padding-bottom: 20px;
+  }
+  .merch-row-head {
+    margin-bottom: 10px;
+  }
+  .mrow-card,
+  .jfy-card {
+    gap: 5px;
+    padding: 9px;
+  }
+  .mrow-name-link h4,
+  .jfy-name-link h4 {
+    min-height: 0;
+    line-height: 1.25;
+  }
+}
