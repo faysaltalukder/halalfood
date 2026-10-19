@@ -771,3 +771,33 @@ picture{display:contents}
     font-size: 14px !important;
   }
 }
+
+
+/* Explicit related-product actions: ensure they render after JS updates. */
+#related-grid .related-cart-btn,
+#related-grid .related-order-btn {
+  display: inline-flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+@media (min-width: 901px) {
+  #related-grid .product-foot {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  }
+  #related-grid .related-cart-btn,
+  #related-grid .related-order-btn {
+    display: inline-flex !important;
+  }
+}
+@media (max-width: 900px) {
+  #related-grid .related-order-btn { display: none !important; }
+  #related-grid .related-cart-btn {
+    display: inline-flex !important;
+    width: 100% !important;
+    min-height: 44px;
+  }
+}
