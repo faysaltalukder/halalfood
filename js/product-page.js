@@ -52,7 +52,7 @@ document.addEventListener("DOMContentLoaded", () => {
         <p class="product-detail-price">${product.price}</p>
 
         <div class="product-detail-actions">
-          <a class="btn-primary" href="${orderUrl}">Order Now</a>
+          <a class="btn-primary order-btn" href="${orderUrl}">Order Now</a>
           <button type="button" class="btn-secondary cart-detail-add" data-add-to-cart data-slug="${product.slug}" data-name="${product.name}" data-price="${String(product.price).replace(/[^0-9.]/g, "")}" data-display-price="${product.price}" data-image="${product.image}" data-category="${product.category}">Add to Cart</button>
           <a class="btn-secondary" href="${whatsappUrl}" target="_blank" rel="noopener">Message Us</a>
           <a class="btn-secondary" href="tel:+8801842031164">Call Us</a>
