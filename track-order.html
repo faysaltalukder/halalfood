@@ -41,32 +41,48 @@
   </main>
 </div>
 <script>
-const API="https://script.google.com/macros/s/AKfycbzSf6OzjwGNBSmaZBNxBf5zL8z5wkf3tY7QtSqRUGrjZj2eWLN4DsGw1WQwkPhTqmSzrw/exec";
+const API="https://qfwvrcfkrsydycbfjsxf.supabase.co/functions/v1/order-track";
 const steps=["Order Received","Confirmed","Processing","Packed","Shipped","Out for Delivery","Delivered"];
 const $=s=>document.querySelector(s);
 function money(v){return "৳ "+Number(v||0).toLocaleString("en-BD");}
 function esc(v){const d=document.createElement("div");d.textContent=String(v??"");return d.innerHTML;}
 function normalizeMobile(v){v=String(v||"").replace(/[^0-9+]/g,"");if(v.startsWith("+880"))return "0"+v.slice(4);if(v.startsWith("880")&&v.length===13)return "0"+v.slice(3);return v;}
 function render(data){
-  $("#r-id").textContent=data.orderId;$("#r-name").textContent=data.customerName||"Customer";$("#r-total").textContent=money(data.orderTotal);
-  $("#r-courier").textContent=data.courier||"Not assigned yet";$("#r-tracking").textContent=data.trackingNumber||"Not assigned yet";$("#r-status").textContent="Current Status: "+(data.status||"Order Received");
-  const current=steps.indexOf(data.status);const timeline=$("#timeline");timeline.innerHTML="";
-  steps.forEach((s,i)=>{const el=document.createElement("div");el.className="step"+(i<=current?" done":"");el.textContent=s;timeline.appendChild(el);});
+  $("#r-id").textContent=data.orderId;
+  $("#r-name").textContent=data.customerName||"Customer";
+  $("#r-total").textContent=money(data.orderTotal);
+  $("#r-courier").textContent=data.courier||"Not assigned yet";
+  $("#r-tracking").textContent=data.trackingNumber||"Not assigned yet";
+  const cancelled=data.statusCode==="cancelled";
+  $("#r-status").textContent=cancelled?"Current Status: Order Cancelled":"Current Status: "+(data.status||"Order Received");
+  $("#r-status").style.color=cancelled?"#9B2C25":"";
+  const current=steps.indexOf(data.status);
+  const timeline=$("#timeline");timeline.innerHTML="";
+  if(cancelled){
+    const el=document.createElement("div");el.className="step done";el.style.cssText="color:#9B2C25;border-left-color:#9B2C25";
+    el.textContent="আপনার অর্ডারটি বাতিল করা হয়েছে। প্রয়োজনে Halal Food-এর সঙ্গে যোগাযোগ করুন।";timeline.appendChild(el);
+  }else{
+    steps.forEach((s,i)=>{const el=document.createElement("div");el.className="step"+(i<=current?" done":"");el.textContent=s;timeline.appendChild(el);});
+  }
   $("#items").innerHTML=(data.items||[]).map(x=>'<div class="item"><span>'+esc(x.product)+' × '+Number(x.quantity||1)+'</span><b>'+money(x.lineTotal)+'</b></div>').join("");
   $("#updated").textContent=data.lastUpdated?"Last updated: "+new Date(data.lastUpdated).toLocaleString("en-BD"):"";
   $("#result").style.display="block";
 }
-function jsonp(url){return new Promise((resolve,reject)=>{const cb="hfTrack_"+Date.now()+"_"+Math.random().toString(36).slice(2);const script=document.createElement("script");const timer=setTimeout(()=>{cleanup();reject(new Error("Tracking service timeout."));},15000);function cleanup(){clearTimeout(timer);script.remove();try{delete window[cb];}catch(_){window[cb]=undefined;}}window[cb]=data=>{cleanup();resolve(data);};script.src=url+"&callback="+encodeURIComponent(cb);script.onerror=()=>{cleanup();reject(new Error("Tracking service unavailable."));};document.head.appendChild(script);});}
-async function getTrackingData(url){
+$("#track-form").addEventListener("submit",async e=>{
+  e.preventDefault();$("#error").style.display="none";$("#result").style.display="none";
+  const btn=$("#track-btn");btn.disabled=true;btn.textContent="Checking...";
   try{
-    const r=await fetch(url,{method:"GET",cache:"no-store"});
-    if(r.ok){
-      const data=await r.json();
-      return data;
-    }
-  }catch(_){}
-  return await jsonp(url);
-}
-$("#track-form").addEventListener("submit",async e=>{e.preventDefault();$("#error").style.display="none";$("#result").style.display="none";const btn=$("#track-btn");btn.disabled=true;btn.textContent="Checking...";try{const id=$("#order-id").value.trim();const mobile=normalizeMobile($("#mobile").value);if(!id||!mobile)throw new Error("Order ID and mobile number are required.");const url=API+"?track="+encodeURIComponent(id)+"&mobile="+encodeURIComponent(mobile);const data=await getTrackingData(url);if(!data.success)throw new Error(data.error||"Order not found.");render(data);}catch(err){$("#error").textContent=err.message||"অর্ডারের তথ্য পাওয়া যায়নি।";$("#error").style.display="block";}finally{btn.disabled=false;btn.textContent="Track Order";}});
-</script>
+    const id=$("#order-id").value.trim().toUpperCase();
+    const mobile=normalizeMobile($("#mobile").value);
+    if(!id||!mobile)throw new Error("Order ID and mobile number are required.");
+    const response=await fetch(API+"?orderId="+encodeURIComponent(id)+"&mobile="+encodeURIComponent(mobile),{method:"GET",cache:"no-store"});
+    const data=await response.json().catch(()=>null);
+    if(!response.ok||!data?.success)throw new Error(data?.error||"অর্ডারের তথ্য পাওয়া যায়নি।");
+    render(data);
+  }catch(err){
+    $("#error").textContent=err.message||"অর্ডারের তথ্য পাওয়া যায়নি।";
+    $("#error").style.display="block";
+  }finally{btn.disabled=false;btn.textContent="Track Order";}
+});
+</script>>
 </body></html>
