@@ -22,7 +22,7 @@ button,.button{border:0;border-radius:10px;padding:12px 15px;background:var(--ea
 <main>
 <section class="card">
 <h1>Customer Account</h1>
-<p class="muted">Create an account or securely access your Halal Food account using your verified email address.</p>
+<p class="muted">Create an account with your name, email address and password. Email OTP is not used.</p>
 <div class="tabs" id="tabs">
 <button type="button" class="active" data-mode="login">Log in</button>
 <button type="button" data-mode="signup">Create account</button>
@@ -31,51 +31,22 @@ button,.button{border:0;border-radius:10px;padding:12px 15px;background:var(--ea
 <form id="loginForm">
 <label>Email address<input id="loginEmail" type="email" autocomplete="email" required maxlength="254" placeholder="you@example.com"></label>
 <label>Password<input id="loginPassword" type="password" autocomplete="current-password" required minlength="8" maxlength="128" placeholder="Your password"></label>
-<div class="row"><button type="submit">Log in securely</button><button class="plain" type="button" id="forgotBtn">Forgot password?</button></div>
-<button class="secondary" type="button" id="otpLoginBtn">Email me a one-time login code</button>
+<div class="row"><button type="submit">Log in</button><button class="plain" type="button" id="forgotBtn">Forgot password?</button></div>
 </form>
 <form id="signupForm" class="hidden">
 <label>Your name<input id="fullName" type="text" autocomplete="name" required maxlength="100" placeholder="Full name"></label>
 <label>Email address<input id="signupEmail" type="email" autocomplete="email" required maxlength="254" placeholder="you@example.com"></label>
 <label>Create password<input id="signupPassword" type="password" autocomplete="new-password" required minlength="8" maxlength="128" placeholder="At least 8 characters"></label>
-<p class="muted">We will send a verification email. Your account cannot be used until your email is verified.</p>
-<button type="submit">Create account &amp; verify email</button>
+<p class="muted">Create your account with your name, email address and password. No email OTP will be requested.</p>
+<button type="submit">Create account</button>
 </form>
-<form id="verifySignupForm" class="hidden">
-<h2 class="section-title">Verify your email</h2>
-<p class="muted">Enter the one-time code sent to your email address.</p>
-<label>6-digit verification code<input id="signupToken" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" minlength="6" maxlength="6" required placeholder="123456"></label>
-<button type="submit">Verify email</button>
-<button class="plain" type="button" id="resendSignupBtn">Resend verification email</button>
-</form>
-<form id="otpLoginForm" class="hidden">
-<h2 class="section-title">Email code login</h2>
-<label>Email address<input id="otpEmail" type="email" autocomplete="email" required maxlength="254" placeholder="you@example.com"></label>
-<button type="submit">Send login code</button>
-<p class="muted">This sends a code only to an existing account; it does not create a new account.</p>
-</form>
-<form id="verifyOtpForm" class="hidden">
-<h2 class="section-title">Enter login code</h2>
-<label>6-digit code<input id="otpToken" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" minlength="6" maxlength="6" required placeholder="123456"></label>
-<button type="submit">Verify code &amp; log in</button>
-</form>
-<form id="recoverForm" class="hidden">
-<h2 class="section-title">Reset your password</h2>
-<p class="muted">We will send a recovery email to verify that you own the account.</p>
-<label>Email address<input id="recoverEmail" type="email" autocomplete="email" required maxlength="254" placeholder="you@example.com"></label>
-<button type="submit">Send recovery code</button>
-</form>
-<form id="verifyRecoveryForm" class="hidden">
-<h2 class="section-title">Verify recovery code</h2>
-<label>6-digit recovery code<input id="recoveryToken" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" minlength="6" maxlength="6" required placeholder="123456"></label>
-<button type="submit">Verify code</button>
-</form>
-<form id="newPasswordForm" class="hidden">
-<h2 class="section-title">Choose a new password</h2>
-<label>New password<input id="newPassword" type="password" autocomplete="new-password" required minlength="8" maxlength="128" placeholder="At least 8 characters"></label>
-<label>Confirm new password<input id="confirmPassword" type="password" autocomplete="new-password" required minlength="8" maxlength="128" placeholder="Repeat your password"></label>
-<button type="submit">Save new password</button>
-</form>
+<section id="helpPanel" class="hidden">
+<h2 class="section-title">Need help signing in?</h2>
+<p>If you forgot your password, contact Halal Food support. After verifying your identity, the administrator will help you securely reset it. We cannot view or tell you your existing password.</p>
+<p><strong>Helpline:</strong> <a href="tel:01842031164">01842031164</a></p>
+<p><strong>Email:</strong> <a href="mailto:halalfoodbd.official@gmail.com">halalfoodbd.official@gmail.com</a></p>
+<button type="button" class="secondary" id="backToLoginBtn">Back to log in</button>
+</section>
 <section id="accountPanel" class="hidden">
 <h2 class="section-title">You're signed in</h2>
 <p id="accountEmail" class="muted"></p>
@@ -84,7 +55,7 @@ button,.button{border:0;border-radius:10px;padding:12px 15px;background:var(--ea
 <div class="row"><button id="saveProfileBtn" type="button">Save profile</button><button id="logoutBtn" type="button" class="secondary">Log out</button></div>
 <p class="muted">Order history and tracking will appear here after they are securely connected to your customer account.</p>
 </section>
-<p class="fine">Your password is handled by Supabase Auth and is not stored as readable text. Never share verification codes with anyone. This website is currently a learning/testing project; real delivery and payments are not available.</p>
+<p class="fine">Your password is securely handled by Supabase Auth and is not stored as readable text. If you forget it, contact support for identity verification and a secure reset. This is a learning/testing project; real delivery and payments are not available.</p>
 </section>
 </main>
 <footer>Halal Food · Secure customer access</footer>
@@ -96,32 +67,50 @@ const SUPABASE_URL="https://qfwvrcfkrsydycbfjsxf.supabase.co";
 const SUPABASE_KEY="sb_publishable_X32Rb8W-axGIfgFuppdfZQ_jbc38pcL";
 const client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const $=id=>document.getElementById(id);
-const forms=["loginForm","signupForm","verifySignupForm","otpLoginForm","verifyOtpForm","recoverForm","verifyRecoveryForm","newPasswordForm","accountPanel"];
-let mode="login",pendingSignupEmail="",pendingOtpEmail="",pendingRecoveryEmail="";
+const forms=["loginForm","signupForm","helpPanel","accountPanel"];
 function message(text,type=""){const el=$("message");el.textContent=text;el.className="msg"+(type?" "+type:"")}
 function show(formId){forms.forEach(id=>$(id).classList.toggle("hidden",id!==formId));$("tabs").classList.toggle("hidden",!["loginForm","signupForm"].includes(formId));message("")}
 function setBusy(form,busy){form.querySelectorAll("button").forEach(b=>b.disabled=busy)}
-function validEmail(v){return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)}
 function normalizedEmail(v){return String(v||"").trim().toLowerCase()}
-function showMode(next){mode=next;$("tabs").querySelectorAll("button").forEach(b=>b.classList.toggle("active",b.dataset.mode===next));show(next==="signup"?"signupForm":"loginForm")}
+function showMode(next){$("tabs").querySelectorAll("button").forEach(b=>b.classList.toggle("active",b.dataset.mode===next));show(next==="signup"?"signupForm":"loginForm")}
 $("tabs").addEventListener("click",e=>{const b=e.target.closest("[data-mode]");if(b)showMode(b.dataset.mode)});
-$("loginForm").addEventListener("submit",async e=>{e.preventDefault();const f=e.currentTarget;setBusy(f,true);message("Checking your account…");try{const {data,error}=await client.auth.signInWithPassword({email:normalizedEmail($("loginEmail").value),password:$("loginPassword").value});if(error)throw error;if(!data.user?.email_confirmed_at){await client.auth.signOut();throw new Error("Please verify your email before logging in. Use email code login or check your inbox.");}await showAccount(data.user)}catch(err){message(err.message==="Invalid login credentials"?"Email or password is incorrect.":err.message||"Unable to log in. Please try again.","error")}finally{setBusy(f,false)}});
-$("signupForm").addEventListener("submit",async e=>{e.preventDefault();const f=e.currentTarget;setBusy(f,true);message("Creating your account…");const email=normalizedEmail($("signupEmail").value),password=$("signupPassword").value,name=$("fullName").value.trim();try{const {data,error}=await client.auth.signUp({email,password,options:{data:{full_name:name},emailRedirectTo:location.origin+location.pathname}});if(error)throw error;if(data.user?.email_confirmed_at){pendingSignupEmail=email;show("verifySignupForm");message("Your email is already verified. If needed, enter the latest code sent to your inbox.","success");return;}pendingSignupEmail=email;show("verifySignupForm");message("Check your inbox for the 6-digit verification code. If no code appears, the Supabase email template must be configured to send {{ .Token }}.","success");}catch(err){message(err.message||"Could not create account. Please try again.","error")}finally{setBusy(f,false)}});
-$("verifySignupForm").addEventListener("submit",async e=>{e.preventDefault();const f=e.currentTarget;setBusy(f,true);try{const {data,error}=await client.auth.verifyOtp({email:pendingSignupEmail,token:$("signupToken").value.trim(),type:"signup"});if(error)throw error;if(!data.user?.email_confirmed_at)throw new Error("Email verification could not be confirmed. Request a fresh code and try again.");await ensureProfile(data.user,$("fullName").value.trim());await showAccount(data.user);message("Email verified. Your account is ready.","success")}catch(err){message(err.message||"Code verification failed. Request a new code if it has expired.","error")}finally{setBusy(f,false)}});
-$("resendSignupBtn").addEventListener("click",async()=>{if(!pendingSignupEmail)return message("Please start account creation again.","error");try{const {error}=await client.auth.resend({type:"signup",email:pendingSignupEmail});if(error)throw error;message("A new verification email has been requested. Wait before requesting another code.","success")}catch(err){message(err.message||"Could not resend the email.","error")}});
-$("otpLoginBtn").addEventListener("click",()=>{ $("otpEmail").value=$("loginEmail").value;show("otpLoginForm")});
-$("otpLoginForm").addEventListener("submit",async e=>{e.preventDefault();const f=e.currentTarget;setBusy(f,true);pendingOtpEmail=normalizedEmail($("otpEmail").value);try{const {error}=await client.auth.signInWithOtp({email:pendingOtpEmail,options:{shouldCreateUser:false}});if(error)throw error;show("verifyOtpForm");message("If this email belongs to a verified account, a one-time code will arrive shortly.","success")}catch(err){message(err.message||"Could not send a login code.","error")}finally{setBusy(f,false)}});
-$("verifyOtpForm").addEventListener("submit",async e=>{e.preventDefault();const f=e.currentTarget;setBusy(f,true);try{const {data,error}=await client.auth.verifyOtp({email:pendingOtpEmail,token:$("otpToken").value.trim(),type:"email"});if(error)throw error;if(!data.user?.email_confirmed_at){await client.auth.signOut();throw new Error("Verify your email before using this account.");}await showAccount(data.user);message("You are now signed in.","success")}catch(err){message(err.message||"The code is invalid or expired.","error")}finally{setBusy(f,false)}});
-$("forgotBtn").addEventListener("click",()=>{$("recoverEmail").value=$("loginEmail").value;show("recoverForm")});
-$("recoverForm").addEventListener("submit",async e=>{e.preventDefault();const f=e.currentTarget;setBusy(f,true);pendingRecoveryEmail=normalizedEmail($("recoverEmail").value);try{const {error}=await client.auth.resetPasswordForEmail(pendingRecoveryEmail);if(error)throw error;show("verifyRecoveryForm");message("If the account exists, a recovery email has been requested. Enter the 6-digit code from the email.","success")}catch(err){message(err.message||"Could not request password recovery.","error")}finally{setBusy(f,false)}});
-$("verifyRecoveryForm").addEventListener("submit",async e=>{e.preventDefault();const f=e.currentTarget;setBusy(f,true);try{const {error}=await client.auth.verifyOtp({email:pendingRecoveryEmail,token:$("recoveryToken").value.trim(),type:"recovery"});if(error)throw error;show("newPasswordForm");message("Email verified. Choose a new password.","success")}catch(err){message(err.message||"Recovery code is invalid or expired.","error")}finally{setBusy(f,false)}});
-$("newPasswordForm").addEventListener("submit",async e=>{e.preventDefault();const f=e.currentTarget;setBusy(f,true);try{const p=$("newPassword").value;if(p!==$("confirmPassword").value)throw new Error("The passwords do not match.");const {error}=await client.auth.updateUser({password:p});if(error)throw error;message("Password updated successfully. You can now log in with your new password.","success");await client.auth.signOut();showMode("login");$("loginEmail").value=pendingRecoveryEmail;$("loginPassword").value=""}catch(err){message(err.message||"Could not update the password.","error")}finally{setBusy(f,false)}});
-async function ensureProfile(user,name){if(!user?.id)return;const {error}=await client.from("customer_profiles").upsert({user_id:user.id,full_name:name||user.user_metadata?.full_name||""},{onConflict:"user_id"});if(error)console.warn("Profile setup skipped",error.message)}
-async function showAccount(user){show("accountPanel");$("accountEmail").textContent=user.email||"";const {data,error}=await client.from("customer_profiles").select("full_name,phone").eq("user_id",user.id).maybeSingle();if(!error&&data){$("profileName").value=data.full_name||"";$("profilePhone").value=data.phone||""}else{$("profileName").value=user.user_metadata?.full_name||"";$("profilePhone").value=""}}
-$("saveProfileBtn").addEventListener("click",async()=>{const {data:{user}}=await client.auth.getUser();if(!user)return showMode("login");const {error}=await client.from("customer_profiles").upsert({user_id:user.id,full_name:$("profileName").value.trim(),phone:$("profilePhone").value.trim()||null},{onConflict:"user_id"});if(error)message("Profile could not be saved. Check profile permissions.","error");else message("Profile saved.","success")});
+$("loginForm").addEventListener("submit",async e=>{
+ e.preventDefault();const f=e.currentTarget;setBusy(f,true);message("Checking your account…");
+ try{const {data,error}=await client.auth.signInWithPassword({email:normalizedEmail($("loginEmail").value),password:$("loginPassword").value});if(error)throw error;if(!data.user)throw new Error("Unable to verify this account.");await showAccount(data.user)}
+ catch(err){message(err.message==="Invalid login credentials"?"Email or password is incorrect.":(err.message||"Unable to log in. Please try again."),"error")}
+ finally{setBusy(f,false)}
+});
+$("signupForm").addEventListener("submit",async e=>{
+ e.preventDefault();const f=e.currentTarget;setBusy(f,true);message("Creating your account…");
+ const email=normalizedEmail($("signupEmail").value),password=$("signupPassword").value,name=$("fullName").value.trim();
+ try{
+  const {data,error}=await client.auth.signUp({email,password,options:{data:{full_name:name}}});
+  if(error)throw error;
+  if(data.session&&data.user){await ensureProfile(data.user,name);await showAccount(data.user);message("Account created successfully. You are now signed in.","success");return}
+  message("The account was created, but Supabase still requires email confirmation. The administrator must disable Confirm email in Supabase Auth settings for password-only signup.","error");
+ }catch(err){message(err.message||"Could not create account. Please try again.","error")}
+ finally{setBusy(f,false)}
+});
+$("forgotBtn").addEventListener("click",()=>show("helpPanel"));
+$("backToLoginBtn").addEventListener("click",()=>showMode("login"));
+async function ensureProfile(user,name){
+ if(!user?.id)return;
+ const {error}=await client.from("customer_profiles").upsert({user_id:user.id,full_name:name||user.user_metadata?.full_name||""},{onConflict:"user_id"});
+ if(error)console.warn("Profile setup skipped",error.message)
+}
+async function showAccount(user){
+ show("accountPanel");$("accountEmail").textContent=user.email||"";
+ const {data,error}=await client.from("customer_profiles").select("full_name,phone").eq("user_id",user.id).maybeSingle();
+ if(!error&&data){$("profileName").value=data.full_name||"";$("profilePhone").value=data.phone||""}
+ else{$("profileName").value=user.user_metadata?.full_name||"";$("profilePhone").value=""}
+}
+$("saveProfileBtn").addEventListener("click",async()=>{
+ const {data:{user}}=await client.auth.getUser();if(!user)return showMode("login");
+ const {error}=await client.from("customer_profiles").upsert({user_id:user.id,full_name:$("profileName").value.trim(),phone:$("profilePhone").value.trim()||null},{onConflict:"user_id"});
+ if(error)message("Profile could not be saved. Check profile permissions.","error");else message("Profile saved.","success")
+});
 $("logoutBtn").addEventListener("click",async()=>{await client.auth.signOut();showMode("login");message("You have been logged out.","success")});
-client.auth.onAuthStateChange((event,session)=>{if(event==="PASSWORD_RECOVERY"){show("newPasswordForm");message("Choose a new password to finish resetting your account.","success")}});
-client.auth.getSession().then(async({data})=>{const user=data.session?.user;if(user?.email_confirmed_at)await showAccount(user)});
+client.auth.getSession().then(async({data})=>{const user=data.session?.user;if(user)await showAccount(user)});
 })();
 </script>
 </body>
