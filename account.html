@@ -65,7 +65,12 @@ button,.button{border:0;border-radius:10px;padding:12px 15px;background:var(--ea
 <label>Your name<input id="profileName" type="text" maxlength="100" autocomplete="name"></label>
 <label>Phone number (optional)<input id="profilePhone" type="tel" maxlength="24" autocomplete="tel" placeholder="+880..."></label>
 <div class="row"><button id="saveProfileBtn" type="button">Save profile</button><button id="logoutBtn" type="button" class="secondary">Log out</button></div>
-<p class="muted">Order history and tracking will appear here after they are securely connected to your customer account.</p>
+<section id="myOrdersSection" style="margin-top:24px">
+<h2 class="section-title">My Orders</h2>
+<p class="muted">Orders placed using this same email address appear here. This is a test project; real delivery and payments are not available.</p>
+<div id="myOrdersMsg" class="msg" role="status" aria-live="polite">Loading your orders…</div>
+<div id="myOrdersList" style="display:grid;gap:12px"></div>
+</section>
 </section>
 <p class="fine">Your password is securely handled by Supabase Auth and is never visible to Halal Food staff. Use the reset link sent to your registered email if you forget it. This is a learning/testing project; real delivery and payments are not available.</p>
 </section>
@@ -137,11 +142,26 @@ async function ensureProfile(user,name){
  const {error}=await client.from("customer_profiles").upsert({user_id:user.id,full_name:name||user.user_metadata?.full_name||""},{onConflict:"user_id"});
  if(error)console.warn("Profile setup skipped",error.message)
 }
+function escapeHtml(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
+function money(v){return "৳"+Number(v||0).toLocaleString("en-BD",{maximumFractionDigits:2})}
+async function loadMyOrders(user){
+ const msg=$("myOrdersMsg"),list=$("myOrdersList");msg.textContent="Loading your orders…";msg.className="msg";list.innerHTML="";
+ const email=String(user?.email||"").trim().toLowerCase();
+ if(!email){msg.textContent="Your login did not provide an email address. Orders cannot be matched safely.";msg.className="msg error";return}
+ const {data,error}=await client.from("orders").select("id,order_number,total,status,ordered_at,order_items(product_name,quantity,unit,line_total)").eq("customer_email",email).order("ordered_at",{ascending:false}).limit(100);
+ if(error){msg.textContent="Order history is not available right now. Please refresh and try again.";msg.className="msg error";console.warn("Customer order history query failed",error.message);return}
+ const rows=data||[];
+ if(!rows.length){msg.textContent="No orders found for "+email+". Orders placed with a different email will not appear here.";msg.className="msg";return}
+ msg.textContent="Found "+rows.length+" order(s) for your account.";msg.className="msg success";
+ const labels={pending:"Pending",processing:"Processing",shipped:"Shipped",delivered:"Delivered",cancelled:"Cancelled"};
+ list.innerHTML=rows.map(o=>'<article style="border:1px solid var(--border);border-radius:12px;padding:14px;background:#fff"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><strong>'+escapeHtml(o.order_number||o.id.slice(0,8))+'</strong><span style="border-radius:99px;padding:4px 9px;background:#f0eee8;font-size:12px">'+escapeHtml(labels[o.status]||o.status)+'</span></div><p class="muted" style="margin:8px 0">Placed: '+(o.ordered_at?new Date(o.ordered_at).toLocaleString("en-BD"):"—")+'</p><div>'+((o.order_items||[]).map(it=>'<div style="display:flex;justify-content:space-between;gap:12px;padding:5px 0;border-top:1px solid #eee"><span>'+escapeHtml(it.product_name)+' × '+escapeHtml(it.quantity)+' '+escapeHtml(it.unit)+'</span><strong>'+money(it.line_total)+'</strong></div>').join(""))+'</div><p style="text-align:right;margin-bottom:0"><strong>Total: '+money(o.total)+'</strong></p></article>').join("");
+}
 async function showAccount(user){
  show("accountPanel");$("accountEmail").textContent=user.email||"";
  const {data,error}=await client.from("customer_profiles").select("full_name,phone").eq("user_id",user.id).maybeSingle();
  if(!error&&data){$("profileName").value=data.full_name||"";$("profilePhone").value=data.phone||""}
  else{$("profileName").value=user.user_metadata?.full_name||"";$("profilePhone").value=""}
+ await loadMyOrders(user);
 }
 $("saveProfileBtn").addEventListener("click",async()=>{
  const {data:{user}}=await client.auth.getUser();if(!user)return showMode("login");
