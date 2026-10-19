@@ -586,3 +586,28 @@ picture{display:contents}
     justify-content: center !important;
   }
 }
+
+
+/* Mobile: hide Order Now, keep only Add to Cart */
+@media (max-width: 900px) {
+  .order-btn,
+  a.order-btn,
+  .product-foot .order-btn {
+    display: none !important;
+  }
+
+  /* Add to Cart takes full width so it is never clipped */
+  .product-foot {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .product-foot .cart-add-btn {
+    width: 100% !important;
+    max-width: 100%;
+    justify-content: center;
+    box-sizing: border-box;
+    white-space: nowrap;
+  }
+}
