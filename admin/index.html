@@ -36,6 +36,16 @@ input,button,select{font:inherit;padding:11px 13px;border-radius:10px;border:1px
 <div class="card stat"><span class="muted">Delivered</span><strong id="deliveredCount">0</strong></div>
 <div class="card stat"><span class="muted">Revenue</span><strong id="revenue">৳0</strong></div>
 </div>
+<div class="card" style="margin-bottom:20px">
+  <div class="top"><div><h2>Website Analytics</h2><p class="muted">First-party events saved in Supabase · last 7 days</p></div><span id="analyticsUpdated" class="muted"></span></div>
+  <div class="stats">
+    <div class="card stat"><span class="muted">Page views</span><strong id="analyticsPageViews">—</strong></div>
+    <div class="card stat"><span class="muted">Product views</span><strong id="analyticsProductViews">—</strong></div>
+    <div class="card stat"><span class="muted">Add to cart</span><strong id="analyticsAddToCart">—</strong></div>
+    <div class="card stat"><span class="muted">Checkout starts</span><strong id="analyticsCheckout">—</strong></div>
+  </div>
+  <p id="analyticsMsg" class="muted">Loading analytics…</p>
+</div>
 <div class="card"><div class="top"><h2>Orders</h2><span id="lastUpdated" class="muted"></span></div>
 <div class="table-wrap"><table><thead><tr><th>Order</th><th>Customer</th><th>Phone</th><th>Total</th><th>Status</th><th>Time</th><th></th></tr></thead><tbody id="ordersBody"><tr><td colspan="7" class="muted">Loading…</td></tr></tbody></table></div></div>
 </section>
@@ -58,6 +68,22 @@ $("authForm").addEventListener("submit",async e=>{
  $("authMsg").textContent="";
 });
 
+async function loadAnalytics(){
+ const since=new Date(Date.now()-7*24*60*60*1000).toISOString();
+ const {data,error}=await client.from("analytics_events").select("event_name,occurred_at,item_name,value").gte("occurred_at",since).order("occurred_at",{ascending:false}).limit(5000);
+ if(error){
+   $("analyticsMsg").textContent="Analytics unavailable. Verify Admin access and database policies.";
+   return;
+ }
+ const rows=data||[];
+ const count=name=>rows.filter(x=>x.event_name===name).length;
+ $("analyticsPageViews").textContent=count("page_view").toLocaleString("en-BD");
+ $("analyticsProductViews").textContent=count("view_item").toLocaleString("en-BD");
+ $("analyticsAddToCart").textContent=count("add_to_cart").toLocaleString("en-BD");
+ $("analyticsCheckout").textContent=count("begin_checkout").toLocaleString("en-BD");
+ $("analyticsMsg").textContent=rows.length ? "Showing up to "+rows.length.toLocaleString("en-BD")+" recent events from the last 7 days. These are website events, not proof of completed sales." : "No analytics events recorded yet. Visit the website after deployment to begin collecting events.";
+ $("analyticsUpdated").textContent="Updated "+new Date().toLocaleTimeString("en-BD");
+}
 async function load(){
  const {data,error}=await client.from("orders").select("id,order_number,customer_name,customer_phone,customer_email,delivery_address,total,status,ordered_at,order_items(id,product_name,quantity,unit,unit_price,line_total,product_image_url)").order("ordered_at",{ascending:false}).limit(100);
  if(error){$("ordersBody").innerHTML='<tr><td colspan="7">'+escapeHtml(error.message)+'</td></tr>';return}
@@ -67,6 +93,7 @@ async function load(){
  $("deliveredCount").textContent=cache.filter(x=>x.status==="delivered").length;
  $("revenue").textContent=money(cache.filter(x=>x.status!=="cancelled").reduce((s,x)=>s+Number(x.total||0),0));
  $("lastUpdated").textContent="Updated "+new Date().toLocaleTimeString("en-BD");
+ loadAnalytics();
  $("ordersBody").innerHTML=cache.length?cache.map((x,i)=>{
    const items=(x.order_items||[]).map(it=>'<div class="item">'+(it.product_image_url?'<img src="'+escapeHtml(it.product_image_url)+'" alt="">':'')+'<span>'+escapeHtml(it.product_name)+' × '+escapeHtml(it.quantity)+' '+escapeHtml(it.unit)+' — '+money(it.line_total)+'</span></div>').join("")||'<span class="muted">No items</span>';
    return '<tr><td>'+(escapeHtml(x.order_number||x.id.slice(0,8)))+'</td><td>'+escapeHtml(x.customer_name)+'</td><td>'+escapeHtml(x.customer_phone)+'</td><td>'+money(x.total)+'</td><td><select class="status" data-status="'+x.id+'">'+["pending","processing","shipped","delivered","cancelled"].map(s=>'<option '+(s===x.status?'selected':'')+'>'+s+'</option>').join("")+'</select></td><td>'+new Date(x.ordered_at).toLocaleString("en-BD")+'</td><td><button class="secondary" data-detail="'+i+'">Details</button></td></tr><tr class="details" id="detail-'+i+'"><td colspan="7"><b>Address:</b> '+escapeHtml(x.delivery_address)+'<br><b>Email:</b> '+escapeHtml(x.customer_email||"—")+'<br>'+items+'</td></tr>';
@@ -79,7 +106,7 @@ async function updateStatus(id,status){
  if(error){alert(error.message);load();return}
  load();
 }
-$("refresh").onclick=load;
+$("refresh").onclick=()=>{load();loadAnalytics();};
 $("logout").onclick=()=>client.auth.signOut();
 
 client.auth.onAuthStateChange((_event,session)=>{
