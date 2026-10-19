@@ -569,3 +569,9 @@ picture{display:contents}
     white-space: nowrap;
   }
 }
+
+/* Final mobile override for Featured Products only. */
+@media screen and (max-width: 600px) {
+  #products .featured-grid-4 .product-foot > .order-btn { display: none !important; }
+  #products .featured-grid-4 .product-foot > .cart-add-btn { display: inline-flex !important; width: 100% !important; max-width: 100% !important; flex: 1 1 100% !important; grid-column: 1 / -1 !important; box-sizing: border-box !important; align-items: center !important; justify-content: center !important; }
+}
