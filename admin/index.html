@@ -110,6 +110,7 @@ async function load(){
  const {data,error}=await client.from("orders").select("id,order_number,customer_name,customer_phone,customer_email,delivery_address,total,status,ordered_at,order_items(id,product_name,quantity,unit,unit_price,line_total,product_image_url)").order("ordered_at",{ascending:false}).limit(100);
  if(error){$("ordersBody").innerHTML='<tr><td colspan="7">'+escapeHtml(error.message)+'</td></tr>';return}
  cache=data||[];
+ renderCustomerOrderHistory();
  $("ordersCount").textContent=cache.length;
  $("pendingCount").textContent=cache.filter(x=>x.status==="pending").length;
  $("deliveredCount").textContent=cache.filter(x=>x.status==="delivered").length;
