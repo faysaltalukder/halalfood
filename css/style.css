@@ -202,3 +202,25 @@ picture{display:contents}
 @media (max-width: 420px) {
   .product-foot { gap: 8px; }
 }
+
+/* Final spacing refinement for every home-page product section and featured cards. */
+.product-body h3,
+.mrow-name-link h3,
+.jfy-name-link h3 {
+  margin-bottom: 2px;
+}
+.product-body { padding-bottom: 10px; }
+.product-foot {
+  row-gap: 5px;
+  column-gap: 8px;
+  padding-top: 5px;
+  margin-top: 0;
+}
+.product-foot .price {
+  padding-top: 0;
+  padding-bottom: 0;
+  line-height: 1.25;
+}
+.featured-grid-4 .product-foot { gap: 5px; }
+.featured-grid-4 .product-foot .price { padding-bottom: 0; }
+.mrow-price, .jfy-price { margin-top: 3px; line-height: 1.25; }
