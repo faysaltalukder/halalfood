@@ -509,3 +509,46 @@ picture{display:contents}
 }
 /* Hide the legacy Botpress bubble so it cannot reappear on mobile or desktop. */
 #bp-web-widget-container, #bp-widget, .bp-widget-web, iframe[src*="botpress"] { display:none !important; }
+
+
+/* Mobile fix: prevent featured-card action labels/icons from being clipped.
+   Stack actions at full card width on phones; desktop/tablet layout is unchanged. */
+@media (max-width: 600px) {
+  .featured-grid-4 .product-foot {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+  }
+  .featured-grid-4 .product-foot .order-btn,
+  .featured-grid-4 .product-foot .cart-add-btn {
+    display: flex !important;
+    flex: 0 0 auto !important;
+    width: 100% !important;
+    max-width: 100%;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    min-height: 42px;
+    padding: 9px 12px !important;
+    gap: 8px !important;
+    justify-content: center !important;
+    white-space: nowrap !important;
+    overflow: visible !important;
+    font-size: 13px !important;
+    line-height: 1.2 !important;
+    letter-spacing: 0 !important;
+  }
+  .featured-grid-4 .product-foot .order-btn .btn-icon,
+  .featured-grid-4 .product-foot .cart-add-btn .btn-icon {
+    display: inline-block;
+    width: 16px !important;
+    height: 16px !important;
+    flex: 0 0 16px !important;
+  }
+  .featured-grid-4 .product-foot .order-btn > *,
+  .featured-grid-4 .product-foot .cart-add-btn > * {
+    flex: 0 1 auto;
+    min-width: 0;
+    white-space: nowrap;
+  }
+}
