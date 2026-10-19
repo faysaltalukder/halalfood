@@ -611,3 +611,85 @@ picture{display:contents}
     white-space: nowrap;
   }
 }
+
+
+/* Category product cards: desktop shows paired actions; mobile shows one full-width cart action. */
+@media (min-width: 901px) {
+  body.category-products-page .product-card .product-foot {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+    align-items: center !important;
+    justify-content: stretch !important;
+    gap: 10px !important;
+  }
+  body.category-products-page .product-card .product-foot > .price {
+    grid-column: 1 / -1;
+    min-width: 0;
+  }
+  body.category-products-page .product-card .product-foot > .cart-add-btn,
+  body.category-products-page .product-card .product-foot > .category-order-btn {
+    display: inline-flex !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    min-height: 42px;
+    box-sizing: border-box !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    padding: 9px 8px !important;
+    white-space: nowrap !important;
+    font-size: 13px !important;
+  }
+  body.category-products-page .product-card .product-foot > .category-order-btn {
+    background: var(--orange-strong, #c97b3d) !important;
+    color: var(--white, #fffdf8) !important;
+    border: 1px solid var(--orange-strong, #c97b3d) !important;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 700;
+    transition: background .18s ease, border-color .18s ease, color .18s ease, transform .18s ease;
+  }
+  body.category-products-page .product-card .product-foot > .category-order-btn:hover,
+  body.category-products-page .product-card .product-foot > .category-order-btn:focus-visible {
+    background: var(--navy, #2b2a3d) !important;
+    border-color: var(--navy, #2b2a3d) !important;
+    color: var(--cream, #f2f0ea) !important;
+    transform: translateY(-1px);
+  }
+}
+@media (max-width: 900px) {
+  body.category-products-page .product-card .product-foot {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    gap: 10px !important;
+  }
+  body.category-products-page .product-card .product-foot > .category-order-btn,
+  body.category-products-page .product-card .product-foot > .order-btn {
+    display: none !important;
+  }
+  body.category-products-page .product-card .product-foot > .cart-add-btn {
+    display: inline-flex !important;
+    flex: 0 0 auto !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    min-height: 44px;
+    box-sizing: border-box !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    padding: 10px 12px !important;
+    white-space: nowrap !important;
+    overflow: visible !important;
+    font-size: 14px !important;
+    line-height: 1.2 !important;
+  }
+  body.category-products-page .product-card .product-foot > .cart-add-btn > * {
+    flex: 0 0 auto !important;
+    min-width: 0 !important;
+    white-space: nowrap !important;
+  }
+}
