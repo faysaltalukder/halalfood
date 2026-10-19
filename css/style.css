@@ -448,3 +448,64 @@ picture{display:contents}
     stroke-linejoin: round;
   }
 }
+
+
+/* Desktop-only floating contact launcher with Call and WhatsApp choices. */
+.hf-contact-widget { display:none; }
+@media (min-width: 901px) {
+  .hf-contact-widget {
+    display:block;
+    position:fixed;
+    right:28px;
+    bottom:28px;
+    z-index:1000;
+  }
+  .hf-contact-launcher {
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    width:58px;
+    height:58px;
+    border:0;
+    border-radius:50%;
+    background:var(--orange, #c97b3d);
+    color:#fffdf8;
+    box-shadow:0 5px 18px rgba(43,42,61,.2);
+    cursor:pointer;
+  }
+  .hf-contact-launcher svg { width:25px;height:25px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round; }
+  .hf-contact-close-icon { display:none; }
+  .hf-contact-launcher[aria-expanded="true"] .hf-contact-chat-icon { display:none; }
+  .hf-contact-launcher[aria-expanded="true"] .hf-contact-close-icon { display:block; }
+  .hf-contact-options {
+    position:absolute;
+    right:0;
+    bottom:70px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    min-width:170px;
+    padding:10px;
+    border:1px solid var(--line, #d8d4c9);
+    border-radius:12px;
+    background:var(--white, #fffdf8);
+    box-shadow:0 8px 28px rgba(43,42,61,.16);
+  }
+  .hf-contact-options[hidden] { display:none !important; }
+  .hf-contact-option {
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:12px 14px;
+    border-radius:8px;
+    color:var(--navy, #2b2a3d);
+    text-decoration:none;
+    font-weight:700;
+    white-space:nowrap;
+  }
+  .hf-contact-option:hover { background:var(--cream, #f2f0ea); }
+  .hf-contact-option svg { width:20px;height:20px;flex:0 0 20px;fill:currentColor; }
+  .hf-contact-call svg { fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round; }
+}
+/* Hide the legacy Botpress bubble so it cannot reappear on mobile or desktop. */
+#bp-web-widget-container, #bp-widget, .bp-widget-web, iframe[src*="botpress"] { display:none !important; }
