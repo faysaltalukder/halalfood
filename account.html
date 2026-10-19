@@ -40,12 +40,24 @@ button,.button{border:0;border-radius:10px;padding:12px 15px;background:var(--ea
 <p class="muted">Create your account with your name, email address and password. No email OTP will be requested.</p>
 <button type="submit">Create account</button>
 </form>
-<section id="helpPanel" class="hidden">
-<h2 class="section-title">Need help signing in?</h2>
-<p>If you forgot your password, contact Halal Food support. After verifying your identity, the administrator will help you securely reset it. We cannot view or tell you your existing password.</p>
-<p><strong>Helpline:</strong> <a href="tel:01842031164">01842031164</a></p>
-<p><strong>Email:</strong> <a href="mailto:halalfoodbd.official@gmail.com">halalfoodbd.official@gmail.com</a></p>
+<section id="forgotPanel" class="hidden">
+<h2 class="section-title">Reset your password</h2>
+<p>Enter the email address registered to your Halal Food account. If an account exists, we will send a secure password-reset link to that email.</p>
+<form id="forgotForm">
+<label>Registered email address<input id="forgotEmail" type="email" autocomplete="email" required maxlength="254" placeholder="you@example.com"></label>
+<button type="submit">Email me a reset link</button>
 <button type="button" class="secondary" id="backToLoginBtn">Back to log in</button>
+</form>
+</section>
+<section id="resetPanel" class="hidden">
+<h2 class="section-title">Choose a new password</h2>
+<p>Set a new password for your existing Halal Food account. Your old password is never shown to Halal Food staff.</p>
+<form id="resetForm">
+<label>New password<input id="newPassword" type="password" autocomplete="new-password" required minlength="8" maxlength="128" placeholder="At least 8 characters"></label>
+<label>Confirm new password<input id="confirmPassword" type="password" autocomplete="new-password" required minlength="8" maxlength="128" placeholder="Type it again"></label>
+<button type="submit">Update password</button>
+<button type="button" class="secondary" id="cancelResetBtn">Back to log in</button>
+</form>
 </section>
 <section id="accountPanel" class="hidden">
 <h2 class="section-title">You're signed in</h2>
@@ -55,7 +67,7 @@ button,.button{border:0;border-radius:10px;padding:12px 15px;background:var(--ea
 <div class="row"><button id="saveProfileBtn" type="button">Save profile</button><button id="logoutBtn" type="button" class="secondary">Log out</button></div>
 <p class="muted">Order history and tracking will appear here after they are securely connected to your customer account.</p>
 </section>
-<p class="fine">Your password is securely handled by Supabase Auth and is not stored as readable text. If you forget it, contact support for identity verification and a secure reset. This is a learning/testing project; real delivery and payments are not available.</p>
+<p class="fine">Your password is securely handled by Supabase Auth and is never visible to Halal Food staff. Use the reset link sent to your registered email if you forget it. This is a learning/testing project; real delivery and payments are not available.</p>
 </section>
 </main>
 <footer>Halal Food · Secure customer access</footer>
@@ -67,7 +79,7 @@ const SUPABASE_URL="https://qfwvrcfkrsydycbfjsxf.supabase.co";
 const SUPABASE_KEY="sb_publishable_X32Rb8W-axGIfgFuppdfZQ_jbc38pcL";
 const client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const $=id=>document.getElementById(id);
-const forms=["loginForm","signupForm","helpPanel","accountPanel"];
+const forms=["loginForm","signupForm","forgotPanel","resetPanel","accountPanel"];
 function message(text,type=""){const el=$("message");el.textContent=text;el.className="msg"+(type?" "+type:"")}
 function show(formId){forms.forEach(id=>$(id).classList.toggle("hidden",id!==formId));$("tabs").classList.toggle("hidden",!["loginForm","signupForm"].includes(formId));message("")}
 function setBusy(form,busy){form.querySelectorAll("button").forEach(b=>b.disabled=busy)}
@@ -91,8 +103,34 @@ $("signupForm").addEventListener("submit",async e=>{
  }catch(err){message(err.message||"Could not create account. Please try again.","error")}
  finally{setBusy(f,false)}
 });
-$("forgotBtn").addEventListener("click",()=>show("helpPanel"));
+$("forgotBtn").addEventListener("click",()=>{ $("forgotEmail").value=normalizedEmail($("loginEmail").value); show("forgotPanel"); $("forgotEmail").focus(); });
 $("backToLoginBtn").addEventListener("click",()=>showMode("login"));
+$("cancelResetBtn").addEventListener("click",()=>{ window.history.replaceState({},document.title,window.location.pathname); showMode("login"); });
+$("forgotForm").addEventListener("submit",async e=>{
+ e.preventDefault();const f=e.currentTarget;setBusy(f,true);message("Sending a secure reset link…");
+ try{
+  const email=normalizedEmail($("forgotEmail").value);
+  const {error}=await client.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+window.location.pathname+"?mode=reset"});
+  if(error)throw error;
+  message("If a Halal Food account exists for that email address, a password-reset link has been sent. Check your inbox and spam folder. The link may expire for security.","success");
+ }catch(err){message("We could not send the reset email right now. Please try again later. If the problem continues, contact halalfoodbd.official@gmail.com.","error");console.error("Password reset request failed",err)}
+ finally{setBusy(f,false)}
+});
+$("resetForm").addEventListener("submit",async e=>{
+ e.preventDefault();const f=e.currentTarget;const password=$("newPassword").value;setBusy(f,true);
+ if(password!==$("confirmPassword").value){message("The passwords do not match.","error");setBusy(f,false);return}
+ if(password.length<8){message("Use at least 8 characters for your new password.","error");setBusy(f,false);return}
+ message("Updating your password…");
+ try{
+  const {data:{session}}=await client.auth.getSession();
+  if(!session){throw new Error("This reset link is invalid or has expired. Please request a new reset email.")}
+  const {error}=await client.auth.updateUser({password});if(error)throw error;
+  await client.auth.signOut();window.history.replaceState({},document.title,window.location.pathname);
+  showMode("login");$("loginEmail").value=normalizedEmail($("forgotEmail").value||$("loginEmail").value);$("loginPassword").value="";
+  message("Your password has been updated. Please log in with your new password.","success");
+ }catch(err){message(err.message||"Could not update the password. Request a new reset link and try again.","error")}
+ finally{setBusy(f,false)}
+});
 async function ensureProfile(user,name){
  if(!user?.id)return;
  const {error}=await client.from("customer_profiles").upsert({user_id:user.id,full_name:name||user.user_metadata?.full_name||""},{onConflict:"user_id"});
@@ -110,7 +148,16 @@ $("saveProfileBtn").addEventListener("click",async()=>{
  if(error)message("Profile could not be saved. Check profile permissions.","error");else message("Profile saved.","success")
 });
 $("logoutBtn").addEventListener("click",async()=>{await client.auth.signOut();showMode("login");message("You have been logged out.","success")});
-client.auth.getSession().then(async({data})=>{const user=data.session?.user;if(user)await showAccount(user)});
+client.auth.getSession().then(async({data})=>{
+ const isReset=new URLSearchParams(window.location.search).get("mode")==="reset" || window.location.hash.includes("type=recovery");
+ const user=data.session?.user;
+ if(isReset){
+  if(user){show("resetPanel");message("Choose a new password for your existing account.","success")}
+  else{showMode("login");message("This reset link is invalid or has expired. Request a new password-reset email.","error")}
+  return;
+ }
+ if(user)await showAccount(user);
+});
 })();
 </script>
 </body>
