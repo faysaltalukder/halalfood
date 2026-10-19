@@ -22,10 +22,9 @@ input,button,select{font:inherit;padding:11px 13px;border-radius:10px;border:1px
 <header><strong>Halal Food — Admin</strong><button id="logout" class="secondary hidden">Logout</button></header>
 <main>
 <section id="authCard" class="card">
-<h1 id="authTitle">Admin Login</h1>
+<h1>Admin Login</h1>
 <p class="muted">Authorized account: halalfoodbd.official@gmail.com</p>
-<form id="authForm"><input id="email" type="email" value="halalfoodbd.official@gmail.com" required><input id="password" type="password" minlength="8" placeholder="Password" required><button id="authButton">Sign in</button></form>
-<button id="toggleSignup" class="link">First time? Create the admin account</button>
+<form id="authForm"><input id="email" type="email" value="halalfoodbd.official@gmail.com" autocomplete="username" readonly required><input id="password" type="password" autocomplete="current-password" placeholder="Admin password" required><button id="authButton">Sign in</button></form>
 <p id="authMsg" class="msg muted"></p>
 </section>
 
@@ -47,22 +46,16 @@ const SUPABASE_URL="https://qfwvrcfkrsydycbfjsxf.supabase.co";
 const SUPABASE_KEY="sb_publishable_X32Rb8W-axGIfgFuppdfZQ_jbc38pcL";
 const client=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const $=id=>document.getElementById(id);
-let signup=false, cache=[];
+let cache=[];
 
 function money(n){return "৳"+Number(n||0).toLocaleString("en-BD",{maximumFractionDigits:2})}
 function escapeHtml(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
-function setAuthMode(){signup=!signup;$("authTitle").textContent=signup?"Create Admin Account":"Admin Login";$("authButton").textContent=signup?"Create account":"Sign in";$("toggleSignup").textContent=signup?"Already have an account? Sign in":"First time? Create the admin account";$("authMsg").textContent=""}
-$("toggleSignup").onclick=setAuthMode;
-
 $("authForm").addEventListener("submit",async e=>{
- e.preventDefault(); $("authMsg").textContent=signup?"Creating account…":"Signing in…";
+ e.preventDefault(); $("authMsg").textContent="Signing in…";
  const email=$("email").value.trim(),password=$("password").value;
- let result;
- if(signup) result=await client.auth.signUp({email,password});
- else result=await client.auth.signInWithPassword({email,password});
- if(result.error){$("authMsg").textContent=result.error.message;return}
- if(signup && !result.data.session){$("authMsg").textContent="Account created. Check the email inbox to confirm the account, then sign in."}
- else $("authMsg").textContent="";
+ const result=await client.auth.signInWithPassword({email,password});
+ if(result.error){$("authMsg").textContent="Sign-in failed. Check your password or account settings.";return}
+ $("authMsg").textContent="";
 });
 
 async function load(){
