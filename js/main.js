@@ -776,14 +776,67 @@ document.addEventListener("DOMContentLoaded", () => {
     if(document.readyState==='complete') armTimer(); else window.addEventListener('load',armTimer);
   }
 
+  var firstPartySessionId = '';
+  try {
+    firstPartySessionId = sessionStorage.getItem('hf_analytics_session') || '';
+    if (!firstPartySessionId) {
+      firstPartySessionId = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + '-' + Math.random().toString(36).slice(2));
+      sessionStorage.setItem('hf_analytics_session', firstPartySessionId);
+    }
+  } catch (_) {}
+  var firstPartyEndpoint = 'https://qfwvrcfkrsydycbfjsxf.supabase.co/functions/v1/analytics-ingest';
+  var firstPartyEvents = new Set(['page_view','view_item','view_item_list','select_item','search','add_to_cart','view_cart','begin_checkout','order_submit','order_success','track_order','whatsapp_click','phone_click']);
+  function sendFirstPartyEvent(eventName, params) {
+    if (!firstPartyEvents.has(eventName)) return;
+    var p = params || {};
+    var items = Array.isArray(p.items) ? p.items : [];
+    var first = items.length && items[0] && typeof items[0] === 'object' ? items[0] : {};
+    var urlParams = new URLSearchParams(location.search);
+    var row = {
+      event_name: eventName,
+      occurred_at: new Date().toISOString(),
+      page_path: location.pathname,
+      page_title: document.title,
+      session_id: firstPartySessionId || null,
+      item_id: first.item_id || first.itemId || first.slug || null,
+      item_name: first.item_name || first.name || null,
+      item_category: first.item_category || first.category || null,
+      value: typeof p.value === 'number' && Number.isFinite(p.value) ? p.value : null,
+      quantity: typeof first.quantity === 'number' ? first.quantity : null,
+      search_term: typeof p.search_term === 'string' ? p.search_term.slice(0,120) : null,
+      source: urlParams.get('utm_source'),
+      medium: urlParams.get('utm_medium'),
+      campaign: urlParams.get('utm_campaign')
+    };
+    try {
+      fetch(firstPartyEndpoint, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(row),
+        keepalive: true,
+        credentials: 'omit',
+        referrerPolicy: 'no-referrer'
+      }).catch(function(){});
+    } catch (_) {}
+  }
+
   window.halalTrack=function(eventName,params,metaEvent,metaParams){
     var safeParams=params||{};
+    sendFirstPartyEvent(eventName, safeParams);
     window.dataLayer.push(Object.assign({event:eventName},safeParams));
     if(typeof window.gtag==='function') window.gtag('event',eventName,safeParams);
     if(typeof window.fbq==='function' && metaEvent){
       window.fbq('track',metaEvent,metaParams||safeParams);
     }
   };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+      window.halalTrack('page_view', {page_title: document.title});
+    }, {once:true});
+  } else {
+    window.halalTrack('page_view', {page_title: document.title});
+  }
 
   window.halalTrackItems=function(items){
     return (Array.isArray(items)?items:[]).map(function(item){
