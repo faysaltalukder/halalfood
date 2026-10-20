@@ -2273,3 +2273,84 @@ button.cart-qty-action:focus-visible {
 @media screen and (min-width: 901px) {
   .mobile-drawer-account-cta { display: none !important; }
 }
+
+
+/* Requested mobile-only header and floating-cart visibility refinements */
+@media (max-width: 900px) {
+  /* Give the brand mark a little more presence without changing desktop sizing. */
+  header .brand-logo {
+    width: 36px !important;
+    height: 36px !important;
+    flex-basis: 36px !important;
+  }
+
+  /* Borderless, asymmetric three-line menu mark in the site palette. */
+  header .mobile-menu-toggle {
+    position: relative;
+    border: 0 !important;
+    border-radius: 4px !important;
+    box-shadow: none !important;
+    color: transparent !important;
+    font-size: 0 !important;
+    background: linear-gradient(var(--navy-soft), var(--navy-soft)) center / 23px 2.5px no-repeat !important;
+    transition: transform .16s ease, opacity .16s ease;
+  }
+  header .mobile-menu-toggle::before,
+  header .mobile-menu-toggle::after {
+    content: "";
+    position: absolute;
+    height: 2.5px;
+    border-radius: 999px;
+    background: var(--orange);
+  }
+  header .mobile-menu-toggle::before {
+    width: 22px;
+    left: 8px;
+    top: 9px;
+    transform: rotate(-5deg);
+  }
+  header .mobile-menu-toggle::after {
+    width: 17px;
+    left: 13px;
+    bottom: 9px;
+    transform: rotate(-5deg);
+  }
+  header .mobile-menu-toggle:hover,
+  header .mobile-menu-toggle:focus-visible {
+    box-shadow: none !important;
+    background-color: transparent !important;
+  }
+  header .mobile-menu-toggle:active { transform: scale(.94); }
+
+  /* Enlarge the existing sun/moon control moderately. */
+  header .header-actions .theme-toggle,
+  header .header-actions [data-theme-toggle] {
+    width: 42px !important;
+    height: 42px !important;
+    flex-basis: 42px !important;
+    font-size: 1.4rem !important;
+  }
+  header .header-actions [data-theme-toggle] span {
+    font-size: 24px;
+    line-height: 1;
+  }
+}
+
+@media (max-width: 380px) {
+  header .brand-logo {
+    width: 33px !important;
+    height: 33px !important;
+    flex-basis: 33px !important;
+  }
+  header .mobile-menu-toggle {
+    width: 36px !important;
+    height: 38px !important;
+    flex-basis: 36px !important;
+  }
+  header .header-actions .theme-toggle,
+  header .header-actions [data-theme-toggle] {
+    width: 39px !important;
+    height: 39px !important;
+    flex-basis: 39px !important;
+  }
+}
