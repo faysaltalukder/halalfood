@@ -2542,8 +2542,8 @@ button.cart-qty-action:focus-visible {
 
   /* The floating Items/Cart summary fades while mobile search is active. */
   body:has(.search-wrap.mobile-search-open) .mobile-floating-cart {
-    filter: blur(1.6px);
-    opacity: .26 !important;
+    filter: blur(1.2px);
+    opacity: .45 !important;
     pointer-events: none !important;
     transition: opacity .16s ease, filter .16s ease;
   }
