@@ -279,7 +279,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const contactRoot = document.querySelector("#hf-contact-widget");
   const contactTrigger = contactRoot?.querySelector(".hf-contact-launcher");
   const contactOptions = contactRoot?.querySelector(".hf-contact-options");
-  if (contactRoot && contactTrigger && contactOptions && !contactTrigger.dataset.bound) {
+  if (contactRoot && contactTrigger && contactOptions && !contactTrigger.dataset.bound && !document.querySelector("#hf-contact-widget-script")) {
     contactTrigger.dataset.bound = "1";
     contactTrigger.addEventListener("click", () => {
       const open = contactTrigger.getAttribute("aria-expanded") === "true";
