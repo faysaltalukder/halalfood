@@ -158,12 +158,99 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
+  // Mobile search: open a full-width, accessible search panel and populate real product matches.
+  const mobileSearchButton = document.querySelector("[data-mobile-search]");
+  const searchWrap = document.querySelector(".search-wrap");
+  const productSearch = document.querySelector("#product-search");
+  const searchResults = document.querySelector("#search-results");
+  const closeMobileSearch = () => {
+    searchWrap?.classList.remove("mobile-search-open");
+    if (productSearch) productSearch.setAttribute("aria-expanded", "false");
+  };
+  const renderSearchResults = (term) => {
+    if (!searchResults) return;
+    searchResults.replaceChildren();
+    const query = String(term || "").trim().toLocaleLowerCase();
+    if (!query) return;
+    const source = Array.isArray(window.PRODUCTS_DATA) ? window.PRODUCTS_DATA : [];
+    const matches = source.filter(item => [item.name,item.category,item.slug].some(value => String(value || "").toLocaleLowerCase().includes(query))).slice(0,10);
+    matches.forEach(item => {
+      const li = document.createElement("li");
+      const link = document.createElement("a");
+      link.href = "products/" + encodeURIComponent(String(item.slug || "")) + ".html";
+      link.textContent = String(item.name || item.slug || "Product");
+      if (item.price) {
+        const price = document.createElement("span");
+        price.className = "mobile-search-price";
+        price.textContent = " — " + String(item.price);
+        link.appendChild(price);
+      }
+      li.appendChild(link);
+      searchResults.appendChild(li);
+    });
+    if (!matches.length) {
+      const li = document.createElement("li");
+      li.className = "search-empty";
+      li.textContent = "No matching products found";
+      searchResults.appendChild(li);
+    }
+  };
+  if (productSearch) {
+    productSearch.setAttribute("aria-label", "Search products");
+    productSearch.setAttribute("aria-expanded", "false");
+    productSearch.addEventListener("input", () => renderSearchResults(productSearch.value));
+  }
+  mobileSearchButton?.addEventListener("click", () => {
+    if (!searchWrap || !productSearch) return;
+    searchWrap.classList.add("mobile-search-open");
+    if (box) box.classList.add("open");
+    productSearch.setAttribute("aria-expanded", "true");
+    window.setTimeout(() => productSearch.focus({preventScroll:true}), 40);
+  });
+  document.addEventListener("click", (event) => {
+    if (searchWrap?.classList.contains("mobile-search-open") &&
+        !searchWrap.contains(event.target) &&
+        !event.target.closest("[data-mobile-search]")) closeMobileSearch();
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closeMobileSearch();
+  });
+
+  // Keep the compact cart summary synchronized with the existing cart data.
+  const updateMobileCartSummary = () => {
+    const api = window.HALAL_CART_API;
+    if (!api) return;
+    const qty = api.totalQty();
+    const total = api.total();
+    document.querySelectorAll(".mobile-floating-cart [data-cart-count]").forEach(el => { el.textContent = String(qty); });
+    document.querySelectorAll("[data-cart-total]").forEach(el => { el.textContent = "৳ " + Number(total || 0).toLocaleString("en-BD", {maximumFractionDigits:0}); });
+  };
+  window.addEventListener("halalcart:updated", updateMobileCartSummary);
+  document.addEventListener("DOMContentLoaded", updateMobileCartSummary);
+  updateMobileCartSummary();
+
+  // Mobile-only hide-on-down / reveal-on-up header behavior. Bottom navigation stays fixed.
+  if (window.matchMedia("(max-width: 900px)").matches) {
+    let lastY = window.scrollY;
+    let ticking = false;
+    const mobileHeader = document.querySelector("header");
+    window.addEventListener("scroll", () => {
+      if (ticking) return;
+      ticking = true;
+      window.requestAnimationFrame(() => {
+        const currentY = Math.max(0, window.scrollY);
+        if (currentY < 70 || currentY < lastY - 6) mobileHeader?.classList.remove("hf-header-hidden");
+        else if (currentY > lastY + 8 && currentY > 110 && !searchWrap?.classList.contains("mobile-search-open")) mobileHeader?.classList.add("hf-header-hidden");
+        lastY = currentY;
+        ticking = false;
+      });
+    }, {passive:true});
+  }
+
   // Mobile bottom navigation
   document.querySelector("[data-mobile-categories]")?.addEventListener("click", () => setDrawer(true));
   document.querySelector("[data-mobile-search]")?.addEventListener("click", () => {
     if (box) box.classList.add("open");
-    document.querySelector("#product-search")?.focus();
-    window.scrollTo({ top: 0, behavior: "smooth" });
   });
 
   // Hero carousel
