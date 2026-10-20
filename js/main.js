@@ -1078,3 +1078,82 @@ document.addEventListener("DOMContentLoaded", () => {
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initPriceDisplay, { once: true });
   else initPriceDisplay();
 })();
+
+
+/* HALAL FOOD — consistent mobile dock and delegated controls on every page. */
+(function () {
+  "use strict";
+  const mobile = window.matchMedia("(max-width: 900px)");
+  const mainScript = [...document.scripts].find(s => /js\/main\.js(?:\?|$)/.test(s.src));
+  const root = mainScript ? new URL("../", mainScript.src) : new URL("/halalfood/", location.origin);
+  const href = p => new URL(p, root).href;
+  function installMobileDock() {
+    let nav = document.querySelector(".mobile-bottom-nav");
+    if (!nav) {
+      nav = document.createElement("nav");
+      document.body.appendChild(nav);
+    }
+    nav.className = "mobile-bottom-nav";
+    nav.setAttribute("aria-label", "Mobile quick navigation");
+    nav.innerHTML =
+      '<a aria-label="Home" href="' + href("index.html") + '"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 10.8 12 3l9 7.8v9.2a1 1 0 0 1-1 1h-5.5v-6h-5v6H4a1 1 0 0 1-1-1z"></path></svg><span>Home</span></a>' +
+      '<a aria-label="Categories" href="' + href("index.html#categories") + '"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"></path></svg><span>Categories</span></a>' +
+      '<a aria-label="Cart" class="mobile-cart-link" href="' + href("cart.html") + '"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5.5 8h13l1 12h-15l1-12Z"></path><path d="M9 8V6.2a3 3 0 0 1 6 0V8"></path></svg><b class="mobile-cart-count" data-cart-count>0</b><span>Cart</span></a>' +
+      '<button aria-label="Search" data-mobile-search type="button"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8"></circle><path d="m16 16 5 5"></path></svg><span>Search</span></button>' +
+      '<a aria-label="Account" href="' + href("account.html") + '"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"></circle><path d="M5 20c.6-3.8 3.1-5.7 7-5.7s6.4 1.9 7 5.7"></path></svg><span>Account</span></a>';
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", installMobileDock, {once:true});
+  else installMobileDock();
+
+  document.addEventListener("click", function (event) {
+    const searchButton = event.target.closest("[data-mobile-search]");
+    if (searchButton && mobile.matches) {
+      const wrap = document.querySelector(".search-wrap");
+      const input = document.querySelector("#product-search");
+      if (!wrap || !input) {
+        location.href = href("index.html#products");
+        return;
+      }
+      event.preventDefault();
+      wrap.classList.add("mobile-search-open");
+      document.querySelector("header")?.classList.remove("hf-header-hidden");
+      const box = wrap.querySelector(".search-box");
+      box?.classList.add("open");
+      if (!wrap.querySelector(".mobile-search-panel-head")) {
+        const head = document.createElement("div");
+        head.className = "mobile-search-panel-head";
+        const title = document.createElement("strong");
+        title.textContent = "Search Products";
+        const close = document.createElement("button");
+        close.type = "button";
+        close.className = "mobile-search-close";
+        close.setAttribute("aria-label", "Close search");
+        close.textContent = "×";
+        close.addEventListener("click", function (e) {
+          e.preventDefault(); e.stopPropagation();
+          wrap.classList.remove("mobile-search-open");
+          box?.classList.remove("open");
+          head.remove();
+          input.setAttribute("aria-expanded", "false");
+        });
+        head.append(title, close);
+        wrap.insertBefore(head, box || null);
+      }
+      input.setAttribute("aria-expanded", "true");
+      window.setTimeout(() => input.focus({preventScroll:true}), 30);
+    }
+  });
+
+  // Make sure dismissing search always restores the magnifier control in the bottom dock.
+  document.addEventListener("keydown", function (event) {
+    if (event.key === "Escape") {
+      const wrap = document.querySelector(".search-wrap.mobile-search-open");
+      if (wrap) {
+        wrap.classList.remove("mobile-search-open");
+        wrap.querySelector(".search-box")?.classList.remove("open");
+        wrap.querySelector(".mobile-search-panel-head")?.remove();
+        document.querySelector("#product-search")?.setAttribute("aria-expanded", "false");
+      }
+    }
+  });
+})();
