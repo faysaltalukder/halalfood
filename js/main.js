@@ -13,100 +13,7 @@ function whatsappLink(productName = "") {
   return `https://wa.me/8801842031164?text=${encodeURIComponent(message)}`;
 }
 
-
-
-/* HALAL FOOD — curated, visual-only discount labels for a subset of products. */
-window.HALAL_DISCOUNTS = Object.freeze({
-  "ajwa-dates": 18,
-  "medjool-dates": 16,
-  "date-syrup": 22,
-  "kalmi-dates": 18,
-  "sukkari-dates": 16,
-  "basmati-rice": 16,
-  "chickpeas": 18,
-  "roasted-chana": 20,
-  "brown-lentils": 16,
-  "beef-cuts": 16,
-  "beef-boneless": 18,
-  "fresh-mutton": 22,
-  "fresh-chicken": 16,
-  "wild-forest-honey": 18,
-  "black-seed-honey": 20,
-  "litchi-honey": 16,
-  "sundarban-honey": 18,
-  "garlic-honey-mix": 18,
-  "date-nut-mix": 16,
-  "dry-fruit-mix": 22,
-  "trail-mix": 18,
-  "mixed-roasted-nuts": 16,
-  "almonds": 18,
-  "cashews": 20,
-  "pumpkin-seeds": 16,
-  "house-biryani-masala": 18,
-  "beef-masala": 16,
-  "fish-masala": 20,
-  "korma-masala": 18,
-  "classic-black-tea": 18,
-  "green-tea": 16,
-  "ginger-tea": 20,
-  "lemon-tea": 18,
-  "mustard-oil": 16,
-  "olive-oil": 18,
-  "sunflower-oil": 20,
-  "soybean-oil": 16,
-  "cow-ghee": 16,
-  "buffalo-ghee": 18,
-  "organic-a2-ghee": 20,
-  "desi-ghee": 18,
-  "premium-ghee-tin": 16
-});
-
-function halalDiscountPercent(slug) {
-  return Number(window.HALAL_DISCOUNTS?.[String(slug || "")] || 0);
-}
-function halalDiscountBadge(percent) {
-  const badge = document.createElement("span");
-  badge.className = "hf-discount-badge";
-  badge.setAttribute("aria-label", `${percent}% off`);
-  const amount = document.createElement("strong");
-  amount.className = "hf-discount-percent";
-  amount.textContent = `${percent}%`;
-  const off = document.createElement("span");
-  off.className = "hf-discount-off";
-  off.textContent = "OFF";
-  badge.append(amount, off);
-  return badge;
-}
-function applyHalalDiscounts(root = document) {
-  const selector = ".product-card, .jfy-card, .mrow-card, .product-detail-grid";
-  const cards = root.querySelectorAll ? root.querySelectorAll(selector) : [];
-  cards.forEach(card => {
-    const control = card.querySelector("[data-add-to-cart], [data-product-cart-control], .cart-detail-add");
-    let slug = String(control?.dataset?.slug || "");
-    if (!slug) {
-      for (const link of card.querySelectorAll('a[href*="products/"]')) {
-        const match = String(link.getAttribute("href") || "").match(/products\/([^/?#]+)\.html/i);
-        if (match) { slug = decodeURIComponent(match[1]); break; }
-      }
-    }
-    const percent = halalDiscountPercent(slug);
-    if (!percent) return;
-    let image = card.querySelector(".product-detail-image-wrap");
-    if (!image) image = card.querySelector(".product-image, .jfy-image, .mrow-image, .product-card-image");
-    if (!image) return;
-    image.classList.add("hf-discount-anchor");
-    if (!image.querySelector(".hf-discount-badge")) image.append(halalDiscountBadge(percent));
-  });
-}
-
 document.addEventListener("DOMContentLoaded", () => {
-  applyHalalDiscounts(document);
-  const discountObserver=new MutationObserver(records=>{
-   const selector=".product-card, .jfy-card, .mrow-card, .product-detail-grid";
-   const hasCard=node=>node&&node.nodeType===1&&(node.matches?.(selector)||node.querySelector?.(selector));
-   if(records.some(record=>Array.from(record.addedNodes||[]).some(hasCard)))requestAnimationFrame(()=>applyHalalDiscounts(document));
-  });
-  if(document.body)discountObserver.observe(document.body,{childList:true,subtree:true});
   const track=window.halalTrack||function(){};
   const trackItems=window.halalTrackItems||function(items){return items||[];};
   const parseProductPrice=(value,displayValue="")=>{
@@ -579,7 +486,7 @@ document.addEventListener("DOMContentLoaded", () => {
       productInput && (productInput.value = singleProduct.name);
       productDisplay && (productDisplay.textContent = singleProduct.name);
       const price = priceNumber(singleProduct.price);
-      if (productPrice) productPrice.textContent = singleProduct.price || money(price);
+      productPrice && (productPrice.textContent = singleProduct.price || money(price));
       if (productImage && singleProduct.image) {
         productImage.src = String(singleProduct.image).replace(/\.(jpe?g|png)$/i, ".webp");
         productImage.alt = singleProduct.name || "Selected product";

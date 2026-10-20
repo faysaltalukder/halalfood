@@ -49,7 +49,6 @@
     }
     return "";
   }
-
   function imageUrl(path) {
     try { return new URL(path, siteBase).href; } catch (_) { return path || ""; }
   }
