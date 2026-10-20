@@ -121,6 +121,18 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // Add a shared mobile drawer on simple pages that do not carry the home-page drawer markup.
+  if (!document.querySelector("#mobile-drawer")) {
+    const drawerBackdrop = document.createElement("div");
+    drawerBackdrop.className = "mobile-drawer-backdrop";
+    drawerBackdrop.setAttribute("data-drawer-close", "");
+    const drawer = document.createElement("aside");
+    drawer.id = "mobile-drawer";
+    drawer.className = "mobile-drawer";
+    drawer.setAttribute("aria-label", "Site menu");
+    drawer.innerHTML = '<div class="mobile-drawer-head"><strong>Halal Food</strong><button class="mobile-drawer-close" type="button" data-drawer-close aria-label="Close menu">×</button></div><nav class="mobile-drawer-nav"><a href="' + localHref("index.html") + '">Home</a><details class="mobile-category-details"><summary>Categories <span aria-hidden="true">＋</span></summary><div class="mobile-category-links"><a href="' + localHref("categories/dates.html") + '">Dates</a><a href="' + localHref("categories/dry-food.html") + '">Dry Food</a><a href="' + localHref("categories/honey.html") + '">Honey</a><a href="' + localHref("categories/mix-food.html") + '">Mix Food</a><a href="' + localHref("categories/nuts-seeds.html") + '">Nuts &amp; Seeds</a><a href="' + localHref("categories/special-masala.html") + '">Special Masala</a><a href="' + localHref("categories/tea.html") + '">Tea</a><a href="' + localHref("categories/fresh-meat.html") + '">Fresh Meat</a><a href="' + localHref("categories/oil.html") + '">Oil</a><a href="' + localHref("categories/ghee.html") + '">Ghee</a></div></details><a href="' + localHref("cart.html") + '">Cart</a><a href="' + localHref("account.html") + '">Account</a><a href="' + localHref("track-order.html") + '">Track Order</a><a href="' + localHref("contact.html") + '">Contact</a></nav>';
+    document.body.append(drawerBackdrop, drawer);
+  }
   // Mobile drawer
   const drawer = document.querySelector("#mobile-drawer");
   const backdrop = document.querySelector(".mobile-drawer-backdrop");
@@ -294,18 +306,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Add a shared mobile drawer on simple pages that do not carry the home-page drawer markup.
-  if (!document.querySelector("#mobile-drawer")) {
-    const drawerBackdrop = document.createElement("div");
-    drawerBackdrop.className = "mobile-drawer-backdrop";
-    drawerBackdrop.setAttribute("data-drawer-close", "");
-    const drawer = document.createElement("aside");
-    drawer.id = "mobile-drawer";
-    drawer.className = "mobile-drawer";
-    drawer.setAttribute("aria-label", "Site menu");
-    drawer.innerHTML = '<div class="mobile-drawer-head"><strong>Halal Food</strong><button class="mobile-drawer-close" type="button" data-drawer-close aria-label="Close menu">×</button></div><nav class="mobile-drawer-nav"><a href="' + localHref("index.html") + '">Home</a><details class="mobile-category-details"><summary>Categories <span aria-hidden="true">＋</span></summary><div class="mobile-category-links"><a href="' + localHref("categories/dates.html") + '">Dates</a><a href="' + localHref("categories/dry-food.html") + '">Dry Food</a><a href="' + localHref("categories/honey.html") + '">Honey</a><a href="' + localHref("categories/mix-food.html") + '">Mix Food</a><a href="' + localHref("categories/nuts-seeds.html") + '">Nuts &amp; Seeds</a><a href="' + localHref("categories/special-masala.html") + '">Special Masala</a><a href="' + localHref("categories/tea.html") + '">Tea</a><a href="' + localHref("categories/fresh-meat.html") + '">Fresh Meat</a><a href="' + localHref("categories/oil.html") + '">Oil</a><a href="' + localHref("categories/ghee.html") + '">Ghee</a></div></details><a href="' + localHref("cart.html") + '">Cart</a><a href="' + localHref("account.html") + '">Account</a><a href="' + localHref("track-order.html") + '">Track Order</a><a href="' + localHref("contact.html") + '">Contact</a></nav>';
-    document.body.append(drawerBackdrop, drawer);
-  }
   // Ensure a mobile search input is available on lightweight pages without a header search box.
   if (window.matchMedia("(max-width: 900px)").matches && !document.querySelector(".search-wrap")) {
     const host = document.querySelector("header .header-actions") || document.querySelector("header") || document.body;
