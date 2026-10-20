@@ -1978,3 +1978,133 @@ button.cart-qty-action:focus-visible {
   }
   .cart-qty-value { width:100%!important; min-width:0!important; padding:0!important; overflow:hidden!important; text-align:center!important; }
 }
+
+
+/* Mobile-only homepage repair: featured product actions and full-width hero carousel. */
+@media screen and (max-width: 600px) {
+  /* Let the banner use the full phone width and keep the complete artwork visible. */
+  .hero-visual-only {
+    padding: 14px 0 22px !important;
+  }
+  .hero-visual-only .wrap {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+  .hero-visual-only .hero-media-grid {
+    display: block !important;
+    width: 100% !important;
+  }
+  .hero-visual-only .hero-carousel {
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+    height: auto !important;
+    aspect-ratio: 2.7 / 1 !important;
+    margin: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    overflow: hidden !important;
+  }
+  .hero-visual-only .hero-carousel-track,
+  .hero-visual-only .hero-slide,
+  .hero-visual-only .hero-slide picture {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 100% !important;
+  }
+  .hero-visual-only .hero-slide img {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+    object-position: center !important;
+    background: var(--cream-deep) !important;
+  }
+  /* Phone users swipe between banners: hide both arrows and the white/orange slide indicators. */
+  .hero-visual-only .hero-carousel-arrow,
+  .hero-visual-only .hero-carousel-dots,
+  .hero-visual-only .hero-carousel-dots button {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+
+  /* Featured Products: keep the price left-aligned and give Add to Cart its own full-width row. */
+  #products .featured-grid-4 .product-card,
+  #products .featured-grid-4 .product-body {
+    min-width: 0 !important;
+  }
+  #products .featured-grid-4 .product-body {
+    padding: 10px 10px 12px !important;
+  }
+  #products .featured-grid-4 .product-foot {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    gap: 8px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    margin-top: auto !important;
+    padding-top: 6px !important;
+    box-sizing: border-box !important;
+    overflow: visible !important;
+  }
+  #products .featured-grid-4 .product-foot > .price {
+    display: block !important;
+    order: 0 !important;
+    align-self: flex-start !important;
+    justify-self: start !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    text-align: left !important;
+    line-height: 1.35 !important;
+    white-space: normal !important;
+  }
+  #products .featured-grid-4 .product-foot > .cart-add-btn {
+    display: inline-flex !important;
+    order: 1 !important;
+    align-self: stretch !important;
+    flex: 0 0 auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    min-height: 44px !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 9px 10px !important;
+    box-sizing: border-box !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 7px !important;
+    overflow: visible !important;
+    white-space: nowrap !important;
+    font-size: 13px !important;
+    line-height: 1.2 !important;
+    letter-spacing: 0 !important;
+  }
+  #products .featured-grid-4 .product-foot > .cart-add-btn .btn-icon {
+    display: inline-block !important;
+    width: 16px !important;
+    height: 16px !important;
+    flex: 0 0 16px !important;
+    margin: 0 !important;
+  }
+  #products .featured-grid-4 .product-foot > .cart-add-btn > span {
+    display: inline !important;
+    min-width: 0 !important;
+    flex: 0 1 auto !important;
+    overflow: visible !important;
+    white-space: nowrap !important;
+  }
+  #products .featured-grid-4 .product-foot > .order-btn {
+    display: none !important;
+  }
+}
