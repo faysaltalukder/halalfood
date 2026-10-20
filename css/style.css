@@ -2408,3 +2408,80 @@ button.cart-qty-action:focus-visible {
     flex-basis: 40px !important;
   }
 }
+
+
+/* Mobile header final correction: standard three-bar menu, balanced theme button, slightly larger brand mark */
+@media (max-width: 900px) {
+  header .nav > .brand .brand-logo,
+  header .nav > .brand picture .brand-logo {
+    width: 48px !important;
+    height: 48px !important;
+    flex: 0 0 48px !important;
+    flex-shrink: 0 !important;
+    object-fit: contain !important;
+  }
+
+  header .nav > .mobile-menu-toggle {
+    border: 0 !important;
+    outline-offset: 3px;
+    border-radius: 4px !important;
+    box-shadow: none !important;
+    color: transparent !important;
+    font-size: 0 !important;
+    background-color: transparent !important;
+    background-image:
+      linear-gradient(#D5A100, #D5A100),
+      linear-gradient(#D5A100, #D5A100),
+      linear-gradient(#D5A100, #D5A100) !important;
+    background-position: center 27%, center 50%, center 73% !important;
+    background-size: 22px 2.5px, 22px 2.5px, 22px 2.5px !important;
+    background-repeat: no-repeat !important;
+  }
+
+  header .nav > .mobile-menu-toggle::before,
+  header .nav > .mobile-menu-toggle::after {
+    content: none !important;
+    display: none !important;
+  }
+
+  header .nav > .mobile-menu-toggle:hover,
+  header .nav > .mobile-menu-toggle:focus-visible,
+  header .nav > .mobile-menu-toggle:active {
+    border: 0 !important;
+    box-shadow: none !important;
+    background-color: transparent !important;
+  }
+
+  header .header-actions .theme-toggle,
+  header .header-actions [data-theme-toggle] {
+    width: 38px !important;
+    height: 38px !important;
+    flex-basis: 38px !important;
+    font-size: 1.2rem !important;
+  }
+
+  header .header-actions [data-theme-toggle] span {
+    font-size: 21px !important;
+    line-height: 1 !important;
+  }
+}
+
+@media (max-width: 380px) {
+  header .nav > .brand .brand-logo,
+  header .nav > .brand picture .brand-logo {
+    width: 44px !important;
+    height: 44px !important;
+    flex-basis: 44px !important;
+  }
+
+  header .header-actions .theme-toggle,
+  header .header-actions [data-theme-toggle] {
+    width: 36px !important;
+    height: 36px !important;
+    flex-basis: 36px !important;
+  }
+
+  header .header-actions [data-theme-toggle] span {
+    font-size: 20px !important;
+  }
+}
