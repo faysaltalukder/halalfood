@@ -1710,3 +1710,170 @@ button.cart-qty-action:focus-visible {
   div.cart-qty-control,
   button.cart-qty-action { transition: none; }
 }
+
+
+/* HALAL FOOD — product CTA alignment and mobile quantity-control containment.
+   No hero/banner selectors are changed by this section. */
+.product-grid > .product-card,
+.featured-grid-4 > .product-card,
+#related-grid > .product-card,
+.category-page-products .product-grid > .product-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+}
+.product-card > .product-image-link { flex: 0 0 auto; min-width: 0; }
+.product-card > .product-image { flex: 0 0 auto; }
+.product-card > .product-body,
+.product-card > .product-description,
+.product-card .product-body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+}
+.product-card .product-body .product-foot {
+  margin-top: auto !important;
+  align-items: stretch;
+}
+.product-card .product-body h3 {
+  overflow-wrap: anywhere;
+}
+.product-card .product-foot > .cart-add-btn,
+.product-card .product-foot > .order-btn,
+.product-card .product-foot > .cart-qty-control {
+  box-sizing: border-box;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+}
+.product-card .product-foot > .cart-add-btn,
+.product-card .product-foot > .order-btn {
+  line-height: 1.2;
+}
+
+/* Keep mobile category quantity steppers entirely inside their original button box. */
+@media (max-width: 900px) {
+  .category-page-products .product-card .product-foot > .cart-qty-control,
+  .category-page-products .product-card .product-foot > [data-product-cart-control],
+  .product-card .product-foot > .cart-qty-control {
+    display: grid !important;
+    grid-template-columns: 32px minmax(0, 1fr) 32px !important;
+    gap: 2px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    flex: 1 1 100% !important;
+    align-self: stretch !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+    padding: 3px !important;
+    margin: 0 !important;
+    border-radius: 8px !important;
+  }
+  .category-page-products .product-card .product-foot > .cart-qty-control .cart-qty-action,
+  .product-card .product-foot > .cart-qty-control .cart-qty-action {
+    display: inline-flex !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    min-height: 32px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    justify-content: center !important;
+    align-items: center !important;
+    font-size: 1.12rem !important;
+    line-height: 1 !important;
+  }
+  .category-page-products .product-card .product-foot > .cart-qty-control .cart-qty-value,
+  .product-card .product-foot > .cart-qty-control .cart-qty-value {
+    min-width: 0 !important;
+    width: 100% !important;
+    padding: 0 !important;
+    text-align: center !important;
+    overflow: hidden !important;
+  }
+  .product-card .product-foot > .cart-add-btn {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    min-height: 44px !important;
+    box-sizing: border-box !important;
+    padding-left: 7px !important;
+    padding-right: 7px !important;
+  }
+  .product-card .product-foot .price {
+    min-width: 0 !important;
+    overflow-wrap: anywhere;
+  }
+
+  /* Center the existing brand mark and name while keeping menu/actions at the edges. */
+  header .nav {
+    position: relative !important;
+    justify-content: space-between !important;
+  }
+  header .nav > .brand {
+    position: absolute !important;
+    left: 50% !important;
+    top: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    z-index: 2;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    width: max-content;
+    max-width: calc(100vw - 132px) !important;
+    min-width: 0 !important;
+    flex: 0 1 auto !important;
+    font-size: clamp(1.08rem, 4.7vw, 1.28rem) !important;
+    line-height: 1.1 !important;
+    white-space: nowrap !important;
+  }
+  header .nav > .brand .brand-logo {
+    width: 35px !important;
+    height: 35px !important;
+    flex: 0 0 35px !important;
+  }
+  header .nav > .mobile-menu-toggle,
+  header .nav > .header-actions {
+    position: relative !important;
+    z-index: 3 !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Slightly reduce the bottom dock's footprint without shrinking touch targets too far. */
+  .mobile-bottom-nav {
+    min-height: 52px !important;
+    padding: 2px 3px calc(2px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+  .mobile-bottom-nav a,
+  .mobile-bottom-nav button {
+    min-height: 44px !important;
+    height: 44px !important;
+    gap: 2px !important;
+  }
+  .mobile-bottom-nav svg {
+    width: 19px !important;
+    height: 19px !important;
+    flex: 0 0 19px !important;
+  }
+  .mobile-bottom-nav span {
+    font-size: clamp(8.5px, 2.5vw, 10px) !important;
+    line-height: 1.1 !important;
+  }
+  body { padding-bottom: calc(58px + env(safe-area-inset-bottom, 0px)) !important; }
+}
+@media (max-width: 360px) {
+  header .nav > .brand { gap: 4px !important; font-size: 1.02rem !important; }
+  header .nav > .brand .brand-logo { width: 30px !important; height: 30px !important; flex-basis: 30px !important; }
+  header .nav > .brand { max-width: calc(100vw - 120px) !important; }
+  header .nav > .mobile-menu-toggle { width: 33px !important; flex-basis: 33px !important; }
+  header .nav > .header-actions { gap: 4px !important; }
+  header .header-actions .theme-toggle,
+  header .header-actions [data-theme-toggle] { width: 32px !important; height: 32px !important; flex-basis: 32px !important; }
+  header .header-actions .header-cart,
+  header .header-actions [data-cart-open] { width: 34px !important; height: 34px !important; flex-basis: 34px !important; }
+}
