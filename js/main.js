@@ -257,8 +257,15 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!api) return;
     const qty = api.totalQty();
     const total = api.total();
+    const formattedTotal = "৳ " + Number(total || 0).toLocaleString("en-BD", {maximumFractionDigits:0});
     document.querySelectorAll(".mobile-floating-cart [data-cart-count]").forEach(el => { el.textContent = String(qty); });
-    document.querySelectorAll("[data-cart-total]").forEach(el => { el.textContent = "৳ " + Number(total || 0).toLocaleString("en-BD", {maximumFractionDigits:0}); });
+    document.querySelectorAll("[data-cart-total]").forEach(el => { el.textContent = formattedTotal; });
+    document.querySelectorAll(".mobile-floating-cart").forEach(el => {
+      const hasItems = qty > 0;
+      el.classList.toggle("has-items", hasItems);
+      el.setAttribute("aria-hidden", String(!hasItems));
+      el.setAttribute("aria-label", hasItems ? `Open cart: ${qty} item(s), total ${formattedTotal}` : "Shopping cart is empty");
+    });
   };
   window.addEventListener("halalcart:updated", updateMobileCartSummary);
   document.addEventListener("DOMContentLoaded", updateMobileCartSummary);
@@ -282,7 +289,8 @@ document.addEventListener("DOMContentLoaded", () => {
         } else if (currentY > lastY + 8) {
           mobileCart?.classList.add("hf-cart-scroll-down");
           mobileCart?.classList.remove("hf-cart-scroll-up");
-          if (currentY > 110 && !searchWrap?.classList.contains("mobile-search-open")) mobileHeader?.classList.add("hf-header-hidden");
+          const focusedField = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || "");
+          if (currentY > 110 && !focusedField && !searchWrap?.classList.contains("mobile-search-open")) mobileHeader?.classList.add("hf-header-hidden");
         }
         lastY = currentY;
         ticking = false;
@@ -309,6 +317,31 @@ document.addEventListener("DOMContentLoaded", () => {
     miniCart.innerHTML = '<span class="mobile-floating-cart-top"><span class="mobile-floating-cart-icon-wrap"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5.5 8h13l1 12h-15l1-12Z"></path><path d="M9 8V6.2a3 3 0 0 1 6 0V8"></path></svg><b class="mobile-floating-cart-count" data-cart-count>0</b></span><span class="mobile-floating-cart-label">Items</span></span><span class="mobile-floating-cart-total" data-cart-total>৳ 0</span>';
     document.body.appendChild(miniCart);
   }
+
+  // Apply active states to the five-item mobile dock and refresh the mini-cart after injection.
+  const refreshMobileDock = () => {
+    const nav = document.querySelector(".mobile-bottom-nav");
+    if (!nav) return;
+    const normalizePath = path => {
+      const clean = String(path || "/").replace(/\\/+$/, "") || "/";
+      return clean.endsWith("/index.html") ? (clean.slice(0, -11) || "/") : clean;
+    };
+    const currentPath = normalizePath(location.pathname);
+    nav.querySelectorAll("a[href]").forEach(link => {
+      const active = normalizePath(new URL(link.href, location.href).pathname) === currentPath;
+      link.classList.toggle("is-active", active);
+      if (active) link.setAttribute("aria-current", "page");
+      else link.removeAttribute("aria-current");
+    });
+    const categoriesButton = nav.querySelector("[data-mobile-categories]");
+    const onCategoryPage = /\\/categories\\/[^/]+\\.html$/i.test(location.pathname);
+    categoriesButton?.classList.toggle("is-active", onCategoryPage);
+    if (onCategoryPage) categoriesButton?.setAttribute("aria-current", "page");
+    else categoriesButton?.removeAttribute("aria-current");
+  };
+  updateMobileCartSummary();
+  refreshMobileDock();
+
   if (window.matchMedia("(max-width: 900px)").matches && !document.querySelector("#hf-contact-widget")) {
     const contact = document.createElement("div");
     contact.className = "hf-contact-widget";
