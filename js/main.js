@@ -160,7 +160,19 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!drawerAccountCta) return;
     let user = null;
     try {
-      const stored = JSON.parse(localStorage.getItem("sb-qfwvrcfkrsydycbfjsxf-auth-token") || "null");
+      let rawStored = localStorage.getItem("sb-qfwvrcfkrsydycbfjsxf-auth-token");
+      let stored = null;
+      if (rawStored) {
+        // Supabase may base64-encode larger persisted sessions with this prefix.
+        if (rawStored.startsWith("base64-")) {
+          const encoded = rawStored.slice(7).replace(/-/g, "+").replace(/_/g, "/");
+          const padded = encoded.padEnd(Math.ceil(encoded.length / 4) * 4, "=");
+          const binary = atob(padded);
+          const bytes = Uint8Array.from(binary, char => char.charCodeAt(0));
+          rawStored = new TextDecoder().decode(bytes);
+        }
+        stored = JSON.parse(rawStored);
+      }
       user = stored?.user || stored?.currentSession?.user || null;
     } catch (_) {}
     const metadata = user?.user_metadata || {};
