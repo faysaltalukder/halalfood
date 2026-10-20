@@ -263,6 +263,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.querySelectorAll(".mobile-floating-cart").forEach(el => {
       const hasItems = qty > 0;
       el.classList.toggle("has-items", hasItems);
+      el.classList.toggle("is-empty", !hasItems);
       el.setAttribute("aria-hidden", String(!hasItems));
       el.setAttribute("aria-label", hasItems ? `Open cart: ${qty} item(s), total ${formattedTotal}` : "Shopping cart is empty");
     });
