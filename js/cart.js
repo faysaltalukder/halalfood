@@ -185,6 +185,86 @@
     const qty = totalQty();
     document.querySelectorAll("[data-cart-count]").forEach(el => { el.textContent = String(qty); el.classList.toggle("is-empty", qty === 0); });
   }
+
+  // Keep the shopper on the current page and turn added product buttons into quantity steppers.
+  function renderProductCartControls() {
+    const quantities = new Map(read().map(item => [String(item.slug), Math.max(0, Number(item.qty) || 0)]));
+    const targets = document.querySelectorAll("button[data-add-to-cart], [data-product-cart-control]");
+    targets.forEach(current => {
+      const slug = String(current.dataset.slug || "");
+      if (!slug) return;
+      const qty = quantities.get(slug) || 0;
+
+      if (current.matches("button[data-add-to-cart]")) {
+        if (qty < 1) return;
+        const wrapper = document.createElement("div");
+        const originalClass = current.className;
+        wrapper.className = originalClass + " cart-qty-control";
+        wrapper.dataset.productCartControl = "";
+        wrapper.dataset.cartOriginalHtml = current.innerHTML;
+        wrapper.dataset.cartOriginalClass = originalClass;
+        wrapper.dataset.cartOriginalAria = current.getAttribute("aria-label") || ("Add " + (current.dataset.name || "product") + " to cart");
+        Array.from(current.attributes).forEach(attribute => {
+          if (["class", "type", "aria-label", "data-add-to-cart"].includes(attribute.name)) return;
+          wrapper.setAttribute(attribute.name, attribute.value);
+        });
+        wrapper.setAttribute("role", "group");
+        wrapper.setAttribute("aria-label", "Quantity for " + (current.dataset.name || "product"));
+        renderQuantityStepper(wrapper, slug, current.dataset.name || "product", qty);
+        current.replaceWith(wrapper);
+        return;
+      }
+
+      if (current.hasAttribute("data-product-cart-control")) {
+        if (qty < 1) {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = current.dataset.cartOriginalClass || "cart-add-btn";
+          Array.from(current.attributes).forEach(attribute => {
+            if (["class", "role", "aria-label", "data-product-cart-control", "data-cart-original-html", "data-cart-original-class", "data-cart-original-aria"].includes(attribute.name)) return;
+            button.setAttribute(attribute.name, attribute.value);
+          });
+          button.setAttribute("data-add-to-cart", "");
+          const label = current.dataset.cartOriginalAria;
+          if (label) button.setAttribute("aria-label", label);
+          button.innerHTML = current.dataset.cartOriginalHtml || "<span>Add to Cart</span>";
+          current.replaceWith(button);
+          return;
+        }
+        const count = current.querySelector(".cart-qty-value");
+        if (count && count.textContent !== String(qty)) count.textContent = String(qty);
+        const dec = current.querySelector("[data-product-qty-dec]");
+        if (dec) dec.setAttribute("aria-label", "Remove one " + (current.dataset.name || "item"));
+        const inc = current.querySelector("[data-product-qty-inc]");
+        if (inc) inc.setAttribute("aria-label", "Add one " + (current.dataset.name || "item"));
+      }
+    });
+  }
+
+  function renderQuantityStepper(wrapper, slug, name, qty) {
+    wrapper.replaceChildren();
+    const minus = document.createElement("button");
+    minus.type = "button";
+    minus.className = "cart-qty-action cart-qty-minus";
+    minus.dataset.productQtyDec = slug;
+    minus.setAttribute("aria-label", "Remove one " + name);
+    minus.textContent = "−";
+
+    const count = document.createElement("span");
+    count.className = "cart-qty-value";
+    count.dataset.cartQtyValue = slug;
+    count.setAttribute("aria-live", "polite");
+    count.textContent = String(qty);
+
+    const plus = document.createElement("button");
+    plus.type = "button";
+    plus.className = "cart-qty-action cart-qty-plus";
+    plus.dataset.productQtyInc = slug;
+    plus.setAttribute("aria-label", "Add one " + name);
+    plus.textContent = "+";
+
+    wrapper.append(minus, count, plus);
+  }
   function renderDrawer() {
     const box = document.querySelector("[data-cart-drawer-items]");
     if (!box) return;
@@ -225,14 +305,30 @@
     document.querySelectorAll("[data-single-order-review]").forEach(el => el.style.display = "none");
   }
 
-  function renderAll() { renderCounts(); renderDrawer(); renderPage(); renderOrderSummary(); }
+  function renderAll() { renderCounts(); renderProductCartControls(); renderDrawer(); renderPage(); renderOrderSummary(); }
 
   document.addEventListener("click", event => {
     const addBtn = event.target.closest("[data-add-to-cart]");
     if (addBtn) {
       event.preventDefault();
       add({slug:addBtn.dataset.slug, name:addBtn.dataset.name, price:addBtn.dataset.price, displayPrice:addBtn.dataset.displayPrice, image:addBtn.dataset.image, category:addBtn.dataset.category}, addBtn.dataset.qty || 1);
-      setDrawer(true);
+      return;
+    }
+    const productInc = event.target.closest("[data-product-qty-inc]");
+    if (productInc) {
+      event.preventDefault();
+      const item = read().find(x => String(x.slug) === String(productInc.dataset.productQtyInc));
+      if (item) add(item, 1);
+      return;
+    }
+    const productDec = event.target.closest("[data-product-qty-dec]");
+    if (productDec) {
+      event.preventDefault();
+      const item = read().find(x => String(x.slug) === String(productDec.dataset.productQtyDec));
+      if (item) {
+        if (Number(item.qty) <= 1) remove(item.slug);
+        else setQty(item.slug, Number(item.qty) - 1);
+      }
       return;
     }
     const open = event.target.closest("[data-cart-open]");
