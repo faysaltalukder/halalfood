@@ -197,6 +197,21 @@
       <div class="cart-item-actions">${compact ? `<span class="cart-item-line-total">${money(line)}</span>` : `<button type="button" class="cart-remove" data-cart-remove="${html.escape(item.slug)}" aria-label="Remove ${html.escape(item.name)}">Remove</button>`}</div>
     </div>`;
   }
+  function checkoutItemMarkup(item) {
+    const line = Number(item.price || 0) * Number(item.qty || 0);
+    const productHref = new URL("products/" + item.slug + ".html", siteBase).href;
+    const image = imageUrl(String(item.image || "").replace(/\.(jpe?g|png)$/i, ".webp"));
+    return `<div class="cart-item checkout-cart-item" data-cart-item="${html.escape(item.slug)}">
+      <a class="cart-item-image" href="${html.escape(productHref)}"><img src="${html.escape(image)}" alt="${html.escape(item.name)}" loading="lazy"></a>
+      <div class="cart-item-info">
+        <a class="cart-item-name" href="${html.escape(productHref)}">${html.escape(item.name)}</a>
+        <span class="cart-item-price">${html.escape(item.displayPrice || money(item.price))} per unit</span>
+        <div class="cart-qty"><button type="button" data-cart-dec="${html.escape(item.slug)}" aria-label="Decrease ${html.escape(item.name)} quantity">−</button><span>${Number(item.qty)||1}</span><button type="button" data-cart-inc="${html.escape(item.slug)}" aria-label="Increase ${html.escape(item.name)} quantity">+</button></div>
+      </div>
+      <div class="cart-item-actions"><strong class="checkout-line-total">${money(line)}</strong><button type="button" class="cart-remove" data-cart-remove="${html.escape(item.slug)}" aria-label="Remove ${html.escape(item.name)}">Remove</button></div>
+    </div>`;
+  }
+
   const html = { escape: s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])) };
 
   function renderCounts() {
@@ -316,7 +331,8 @@
       const form = document.querySelector("#order-form"); if (form) form.classList.add("cart-order-disabled");
       return;
     }
-    box.innerHTML = `<div class="cart-checkout-summary-head"><div><span class="section-eyebrow">Order Items</span><h2>Review your cart</h2></div><strong>${money(total(items))}</strong></div><div class="cart-checkout-list">${items.map(item => itemMarkup(item, true)).join("")}</div><div class="cart-checkout-summary-bottom"><span>${totalQty(items)} item${totalQty(items) === 1 ? "" : "s"}</span><strong>Subtotal: ${money(total(items))}</strong></div>`;
+    const form = document.querySelector("#order-form"); if (form) form.classList.remove("cart-order-disabled");
+    box.innerHTML = `<div class="cart-checkout-summary-head"><div><span class="section-eyebrow">Order Items</span><h2>Review your cart</h2></div><strong>${money(total(items))}</strong></div><div class="cart-checkout-list">${items.map(item => checkoutItemMarkup(item)).join("")}</div><div class="cart-checkout-summary-bottom"><span>${totalQty(items)} item${totalQty(items) === 1 ? "" : "s"}</span><strong>Products subtotal: ${money(total(items))}</strong></div>`;
     const productInput = document.querySelector("#product"); if (productInput) productInput.value = items.map(i => `${i.name} × ${i.qty}`).join(" | ");
     const quantityInput = document.querySelector("#quantity"); if (quantityInput) quantityInput.value = String(totalQty(items));
     const display = document.querySelector("#product-display"); if (display) display.textContent = `${items.length} product${items.length===1?"":"s"} in cart`;
