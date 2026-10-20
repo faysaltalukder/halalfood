@@ -1877,3 +1877,38 @@ button.cart-qty-action:focus-visible {
   header .header-actions .header-cart,
   header .header-actions [data-cart-open] { width: 34px !important; height: 34px !important; flex-basis: 34px !important; }
 }
+
+
+/* Mobile-only fixes requested 2026-10-20. Banner and desktop rules remain untouched. */
+@media(max-width:900px){
+  /* Center the larger brand between menu and actions. */
+  header .nav{position:relative!important;min-height:70px!important}
+  header .brand{position:absolute!important;left:50%!important;top:50%!important;transform:translate(-50%,-50%)!important;display:flex!important;flex-direction:row-reverse!important;align-items:center!important;justify-content:center!important;gap:7px!important;width:max-content!important;max-width:calc(100% - 112px)!important;min-width:0!important;margin:0!important;font-size:clamp(17px,4.8vw,20px)!important;line-height:1.1!important;white-space:nowrap!important;z-index:3}
+  header .brand-logo{width:38px!important;height:38px!important;flex:0 0 38px!important;object-fit:contain!important}
+  header .mobile-menu-toggle,header .header-actions{position:relative;z-index:4}
+
+  /* Slightly smaller fixed bottom navigation. */
+  .mobile-bottom-nav{min-height:52px!important;padding:2px 3px calc(2px + env(safe-area-inset-bottom,0px))!important}
+  .mobile-bottom-nav a,.mobile-bottom-nav button{min-height:44px!important;height:44px!important;padding:1px 0!important;gap:1px!important}
+  .mobile-bottom-nav svg{width:20px!important;height:20px!important;flex:0 0 20px!important}
+  .mobile-bottom-nav span{font-size:clamp(9px,2.55vw,10.5px)!important;line-height:1.1!important}
+  body{padding-bottom:calc(58px + env(safe-area-inset-bottom,0px))!important}
+
+  /* Equal-height product cards with Add to Cart anchored to each card's bottom edge. */
+  .product-grid,.featured-grid-4,#related-grid,.jfy-grid{align-items:stretch!important;grid-auto-rows:1fr}
+  .product-grid>.product-card,.featured-grid-4>.product-card,#related-grid>.product-card,.jfy-grid>.product-card,body.category-products-page .product-card{display:flex!important;flex-direction:column!important;align-self:stretch!important;height:100%;min-width:0!important;overflow:hidden}
+  .product-grid .product-card .product-image,.featured-grid-4 .product-card .product-image,#related-grid .product-card .product-image,.jfy-grid .product-card .product-image,body.category-products-page .product-card .product-image{width:100%!important;height:auto!important;aspect-ratio:1/1!important;display:flex!important;align-items:center!important;justify-content:center!important;overflow:hidden!important}
+  .product-grid .product-card .product-image img,.featured-grid-4 .product-card .product-image img,#related-grid .product-card .product-image img,.jfy-grid .product-card .product-image img,body.category-products-page .product-card .product-image img{width:100%!important;height:100%!important;max-width:100%!important;object-fit:contain!important;object-position:center!important}
+  .product-grid .product-card .product-body,.featured-grid-4 .product-card .product-body,#related-grid .product-card .product-body,.jfy-grid .product-card .product-body,body.category-products-page .product-card .product-body{display:flex!important;flex:1 1 auto!important;flex-direction:column!important;min-width:0!important}
+  .product-grid .product-card .product-body h3,.featured-grid-4 .product-card .product-body h3,#related-grid .product-card .product-body h3,.jfy-grid .product-card .product-body h3,body.category-products-page .product-card .product-body h3{min-height:2.5em;line-height:1.25!important}
+  .product-grid .product-card .product-body>p,.featured-grid-4 .product-card .product-body>p,#related-grid .product-card .product-body>p,.jfy-grid .product-card .product-body>p,body.category-products-page .product-card .product-body>p{display:-webkit-box;min-height:2.8em;overflow:hidden;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2}
+  .product-grid .product-card .product-foot,.featured-grid-4 .product-card .product-foot,#related-grid .product-card .product-foot,.jfy-grid .product-card .product-foot,body.category-products-page .product-card .product-foot{display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:8px!important;width:100%!important;min-width:0!important;margin-top:auto!important}
+  .product-grid .product-card .product-foot>.price,.featured-grid-4 .product-card .product-foot>.price,#related-grid .product-card .product-foot>.price,.jfy-grid .product-card .product-foot>.price,body.category-products-page .product-card .product-foot>.price{display:flex!important;align-items:center!important;justify-content:center!important;width:100%!important;min-width:0!important;min-height:2.4em!important;margin:0!important;padding:0!important;text-align:center!important;line-height:1.2!important;overflow-wrap:anywhere}
+  .product-grid .product-card .product-foot>.cart-add-btn,.featured-grid-4 .product-card .product-foot>.cart-add-btn,#related-grid .product-card .product-foot>.cart-add-btn,.jfy-grid .product-card .product-foot>.cart-add-btn,body.category-products-page .product-card .product-foot>.cart-add-btn{display:flex!important;align-items:center!important;justify-content:center!important;align-self:stretch!important;width:100%!important;max-width:100%!important;min-width:0!important;min-height:44px!important;height:44px!important;flex:0 0 44px!important;margin:0!important;padding:8px 5px!important;box-sizing:border-box!important;gap:5px!important;font-size:12.5px!important;line-height:1.1!important;white-space:nowrap!important;overflow:hidden!important}
+
+  /* Prevent minus / number / plus from escaping the Add to Cart box on category cards. */
+  div.cart-qty-control,div.cart-qty-control:hover,div.cart-qty-control:focus-within,.product-card .product-foot>.cart-qty-control,#related-grid .product-card .product-foot>.cart-qty-control,body.category-products-page .product-card .product-foot>.cart-qty-control{display:grid!important;grid-template-columns:minmax(26px,1fr) minmax(18px,1fr) minmax(26px,1fr)!important;align-items:stretch!important;justify-content:stretch!important;gap:3px!important;width:100%!important;max-width:100%!important;min-width:0!important;min-height:44px!important;height:44px!important;flex:0 0 44px!important;margin:0!important;padding:3px!important;box-sizing:border-box!important;overflow:hidden!important;border:1.5px solid var(--orange)!important;border-radius:8px!important;background:var(--white,#fffdf8)!important}
+  button.cart-qty-action,button.cart-qty-action:hover,button.cart-qty-action:focus-visible,button.cart-qty-action:active{display:flex!important;align-items:center!important;justify-content:center!important;width:100%!important;max-width:100%!important;min-width:0!important;min-height:0!important;height:100%!important;margin:0!important;padding:0!important;box-sizing:border-box!important;overflow:hidden!important;border:0!important;border-radius:5px!important;font-size:1.05rem!important;line-height:1!important}
+  .cart-qty-value{display:flex!important;align-items:center!important;justify-content:center!important;width:100%!important;min-width:0!important;padding:0!important;overflow:hidden!important;font-size:.94rem!important;line-height:1!important}
+}
+@media(max-width:380px){header .brand{max-width:calc(100% - 102px)!important;gap:5px!important;font-size:16px!important}header .brand-logo{width:32px!important;height:32px!important;flex-basis:32px!important}.mobile-bottom-nav svg{width:19px!important;height:19px!important}}
