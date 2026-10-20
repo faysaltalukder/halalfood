@@ -2356,7 +2356,7 @@ button.cart-qty-action:focus-visible {
 }
 
 
-/* Final mobile header correction: clearly larger logo and equal yellow menu lines.
+/* Final mobile header correction: clearly larger logo and three equal yellow menu dots.
    Kept at the end so older mobile overrides cannot shrink or restyle these controls. */
 @media (max-width: 900px) {
   header .nav > .brand .brand-logo,
@@ -2377,11 +2377,11 @@ button.cart-qty-action:focus-visible {
     font-size: 0 !important;
     background-color: transparent !important;
     background-image:
-      linear-gradient(#D5A100, #D5A100),
-      linear-gradient(#D5A100, #D5A100),
-      linear-gradient(#D5A100, #D5A100) !important;
-    background-position: center 27%, center 50%, center 73% !important;
-    background-size: 22px 2.5px, 22px 2.5px, 22px 2.5px !important;
+      radial-gradient(circle, #D5A100 0 2.5px, transparent 2.7px),
+      radial-gradient(circle, #D5A100 0 2.5px, transparent 2.7px),
+      radial-gradient(circle, #D5A100 0 2.5px, transparent 2.7px) !important;
+    background-position: calc(50% - 9px) 50%, 50% 50%, calc(50% + 9px) 50% !important;
+    background-size: 7px 7px, 7px 7px, 7px 7px !important;
     background-repeat: no-repeat !important;
   }
 
