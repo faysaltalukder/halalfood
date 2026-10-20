@@ -6,6 +6,7 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="theme-color" content="#2B2A3D">
 <title>Customer Account | Halal Food</title>
+<link rel="stylesheet" href="css/style.css?v=20261020-mobile-nav-v5">
 <style>
 :root{--navy:#2B2A3D;--cream:#F2F0EA;--white:#FFFDF8;--earth:#C97B3D;--muted:#666574;--border:#D8D4C9;--danger:#9d2929;--success:#226443}
 *{box-sizing:border-box}body{margin:0;background:var(--cream);color:var(--navy);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh}
@@ -16,9 +17,22 @@ form{display:grid;gap:13px}label{display:grid;gap:6px;font-size:14px;font-weight
 button,.button{border:0;border-radius:10px;padding:12px 15px;background:var(--earth);color:#fff;font:inherit;font-weight:700;cursor:pointer;text-align:center;text-decoration:none;min-height:44px}button:disabled{opacity:.55;cursor:wait}.secondary{background:#e8e4dc;color:var(--navy)}.plain{padding:4px;background:transparent;color:var(--navy);text-decoration:underline;font-weight:600;min-height:0}.google-section{display:grid;gap:10px;margin:18px 0}.or-divider{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12px}.or-divider:before,.or-divider:after{content:"";height:1px;background:var(--border);flex:1}.google-btn{width:100%;background:#fff;color:#2B2A3D;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;gap:10px}.google-btn svg{width:18px;height:18px;flex-shrink:0}
 .row{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}.hidden{display:none!important}.msg{padding:10px 12px;border-radius:9px;background:#f0eee8;min-height:0;font-size:14px;line-height:1.5;overflow-wrap:anywhere}.msg:empty{display:none}.msg.error{background:#fae8e6;color:var(--danger)}.msg.success{background:#e6f3ea;color:var(--success)}.fine{font-size:12px;color:var(--muted);margin-top:20px}.toplink{font-size:14px}.section-title{margin:0 0 8px;font-size:20px}footer{text-align:center;color:var(--muted);font-size:12px;padding:0 15px 25px}
 </style>
+<style id="hf-mobile-account-nav">
+.hf-mobile-only-header{display:none!important}
+@media(max-width:900px){
+  .account-original-header{display:none!important}
+  .hf-mobile-only-header{display:block!important;position:sticky!important;top:0!important;z-index:60!important;padding:0!important;background:var(--cream)!important;color:var(--navy)!important;border-bottom:1px solid var(--line)!important;transition:transform .24s ease!important}
+  .hf-mobile-only-header .nav{display:flex;align-items:center;justify-content:space-between;gap:clamp(4px,1.5vw,9px);min-height:62px;padding:8px 9px}
+  .hf-mobile-only-header .mobile-menu-toggle{display:inline-flex;align-items:center;justify-content:center;width:36px;height:40px;flex:0 0 36px;padding:0;border:1px solid var(--line);border-radius:8px;background:var(--cream);color:var(--navy);font-size:25px;line-height:1}
+  .hf-mobile-only-header .brand{display:flex;align-items:center;gap:5px;min-width:0;white-space:nowrap;color:var(--navy)!important;text-decoration:none;font-size:clamp(14px,4vw,18px);line-height:1.15}
+  .hf-mobile-only-header .brand-logo{width:29px;height:29px;flex:0 0 29px;object-fit:contain}
+  .hf-mobile-only-header .header-actions{display:flex;align-items:center;gap:5px;margin-left:auto}
+}
+</style>
 </head>
 <body>
-<header><a class="brand" href="./">Halal Food</a><a class="toplink" href="./">← Back to store</a></header>
+<header class="account-original-header"><a class="brand" href="./">Halal Food</a><a class="toplink" href="./">← Back to store</a></header>
+<header class="hf-mobile-only-header"><div class="wrap nav"><button aria-controls="mobile-drawer" aria-expanded="false" aria-label="Open menu" class="mobile-menu-toggle" type="button">☰</button><a class="brand" href="index.html">Halal Food <img class="brand-logo" src="images/logo-favicon/logo.png" alt="Halal Food logo" width="42" height="42"></a><div class="header-actions"><button class="theme-toggle" type="button" data-theme-toggle aria-label="Switch to dark mode" title="Dark mode"><span data-theme-icon aria-hidden="true">☾</span></button><a class="header-cart" href="cart.html" data-cart-open="true" aria-label="Shopping cart"><span class="header-cart-icon header-cart-icon--desktop" aria-hidden="true">🛒</span><span class="header-cart-icon header-cart-icon--mobile" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5.5 8h13l1 12h-15l1-12Z"></path><path d="M9 8V6.2a3 3 0 0 1 6 0V8"></path></svg></span><span class="cart-count" data-cart-count>0</span></a></div></div></header>
 <main>
 <section class="card">
 <h1>Customer Account</h1>
@@ -181,5 +195,8 @@ client.auth.getSession().then(async({data})=>{
 });
 })();
 </script>
+<script src="js/products-index.js?v=20261020-mobile-nav-v5" defer></script>
+<script src="js/cart.js?v=20261020-bag-icon-v1" defer></script>
+<script src="js/main.js?v=20261020-mobile-nav-v5" defer></script>
 </body>
 </html>
