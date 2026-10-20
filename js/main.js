@@ -430,7 +430,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Mobile bottom navigation
-  document.querySelector("[data-mobile-menu]")?.addEventListener("click", () => setDrawer(true));
+  // Bottom navigation Menu uses the same header drawer toggle via the delegated handler below.
   document.querySelector("[data-mobile-search]")?.addEventListener("click", () => {
     if (box) box.classList.add("open");
   });
