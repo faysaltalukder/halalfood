@@ -2170,3 +2170,18 @@ button.cart-qty-action:focus-visible {
     margin-bottom: 8px !important;
   }
 }
+
+
+/* HALAL FOOD — hide the floating cart on mobile cart/account/category contexts and while the menu is open. */
+@media screen and (max-width: 900px) {
+  body:has([data-cart-page]) .mobile-floating-cart,
+  body:has(.account-original-header) .mobile-floating-cart,
+  body.category-products-page .mobile-floating-cart,
+  body.drawer-open .mobile-floating-cart,
+  body:has(.mobile-drawer.open) .mobile-floating-cart,
+  body:has(.mobile-drawer-backdrop.open) .mobile-floating-cart {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+}
