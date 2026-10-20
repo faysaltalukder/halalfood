@@ -2485,3 +2485,66 @@ button.cart-qty-action:focus-visible {
     font-size: 20px !important;
   }
 }
+
+
+/* Mobile-only spacing refinement — 2026-10-21.
+   Intentional: reduce empty vertical space without resizing buttons or product/category images. */
+@media screen and (max-width: 900px) {
+  .hero-visual-only { padding-bottom: 18px !important; }
+  #categories.section { padding-top: 18px !important; padding-bottom: 12px !important; }
+  #categories .section-head.section-head-center { margin: 0 auto 12px !important; }
+  #categories .category-rail { padding-top: 2px !important; padding-bottom: 4px !important; }
+  /* Preserve the complete category photo; only trim whitespace around its label. */
+  #categories .cat-card h3 {
+    margin: 8px 8px 10px !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    overflow-wrap: anywhere;
+    line-height: 1.25;
+  }
+  #products.section { padding-top: 16px !important; }
+  #products .section-head { margin-bottom: 12px !important; }
+  #products .featured-grid-4 .product-body { padding-top: 9px; padding-bottom: 7px; }
+  #products .featured-grid-4 .product-body h3 { margin-bottom: 2px; line-height: 1.28; }
+  #products .featured-grid-4 .product-body > p {
+    margin-top: 0;
+    margin-bottom: 6px !important;
+    line-height: 1.35;
+  }
+  #products .featured-grid-4 .product-foot {
+    margin-top: 0 !important;
+    padding-top: 2px !important;
+    gap: 4px !important;
+    row-gap: 2px !important;
+  }
+  #products .featured-grid-4 .product-foot > .price { margin: 0 !important; line-height: 1.25; }
+
+  body.category-products-page .category-page-products .product-body h3 { margin-bottom: 2px !important; line-height: 1.28; }
+  body.category-products-page .category-page-products .product-body > p {
+    margin-top: 0;
+    margin-bottom: 6px !important;
+    line-height: 1.35;
+  }
+  body.category-products-page .product-card .product-foot {
+    gap: 6px !important;
+    padding-top: 2px !important;
+    margin-top: 0 !important;
+  }
+  body.category-products-page .product-card .product-foot > .price {
+    align-self: flex-end !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    text-align: right !important;
+    justify-self: end !important;
+  }
+
+  /* The floating Items/Cart summary fades while mobile search is active. */
+  body:has(.search-wrap.mobile-search-open) .mobile-floating-cart {
+    filter: blur(1.6px);
+    opacity: .26 !important;
+    pointer-events: none !important;
+    transition: opacity .16s ease, filter .16s ease;
+  }
+}
