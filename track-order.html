@@ -6,13 +6,27 @@
 <meta name="robots" content="noindex,follow">
 <title>Track Your Order — Halal Food</title>
 <link rel="icon" type="image/png" href="images/logo-favicon/favicon.png">
+<link rel="stylesheet" href="css/style.css?v=20261020-mobile-nav-v5">
 <style>
 :root{--navy:#17233C;--cream:#F4EBD8;--card:#FFFDF7;--gold:#C99220;--muted:#6D6875;--line:#E4D8BF}
 *{box-sizing:border-box}body{margin:0;background:var(--cream);color:var(--navy);font-family:Arial,"Noto Sans Bengali",sans-serif}.wrap{width:min(760px,calc(100% - 28px));margin:auto}.top{padding:18px 0}.brand{display:flex;align-items:center;gap:10px;color:var(--navy);text-decoration:none;font-weight:800;font-size:22px}.brand img{width:52px;height:42px;object-fit:contain}.card{background:var(--card);border:1px solid var(--line);border-radius:24px;padding:28px;box-shadow:0 15px 45px rgba(23,35,60,.10)}h1{margin:0 0 8px;font-size:32px}.lead{margin:0 0 24px;color:var(--muted);line-height:1.7}.field{margin:15px 0}.field label{display:block;font-weight:700;margin-bottom:7px}.field input{width:100%;padding:14px 15px;border:1px solid #D8D0C1;border-radius:12px;font-size:16px;background:#fff}.btn{width:100%;border:0;border-radius:999px;padding:14px 18px;background:var(--navy);color:#fff;font-size:16px;font-weight:800;cursor:pointer;margin-top:8px}.error{display:none;margin-top:16px;padding:12px 14px;border-radius:12px;background:#FFF0EF;color:#9B2C25}.result{display:none;margin-top:26px}.summary{background:#F8F1E2;border:1px solid var(--line);border-radius:18px;padding:18px}.row{display:flex;justify-content:space-between;gap:16px;padding:8px 0}.label{color:var(--muted);font-size:13px}.value{font-weight:800;text-align:right}.status{margin:18px 0 8px;font-weight:800}.timeline{display:grid;gap:0;margin-top:8px}.step{position:relative;padding:11px 12px 11px 34px;border-left:3px solid #D8D0C1;color:#8A8490}.step:before{content:"";position:absolute;left:-8px;top:13px;width:11px;height:11px;border-radius:50%;background:#D8D0C1}.step.done{color:var(--navy);font-weight:700;border-left-color:var(--gold)}.step.done:before{background:var(--gold)}.items{margin-top:18px;border-top:1px solid var(--line)}.item{display:flex;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}.muted{color:var(--muted)}.back{display:inline-block;margin-top:18px;color:var(--navy);font-weight:700;text-decoration:none}@media(max-width:520px){.card{padding:20px}h1{font-size:27px}.row{display:block}.value{text-align:left;margin-top:3px}}
 
 </style>
+<style id="hf-mobile-track-order-nav">
+.hf-mobile-only-header{display:none!important}
+@media(max-width:900px){
+  .hf-mobile-only-header{display:block!important;position:sticky!important;top:0!important;z-index:60!important;padding:0!important;background:var(--cream)!important;color:var(--navy)!important;border-bottom:1px solid var(--line)!important;transition:transform .24s ease!important}
+  .hf-mobile-only-header .nav{display:flex;align-items:center;justify-content:space-between;gap:clamp(4px,1.5vw,9px);min-height:62px;padding:8px 9px}
+  .hf-mobile-only-header .mobile-menu-toggle{display:inline-flex;align-items:center;justify-content:center;width:36px;height:40px;flex:0 0 36px;padding:0;border:1px solid var(--line);border-radius:8px;background:var(--cream);color:var(--navy);font-size:25px;line-height:1}
+  .hf-mobile-only-header .brand{display:flex;align-items:center;gap:5px;min-width:0;white-space:nowrap;color:var(--navy)!important;text-decoration:none;font-size:clamp(14px,4vw,18px);line-height:1.15}
+  .hf-mobile-only-header .brand img{width:29px;height:29px;flex:0 0 29px;object-fit:contain}
+  .hf-mobile-only-header .header-actions{display:flex;align-items:center;gap:5px;margin-left:auto}
+  .top{display:none!important}
+}
+</style>
 </head>
 <body>
+<header class="hf-mobile-only-header"><div class="wrap nav"><button aria-controls="mobile-drawer" aria-expanded="false" aria-label="Open menu" class="mobile-menu-toggle" type="button">☰</button><a class="brand" href="index.html"><img class="brand-logo" src="images/logo-favicon/logo.png" alt="Halal Food logo" width="42" height="42"><span>Halal Food</span></a><div class="header-actions"><button class="theme-toggle" type="button" data-theme-toggle aria-label="Switch to dark mode" title="Dark mode"><span data-theme-icon aria-hidden="true">☾</span></button><a class="header-cart" href="cart.html" data-cart-open="true" aria-label="Shopping cart"><span class="header-cart-icon header-cart-icon--desktop" aria-hidden="true">🛒</span><span class="header-cart-icon header-cart-icon--mobile" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5.5 8h13l1 12h-15l1-12Z"></path><path d="M9 8V6.2a3 3 0 0 1 6 0V8"></path></svg></span><span class="cart-count" data-cart-count>0</span></a></div></div></header>
 <div class="wrap">
   <div class="top"><a class="brand" href="index.html"><picture><source type="image/webp" srcset="images/logo-favicon/logo.webp"><img src="images/logo-favicon/logo.png" alt="Halal Food logo"></picture><span>Halal Food</span></a></div>
   <main class="card">
@@ -121,4 +135,7 @@ $("#track-form").addEventListener("submit",async e=>{
   });
 })();
 </script>
+<script src="js/products-index.js?v=20261020-mobile-nav-v5" defer></script>
+<script src="js/cart.js?v=20261020-bag-icon-v1" defer></script>
+<script src="js/main.js?v=20261020-mobile-nav-v5" defer></script>
 </body></html>
