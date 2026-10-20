@@ -16,6 +16,37 @@ input,button,select{font:inherit;padding:11px 13px;border-radius:10px;border:1px
 .table-wrap{overflow:auto}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:11px;border-bottom:1px solid var(--border);white-space:nowrap}th{font-size:11px;text-transform:uppercase;color:var(--muted)}
 .badge{padding:5px 9px;border-radius:999px;background:#f0eee8;font-size:12px}.details{display:none;background:#fbf9f4}.details.open{display:table-row}.item{display:flex;gap:10px;align-items:center;padding:7px 0}.item img{width:48px;height:48px;object-fit:contain;background:#f3eee4;border-radius:8px}
 .status{min-width:125px}@media(max-width:800px){.stats{grid-template-columns:repeat(2,1fr)}}@media(max-width:520px){.stats{grid-template-columns:1fr}.top{align-items:flex-start;flex-direction:column}}
+
+/* Admin Excel-like horizontal navigation */
+.table-scroll-tools{display:none;align-items:center;gap:12px;margin:10px 0 7px;min-width:0}
+.table-scroll-tools.is-overflowing{display:flex}
+.table-scroll-label{flex:0 0 auto;color:var(--muted);font-size:11px;font-weight:650;white-space:nowrap}
+.table-x-scroll{flex:1 1 auto;min-width:100px;height:18px;overflow-x:auto;overflow-y:hidden;border:1px solid var(--border);border-radius:8px;background:#f0eee8;scrollbar-width:auto;overscroll-behavior-x:contain}
+.table-x-scroll-inner{height:1px;min-width:100%;pointer-events:none}
+.table-x-scroll::-webkit-scrollbar{height:13px}
+.table-x-scroll::-webkit-scrollbar-track{background:#f0eee8;border-radius:8px}
+.table-x-scroll::-webkit-scrollbar-thumb{background:#a6acb5;border:2px solid #f0eee8;border-radius:8px}
+.table-x-scroll::-webkit-scrollbar-thumb:hover{background:#737c89}
+.table-wrap table{min-width:100%;border-collapse:separate;border-spacing:0}
+.table-wrap th,.table-wrap td{padding:8px 9px;font-size:12px}
+.table-wrap th{font-size:10px;letter-spacing:.035em}
+.table-wrap td{line-height:1.35}
+.table-wrap thead th{position:sticky;top:0;z-index:3;background:#fff;box-shadow:0 1px 0 var(--border)}
+#ordersCard .table-wrap{border:1px solid var(--border);border-radius:10px;overscroll-behavior:contain}
+#ordersCard .table-wrap table{min-width:1240px}
+#ordersCard .table-wrap thead th:first-child{position:sticky;left:0;z-index:5;background:#fff}
+#ordersCard .table-wrap tbody tr:not(.details) td:first-child{position:sticky;left:0;z-index:2;background:#fff;font-weight:700}
+#ordersCard .table-wrap tbody tr:not(.details):hover td:first-child{background:#faf8f3}
+#ordersCard .details td{white-space:normal;line-height:1.6}
+@media(min-width:801px){#ordersCard .table-wrap{max-height:min(70vh,760px);overflow:auto}}
+@media(max-width:800px){
+ .table-scroll-tools{gap:7px;margin:8px 0 6px}
+ .table-scroll-label{font-size:10px}
+ .table-x-scroll{height:19px}
+ .table-x-scroll::-webkit-scrollbar{height:14px}
+ .table-wrap th,.table-wrap td{padding:8px;font-size:12px}
+ #ordersCard .table-wrap table{min-width:1180px}
+}
 </style>
 </head>
 <body>
@@ -86,6 +117,73 @@ let cache=[];
 let pendingMfaFactorId=null;
 let routingSession=false;
 let mfaEnrolling=false;
+
+function setupAdminHorizontalNavigation(){
+ const refresh=()=>{
+  document.querySelectorAll(".table-wrap").forEach(wrap=>{
+   const table=wrap.querySelector("table");
+   if(!table)return;
+   let tools=wrap.previousElementSibling;
+   if(!tools||!tools.classList.contains("table-scroll-tools")){
+    tools=document.createElement("div");
+    tools.className="table-scroll-tools";
+    const label=document.createElement("span");
+    label.className="table-scroll-label";
+    label.textContent="Drag to view columns";
+    const bar=document.createElement("div");
+    bar.className="table-x-scroll";
+    bar.setAttribute("role","region");
+    bar.setAttribute("aria-label","Horizontal table navigation");
+    bar.tabIndex=0;
+    const inner=document.createElement("div");
+    inner.className="table-x-scroll-inner";
+    bar.appendChild(inner);
+    tools.append(label,bar);
+    wrap.parentNode.insertBefore(tools,wrap);
+    let syncing=false;
+    bar.addEventListener("scroll",()=>{
+     if(syncing||Math.abs(wrap.scrollLeft-bar.scrollLeft)<1)return;
+     syncing=true;wrap.scrollLeft=bar.scrollLeft;syncing=false;
+    },{passive:true});
+    wrap.addEventListener("scroll",()=>{
+     if(syncing||Math.abs(bar.scrollLeft-wrap.scrollLeft)<1)return;
+     syncing=true;bar.scrollLeft=wrap.scrollLeft;syncing=false;
+    },{passive:true});
+    bar.addEventListener("keydown",e=>{
+     if(e.key==="ArrowLeft"||e.key==="ArrowRight"){
+      e.preventDefault();bar.scrollLeft+=e.key==="ArrowRight"?120:-120;
+     }
+    });
+   }
+   const bar=tools.querySelector(".table-x-scroll");
+   const inner=tools.querySelector(".table-x-scroll-inner");
+   if(!bar||!inner)return;
+   const viewport=wrap.clientWidth;
+   const content=Math.max(wrap.scrollWidth,table.scrollWidth,viewport);
+   inner.style.width=content+"px";
+   const overflow=viewport>0&&content>viewport+2;
+   tools.classList.toggle("is-overflowing",overflow);
+   tools.setAttribute("aria-hidden",String(!overflow));
+   if(!overflow){wrap.scrollLeft=0;bar.scrollLeft=0;}
+   else if(Math.abs(bar.scrollLeft-wrap.scrollLeft)>1)bar.scrollLeft=wrap.scrollLeft;
+  });
+ };
+ refresh();
+ if(window.ResizeObserver){
+  const resizeObserver=new ResizeObserver(()=>refresh());
+  document.querySelectorAll(".table-wrap").forEach(wrap=>{
+   resizeObserver.observe(wrap);
+   const table=wrap.querySelector("table");if(table)resizeObserver.observe(table);
+  });
+ }
+ if(window.MutationObserver){
+  const mutationObserver=new MutationObserver(()=>refresh());
+  document.querySelectorAll(".table-wrap table").forEach(table=>mutationObserver.observe(table,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:["class","style"]}));
+ }
+ window.addEventListener("resize",refresh,{passive:true});
+ window.refreshAdminHorizontalNavigation=refresh;
+}
+setupAdminHorizontalNavigation();
 
 function money(n){return "৳"+Number(n||0).toLocaleString("en-BD",{maximumFractionDigits:2})}
 function escapeHtml(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
@@ -232,6 +330,7 @@ async function load(){
  $("deliveredCount").textContent=cache.filter(x=>x.status==="delivered").length;
  $("revenue").textContent=money(cache.filter(x=>x.status!=="cancelled").reduce((s,x)=>s+Number(x.total||0),0));
  $("lastUpdated").textContent="Updated "+new Date().toLocaleTimeString("en-BD");
+ window.refreshAdminHorizontalNavigation?.();
  loadAnalytics();
  $("ordersBody").innerHTML=cache.length?cache.map((x,i)=>{
    const items=(x.order_items||[]).map(it=>'<div class="item">'+(it.product_image_url?'<img src="'+escapeHtml(it.product_image_url)+'" alt="">':'')+'<span>'+escapeHtml(it.product_name)+' × '+escapeHtml(it.quantity)+' '+escapeHtml(it.unit)+' — '+money(it.line_total)+'</span></div>').join("")||'<span class="muted">No items</span>';
