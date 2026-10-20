@@ -1,4 +1,8 @@
 document.addEventListener("DOMContentLoaded", () => {
+  const priceToNumber = (value) => {
+    const match = String(value || "").match(/(?:৳|BDT)\s*([0-9][0-9,]*(?:\.[0-9]+)?)/i);
+    return match ? Number(match[1].replace(/,/g, "")) : 0;
+  };
   const detailBox = document.querySelector("#product-detail");
   if (!detailBox) return;
 
@@ -53,7 +57,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         <div class="product-detail-actions">
           <a class="btn-primary order-btn" href="${orderUrl}">Order Now</a>
-          <button type="button" class="btn-secondary cart-detail-add" data-add-to-cart data-slug="${product.slug}" data-name="${product.name}" data-price="${String(product.price).replace(/[^0-9.]/g, "")}" data-display-price="${product.price}" data-image="${product.image}" data-category="${product.category}">Add to Cart</button>
+          <button type="button" class="btn-secondary cart-detail-add" data-add-to-cart data-slug="${product.slug}" data-name="${product.name}" data-price="${priceToNumber(product.price)}" data-display-price="${product.price}" data-image="${product.image}" data-category="${product.category}">Add to Cart</button>
           <a class="btn-secondary" href="${whatsappUrl}" target="_blank" rel="noopener">Message Us</a>
           <a class="btn-secondary" href="tel:+8801842031164">Call Us</a>
         </div>
@@ -128,7 +132,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <p>${item.shortDescription}</p>
             <div class="product-foot">
               <span class="price">${item.price}</span>
-              <button type="button" class="cart-add-btn related-cart-btn" data-add-to-cart data-slug="${item.slug}" data-name="${item.name}" data-price="${String(item.price).replace(/[^0-9.]/g, "")}" data-display-price="${item.price}" data-image="${item.image}" data-category="${item.category}">Add to Cart</button>
+              <button type="button" class="cart-add-btn related-cart-btn" data-add-to-cart data-slug="${item.slug}" data-name="${item.name}" data-price="${priceToNumber(item.price)}" data-display-price="${item.price}" data-image="${item.image}" data-category="${item.category}">Add to Cart</button>
             </div>
           </div>
         </article>
