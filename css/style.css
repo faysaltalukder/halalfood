@@ -1912,3 +1912,49 @@ button.cart-qty-action:focus-visible {
   .cart-qty-value{display:flex!important;align-items:center!important;justify-content:center!important;width:100%!important;min-width:0!important;padding:0!important;overflow:hidden!important;font-size:.94rem!important;line-height:1!important}
 }
 @media(max-width:380px){header .brand{max-width:calc(100% - 102px)!important;gap:5px!important;font-size:16px!important}header .brand-logo{width:32px!important;height:32px!important;flex-basis:32px!important}.mobile-bottom-nav svg{width:19px!important;height:19px!important}}
+
+
+/* HALAL FOOD — mobile-only hero carousel size and swipe controls.
+   Desktop sizing is intentionally unchanged. Keep all banner artwork visible. */
+@media screen and (max-width: 600px) {
+  .hero-visual-only .wrap {
+    width: 100% !important;
+    max-width: none !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  .hero-visual-only .hero-media-grid {
+    display: block !important;
+  }
+
+  .hero-visual-only .hero-carousel {
+    width: 100% !important;
+    max-width: none !important;
+    height: auto !important;
+    aspect-ratio: 2.7 / 1 !important;
+    margin: 0 !important;
+  }
+
+  .hero-visual-only .hero-carousel-track,
+  .hero-visual-only .hero-slide {
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  .hero-visual-only .hero-slide img {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+    object-position: center !important;
+    background: var(--cream-deep) !important;
+  }
+
+  /* Mobile visitors can swipe between slides, so hide only the arrow buttons. */
+  .hero-visual-only .hero-carousel-arrow {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+}
