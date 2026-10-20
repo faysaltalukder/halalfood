@@ -1978,3 +1978,22 @@ button.cart-qty-action:focus-visible {
   }
   .cart-qty-value { width:100%!important; min-width:0!important; padding:0!important; overflow:hidden!important; text-align:center!important; }
 }
+
+
+/* HALAL FOOD — restrained offer badges with a reserved band, never over the product image. */
+.hf-discounted-image{display:flex!important;flex-direction:column!important;align-items:stretch!important;justify-content:flex-start!important;gap:5px!important;box-sizing:border-box!important;padding:6px!important}
+.hf-discount-badge{position:static!important;z-index:2;display:inline-flex!important;flex:0 0 auto!important;align-self:flex-start!important;align-items:center!important;justify-content:center!important;gap:4px!important;width:max-content!important;max-width:100%;min-height:24px;padding:5px 8px!important;border:1px solid rgba(255,253,248,.7)!important;border-radius:7px!important;background:var(--orange,#C97B3D)!important;color:var(--white,#fffdf8)!important;box-shadow:0 2px 7px rgba(43,42,61,.12);font-family:Arial,sans-serif;white-space:nowrap}
+.hf-discount-percent{color:inherit!important;font-size:.77rem!important;font-weight:800!important;line-height:1!important;letter-spacing:-.01em}
+.hf-discount-off{color:inherit!important;font-size:.55rem!important;font-weight:800!important;line-height:1!important;letter-spacing:.04em}
+.hf-discounted-image>img,.hf-discounted-image>picture,.hf-discounted-image>a{flex:1 1 auto!important;min-height:0!important;width:100%!important;max-width:100%!important}
+.hf-discounted-image>img{display:block!important;height:auto!important;object-fit:contain!important;object-position:center!important}
+.hf-discounted-image>picture{display:block!important;height:100%!important}
+.hf-discounted-image>picture img,.hf-discounted-image>a img{display:block!important;width:100%!important;height:100%!important;min-height:0!important;object-fit:contain!important;object-position:center!important}
+.jfy-image.hf-discounted-image img,.mrow-image.hf-discounted-image img{object-fit:contain!important}
+.hf-discount-detail{display:flex!important;flex-direction:column!important;align-items:flex-start!important;gap:8px!important}
+.hf-price-stack{display:inline-flex!important;flex-wrap:wrap!important;align-items:baseline!important;justify-content:inherit;gap:5px!important;max-width:100%;line-height:1.25}
+.hf-price-original{color:var(--navy-soft,#4c4a5b)!important;font-size:.76em!important;font-weight:500!important;opacity:.78;text-decoration:line-through!important;text-decoration-thickness:1px!important;white-space:nowrap}
+.hf-price-current{color:var(--orange,#C97B3D)!important;font-size:1em!important;font-weight:800!important;white-space:nowrap}
+.hf-has-discount .hf-price-stack{vertical-align:middle}
+.product-detail-price.hf-has-discount .hf-price-stack{display:flex!important;align-items:baseline!important;gap:9px!important}
+@media(max-width:600px){.hf-discount-badge{min-height:22px;padding:5px 7px!important}.hf-price-stack{gap:4px!important}.hf-price-original{font-size:.72em!important}}
