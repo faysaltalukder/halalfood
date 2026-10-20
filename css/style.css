@@ -2008,13 +2008,29 @@ button.cart-qty-action:focus-visible {
     border-radius: 0 !important;
     overflow: hidden !important;
   }
-  .hero-visual-only .hero-carousel-track,
+  /* Keep the carousel track horizontal on phones; do not let the image sizing rule stack slides vertically. */
+  .hero-visual-only .hero-carousel-track {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: stretch !important;
+    width: 100% !important;
+    height: 100% !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    scroll-snap-type: x mandatory !important;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x pan-y;
+  }
   .hero-visual-only .hero-slide,
   .hero-visual-only .hero-slide picture {
     display: block !important;
     width: 100% !important;
     height: 100% !important;
     min-width: 100% !important;
+  }
+  .hero-visual-only .hero-slide {
+    flex: 0 0 100% !important;
+    scroll-snap-align: start !important;
   }
   .hero-visual-only .hero-slide img {
     display: block !important;
