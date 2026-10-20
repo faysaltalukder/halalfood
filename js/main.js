@@ -608,7 +608,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const totalNode = document.querySelector("#checkout-grand-total");
     if (subtotalNode) subtotalNode.textContent = money(subtotal);
     if (deliveryNode) deliveryNode.textContent = zone ? money(deliveryCharge) : "Choose an area";
-    if (totalNode) totalNode.textContent = money(subtotal + deliveryCharge);
+    if (totalNode) totalNode.textContent = zone ? money(subtotal + deliveryCharge) : "Select delivery area";
     return { subtotal, deliveryCharge, total: subtotal + deliveryCharge, deliveryZone: zone };
   };
   document.querySelectorAll('input[name="deliveryZone"]').forEach((radio) => radio.addEventListener("change", updateCheckoutTotals));
