@@ -1209,8 +1209,7 @@ html.dark-mode .contact-response-card:hover .contact-response-num { background: 
   .hf-contact-launcher { background:var(--orange) !important; border-color:var(--orange) !important; color:var(--white) !important; }
   .category-rail .cat-card h3, .cat-card h3, .mobile-category-links a, .mobile-bottom-nav span { white-space:nowrap; word-break:keep-all; overflow-wrap:normal; }
   .category-rail .cat-card h3, .cat-card h3 { display:block; max-width:100%; overflow:hidden; text-overflow:ellipsis; }
-  header .header-actions .search-wrap.mobile-search-open { display:block !important; position:fixed !important; z-index:1400 !important; top:0; left:0; right:0; width:100%; padding:12px 14px 14px; background:var(--white); border-bottom:1px solid var(--line); box-shadow:0 12px 35px rgba(43,42,61,.15); }
-  .search-wrap.mobile-search-open::before { content:""; position:fixed; inset:0; z-index:-1; background:rgba(43,42,61,.48); }
+  header .header-actions .search-wrap.mobile-search-open { display:block !important; position:fixed !important; z-index:1400 !important; top:0; left:0; right:0; width:100%; padding:12px 14px 14px; background:var(--white); border-bottom:1px solid var(--line); box-shadow:0 12px 35px rgba(43,42,61,.15), 0 0 0 100vmax rgba(43,42,61,.48); }
   .search-wrap.mobile-search-open::after { content:"Search Products"; display:block; margin:0 0 10px; color:var(--navy); font-weight:800; font-size:17px; }
   .search-wrap.mobile-search-open .search-toggle { display:none !important; }
   .search-wrap.mobile-search-open .search-box { display:block !important; position:static !important; width:100% !important; max-height:65vh; overflow:auto; padding:0; border:0; background:transparent; box-shadow:none; }
