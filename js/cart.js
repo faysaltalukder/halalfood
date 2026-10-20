@@ -310,13 +310,17 @@
   document.addEventListener("click", event => {
     const addBtn = event.target.closest("[data-add-to-cart]");
     if (addBtn) {
+      // Add in place; prevent a product-card wrapper/link from navigating to Cart or Product.
       event.preventDefault();
+      event.stopPropagation();
+      if (!addBtn.dataset.slug || !addBtn.dataset.name) return;
       add({slug:addBtn.dataset.slug, name:addBtn.dataset.name, price:addBtn.dataset.price, displayPrice:addBtn.dataset.displayPrice, image:addBtn.dataset.image, category:addBtn.dataset.category}, addBtn.dataset.qty || 1);
       return;
     }
     const productInc = event.target.closest("[data-product-qty-inc]");
     if (productInc) {
       event.preventDefault();
+      event.stopPropagation();
       const item = read().find(x => String(x.slug) === String(productInc.dataset.productQtyInc));
       if (item) add(item, 1);
       return;
@@ -324,6 +328,7 @@
     const productDec = event.target.closest("[data-product-qty-dec]");
     if (productDec) {
       event.preventDefault();
+      event.stopPropagation();
       const item = read().find(x => String(x.slug) === String(productDec.dataset.productQtyDec));
       if (item) {
         if (Number(item.qty) <= 1) remove(item.slug);
@@ -338,7 +343,31 @@
     const dec = event.target.closest("[data-cart-dec]"); if (dec) { const item=read().find(x=>x.slug===dec.dataset.cartDec); if(item)setQty(item.slug, item.qty-1); return; }
     const rem = event.target.closest("[data-cart-remove]"); if (rem) { remove(rem.dataset.cartRemove); return; }
     const clearBtn = event.target.closest("[data-cart-clear]"); if (clearBtn) { clear(); return; }
-  });
+  }, true);
+
+  // Product cards can be inserted after initial page load (home page, category rails, load-more).
+  // Observe only newly inserted controls so their quantities always match the cart without navigation.
+  function observeProductCartControls() {
+    if (!document.body || document.body.dataset.cartControlsObserved === "1") return;
+    document.body.dataset.cartControlsObserved = "1";
+    let pending = false;
+    const selector = 'button[data-add-to-cart], [data-product-cart-control]';
+    const hasControl = node => node && node.nodeType === 1 &&
+      (node.matches(selector) || Boolean(node.querySelector(selector)));
+    const observer = new MutationObserver(records => {
+      const shouldRefresh = records.some(record =>
+        Array.from(record.addedNodes || []).some(hasControl)
+      );
+      if (!shouldRefresh || pending) return;
+      pending = true;
+      requestAnimationFrame(() => {
+        pending = false;
+        renderProductCartControls();
+      });
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+  }
+
   document.addEventListener("keydown", e => { if (e.key === "Escape") setDrawer(false); });
   window.addEventListener("halalcart:updated", renderAll);
   window.addEventListener("storage", e => { if (e.key === CART_KEY) renderAll(); });
@@ -347,7 +376,7 @@
   window.HALAL_CART_KEY = CART_KEY;
 
   document.addEventListener("DOMContentLoaded", () => {
-    initThemeMode(); ensureHeaderButton(); ensureDrawer(); renderAll();
+    initThemeMode(); ensureHeaderButton(); ensureDrawer(); renderAll(); observeProductCartControls();
     if (document.querySelector("[data-cart-page]")) renderPage();
     if (document.querySelector("[data-cart-checkout-summary]")) renderOrderSummary();
   });
