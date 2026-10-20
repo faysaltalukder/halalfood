@@ -1172,3 +1172,10 @@ html.dark-mode .contact-response-card:hover .contact-response-num { background: 
 @media (min-width: 901px) {
   .mobile-floating-cart { display:none !important; }
 }
+
+@media (max-width:900px) {
+  header .header-actions .mobile-header-cart { position:relative; display:inline-flex; align-items:center; justify-content:center; width:38px; height:38px; flex:0 0 38px; border:1px solid var(--orange); border-radius:9px; background:var(--orange); color:var(--white); }
+  .mobile-header-cart svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+  .mobile-header-cart b { position:absolute; top:-5px; right:-5px; min-width:17px; height:17px; padding:0 4px; display:flex; align-items:center; justify-content:center; border-radius:999px; background:var(--navy); color:var(--white); font-size:10px; line-height:1; }
+}
+@media (min-width:901px) { header .header-actions .mobile-header-cart { display:none !important; } }
