@@ -269,7 +269,7 @@ document.addEventListener("DOMContentLoaded", () => {
     miniCart.innerHTML = '<span class="mobile-floating-cart-top"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 4h2l2.2 11.2a2 2 0 0 0 2 1.6h8.9a2 2 0 0 0 1.9-1.5L22 8H6"></path><circle cx="10" cy="20" r="1.2"></circle><circle cx="18" cy="20" r="1.2"></circle></svg><span><b data-cart-count>0</b> Items</span></span><span class="mobile-floating-cart-total" data-cart-total>৳ 0</span>';
     document.body.appendChild(miniCart);
   }
-  if (!document.querySelector("#hf-contact-widget")) {
+  if (window.matchMedia("(max-width: 900px)").matches && !document.querySelector("#hf-contact-widget")) {
     const contact = document.createElement("div");
     contact.className = "hf-contact-widget";
     contact.id = "hf-contact-widget";
