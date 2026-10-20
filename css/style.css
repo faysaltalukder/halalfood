@@ -2185,3 +2185,91 @@ button.cart-qty-action:focus-visible {
     pointer-events: none !important;
   }
 }
+
+
+/* HALAL FOOD — mobile drawer account CTA and bottom navigation Menu item. */
+@media screen and (max-width: 900px) {
+  .mobile-drawer .mobile-account-link { display: none !important; }
+  .mobile-drawer .mobile-drawer-account-cta {
+    display: flex !important;
+    align-items: center;
+    gap: 12px;
+    margin: 12px 14px 16px;
+    padding: 12px 13px !important;
+    min-height: 70px;
+    border: 1.5px solid var(--orange);
+    border-radius: 13px;
+    background: var(--cream) !important;
+    color: var(--navy) !important;
+    text-decoration: none;
+    box-shadow: 0 5px 16px rgba(43,42,61,.08);
+  }
+  .mobile-drawer .mobile-drawer-account-cta:focus-visible {
+    outline: 3px solid var(--orange);
+    outline-offset: 2px;
+  }
+  .mobile-drawer .mobile-drawer-account-avatar {
+    width: 44px;
+    height: 44px;
+    flex: 0 0 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border-radius: 50%;
+    background: var(--orange);
+    color: var(--white);
+    font-size: 19px;
+    line-height: 1;
+    font-weight: 800;
+  }
+  .mobile-drawer .mobile-drawer-account-avatar.has-initial { background: var(--navy); }
+  .mobile-drawer .mobile-drawer-account-avatar img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+  }
+  .mobile-drawer .mobile-drawer-account-avatar svg {
+    display: block;
+    width: 24px;
+    height: 24px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .mobile-drawer .mobile-drawer-account-copy {
+    display: block;
+    flex: 1 1 auto;
+    min-width: 0;
+    line-height: 1.35;
+    white-space: normal;
+  }
+  .mobile-drawer .mobile-drawer-account-copy strong {
+    display: block;
+    color: var(--navy);
+    font-size: 14px;
+    font-weight: 800;
+    overflow-wrap: anywhere;
+  }
+  .mobile-drawer .mobile-drawer-account-copy small {
+    display: block;
+    margin-top: 3px;
+    color: var(--navy-soft);
+    font-size: 11px;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+  .mobile-drawer .mobile-drawer-account-chevron {
+    flex: 0 0 auto;
+    color: var(--orange);
+    font-size: 26px;
+    line-height: 1;
+  }
+}
+@media screen and (min-width: 901px) {
+  .mobile-drawer-account-cta { display: none !important; }
+}

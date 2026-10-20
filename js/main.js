@@ -141,8 +141,81 @@ document.addEventListener("DOMContentLoaded", () => {
   const backdrop = document.querySelector(".mobile-drawer-backdrop");
   const menuButton = document.querySelector(".mobile-menu-toggle");
   const closeButtons = document.querySelectorAll("[data-drawer-close]");
+
+  // Promote account access to the top of the mobile drawer and reflect the stored Supabase session.
+  const drawerNav = drawer?.querySelector(".mobile-drawer-nav");
+  drawer?.querySelectorAll(".mobile-account-link").forEach(link => link.remove());
+  let drawerAccountCta = drawerNav?.querySelector(".mobile-drawer-account-cta");
+  if (drawerNav && !drawerAccountCta) {
+    drawerAccountCta = document.createElement("a");
+    drawerAccountCta.className = "mobile-drawer-account-cta";
+    drawerAccountCta.href = drawerHref("account.html");
+    drawerAccountCta.innerHTML =
+      '<span class="mobile-drawer-account-avatar" aria-hidden="true"></span>' +
+      '<span class="mobile-drawer-account-copy"><strong></strong><small></small></span>' +
+      '<span class="mobile-drawer-account-chevron" aria-hidden="true">›</span>';
+    drawerNav.prepend(drawerAccountCta);
+  }
+  const refreshMobileDrawerAccount = () => {
+    if (!drawerAccountCta) return;
+    let user = null;
+    try {
+      const stored = JSON.parse(localStorage.getItem("sb-qfwvrcfkrsydycbfjsxf-auth-token") || "null");
+      user = stored?.user || stored?.currentSession?.user || null;
+    } catch (_) {}
+    const metadata = user?.user_metadata || {};
+    const email = String(user?.email || "").trim();
+    const name = String(metadata.full_name || metadata.name || metadata.given_name || metadata.display_name || "").trim();
+    const identity = name || email || "Account";
+    const initial = Array.from(identity)[0]?.toLocaleUpperCase("en-US") || "A";
+    const avatar = drawerAccountCta.querySelector(".mobile-drawer-account-avatar");
+    const title = drawerAccountCta.querySelector(".mobile-drawer-account-copy strong");
+    const subtitle = drawerAccountCta.querySelector(".mobile-drawer-account-copy small");
+    avatar?.replaceChildren();
+    drawerAccountCta.classList.toggle("is-signed-in", Boolean(user));
+    drawerAccountCta.href = drawerHref("account.html");
+
+    const fallbackInitial = () => {
+      if (avatar) {
+        avatar.replaceChildren();
+        avatar.textContent = initial;
+        avatar.classList.add("has-initial");
+      }
+    };
+    avatar?.classList.remove("has-initial");
+    if (user) {
+      const photo = [metadata.avatar_url, metadata.picture, metadata.photo_url, metadata.profile_image]
+        .find(value => typeof value === "string" && /^https:\/\//i.test(value));
+      if (photo && avatar) {
+        const image = document.createElement("img");
+        image.alt = "";
+        image.referrerPolicy = "no-referrer";
+        image.src = photo;
+        image.addEventListener("error", fallbackInitial, { once: true });
+        avatar.appendChild(image);
+      } else {
+        fallbackInitial();
+      }
+      if (title) title.textContent = name || "My account";
+      if (subtitle) subtitle.textContent = email ? "Signed in · " + email : "Signed in — manage your account";
+      drawerAccountCta.setAttribute("aria-label", "My account" + (email ? ", " + email : ""));
+    } else {
+      if (avatar) {
+        avatar.innerHTML = '<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"></circle><path d="M5 20c.6-3.8 3.1-5.7 7-5.7s6.4 1.9 7 5.7"></path></svg>';
+      }
+      if (title) title.textContent = "Sign in to your account";
+      if (subtitle) subtitle.textContent = "Log in or create an account";
+      drawerAccountCta.setAttribute("aria-label", "Sign in to your account");
+    }
+  };
+  window.halalRefreshMobileAccountCTA = refreshMobileDrawerAccount;
+  window.addEventListener("storage", refreshMobileDrawerAccount);
+  window.addEventListener("halal-auth-state-change", refreshMobileDrawerAccount);
+  refreshMobileDrawerAccount();
+
   const setDrawer = (open) => {
     if (!drawer) return;
+    if (open) window.halalRefreshMobileAccountCTA?.();
     drawer.classList.toggle("open", open);
     backdrop?.classList.toggle("open", open);
     menuButton?.setAttribute("aria-expanded", String(open));
@@ -298,7 +371,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const nav = document.createElement("nav");
     nav.className = "mobile-bottom-nav";
     nav.setAttribute("aria-label", "Mobile quick navigation");
-    nav.innerHTML = '<a aria-label="Home" href="' + localHref("index.html") + '"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 10.8 12 3l9 7.8v9.2a1 1 0 0 1-1 1h-5.5v-6h-5v6H4a1 1 0 0 1-1-1z"></path></svg><span>Home</span></a><button aria-label="Categories" data-mobile-categories type="button"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"></path></svg><span>Categories</span></button><a aria-label="Cart" class="mobile-cart-link" href="' + localHref("cart.html") + '"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5.5 8h13l1 12h-15l1-12Z"></path><path d="M9 8V6.2a3 3 0 0 1 6 0V8"></path></svg><span>Cart</span><b class="mobile-cart-count" data-cart-count>0</b></a><button aria-label="Search" data-mobile-search type="button"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8"></circle><path d="m16 16 5 5"></path></svg><span>Search</span></button><a aria-label="Account" href="' + localHref("account.html") + '"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"></circle><path d="M5 20c.6-3.8 3.1-5.7 7-5.7s6.4 1.9 7 5.7"></path></svg><span>Account</span></a>';
+    nav.innerHTML = '<a aria-label="Home" href="' + localHref("index.html") + '"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 10.8 12 3l9 7.8v9.2a1 1 0 0 1-1 1h-5.5v-6h-5v6H4a1 1 0 0 1-1-1z"></path></svg><span>Home</span></a><button aria-label="Open menu" data-mobile-menu type="button"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"></path></svg><span>Menu</span></button><a aria-label="Cart" class="mobile-cart-link" href="' + localHref("cart.html") + '"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5.5 8h13l1 12h-15l1-12Z"></path><path d="M9 8V6.2a3 3 0 0 1 6 0V8"></path></svg><span>Cart</span><b class="mobile-cart-count" data-cart-count>0</b></a><button aria-label="Search" data-mobile-search type="button"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8"></circle><path d="m16 16 5 5"></path></svg><span>Search</span></button><a aria-label="Account" href="' + localHref("account.html") + '"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"></circle><path d="M5 20c.6-3.8 3.1-5.7 7-5.7s6.4 1.9 7 5.7"></path></svg><span>Account</span></a>';
     document.body.appendChild(nav);
   }
   if (!document.querySelector(".mobile-floating-cart")) {
@@ -345,7 +418,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Mobile bottom navigation
-  document.querySelector("[data-mobile-categories]")?.addEventListener("click", () => setDrawer(true));
+  document.querySelector("[data-mobile-menu]")?.addEventListener("click", () => setDrawer(true));
   document.querySelector("[data-mobile-search]")?.addEventListener("click", () => {
     if (box) box.classList.add("open");
   });
@@ -1098,7 +1171,7 @@ document.addEventListener("DOMContentLoaded", () => {
     nav.setAttribute("aria-label", "Mobile quick navigation");
     nav.innerHTML =
       '<a aria-label="Home" href="' + href("index.html") + '"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 10.8 12 3l9 7.8v9.2a1 1 0 0 1-1 1h-5.5v-6h-5v6H4a1 1 0 0 1-1-1z"></path></svg><span>Home</span></a>' +
-      '<a aria-label="Categories" href="' + href("index.html#categories") + '"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"></path></svg><span>Categories</span></a>' +
+      '<button aria-label="Open menu" data-mobile-menu type="button"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"></path></svg><span>Menu</span></button>' +
       '<a aria-label="Cart" class="mobile-cart-link" href="' + href("cart.html") + '"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5.5 8h13l1 12h-15l1-12Z"></path><path d="M9 8V6.2a3 3 0 0 1 6 0V8"></path></svg><b class="mobile-cart-count" data-cart-count>0</b><span>Cart</span></a>' +
       '<button aria-label="Search" data-mobile-search type="button"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8"></circle><path d="m16 16 5 5"></path></svg><span>Search</span></button>' +
       '<a aria-label="Account" href="' + href("account.html") + '"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"></circle><path d="M5 20c.6-3.8 3.1-5.7 7-5.7s6.4 1.9 7 5.7"></path></svg><span>Account</span></a>';
@@ -1107,6 +1180,31 @@ document.addEventListener("DOMContentLoaded", () => {
   else installMobileDock();
 
   document.addEventListener("click", function (event) {
+    const menuButton = event.target.closest("[data-mobile-menu]");
+    if (menuButton && mobile.matches) {
+      event.preventDefault();
+      const drawer = document.querySelector("#mobile-drawer");
+      const backdrop = document.querySelector(".mobile-drawer-backdrop");
+      if (drawer?.classList.contains("open")) {
+        const close = drawer.querySelector("[data-drawer-close]");
+        if (close) close.click();
+        else {
+          drawer.classList.remove("open");
+          backdrop?.classList.remove("open");
+          document.body.classList.remove("drawer-open");
+          document.querySelector(".mobile-menu-toggle")?.setAttribute("aria-expanded", "false");
+        }
+      } else {
+        const headerMenu = document.querySelector(".mobile-menu-toggle");
+        if (headerMenu) headerMenu.click();
+        else if (drawer) {
+          drawer.classList.add("open");
+          backdrop?.classList.add("open");
+          document.body.classList.add("drawer-open");
+        }
+      }
+      return;
+    }
     const searchButton = event.target.closest("[data-mobile-search]");
     if (searchButton && mobile.matches) {
       const wrap = document.querySelector(".search-wrap");
