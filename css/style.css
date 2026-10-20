@@ -1913,48 +1913,68 @@ button.cart-qty-action:focus-visible {
 }
 @media(max-width:380px){header .brand{max-width:calc(100% - 102px)!important;gap:5px!important;font-size:16px!important}header .brand-logo{width:32px!important;height:32px!important;flex-basis:32px!important}.mobile-bottom-nav svg{width:19px!important;height:19px!important}}
 
-
-/* HALAL FOOD — mobile-only hero carousel size and swipe controls.
-   Desktop sizing is intentionally unchanged. Keep all banner artwork visible. */
-@media screen and (max-width: 600px) {
-  .hero-visual-only .wrap {
-    width: 100% !important;
-    max-width: none !important;
-    padding-left: 0 !important;
-    padding-right: 0 !important;
+/* HALAL FOOD — final product action alignment; banner rules are intentionally excluded. */
+.product-grid > .product-card,
+.featured-grid-4 > .product-card,
+#related-grid > .product-card {
+  display:flex;
+  flex-direction:column;
+  min-width:0;
+}
+.product-grid > .product-card .product-body,
+.featured-grid-4 > .product-card .product-body,
+#related-grid > .product-card .product-body {
+  display:flex;
+  flex:1 1 auto;
+  flex-direction:column;
+  min-width:0;
+}
+.product-grid > .product-card .product-foot,
+.featured-grid-4 > .product-card .product-foot,
+#related-grid > .product-card .product-foot {
+  margin-top:auto!important;
+  min-width:0;
+  align-self:stretch;
+}
+.product-grid > .product-card .product-foot > .price,
+.featured-grid-4 > .product-card .product-foot > .price,
+#related-grid > .product-card .product-foot > .price {
+  min-width:0;
+  min-height:1.35em;
+}
+.product-grid > .product-card .product-foot > .cart-add-btn,
+.product-grid > .product-card .product-foot > .cart-qty-control,
+.featured-grid-4 > .product-card .product-foot > .cart-add-btn,
+.featured-grid-4 > .product-card .product-foot > .cart-qty-control,
+#related-grid > .product-card .product-foot > .cart-add-btn,
+#related-grid > .product-card .product-foot > .cart-qty-control {
+  box-sizing:border-box;
+  max-width:100%;
+  min-width:0;
+}
+.mrow-card,.jfy-card { display:flex; flex-direction:column; min-width:0; }
+.mrow-name-link,.jfy-name-link { display:block; min-width:0; min-height:2.6em; }
+.mrow-name-link h3,.jfy-name-link h3 { min-height:2.6em; line-height:1.3; overflow-wrap:anywhere; }
+.mrow-price,.jfy-price { display:flex; align-items:center; min-width:0; min-height:1.4em; overflow-wrap:anywhere; }
+.mrow-card > .mrow-cart-btn,.jfy-card > .jfy-cart-btn {
+  align-self:stretch; width:100%; min-width:0; min-height:44px; height:44px;
+  margin-top:auto!important; box-sizing:border-box;
+}
+@media(max-width:900px) {
+  .product-grid .product-foot > .cart-qty-control,
+  .featured-grid-4 .product-foot > .cart-qty-control,
+  #related-grid .product-foot > .cart-qty-control,
+  body.category-products-page .product-card .product-foot > .cart-qty-control,
+  .mrow-card > .cart-qty-control,.jfy-card > .cart-qty-control {
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) minmax(14px,.8fr) minmax(0,1fr)!important;
+    gap:3px!important; width:100%!important; max-width:100%!important; min-width:0!important;
+    height:44px!important; min-height:44px!important; flex:0 0 44px!important;
+    margin:0!important; padding:3px!important; overflow:hidden!important; box-sizing:border-box!important;
   }
-
-  .hero-visual-only .hero-media-grid {
-    display: block !important;
+  button.cart-qty-action,button.cart-qty-action:hover,button.cart-qty-action:focus-visible,button.cart-qty-action:active {
+    width:100%!important; max-width:100%!important; min-width:0!important; min-height:0!important;
+    height:100%!important; padding:0!important; box-sizing:border-box!important; overflow:hidden!important; line-height:1!important;
   }
-
-  .hero-visual-only .hero-carousel {
-    width: 100% !important;
-    max-width: none !important;
-    height: auto !important;
-    aspect-ratio: 2.7 / 1 !important;
-    margin: 0 !important;
-  }
-
-  .hero-visual-only .hero-carousel-track,
-  .hero-visual-only .hero-slide {
-    width: 100% !important;
-    height: 100% !important;
-  }
-
-  .hero-visual-only .hero-slide img {
-    display: block !important;
-    width: 100% !important;
-    height: 100% !important;
-    object-fit: contain !important;
-    object-position: center !important;
-    background: var(--cream-deep) !important;
-  }
-
-  /* Mobile visitors can swipe between slides, so hide only the arrow buttons. */
-  .hero-visual-only .hero-carousel-arrow {
-    display: none !important;
-    visibility: hidden !important;
-    pointer-events: none !important;
-  }
+  .cart-qty-value { width:100%!important; min-width:0!important; padding:0!important; overflow:hidden!important; text-align:center!important; }
 }

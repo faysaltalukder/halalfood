@@ -13,7 +13,7 @@
       const products = Array.isArray(window.PRODUCTS_DATA) ? window.PRODUCTS_DATA : [];
       return value.filter(item => item && item.slug && item.name).map(item => {
         const source = products.find(p => String(p.slug || "") === String(item.slug || ""));
-        const displayPrice = String(source?.price || item.displayPrice || item.price || "");
+        const displayPrice = String(source?.price || visibleDisplayPrice(item.slug) || item.displayPrice || item.price || "");
         // Prefer the visible unit price: older product markup could turn "৳ 950 / 500g"
         // into "950500" in data-price. Parsing displayPrice keeps the unit amount correct.
         const parsedDisplayPrice = displayPrice ? priceNumber(displayPrice) : null;
@@ -39,6 +39,15 @@
     const match = String(text || "").match(/(?:৳|BDT)?\s*([0-9][0-9,]*(?:\.[0-9]+)?)/i);
     const n = match ? Number(match[1].replace(/,/g, "")) : 0;
     return Number.isFinite(n) ? n : 0;
+  }
+  function visibleDisplayPrice(slug) {
+    const controls = document.querySelectorAll("[data-add-to-cart][data-slug], [data-product-cart-control][data-slug]");
+    for (const control of controls) {
+      if (String(control.dataset.slug || "") === String(slug || "") && control.dataset.displayPrice) {
+        return String(control.dataset.displayPrice);
+      }
+    }
+    return "";
   }
   function imageUrl(path) {
     try { return new URL(path, siteBase).href; } catch (_) { return path || ""; }
