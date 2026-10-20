@@ -697,11 +697,17 @@ document.addEventListener("DOMContentLoaded", () => {
       } else {
         data.product = singleProduct?.name || singleProductName;
         data.orderId = makeOrderId();
-        if (singleProduct) {
-          data.price = String(priceNumber(singleProduct.price));
-          data.image = String(singleProduct.image || "");
-          data.slug = String(singleProduct.slug || "");
-        }
+        const singleUnitPrice = singleProduct ? priceNumber(singleProduct.price) : priceNumber(data.price);
+        data.price = String(singleUnitPrice);
+        data.image = String(singleProduct?.image || "");
+        data.slug = String(singleProduct?.slug || "");
+        data.items = [{
+          product: data.product,
+          quantity: String(Math.max(1, Number(data.quantity) || 1)),
+          price: String(singleUnitPrice),
+          image: data.image,
+          slug: data.slug
+        }];
       }
 
       const checkoutItems = Array.isArray(data.items) && data.items.length ? data.items : [{
@@ -709,9 +715,34 @@ document.addEventListener("DOMContentLoaded", () => {
         quantity:data.quantity || "1",
         price:data.price || (singleProduct ? String(priceNumber(singleProduct.price)) : "0")
       }];
-      const checkoutValue=checkoutItems.reduce((sum,item)=>sum+(Number(item.price)||0)*Math.max(1,Number(item.quantity)||1),0);
-      track("add_shipping_info",{currency:"BDT",value:checkoutValue,shipping_tier:"Cash on Delivery",items:trackItems(checkoutItems)});
-      track("order_submit",{currency:"BDT",value:checkoutValue,items:trackItems(checkoutItems)});
+      const checkoutValue = checkoutItems.reduce((sum,item) => sum + (Number(item.price)||0) * Math.max(1,Number(item.quantity)||1), 0);
+      const deliveryZone = String(data.deliveryZone || "");
+      if (deliveryZone !== "inside_dhaka" && deliveryZone !== "outside_dhaka") {
+        if (error) {
+          error.textContent = "অর্ডার দেওয়ার আগে ডেলিভারি এলাকা নির্বাচন করুন।";
+          error.style.display = "block";
+        }
+        if (submit) {
+          submit.disabled = false;
+          submit.classList.remove("is-loading");
+          if (submitLabel) submitLabel.textContent = "Submit Order";
+        }
+        return;
+      }
+      const deliveryCharge = deliveryChargeFor(deliveryZone);
+      const grandTotal = checkoutValue + deliveryCharge;
+      data.deliveryZone = deliveryZone;
+      data.deliveryCharge = String(deliveryCharge);
+      data.subtotal = String(checkoutValue);
+      data.total = String(grandTotal);
+      data.orderTotal = String(grandTotal);
+      data.paymentMethod = "cash_on_delivery";
+      // Keep Google Apps Script's existing amount field, but send the complete
+      // order amount there. Item unit prices remain intact in data.items.
+      data.price = String(grandTotal);
+      updateCheckoutTotals();
+      track("add_shipping_info",{currency:"BDT",value:grandTotal,shipping_tier:"Cash on Delivery",items:trackItems(checkoutItems)});
+      track("order_submit",{currency:"BDT",value:grandTotal,items:trackItems(checkoutItems)});
 
       // Fast confirmation flow: Google Sheet is backup only; its response never blocks checkout.
       // Supabase and Google Sheets are both written in parallel. We no longer
@@ -725,11 +756,7 @@ document.addEventListener("DOMContentLoaded", () => {
             quantity: data.quantity || "1",
             price: data.price || (singleProduct ? String(priceNumber(singleProduct.price)) : "0")
           }];
-      const localOrderTotal = confirmedItems.reduce((sum, item) => {
-        const price = Number(item.price) || 0;
-        const qty = Math.max(1, Number(item.quantity) || 1);
-        return sum + price * qty;
-      }, 0);
+      const localOrderTotal = grandTotal;
 
       const googleSubmitPromise = (async () => {
         if (!GOOGLE_APPS_SCRIPT_URL || GOOGLE_APPS_SCRIPT_URL.includes("PASTE_YOUR")) {
@@ -749,7 +776,7 @@ document.addEventListener("DOMContentLoaded", () => {
           source: "google",
           success: true,
           orderId: result?.orderId || data.orderId,
-          orderTotal: Number.isFinite(Number(result?.orderTotal)) ? Number(result.orderTotal) : localOrderTotal
+          orderTotal: localOrderTotal
         };
       })();
 
@@ -826,6 +853,10 @@ document.addEventListener("DOMContentLoaded", () => {
           sessionStorage.setItem("HALAL_ORDER_CONFIRMATION", JSON.stringify({
             orderId: confirmedOrderId,
             orderTotal: confirmedTotal,
+            subtotal: checkoutValue,
+            deliveryCharge,
+            deliveryZone,
+            paymentMethod: "cash_on_delivery",
             items: confirmedItems,
             customerName: data.name || "",
             confirmedAt: new Date().toISOString()
