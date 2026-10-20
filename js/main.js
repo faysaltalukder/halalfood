@@ -250,6 +250,50 @@ document.addEventListener("DOMContentLoaded", () => {
     }, {passive:true});
   }
 
+  // Ensure mobile navigation and the floating cart exist consistently on every page.
+  const mainScriptForUi = [...document.scripts].find(script => /js\/main\.js(?:\?|$)/.test(script.src));
+  const siteRootForUi = mainScriptForUi ? new URL("../", mainScriptForUi.src) : new URL("/halalfood/", location.origin);
+  const localHref = path => new URL(path, siteRootForUi).href;
+  if (!document.querySelector(".mobile-bottom-nav")) {
+    const nav = document.createElement("nav");
+    nav.className = "mobile-bottom-nav";
+    nav.setAttribute("aria-label", "Mobile quick navigation");
+    nav.innerHTML = '<a aria-label="Home" href="' + localHref("index.html") + '"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 10.8 12 3l9 7.8v9.2a1 1 0 0 1-1 1h-5.5v-6h-5v6H4a1 1 0 0 1-1-1z"></path></svg><span>Home</span></a><button aria-label="Categories" data-mobile-categories type="button"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"></path></svg><span>Categories</span></button><a aria-label="Cart" class="mobile-cart-link" href="' + localHref("cart.html") + '"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 4h2l2.2 11.2a2 2 0 0 0 2 1.6h8.9a2 2 0 0 0 1.9-1.5L22 8H6"></path><circle cx="10" cy="20" r="1.2"></circle><circle cx="18" cy="20" r="1.2"></circle></svg><span>Cart</span><b class="mobile-cart-count" data-cart-count>0</b></a><button aria-label="Search" data-mobile-search type="button"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8"></circle><path d="m16 16 5 5"></path></svg><span>Search</span></button><a aria-label="Account" href="' + localHref("account.html") + '"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"></circle><path d="M5 20c.6-3.8 3.1-5.7 7-5.7s6.4 1.9 7 5.7"></path></svg><span>Account</span></a>';
+    document.body.appendChild(nav);
+  }
+  if (!document.querySelector(".mobile-floating-cart")) {
+    const miniCart = document.createElement("a");
+    miniCart.className = "mobile-floating-cart";
+    miniCart.href = localHref("cart.html");
+    miniCart.setAttribute("aria-label", "Open shopping cart");
+    miniCart.innerHTML = '<span class="mobile-floating-cart-top"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 4h2l2.2 11.2a2 2 0 0 0 2 1.6h8.9a2 2 0 0 0 1.9-1.5L22 8H6"></path><circle cx="10" cy="20" r="1.2"></circle><circle cx="18" cy="20" r="1.2"></circle></svg><span><b data-cart-count>0</b> Items</span></span><span class="mobile-floating-cart-total" data-cart-total>৳ 0</span>';
+    document.body.appendChild(miniCart);
+  }
+  if (!document.querySelector("#hf-contact-widget")) {
+    const contact = document.createElement("div");
+    contact.className = "hf-contact-widget";
+    contact.id = "hf-contact-widget";
+    contact.innerHTML = '<div class="hf-contact-options" hidden><a class="hf-contact-option hf-contact-whatsapp" href="https://wa.me/8801842031164" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 3.5A10.1 10.1 0 0 0 12.1 1 10 10 0 0 0 3.5 15.8L2 21l5.4-1.4A10 10 0 1 0 20.5 3.5z"></path></svg><span>WhatsApp</span></a><a class="hf-contact-option hf-contact-call" href="tel:+8801842031164"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.2 11 11 0 0 0 3.4.5 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17.8 17.8 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1 11 11 0 0 0 .5 3.4 1 1 0 0 1-.2 1z"></path></svg><span>Call</span></a></div><button class="hf-contact-launcher" type="button" aria-label="Open contact options" aria-expanded="false"><svg class="hf-contact-chat-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v12H9l-5 4z"></path></svg><svg class="hf-contact-close-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"></path></svg></button>';
+    document.body.appendChild(contact);
+  }
+  const contactRoot = document.querySelector("#hf-contact-widget");
+  const contactTrigger = contactRoot?.querySelector(".hf-contact-launcher");
+  const contactOptions = contactRoot?.querySelector(".hf-contact-options");
+  if (contactRoot && contactTrigger && contactOptions && !contactTrigger.dataset.bound) {
+    contactTrigger.dataset.bound = "1";
+    contactTrigger.addEventListener("click", () => {
+      const open = contactTrigger.getAttribute("aria-expanded") === "true";
+      contactTrigger.setAttribute("aria-expanded", String(!open));
+      contactOptions.hidden = open;
+    });
+    document.addEventListener("click", event => {
+      if (!contactRoot.contains(event.target)) {
+        contactOptions.hidden = true;
+        contactTrigger.setAttribute("aria-expanded", "false");
+      }
+    });
+  }
+
   // Mobile bottom navigation
   document.querySelector("[data-mobile-categories]")?.addEventListener("click", () => setDrawer(true));
   document.querySelector("[data-mobile-search]")?.addEventListener("click", () => {
