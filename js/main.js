@@ -323,7 +323,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const nav = document.querySelector(".mobile-bottom-nav");
     if (!nav) return;
     const normalizePath = path => {
-      const clean = String(path || "/").replace(/\\/+$/, "") || "/";
+      const clean = String(path || "/").replace(/\/+$/, "") || "/";
       return clean.endsWith("/index.html") ? (clean.slice(0, -11) || "/") : clean;
     };
     const currentPath = normalizePath(location.pathname);
@@ -334,7 +334,7 @@ document.addEventListener("DOMContentLoaded", () => {
       else link.removeAttribute("aria-current");
     });
     const categoriesButton = nav.querySelector("[data-mobile-categories]");
-    const onCategoryPage = /\\/categories\\/[^/]+\\.html$/i.test(location.pathname);
+    const onCategoryPage = /\/categories\/[^/]+\.html$/i.test(location.pathname);
     categoriesButton?.classList.toggle("is-active", onCategoryPage);
     if (onCategoryPage) categoriesButton?.setAttribute("aria-current", "page");
     else categoriesButton?.removeAttribute("aria-current");
