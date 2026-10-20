@@ -177,7 +177,9 @@ document.addEventListener("DOMContentLoaded", () => {
     matches.forEach(item => {
       const li = document.createElement("li");
       const link = document.createElement("a");
-      link.href = "products/" + encodeURIComponent(String(item.slug || "")) + ".html";
+      const mainScript = [...document.scripts].find(script => /js\/main\.js(?:\?|$)/.test(script.src));
+      const siteRoot = mainScript ? new URL("../", mainScript.src) : new URL("/halalfood/", location.origin);
+      link.href = new URL("products/" + encodeURIComponent(String(item.slug || "")) + ".html", siteRoot).href;
       link.textContent = String(item.name || item.slug || "Product");
       if (item.price) {
         const price = document.createElement("span");
@@ -203,6 +205,7 @@ document.addEventListener("DOMContentLoaded", () => {
   mobileSearchButton?.addEventListener("click", () => {
     if (!searchWrap || !productSearch) return;
     searchWrap.classList.add("mobile-search-open");
+    document.querySelector("header")?.classList.remove("hf-header-hidden");
     if (box) box.classList.add("open");
     productSearch.setAttribute("aria-expanded", "true");
     window.setTimeout(() => productSearch.focus({preventScroll:true}), 40);
