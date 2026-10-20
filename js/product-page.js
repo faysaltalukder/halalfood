@@ -109,7 +109,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const related = PRODUCTS_DATA
     .filter((item) => item.categorySlug === product.categorySlug && item.slug !== product.slug)
-    .slice(0, 3);
+    .slice(0, 4);
 
   const relatedSection = document.querySelector("#related-section");
   const relatedGrid = document.querySelector("#related-grid");
@@ -117,7 +117,6 @@ document.addEventListener("DOMContentLoaded", () => {
   if (related.length && relatedSection && relatedGrid) {
     relatedGrid.innerHTML = related.map((item) => {
       const url = `products/${encodeURIComponent(item.slug)}.html`;
-      const order = `order.html?product=${encodeURIComponent(item.name)}`;
       return `
         <article class="product-card">
           <a href="${url}" class="product-image-link">
@@ -130,7 +129,6 @@ document.addEventListener("DOMContentLoaded", () => {
             <div class="product-foot">
               <span class="price">${item.price}</span>
               <button type="button" class="cart-add-btn related-cart-btn" data-add-to-cart data-slug="${item.slug}" data-name="${item.name}" data-price="${String(item.price).replace(/[^0-9.]/g, "")}" data-display-price="${item.price}" data-image="${item.image}" data-category="${item.category}">Add to Cart</button>
-              <a class="order-btn related-order-btn" href="${order}">Order Now</a>
             </div>
           </div>
         </article>

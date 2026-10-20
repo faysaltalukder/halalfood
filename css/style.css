@@ -872,3 +872,270 @@ a[href="account.html"]:not(.header-account-link):not(.mobile-account-link):focus
     margin-left: auto;
   }
 }
+
+
+/* =====================================================================
+   Site update 2026-10-20
+   1) Desktop category pages: Order Now matches Add to Cart (mobile unchanged)
+   2) Product pages: 4 related products, Add to Cart under each
+   3) Contact page: colourful cards, icons, transitions, response policy
+   4) Floating contact button: coloured icons, no text bar
+   5) Customer account icon in the header on every page
+   ===================================================================== */
+
+/* ---------- 1) Desktop category Order Now button ---------- */
+@media (min-width: 901px) {
+  body.category-products-page .product-card .product-foot > .cart-add-btn,
+  body.category-products-page .product-card .product-foot > .category-order-btn {
+    height: 44px !important;
+    min-height: 44px !important;
+    padding: 0 10px !important;
+    border-width: 1.5px !important;
+    border-style: solid !important;
+    border-radius: 8px !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    line-height: 1 !important;
+    gap: 7px !important;
+    box-sizing: border-box !important;
+  }
+  body.category-products-page .product-card .product-foot > .category-order-btn {
+    background: var(--orange-strong, #c97b3d) !important;
+    border-color: var(--orange-strong, #c97b3d) !important;
+    color: #fffdf8 !important;
+  }
+  body.category-products-page .product-card .product-foot > .category-order-btn:hover,
+  body.category-products-page .product-card .product-foot > .category-order-btn:focus-visible {
+    background: #1e1d2d !important;
+    border-color: #1e1d2d !important;
+    color: #fffdf8 !important;
+  }
+  /* The cart icon inside Order Now was filled black and oversized: make it a white outline icon like Add to Cart. */
+  body.category-products-page .product-card .product-foot > .category-order-btn .btn-icon,
+  body.category-products-page .product-card .product-foot > .cart-add-btn .btn-icon {
+    width: 18px !important;
+    height: 18px !important;
+    flex: 0 0 18px !important;
+    fill: none !important;
+    stroke: currentColor !important;
+    stroke-width: 1.8 !important;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  body.category-products-page .product-card .product-foot > .category-order-btn .btn-icon * {
+    fill: none !important;
+    stroke: currentColor !important;
+  }
+  body.category-products-page .product-card .product-foot > .category-order-btn span,
+  body.category-products-page .product-card .product-foot > .cart-add-btn span {
+    line-height: 1;
+    color: inherit;
+  }
+}
+
+/* ---------- 2) Related products: 4 cards + Add to Cart (right aligned) ---------- */
+#related-section .product-description-inner { max-width: none; }
+#related-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; }
+#related-grid .product-card { display: flex; flex-direction: column; min-width: 0; }
+#related-grid .product-card .product-body { flex: 1 1 auto; display: flex; flex-direction: column; min-width: 0; }
+#related-grid .product-card .product-body h3 { font-size: 1.02rem; }
+#related-grid .product-card .product-foot {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 10px !important;
+  margin-top: auto;
+}
+#related-grid .product-card .product-foot > .price { text-align: left !important; }
+#related-grid .product-card .product-foot > .order-btn,
+#related-grid .product-card .product-foot > .related-order-btn { display: none !important; }
+#related-grid .product-card .product-foot > .cart-add-btn {
+  display: inline-flex !important;
+  align-self: flex-end !important;
+  width: calc(100% - 24px) !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  margin: 0 0 0 auto !important;
+  min-height: 42px;
+  padding: 9px 10px !important;
+  gap: 7px !important;
+  font-size: 13px !important;
+  line-height: 1.2 !important;
+  white-space: nowrap !important;
+  border-radius: 8px;
+  box-sizing: border-box !important;
+}
+#related-grid .product-card .product-foot > .cart-add-btn .btn-icon { width: 17px; height: 17px; flex: 0 0 17px; }
+@media (max-width: 900px) {
+  #related-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  #related-grid .product-card .product-foot { gap: 9px !important; }
+  #related-grid .product-card .product-foot > .cart-add-btn {
+    width: calc(100% - 14px) !important;
+    min-height: 44px;
+    padding: 10px 6px !important;
+    gap: 6px !important;
+    font-size: 12.5px !important;
+  }
+  #related-grid .product-card .product-foot > .cart-add-btn .btn-icon { width: 16px; height: 16px; flex: 0 0 16px; }
+}
+
+/* ---------- 3) Contact page ---------- */
+.contact-page .contact-actions { gap: 12px; margin: 26px 0 8px; }
+.contact-page .contact-actions a {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-weight: 700;
+  border: 1.5px solid var(--navy);
+  transition: transform .2s ease, box-shadow .2s ease, background-color .2s ease, color .2s ease, border-color .2s ease;
+}
+.contact-page .contact-actions a svg { width: 18px; height: 18px; flex: 0 0 18px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.contact-page .contact-actions a svg.fill { fill: currentColor; stroke: none; }
+.contact-page .contact-actions a:hover,
+.contact-page .contact-actions a:focus-visible { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(43,42,61,.16); outline: none; }
+.contact-page .contact-btn-call { background: #2b2a3d; color: #fffdf8; border-color: #2b2a3d; }
+.contact-page .contact-btn-call:hover { background: var(--orange-strong, #c97b3d); border-color: var(--orange-strong, #c97b3d); color: #fffdf8; }
+.contact-page .contact-btn-whatsapp { background: #1faa59; color: #fff; border-color: #1faa59; }
+.contact-page .contact-btn-whatsapp:hover { background: #168a47; border-color: #168a47; color: #fff; }
+.contact-page .contact-btn-email { background: #fbf0e4; color: #9a5416; border-color: var(--orange-strong, #c97b3d); }
+.contact-page .contact-btn-email:hover { background: var(--orange-strong, #c97b3d); color: #fffdf8; }
+.contact-page .contact-btn-order { background: transparent; color: var(--navy); border-color: var(--navy); }
+.contact-page .contact-btn-order:hover { background: #2b2a3d; color: #fffdf8; }
+
+.contact-page .contact-details-grid { gap: 18px; margin-top: 28px; }
+.contact-page .contact-detail-card {
+  --accent: #2b2a3d;
+  --tint: #ecebf3;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 22px 20px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  border-left: 5px solid var(--accent);
+  background: linear-gradient(135deg, var(--white) 0%, var(--tint) 100%);
+  transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+}
+.contact-page .contact-card-whatsapp { --accent: #1faa59; --tint: #e5f6ec; }
+.contact-page .contact-card-email { --accent: #c97b3d; --tint: #f9ecdf; }
+.contact-page .contact-detail-card:hover { transform: translateY(-5px); box-shadow: 0 16px 32px rgba(43,42,61,.14); border-color: var(--accent); }
+.contact-card-icon {
+  width: 52px;
+  height: 52px;
+  flex: 0 0 52px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  background: var(--accent);
+  color: #fff;
+  transition: transform .25s ease;
+}
+.contact-card-icon svg { width: 25px; height: 25px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.contact-card-icon svg.fill { fill: currentColor; stroke: none; }
+.contact-detail-card:hover .contact-card-icon { transform: scale(1.1) rotate(-5deg); }
+.contact-card-text { min-width: 0; }
+.contact-page .contact-detail-card h2 { margin: 0 0 4px; font-size: 1.05rem; }
+.contact-page .contact-detail-card p { margin: 0; }
+.contact-page .contact-detail-card a { transition: color .2s ease; font-weight: 600; }
+.contact-page .contact-detail-card a:hover { color: var(--accent); }
+
+/* Response policy section */
+.contact-response { margin-top: 44px; }
+.contact-response > h2 { margin: 0 0 8px; }
+.contact-response > p { margin-bottom: 20px; }
+.contact-response-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.contact-response-card {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--white);
+  transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
+}
+.contact-response-card:hover { transform: translateY(-3px); box-shadow: 0 12px 26px rgba(43,42,61,.1); border-color: var(--orange-strong, #c97b3d); }
+.contact-response-num {
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--orange-strong, #c97b3d);
+  color: #fff;
+  font-weight: 800;
+  transition: background-color .22s ease, transform .22s ease;
+}
+.contact-response-card:hover .contact-response-num { background: #2b2a3d; transform: scale(1.08); }
+.contact-response-card h3 { margin: 2px 0 4px; font-size: 1.02rem; }
+.contact-response-card p { margin: 0; font-size: .93rem; line-height: 1.7; }
+.contact-tips {
+  margin-top: 20px;
+  padding: 18px 20px;
+  border-left: 4px solid var(--orange-strong, #c97b3d);
+  border-radius: 10px;
+  background: var(--cream-deep);
+}
+.contact-tips h3 { margin: 0 0 8px; font-size: 1.05rem; }
+.contact-tips ul { margin: 0; padding-left: 20px; }
+.contact-tips li { margin-bottom: 4px; }
+.contact-tips a { color: var(--orange-strong, #c97b3d); font-weight: 700; }
+html.dark-mode .contact-page .contact-detail-card { --tint: #2b2b36; }
+html.dark-mode .contact-page .contact-card-whatsapp { --tint: #1f3027; }
+html.dark-mode .contact-page .contact-card-email { --tint: #35291f; }
+html.dark-mode .contact-page .contact-btn-call { background: #3a3947; border-color: #4a4958; color: #f3efe5; }
+html.dark-mode .contact-page .contact-btn-email { background: #35291f; color: #f1c79d; }
+html.dark-mode .contact-page .contact-btn-order { color: #f3efe5; border-color: #6a6878; }
+html.dark-mode .contact-page .contact-btn-order:hover { background: #f3efe5; color: #15151b; }
+html.dark-mode .contact-response-card:hover .contact-response-num { background: #f3efe5; color: #15151b; }
+@media (max-width: 768px) {
+  .contact-response-grid { grid-template-columns: 1fr; }
+  .contact-page .contact-actions a { width: 100%; justify-content: center; }
+  .contact-page .contact-detail-card { padding: 18px 16px; }
+}
+
+/* ---------- 4) Floating contact button (desktop) ---------- */
+.float-contact { display: none !important; }
+@media (min-width: 901px) {
+  .hf-contact-options:not([hidden]) { animation: hf-pop .18s ease; }
+  .hf-contact-option { transition: background-color .18s ease, transform .18s ease; }
+  .hf-contact-option:hover { transform: translateX(-3px); }
+  .hf-contact-option svg {
+    width: 36px;
+    height: 36px;
+    flex: 0 0 36px;
+    padding: 8px;
+    border-radius: 50%;
+    color: #fff;
+  }
+  .hf-contact-whatsapp svg { background: #25d366; fill: #fff; stroke: none; }
+  .hf-contact-whatsapp:hover { background: #e7f8ee; }
+  .hf-contact-call svg { background: #2b2a3d; fill: none; stroke: #fff; }
+  .hf-contact-call:hover { background: #ecebf3; }
+  .hf-contact-launcher { transition: transform .2s ease, box-shadow .2s ease; }
+  .hf-contact-launcher:hover { transform: scale(1.07); box-shadow: 0 8px 22px rgba(43,42,61,.28); }
+  html.dark-mode .hf-contact-option { color: #f3efe5; }
+  html.dark-mode .hf-contact-whatsapp:hover { background: #1f3027; }
+  html.dark-mode .hf-contact-call svg { background: #4a4958; }
+  html.dark-mode .hf-contact-call:hover { background: #34333f; }
+}
+@keyframes hf-pop { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ---------- 6) Customer account icon (same look as the home page) on every page ---------- */
+.header-account-link{display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;flex:0 0 42px;border:1.5px solid var(--orange);border-radius:50%;background:var(--cream);color:var(--navy)!important;transition:background-color .18s ease,color .18s ease,transform .18s ease;box-shadow:0 4px 12px rgba(43,42,61,.10)}
+.header-account-link svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.header-account-link:hover,.header-account-link:focus-visible{background:var(--navy);border-color:var(--navy);color:var(--cream)!important;transform:translateY(-1px);outline:2px solid var(--orange);outline-offset:2px}
+.mobile-account-link{display:flex!important;align-items:center;justify-content:center;width:44px;height:44px;margin:8px 0 8px 12px;border:1.5px solid var(--orange);border-radius:50%;background:var(--cream);color:var(--navy)!important}
+.mobile-account-link svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+@media(max-width:900px){.header-actions .header-account-link{width:40px;height:40px;flex-basis:40px}.header-actions{gap:8px}}
+
+/* Header safety margin: the wider header (account icon) can touch the edge at 1241-1260px, so use the same two-row layout there. */
+@media (min-width: 1241px) and (max-width: 1260px) {
+  header .nav { flex-wrap: wrap; row-gap: 10px; }
+  header .nav-links { order: 3; flex: 1 0 100%; justify-content: center; gap: clamp(14px, 2vw, 25px); padding-top: 2px; }
+  header .header-actions { margin-left: auto; }
+}

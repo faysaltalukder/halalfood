@@ -85,4 +85,40 @@ $("#track-form").addEventListener("submit",async e=>{
   }finally{btn.disabled=false;btn.textContent="Track Order";}
 });
 </script>
+<!-- Desktop-only quick contact widget -->
+<div class="hf-contact-widget" id="hf-contact-widget">
+  <div class="hf-contact-options" id="hf-contact-options" hidden>
+    <a class="hf-contact-option hf-contact-whatsapp" href="https://wa.me/8801842031164" target="_blank" rel="noopener noreferrer">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 3.5A10.1 10.1 0 0 0 12.1 1 10 10 0 0 0 3.5 15.8L2 21l5.4-1.4A10 10 0 1 0 20.5 3.5zm-8.4 15.1a7.7 7.7 0 0 1-3.9-1.1l-.3-.2-2.9.8.8-2.9-.2-.3a7.7 7.7 0 1 1 6.5 3.7zm4.3-5.8c-.2-.1-1.4-.7-1.6-.8s-.4-.1-.5.1-.6.8-.7.9-.3.2-.5.1a6.3 6.3 0 0 1-1.9-1.2 6.9 6.9 0 0 1-1.3-1.6c-.1-.2 0-.3.1-.5l.4-.4c.1-.1.1-.2.2-.4s0-.3 0-.4-.5-1.3-.7-1.8-.4-.4-.5-.4h-.5a.9.9 0 0 0-.6.3 2.7 2.7 0 0 0-.8 2 4.7 4.7 0 0 0 1 2.5 10.6 10.6 0 0 0 4.1 3.6c.6.2 1 .4 1.4.5a3.3 3.3 0 0 0 1.5.1 2.5 2.5 0 0 0 1.6-1.1 1.9 1.9 0 0 0 .1-1.1c-.1-.1-.2-.2-.5-.3z"/></svg>
+      <span>WhatsApp</span>
+    </a>
+    <a class="hf-contact-option hf-contact-call" href="tel:+8801842031164">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.2 11 11 0 0 0 3.4.5 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17.8 17.8 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1 11 11 0 0 0 .5 3.4 1 1 0 0 1-.2 1z"/></svg>
+      <span>Call Us</span>
+    </a>
+  </div>
+  <button class="hf-contact-launcher" id="hf-contact-launcher" type="button" aria-label="Open contact options" aria-expanded="false">
+    <svg class="hf-contact-chat-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v12H9l-5 4z"/></svg>
+    <svg class="hf-contact-close-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+  </button>
+</div>
+<script id="hf-contact-widget-script">
+(function(){
+  var root=document.getElementById('hf-contact-widget');
+  var trigger=document.getElementById('hf-contact-launcher');
+  var options=document.getElementById('hf-contact-options');
+  if(!root||!trigger||!options)return;
+  trigger.addEventListener('click',function(){
+    var open=trigger.getAttribute('aria-expanded')==='true';
+    trigger.setAttribute('aria-expanded',String(!open));
+    options.hidden=open;
+  });
+  document.addEventListener('click',function(e){
+    if(!root.contains(e.target)){options.hidden=true;trigger.setAttribute('aria-expanded','false');}
+  });
+  document.addEventListener('keydown',function(e){
+    if(e.key==='Escape'){options.hidden=true;trigger.setAttribute('aria-expanded','false');}
+  });
+})();
+</script>
 </body></html>
