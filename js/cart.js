@@ -144,7 +144,7 @@
       link.href = cartUrl();
       link.setAttribute("data-cart-open", "true");
       link.setAttribute("aria-label", "Shopping cart");
-      link.innerHTML = '<span class="header-cart-icon" aria-hidden="true">🛒</span><span class="header-cart-label">Cart</span><span class="cart-count" data-cart-count>0</span>';
+      link.innerHTML = '<span class="header-cart-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M5.5 8h13l1 12h-15l1-12Z"></path><path d="M9 8V6.2a3 3 0 0 1 6 0V8"></path></svg></span><span class="header-cart-label">Cart</span><span class="cart-count" data-cart-count>0</span>';
       actions.insertBefore(link, trackButton);
     });
   }
