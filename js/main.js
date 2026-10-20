@@ -180,7 +180,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const searchResults = document.querySelector("#search-results");
   const closeMobileSearch = () => {
     searchWrap?.classList.remove("mobile-search-open");
+    if (box) box.classList.remove("open");
     if (productSearch) productSearch.setAttribute("aria-expanded", "false");
+    searchWrap?.querySelector(".mobile-search-panel-head")?.remove();
   };
   const renderSearchResults = (term) => {
     if (!searchResults) return;
@@ -222,6 +224,21 @@ document.addEventListener("DOMContentLoaded", () => {
     searchWrap.classList.add("mobile-search-open");
     document.querySelector("header")?.classList.remove("hf-header-hidden");
     if (box) box.classList.add("open");
+    const searchBox = searchWrap.querySelector(".search-box");
+    if (!searchWrap.querySelector(".mobile-search-panel-head")) {
+      const panelHead = document.createElement("div");
+      panelHead.className = "mobile-search-panel-head";
+      const title = document.createElement("strong");
+      title.textContent = "Search Products";
+      const close = document.createElement("button");
+      close.type = "button";
+      close.className = "mobile-search-close";
+      close.setAttribute("aria-label", "Close search");
+      close.textContent = "×";
+      close.addEventListener("click", event => { event.preventDefault(); event.stopPropagation(); closeMobileSearch(); });
+      panelHead.append(title, close);
+      searchWrap.insertBefore(panelHead, searchBox || null);
+    }
     productSearch.setAttribute("aria-expanded", "true");
     window.setTimeout(() => productSearch.focus({preventScroll:true}), 40);
   });
@@ -257,8 +274,16 @@ document.addEventListener("DOMContentLoaded", () => {
       ticking = true;
       window.requestAnimationFrame(() => {
         const currentY = Math.max(0, window.scrollY);
-        if (currentY < 70 || currentY < lastY - 6) mobileHeader?.classList.remove("hf-header-hidden");
-        else if (currentY > lastY + 8 && currentY > 110 && !searchWrap?.classList.contains("mobile-search-open")) mobileHeader?.classList.add("hf-header-hidden");
+        const mobileCart = document.querySelector(".mobile-floating-cart");
+        if (currentY < 70 || currentY < lastY - 6) {
+          mobileHeader?.classList.remove("hf-header-hidden");
+          mobileCart?.classList.add("hf-cart-scroll-up");
+          mobileCart?.classList.remove("hf-cart-scroll-down");
+        } else if (currentY > lastY + 8) {
+          mobileCart?.classList.add("hf-cart-scroll-down");
+          mobileCart?.classList.remove("hf-cart-scroll-up");
+          if (currentY > 110 && !searchWrap?.classList.contains("mobile-search-open")) mobileHeader?.classList.add("hf-header-hidden");
+        }
         lastY = currentY;
         ticking = false;
       });
@@ -273,7 +298,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const nav = document.createElement("nav");
     nav.className = "mobile-bottom-nav";
     nav.setAttribute("aria-label", "Mobile quick navigation");
-    nav.innerHTML = '<a aria-label="Home" href="' + localHref("index.html") + '"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 10.8 12 3l9 7.8v9.2a1 1 0 0 1-1 1h-5.5v-6h-5v6H4a1 1 0 0 1-1-1z"></path></svg><span>Home</span></a><button aria-label="Categories" data-mobile-categories type="button"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"></path></svg><span>Categories</span></button><a aria-label="Cart" class="mobile-cart-link" href="' + localHref("cart.html") + '"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 4h2l2.2 11.2a2 2 0 0 0 2 1.6h8.9a2 2 0 0 0 1.9-1.5L22 8H6"></path><circle cx="10" cy="20" r="1.2"></circle><circle cx="18" cy="20" r="1.2"></circle></svg><span>Cart</span><b class="mobile-cart-count" data-cart-count>0</b></a><button aria-label="Search" data-mobile-search type="button"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8"></circle><path d="m16 16 5 5"></path></svg><span>Search</span></button><a aria-label="Account" href="' + localHref("account.html") + '"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"></circle><path d="M5 20c.6-3.8 3.1-5.7 7-5.7s6.4 1.9 7 5.7"></path></svg><span>Account</span></a>';
+    nav.innerHTML = '<a aria-label="Home" href="' + localHref("index.html") + '"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 10.8 12 3l9 7.8v9.2a1 1 0 0 1-1 1h-5.5v-6h-5v6H4a1 1 0 0 1-1-1z"></path></svg><span>Home</span></a><button aria-label="Categories" data-mobile-categories type="button"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"></path></svg><span>Categories</span></button><a aria-label="Cart" class="mobile-cart-link" href="' + localHref("cart.html") + '"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5.5 8h13l1 12h-15l1-12Z"></path><path d="M9 8V6.2a3 3 0 0 1 6 0V8"></path></svg><span>Cart</span><b class="mobile-cart-count" data-cart-count>0</b></a><button aria-label="Search" data-mobile-search type="button"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8"></circle><path d="m16 16 5 5"></path></svg><span>Search</span></button><a aria-label="Account" href="' + localHref("account.html") + '"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"></circle><path d="M5 20c.6-3.8 3.1-5.7 7-5.7s6.4 1.9 7 5.7"></path></svg><span>Account</span></a>';
     document.body.appendChild(nav);
   }
   if (!document.querySelector(".mobile-floating-cart")) {
@@ -281,7 +306,7 @@ document.addEventListener("DOMContentLoaded", () => {
     miniCart.className = "mobile-floating-cart";
     miniCart.href = localHref("cart.html");
     miniCart.setAttribute("aria-label", "Open shopping cart");
-    miniCart.innerHTML = '<span class="mobile-floating-cart-top"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 4h2l2.2 11.2a2 2 0 0 0 2 1.6h8.9a2 2 0 0 0 1.9-1.5L22 8H6"></path><circle cx="10" cy="20" r="1.2"></circle><circle cx="18" cy="20" r="1.2"></circle></svg><span><b data-cart-count>0</b> Items</span></span><span class="mobile-floating-cart-total" data-cart-total>৳ 0</span>';
+    miniCart.innerHTML = '<span class="mobile-floating-cart-top"><span class="mobile-floating-cart-icon-wrap"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5.5 8h13l1 12h-15l1-12Z"></path><path d="M9 8V6.2a3 3 0 0 1 6 0V8"></path></svg><b class="mobile-floating-cart-count" data-cart-count>0</b></span><span class="mobile-floating-cart-label">Items</span></span><span class="mobile-floating-cart-total" data-cart-total>৳ 0</span>';
     document.body.appendChild(miniCart);
   }
   if (window.matchMedia("(max-width: 900px)").matches && !document.querySelector("#hf-contact-widget")) {
