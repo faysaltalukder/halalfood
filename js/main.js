@@ -590,6 +590,30 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  const checkoutIsCart = new URLSearchParams(window.location.search).get("cart") === "1";
+  const getCheckoutSubtotal = () => {
+    if (checkoutIsCart && window.HALAL_CART_API) {
+      return window.HALAL_CART_API.read().reduce((sum, item) => sum + (Number(item.price) || 0) * Math.max(1, Number(item.qty) || 1), 0);
+    }
+    return singleProduct ? priceNumber(singleProduct.price) * Math.max(1, Number(quantityInput?.value) || 1) : 0;
+  };
+  const selectedDeliveryZone = () => document.querySelector('input[name="deliveryZone"]:checked')?.value || "";
+  const deliveryChargeFor = (zone) => zone === "inside_dhaka" ? 70 : zone === "outside_dhaka" ? 120 : 0;
+  const updateCheckoutTotals = () => {
+    const subtotal = getCheckoutSubtotal();
+    const zone = selectedDeliveryZone();
+    const deliveryCharge = deliveryChargeFor(zone);
+    const subtotalNode = document.querySelector("#checkout-subtotal");
+    const deliveryNode = document.querySelector("#checkout-delivery-charge");
+    const totalNode = document.querySelector("#checkout-grand-total");
+    if (subtotalNode) subtotalNode.textContent = money(subtotal);
+    if (deliveryNode) deliveryNode.textContent = zone ? money(deliveryCharge) : "Choose an area";
+    if (totalNode) totalNode.textContent = money(subtotal + deliveryCharge);
+    return { subtotal, deliveryCharge, total: subtotal + deliveryCharge, deliveryZone: zone };
+  };
+  document.querySelectorAll('input[name="deliveryZone"]').forEach((radio) => radio.addEventListener("change", updateCheckoutTotals));
+  window.addEventListener("halalcart:updated", updateCheckoutTotals);
+
   const syncQuantity = (value) => {
     const n = Math.max(1, Math.min(99, Number(value) || 1));
     if (quantityInput) quantityInput.value = String(n);
@@ -597,6 +621,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (productLineTotal && singleProduct) {
       productLineTotal.textContent = money(priceNumber(singleProduct.price) * n);
     }
+    updateCheckoutTotals();
     return n;
   };
   if (quantityInput) syncQuantity(quantityInput.value);
