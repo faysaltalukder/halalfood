@@ -13,14 +13,17 @@
       const products = Array.isArray(window.PRODUCTS_DATA) ? window.PRODUCTS_DATA : [];
       return value.filter(item => item && item.slug && item.name).map(item => {
         const source = products.find(p => String(p.slug || "") === String(item.slug || ""));
-        if (!source) return item;
+        const displayPrice = String(source?.price || item.displayPrice || item.price || "");
+        // Prefer the visible unit price: older product markup could turn "৳ 950 / 500g"
+        // into "950500" in data-price. Parsing displayPrice keeps the unit amount correct.
+        const parsedDisplayPrice = displayPrice ? priceNumber(displayPrice) : null;
         return {
           ...item,
-          name: String(source.name || item.name),
-          price: priceNumber(source.price || item.price),
-          displayPrice: String(source.price || item.displayPrice || item.price || ""),
-          image: String(source.image || item.image || ""),
-          category: String(source.category || item.category || "")
+          name: String(source?.name || item.name),
+          price: parsedDisplayPrice === null ? priceNumber(item.price) : parsedDisplayPrice,
+          displayPrice,
+          image: String(source?.image || item.image || ""),
+          category: String(source?.category || item.category || "")
         };
       });
     } catch (_) { return []; }
@@ -53,18 +56,24 @@
     const items = read();
     const existing = items.find(x => x.slug === item.slug);
     const amount = Math.max(1, Math.min(MAX_QTY, Number(qty) || 1));
-    if (existing) existing.qty = Math.min(MAX_QTY, Number(existing.qty || 0) + amount);
-    else items.push({
-      slug: String(item.slug), name: String(item.name), price: priceNumber(item.price),
+    // Always calculate from the visible unit price when it exists (e.g. "৳ 950 / 500g").
+    const displayPrice = String(item.displayPrice || "");
+    const unitPrice = priceNumber(displayPrice || item.price);
+    if (existing) {
+      existing.qty = Math.min(MAX_QTY, Number(existing.qty || 0) + amount);
+      existing.price = unitPrice;
+      if (displayPrice) existing.displayPrice = displayPrice;
+    } else items.push({
+      slug: String(item.slug), name: String(item.name), price: unitPrice,
       displayPrice: String(item.displayPrice || item.price || ""), image: String(item.image || ""),
-      category: String(item.category || "") , qty: amount
+      category: String(item.category || ""), qty: amount
     });
     write(items); renderAll();
     if(window.halalTrack){
-      const trackedItem={...item,quantity:amount};
-      const value=(Number(item.price)||0)*amount;
+      const trackedItem={...item,price:unitPrice,displayPrice:displayPrice || String(item.price || ""),quantity:amount};
+      const value=unitPrice*amount;
       window.halalTrack("add_to_cart",{currency:"BDT",value:value,items:window.halalTrackItems([trackedItem])},"AddToCart",{
-        content_ids:[String(item.slug||"")],contents:[{id:String(item.slug||""),quantity:amount,item_price:Number(item.price)||0}],content_type:"product",value:value,currency:"BDT"
+        content_ids:[String(item.slug||"")],contents:[{id:String(item.slug||""),quantity:amount,item_price:unitPrice}],content_type:"product",value:value,currency:"BDT"
       });
     }
   }
