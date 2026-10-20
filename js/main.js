@@ -200,7 +200,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (productSearch) {
     productSearch.setAttribute("aria-label", "Search products");
     productSearch.setAttribute("aria-expanded", "false");
-    productSearch.addEventListener("input", () => renderSearchResults(productSearch.value));
+    if (window.matchMedia("(max-width: 900px)").matches) productSearch.addEventListener("input", () => renderSearchResults(productSearch.value));
   }
   mobileSearchButton?.addEventListener("click", () => {
     if (!searchWrap || !productSearch) return;
