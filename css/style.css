@@ -1567,3 +1567,11 @@ html.dark-mode .contact-response-card:hover .contact-response-num { background: 
   .mobile-floating-cart { display: none !important; }
   header.hf-header-hidden { transform: none !important; }
 }
+
+
+/* Responsive icon split: desktop cart retains its original glyph; mobile shows the bag mark. */
+.header-cart-icon--mobile { display: none !important; }
+@media (max-width: 900px) {
+  header .header-actions .header-cart-icon--desktop { display: none !important; }
+  header .header-actions .header-cart-icon--mobile { display: inline-flex !important; }
+}
