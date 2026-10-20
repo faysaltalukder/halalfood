@@ -13,9 +13,7 @@
       const products = Array.isArray(window.PRODUCTS_DATA) ? window.PRODUCTS_DATA : [];
       return value.filter(item => item && item.slug && item.name).map(item => {
         const source = products.find(p => String(p.slug || "") === String(item.slug || ""));
-        const baseDisplayPrice = String(source?.price || visibleDisplayPrice(item.slug) || item.displayPrice || item.price || "");
-        const discountPercent = Number(window.HALAL_DISCOUNTS?.[String(item.slug || "")] || 0);
-        const displayPrice = discountPercent ? discountDisplayPrice(baseDisplayPrice, discountPercent) : String(source?.price || visibleDisplayPrice(item.slug) || item.displayPrice || item.price || "");
+        const displayPrice = String(source?.price || visibleDisplayPrice(item.slug) || item.displayPrice || item.price || "");
         // Prefer the visible unit price: older product markup could turn "৳ 950 / 500g"
         // into "950500" in data-price. Parsing displayPrice keeps the unit amount correct.
         const parsedDisplayPrice = displayPrice ? priceNumber(displayPrice) : null;
@@ -51,15 +49,7 @@
     }
     return "";
   }
-  function discountDisplayPrice(value, percent) {
-    const rate=Number(percent) || 0;
-    if(!rate) return String(value || "");
-    return String(value || "").replace(/((?:৳|BDT)\s*)([0-9][0-9,]*(?:\.[0-9]+)?)/i,(match,prefix,digits)=>{
-      const original=Number(String(digits).replace(/,/g,""));
-      if(!Number.isFinite(original)) return match;
-      return prefix+Math.max(0,Math.round(original*(100-rate)/100)).toLocaleString("en-US");
-    });
-  }
+
   function imageUrl(path) {
     try { return new URL(path, siteBase).href; } catch (_) { return path || ""; }
   }
