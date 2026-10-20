@@ -1230,3 +1230,340 @@ html.dark-mode .contact-response-card:hover .contact-response-num { background: 
   header.hf-header-hidden { transform:none !important; }
   .mobile-floating-cart { display:none !important; }
 }
+
+
+/* Mobile cart icon + navigation refinements v4. These declarations are intentionally mobile-only. */
+@media (max-width: 900px) {
+  body { padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)) !important; }
+
+  /* Header cart uses the same outline shopping-bag glyph as the other cart shortcuts. */
+  header .header-actions .header-cart,
+  header .header-actions [data-cart-open] {
+    display: inline-flex !important;
+    order: 2;
+    position: relative;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    min-height: 40px;
+    flex: 0 0 40px;
+    padding: 0;
+    margin: 0;
+    border: 1px solid var(--orange);
+    border-radius: 10px;
+    background: var(--orange);
+    color: var(--white) !important;
+    box-shadow: 0 3px 9px rgba(43,42,61,.12);
+  }
+  header .header-actions .theme-toggle,
+  header .header-actions [data-theme-toggle] { order: 1; }
+  header .header-actions .header-cart:hover,
+  header .header-actions .header-cart:focus-visible {
+    background: var(--orange);
+    border-color: var(--orange);
+    color: var(--white) !important;
+  }
+  header .header-actions .header-cart-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 25px;
+    height: 25px;
+    font-size: 0;
+    line-height: 0;
+  }
+  header .header-actions .header-cart-icon svg {
+    width: 24px;
+    height: 24px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  header .header-actions .header-cart-label { display: none !important; }
+  header .header-actions .header-cart .cart-count {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    min-width: 17px;
+    height: 17px;
+    padding: 0 4px;
+    border: 1px solid var(--cream);
+    border-radius: 999px;
+    background: var(--navy);
+    color: var(--white);
+    font-size: 10px;
+    line-height: 1;
+  }
+
+  /* Keep all five dock labels on one line and keep Account in the same contrast scheme. */
+  .mobile-bottom-nav { min-height: 57px; padding: 3px 3px calc(3px + env(safe-area-inset-bottom,0px)); }
+  .mobile-bottom-nav a,
+  .mobile-bottom-nav button {
+    min-width: 0;
+    min-height: 49px;
+    height: 49px;
+    overflow: visible;
+    color: var(--white) !important;
+    text-decoration: none;
+  }
+  .mobile-bottom-nav a[aria-label="Account"],
+  .mobile-bottom-nav a[aria-label="Account"]:visited,
+  .mobile-bottom-nav a[aria-label="Account"]:active {
+    background: transparent !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    color: var(--white) !important;
+  }
+  .mobile-bottom-nav a[aria-label="Account"] svg {
+    color: var(--white) !important;
+    stroke: var(--white) !important;
+    fill: none !important;
+  }
+  .mobile-bottom-nav .mobile-cart-link { position: relative; }
+  .mobile-bottom-nav .mobile-cart-count {
+    top: 1px;
+    left: calc(50% + 6px);
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--navy);
+    color: var(--white);
+    font-size: 10px;
+    line-height: 1;
+    z-index: 2;
+  }
+  .mobile-bottom-nav span {
+    white-space: nowrap;
+    word-break: keep-all;
+    overflow-wrap: normal;
+    line-height: 1.12;
+    font-size: clamp(9px, 2.65vw, 11px);
+  }
+
+  /* Compact right-edge cart: bag icon, live item count, and a separate white total strip. */
+  .mobile-floating-cart {
+    position: fixed !important;
+    z-index: 1050 !important;
+    top: 54%;
+    right: 0;
+    bottom: auto !important;
+    display: flex !important;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: center;
+    width: 74px;
+    min-width: 74px;
+    min-height: 0;
+    padding: 0;
+    overflow: visible;
+    border: 1px solid rgba(255,253,248,.72);
+    border-right: 0;
+    border-radius: 13px 0 0 13px;
+    background: var(--orange);
+    color: var(--white);
+    box-shadow: 0 5px 16px rgba(43,42,61,.16);
+    transform: translate3d(0,-50%,0) scale(1);
+    transform-origin: right center;
+    transition: transform .28s cubic-bezier(.2,.75,.25,1), box-shadow .28s ease;
+    will-change: transform;
+  }
+  .mobile-floating-cart.hf-cart-scroll-up {
+    transform: translate3d(0,calc(-50% - 3px),0) scale(1.015);
+    box-shadow: 0 7px 19px rgba(43,42,61,.18);
+  }
+  .mobile-floating-cart.hf-cart-scroll-down {
+    transform: translate3d(0,calc(-50% + 3px),0) scale(.99);
+    box-shadow: 0 3px 11px rgba(43,42,61,.13);
+  }
+  .mobile-floating-cart-top {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-height: 62px;
+    padding: 8px 4px 6px;
+  }
+  .mobile-floating-cart-icon-wrap {
+    position: relative;
+    display: inline-flex;
+    width: 27px;
+    height: 27px;
+    align-items: center;
+    justify-content: center;
+  }
+  .mobile-floating-cart-icon-wrap svg {
+    display: block;
+    width: 26px;
+    height: 26px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .mobile-floating-cart-count {
+    position: absolute;
+    top: -6px;
+    right: -9px;
+    min-width: 17px;
+    height: 17px;
+    padding: 0 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--orange);
+    border-radius: 999px;
+    background: var(--navy);
+    color: var(--white);
+    font-size: 10px;
+    line-height: 1;
+    font-weight: 800;
+  }
+  .mobile-floating-cart-label {
+    display: block;
+    font-size: 11px;
+    line-height: 1.1;
+    white-space: nowrap;
+    text-align: center;
+  }
+  .mobile-floating-cart-total {
+    display: block;
+    width: 100%;
+    padding: 7px 2px;
+    border-top: 1px solid var(--line);
+    border-radius: 0 0 0 12px;
+    background: var(--white);
+    color: var(--orange);
+    font-size: 10px;
+    line-height: 1.15;
+    font-weight: 800;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: clip;
+  }
+
+  /* Contact bubble is separate from the floating cart and opens Call + WhatsApp choices. */
+  .hf-contact-widget {
+    display: block !important;
+    position: fixed !important;
+    z-index: 1090 !important;
+    right: 12px !important;
+    bottom: calc(69px + env(safe-area-inset-bottom,0px)) !important;
+  }
+  .hf-contact-launcher {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 49px;
+    height: 49px;
+    padding: 0;
+    border: 1px solid var(--orange) !important;
+    border-radius: 15px;
+    background: var(--orange) !important;
+    color: var(--white) !important;
+    box-shadow: 0 4px 14px rgba(43,42,61,.18);
+  }
+  .hf-contact-launcher svg {
+    width: 23px;
+    height: 23px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .hf-contact-close-icon { display: none; }
+  .hf-contact-launcher[aria-expanded="true"] .hf-contact-chat-icon { display: none; }
+  .hf-contact-launcher[aria-expanded="true"] .hf-contact-close-icon { display: block; }
+  .hf-contact-options:not([hidden]) {
+    position: absolute;
+    right: 0;
+    bottom: 59px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 160px;
+    padding: 8px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--white);
+    box-shadow: 0 8px 25px rgba(43,42,61,.17);
+  }
+  .hf-contact-option {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    color: var(--navy);
+    font-size: 14px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .hf-contact-option svg { width: 23px; height: 23px; flex: 0 0 23px; }
+  .hf-contact-whatsapp svg { color: #25a85a; fill: currentColor; stroke: none; }
+  .hf-contact-call svg { color: var(--navy); fill: none; stroke: currentColor; stroke-width: 1.8; }
+
+  /* Search panel includes a real close control; dismissing it reveals the permanent magnifier again. */
+  header .header-actions .search-wrap.mobile-search-open {
+    display: block !important;
+    position: fixed !important;
+    z-index: 1400 !important;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    padding: 12px 14px 14px;
+    background: var(--white);
+    border-bottom: 1px solid var(--line);
+    box-shadow: 0 12px 35px rgba(43,42,61,.15), 0 0 0 100vmax rgba(43,42,61,.48);
+  }
+  .search-wrap.mobile-search-open::after { display: none !important; }
+  .mobile-search-panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 0 0 10px;
+    color: var(--navy);
+  }
+  .mobile-search-panel-head strong { font-size: 17px; line-height: 1.25; }
+  .mobile-search-close {
+    display: inline-flex;
+    flex: 0 0 38px;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    background: var(--cream);
+    color: var(--orange);
+    font-size: 26px;
+    line-height: 1;
+    cursor: pointer;
+  }
+  .mobile-search-close:focus-visible { outline: 2px solid var(--orange); outline-offset: 2px; }
+}
+@media (max-width: 380px) {
+  header .nav { gap: 4px; padding-left: 7px; padding-right: 7px; }
+  header .brand { font-size: 14px; gap: 4px; }
+  header .brand-logo { width: 27px; height: 27px; flex-basis: 27px; }
+  header .mobile-menu-toggle { width: 34px; flex-basis: 34px; }
+  header .header-actions .theme-toggle,
+  header .header-actions [data-theme-toggle] { width: 33px; height: 33px; flex-basis: 33px; }
+  header .header-actions .header-cart,
+  header .header-actions [data-cart-open] { width: 36px; height: 36px; flex-basis: 36px; }
+  .mobile-floating-cart { width: 69px; min-width: 69px; }
+}
+@media (min-width: 901px) {
+  .mobile-floating-cart { display: none !important; }
+  header.hf-header-hidden { transform: none !important; }
+}
