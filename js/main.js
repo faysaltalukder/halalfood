@@ -13,7 +13,122 @@ function whatsappLink(productName = "") {
   return `https://wa.me/8801842031164?text=${encodeURIComponent(message)}`;
 }
 
+
+/* HALAL FOOD — controlled product discount campaign. Demo pricing for 70% of the catalogue. */
+window.HALAL_DISCOUNTS = Object.freeze({
+  "ajwa-dates": 18,
+  "medjool-dates": 16,
+  "date-syrup": 22,
+  "kalmi-dates": 18,
+  "sukkari-dates": 16,
+  "basmati-rice": 16,
+  "chickpeas": 18,
+  "roasted-chana": 20,
+  "brown-lentils": 16,
+  "beef-cuts": 16,
+  "beef-boneless": 18,
+  "fresh-mutton": 22,
+  "fresh-chicken": 16,
+  "wild-forest-honey": 18,
+  "black-seed-honey": 20,
+  "litchi-honey": 16,
+  "sundarban-honey": 18,
+  "garlic-honey-mix": 18,
+  "date-nut-mix": 16,
+  "dry-fruit-mix": 22,
+  "trail-mix": 18,
+  "mixed-roasted-nuts": 16,
+  "almonds": 18,
+  "cashews": 20,
+  "pumpkin-seeds": 16,
+  "house-biryani-masala": 18,
+  "beef-masala": 16,
+  "fish-masala": 20,
+  "korma-masala": 18,
+  "classic-black-tea": 18,
+  "green-tea": 16,
+  "ginger-tea": 20,
+  "lemon-tea": 18,
+  "mustard-oil": 16,
+  "olive-oil": 18,
+  "sunflower-oil": 20,
+  "soybean-oil": 16,
+  "cow-ghee": 16,
+  "buffalo-ghee": 18,
+  "organic-a2-ghee": 20,
+  "desi-ghee": 18,
+  "premium-ghee-tin": 16
+});
+function halalDiscountPercent(slug){return Number(window.HALAL_DISCOUNTS?.[String(slug||"")]||0);}
+function halalDiscountPriceText(value,percent){
+ const raw=String(value||""),rate=Number(percent)||0;if(!rate)return raw;
+ return raw.replace(/((?:৳|BDT)\s*)([0-9][0-9,]*(?:\.[0-9]+)?)/i,(match,prefix,digits)=>{
+  const original=Number(String(digits).replace(/,/g,""));if(!Number.isFinite(original))return match;
+  return prefix+Math.max(0,Math.round(original*(100-rate)/100)).toLocaleString("en-US");
+ });
+}
+function halalPriceNumber(value){
+ const match=String(value||"").match(/(?:৳|BDT)?\s*([0-9][0-9,]*(?:\.[0-9]+)?)/i);
+ const amount=match?Number(match[1].replace(/,/g,"")):0;return Number.isFinite(amount)?amount:0;
+}
+function halalRenderPriceElement(element,originalText,percent){
+ if(!element||!percent||!originalText)return;
+ const original=String(originalText).trim(),sale=halalDiscountPriceText(original,percent);
+ element.dataset.hfOriginalPrice=original;element.dataset.hfDiscountPercent=String(percent);element.classList.add("hf-has-discount");
+ const stack=document.createElement("span");stack.className="hf-price-stack";
+ const oldPrice=document.createElement("del");oldPrice.className="hf-price-original";oldPrice.textContent=original;
+ const salePrice=document.createElement("strong");salePrice.className="hf-price-current";salePrice.textContent=sale;
+ stack.append(oldPrice,salePrice);element.replaceChildren(stack);
+ element.setAttribute("aria-label",`Original price ${original}; ${percent}% off; sale price ${sale}`);
+}
+function halalDiscountBadge(percent){
+ const badge=document.createElement("span");badge.className="hf-discount-badge";badge.setAttribute("aria-label",`${percent}% off`);
+ const amount=document.createElement("strong");amount.className="hf-discount-percent";amount.textContent=`${percent}%`;
+ const off=document.createElement("span");off.className="hf-discount-off";off.textContent="OFF";badge.append(amount,off);return badge;
+}
+function applyHalalDiscounts(root=document){
+ const selector=".product-card, .jfy-card, .mrow-card, .product-detail-grid";
+ const cards=root.querySelectorAll?root.querySelectorAll(selector):[];
+ cards.forEach(card=>{
+  const control=card.querySelector("[data-add-to-cart], [data-product-cart-control], .cart-detail-add");
+  let slug=String(control?.dataset?.slug||"");
+  if(!slug)for(const link of card.querySelectorAll('a[href*="products/"]')){
+   const match=String(link.getAttribute("href")||"").match(/products\/([^/?#]+)\.html/i);
+   if(match){slug=decodeURIComponent(match[1]);break;}
+  }
+  const percent=halalDiscountPercent(slug);if(!percent)return;
+  let basePrice=String(control?.dataset?.hfOriginalDisplayPrice||control?.dataset?.displayPrice||"");
+  if(!basePrice){
+   const priceNode=card.querySelector(".product-detail-price, .product-foot .price, .jfy-price, .mrow-price, .price");
+   basePrice=String(priceNode?.dataset?.hfOriginalPrice||priceNode?.textContent||"").trim();
+  }
+  if(!basePrice&&Array.isArray(window.PRODUCTS_DATA))basePrice=String(window.PRODUCTS_DATA.find(item=>item.slug===slug)?.price||"");
+  if(control&&basePrice){
+   control.dataset.hfOriginalDisplayPrice=basePrice;control.dataset.discountPercent=String(percent);
+   control.dataset.displayPrice=halalDiscountPriceText(basePrice,percent);
+   control.dataset.price=String(halalPriceNumber(control.dataset.displayPrice));
+  }
+  card.querySelectorAll(".product-detail-price, .product-foot .price, .jfy-price, .mrow-price, .price").forEach(element=>{
+   const original=String(element.dataset.hfOriginalPrice||element.textContent||basePrice).trim();
+   if(original)halalRenderPriceElement(element,original,percent);
+  });
+  const detailImage=card.querySelector(".product-detail-image-wrap");
+  if(detailImage){detailImage.classList.add("hf-discount-detail");if(!detailImage.querySelector(".hf-discount-badge"))detailImage.prepend(halalDiscountBadge(percent));}
+  else{
+   const image=card.querySelector(".product-image, .jfy-image, .mrow-image, .product-card-image");
+   if(image){image.classList.add("hf-discounted-image");if(!image.querySelector(".hf-discount-badge"))image.prepend(halalDiscountBadge(percent));}
+  }
+ });
+}
+
 document.addEventListener("DOMContentLoaded", () => {
+  applyHalalDiscounts(document);
+  const discountObserver=new MutationObserver(records=>{
+   const selector=".product-card, .jfy-card, .mrow-card, .product-detail-grid";
+   const hasCard=node=>node&&node.nodeType===1&&(node.matches?.(selector)||node.querySelector?.(selector));
+   if(records.some(record=>Array.from(record.addedNodes||[]).some(hasCard)))requestAnimationFrame(()=>applyHalalDiscounts(document));
+  });
+  if(document.body)discountObserver.observe(document.body,{childList:true,subtree:true});
   const track=window.halalTrack||function(){};
   const trackItems=window.halalTrackItems||function(items){return items||[];};
   const parseProductPrice=(value,displayValue="")=>{
@@ -201,7 +316,8 @@ document.addEventListener("DOMContentLoaded", () => {
       if (item.price) {
         const price = document.createElement("span");
         price.className = "mobile-search-price";
-        price.textContent = " — " + String(item.price);
+        const percent = halalDiscountPercent(item.slug);
+        price.textContent = " — " + (percent ? halalDiscountPriceText(item.price, percent) + " (" + percent + "% OFF)" : String(item.price));
         link.appendChild(price);
       }
       li.appendChild(link);
@@ -485,8 +601,13 @@ document.addEventListener("DOMContentLoaded", () => {
     if (singleProduct) {
       productInput && (productInput.value = singleProduct.name);
       productDisplay && (productDisplay.textContent = singleProduct.name);
-      const price = priceNumber(singleProduct.price);
-      productPrice && (productPrice.textContent = singleProduct.price || money(price));
+      const discountPercent = halalDiscountPercent(singleProduct.slug);
+      const discountedPrice = halalDiscountPriceText(singleProduct.price, discountPercent);
+      const price = priceNumber(discountedPrice);
+      if (productPrice) {
+        if (discountPercent) halalRenderPriceElement(productPrice, singleProduct.price, discountPercent);
+        else productPrice.textContent = singleProduct.price || money(price);
+      }
       if (productImage && singleProduct.image) {
         productImage.src = String(singleProduct.image).replace(/\.(jpe?g|png)$/i, ".webp");
         productImage.alt = singleProduct.name || "Selected product";
@@ -501,7 +622,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (quantityInput) quantityInput.value = String(n);
     if (quantityDisplay) quantityDisplay.textContent = String(n);
     if (productLineTotal && singleProduct) {
-      productLineTotal.textContent = money(priceNumber(singleProduct.price) * n);
+      productLineTotal.textContent = money(priceNumber(halalDiscountPriceText(singleProduct.price, halalDiscountPercent(singleProduct.slug))) * n);
     }
     return n;
   };
@@ -604,7 +725,7 @@ document.addEventListener("DOMContentLoaded", () => {
         data.product = singleProduct?.name || singleProductName;
         data.orderId = makeOrderId();
         if (singleProduct) {
-          data.price = String(priceNumber(singleProduct.price));
+          data.price = String(priceNumber(halalDiscountPriceText(singleProduct.price, halalDiscountPercent(singleProduct.slug))));
           data.image = String(singleProduct.image || "");
           data.slug = String(singleProduct.slug || "");
         }
@@ -613,7 +734,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const checkoutItems = Array.isArray(data.items) && data.items.length ? data.items : [{
         product:data.product || singleProduct?.name || singleProductName,
         quantity:data.quantity || "1",
-        price:data.price || (singleProduct ? String(priceNumber(singleProduct.price)) : "0")
+        price:data.price || (singleProduct ? String(priceNumber(halalDiscountPriceText(singleProduct.price, halalDiscountPercent(singleProduct.slug)))) : "0")
       }];
       const checkoutValue=checkoutItems.reduce((sum,item)=>sum+(Number(item.price)||0)*Math.max(1,Number(item.quantity)||1),0);
       track("add_shipping_info",{currency:"BDT",value:checkoutValue,shipping_tier:"Cash on Delivery",items:trackItems(checkoutItems)});
@@ -629,7 +750,7 @@ document.addEventListener("DOMContentLoaded", () => {
         : [{
             product: data.product || singleProduct?.name || singleProductName,
             quantity: data.quantity || "1",
-            price: data.price || (singleProduct ? String(priceNumber(singleProduct.price)) : "0")
+            price: data.price || (singleProduct ? String(priceNumber(halalDiscountPriceText(singleProduct.price, halalDiscountPercent(singleProduct.slug)))) : "0")
           }];
       const localOrderTotal = confirmedItems.reduce((sum, item) => {
         const price = Number(item.price) || 0;
