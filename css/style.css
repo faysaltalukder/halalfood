@@ -1191,7 +1191,7 @@ html.dark-mode .contact-response-card:hover .contact-response-num { background: 
   header .brand { min-width:0; flex:0 1 auto; gap:5px; font-size:clamp(15px,4vw,19px); line-height:1.15; white-space:nowrap; }
   header .brand-logo { width:30px; height:30px; flex:0 0 30px; }
   header .header-actions { min-width:0; flex:0 0 auto; gap:5px; margin-left:auto; }
-  header .header-actions .search-wrap, header .header-actions .header-account-link, header .header-actions .header-track-order, header .header-actions .mobile-header-cart { display:none !important; }
+  header .header-actions .search-wrap, header .header-actions .header-account-link, header .header-actions .header-track-order, header .header-actions .mobile-header-cart, header .header-actions .header-cart, header .header-actions [data-cart-open] { display:none !important; }
   header .header-actions .theme-toggle, header .header-actions [data-theme-toggle] { display:inline-flex; align-items:center; justify-content:center; width:36px; height:36px; flex:0 0 36px; border-radius:50%; }
   .mobile-bottom-nav { position:fixed !important; z-index:1100; left:0; right:0; bottom:0; width:100%; grid-template-columns:repeat(5,minmax(0,1fr)); padding:4px 3px calc(4px + env(safe-area-inset-bottom,0px)); min-height:58px; background:var(--orange) !important; border-top:1px solid rgba(43,42,61,.14); box-shadow:0 -3px 12px rgba(43,42,61,.10); }
   .mobile-bottom-nav a, .mobile-bottom-nav button { min-width:0; min-height:49px; height:49px; padding:2px 0; gap:2px; border-radius:0; color:var(--white); overflow:hidden; }
