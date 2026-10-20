@@ -2354,3 +2354,57 @@ button.cart-qty-action:focus-visible {
     flex-basis: 39px !important;
   }
 }
+
+
+/* Final mobile header correction: clearly larger logo and equal yellow menu lines.
+   Kept at the end so older mobile overrides cannot shrink or restyle these controls. */
+@media (max-width: 900px) {
+  header .nav > .brand .brand-logo,
+  header .nav > .brand picture .brand-logo {
+    width: 44px !important;
+    height: 44px !important;
+    flex: 0 0 44px !important;
+    flex-shrink: 0 !important;
+    object-fit: contain !important;
+  }
+
+  header .nav > .mobile-menu-toggle {
+    border: 0 !important;
+    outline-offset: 3px;
+    border-radius: 4px !important;
+    box-shadow: none !important;
+    color: transparent !important;
+    font-size: 0 !important;
+    background-color: transparent !important;
+    background-image:
+      linear-gradient(#D5A100, #D5A100),
+      linear-gradient(#D5A100, #D5A100),
+      linear-gradient(#D5A100, #D5A100) !important;
+    background-position: center 27%, center 50%, center 73% !important;
+    background-size: 22px 2.5px, 22px 2.5px, 22px 2.5px !important;
+    background-repeat: no-repeat !important;
+  }
+
+  header .nav > .mobile-menu-toggle::before,
+  header .nav > .mobile-menu-toggle::after {
+    content: none !important;
+    display: none !important;
+  }
+
+  header .nav > .mobile-menu-toggle:hover,
+  header .nav > .mobile-menu-toggle:focus-visible,
+  header .nav > .mobile-menu-toggle:active {
+    border: 0 !important;
+    box-shadow: none !important;
+    background-color: transparent !important;
+  }
+}
+
+@media (max-width: 380px) {
+  header .nav > .brand .brand-logo,
+  header .nav > .brand picture .brand-logo {
+    width: 40px !important;
+    height: 40px !important;
+    flex-basis: 40px !important;
+  }
+}
