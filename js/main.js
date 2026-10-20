@@ -386,13 +386,22 @@ document.addEventListener("DOMContentLoaded", () => {
     nav.innerHTML = '<a aria-label="Home" href="' + localHref("index.html") + '"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 10.8 12 3l9 7.8v9.2a1 1 0 0 1-1 1h-5.5v-6h-5v6H4a1 1 0 0 1-1-1z"></path></svg><span>Home</span></a><button aria-label="Open menu" data-mobile-menu type="button"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"></path></svg><span>Menu</span></button><a aria-label="Cart" class="mobile-cart-link" href="' + localHref("cart.html") + '"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5.5 8h13l1 12h-15l1-12Z"></path><path d="M9 8V6.2a3 3 0 0 1 6 0V8"></path></svg><span>Cart</span><b class="mobile-cart-count" data-cart-count>0</b></a><button aria-label="Search" data-mobile-search type="button"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8"></circle><path d="m16 16 5 5"></path></svg><span>Search</span></button><a aria-label="Account" href="' + localHref("account.html") + '"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"></circle><path d="M5 20c.6-3.8 3.1-5.7 7-5.7s6.4 1.9 7 5.7"></path></svg><span>Account</span></a>';
     document.body.appendChild(nav);
   }
-  if (!document.querySelector(".mobile-floating-cart")) {
+  // Show the floating cart summary only on the home page and category listings.
+  const currentPagePath = window.location.pathname.replace(/\/+$/, "");
+  const isHomePage = currentPagePath === "" || /\/halalfood$/i.test(currentPagePath) || /\/halalfood\/index\.html$/i.test(currentPagePath);
+  const isCategoryListingPage = /\/categories\/[^/]+\.html$/i.test(currentPagePath);
+  const showFloatingCart = isHomePage || isCategoryListingPage;
+
+  if (showFloatingCart && !document.querySelector(".mobile-floating-cart")) {
     const miniCart = document.createElement("a");
     miniCart.className = "mobile-floating-cart";
     miniCart.href = localHref("cart.html");
     miniCart.setAttribute("aria-label", "Open shopping cart");
     miniCart.innerHTML = '<span class="mobile-floating-cart-top"><span class="mobile-floating-cart-icon-wrap"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5.5 8h13l1 12h-15l1-12Z"></path><path d="M9 8V6.2a3 3 0 0 1 6 0V8"></path></svg><b class="mobile-floating-cart-count" data-cart-count>0</b></span><span class="mobile-floating-cart-label">Items</span></span><span class="mobile-floating-cart-total" data-cart-total>৳ 0</span>';
     document.body.appendChild(miniCart);
+  } else if (!showFloatingCart) {
+    // Remove any copy already present in the static HTML on other pages.
+    document.querySelectorAll(".mobile-floating-cart").forEach(miniCart => miniCart.remove());
   }
 
   if (window.matchMedia("(max-width: 900px)").matches && !document.querySelector("#hf-contact-widget")) {
