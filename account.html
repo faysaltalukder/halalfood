@@ -113,7 +113,7 @@ const SUPABASE_KEY="sb_publishable_X32Rb8W-axGIfgFuppdfZQ_jbc38pcL";
 const client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});window.halalSupabaseClient=client;
 const $=id=>document.getElementById(id);
 const forms=["loginForm","signupForm","forgotPanel","resetPanel","accountPanel"];
-function announceAuthState(user){window.dispatchEvent(new CustomEvent("halal-auth-state-change",{detail:{client,user:user||null}}));window.halalRefreshMobileAccountCTA?.()}
+function announceAuthState(user,reason="session"){window.dispatchEvent(new CustomEvent("halal-auth-state-change",{detail:{client,user:user||null,reason}}));window.halalRefreshMobileAccountCTA?.()}
 function message(text,type=""){const el=$("message");el.textContent=text;el.className="msg"+(type?" "+type:"")}
 function show(formId){forms.forEach(id=>$(id).classList.toggle("hidden",id!==formId));const isAuthForm=["loginForm","signupForm"].includes(formId);$("tabs").classList.toggle("hidden",!isAuthForm);$("googleAuthSection").classList.toggle("hidden",!isAuthForm);document.querySelector(".account-shell")?.classList.toggle("is-signed-in",formId==="accountPanel");message("")}
 function setBusy(form,busy){form.querySelectorAll("button").forEach(b=>b.disabled=busy)}
@@ -200,7 +200,7 @@ $("saveProfileBtn").addEventListener("click",async()=>{
  const {error}=await client.from("customer_profiles").upsert({user_id:user.id,full_name:$("profileName").value.trim(),phone:$("profilePhone").value.trim()||null},{onConflict:"user_id"});
  if(error)message("Profile could not be saved. Check profile permissions.","error");else{const fullName=$("profileName").value.trim();const {error:metaError}=await client.auth.updateUser({data:{full_name:fullName}});if(metaError)console.warn("Profile name saved to profile table but auth metadata could not be updated",metaError.message);const {data:{user:updatedUser}}=await client.auth.getUser();renderProfileAvatar(updatedUser);announceAuthState(updatedUser);message("Profile saved.","success")}
 });
-$("logoutBtn").addEventListener("click",async()=>{await client.auth.signOut();announceAuthState(null);showMode("login");message("You have been logged out.","success")});
+$("logoutBtn").addEventListener("click",async()=>{await client.auth.signOut();announceAuthState(null,"signout");showMode("login");message("You have been logged out.","success")});
 client.auth.getSession().then(async({data})=>{
  const isReset=new URLSearchParams(window.location.search).get("mode")==="reset" || window.location.hash.includes("type=recovery");
  const user=data.session?.user;
@@ -214,7 +214,7 @@ client.auth.getSession().then(async({data})=>{
 })();
 </script>
 <script src="js/products-index.js?v=20261020-mobile-nav-v5" defer></script>
-<script src="js/cart.js?v=20261021-cloud-cart-v1" defer></script>
+<script src="js/cart.js?v=20261021-cloud-cart-v2" defer></script>
 <script src="js/main.js?v=20261021-desktop-account-avatar-v1" defer></script>
 </body>
 </html>
