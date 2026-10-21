@@ -178,6 +178,7 @@
     el("productId").value = item?.id || "";
     el("productName").value = item?.name || "";
     el("productSlug").value = item?.slug || "";
+    el("productSlug").readOnly = Boolean(item && !item.cms_created);
     el("productSlug").dataset.userEdited = item ? "1" : "";
     fillCategoryOptions(item?.category_slug || "");
     el("productCategory").value = item?.category_slug || "";
@@ -320,6 +321,7 @@
     el("postId").value = item?.id || "";
     el("postTitle").value = item?.title || "";
     el("postSlug").value = item?.slug || "";
+    el("postSlug").readOnly = Boolean(item && !item.cms_created);
     el("postSlug").dataset.userEdited = item ? "1" : "";
     el("postExcerpt").value = item?.excerpt || "";
     el("postContent").value = item?.content || "";
