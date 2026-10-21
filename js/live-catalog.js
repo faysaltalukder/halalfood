@@ -359,11 +359,15 @@
       readTable("categories", { select: "id,name,slug,description,image_url,is_active,cms_created,cms_managed,sort_order", is_active: "eq.true", order: "sort_order.asc,name.asc", limit: "500" })
     ]);
     currentCategories = categories;
-    syncProductData(products, categories);
+    // Products assigned to a hidden category should not leak into home, search or cart.
+    const visibleProducts = products.filter(product =>
+      categories.some(category => category.slug === product.category_slug && category.is_active)
+    );
+    syncProductData(visibleProducts, categories);
     syncCategoryMenus(categories);
-    if (info.kind === "home") renderHome(products, categories);
-    else if (info.kind === "category") renderCategory(products, categories, info);
-    else if (info.kind === "product") renderProductDetail(products, info);
+    if (info.kind === "home") renderHome(visibleProducts, categories);
+    else if (info.kind === "category") renderCategory(visibleProducts, categories, info);
+    else if (info.kind === "product") renderProductDetail(visibleProducts, info);
   }
   window.addEventListener("halalnav:ready", () => { if (currentCategories.length) syncCategoryMenus(currentCategories); });
   const initLiveCatalog = () => start().catch(error => {
