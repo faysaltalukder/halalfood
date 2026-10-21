@@ -69,11 +69,28 @@ window.HFAdminReady.then(async H=>{
   }).sort((a,b)=>Date.parse(b.lastSeen||0)-Date.parse(a.lastSeen||0));
  }
  function buildProductPerformance(events,orders,products){
-  const rows=products.map(product=>({product,views:0,cartAdds:0,viewSessions:new Set(),cartSessions:new Set(),orderIds:new Set(),orderLines:0,units:0,orderValue:0}));
+  const rows=products.map(product=>({product,views:0,cartAdds:0,viewSessions:new Set(),viewTimeBySession:new Map(),cartAfterViewSessions:new Set(),orderIds:new Set(),orderLines:0,units:0,orderValue:0}));
   const eventProduct=event=>{const id=String(event.item_id||"").toLowerCase(),name=String(event.item_name||"").trim().toLowerCase();return rows.find(row=>(id&&(String(row.product.slug||"").toLowerCase()===id||String(row.product.id||"").toLowerCase()===id))||(name&&String(row.product.name||"").trim().toLowerCase()===name));};
-  events.filter(event=>event.event_name==="view_item"||event.event_name==="add_to_cart").forEach(event=>{const row=eventProduct(event);if(!row)return;const actor=visitorSessionKey(event)||("event-"+String(event.id));if(event.event_name==="view_item"){row.views++;row.viewSessions.add(actor);}else{row.cartAdds++;row.cartSessions.add(actor);}});
-  orders.filter(order=>order.status!=="cancelled").forEach(order=>(order.order_items||[]).forEach(item=>{const id=String(item.product_id||"").toLowerCase(),name=String(item.product_name||"").trim().toLowerCase();const row=rows.find(candidate=>(id&&String(candidate.product.id||"").toLowerCase()===id)||(name&&String(candidate.product.name||"").trim().toLowerCase()===name));if(!row)return;row.orderIds.add(String(order.id));row.orderLines++;row.units+=Math.max(0,Number(item.quantity)||0);const value=item.line_total!=null?Number(item.line_total):Number(item.unit_price||0)*Number(item.quantity||0);row.orderValue+=Number.isFinite(value)?Math.max(0,value):0;}));
-  return rows.map(row=>{const overlap=[...row.viewSessions].filter(actor=>row.cartSessions.has(actor)).length;return {...row,orderCount:row.orderIds.size,viewToCartRate:row.viewSessions.size?overlap/row.viewSessions.size*100:null};}).sort((a,b)=>b.orderCount-a.orderCount||b.units-a.units||b.views-a.views||b.cartAdds-a.cartAdds);
+  events.filter(event=>event.event_name==="view_item"||event.event_name==="add_to_cart").slice().sort((a,b)=>Date.parse(a.occurred_at||0)-Date.parse(b.occurred_at||0)).forEach(event=>{
+   const row=eventProduct(event);if(!row)return;
+   const actor=visitorSessionKey(event),stamp=Date.parse(event.occurred_at||"");
+   if(event.event_name==="view_item"){
+    row.views++;
+    if(actor){row.viewSessions.add(actor);if(!row.viewTimeBySession.has(actor))row.viewTimeBySession.set(actor,stamp);}
+   }else{
+    row.cartAdds++;
+    if(actor&&row.viewTimeBySession.has(actor)&&stamp>row.viewTimeBySession.get(actor))row.cartAfterViewSessions.add(actor);
+   }
+  });
+  orders.filter(order=>order.status!=="cancelled").forEach(order=>(order.order_items||[]).forEach(item=>{
+   const id=String(item.product_id||"").toLowerCase(),name=String(item.product_name||"").trim().toLowerCase();
+   const row=rows.find(candidate=>(id&&String(candidate.product.id||"").toLowerCase()===id)||(name&&String(candidate.product.name||"").trim().toLowerCase()===name));
+   if(!row)return;
+   row.orderIds.add(String(order.id));row.orderLines++;row.units+=Math.max(0,Number(item.quantity)||0);
+   const value=item.line_total!=null?Number(item.line_total):Number(item.unit_price||0)*Number(item.quantity||0);
+   row.orderValue+=Number.isFinite(value)?Math.max(0,value):0;
+  }));
+  return rows.map(row=>({...row,orderCount:row.orderIds.size,viewToCartRate:row.viewSessions.size?row.cartAfterViewSessions.size/row.viewSessions.size*100:null})).sort((a,b)=>b.orderCount-a.orderCount||b.units-a.units||b.views-a.views||b.cartAdds-a.cartAdds);
  }
  function renderTopProducts(list,rows){
   if(!list)return;
