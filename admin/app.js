@@ -122,19 +122,59 @@ window.HFAdminReady.then(async H=>{
    for(let i=Math.max(1,days)-1;i>=0;i--){const d=new Date(base);d.setDate(d.getDate()-i);keys.push(localDateKey(d));}
    return keys;
   };
+  async function fetchOverviewOrderSummary(range,maxRows=5000){
+   const rows=[],pageSize=1000;
+   for(let offset=0;offset<maxRows;offset+=pageSize){
+    const size=Math.min(pageSize,maxRows-offset);
+    let query=client.from("orders").select("id,order_number,customer_name,customer_phone,total,status,ordered_at").order("ordered_at",{ascending:false}).order("id",{ascending:true});
+    query=rangeQuery(query,"ordered_at",range);
+    const page=await signedQuery(query.range(offset,offset+size-1));
+    rows.push(...page);
+    if(page.length<size)break;
+   }
+   return rows;
+  }
+  function renderActionCenter(products,pendingCount,pendingVerified){
+   const list=$("overviewActionList");if(!list)return;
+   const tracked=products.filter(p=>p.is_active&&p.stock_quantity!==null&&p.stock_quantity!==undefined&&p.stock_quantity!==""&&Number.isFinite(Number(p.stock_quantity)));
+   const outOfStock=tracked.filter(p=>Number(p.stock_quantity)<=0).length;
+   const lowStock=tracked.filter(p=>Number(p.stock_quantity)>0&&Number(p.stock_quantity)<=Number(p.low_stock_threshold??5)).length;
+   const catalogGaps=products.filter(p=>p.is_active&&(!String(p.image_url||"").trim()||!Number.isFinite(Number(p.price))||Number(p.price)<=0)).length;
+   const actions=[];
+   const add=(kind,title,count,detail,href,button)=>actions.push({kind,title,count,detail,href,button});
+   if(!pendingVerified)add("warning","Pending order count needs review","!", "Pending-order count could not be confirmed. Open Orders to review the current list.","./orders.html?status=pending","Review orders");
+   else if(pendingCount>0)add("urgent","Pending orders may need review",pendingCount, "Order records need review; an order is not proof of payment or delivery.","./orders.html?status=pending","Review orders");
+   if(outOfStock>0)add("urgent","Active products are out of stock",outOfStock,"Tracked stock is at zero. Check availability before presenting these items as ready to sell.","./products.html","Open products");
+   if(lowStock>0)add("warning","Products are at or below the stock-alert threshold",lowStock,"Review stock thresholds and replenish when appropriate.","./products.html","Open products");
+   if(catalogGaps>0)add("warning","Active products need catalog details",catalogGaps,"Add a valid positive price and/or a product image where needed.","./products.html","Review catalog");
+   const issueCount=actions.filter(a=>a.kind!=="info").length;
+   const badge=$("overviewActionCount");
+   if(badge){badge.textContent=issueCount?issueCount.toLocaleString("en-BD")+" to review":"Clear";badge.className="hf-status "+(issueCount?"hf-status-pending":"hf-status-confirmed");}
+   if(!actions.length){
+    list.innerHTML='<div class="hf-action-clear"><span class="hf-action-clear-icon">✓</span><div><strong>'+esc("Everything looks clear")+'</strong><p>'+esc("No pending orders or tracked stock alerts were found in the loaded records.")+'</p></div></div>';
+   }else{
+    list.innerHTML=actions.map(a=>'<div class="hf-action-row '+(a.kind==="urgent"?"is-urgent":"is-warning")+'"><span class="hf-action-count '+(a.kind==="urgent"?"is-urgent":"is-warning")+'">'+esc(a.count)+'</span><div class="hf-action-copy"><strong>'+esc(a.title)+'</strong><p>'+esc(a.detail)+'</p></div><a class="hf-button hf-button-secondary hf-button-small hf-action-link" href="'+esc(a.href)+'">'+esc(a.button)+' <span aria-hidden="true">→</span></a></div>').join("");
+   }
+   $("overviewActionNote").textContent="Checks use saved catalog and order records. This testing project does not process real payments or deliveries.";
+  }
   async function refresh(){
    const now=new Date();
-   const range={from:new Date(now.getTime()-30*86400000).toISOString(),to:now.toISOString(),days:30,label:"Last 30 days"};
-   const [orders,events,products]=await Promise.all([fetchOrders(null,5000),fetchEvents(range,15000),fetchProducts()]);
-   let finance=[],financeAvailable=true;
-   try{finance=await fetchFinance(null,3000);}
-   catch(err){financeAvailable=false;console.warn("Overview finance summary is unavailable for this session.",err);}
+   const range30={from:new Date(now.getTime()-30*86400000).toISOString(),to:now.toISOString(),days:30,label:"Last 30 days"};
+   const range14={from:new Date(now.getTime()-14*86400000).toISOString(),to:now.toISOString(),days:14,label:"Last 14 days"};
+   const [summaryOrders,chartOrders,events,products,pendingResult]=await Promise.all([
+    fetchOverviewOrderSummary(range30,5000),
+    fetchOrders(range14,1000),
+    fetchEvents(range14,5000),
+    fetchProducts(1000),
+    client.from("orders").select("id",{count:"exact",head:true}).eq("status","pending")
+   ]);
    const today=localDateKey(now);
-   const ordersLast30=orders.filter(o=>o.ordered_at&&new Date(o.ordered_at)>=new Date(range.from)&&new Date(o.ordered_at)<=now);
-   const todayOrders=orders.filter(o=>localDateKey(o.ordered_at)===today);
+   const ordersLast30=summaryOrders.filter(o=>o.ordered_at&&new Date(o.ordered_at)>=new Date(range30.from)&&new Date(o.ordered_at)<=now);
+   const todayOrders=chartOrders.filter(o=>localDateKey(o.ordered_at)===today);
    const todayItemLines=todayOrders.filter(o=>o.status!=="cancelled").reduce((sum,o)=>sum+(o.order_items||[]).length,0);
    const todayCartEvents=events.filter(e=>e.event_name==="add_to_cart"&&localDateKey(e.occurred_at)===today).length;
-   const pendingCount=orders.filter(o=>o.status==="pending").length;
+   const pendingVerified=!pendingResult.error&&Number.isFinite(Number(pendingResult.count));
+   const pendingCount=pendingVerified?Number(pendingResult.count):summaryOrders.filter(o=>o.status==="pending").length;
    const orderValue=ordersLast30.filter(o=>o.status!=="cancelled").reduce((sum,o)=>sum+Number(o.total||0),0);
    const lowStock=products.filter(p=>p.is_active&&p.stock_quantity!==null&&p.stock_quantity!==undefined&&p.stock_quantity!==""&&Number.isFinite(Number(p.stock_quantity))&&Number(p.stock_quantity)<=Number(p.low_stock_threshold??5)).length;
    $("kpiOrders").textContent=shortNum(ordersLast30.length);
@@ -142,8 +182,12 @@ window.HFAdminReady.then(async H=>{
    $("kpiPending").textContent=shortNum(pendingCount);
    $("kpiCart").textContent=shortNum(todayCartEvents);
    $("kpiOrderValue").textContent=money(orderValue);
-   $("kpiNote").textContent=range.label+" · recorded order value is not verified cash income.";
+   $("kpiNote").textContent=range30.label+" · recorded order value is not verified cash income.";
    $("kpiLowStock").textContent=shortNum(lowStock);
+   renderActionCenter(products,pendingCount,pendingVerified);
+   let finance=[],financeAvailable=true;
+   try{finance=await fetchFinance(null,3000);}
+   catch(err){financeAvailable=false;console.warn("Overview finance summary is unavailable for this session.",err);}
    const confirmedFinance=finance.filter(e=>e.status==="confirmed");
    const income=confirmedFinance.filter(e=>e.entry_type==="income").reduce((sum,e)=>sum+Number(e.amount||0),0);
    const expenses=confirmedFinance.filter(e=>e.entry_type==="expense").reduce((sum,e)=>sum+Number(e.amount||0),0);
@@ -155,7 +199,7 @@ window.HFAdminReady.then(async H=>{
     :"Finance summary could not be loaded. Refresh after signing in to the authorized admin account and completing MFA. Courier entries are manual placeholders and are not verified cash receipts.";
    const labels=dateKeys(14);
    drawChart("overviewOperationsChart",{type:"line",data:{labels:labels.map(dateOnly),datasets:[
-    {label:"Order item lines",data:labels.map(day=>orders.filter(o=>localDateKey(o.ordered_at)===day&&o.status!=="cancelled").reduce((sum,o)=>sum+(o.order_items||[]).length,0)),borderColor:palette.orange,backgroundColor:"#F59E0B22",fill:true,tension:.32,pointRadius:2,borderWidth:2},
+    {label:"Order item lines",data:labels.map(day=>chartOrders.filter(o=>localDateKey(o.ordered_at)===day&&o.status!=="cancelled").reduce((sum,o)=>sum+(o.order_items||[]).length,0)),borderColor:palette.orange,backgroundColor:"#F59E0B22",fill:true,tension:.32,pointRadius:2,borderWidth:2},
     {label:"Add-to-cart events",data:labels.map(day=>events.filter(e=>e.event_name==="add_to_cart"&&localDateKey(e.occurred_at)===day).length),borderColor:palette.blue,backgroundColor:"#4F7CFF20",fill:false,tension:.32,pointRadius:2,borderWidth:2}
    ]},options:{...chartAxisOptions(),plugins:{legend:{position:"bottom"}},onClick:(ev,items)=>{if(items.length)location.href=items[0].datasetIndex===0?"./orders.html":"./analytics.html";}}});
    const financeCanvas=$("overviewFinanceChart");
@@ -174,11 +218,15 @@ window.HFAdminReady.then(async H=>{
     {label:"Page views",data:labels.map(day=>events.filter(e=>e.event_name==="page_view"&&localDateKey(e.occurred_at)===day).length),borderColor:palette.blue,backgroundColor:"#4F7CFF20",fill:true,tension:.35,pointRadius:2,borderWidth:2},
     {label:"Product views",data:labels.map(day=>events.filter(e=>e.event_name==="view_item"&&localDateKey(e.occurred_at)===day).length),borderColor:palette.orange,backgroundColor:"#C97B3D18",fill:true,tension:.35,pointRadius:2,borderWidth:2}
    ]},options:{...chartAxisOptions(),plugins:{legend:{position:"bottom"}}}});
-   drawChart("overviewStatusChart",{type:"doughnut",data:orderStatusCounts(orders),options:{cutout:"67%",plugins:{legend:{position:"bottom"}},onClick:(ev,items)=>{if(items.length)location.href="./orders.html?status="+encodeURIComponent(["pending","processing","shipped","delivered","cancelled"][items[0].index]);}}});
+   drawChart("overviewStatusChart",{type:"doughnut",data:orderStatusCounts(summaryOrders),options:{cutout:"67%",plugins:{legend:{position:"bottom"}},onClick:(ev,items)=>{if(items.length)location.href="./orders.html?status="+encodeURIComponent(["pending","processing","shipped","delivered","cancelled"][items[0].index]);}}});
    renderTopProducts($("overviewTopProducts"),topProducts(events,products).slice(0,5));
-   renderRecentOrders(orders);
+   renderRecentOrders(summaryOrders);
    $("overviewUpdated").textContent="Updated "+new Date().toLocaleTimeString("en-BD",{hour:"2-digit",minute:"2-digit"});
-   $("overviewDataNote").textContent=events.length+" website events were returned for the last 30 days; "+orders.length+" total order records are available. 'Order item lines today' counts saved product lines for orders placed today, excluding cancelled orders; quantity units can differ by product. Add-to-cart is an event count, not current cart contents. These records do not prove payment or delivery.";
+   const limits=[];
+   if(summaryOrders.length>=5000)limits.push("The order summary reached its 5,000-record limit, so totals/status counts may be incomplete.");
+   if(chartOrders.length>=1000)limits.push("The daily order-item chart reached its 1,000-order limit.");
+   if(events.length>=5000)limits.push("Website events reached the 5,000-event limit.");
+   $("overviewDataNote").textContent=events.length+" website events were returned for the last 14 days; "+ordersLast30.length+" order records were loaded for the last 30 days"+(pendingVerified?"; the pending-order KPI uses an exact database count.":"; pending-order count could not be verified, so the KPI uses loaded recent records.")+". Order item lines count saved product rows, not quantities. Cart additions are event counts, not current cart contents. Records do not prove payment or delivery."+(limits.length?" "+limits.join(" "):"");
   }
   await refresh();attachRefresh(refresh);
  }
