@@ -154,10 +154,10 @@
     const category = categories.find(item => item.slug === info.slug && item.is_active);
     const grid = $(".category-page-products .product-grid");
     const heading = $(".category-page-heading h1, #live-category-title");
-    if (heading) heading.textContent = category?.name || "Category unavailable";
+    if (heading && (info.generic || category?.cms_created || category?.cms_managed)) heading.textContent = category?.name || "Category unavailable";
     const meta = document.querySelector('meta[name="description"]');
-    if (category && meta) meta.content = category.description || "Browse " + category.name + " products from Halal Food.";
-    document.title = category ? category.name + " | Halal Food" : "Category | Halal Food";
+    if (category && meta && (info.generic || category.cms_created || category.cms_managed)) meta.content = category.description || "Browse " + category.name + " products from Halal Food.";
+    if (info.generic || category?.cms_created || category?.cms_managed) document.title = category ? category.name + " | Halal Food" : "Category | Halal Food";
     if (!grid) return;
     if (info.generic) grid.replaceChildren();
     const records = products.filter(item => item.category_slug === info.slug && item.is_active);
@@ -284,9 +284,9 @@
     const article = $("main .product-detail") || $("main .product-detail-grid")?.closest("article");
     if (!article) return;
     const title = $(".product-detail-info h1", article);
-    if (title) title.textContent = product.name;
+    if (title && product.cms_managed) title.textContent = product.name;
     const tag = $(".product-detail-info .tag", article);
-    if (tag) tag.textContent = product.category || "";
+    if (tag && product.cms_managed) tag.textContent = product.category || "";
     const price = $(".product-detail-price", article);
     if (price) price.textContent = priceText(product);
     const image = $(".product-detail-image img, .product-detail-image-wrap img", article);
@@ -340,7 +340,7 @@
     const info = pathInfo();
     const [products, categories] = await Promise.all([
       readTable("products", { select: "id,name,slug,category,category_slug,price,unit_type,display_price,image_url,short_description,full_description,description,is_active,is_featured,cms_created,cms_managed,sort_order,seo_title,seo_description,stock_quantity", is_active: "eq.true", order: "sort_order.asc,name.asc", limit: "1000" }),
-      readTable("categories", { select: "id,name,slug,description,image_url,is_active,cms_created,sort_order", is_active: "eq.true", order: "sort_order.asc,name.asc", limit: "500" })
+      readTable("categories", { select: "id,name,slug,description,image_url,is_active,cms_created,cms_managed,sort_order", is_active: "eq.true", order: "sort_order.asc,name.asc", limit: "500" })
     ]);
     syncProductData(products, categories);
     syncCategoryMenus(categories);
