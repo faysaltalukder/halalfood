@@ -141,6 +141,18 @@
     applyThemeMode(mode);
   }
 
+  function ensureCategoryFloatingCart() {
+    if (!document.body || !document.body.classList.contains("category-products-page")) return;
+    if (document.querySelector(".mobile-floating-cart")) return;
+
+    const link = document.createElement("a");
+    link.className = "mobile-floating-cart";
+    link.href = cartUrl();
+    link.setAttribute("aria-label", "Open shopping cart");
+    link.innerHTML = '<span class="mobile-floating-cart-top"><span class="mobile-floating-cart-icon-wrap"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5.5 8h13l1 12h-15l1-12Z"></path><path d="M9 8V6.2a3 3 0 0 1 6 0V8"></path></svg><b class="mobile-floating-cart-count" data-cart-count>0</b></span><span class="mobile-floating-cart-label">Items</span></span><span class="mobile-floating-cart-total" data-cart-total>৳ 0</span>';
+    document.body.appendChild(link);
+  }
+
   function ensureHeaderButton() {
     document.querySelectorAll(".header-actions").forEach(actions => {
       const oldContact = actions.querySelector(".call-btn");
@@ -410,7 +422,7 @@
   window.HALAL_CART_KEY = CART_KEY;
 
   document.addEventListener("DOMContentLoaded", () => {
-    initThemeMode(); ensureHeaderButton(); ensureDrawer(); renderAll(); observeProductCartControls();
+    initThemeMode(); ensureHeaderButton(); ensureDrawer(); ensureCategoryFloatingCart(); renderAll(); observeProductCartControls();
     if (document.querySelector("[data-cart-page]")) renderPage();
     if (document.querySelector("[data-cart-checkout-summary]")) renderOrderSummary();
   });
