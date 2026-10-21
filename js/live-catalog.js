@@ -363,11 +363,11 @@
     else if (info.kind === "category") renderCategory(products, categories, info);
     else if (info.kind === "product") renderProductDetail(products, info);
   }
-  document.addEventListener("DOMContentLoaded", () => {
-    start().catch(error => {
-      console.warn("Live catalog could not connect; leaving the static catalog in place.", error);
-      const status = $("#live-catalog-status");
-      if (status) status.textContent = "Catalog is temporarily showing saved static content.";
-    });
+  const initLiveCatalog = () => start().catch(error => {
+    console.warn("Live catalog could not connect; leaving the static catalog in place.", error);
+    const status = $("#live-catalog-status");
+    if (status) status.textContent = "Catalog is temporarily showing saved static content.";
   });
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", initLiveCatalog, { once: true });
+  else initLiveCatalog();
 })();
