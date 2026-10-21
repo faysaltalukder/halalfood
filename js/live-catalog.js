@@ -352,6 +352,14 @@
     console.warn("Live catalog could not connect; leaving the static catalog in place.", error);
     const status = $("#live-catalog-status");
     if (status) status.textContent = "Catalog is temporarily showing saved static content.";
+    if (/\/category\.html$/i.test(location.pathname)) {
+      const heading = $("#live-category-title");
+      const grid = $(".category-page-products .product-grid");
+      if (heading && /loading category/i.test(heading.textContent)) heading.textContent = "Category temporarily unavailable";
+      if (grid && /loading products/i.test(grid.textContent)) {
+        grid.innerHTML = '<p class="muted">We could not load this category right now. Please refresh the page to try again.</p>';
+      }
+    }
   });
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", initLiveCatalog, { once: true });
   else initLiveCatalog();
