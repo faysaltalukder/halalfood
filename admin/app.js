@@ -52,6 +52,29 @@ window.HFAdminReady.then(async H=>{
   const by=new Map();rows.forEach(e=>{const name=String(e[field]).trim();by.set(name,(by.get(name)||0)+1);});
   return [...by.entries()].map(([name,count])=>({name,count,product:products.find(p=>p.name===name||p.slug===name)})).sort((a,b)=>b.count-a.count).slice(0,8);
  }
+
+ function visitorSessionKey(event){return String(event.session_id||event.anonymous_id||"");}
+ function formatSeconds(seconds){const value=Math.max(0,Math.round(Number(seconds)||0));if(value<60)return value+" sec";const minutes=Math.floor(value/60),remaining=value%60;return remaining?minutes+"m "+remaining+"s":minutes+"m";}
+ function buildPageExperience(events){
+  const pages=new Map();const getPage=path=>{const key=String(path||"/");if(!pages.has(key))pages.set(key,{path:key,views:0,visibleSeconds:0,timingCount:0,lastSeenSessions:0});return pages.get(key);};
+  events.forEach(event=>{const row=getPage(event.page_path);if(event.event_name==="page_view")row.views++;if(event.event_name==="page_engagement"){const seconds=Number(event.value);if(Number.isFinite(seconds)&&seconds>=0){row.visibleSeconds+=seconds;row.timingCount++;}}});
+  const latestBySession=new Map();events.forEach(event=>{const key=visitorSessionKey(event),stamp=Date.parse(event.occurred_at||"");if(!key||!Number.isFinite(stamp))return;const previous=latestBySession.get(key);if(!previous||stamp>Date.parse(previous.occurred_at||""))latestBySession.set(key,event);});
+  latestBySession.forEach(event=>getPage(event.page_path).lastSeenSessions++);return [...pages.values()].sort((a,b)=>b.views-a.views||b.visibleSeconds-a.visibleSeconds);
+ }
+ function buildSessionJourneys(events){
+  const groups=new Map();events.forEach(event=>{const key=visitorSessionKey(event);if(!key)return;if(!groups.has(key))groups.set(key,[]);groups.get(key).push(event);});
+  return [...groups.entries()].map(([sessionId,rows])=>{rows.sort((a,b)=>Date.parse(a.occurred_at||0)-Date.parse(b.occurred_at||0));const pageViews=rows.filter(e=>e.event_name==="page_view"),pathSteps=[];pageViews.forEach(e=>{const path=String(e.page_path||"/");if(pathSteps[pathSteps.length-1]!==path)pathSteps.push(path);});
+   const last=rows[rows.length-1]||{},visibleSeconds=rows.filter(e=>e.event_name==="page_engagement").reduce((sum,e)=>sum+Math.max(0,Number(e.value)||0),0),count=name=>rows.filter(e=>e.event_name===name).length;
+   return {sessionId,rows,pathSteps,steps:pageViews.length,lastSeen:last.occurred_at||"",lastPage:last.page_path||"/",visibleSeconds,cartAdds:count("add_to_cart"),checkouts:count("begin_checkout"),orderSubmits:count("order_submit")};
+  }).sort((a,b)=>Date.parse(b.lastSeen||0)-Date.parse(a.lastSeen||0));
+ }
+ function buildProductPerformance(events,orders,products){
+  const rows=products.map(product=>({product,views:0,cartAdds:0,viewSessions:new Set(),cartSessions:new Set(),orderIds:new Set(),orderLines:0,units:0,orderValue:0}));
+  const eventProduct=event=>{const id=String(event.item_id||"").toLowerCase(),name=String(event.item_name||"").trim().toLowerCase();return rows.find(row=>(id&&(String(row.product.slug||"").toLowerCase()===id||String(row.product.id||"").toLowerCase()===id))||(name&&String(row.product.name||"").trim().toLowerCase()===name));};
+  events.filter(event=>event.event_name==="view_item"||event.event_name==="add_to_cart").forEach(event=>{const row=eventProduct(event);if(!row)return;const actor=visitorSessionKey(event)||("event-"+String(event.id));if(event.event_name==="view_item"){row.views++;row.viewSessions.add(actor);}else{row.cartAdds++;row.cartSessions.add(actor);}});
+  orders.filter(order=>order.status!=="cancelled").forEach(order=>(order.order_items||[]).forEach(item=>{const id=String(item.product_id||"").toLowerCase(),name=String(item.product_name||"").trim().toLowerCase();const row=rows.find(candidate=>(id&&String(candidate.product.id||"").toLowerCase()===id)||(name&&String(candidate.product.name||"").trim().toLowerCase()===name));if(!row)return;row.orderIds.add(String(order.id));row.orderLines++;row.units+=Math.max(0,Number(item.quantity)||0);const value=item.line_total!=null?Number(item.line_total):Number(item.unit_price||0)*Number(item.quantity||0);row.orderValue+=Number.isFinite(value)?Math.max(0,value):0;}));
+  return rows.map(row=>{const overlap=[...row.viewSessions].filter(actor=>row.cartSessions.has(actor)).length;return {...row,orderCount:row.orderIds.size,viewToCartRate:row.viewSessions.size?overlap/row.viewSessions.size*100:null};}).sort((a,b)=>b.orderCount-a.orderCount||b.units-a.units||b.views-a.views||b.cartAdds-a.cartAdds);
+ }
  function renderTopProducts(list,rows){
   if(!list)return;
   if(!rows.length){list.innerHTML=makeEmpty("No product views yet","Once visitors browse products, their activity will appear here.");return;}
@@ -153,12 +176,36 @@ window.HFAdminReady.then(async H=>{
    ]},options:{...chartAxisOptions(),plugins:{legend:{position:"bottom"}}}});
    const top=topProducts(events,products);
    drawChart("analyticsProductChart",{type:"doughnut",data:{labels:top.slice(0,7).map(x=>x.name),datasets:[{data:top.slice(0,7).map(x=>x.count),backgroundColor:colorSet,borderColor:chartTheme().surface,borderWidth:3,hoverOffset:8}]},options:{cutout:"57%",plugins:{legend:{position:"bottom"}}}});
-   const sources=groupBy(events.filter(e=>e.event_name==="page_view"),e=>[e.source,e.medium].filter(Boolean).join(" / ")||"Direct or unknown").slice(0,7);
-   drawChart("analyticsSourceChart",{type:"bar",data:{labels:sources.map(x=>x.label),datasets:[{label:"Page views",data:sources.map(x=>x.count),backgroundColor:colorSet,borderRadius:7,maxBarThickness:36}]},options:{indexAxis:"y",plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,ticks:{precision:0,color:chartTheme().muted},grid:{color:chartTheme().grid}},y:{ticks:{color:palette.navy},grid:{display:false}}}}});
+   const pageStats=buildPageExperience(events);
+   const timedPages=pageStats.filter(p=>p.timingCount>0).sort((a,b)=>b.visibleSeconds-a.visibleSeconds).slice(0,8);
+   drawChart("analyticsSourceChart",{type:"bar",data:{labels:timedPages.map(p=>p.path.length>24?p.path.slice(0,21)+"…":p.path),datasets:[{label:"Visible time",data:timedPages.map(p=>p.visibleSeconds),backgroundColor:colorSet,borderRadius:7,maxBarThickness:34}]},options:{indexAxis:"y",plugins:{legend:{display:false},tooltip:{callbacks:{label:context=>formatSeconds(context.raw)}}},scales:{x:{beginAtZero:true,ticks:{color:chartTheme().muted,callback:value=>value+"s"},grid:{color:chartTheme().grid}},y:{ticks:{color:palette.navy},grid:{display:false}}}}});
    const funnelEvents=events.map(e=>e);renderFunnel(funnelEvents);
    drawChart("analyticsOrdersChart",{type:"doughnut",data:orderStatusCounts(orders),options:{cutout:"60%",plugins:{legend:{position:"bottom"}},onClick:(ev,items)=>{if(items.length)location.href="./orders.html?status="+encodeURIComponent(["pending","processing","shipped","delivered","cancelled"][items[0].index]);}}});
    const total=events.length,views=events.filter(e=>e.event_name==="page_view").length,pv=events.filter(e=>e.event_name==="view_item").length,carts=events.filter(e=>e.event_name==="add_to_cart").length,wa=events.filter(e=>e.event_name==="whatsapp_click").length;
    $("analyticsEventsCount").textContent=shortNum(total);$("analyticsPageViews").textContent=shortNum(views);$("analyticsProductViews").textContent=shortNum(pv);$("analyticsCartAdds").textContent=shortNum(carts);$("analyticsWhatsApp").textContent=shortNum(wa);
+   const engagementEvents=events.filter(e=>e.event_name==="page_engagement");
+   const totalVisibleSeconds=engagementEvents.reduce((sum,e)=>sum+Math.max(0,Number(e.value)||0),0);
+   const measuredPages=pageStats.filter(p=>p.timingCount>0);
+   $("analyticsPagesMeasured").textContent=shortNum(measuredPages.length);
+   $("analyticsAvgVisibleTime").textContent=engagementEvents.length?formatSeconds(totalVisibleSeconds/engagementEvents.length):"—";
+   $("analyticsTimedSessions").textContent=shortNum(new Set(engagementEvents.map(visitorSessionKey).filter(Boolean)).size);
+   $("analyticsPageExperienceBody").innerHTML=pageStats.length?pageStats.slice(0,20).map(p=>'<tr><td><strong title="'+esc(p.path)+'">'+esc(p.path.length>52?p.path.slice(0,49)+"…":p.path)+'</strong></td><td>'+shortNum(p.views)+'</td><td>'+(p.timingCount?formatSeconds(p.visibleSeconds/p.timingCount):"—")+'</td><td>'+(p.timingCount?formatSeconds(p.visibleSeconds):"—")+'</td><td>'+shortNum(p.lastSeenSessions)+'</td></tr>').join(""):'<tr><td colspan="5">'+makeEmpty("No page activity","Recorded page paths will appear when visitors browse the site.")+'</td></tr>';
+   $("analyticsPageTimingNote").textContent=engagementEvents.length?"Timing data is available for "+engagementEvents.length.toLocaleString("en-BD")+" page-leave events. Visible seconds pause while the browser tab is hidden; this is an estimate of visible time, not proof of attention.":"No page-timing events in this range yet. New timing starts after the website tracking update goes live; older page views cannot be backfilled.";
+   const journeys=buildSessionJourneys(events).slice(0,15);
+   $("analyticsSessionJourneyBody").innerHTML=journeys.length?journeys.map(s=>'<tr><td><strong>'+esc(s.sessionId.slice(0,8))+'…</strong><small>Anonymous session ID</small></td><td title="'+esc(s.pathSteps.join(" → "))+'">'+esc(s.pathSteps.length?s.pathSteps.slice(-6).join(" → "):s.lastPage)+'</td><td>'+shortNum(s.steps)+'</td><td>'+(s.rows.some(e=>e.event_name==="page_engagement")?formatSeconds(s.visibleSeconds):"Not measured")+'</td><td>'+esc(dateTime(s.lastSeen))+'<small>'+esc(s.lastPage)+'</small></td><td>Cart '+s.cartAdds+' · Checkout '+s.checkouts+' · Submit '+s.orderSubmits+'</td></tr>').join(""):'<tr><td colspan="6">'+makeEmpty("No session journeys yet","Journeys require a recorded session ID. This table never displays customer names or contact details.")+'</td></tr>';
+   const productRows=buildProductPerformance(events,orders,products);
+   const listedProducts=productRows.filter(p=>p.views||p.cartAdds||p.orderCount).slice(0,20);
+   $("analyticsProductPerformanceBody").innerHTML=listedProducts.length?listedProducts.map(p=>'<tr><td><strong>'+esc(p.product.name)+'</strong><small>'+esc(p.product.category||"Uncategorised")+'</small></td><td>'+shortNum(p.views)+'</td><td>'+shortNum(p.cartAdds)+'</td><td>'+(p.viewToCartRate==null?"—":Math.round(p.viewToCartRate)+"%")+'</td><td>'+shortNum(p.orderCount)+'<small>'+shortNum(p.orderLines)+' item lines</small></td><td>'+money(p.orderValue)+'</td><td>'+(p.product.stock_quantity==null?"Not set":esc(p.product.stock_quantity))+'</td></tr>').join(""):'<tr><td colspan="7">'+makeEmpty("No matched product activity","Product events or recorded test-order items will appear when matching product data is available.")+'</td></tr>';
+   const insights=[];
+   if(!engagementEvents.length)insights.push({title:"Page timing is awaiting new data",body:"The new visible-time tracker records the time when a page is left. Earlier page views cannot be assigned an estimated duration retroactively."});
+   const noCartProducts=productRows.filter(p=>p.views>=3&&p.cartAdds===0).sort((a,b)=>b.views-a.views).slice(0,2);
+   if(noCartProducts.length)insights.push({title:"Review product pages with views but no cart adds",body:noCartProducts.map(p=>p.product.name+" ("+p.views+" views)").join(", ")+". Consider checking the photo, price clarity and product description; this is a prompt to investigate, not proof of a defect."});
+   const cartCount=events.filter(e=>e.event_name==="add_to_cart").length,submitCount=events.filter(e=>e.event_name==="order_submit").length;
+   if(cartCount>0&&submitCount===0)insights.push({title:"Check the checkout path",body:"Cart-add activity exists, but no order-submit event was recorded in this date range. Verify the checkout experience and its event instrumentation."});
+   const lowStockProducts=products.filter(p=>p.is_active&&p.stock_quantity!=null&&p.stock_quantity!==""&&Number.isFinite(Number(p.stock_quantity))&&Number(p.stock_quantity)<=Number(p.low_stock_threshold??5));
+   if(lowStockProducts.length)insights.push({title:"Review low-stock products",body:lowStockProducts.slice(0,3).map(p=>p.name).join(", ")+(lowStockProducts.length>3?" and "+(lowStockProducts.length-3)+" more":"")+" are at or below their configured stock alert."});
+   $("analyticsDecisionCenter").innerHTML=insights.length?insights.map((item,i)=>'<div class="hf-insight-row"><span class="hf-thumb hf-thumb-empty">'+(i+1)+'</span><div><strong>'+esc(item.title)+'</strong><small>'+esc(item.body)+'</small></div><span class="hf-status hf-status-review">Review</span></div>').join(""):makeEmpty("No immediate checks suggested","Keep collecting on-site events and review this area again as more data arrives.");
+
    $("analyticsReportHint").textContent=range.label+" · "+total.toLocaleString("en-BD")+" recorded events · "+orders.length.toLocaleString("en-BD")+" orders. "+((!range.days||range.days>90)?"Daily trend shows the last 90 days; totals use the full selected range.":"");
    $("analyticsTopProducts").innerHTML=top.length?top.map((x,i)=>'<div class="hf-insight-row">'+(x.product?.image_url?'<img class="hf-thumb" src="'+esc(x.product.image_url)+'" alt="">':'<span class="hf-thumb hf-thumb-empty">'+(i+1)+'</span>')+'<div><strong>'+esc(x.name)+'</strong><small>'+esc(x.product?.category||"No category match")+'</small></div><span class="hf-insight-number">'+shortNum(x.count)+'</span></div>').join(""):makeEmpty("No product-view data","Check again after the website has recorded product views.");
    $("analyticsEventBreakdown").innerHTML=groupBy(events,e=>e.event_name).slice(0,12).map(x=>'<tr><td>'+esc(x.label)+'</td><td>'+shortNum(x.count)+'</td><td>'+(total?Math.round(x.count/total*100)+"%":"—")+'</td></tr>').join("")||'<tr><td colspan="3">'+makeEmpty("No events yet","No website events were recorded in this date range.")+'</td></tr>';
@@ -604,7 +651,7 @@ async function refresh(){[products,categories]=await Promise.all([fetchProducts(
     title="Orders Report";notes="Recorded order values are not proof of payment collection. Cancelled orders remain listed with their status.";
    }else if(type==="analytics"){
     const events=await fetchEvents(range,15000);
-    rows=events.map(e=>({occurred_at:e.occurred_at,event_name:e.event_name,page_path:e.page_path,page_title:e.page_title,item_name:e.item_name,item_category:e.item_category,value:e.value,quantity:e.quantity,source:e.source,medium:e.medium,campaign:e.campaign}));
+    rows=events.map(e=>({occurred_at:e.occurred_at,event_name:e.event_name,page_path:e.page_path,page_title:e.page_title,session_id:e.session_id,item_id:e.item_id,item_name:e.item_name,item_category:e.item_category,value:e.event_name==="page_engagement"?null:e.value,visible_seconds:e.event_name==="page_engagement"?Number(e.value||0):null,quantity:e.quantity,source:e.source,medium:e.medium,campaign:e.campaign}));
     title="Website Analytics Report";notes="Website events measure recorded interaction. They do not by themselves establish unique people, paid sales, or collected revenue.";
    }else if(type==="products"){
     const products=await fetchProducts();
