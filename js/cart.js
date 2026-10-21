@@ -219,7 +219,7 @@
       <div class="cart-item-info">
         <a class="cart-item-name" href="${html.escape(productHref)}">${html.escape(item.name)}</a>
         <span class="cart-item-price">${html.escape(item.displayPrice || money(item.price))} per unit</span>
-        <div class="cart-qty"><button type="button" data-cart-dec="${html.escape(item.slug)}" aria-label="Decrease ${html.escape(item.name)} quantity">−</button><span>${Number(item.qty)||1}</span><button type="button" data-cart-inc="${html.escape(item.slug)}" aria-label="Increase ${html.escape(item.name)} quantity">+</button></div>
+        <div class="cart-qty"><button type="button" data-cart-dec="${html.escape(item.slug)}" aria-label="Decrease ${html.escape(item.name)} quantity">−</button><input aria-label="Quantity for ${html.escape(item.name)}" data-checkout-qty="${html.escape(item.slug)}" inputmode="numeric" max="${MAX_QTY}" min="1" step="1" type="number" value="${Number(item.qty)||1}"><button type="button" data-cart-inc="${html.escape(item.slug)}" aria-label="Increase ${html.escape(item.name)} quantity">+</button></div>
       </div>
       <div class="cart-item-actions"><strong class="checkout-line-total">${money(line)}</strong><button type="button" class="cart-remove" data-cart-remove="${html.escape(item.slug)}" aria-label="Remove ${html.escape(item.name)}">Remove</button></div>
     </div>`;
@@ -422,6 +422,18 @@
     });
     observer.observe(document.body, { childList: true, subtree: true });
   }
+
+  // Commit manually entered checkout quantities when the field loses focus or Enter is pressed.
+  document.addEventListener("change", event => {
+    const input = event.target.closest("[data-checkout-qty]");
+    if (!input) return;
+    const slug = String(input.dataset.checkoutQty || "");
+    const item = read().find(entry => String(entry.slug) === slug);
+    if (!item) return;
+    const entered = Number(input.value);
+    const quantity = Math.max(1, Math.min(MAX_QTY, Math.floor(Number.isFinite(entered) ? entered : 1)));
+    setQty(slug, quantity);
+  }, true);
 
   document.addEventListener("keydown", e => { if (e.key === "Escape") setDrawer(false); });
   window.addEventListener("halalcart:updated", renderAll);
