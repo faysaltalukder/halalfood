@@ -163,7 +163,7 @@ async function fetchFinance(range=null,limit=3000){
 function makeShell(){
  adminApp.classList.add("admin-app");
  const menu=[
-  ["overview","⌂","Overview"],["analytics","◷","Analytics"],["orders","▣","Orders"],["products","◇","Products"],["content","▤","Website Content"],["customers","♙","Customers"],["finance","৳","Finance"],["reports","⇩","Reports"],["settings","⚙","Settings"]
+  ["overview","⌂","Overview"],["analytics","◷","Analytics"],["orders","▣","Orders"],["operations","⚒","Operations"],["products","◇","Products"],["content","▤","Website Content"],["customers","♙","Customers"],["finance","৳","Finance"],["reports","⇩","Reports"],["settings","⚙","Settings"]
  ];
  const links=menu.map(x=>'<a class="admin-nav-link '+(x[0]===pageName?"active":"")+'" href="./'+x[0]+'.html" '+(x[0]===pageName?'aria-current="page"':'')+'><span class="nav-icon">'+x[1]+'</span><span>'+x[2]+'</span></a>').join("");
  const shell='<aside class="admin-sidebar" id="adminSidebar">'+
