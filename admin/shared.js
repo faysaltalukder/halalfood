@@ -1,5 +1,9 @@
 (() => {
 "use strict";
+try{
+ const savedTheme=localStorage.getItem("hf_admin_theme");
+ document.documentElement.dataset.adminTheme=savedTheme==="light"?"light":"dark";
+}catch(_themeError){document.documentElement.dataset.adminTheme="dark";}
 const SUPABASE_URL="https://qfwvrcfkrsydycbfjsxf.supabase.co";
 const SUPABASE_KEY="sb_publishable_X32Rb8W-axGIfgFuppdfZQ_jbc38pcL";
 const ADMIN_EMAIL="halalfoodbd.official@gmail.com";
