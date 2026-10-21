@@ -1,3 +1,25 @@
+// Load the server-managed catalog on every public page that includes this shared script.
+// Pages that already include it explicitly are left untouched.
+(function ensureLiveCatalogScript() {
+  const alreadyIncluded = Array.from(document.scripts).some(script =>
+    /(?:^|\/)live-catalog\.js(?:\?|$)/i.test(script.src)
+  );
+  if (alreadyIncluded) return;
+  const mainScript = Array.from(document.scripts).find(script =>
+    /(?:^|\/)js\/main\.js(?:\?|$)/i.test(script.src)
+  );
+  if (!mainScript) return;
+  try {
+    const siteRoot = new URL("../", mainScript.src);
+    const script = document.createElement("script");
+    script.src = new URL("js/live-catalog.js?v=20261021-catalog-global-v1", siteRoot).href;
+    script.async = true;
+    document.head.appendChild(script);
+  } catch (error) {
+    console.warn("Could not initialize the live catalog script.", error);
+  }
+})();
+
 function makeOrderId() {
   const a = new Uint32Array(1);
   crypto.getRandomValues(a);
