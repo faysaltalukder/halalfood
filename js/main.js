@@ -685,6 +685,20 @@ document.addEventListener("DOMContentLoaded", () => {
   quantityMinus?.addEventListener("click", () => syncQuantity(Number(quantityInput?.value) - 1));
   quantityPlus?.addEventListener("click", () => syncQuantity(Number(quantityInput?.value) + 1));
 
+  // Allow direct quantity entry on the single-product order form.
+  // Keep calculations live while the shopper types; normalize only on change.
+  quantityInput?.addEventListener("input", () => {
+    const raw = quantityInput.value;
+    if (raw === "") return;
+    const n = Number(raw);
+    if (!Number.isInteger(n) || n < 1 || n > 99) return;
+    if (productLineTotal && singleProduct) {
+      productLineTotal.textContent = money(priceNumber(singleProduct.price) * n);
+    }
+    updateCheckoutTotals();
+  });
+  quantityInput?.addEventListener("change", () => syncQuantity(quantityInput.value));
+
   document.querySelector("[data-remove-order]")?.addEventListener("click", () => {
     window.location.href = document.querySelector("[data-remove-order]")?.dataset.home || "index.html";
   });
