@@ -257,7 +257,7 @@ window.HFAdminReady.then(async H=>{
    const search=String($("orderSearch")?.value||$("globalSearch")?.value||"").toLowerCase().trim(),status=$("orderStatusFilter")?.value||"";
    const rows=all.filter(o=>(!status||o.status===status)&&(!search||[o.order_number,o.customer_name,o.customer_phone,o.customer_email,o.id,...(o.order_items||[]).map(i=>i.product_name)].join(" ").toLowerCase().includes(search)));
    $("ordersFoundCount").textContent=rows.length.toLocaleString("en-BD")+" orders";
-   $("ordersDataBody").innerHTML=rows.length?rows.map(o=>'<tr><td><strong>'+esc(o.order_number||String(o.id).slice(0,8))+'</strong><small>'+esc(String(o.id).slice(0,8))+'</small></td><td><strong>'+esc(o.customer_name||"Guest")+'</strong><small>'+esc(o.customer_phone||"No phone")+'</small></td><td>'+esc((o.order_items||[]).slice(0,2).map(x=>x.product_name+" × "+x.quantity+" "+(x.unit||"")).join(", ")||"No item detail")+'</td><td>'+money(o.subtotal)+'</td><td>'+money(o.delivery_charge)+'</td><td><strong>'+money(o.total)+'</strong></td><td><select class="hf-select order-status-select" data-order-id="'+esc(o.id)+'" style="min-width:120px;padding:7px;font-size:11px">'+statusOptions.map(s=>'<option value="'+s+'" '+(s===o.status?"selected":"")+'>'+s.charAt(0).toUpperCase()+s.slice(1)+'</option>').join("")+'</select>'+(o.status==="cancelled"&&o.cancellation_reason?'<small>'+esc(o.cancellation_reason)+'</small>':"")+'</td><td>'+dateTime(o.ordered_at)+'</td><td><div class="hf-table-actions"><button class="hf-button hf-button-secondary hf-button-small" data-order-details="'+esc(o.id)+'">Details</button></div></td></tr>').join(""):'<tr><td colspan="9">'+makeEmpty("No matching orders","Try another status or a shorter search term.")+'</td></tr>';
+   $("ordersDataBody").innerHTML=rows.length?rows.map(o=>'<tr><td><strong>'+esc(o.order_number||String(o.id).slice(0,8))+'</strong><small>'+esc(String(o.id).slice(0,8))+'</small></td><td><strong>'+esc(o.customer_name||"Guest")+'</strong><small>'+esc(o.customer_phone||"No phone")+'</small></td><td>'+esc((o.order_items||[]).slice(0,2).map(x=>x.product_name+" × "+x.quantity+" "+(x.unit||"")).join(", ")||"No item detail")+'</td><td>'+money(o.subtotal)+'</td><td>'+money(o.delivery_charge)+'</td><td><strong>'+money(o.total)+'</strong></td><td><select class="hf-select order-status-select" data-order-id="'+esc(o.id)+'" style="min-width:120px;padding:7px;font-size:11px">'+statusOptions.map(s=>'<option value="'+s+'" '+(s===o.status?"selected ":"")+(o.status==="cancelled"&&s!=="cancelled"?"disabled ":"")+'>'+s.charAt(0).toUpperCase()+s.slice(1)+'</option>').join("")+'</select>'+(o.status==="cancelled"&&o.cancellation_reason?'<small>'+esc(o.cancellation_reason)+'</small>':"")+'</td><td>'+dateTime(o.ordered_at)+'</td><td><div class="hf-table-actions"><button class="hf-button hf-button-secondary hf-button-small" data-order-details="'+esc(o.id)+'">Details</button></div></td></tr>').join(""):'<tr><td colspan="9">'+makeEmpty("No matching orders","Try another status or a shorter search term.")+'</td></tr>';
   }
   async function refresh(){all=await fetchOrders(null,5000);render();$("ordersUpdated").textContent="Updated "+dateTime(new Date().toISOString());}
   $("orderSearch")?.addEventListener("input",render);$("orderStatusFilter")?.addEventListener("change",render);
@@ -709,7 +709,7 @@ async function refresh(){[products,categories]=await Promise.all([fetchProducts(
    }catch(err){toast(err.message||"Excel export failed.","error");}
   });
   $("downloadPdfBtn")?.addEventListener("click",async()=>{try{if(!report.rows.length)await buildReport();$("printReportTitle").textContent=report.title;$("printReportDetails").textContent=report.rangeLabel+" · "+report.rows.length+" records · "+new Date().toLocaleString("en-BD");await audit("report_printed","report",null,report.title+" opened for PDF/printing",{rows:report.rows.length,type:report.type});window.print();}catch(err){toast(err.message||"Could not prepare print report.","error");}});
-  $("includePersonalData")?.addEventListener("change",()=>{report.rows=[];});
+  $("includePersonalData")?.addEventListener("change",()=>{buildReport().catch(err=>toast(err.message||"Could not refresh the report preview.","error"));});
   bindRangeControls(()=>buildReport());await buildReport();attachRefresh(buildReport);
  }
  async function initSettings(){
@@ -760,11 +760,24 @@ async function refresh(){[products,categories]=await Promise.all([fetchProducts(
   if(!actions[page]){toast("This section is not available yet.","error");return;}
   actions[page]().catch(err=>{console.error("Admin page failed",page,err);toast("The page could not load its data. "+(err?.message||"Please refresh and try again."),"error");});
  }
- $("globalSearch")?.addEventListener("input",e=>{
-  const q=String(e.target.value||"").toLowerCase().trim();
-  const table=document.querySelector("#adminMain .hf-table tbody");
-  if(table){table.querySelectorAll("tr").forEach(row=>{row.hidden=!!q&&!row.textContent.toLowerCase().includes(q);});}
- });
+ const globalSearchInput=$("globalSearch");
+ const adminMain=$("adminMain");
+ let globalSearchFrame=0;
+ function applyGlobalTableSearch(){
+  if(!adminMain)return;
+  const q=String(globalSearchInput?.value||"").toLowerCase().trim();
+  adminMain.querySelectorAll(".hf-table tbody tr").forEach(row=>{
+   row.hidden=!!q&&!row.textContent.toLowerCase().includes(q);
+  });
+ }
+ globalSearchInput?.addEventListener("input",applyGlobalTableSearch);
+ if(adminMain&&window.MutationObserver){
+  const globalSearchObserver=new MutationObserver(()=>{
+   if(globalSearchFrame)return;
+   globalSearchFrame=window.requestAnimationFrame(()=>{globalSearchFrame=0;applyGlobalTableSearch();});
+  });
+  globalSearchObserver.observe(adminMain,{subtree:true,childList:true,characterData:true});
+ }
  doInit();
 });
 })();
