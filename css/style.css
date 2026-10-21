@@ -2806,3 +2806,10 @@ main .section-head h3 {
 .checkout-page .checkout-delivery-fieldset .checkout-delivery-option {
   margin-top: 4px !important;
 }
+
+
+/* Improve readability of the delivery-area prompt. */
+.checkout-page .checkout-delivery-fieldset legend {
+  font-size: 1rem !important;
+  line-height: 1.35 !important;
+}
