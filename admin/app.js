@@ -527,9 +527,9 @@ async function refresh(){[products,categories]=await Promise.all([fetchProducts(
   function renderReconciliation(){
    const body=$("orderReconciliationTableBody");if(!body)return;
    body.innerHTML=orders.length?orders.map(o=>{
-    const linked=linkedIncomeTotal(o.id),cancelled=o.status==="cancelled",difference=Number(o.total||0)-linked;
-    return '<tr><td><strong>'+esc(o.order_number||String(o.id).slice(0,8))+'</strong><small>'+esc(o.customer_name||"Customer not named")+' · '+esc(o.customer_phone||"No phone")+'</small></td><td>'+dateOnly(o.ordered_at)+'</td><td>'+makeStatus(o.status)+'</td><td><strong>'+money(o.total)+'</strong><small>Recorded order value</small></td><td>'+money(linked)+'<small>Confirmed linked income only</small></td><td>'+(cancelled?"Not compared":money(difference))+'</td><td><button class="hf-button hf-button-secondary hf-button-small" data-record-income="'+esc(o.id)+'">Record income</button></td></tr>';
-   }).join(""):'<tr><td colspan="7">'+makeEmpty("No order records available","Orders will appear here when they are loaded.")+'</td></tr>';
+    const linked=linkedIncomeTotal(o.id),cancelled=o.status==="cancelled",difference=Number(o.total||0)-linked,method=String(o.payment_method||"not recorded").replace(/[_-]+/g," ");
+    return '<tr><td><strong>'+esc(o.order_number||String(o.id).slice(0,8))+'</strong><small>'+esc(o.customer_name||"Customer not named")+' · '+esc(o.customer_phone||"No phone")+'</small></td><td>'+dateOnly(o.ordered_at)+'</td><td>'+esc(method)+'</td><td>'+makeStatus(o.status)+'</td><td><strong>'+money(o.total)+'</strong><small>Recorded order value</small></td><td>'+money(linked)+'<small>Confirmed linked income only</small></td><td>'+(cancelled?"Not compared":money(difference))+'</td><td><button class="hf-button hf-button-secondary hf-button-small" data-record-income="'+esc(o.id)+'">Record income</button></td></tr>';
+   }).join(""):'<tr><td colspan="8">'+makeEmpty("No order records available","Orders will appear here when they are loaded.")+'</td></tr>';
    $("financeReconcileNote").textContent="Showing "+orders.length.toLocaleString("en-BD")+" recent order records. Confirmed income is a manual ledger entry linked to the order; it is not checked by a payment gateway. The difference is for review only—not profit, debt, or an amount due.";
   }
   function totals(){
