@@ -341,7 +341,7 @@ async function refresh(){[products,categories]=await Promise.all([fetchProducts(
     let imageUrl=$("productImageUrl").value.trim();const file=$("productImageFile").files?.[0];if(file)imageUrl=await uploadImage(file,"products",slug);
     const unit=$("productUnit").value.trim()||"piece";
     const displayPriceInput=$("productDisplayPrice").value.trim();
-    const displayPriceMatch=displayPriceInput.match(/[0-9][0-9,]*(?:\\.[0-9]+)?/);
+    const displayPriceMatch=displayPriceInput.match(/[0-9][0-9,]*(?:\.[0-9]+)?/);
     const displayPriceAmount=displayPriceMatch?Number(displayPriceMatch[0].replace(/,/g,"")):NaN;
     const displayPrice=displayPriceInput&&displayPriceAmount===price?displayPriceInput:("৳"+price.toLocaleString("en-BD")+" / "+unit);
     const payload={name,slug,category:category.name,category_slug:category.slug,price,unit_type:unit,display_price:displayPrice,image_url:imageUrl||null,short_description:$("productShortDescription").value.trim(),full_description:$("productFullDescription").value.trim(),stock_quantity:$("productStock").value===""?null:Number($("productStock").value),is_active:$("productActive").checked,is_featured:$("productFeatured").checked,sort_order:parseInt($("productSortOrder").value||"0",10)||0,seo_title:$("productSeoTitle").value.trim()||null,seo_description:$("productSeoDescription").value.trim()||null,cms_managed:true};
