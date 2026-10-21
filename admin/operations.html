@@ -43,7 +43,7 @@
 <form id="taskForm" class="ops-form">
 <label>Task title *<input id="taskTitle" class="hf-input" required maxlength="180" placeholder="Pack today's orders"></label>
 <label>Department<select id="taskDepartment" class="hf-select"><option>Operations</option><option>Packing</option><option>Customer service</option><option>Inventory</option><option>Finance</option><option>Marketing</option><option>Management</option></select></label>
-<label>Assigned to<input id="taskAssignee" class="hf-input" maxlength="180" placeholder="Staff name or email"></label>
+<label>Assigned to<select id="taskAssignee" class="hf-select"><option value="">Unassigned</option></select></label>
 <label>Priority<select id="taskPriority" class="hf-select"><option value="normal">Normal</option><option value="low">Low</option><option value="high">High</option><option value="urgent">Urgent</option></select></label>
 <label>Due date<input id="taskDueDate" class="hf-input" type="date"></label>
 <label>Related order (optional)<select id="taskOrder" class="hf-select"><option value="">No linked order</option></select></label>
@@ -52,6 +52,19 @@
 </form>
 <div class="hf-toolbar"><select id="taskStatusFilter" class="hf-select"><option value="">All task statuses</option><option value="todo">To do</option><option value="in_progress">In progress</option><option value="blocked">Blocked</option><option value="done">Done</option><option value="cancelled">Cancelled</option></select><input id="taskSearch" class="hf-input" type="search" placeholder="Search task or assignee"></div>
 <div class="hf-table-wrap"><table class="hf-table ops-table"><thead><tr><th>Task</th><th>Owner / due</th><th>Priority</th><th>Status</th><th>Action</th></tr></thead><tbody id="tasksBody"><tr><td colspan="5" class="hf-loading">Loading tasks…</td></tr></tbody></table></div>
+<section class="hf-card hf-card-pad" style="margin-top:16px;box-shadow:none">
+<div class="ops-title"><div><h2>Team directory</h2><p>Add staff contacts and assign daily tasks by name. This is not a login or payroll system.</p></div></div>
+<form id="teamForm" class="ops-form">
+<label>Staff name *<input id="teamName" class="hf-input" required maxlength="180"></label>
+<label>Role / title<input id="teamRole" class="hf-input" maxlength="180" placeholder="Order coordinator"></label>
+<label>Department<select id="teamDepartment" class="hf-select"><option>Operations</option><option>Packing</option><option>Customer service</option><option>Inventory</option><option>Finance</option><option>Marketing</option><option>Management</option></select></label>
+<label>Email<input id="teamEmail" class="hf-input" type="email" maxlength="180"></label>
+<label>Phone<input id="teamPhone" class="hf-input" maxlength="60"></label>
+<label class="wide">Notes<input id="teamNotes" class="hf-input" maxlength="1000" placeholder="Shift or handover notes"></label>
+<div class="wide"><button class="hf-button hf-button-primary" type="submit">＋ Add team member</button></div>
+</form>
+<div class="hf-table-wrap"><table class="hf-table ops-table"><thead><tr><th>Team member</th><th>Department / role</th><th>Contact</th><th>Status</th><th>Action</th></tr></thead><tbody id="teamBody"><tr><td colspan="5" class="hf-loading">Loading team…</td></tr></tbody></table></div>
+</section>
 </section>
 
 <section id="suppliersSection" class="hf-card hf-card-pad ops-section">
