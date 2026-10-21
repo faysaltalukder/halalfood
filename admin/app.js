@@ -92,13 +92,13 @@ window.HFAdminReady.then(async H=>{
    const today=localDateKey(now);
    const ordersLast30=orders.filter(o=>o.ordered_at&&new Date(o.ordered_at)>=new Date(range.from)&&new Date(o.ordered_at)<=now);
    const todayOrders=orders.filter(o=>localDateKey(o.ordered_at)===today);
-   const todayUnits=todayOrders.filter(o=>o.status!=="cancelled").reduce((sum,o)=>sum+(o.order_items||[]).reduce((subtotal,item)=>subtotal+Math.max(0,Number(item.quantity)||0),0),0);
+   const todayItemLines=todayOrders.filter(o=>o.status!=="cancelled").reduce((sum,o)=>sum+(o.order_items||[]).length,0);
    const todayCartEvents=events.filter(e=>e.event_name==="add_to_cart"&&localDateKey(e.occurred_at)===today).length;
    const pendingCount=orders.filter(o=>o.status==="pending").length;
    const orderValue=ordersLast30.filter(o=>o.status!=="cancelled").reduce((sum,o)=>sum+Number(o.total||0),0);
    const lowStock=products.filter(p=>p.is_active&&p.stock_quantity!==null&&p.stock_quantity!==undefined&&p.stock_quantity!==""&&Number.isFinite(Number(p.stock_quantity))&&Number(p.stock_quantity)<=5).length;
    $("kpiOrders").textContent=shortNum(ordersLast30.length);
-   $("kpiTodayUnits").textContent=shortNum(todayUnits);
+   $("kpiTodayItems").textContent=shortNum(todayItemLines);
    $("kpiPending").textContent=shortNum(pendingCount);
    $("kpiCart").textContent=shortNum(todayCartEvents);
    $("kpiOrderValue").textContent=money(orderValue);
@@ -115,7 +115,7 @@ window.HFAdminReady.then(async H=>{
     :"Finance summary could not be loaded. Refresh after signing in to the authorized admin account and completing MFA. Cash-on-hand and courier settlement are not currently tracked.";
    const labels=dateKeys(14);
    drawChart("overviewOperationsChart",{type:"line",data:{labels:labels.map(dateOnly),datasets:[
-    {label:"Units in orders",data:labels.map(day=>orders.filter(o=>localDateKey(o.ordered_at)===day&&o.status!=="cancelled").reduce((sum,o)=>sum+(o.order_items||[]).reduce((s,item)=>s+Math.max(0,Number(item.quantity)||0),0),0)),borderColor:palette.orange,backgroundColor:"#C97B3D22",fill:true,tension:.32,pointRadius:2,borderWidth:2},
+    {label:"Order item lines",data:labels.map(day=>orders.filter(o=>localDateKey(o.ordered_at)===day&&o.status!=="cancelled").reduce((sum,o)=>sum+(o.order_items||[]).length,0)),borderColor:palette.orange,backgroundColor:"#C97B3D22",fill:true,tension:.32,pointRadius:2,borderWidth:2},
     {label:"Add-to-cart events",data:labels.map(day=>events.filter(e=>e.event_name==="add_to_cart"&&localDateKey(e.occurred_at)===day).length),borderColor:palette.blue,backgroundColor:"#5B86B51a",fill:false,tension:.32,pointRadius:2,borderWidth:2}
    ]},options:{...chartAxisOptions(),plugins:{legend:{position:"bottom"}},onClick:(ev,items)=>{if(items.length)location.href=items[0].datasetIndex===0?"./orders.html":"./analytics.html";}}});
    const financeCanvas=$("overviewFinanceChart");
@@ -138,7 +138,7 @@ window.HFAdminReady.then(async H=>{
    renderTopProducts($("overviewTopProducts"),topProducts(events,products).slice(0,5));
    renderRecentOrders(orders);
    $("overviewUpdated").textContent="Updated "+new Date().toLocaleTimeString("en-BD",{hour:"2-digit",minute:"2-digit"});
-   $("overviewDataNote").textContent=events.length+" website events were returned for the last 30 days; "+orders.length+" total order records are available. 'Units in today's orders' counts saved item quantities for orders placed today, excluding cancelled orders. Add-to-cart is an event count, not current cart contents. These records do not prove payment or delivery.";
+   $("overviewDataNote").textContent=events.length+" website events were returned for the last 30 days; "+orders.length+" total order records are available. 'Order item lines today' counts saved product lines for orders placed today, excluding cancelled orders; quantity units can differ by product. Add-to-cart is an event count, not current cart contents. These records do not prove payment or delivery.";
   }
   await refresh();attachRefresh(refresh);
  }
