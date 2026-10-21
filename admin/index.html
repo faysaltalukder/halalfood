@@ -212,7 +212,7 @@ th{background:#17243A;color:#91A4BF}
       <div class="cms-preview-row cms-span-2"><img id="productPreview" class="hidden" alt="Product preview"><p class="muted">Image preview</p></div>
       <label class="cms-span-2">Short description<textarea id="productShortDescription" rows="2" maxlength="500" placeholder="Shown on product cards and search results"></textarea></label>
       <label class="cms-span-2">Full description<textarea id="productFullDescription" rows="5" placeholder="Product details shown on its detail page"></textarea></label>
-      <div class="cms-inline-fields"><label>Stock quantity (optional)<input id="productStock" type="number" min="0" step="any" placeholder="Leave blank if not tracked"></label><label>Display order<input id="productSortOrder" type="number" step="1" value="0"></label></div>
+      <div class="cms-inline-fields"><label>Stock quantity (0–1,000)<input id="productStock" type="number" min="0" max="1000" step="1" required placeholder="New products start at 1,000"><small>Whole numbers only. Sales reduce the stock; 0 means out of stock.</small></label><label>Display order<input id="productSortOrder" type="number" step="1" value="0"></label></div>
       <label>SEO title<input id="productSeoTitle" maxlength="180"></label>
       <label>SEO description<input id="productSeoDescription" maxlength="320"></label>
       <div class="cms-check-row cms-span-2"><label><input id="productActive" type="checkbox" checked> Visible on the store</label><label><input id="productFeatured" type="checkbox"> Feature on the homepage</label></div>
