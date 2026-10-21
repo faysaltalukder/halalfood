@@ -353,6 +353,7 @@
 
   const textState = new WeakMap();
   const attrState = new WeakMap();
+  const chartState = new WeakMap();
   const attrNames = ["placeholder", "title", "aria-label", "alt"];
   const ignoredTags = new Set(["SCRIPT", "STYLE", "TEXTAREA", "CODE", "PRE"]);
 
@@ -362,7 +363,33 @@
   }
 
   function translated(value, lang) {
-    return lang === "bn" ? (translations[value] || value) : value;
+    if (lang !== "bn") return value;
+    if (translations[value]) return translations[value];
+    const titleCase = value ? value.charAt(0).toUpperCase() + value.slice(1) : value;
+    return translations[titleCase] || value;
+  }
+
+  function translateChart(chart, lang = language()) {
+    if (!chart?.data) return;
+    let state = chartState.get(chart);
+    if (!state) {
+      state = {
+        labels: Array.isArray(chart.data.labels) ? chart.data.labels.slice() : null,
+        datasets: (chart.data.datasets || []).map(dataset => dataset.label)
+      };
+      chartState.set(chart, state);
+    }
+    if (state.labels) chart.data.labels = state.labels.map(label => translated(String(label ?? ""), lang));
+    (chart.data.datasets || []).forEach((dataset, index) => {
+      if (state.datasets[index] !== undefined) dataset.label = translated(String(state.datasets[index] ?? ""), lang);
+    });
+    chart.update?.("none");
+  }
+
+  function translateCharts(lang = language()) {
+    const charts = window.HFAdmin?.charts;
+    if (!charts) return;
+    Object.values(charts).forEach(chart => translateChart(chart, lang));
   }
 
   function isPickerOption(node) {
@@ -476,6 +503,7 @@
     translateTree(document.documentElement, lang);
     document.querySelectorAll(".hf-language-picker select").forEach(select => { select.value = lang; });
     document.documentElement.dataset.adminLanguage = lang;
+    translateCharts(lang);
   }
 
   function boot() {
@@ -499,5 +527,5 @@
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot, { once: true });
   else boot();
-  window.HFAdminLanguage = { language, applyLanguage, translateTree, dictionary: translations };
+  window.HFAdminLanguage = { language, applyLanguage, translateTree, translateChart, translateCharts, dictionary: translations };
 })();
