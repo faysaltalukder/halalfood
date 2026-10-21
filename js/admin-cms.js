@@ -2,9 +2,9 @@
 (function () {
   "use strict";
   const ADMIN_EMAIL = "halalfoodbd.official@gmail.com";
-  const PRODUCT_FIELDS = "id,name,slug,category,category_slug,price,unit_type,display_price,image_url,short_description,full_description,stock_quantity,is_active,is_featured,sort_order,seo_title,seo_description,updated_at,created_at";
-  const CATEGORY_FIELDS = "id,name,slug,description,image_url,is_active,sort_order,updated_at,created_at";
-  const POST_FIELDS = "id,title,slug,excerpt,content,featured_image_url,category,status,published_at,seo_title,seo_description,updated_at,created_at";
+  const PRODUCT_FIELDS = "id,name,slug,category,category_slug,price,unit_type,display_price,image_url,short_description,full_description,stock_quantity,is_active,is_featured,sort_order,seo_title,seo_description,cms_created,updated_at,created_at";
+  const CATEGORY_FIELDS = "id,name,slug,description,image_url,is_active,sort_order,cms_created,updated_at,created_at";
+  const POST_FIELDS = "id,title,slug,excerpt,content,featured_image_url,category,status,published_at,seo_title,seo_description,cms_created,updated_at,created_at";
   const state = { products: [], categories: [], posts: [], ready: false, loading: false };
   const el = id => document.getElementById(id);
   const esc = value => String(value ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
@@ -222,6 +222,7 @@
       const stockRaw = el("productStock").value.trim();
       const row = {
         name, slug, category: category.name, category_slug: category.slug,
+        cms_created: id ? Boolean(state.products.find(p => p.id === id)?.cms_created || state.products.find(p => p.id === id)?.slug !== slug) : true,
         price, unit_type: unit, display_price: displayPrice, image_url: image,
         short_description: el("productShortDescription").value.trim(),
         full_description: el("productFullDescription").value.trim(),
@@ -285,7 +286,7 @@
       let image = el("categoryImageUrl").value.trim() || null;
       const uploaded = await uploadImage(el("categoryImageFile"), "categories", slug);
       if (uploaded) image = uploaded;
-      const row = { name, slug, description: el("categoryDescription").value.trim(), image_url: image,
+      const row = { name, slug, cms_created: id ? Boolean(state.categories.find(x => x.id === id)?.cms_created) : true, description: el("categoryDescription").value.trim(), image_url: image,
         sort_order: Number(el("categorySortOrder").value || 0), is_active: el("categoryActive").checked, updated_at: new Date().toISOString() };
       let result;
       if (id) {
@@ -350,7 +351,7 @@
       const status = el("postStatus").value;
       const old = state.posts.find(p => p.id === id);
       const row = {
-        title, slug, excerpt: el("postExcerpt").value.trim(), content: el("postContent").value.trim(),
+        title, slug, cms_created: id ? Boolean(state.posts.find(p => p.id === id)?.cms_created) : true, excerpt: el("postExcerpt").value.trim(), content: el("postContent").value.trim(),
         featured_image_url: image, category: el("postCategory").value.trim() || "Guides", status,
         published_at: status === "published" ? (old?.published_at || new Date().toISOString()) : null,
         seo_title: el("postSeoTitle").value.trim() || title + " | Halal Food Blog",
