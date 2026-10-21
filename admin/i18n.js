@@ -348,9 +348,7 @@
     "Choose a customer email to review their orders without leaving the admin panel.": "অ্যাডমিন প্যানেল না ছেড়ে অর্ডার দেখতে গ্রাহকের ইমেইল বেছে নিন।",
     "Load orders to choose a customer": "গ্রাহক বেছে নিতে অর্ডার লোড করুন", "Products subtotal": "পণ্যের উপমোট",
     "Delivery area": "ডেলিভারি এলাকা", "Customer order history will appear here.": "গ্রাহকের অর্ডারের ইতিহাস এখানে দেখা যাবে।",
-    "Payment": "পেমেন্ট"
-  };
-
+    "Payment": "পেমেন্ট",
     "This is visible-tab time, not proof of attention. Google Analytics 4 remains the place to review referral and acquisition source data.": "এটি শুধু ট্যাব দৃশ্যমান থাকার সময়; মনোযোগ দেওয়ার প্রমাণ নয়। রেফারেল ও ট্রাফিকের উৎস দেখতে Google Analytics 4 ব্যবহার করুন।",
     "The funnel uses distinct available session or anonymous identifiers per event type where present. Missing IDs and events may affect conversion rates.": "ফানেল প্রতিটি ইভেন্টের জন্য উপলভ্য স্বতন্ত্র সেশন বা অজ্ঞাত পরিচয় ব্যবহার করে। আইডি বা ইভেন্ট অনুপস্থিত থাকলে কনভার্সন রেট বদলে যেতে পারে।",
     "Event": "ইভেন্ট",
@@ -400,6 +398,7 @@
     "Save placeholder record": "নমুনা রেকর্ড সংরক্ষণ",
     "JPG, PNG, WebP or AVIF, maximum 5 MB. Upload requires the existing store-content storage permission.": "JPG, PNG, WebP বা AVIF; সর্বোচ্চ ৫ MB। আপলোডের জন্য store-content স্টোরেজের বর্তমান অনুমতি প্রয়োজন।",
     "Warn when tracked stock reaches this level or below. Each product can have its own threshold.": "ট্র্যাক করা স্টক এই মাত্রায় বা এর নিচে নামলে সতর্ক করুন। প্রতিটি পণ্যের আলাদা সীমা থাকতে পারে।",
+  };
 
   const textState = new WeakMap();
   const attrState = new WeakMap();
