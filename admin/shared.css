@@ -471,3 +471,82 @@ html[data-admin-theme="light"] .auth-gate-card p{color:#737487}
  .theme-toggle{width:38px;min-width:38px;padding:7px 0;justify-content:center}
  .theme-toggle-label{display:none}
 }
+
+
+/* Business-state semantics: consistent, readable signals across every admin section.
+   These additions only style existing status badges; they do not add data or storage. */
+.hf-status-completed,.hf-status-complete,.hf-status-done,.hf-status-success,.hf-status-succeeded,
+.hf-status-received,.hf-status-approved,.hf-status-settled,.hf-status-reconciled,.hf-status-verified,
+.hf-status-posted,.hf-status-in-stock,.hf-status-available{
+ background:rgba(16,185,129,.13);color:#6EE7BE;border-color:rgba(16,185,129,.27)
+}
+.hf-status-ordered,.hf-status-new,.hf-status-in-progress,.hf-status-in-transit,.hf-status-packed,
+.hf-status-prepared,.hf-status-returned,.hf-status-refunded,.hf-status-queued{
+ background:rgba(79,124,255,.13);color:#9BB6FF;border-color:rgba(79,124,255,.26)
+}
+.hf-status-partially-received,.hf-status-partially-shipped,.hf-status-partially-refunded,
+.hf-status-awaiting,.hf-status-on-hold,.hf-status-hold,.hf-status-low-stock,.hf-status-limited-stock,
+.hf-status-requested,.hf-status-to-do,.hf-status-todo,.hf-status-unpaid{
+ background:rgba(245,158,11,.13);color:#FBC66A;border-color:rgba(245,158,11,.28)
+}
+.hf-status-failed,.hf-status-rejected,.hf-status-inactive,.hf-status-disabled,.hf-status-blocked,
+.hf-status-expired,.hf-status-error,.hf-status-out-of-stock,.hf-status-unavailable,.hf-status-overdue,
+.hf-status-declined,.hf-status-duplicate,.hf-status-unpaid{
+ background:rgba(240,82,116,.13);color:#FFA0B3;border-color:rgba(240,82,116,.26)
+}
+
+/* Keep semantic status colors legible in the light theme as well. */
+html[data-admin-theme="light"] .hf-status-completed,
+html[data-admin-theme="light"] .hf-status-complete,
+html[data-admin-theme="light"] .hf-status-done,
+html[data-admin-theme="light"] .hf-status-success,
+html[data-admin-theme="light"] .hf-status-succeeded,
+html[data-admin-theme="light"] .hf-status-received,
+html[data-admin-theme="light"] .hf-status-approved,
+html[data-admin-theme="light"] .hf-status-settled,
+html[data-admin-theme="light"] .hf-status-reconciled,
+html[data-admin-theme="light"] .hf-status-verified,
+html[data-admin-theme="light"] .hf-status-posted,
+html[data-admin-theme="light"] .hf-status-in-stock,
+html[data-admin-theme="light"] .hf-status-available{
+ background:#E7F5EC;color:#23744A;border-color:#CDE8D6
+}
+html[data-admin-theme="light"] .hf-status-ordered,
+html[data-admin-theme="light"] .hf-status-new,
+html[data-admin-theme="light"] .hf-status-in-progress,
+html[data-admin-theme="light"] .hf-status-in-transit,
+html[data-admin-theme="light"] .hf-status-packed,
+html[data-admin-theme="light"] .hf-status-prepared,
+html[data-admin-theme="light"] .hf-status-returned,
+html[data-admin-theme="light"] .hf-status-refunded,
+html[data-admin-theme="light"] .hf-status-queued{
+ background:#EAF1FB;color:#416F9D;border-color:#D5E2F0
+}
+html[data-admin-theme="light"] .hf-status-partially-received,
+html[data-admin-theme="light"] .hf-status-partially-shipped,
+html[data-admin-theme="light"] .hf-status-partially-refunded,
+html[data-admin-theme="light"] .hf-status-awaiting,
+html[data-admin-theme="light"] .hf-status-on-hold,
+html[data-admin-theme="light"] .hf-status-hold,
+html[data-admin-theme="light"] .hf-status-low-stock,
+html[data-admin-theme="light"] .hf-status-limited-stock,
+html[data-admin-theme="light"] .hf-status-requested,
+html[data-admin-theme="light"] .hf-status-to-do,
+html[data-admin-theme="light"] .hf-status-todo{
+ background:#FFF0D9;color:#98641C;border-color:#F1DDB7
+}
+html[data-admin-theme="light"] .hf-status-failed,
+html[data-admin-theme="light"] .hf-status-rejected,
+html[data-admin-theme="light"] .hf-status-inactive,
+html[data-admin-theme="light"] .hf-status-disabled,
+html[data-admin-theme="light"] .hf-status-blocked,
+html[data-admin-theme="light"] .hf-status-expired,
+html[data-admin-theme="light"] .hf-status-error,
+html[data-admin-theme="light"] .hf-status-out-of-stock,
+html[data-admin-theme="light"] .hf-status-unavailable,
+html[data-admin-theme="light"] .hf-status-overdue,
+html[data-admin-theme="light"] .hf-status-declined,
+html[data-admin-theme="light"] .hf-status-duplicate,
+html[data-admin-theme="light"] .hf-status-unpaid{
+ background:#FFECE8;color:#A33E32;border-color:#F2D0CA
+}
