@@ -268,10 +268,10 @@
     const whats = $('.product-detail-actions a[href*="wa.me"]', article);
     if (whats) whats.href = "https://wa.me/8801842031164?text=" + message;
     const detail = $(".product-description-section .product-description-inner p", article);
-    if (detail && product.cms_created) detail.textContent = product.full_description || product.description || "";
+    if (detail && product.cms_managed) detail.textContent = product.full_description || product.description || "";
     const seo = document.querySelector('meta[name="description"]');
-    if (seo && product.cms_created && product.seo_description) seo.content = product.seo_description;
-    document.title = product.cms_created ? (product.seo_title || product.name + " | Halal Food") : document.title;
+    if (seo && product.cms_managed && product.seo_description) seo.content = product.seo_description;
+    document.title = product.cms_managed ? (product.seo_title || product.name + " | Halal Food") : document.title;
   }
   function handleProductResult(product, info) {
     if (info.kind === "product") renderProductDetail([product], info);
@@ -279,7 +279,7 @@
   async function start() {
     const info = pathInfo();
     const [products, categories] = await Promise.all([
-      readTable("products", { select: "id,name,slug,category,category_slug,price,unit_type,display_price,image_url,short_description,full_description,description,is_active,is_featured,cms_created,sort_order,seo_title,seo_description,stock_quantity", is_active: "eq.true", order: "sort_order.asc,name.asc", limit: "1000" }),
+      readTable("products", { select: "id,name,slug,category,category_slug,price,unit_type,display_price,image_url,short_description,full_description,description,is_active,is_featured,cms_created,cms_managed,sort_order,seo_title,seo_description,stock_quantity", is_active: "eq.true", order: "sort_order.asc,name.asc", limit: "1000" }),
       readTable("categories", { select: "id,name,slug,description,image_url,is_active,cms_created,sort_order", is_active: "eq.true", order: "sort_order.asc,name.asc", limit: "500" })
     ]);
     if (info.kind === "home") renderHome(products, categories);
