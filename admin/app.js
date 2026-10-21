@@ -72,27 +72,73 @@ window.HFAdminReady.then(async H=>{
   body.innerHTML=orders.length?orders.slice(0,7).map(o=>'<tr><td><strong>'+esc(o.order_number||String(o.id).slice(0,8))+'</strong><small>'+dateTime(o.ordered_at)+'</small></td><td>'+esc(o.customer_name||"Guest")+'</td><td>'+money(o.total)+'</td><td>'+makeStatus(o.status)+'</td><td><a class="hf-button hf-button-secondary hf-button-small" href="./orders.html">Open</a></td></tr>').join(""):'<tr><td colspan="5">'+makeEmpty("No orders in this period","New order records will appear here.")+'</td></tr>';
  }
  async function initOverview(){
+  const localDateKey=value=>{
+   const d=value instanceof Date?value:new Date(value);
+   if(Number.isNaN(d.getTime()))return "";
+   return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+  };
+  const dateKeys=days=>{
+   const keys=[],base=new Date();base.setHours(12,0,0,0);
+   for(let i=Math.max(1,days)-1;i>=0;i--){const d=new Date(base);d.setDate(d.getDate()-i);keys.push(localDateKey(d));}
+   return keys;
+  };
   async function refresh(){
-   const range={from:new Date(Date.now()-30*86400000).toISOString(),to:new Date().toISOString(),days:30,label:"Last 30 days"};
-   const [orders,events,products]=await Promise.all([fetchOrders(range,5000),fetchEvents(range,15000),fetchProducts()]);
-   const orderValue=orders.filter(o=>o.status!=="cancelled").reduce((sum,o)=>sum+Number(o.total||0),0);
-   $("kpiPageViews").textContent=shortNum(events.filter(e=>e.event_name==="page_view").length);
-   $("kpiProductViews").textContent=shortNum(events.filter(e=>e.event_name==="view_item").length);
-   $("kpiOrders").textContent=shortNum(orders.length);
+   const now=new Date();
+   const range={from:new Date(now.getTime()-30*86400000).toISOString(),to:now.toISOString(),days:30,label:"Last 30 days"};
+   const [orders,events,products]=await Promise.all([fetchOrders(null,5000),fetchEvents(range,15000),fetchProducts()]);
+   let finance=[],financeAvailable=true;
+   try{finance=await fetchFinance(null,3000);}
+   catch(err){financeAvailable=false;console.warn("Overview finance summary is unavailable for this session.",err);}
+   const today=localDateKey(now);
+   const ordersLast30=orders.filter(o=>o.ordered_at&&new Date(o.ordered_at)>=new Date(range.from)&&new Date(o.ordered_at)<=now);
+   const todayOrders=orders.filter(o=>localDateKey(o.ordered_at)===today);
+   const todayUnits=todayOrders.filter(o=>o.status!=="cancelled").reduce((sum,o)=>sum+(o.order_items||[]).reduce((subtotal,item)=>subtotal+Math.max(0,Number(item.quantity)||0),0),0);
+   const todayCartEvents=events.filter(e=>e.event_name==="add_to_cart"&&localDateKey(e.occurred_at)===today).length;
+   const pendingCount=orders.filter(o=>o.status==="pending").length;
+   const orderValue=ordersLast30.filter(o=>o.status!=="cancelled").reduce((sum,o)=>sum+Number(o.total||0),0);
+   const lowStock=products.filter(p=>p.is_active&&p.stock_quantity!==null&&p.stock_quantity!==undefined&&p.stock_quantity!==""&&Number.isFinite(Number(p.stock_quantity))&&Number(p.stock_quantity)<=5).length;
+   $("kpiOrders").textContent=shortNum(ordersLast30.length);
+   $("kpiTodayUnits").textContent=shortNum(todayUnits);
+   $("kpiPending").textContent=shortNum(pendingCount);
+   $("kpiCart").textContent=shortNum(todayCartEvents);
    $("kpiOrderValue").textContent=money(orderValue);
-   $("kpiPending").textContent=shortNum(orders.filter(o=>o.status==="pending").length);
-   $("kpiCart").textContent=shortNum(events.filter(e=>e.event_name==="add_to_cart").length);
    $("kpiNote").textContent=range.label+" · recorded order value is not verified cash income.";
-   const days=14,labels=lastDateKeys(days);
-   drawChart("overviewTrafficChart",{type:"line",data:{labels:labels.map(d=>dateOnly(d)),datasets:[
-    {label:"Page views",data:labels.map(d=>events.filter(e=>e.event_name==="page_view"&&String(e.occurred_at).slice(0,10)===d).length),borderColor:palette.blue,backgroundColor:"#5B86B51a",fill:true,tension:.35,pointRadius:2,borderWidth:2},
-    {label:"Product views",data:labels.map(d=>events.filter(e=>e.event_name==="view_item"&&String(e.occurred_at).slice(0,10)===d).length),borderColor:palette.orange,backgroundColor:"#C97B3D18",fill:true,tension:.35,pointRadius:2,borderWidth:2}
+   $("kpiLowStock").textContent=shortNum(lowStock);
+   const confirmedFinance=finance.filter(e=>e.status==="confirmed");
+   const income=confirmedFinance.filter(e=>e.entry_type==="income").reduce((sum,e)=>sum+Number(e.amount||0),0);
+   const expenses=confirmedFinance.filter(e=>e.entry_type==="expense").reduce((sum,e)=>sum+Number(e.amount||0),0);
+   $("financeSummaryIncome").textContent=financeAvailable?money(income):"Unavailable";
+   $("financeSummaryExpenses").textContent=financeAvailable?money(expenses):"Unavailable";
+   $("financeSummaryNet").textContent=financeAvailable?money(income-expenses):"Unavailable";
+   $("financeSummaryNote").textContent=financeAvailable
+    ?"All-time totals use confirmed manual ledger entries only. Net recorded ledger is not a cash-on-hand balance; cash accounts and courier COD settlement are not tracked yet."
+    :"Finance summary could not be loaded. Refresh after signing in to the authorized admin account and completing MFA. Cash-on-hand and courier settlement are not currently tracked.";
+   const labels=dateKeys(14);
+   drawChart("overviewOperationsChart",{type:"line",data:{labels:labels.map(dateOnly),datasets:[
+    {label:"Units in orders",data:labels.map(day=>orders.filter(o=>localDateKey(o.ordered_at)===day&&o.status!=="cancelled").reduce((sum,o)=>sum+(o.order_items||[]).reduce((s,item)=>s+Math.max(0,Number(item.quantity)||0),0),0)),borderColor:palette.orange,backgroundColor:"#C97B3D22",fill:true,tension:.32,pointRadius:2,borderWidth:2},
+    {label:"Add-to-cart events",data:labels.map(day=>events.filter(e=>e.event_name==="add_to_cart"&&localDateKey(e.occurred_at)===day).length),borderColor:palette.blue,backgroundColor:"#5B86B51a",fill:false,tension:.32,pointRadius:2,borderWidth:2}
+   ]},options:{...chartAxisOptions(),plugins:{legend:{position:"bottom"}},onClick:(ev,items)=>{if(items.length)location.href=items[0].datasetIndex===0?"./orders.html":"./analytics.html";}}});
+   const financeCanvas=$("overviewFinanceChart");
+   if(financeAvailable){
+    if(financeCanvas)financeCanvas.hidden=false;
+    $("overviewFinanceChartNote").textContent="Confirmed manual entries only. This chart is not a bank balance or COD settlement report.";
+    drawChart("overviewFinanceChart",{type:"bar",data:{labels:labels.map(dateOnly),datasets:[
+     {label:"Recorded income",data:labels.map(day=>confirmedFinance.filter(e=>e.entry_type==="income"&&String(e.entry_date||"").slice(0,10)===day).reduce((sum,e)=>sum+Number(e.amount||0),0)),backgroundColor:palette.green,borderRadius:5,maxBarThickness:24},
+     {label:"Recorded expenses",data:labels.map(day=>confirmedFinance.filter(e=>e.entry_type==="expense"&&String(e.entry_date||"").slice(0,10)===day).reduce((sum,e)=>sum+Number(e.amount||0),0)),backgroundColor:palette.orange,borderRadius:5,maxBarThickness:24}
+    ]},options:{...chartAxisOptions(),plugins:{legend:{position:"bottom"}},onClick:()=>{location.href="./finance.html";}}});
+   }else{
+    if(financeCanvas)financeCanvas.hidden=true;
+    $("overviewFinanceChartNote").textContent="Finance data is unavailable for this session. Complete admin MFA to view confirmed ledger entries.";
+   }
+   drawChart("overviewTrafficChart",{type:"line",data:{labels:labels.map(dateOnly),datasets:[
+    {label:"Page views",data:labels.map(day=>events.filter(e=>e.event_name==="page_view"&&localDateKey(e.occurred_at)===day).length),borderColor:palette.blue,backgroundColor:"#5B86B51a",fill:true,tension:.35,pointRadius:2,borderWidth:2},
+    {label:"Product views",data:labels.map(day=>events.filter(e=>e.event_name==="view_item"&&localDateKey(e.occurred_at)===day).length),borderColor:palette.orange,backgroundColor:"#C97B3D18",fill:true,tension:.35,pointRadius:2,borderWidth:2}
    ]},options:{...chartAxisOptions(),plugins:{legend:{position:"bottom"}}}});
    drawChart("overviewStatusChart",{type:"doughnut",data:orderStatusCounts(orders),options:{cutout:"67%",plugins:{legend:{position:"bottom"}},onClick:(ev,items)=>{if(items.length)location.href="./orders.html?status="+encodeURIComponent(["pending","processing","shipped","delivered","cancelled"][items[0].index]);}}});
    renderTopProducts($("overviewTopProducts"),topProducts(events,products).slice(0,5));
    renderRecentOrders(orders);
    $("overviewUpdated").textContent="Updated "+new Date().toLocaleTimeString("en-BD",{hour:"2-digit",minute:"2-digit"});
-   $("overviewDataNote").textContent=events.length+" tracking events and "+orders.length+" order records were returned for the last 30 days. Chart values use the data available to the admin account.";
+   $("overviewDataNote").textContent=events.length+" website events were returned for the last 30 days; "+orders.length+" total order records are available. 'Units in today's orders' counts saved item quantities for orders placed today, excluding cancelled orders. Add-to-cart is an event count, not current cart contents. These records do not prove payment or delivery.";
   }
   await refresh();attachRefresh(refresh);
  }
