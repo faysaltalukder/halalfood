@@ -492,6 +492,7 @@
       const anchor = header.querySelector("#themeToggle") || header.querySelector("#logout") || null;
       if (anchor) header.insertBefore(wrap, anchor);
       else header.appendChild(wrap);
+      translateTree(wrap, language());
     });
   }
 
