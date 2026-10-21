@@ -83,29 +83,45 @@ function drawChart(id,config){
  charts[id]=new Chart(canvas,{...config,options:opts});
  return charts[id];
 }
+async function paginateQuery(buildQuery,limit=1000){
+ const rows=[],pageSize=1000;
+ for(let offset=0;offset<limit;offset+=pageSize){
+  const requested=Math.min(pageSize,limit-offset);
+  const page=await signedQuery(buildQuery().range(offset,offset+requested-1));
+  rows.push(...page);
+  if(page.length<requested)break;
+ }
+ return rows;
+}
 async function fetchOrders(range=null,limit=5000){
- let q=client.from("orders").select("id,order_number,customer_name,customer_phone,customer_email,delivery_address,subtotal,delivery_charge,delivery_zone,payment_method,total,status,source,notes,ordered_at,updated_at,order_items(id,product_id,product_name,quantity,unit,unit_price,line_total,product_image_url)").order("ordered_at",{ascending:false}).limit(limit);
- if(range)q=rangeQuery(q,"ordered_at",range);
- return signedQuery(q);
+ return paginateQuery(()=>{
+  let q=client.from("orders").select("id,order_number,customer_name,customer_phone,customer_email,delivery_address,subtotal,delivery_charge,delivery_zone,payment_method,total,status,source,notes,ordered_at,updated_at,order_items(id,product_id,product_name,quantity,unit,unit_price,line_total,product_image_url)").order("ordered_at",{ascending:false}).order("id",{ascending:true});
+  if(range)q=rangeQuery(q,"ordered_at",range);
+  return q;
+ },limit);
 }
 async function fetchEvents(range=null,limit=15000){
- let q=client.from("analytics_events").select("id,event_name,occurred_at,page_path,page_title,session_id,anonymous_id,item_id,item_name,item_category,value,quantity,search_term,source,medium,campaign,metadata").order("occurred_at",{ascending:false}).limit(limit);
- if(range)q=rangeQuery(q,"occurred_at",range);
- return signedQuery(q);
+ return paginateQuery(()=>{
+  let q=client.from("analytics_events").select("id,event_name,occurred_at,page_path,page_title,session_id,anonymous_id,item_id,item_name,item_category,value,quantity,search_term,source,medium,campaign,metadata").order("occurred_at",{ascending:false}).order("id",{ascending:false});
+  if(range)q=rangeQuery(q,"occurred_at",range);
+  return q;
+ },limit);
 }
 async function fetchProducts(limit=2000){
- return signedQuery(client.from("products").select("id,name,slug,category,category_slug,price,display_price,unit_type,image_url,stock_quantity,is_active,is_featured,sort_order,short_description,full_description,seo_title,seo_description,cms_created,cms_managed,created_at,updated_at").order("sort_order",{ascending:true}).order("name",{ascending:true}).limit(limit));
+ return paginateQuery(()=>client.from("products").select("id,name,slug,category,category_slug,price,display_price,unit_type,image_url,stock_quantity,is_active,is_featured,sort_order,short_description,full_description,seo_title,seo_description,cms_created,cms_managed,created_at,updated_at").order("sort_order",{ascending:true}).order("name",{ascending:true}).order("id",{ascending:true}),limit);
 }
 async function fetchCategories(){
- return signedQuery(client.from("categories").select("id,name,slug,description,image_url,is_active,sort_order,cms_created,cms_managed,created_at,updated_at").order("sort_order",{ascending:true}).order("name",{ascending:true}).limit(500));
+ return paginateQuery(()=>client.from("categories").select("id,name,slug,description,image_url,is_active,sort_order,cms_created,cms_managed,created_at,updated_at").order("sort_order",{ascending:true}).order("name",{ascending:true}).order("id",{ascending:true}),500);
 }
 async function fetchPosts(limit=1000){
- return signedQuery(client.from("blog_posts").select("id,title,slug,excerpt,content,featured_image_url,category,status,published_at,seo_title,seo_description,cms_created,cms_managed,created_at,updated_at").order("updated_at",{ascending:false}).limit(limit));
+ return paginateQuery(()=>client.from("blog_posts").select("id,title,slug,excerpt,content,featured_image_url,category,status,published_at,seo_title,seo_description,cms_created,cms_managed,created_at,updated_at").order("updated_at",{ascending:false}).order("id",{ascending:true}),limit);
 }
-async function fetchFinance(range=null,limit=2000){
- let q=client.from("admin_finance_entries").select("id,entry_type,category,amount,entry_date,description,reference,status,related_order_id,created_by,created_at,updated_at").order("entry_date",{ascending:false}).limit(limit);
- if(range)q=rangeQuery(q,"entry_date",{from:range.from?range.from.slice(0,10):null,to:range.to?range.to.slice(0,10):null});
- return signedQuery(q);
+async function fetchFinance(range=null,limit=3000){
+ return paginateQuery(()=>{
+  let q=client.from("admin_finance_entries").select("id,entry_type,category,amount,entry_date,description,reference,status,related_order_id,created_by,created_at,updated_at").order("entry_date",{ascending:false}).order("created_at",{ascending:false});
+  if(range)q=rangeQuery(q,"entry_date",{from:range.from?range.from.slice(0,10):null,to:range.to?range.to.slice(0,10):null});
+  return q;
+ },limit);
 }
 function makeShell(){
  const menu=[
@@ -118,7 +134,7 @@ function makeShell(){
  '<div class="admin-sidebar-note"><strong>Easy Mode + Advanced Tools</strong>Clear guidance for everyday tasks, with deeper reports when you need them.</div></aside>'+
  '<div class="admin-frame"><header class="admin-topbar"><button id="adminMenuToggle" class="admin-menu-toggle" type="button" aria-label="Open navigation">☰</button>'+
  '<div class="admin-global-search"><input id="globalSearch" type="search" placeholder="Search this page…" aria-label="Search current page"></div><span class="admin-topbar-spacer"></span>'+
- '<button class="admin-top-button" id="helpBtn" type="button">? Help</button><button class="admin-top-button" id="logoutBtn" type="button">Sign out</button>'+
+ '<button class="admin-top-button" id="modeToggle" type="button">Advanced view</button><button class="admin-top-button" id="helpBtn" type="button">? Help</button><button class="admin-top-button" id="logoutBtn" type="button">Sign out</button>'+
  '<div class="admin-account-chip"><span class="admin-account-avatar">HF</span><span class="admin-account-meta"><strong>Admin</strong><small id="accountEmail">Authorized account</small></span></div></header>'+
  '<main class="admin-main" id="adminMain">'+initialContent+'</main></div>'+
  '<div id="hfToast" class="hf-toast" role="status" aria-live="polite"></div>'+
@@ -126,6 +142,11 @@ function makeShell(){
  adminApp.innerHTML=shell;
  adminApp.hidden=false;gate.hidden=true;
  const sidebar=document.getElementById("adminSidebar");
+ const modeKey="hf_admin_display_mode";
+ const modeBtn=document.getElementById("modeToggle");
+ const applyMode=()=>{const advanced=localStorage.getItem(modeKey)==="advanced";adminApp.classList.toggle("simple-mode",!advanced);if(modeBtn)modeBtn.textContent=advanced?"Simple view":"Advanced view";};
+ applyMode();
+ modeBtn?.addEventListener("click",()=>{const advanced=adminApp.classList.contains("simple-mode");localStorage.setItem(modeKey,advanced?"advanced":"simple");applyMode();});
  document.getElementById("adminMenuToggle")?.addEventListener("click",()=>sidebar.classList.toggle("open"));
  document.getElementById("adminMain")?.addEventListener("click",e=>{if(window.innerWidth<=900&&e.target.closest("a"))sidebar.classList.remove("open");});
  document.getElementById("helpBtn")?.addEventListener("click",()=>document.getElementById("helpDialog")?.showModal());
