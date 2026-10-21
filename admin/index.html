@@ -324,6 +324,8 @@ async function routeSession(session){
   if(factorResult.error)throw factorResult.error;
   const verified=(factorResult.data?.totp||[]).filter(f=>f.status==="verified");
   if(aal.data?.currentLevel==="aal2"){
+   const preserveLegacy = new URLSearchParams(window.location.search).get("legacy")==="1";
+   if(!preserveLegacy){window.location.replace("./overview.html");return;}
    $("authCard").classList.add("hidden");$("mfaCard").classList.add("hidden");$("dashboard").classList.remove("hidden");$("logout").classList.remove("hidden");
    setMfaMessage("");load();loadCustomers();return;
   }
