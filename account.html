@@ -39,6 +39,20 @@ main.account-main{width:min(1180px,calc(100% - 48px));max-width:1180px;margin:34
   .hf-mobile-only-header .header-actions{display:flex;align-items:center;gap:5px;margin-left:auto}
 }
 </style>
+
+<style id="hf-desktop-account-refinements">
+@media (min-width: 901px) {
+  /* Give the profile actions a little breathing room below the phone field. */
+  .account-shell .account-profile-panel .row { margin-top: 8px; gap: 12px; }
+  /* Keep the desktop login action comfortably sized without enlarging mobile buttons. */
+  .account-shell #loginForm .row button[type="submit"] {
+    min-width: 136px;
+    min-height: 46px;
+    padding: 12px 24px;
+    border-radius: 10px;
+  }
+}
+</style>
 </head>
 <body class="account-page">
 <header class="account-original-header"> <div class="wrap nav"> <a class="brand" href="index.html">Halal Food <picture><source type="image/webp" srcset="images/logo-favicon/logo-128.webp 128w, images/logo-favicon/logo.webp 384w" sizes="42px"><img alt="Halal Food logo" class="brand-logo" decoding="async" height="800" src="images/logo-favicon/logo.png" sizes="42px" srcset="images/logo-favicon/logo-128.png 128w, images/logo-favicon/logo.png 384w" width="1200"/></picture> </a>  <nav aria-label="Primary navigation" class="nav-links"> <div class="nav-category"> <button aria-expanded="false" aria-haspopup="true" class="nav-category-trigger" type="button">Categories <span aria-hidden="true">⌄</span></button> <div class="mega-menu" role="menu"> <a href="categories/dates.html">Dates</a> <a href="categories/dry-food.html">Dry Food</a> <a href="categories/honey.html">Honey</a> <a href="categories/mix-food.html">Mix Food</a> <a href="categories/nuts-seeds.html">Nuts &amp; Seeds</a> <a href="categories/special-masala.html">Special Masala</a> <a href="categories/tea.html">Tea</a> <a href="categories/fresh-meat.html">Fresh Meat</a> <a href="categories/oil.html">Oil</a> <a href="categories/ghee.html">Ghee</a> </div> </div> <a href="index.html#products">Products</a> <a href="how-to-order.html">How to Order</a>  <a href="about.html">About</a> <a href="contact.html">Contact</a> <a download="" href="docs/price-list.pdf">Price List</a> </nav> <div class="header-actions"> <div class="search-wrap"> <button aria-label="Search products" class="search-toggle" type="button"><svg aria-hidden="true" focusable="false" viewbox="0 0 24 24"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 5 5"></path></svg></button> <div class="search-box"> <input autocomplete="off" id="product-search" placeholder="Search products..." type="search"/> <ul class="search-results" id="search-results"></ul> </div> </div> <a aria-label="Customer account — sign in or create account" class="header-account-link" href="account.html" title="Sign in or create account"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"></circle><path d="M5 20c.6-3.8 3.1-5.7 7-5.7s6.4 1.9 7 5.7"></path></svg></a><a class="header-track-order" href="track-order.html"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 7.5h11v9H3z"></path><path d="M14 10h3.5l3.5 3.5V16h-7z"></path><circle cx="7" cy="18" r="1.5"></circle><circle cx="18" cy="18" r="1.5"></circle><path d="M14 13h6"></path></svg><span>Track Order</span></a> </div> </div> </header>
