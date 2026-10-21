@@ -668,7 +668,7 @@ async function refresh(){[products,categories]=await Promise.all([fetchProducts(
     title="Orders Report";notes="Recorded order values are not proof of payment collection. Cancelled orders remain listed with their status.";
    }else if(type==="analytics"){
     const events=await fetchEvents(range,15000);
-    rows=events.map(e=>({occurred_at:e.occurred_at,event_name:e.event_name,page_path:e.page_path,page_title:e.page_title,session_id:e.session_id,item_id:e.item_id,item_name:e.item_name,item_category:e.item_category,value:e.event_name==="page_engagement"?null:e.value,visible_seconds:e.event_name==="page_engagement"?Number(e.value||0):null,quantity:e.quantity,source:e.source,medium:e.medium,campaign:e.campaign}));
+    rows=events.map(e=>({occurred_at:e.occurred_at,event_name:e.event_name,page_path:e.page_path,page_title:e.page_title,session_id:e.session_id,item_id:e.item_id,item_name:e.item_name,item_category:e.item_category,value:e.event_name==="page_engagement"?null:e.value,visible_seconds:e.event_name==="page_engagement"?Number(e.value||0):null,quantity:e.quantity}));
     title="Website Analytics Report";notes="Website events measure recorded interaction. They do not by themselves establish unique people, paid sales, or collected revenue.";
    }else if(type==="products"){
     const products=await fetchProducts();
