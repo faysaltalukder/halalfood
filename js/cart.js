@@ -5,6 +5,210 @@
   const siteBase = scriptEl ? scriptEl.src.replace(/js\/cart\.js(?:\?.*)?$/, "") : "";
   const CART_KEY = "halal_food_cart_v1";
   const MAX_QTY = 99;
+  const AUTH_STORAGE_KEY = "sb-qfwvrcfkrsydycbfjsxf-auth-token";
+  const SUPABASE_URL = "https://qfwvrcfkrsydycbfjsxf.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_X32Rb8W-axGIfgFuppdfZQ_jbc38pcL";
+  let cloudCartClient = null;
+  let cloudCartUserId = null;
+  let cloudCartReady = false;
+  let cloudCartPaused = 0;
+  let cloudCartSaveTimer = 0;
+  let cloudCartStartPromise = null;
+  let cloudCartSaveQueue = Promise.resolve();
+  let cloudSupabaseSdkPromise = null;
+
+  function readStoredAuthUser() {
+    try {
+      let raw = localStorage.getItem(AUTH_STORAGE_KEY);
+      if (!raw) return null;
+      if (raw.startsWith("base64-")) {
+        const encoded = raw.slice(7).replace(/-/g, "+").replace(/_/g, "/");
+        const padded = encoded.padEnd(Math.ceil(encoded.length / 4) * 4, "=");
+        const binary = atob(padded);
+        raw = new TextDecoder().decode(Uint8Array.from(binary, char => char.charCodeAt(0)));
+      }
+      const stored = JSON.parse(raw);
+      return stored?.user || stored?.currentSession?.user || null;
+    } catch (_) { return null; }
+  }
+
+  function loadSupabaseSdk() {
+    if (window.supabase?.createClient) return Promise.resolve(window.supabase);
+    if (cloudSupabaseSdkPromise) return cloudSupabaseSdkPromise;
+    cloudSupabaseSdkPromise = new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4";
+      script.async = true;
+      script.onload = () => window.supabase?.createClient
+        ? resolve(window.supabase)
+        : reject(new Error("Supabase client library did not initialize."));
+      script.onerror = () => reject(new Error("Supabase client library could not be loaded."));
+      document.head.appendChild(script);
+    });
+    return cloudSupabaseSdkPromise;
+  }
+
+  async function getCloudCartClient(preferredClient) {
+    if (preferredClient?.from && preferredClient?.auth) {
+      cloudCartClient = preferredClient;
+      window.halalSupabaseClient = preferredClient;
+      return preferredClient;
+    }
+    if (window.halalSupabaseClient?.from && window.halalSupabaseClient?.auth) {
+      cloudCartClient = window.halalSupabaseClient;
+      return cloudCartClient;
+    }
+    await loadSupabaseSdk();
+    if (!window.halalSupabaseClient?.from) {
+      window.halalSupabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+        auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+      });
+    }
+    cloudCartClient = window.halalSupabaseClient;
+    return cloudCartClient;
+  }
+
+  function waitForLiveCatalog() {
+    if (window.HALAL_LIVE_CATALOG_READY === true) return Promise.resolve();
+    return new Promise(resolve => {
+      let finished = false;
+      const finish = () => {
+        if (finished) return;
+        finished = true;
+        window.removeEventListener("halalcatalog:updated", finish);
+        resolve();
+      };
+      window.addEventListener("halalcatalog:updated", finish, { once: true });
+      window.setTimeout(finish, 1400);
+    });
+  }
+
+  function scheduleCloudCartSave() {
+    if (!cloudCartReady || !cloudCartUserId || cloudCartPaused) return;
+    window.clearTimeout(cloudCartSaveTimer);
+    cloudCartSaveTimer = window.setTimeout(() => {
+      const userId = cloudCartUserId;
+      saveCloudCartSnapshot(userId, read()).catch(error => {
+        console.warn("Could not sync the saved cart to the customer account.", error?.message || error);
+      });
+    }, 450);
+  }
+
+  function saveCloudCartSnapshot(userId, items) {
+    if (!cloudCartClient || !userId) return Promise.resolve();
+    const snapshot = (items || []).map(item => ({
+      user_id: userId,
+      product_slug: String(item.slug || ""),
+      quantity: Math.max(1, Math.min(MAX_QTY, Math.floor(Number(item.qty) || 1))),
+      product_name: String(item.name || ""),
+      unit_price: Math.max(0, Number(item.price) || 0),
+      display_price: String(item.displayPrice || ""),
+      image_url: String(item.image || ""),
+      category_slug: String(item.category || "")
+    })).filter(item => item.product_slug && item.product_name);
+    cloudCartSaveQueue = cloudCartSaveQueue.catch(() => {}).then(async () => {
+      if (!cloudCartClient || cloudCartUserId !== userId) return;
+      const { data: existing, error: listError } = await cloudCartClient
+        .from("customer_cart_items").select("product_slug").eq("user_id", userId);
+      if (listError) throw listError;
+
+      if (snapshot.length) {
+        const { error: upsertError } = await cloudCartClient
+          .from("customer_cart_items").upsert(snapshot, { onConflict: "user_id,product_slug" });
+        if (upsertError) throw upsertError;
+      }
+      const keep = new Set(snapshot.map(item => item.product_slug));
+      const stale = (existing || []).map(row => row.product_slug).filter(slug => !keep.has(slug));
+      if (stale.length) {
+        const { error: deleteError } = await cloudCartClient
+          .from("customer_cart_items").delete().eq("user_id", userId).in("product_slug", stale);
+        if (deleteError) throw deleteError;
+      }
+      window.dispatchEvent(new CustomEvent("halalcloudcart:saved", { detail: { userId, itemCount: snapshot.length } }));
+    });
+    return cloudCartSaveQueue;
+  }
+
+  async function startCloudCartSync(preferredClient = null, preferredUser = null) {
+    const hintedUser = preferredUser || readStoredAuthUser();
+    if (!hintedUser?.id) {
+      cloudCartReady = false;
+      cloudCartUserId = null;
+      return;
+    }
+    if (cloudCartReady && cloudCartUserId === hintedUser.id) return;
+    if (cloudCartStartPromise) {
+      try { await cloudCartStartPromise; } catch (_) {}
+      if (cloudCartReady && cloudCartUserId === hintedUser.id) return;
+    }
+
+    const task = (async () => {
+      const client = await getCloudCartClient(preferredClient);
+      const { data, error: sessionError } = await client.auth.getSession();
+      if (sessionError) throw sessionError;
+      const sessionUser = data?.session?.user;
+      const user = sessionUser?.id === hintedUser.id
+        ? sessionUser
+        : preferredUser?.id === hintedUser.id ? preferredUser : null;
+      if (!user?.id) {
+        cloudCartReady = false;
+        cloudCartUserId = null;
+        return;
+      }
+
+      cloudCartClient = client;
+      cloudCartUserId = user.id;
+      cloudCartReady = false;
+      await waitForLiveCatalog();
+
+      const { data: rows, error } = await client.from("customer_cart_items")
+        .select("product_slug,quantity,product_name,unit_price,display_price,image_url,category_slug,updated_at")
+        .eq("user_id", user.id);
+      if (error) throw error;
+
+      const products = Array.isArray(window.PRODUCTS_DATA) ? window.PRODUCTS_DATA : [];
+      const localItems = read();
+      const merged = new Map(localItems.map(item => [String(item.slug), { ...item }]));
+      (rows || []).forEach(row => {
+        const slug = String(row.product_slug || "");
+        if (!slug) return;
+        if (window.HALAL_LIVE_CATALOG_READY === true && !products.some(product => String(product.slug || "") === slug)) return;
+        const cloudItem = {
+          slug,
+          name: String(row.product_name || slug),
+          price: Math.max(0, Number(row.unit_price) || 0),
+          displayPrice: String(row.display_price || row.unit_price || ""),
+          image: String(row.image_url || ""),
+          category: String(row.category_slug || ""),
+          qty: Math.max(1, Math.min(MAX_QTY, Math.floor(Number(row.quantity) || 1)))
+        };
+        const previous = merged.get(slug);
+        if (previous) {
+          previous.qty = Math.max(1, Math.min(MAX_QTY, Math.max(Number(previous.qty) || 0, cloudItem.qty)));
+        } else {
+          merged.set(slug, cloudItem);
+        }
+      });
+
+      cloudCartPaused++;
+      try { write(Array.from(merged.values())); }
+      finally { cloudCartPaused--; }
+      cloudCartReady = true;
+      await saveCloudCartSnapshot(user.id, read());
+      window.dispatchEvent(new CustomEvent("halalcloudcart:ready", { detail: { userId: user.id } }));
+    })();
+
+    cloudCartStartPromise = task;
+    try { await task; }
+    catch (error) {
+      cloudCartReady = false;
+      cloudCartUserId = null;
+      console.warn("Your cart is still available on this device; cloud sync could not complete.", error?.message || error);
+    }
+    finally { if (cloudCartStartPromise === task) cloudCartStartPromise = null; }
+  }
+
+  window.halalStartCloudCartSync = startCloudCartSync;
 
   function read() {
     try {
@@ -32,6 +236,7 @@
   function write(items) {
     localStorage.setItem(CART_KEY, JSON.stringify(items));
     window.dispatchEvent(new CustomEvent("halalcart:updated", { detail: items }));
+    scheduleCloudCartSave();
   }
   function money(value) {
     return "৳ " + Number(value || 0).toLocaleString("en-BD", { maximumFractionDigits: 0 });
@@ -437,13 +642,21 @@
 
   document.addEventListener("keydown", e => { if (e.key === "Escape") setDrawer(false); });
   window.addEventListener("halalcart:updated", renderAll);
-  window.addEventListener("storage", e => { if (e.key === CART_KEY) renderAll(); });
+  window.addEventListener("storage", e => { if (e.key === CART_KEY) { renderAll(); scheduleCloudCartSave(); } });
+  window.addEventListener("halal-auth-state-change", event => {
+    const detail = event.detail || {};
+    const user = Object.prototype.hasOwnProperty.call(detail, "user") ? detail.user : readStoredAuthUser();
+    if (user?.id) startCloudCartSync(detail.client || window.halalSupabaseClient || null, user);
+    else { cloudCartReady = false; cloudCartUserId = null; cloudCartClient = null; window.clearTimeout(cloudCartSaveTimer); }
+  });
+  window.addEventListener("halalcatalog:updated", () => { renderAll(); scheduleCloudCartSave(); });
 
   window.HALAL_CART_API = { read, add, setQty, remove, clear, total, totalQty };
   window.HALAL_CART_KEY = CART_KEY;
 
   document.addEventListener("DOMContentLoaded", () => {
     initThemeMode(); ensureHeaderButton(); ensureDrawer(); ensureCategoryFloatingCart(); renderAll(); observeProductCartControls();
+    if (readStoredAuthUser()?.id) startCloudCartSync(window.halalSupabaseClient || null, readStoredAuthUser());
     if (document.querySelector("[data-cart-page]")) renderPage();
     if (document.querySelector("[data-cart-checkout-summary]")) renderOrderSummary();
   });
