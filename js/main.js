@@ -304,7 +304,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const link = document.createElement("a");
       const mainScript = [...document.scripts].find(script => /js\/main\.js(?:\?|$)/.test(script.src));
       const siteRoot = mainScript ? new URL("../", mainScript.src) : new URL("/halalfood/", location.origin);
-      link.href = new URL("products/" + encodeURIComponent(String(item.slug || "")) + ".html", siteRoot).href;
+      link.href = item.cmsCreated ? new URL("cms-product.html?slug=" + encodeURIComponent(String(item.slug || "")), siteRoot).href : new URL("products/" + encodeURIComponent(String(item.slug || "")) + ".html", siteRoot).href;
       link.textContent = String(item.name || item.slug || "Product");
       if (item.price) {
         const price = document.createElement("span");
