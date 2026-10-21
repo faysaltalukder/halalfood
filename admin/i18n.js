@@ -365,13 +365,13 @@
     return lang === "bn" ? (translations[value] || value) : value;
   }
 
-  function isPicker(node) {
+  function isPickerOption(node) {
     const el = node.nodeType === 1 ? node : node.parentElement;
-    return !!el?.closest?.(".hf-language-picker");
+    return !!el?.closest?.(".hf-language-picker") && (!!el.closest?.("option") || el.tagName === "OPTION");
   }
 
   function translateText(node, lang) {
-    if (!node || node.nodeType !== 3 || isPicker(node)) return;
+    if (!node || node.nodeType !== 3 || isPickerOption(node)) return;
     const parent = node.parentElement;
     if (!parent || ignoredTags.has(parent.tagName)) return;
     let state = textState.get(node);
@@ -391,7 +391,7 @@
   }
 
   function translateElement(el, lang) {
-    if (!el || el.nodeType !== 1 || isPicker(el) || ignoredTags.has(el.tagName)) return;
+    if (!el || el.nodeType !== 1 || isPickerOption(el) || ignoredTags.has(el.tagName)) return;
     let saved = attrState.get(el);
     if (!saved) { saved = {}; attrState.set(el, saved); }
     for (const name of attrNames) {
@@ -415,7 +415,7 @@
     if (root.nodeType === 1) translateElement(root, lang);
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
       acceptNode(node) {
-        if (isPicker(node)) return NodeFilter.FILTER_REJECT;
+        if (isPickerOption(node)) return NodeFilter.FILTER_REJECT;
         let p = node.parentElement;
         while (p && p !== root) {
           if (ignoredTags.has(p.tagName)) return NodeFilter.FILTER_REJECT;
