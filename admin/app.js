@@ -161,12 +161,13 @@ window.HFAdminReady.then(async H=>{
    const now=new Date();
    const range30={from:new Date(now.getTime()-30*86400000).toISOString(),to:now.toISOString(),days:30,label:"Last 30 days"};
    const range14={from:new Date(now.getTime()-14*86400000).toISOString(),to:now.toISOString(),days:14,label:"Last 14 days"};
-   const [summaryOrders,chartOrders,events,products,pendingResult]=await Promise.all([
+   const [summaryOrders,chartOrders,events,products,pendingResult,recentOrders]=await Promise.all([
     fetchOverviewOrderSummary(range30,5000),
     fetchOrders(range14,1000),
     fetchEvents(range14,5000),
     fetchProducts(1000),
-    client.from("orders").select("id",{count:"exact",head:true}).eq("status","pending")
+    client.from("orders").select("id",{count:"exact",head:true}).eq("status","pending"),
+    signedQuery(client.from("orders").select("id,order_number,customer_name,total,status,ordered_at").order("ordered_at",{ascending:false}).order("id",{ascending:true}).limit(7))
    ]);
    const today=localDateKey(now);
    const ordersLast30=summaryOrders.filter(o=>o.ordered_at&&new Date(o.ordered_at)>=new Date(range30.from)&&new Date(o.ordered_at)<=now);
@@ -220,7 +221,7 @@ window.HFAdminReady.then(async H=>{
    ]},options:{...chartAxisOptions(),plugins:{legend:{position:"bottom"}}}});
    drawChart("overviewStatusChart",{type:"doughnut",data:orderStatusCounts(summaryOrders),options:{cutout:"67%",plugins:{legend:{position:"bottom"}},onClick:(ev,items)=>{if(items.length)location.href="./orders.html?status="+encodeURIComponent(["pending","processing","shipped","delivered","cancelled"][items[0].index]);}}});
    renderTopProducts($("overviewTopProducts"),topProducts(events,products).slice(0,5));
-   renderRecentOrders(summaryOrders);
+   renderRecentOrders(recentOrders);
    $("overviewUpdated").textContent="Updated "+new Date().toLocaleTimeString("en-BD",{hour:"2-digit",minute:"2-digit"});
    const limits=[];
    if(summaryOrders.length>=5000)limits.push("The order summary reached its 5,000-record limit, so totals/status counts may be incomplete.");
