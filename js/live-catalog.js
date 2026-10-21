@@ -332,6 +332,7 @@
         PRODUCTS_INDEX.splice(0, PRODUCTS_INDEX.length, ...nextIndex);
       }
     } catch (_) {}
+    window.HALAL_LIVE_CATALOG_READY = true;
     window.dispatchEvent(new CustomEvent("halalcatalog:updated", { detail: { products: active, categories } }));
     window.dispatchEvent(new CustomEvent("halalcart:updated", { detail: window.HALAL_CART_API?.read?.() || [] }));
   }
