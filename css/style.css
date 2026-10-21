@@ -2813,3 +2813,77 @@ main .section-head h3 {
   font-size: 1rem !important;
   line-height: 1.35 !important;
 }
+
+
+/* Order checkout quantity input — desktop and mobile. */
+.quantity-stepper label.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+.quantity-stepper input[type="number"] {
+  width: 62px;
+  min-width: 54px;
+  height: 42px;
+  padding: 0 3px;
+  border: 0;
+  border-left: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+  border-radius: 0;
+  background: var(--white);
+  color: var(--navy);
+  text-align: center;
+  font: inherit;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+.quantity-stepper input[type="number"]::-webkit-outer-spin-button,
+.quantity-stepper input[type="number"]::-webkit-inner-spin-button,
+.checkout-cart-list .cart-qty input[data-checkout-qty]::-webkit-outer-spin-button,
+.checkout-cart-list .cart-qty input[data-checkout-qty]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.quantity-stepper input[type="number"]:focus-visible,
+.checkout-cart-list .cart-qty input[data-checkout-qty]:focus-visible {
+  position: relative;
+  z-index: 1;
+  outline: 2px solid var(--orange);
+  outline-offset: -2px;
+}
+.checkout-cart-list .cart-qty input[data-checkout-qty] {
+  width: 56px;
+  min-width: 50px;
+  height: 30px;
+  padding: 0 4px;
+  border: 0;
+  border-left: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+  border-radius: 0;
+  background: var(--white);
+  color: var(--navy);
+  text-align: center;
+  font: inherit;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+@media (max-width: 600px) {
+  .quantity-stepper input[type="number"] {
+    width: 58px;
+    min-width: 50px;
+  }
+  .checkout-cart-list .cart-qty input[data-checkout-qty] {
+    width: 52px;
+    min-width: 46px;
+  }
+}
