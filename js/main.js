@@ -1348,7 +1348,16 @@ document.addEventListener("DOMContentLoaded", () => {
     pausePageVisibleClock();
     // analytics_events.value stores seconds for page_engagement events.
     sendFirstPartyEvent('page_engagement', {value: Math.min(86400, Math.round(pageVisibleMs / 1000))});
-  }, {once:true});
+  });
+  // A page restored from the browser's back/forward cache is a new visible visit.
+  // Reset the clock so its next pagehide records only the restored visit's visible time.
+  window.addEventListener('pageshow', function(event) {
+    if (!event.persisted) return;
+    pageVisibleMs = 0;
+    pageEngagementSent = false;
+    visibleSince = document.visibilityState === 'visible' ? performance.now() : null;
+    sendFirstPartyEvent('page_view', {page_title: document.title});
+  });
 
   window.halalTrackItems=function(items){
     return (Array.isArray(items)?items:[]).map(function(item){
