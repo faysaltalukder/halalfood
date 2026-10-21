@@ -188,6 +188,38 @@
     });
     if (!records.length) grid.innerHTML = '<p class="muted">No active products are currently listed in this category.</p>';
   }
+  // Render the homepage's category product rails from the same live catalog as category pages.
+  // Keep each rail's card count stable so existing carousel controls remain compatible.
+  function renderMerchandisingRails(products) {
+    $("[data-mrow]").forEach(wrap => {
+      const track = $("[data-mrow-track]", wrap);
+      const section = wrap.closest("section") || wrap.parentElement;
+      const viewAll = $(".merch-view-all", section);
+      if (!track || !viewAll) return;
+      const href = viewAll.getAttribute("href") || "";
+      const match = href.match(/categories\/([^/?#]+)\.html/i) || href.match(/[?&]slug=([^&]+)/i);
+      if (!match) return;
+      let categorySlug = match[1];
+      try { categorySlug = decodeURIComponent(categorySlug); } catch (_) {}
+      const cardLimit = Math.max(1, track.querySelectorAll(".mrow-card").length);
+      const rows = products
+        .filter(item => item.is_active && item.category_slug === categorySlug)
+        .sort((a, b) =>
+          Number(Boolean(b.is_featured)) - Number(Boolean(a.is_featured)) ||
+          Number(a.sort_order || 0) - Number(b.sort_order || 0) ||
+          String(a.name || "").localeCompare(String(b.name || ""))
+        )
+        .slice(0, cardLimit);
+      track.replaceChildren(...rows.map(item => makeProductCard(item, "mrow")));
+      if (!rows.length) {
+        const empty = document.createElement("p");
+        empty.className = "muted";
+        empty.textContent = "No active products are currently listed in this category.";
+        track.appendChild(empty);
+      }
+    });
+  }
+
   function renderHome(products, categories) {
     const featuredGrid = $("#products .product-grid");
     if (featuredGrid) {
@@ -203,7 +235,8 @@
       const rows = products.filter(item => item.is_active).sort((a,b) => Number(a.sort_order||0)-Number(b.sort_order||0)).slice(0,10);
       jfy.replaceChildren(...rows.map(item => makeProductCard(item, "jfy")));
     }
-    // Keep current curated product rails, but update product data and remove hidden products.
+    // Rebuild category product rails from the current database so new products and edits appear here too.
+    renderMerchandisingRails(products);
     patchExistingCards(products);
     const rail = $("[data-category-rail]");
     if (rail) {
