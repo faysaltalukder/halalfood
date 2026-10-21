@@ -668,7 +668,7 @@ async function refresh(){[products,categories]=await Promise.all([fetchProducts(
    totals();renderReconciliation();
   }
   async function refresh(){
-   [entries,orders]=await Promise.all([fetchFinance(null,3000),fetchOrders(null,1000)]);
+   [entries,orders]=await Promise.all([fetchFinance(null,3000),signedQuery(client.from("orders").select("id,order_number,customer_name,customer_phone,total,status,ordered_at,payment_method").order("ordered_at",{ascending:false}).order("id",{ascending:true}).limit(1000))]);
    const sel=$("financeOrderId");if(sel)sel.innerHTML='<option value="">No linked order</option>'+orders.slice(0,300).map(o=>'<option value="'+esc(o.id)+'">'+esc(o.order_number||String(o.id).slice(0,8))+' · '+money(o.total)+'</option>').join("");
    render();
   }
