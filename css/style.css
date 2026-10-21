@@ -2797,3 +2797,12 @@ main .section-head h3 {
   }
 
 }
+
+
+/* Checkout delivery selector spacing refinement — 2026-10-21 */
+.checkout-page .checkout-delivery-fieldset legend {
+  margin-bottom: 4px !important;
+}
+.checkout-page .checkout-delivery-fieldset .checkout-delivery-option {
+  margin-top: 4px !important;
+}
