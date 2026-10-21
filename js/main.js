@@ -482,6 +482,69 @@ document.addEventListener("DOMContentLoaded", () => {
     if (box) box.classList.add("open");
   });
 
+  // CMS-managed home banners and announcement popup. Falls back to the existing static design if unavailable.
+  (function loadAdminManagedSiteContent(){
+    if(!document.querySelector(".hero-carousel")||!document.getElementById("halal-first-order-popup"))return;
+    const apiRoot="https://qfwvrcfkrsydycbfjsxf.supabase.co";
+    const publicKey="sb_publishable_X32Rb8W-axGIfgFuppdfZQ_jbc38pcL";
+    const siteBase="https://faysaltalukder.github.io/halalfood/";
+    const safeUrl=(candidate,fallback)=>{
+      try{
+        const url=new URL(String(candidate||""),siteBase);
+        return ["http:","https:"].includes(url.protocol)?url.href:fallback;
+      }catch(_){return fallback;}
+    };
+    const applyBanner=(anchor,row)=>{
+      if(!anchor||!row)return;
+      const currentHref=anchor.href||siteBase;
+      anchor.href=safeUrl(row.link_url,currentHref);
+      const img=anchor.querySelector("picture img, img");
+      if(!img)return;
+      const currentSrc=img.currentSrc||img.src||"";
+      const image=safeUrl(row.image_url,currentSrc);
+      if(row.image_url&&image){
+        const source=anchor.querySelector("picture source");
+        if(source){source.srcset=image;source.removeAttribute("sizes");}
+        img.src=image;img.srcset=image;img.removeAttribute("sizes");
+      }
+      if(row.alt_text)img.alt=String(row.alt_text).slice(0,240);
+    };
+    const load=async()=>{
+      const response=await fetch(apiRoot+"/rest/v1/site_content_blocks?select=block_key,block_type,title,image_url,link_url,alt_text,is_active,sort_order&order=sort_order.asc",{
+        headers:{apikey:publicKey}
+      });
+      if(!response.ok)throw new Error("Content configuration is unavailable");
+      const rows=await response.json();
+      if(!Array.isArray(rows))return;
+      const byKey=new Map(rows.map(row=>[row.block_key,row]));
+      const heroRows=[
+        ["hero_slide_1",document.querySelector("[data-founder-slide]")],
+        ["hero_slide_2",document.querySelector(".hero-carousel-track .hero-slide:nth-child(2)")],
+        ["hero_slide_3",document.querySelector(".hero-carousel-track .hero-slide:nth-child(3)")]
+      ];
+      // Hero slide activation is kept on to preserve carousel dimensions; the editor still controls each slide's image and link.
+      heroRows.forEach(([key,anchor])=>{const row=byKey.get(key);if(row&&row.is_active)applyBanner(anchor,row);});
+      const side=byKey.get("side_banner"),sideAnchor=document.querySelector(".hero-honey-banner");
+      if(sideAnchor&&side){sideAnchor.hidden=!side.is_active;sideAnchor.style.display=side.is_active?"":"none";const grid=sideAnchor.parentElement;if(grid){if(side.is_active)grid.style.removeProperty("grid-template-columns");else grid.style.gridTemplateColumns="minmax(0,1fr)";}if(side.is_active)applyBanner(sideAnchor,side);}
+      const popupRow=byKey.get("first_order_popup"),popup=document.getElementById("halal-first-order-popup"),popupLink=document.getElementById("hf-popup-link");
+      if(popup&&popupRow){
+        popup.dataset.hfCmsDisabled=String(!popupRow.is_active);
+        if(popupLink&&popupRow.is_active){
+          const currentHref=popupLink.href||siteBase;
+          popupLink.href=safeUrl(popupRow.link_url,currentHref);
+          const img=popupLink.querySelector("img");
+          if(img&&popupRow.image_url){
+            img.setAttribute("data-src",safeUrl(popupRow.image_url,img.getAttribute("data-src")||img.src||""));
+            if(popupRow.alt_text)img.alt=String(popupRow.alt_text).slice(0,240);
+          }
+        }else if(popupLink){
+          popupLink.querySelector("img")?.removeAttribute("data-src");
+        }
+      }
+    };
+    load().catch(()=>{/* Static fallbacks remain in place if the CMS cannot be reached. */});
+  })();
+
   // Hero carousel
   const hero = document.querySelector("[data-hero-carousel]");
   if (hero) {

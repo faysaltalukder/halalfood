@@ -82,6 +82,7 @@ html.hf-popup-lock,body.hf-popup-lock{overflow:hidden}
     document.body.classList.remove("hf-popup-lock");
   }
   function openPopup(){
+    if(popup.getAttribute("data-hf-cms-disabled")==="true")return;
     var pimg=popup.querySelector("img[data-src]");
     if(pimg){
       /* download the banner first, then show the popup, so no empty box ever appears */

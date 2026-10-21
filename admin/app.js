@@ -239,14 +239,91 @@ window.HFAdminReady.then(async H=>{
   await refresh();attachRefresh(refresh);
  }
  async function initContent(){
-  let posts=[];
-  function render(){
+  let posts=[],siteBlocks=[];
+  const siteRoot="https://faysaltalukder.github.io/halalfood/";
+  function siteUrl(value){
+   try{const u=new URL(String(value||""),siteRoot);return ["http:","https:"].includes(u.protocol)?u.href:"";}catch(_){return "";}
+  }
+  function renderBlocks(){
+   const body=$("siteContentTableBody");if(!body)return;
+   const rows=siteBlocks.slice().sort((a,b)=>Number(a.sort_order||0)-Number(b.sort_order||0));
+   body.innerHTML=rows.length?rows.map(block=>{
+    const placement=block.block_type==="hero_slide"?"Hero carousel":block.block_type==="side_banner"?"Side banner":"Announcement popup";
+    const linkText=String(block.link_url||"");const visibleStatus=block.block_type==="hero_slide"?"Always enabled for carousel":block.is_active?"Visible":"Hidden";
+    return '<tr><td><strong>'+esc(placement)+'</strong><small>'+esc(block.title||block.block_key)+'</small></td><td><div style="display:flex;align-items:center;gap:9px">'+(siteUrl(block.image_url)?'<img class="hf-thumb" src="'+esc(siteUrl(block.image_url))+'" alt="" loading="lazy">':'<span class="hf-thumb hf-thumb-empty">▧</span>')+'<span>'+esc(block.alt_text||"No alternative text")+'</span></div></td><td><span style="display:inline-block;max-width:220px;overflow-wrap:anywhere">'+esc(linkText)+'</span></td><td>'+makeStatus(visibleStatus.toLowerCase().replace(/ /g,"-"))+'</td><td>'+dateTime(block.updated_at)+'</td><td><div class="hf-table-actions"><button class="hf-button hf-button-secondary hf-button-small" data-edit-site-block="'+esc(block.id)+'">Edit</button>'+(block.block_type!=="hero_slide"?'<button class="hf-button '+(block.is_active?"hf-button-danger":"hf-button-success")+' hf-button-small" data-toggle-site-block="'+esc(block.id)+'">'+(block.is_active?"Hide":"Show")+'</button>':"")+'</div></td></tr>';
+   }).join(""):'<tr><td colspan="6">'+makeEmpty("No homepage content blocks","Refresh after the content table has been configured.")+'</td></tr>';
+   $("siteContentTotalCount").textContent=siteBlocks.length.toLocaleString("en-BD");
+   $("siteContentActiveCount").textContent=siteBlocks.filter(b=>b.block_type==="hero_slide"||b.is_active).length.toLocaleString("en-BD");
+   $("siteContentUpdated").textContent="Homepage content settings checked at "+dateTime(new Date().toISOString())+". The public page uses these settings when available and falls back to static images if the database is unreachable.";
+  }
+  function renderPosts(){
    const search=String($("postSearch")?.value||$("globalSearch")?.value||"").toLowerCase().trim(),status=$("postStatusFilter")?.value||"";
    const rows=posts.filter(p=>(!status||p.status===status)&&(!search||[p.title,p.slug,p.category,p.excerpt].join(" ").toLowerCase().includes(search)));
    $("postsTableBody").innerHTML=rows.length?rows.map(p=>'<tr><td><strong>'+esc(p.title)+'</strong><small>/blog/post.html?slug='+esc(p.slug)+'</small></td><td>'+esc(p.category||"Guides")+'</td><td>'+makeStatus(p.status)+'</td><td>'+dateOnly(p.updated_at||p.created_at)+'</td><td><div class="hf-table-actions"><button class="hf-button hf-button-secondary hf-button-small" data-edit-post="'+esc(p.id)+'">Edit</button><button class="hf-button '+(p.status==="published"?"hf-button-danger":"hf-button-success")+' hf-button-small" data-toggle-post="'+esc(p.id)+'">'+(p.status==="published"?"Unpublish":p.status==="archived"?"Restore":"Publish")+'</button></div></td></tr>').join(""):'<tr><td colspan="5">'+makeEmpty("No content found","Create a blog post or adjust your search.")+'</td></tr>';
    $("postsCount").textContent=posts.length.toLocaleString("en-BD");$("publishedPostsCount").textContent=posts.filter(p=>p.status==="published").length.toLocaleString("en-BD");$("draftPostsCount").textContent=posts.filter(p=>p.status==="draft").length.toLocaleString("en-BD");
   }
-  async function refresh(){posts=await fetchPosts();render();}
+  function render(){renderBlocks();renderPosts();}
+  async function refresh(){
+   const results=await Promise.all([
+    fetchPosts(),
+    signedQuery(client.from("site_content_blocks").select("id,block_key,block_type,title,image_url,link_url,alt_text,is_active,sort_order,updated_by,created_at,updated_at").order("sort_order",{ascending:true}).order("block_key",{ascending:true}))
+   ]);
+   posts=results[0];siteBlocks=results[1];render();
+  }
+  function openSiteBlock(block){
+   if(!block)return;
+   $("siteBlockForm").reset();$("siteBlockId").value=block.id;$("siteBlockKey").value=block.block_key;$("siteBlockType").value=block.block_type;
+   $("siteBlockTitle").value=block.title||"";$("siteBlockImageUrl").value=block.image_url||"";$("siteBlockLinkUrl").value=block.link_url||"";$("siteBlockAltText").value=block.alt_text||"";$("siteBlockSortOrder").value=block.sort_order??0;
+   $("siteBlockActive").checked=block.is_active;$("siteBlockActive").disabled=block.block_type==="hero_slide";
+   $("siteBlockActiveHelp").textContent=block.block_type==="hero_slide"?"Hero slides stay enabled so the carousel keeps working correctly. You can still edit the image, destination and accessibility text.":"Turn this banner or popup on or off on the public homepage.";
+   $("siteBlockFormError").textContent="";$("siteBlockDialogTitle").textContent="Edit "+(block.block_type==="hero_slide"?"hero slide":block.block_type==="side_banner"?"side banner":"announcement popup");
+   const preview=$("siteBlockImagePreview"),src=siteUrl(block.image_url);
+   if(src){preview.src=src;preview.hidden=false;}else{preview.removeAttribute("src");preview.hidden=true;}
+   $("siteBlockDialog").showModal();
+  }
+  $("siteContentTableBody")?.addEventListener("click",async e=>{
+   const edit=e.target.closest("[data-edit-site-block]"),toggle=e.target.closest("[data-toggle-site-block]");
+   if(edit){openSiteBlock(siteBlocks.find(x=>x.id===edit.dataset.editSiteBlock));return;}
+   if(toggle){
+    const block=siteBlocks.find(x=>x.id===toggle.dataset.toggleSiteBlock);if(!block)return;
+    const active=!block.is_active;
+    if(!confirm((active?"Show":"Hide")+" "+(block.title||block.block_key)+" on the public homepage?"))return;
+    toggle.disabled=true;
+    try{
+     const {error}=await client.from("site_content_blocks").update({is_active:active,updated_by:H.ADMIN_EMAIL}).eq("id",block.id);if(error)throw error;
+     await audit(active?"site_content_activated":"site_content_hidden","site_content_block",block.id,(block.title||block.block_key)+(active?" activated":" hidden"));
+     toast(active?"Homepage content enabled.":"Homepage content hidden.");await refresh();
+    }catch(err){toast(err.message||"Homepage content status could not be updated.","error");}
+    finally{toggle.disabled=false;}
+   }
+  });
+  $("siteBlockImageUrl")?.addEventListener("input",()=>{
+   const src=siteUrl($("siteBlockImageUrl").value),preview=$("siteBlockImagePreview");
+   if(src){preview.src=src;preview.hidden=false;}else{preview.removeAttribute("src");preview.hidden=true;}
+  });
+  $("siteBlockImageFile")?.addEventListener("change",()=>{
+   const file=$("siteBlockImageFile").files?.[0];if(file){const preview=$("siteBlockImagePreview");preview.src=URL.createObjectURL(file);preview.hidden=false;}
+  });
+  $("siteBlockForm")?.addEventListener("submit",async e=>{
+   e.preventDefault();const button=$("saveSiteBlockBtn"),id=$("siteBlockId").value,block=siteBlocks.find(x=>x.id===id);
+   if(!block)return;
+   button.disabled=true;$("siteBlockFormError").textContent="";
+   try{
+    const title=$("siteBlockTitle").value.trim(),key=block.block_key;
+    let imageUrl=$("siteBlockImageUrl").value.trim(),linkUrl=$("siteBlockLinkUrl").value.trim();
+    const file=$("siteBlockImageFile").files?.[0];
+    if(file)imageUrl=await uploadImage(file,"site-content",slugify(key));
+    if(!title)throw new Error("Enter a clear internal name.");
+    if(!imageUrl)throw new Error("An image URL or uploaded image is required.");
+    if(!siteUrl(imageUrl))throw new Error("Use a valid HTTP/HTTPS image URL or a relative path inside the Halal Food website.");
+    if(!linkUrl||!siteUrl(linkUrl))throw new Error("Use a valid HTTP/HTTPS destination URL or a relative page link.");
+    const payload={title,image_url:imageUrl,link_url:linkUrl,alt_text:$("siteBlockAltText").value.trim(),sort_order:Math.max(0,parseInt($("siteBlockSortOrder").value||"0",10)||0),is_active:block.block_type==="hero_slide"?true:$("siteBlockActive").checked,updated_by:H.ADMIN_EMAIL};
+    const {error}=await client.from("site_content_blocks").update(payload).eq("id",id);if(error)throw error;
+    await audit("site_content_updated","site_content_block",id,"Homepage banner/popup settings updated",{block_key:key,is_active:payload.is_active});
+    $("siteBlockDialog").close();toast("Homepage content saved. Reload the public homepage to see the change.");await refresh();
+   }catch(err){$("siteBlockFormError").textContent=err.message||"Homepage content could not be saved. Check your permissions and image URL.";}
+   finally{button.disabled=false;}
+  });
   function openPost(p=null){
    $("postForm").reset();$("postId").value=p?.id||"";$("postTitle").value=p?.title||"";$("postSlug").value=p?.slug||"";$("postSlug").readOnly=!!p;$("postSlug").dataset.edited=p?"1":"";$("postCategory").value=p?.category||"Guides";$("postStatus").value=p?.status||"draft";$("postExcerpt").value=p?.excerpt||"";$("postContent").value=p?.content||"";$("postImageUrl").value=p?.featured_image_url||"";$("postSeoTitle").value=p?.seo_title||"";$("postSeoDescription").value=p?.seo_description||"";$("postFormError").textContent="";$("postDialogTitle").textContent=p?"Edit blog post":"Create blog post";$("postDialog").showModal();
   }
@@ -273,10 +350,10 @@ window.HFAdminReady.then(async H=>{
    if(toggle){const p=posts.find(x=>x.id===toggle.dataset.togglePost);if(!p)return;const status=p.status==="published"?"draft":"published";if(!confirm((status==="published"?"Publish":"Unpublish")+" “"+p.title+"”?"))return;try{const {error}=await client.from("blog_posts").update({status,published_at:status==="published"?(p.published_at||new Date().toISOString()):null,cms_managed:true}).eq("id",p.id);if(error)throw error;await audit("blog_status_changed","blog_post",p.id,"Blog post status changed",{status});toast(status==="published"?"Post published.":"Post moved to draft.");await refresh();}catch(err){toast(err.message||"Could not update post.","error");}}
   });
   document.querySelectorAll("[data-close-dialog]").forEach(b=>b.addEventListener("click",()=>$(b.dataset.closeDialog)?.close()));
-  $("postSearch")?.addEventListener("input",render);$("postStatusFilter")?.addEventListener("change",render);$("globalSearch")?.addEventListener("input",render);
+  $("postSearch")?.addEventListener("input",renderPosts);$("postStatusFilter")?.addEventListener("change",renderPosts);
+  $("globalSearch")?.addEventListener("input",()=>{renderPosts();renderBlocks();});
   await refresh();attachRefresh(refresh);
- }
- async function initCustomers(){
+ } async function initCustomers(){
   let profiles=[],orders=[];
   function render(){
    const search=String($("customerSearch")?.value||$("globalSearch")?.value||"").toLowerCase().trim();
@@ -366,14 +443,19 @@ window.HFAdminReady.then(async H=>{
     const products=await fetchProducts();
     rows=products.map(p=>({name:p.name,slug:p.slug,category:p.category,price:Number(p.price||0),display_price:p.display_price,unit_type:p.unit_type,stock_quantity:p.stock_quantity,is_active:p.is_active?"visible":"hidden",is_featured:p.is_featured?"yes":"no",updated_at:p.updated_at||p.created_at}));
     title="Products & Inventory Snapshot";notes="This is the current catalog state; the selected time range does not apply to inventory.";
+   }else if(type==="content"){
+    const blocks=await signedQuery(client.from("site_content_blocks").select("block_key,block_type,title,image_url,link_url,alt_text,is_active,sort_order,updated_by,updated_at").order("sort_order",{ascending:true}));
+    rows=blocks.map(b=>({placement:b.block_type,key:b.block_key,title:b.title,image_url:b.image_url,destination_url:b.link_url,alt_text:b.alt_text,active:b.is_active?"yes":"no",sort_order:b.sort_order,updated_by:b.updated_by,updated_at:b.updated_at}));
+    title="Homepage Content Settings";notes="This report contains the banner and promotion configuration used by the public homepage. Hero slides remain enabled to preserve carousel behavior; side banner and popup active flags can be changed from Website Content.";
    }else{
     const entries=await fetchFinance(range);
     rows=entries.map(e=>({entry_date:e.entry_date,entry_type:e.entry_type,category:e.category,amount:Number(e.amount||0),status:e.status,description:e.description,reference:e.reference,related_order_id:e.related_order_id||""}));
     title="Finance Entries Report";notes="Only Confirmed entries contribute to recorded income/expense totals. Entries are manual records and are not independently verified by a payment provider.";
    }
-   report={title,columns:rows.length?Object.keys(rows[0]):(type==="orders"?["order_number","ordered_at","status","subtotal","delivery_charge","total"]:type==="analytics"?["occurred_at","event_name","page_path","item_name"]:type==="products"?["name","slug","category","price","stock_quantity","is_active"]:["entry_date","entry_type","category","amount","status"]),rows,notes,rangeLabel:range.label,type};
-   $("reportTitle").textContent=title;$("reportRangeLabel").textContent=range.label;$("reportRowsCount").textContent=rows.length.toLocaleString("en-BD");$("reportNote").textContent=notes;
-   $("reportSummary").innerHTML='<div class="hf-summary-pill"><small>Records in report</small><strong>'+rows.length.toLocaleString("en-BD")+'</strong></div><div class="hf-summary-pill"><small>Report type</small><strong style="font-size:14px">'+esc(title)+'</strong></div><div class="hf-summary-pill"><small>Time filter</small><strong style="font-size:13px">'+esc(range.label)+'</strong></div>';
+   const displayRange=(type==="products"||type==="content")?"Current snapshot":range.label;
+   report={title,columns:rows.length?Object.keys(rows[0]):(type==="orders"?["order_number","ordered_at","status","subtotal","delivery_charge","total"]:type==="analytics"?["occurred_at","event_name","page_path","item_name"]:type==="products"?["name","slug","category","price","stock_quantity","is_active"]:type==="content"?["placement","key","title","image_url","destination_url","active"]:["entry_date","entry_type","category","amount","status"]),rows,notes,rangeLabel:displayRange,type};
+   $("reportTitle").textContent=title;$("reportRangeLabel").textContent=displayRange;$("reportRowsCount").textContent=rows.length.toLocaleString("en-BD");$("reportNote").textContent=notes;
+   $("reportSummary").innerHTML='<div class="hf-summary-pill"><small>Records in report</small><strong>'+rows.length.toLocaleString("en-BD")+'</strong></div><div class="hf-summary-pill"><small>Report type</small><strong style="font-size:14px">'+esc(title)+'</strong></div><div class="hf-summary-pill"><small>Time filter</small><strong style="font-size:13px">'+esc(displayRange)+'</strong></div>';
    const sample=rows.slice(0,200);
    $("reportTableHead").innerHTML="<tr>"+report.columns.map(c=>"<th>"+esc(c.replace(/_/g," "))+"</th>").join("")+"</tr>";
    $("reportTableBody").innerHTML=sample.length?sample.map(row=>"<tr>"+report.columns.map(c=>"<td>"+esc(row[c]??"")+"</td>").join("")+"</tr>").join(""):'<tr><td colspan="'+report.columns.length+'">'+makeEmpty("No report records","Try a longer time range or another report type.")+'</td></tr>';
@@ -397,7 +479,7 @@ window.HFAdminReady.then(async H=>{
  }
  async function initSettings(){
   async function healthCheck(){
-   const targets=[["Products","products"],["Categories","categories"],["Orders","orders"],["Tracking events","analytics_events"],["Finance entries","admin_finance_entries"],["Activity log","admin_activity_log"]];
+   const targets=[["Products","products"],["Categories","categories"],["Orders","orders"],["Tracking events","analytics_events"],["Homepage content","site_content_blocks"],["Finance entries","admin_finance_entries"],["Activity log","admin_activity_log"]];
    $("connectionStatus").textContent="Checking database access…";
    const result=await Promise.all(targets.map(async item=>{try{const r=await client.from(item[1]).select("id",{count:"exact",head:true});return {name:item[0],table:item[1],count:r.count,error:r.error?.message||null};}catch(err){return {name:item[0],table:item[1],error:err.message||"Connection error"};}}));
    $("systemHealthBody").innerHTML=result.map(r=>'<tr><td><strong>'+esc(r.name)+'</strong><small>'+esc(r.table)+'</small></td><td>'+(r.error?'<span class="hf-status hf-status-cancelled">Needs attention</span>':'<span class="hf-status hf-status-confirmed">Connected</span>')+'</td><td>'+(r.error?esc(r.error):Number(r.count||0).toLocaleString("en-BD")+" records")+'</td></tr>').join("");
@@ -417,10 +499,10 @@ window.HFAdminReady.then(async H=>{
    if(!confirm("Download an admin-only copy of current operational records? The file may contain customer contact details. Keep it private."))return;
    const b=$("downloadBackupBtn");b.disabled=true;
    try{
-    const [products,categories,orders,posts,finance,events]=await Promise.all([fetchProducts(),fetchCategories(),fetchOrders(null,5000),fetchPosts(),fetchFinance(),fetchEvents(null,15000)]);
-    const packageData={backup_type:"halal-food-operational-export",generated_at:new Date().toISOString(),generated_by:H.ADMIN_EMAIL,notice:"Manual export only; this file is not automatically restored. It contains sensitive operational data and must be kept private.",data:{products,categories,orders,blog_posts:posts,admin_finance_entries:finance,analytics_events:events}};
+    const [products,categories,orders,posts,finance,events,siteBlocks]=await Promise.all([fetchProducts(),fetchCategories(),fetchOrders(null,5000),fetchPosts(),fetchFinance(),fetchEvents(null,15000),signedQuery(client.from("site_content_blocks").select("block_key,block_type,title,image_url,link_url,alt_text,is_active,sort_order,updated_by,created_at,updated_at").order("sort_order",{ascending:true}))]);
+    const packageData={backup_type:"halal-food-operational-export",generated_at:new Date().toISOString(),generated_by:H.ADMIN_EMAIL,notice:"Manual export only; this file is not automatically restored. It contains sensitive operational data and must be kept private.",data:{products,categories,orders,blog_posts:posts,site_content_blocks:siteBlocks,admin_finance_entries:finance,analytics_events:events}};
     downloadFile("halal-food-admin-export-"+todayISO()+".json",JSON.stringify(packageData,null,2),"application/json;charset=utf-8");
-    await audit("data_backup_downloaded","backup",null,"Operational data export downloaded",{products:products.length,categories:categories.length,orders:orders.length,blog_posts:posts.length,finance_entries:finance.length,analytics_events:events.length});
+    await audit("data_backup_downloaded","backup",null,"Operational data export downloaded",{products:products.length,categories:categories.length,orders:orders.length,blog_posts:posts.length,site_content_blocks:siteBlocks.length,finance_entries:finance.length,analytics_events:events.length});
     toast("Data export downloaded. Store it securely.");
    }catch(err){toast(err.message||"Backup export failed. Check data access.","error");}
    finally{b.disabled=false;}
