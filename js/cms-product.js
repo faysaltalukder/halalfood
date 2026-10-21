@@ -85,6 +85,18 @@
     if (meta) meta.content = articleDescription;
     const canonical = document.querySelector('link[rel="canonical"]');
     if (canonical) canonical.href = rootURL("cms-product.html?slug=" + encodeURIComponent(item.slug));
+    const ogTitle = document.querySelector('meta[property="og:title"]');
+    const ogDescription = document.querySelector('meta[property="og:description"]');
+    const ogUrl = document.querySelector('meta[property="og:url"]');
+    const twitterTitle = document.querySelector('meta[name="twitter:title"]');
+    const twitterDescription = document.querySelector('meta[name="twitter:description"]');
+    const twitterUrl = document.querySelector('meta[name="twitter:url"]');
+    if (ogTitle) ogTitle.content = articleTitle;
+    if (ogDescription) ogDescription.content = articleDescription;
+    if (ogUrl && canonical) ogUrl.content = canonical.href;
+    if (twitterTitle) twitterTitle.content = articleTitle;
+    if (twitterDescription) twitterDescription.content = articleDescription;
+    if (twitterUrl && canonical) twitterUrl.content = canonical.href;
     const breadcrumb = $("#product-breadcrumb");
     if (breadcrumb) breadcrumb.innerHTML = '<a href="' + rootURL("index.html") + '">Home</a> &gt; <a href="' + rootURL("category.html?slug=" + encodeURIComponent(item.category_slug || "")) + '">' + esc(item.category || "Category") + '</a> &gt; ' + esc(item.name);
     const imgButton = $(".product-detail-image", box);
