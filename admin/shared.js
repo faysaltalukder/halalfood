@@ -172,7 +172,7 @@ function makeShell(){
  '<div class="admin-nav-group"><div class="admin-nav-label">WORKSPACE</div>'+links+'</div>'+
  '<div class="admin-sidebar-note"><strong>Easy Mode + Advanced Tools</strong>Clear guidance for everyday tasks, with deeper reports when you need them.</div></aside>'+
  '<div class="admin-frame"><header class="admin-topbar"><button id="adminMenuToggle" class="admin-menu-toggle" type="button" aria-label="Open navigation">☰</button>'+
- '<div class="admin-global-search"><input id="globalSearch" type="search" placeholder="Search this page…" aria-label="Search current page"></div><span class="admin-topbar-spacer"></span>'+
+ '<div class="admin-global-search"><input id="globalSearch" type="search" placeholder="Search all tables…" aria-label="Search all tables on this page"></div><span class="admin-topbar-spacer"></span>'+
  '<button class="admin-top-button theme-toggle" id="themeToggle" type="button" aria-label="Switch to light theme" title="Switch to light theme" aria-pressed="false"><span class="theme-toggle-icon" aria-hidden="true">☼</span><span class="theme-toggle-label">Light theme</span></button><button class="admin-top-button" id="modeToggle" type="button">Advanced view</button><button class="admin-top-button" id="helpBtn" type="button">? Help</button><button class="admin-top-button" id="logoutBtn" type="button">Sign out</button>'+
  '<div class="admin-account-chip"><span class="admin-account-avatar">HF</span><span class="admin-account-meta"><strong>Admin</strong><small id="accountEmail">Authorized account</small></span></div></header>'+
  '<main class="admin-main" id="adminMain">'+initialContent+'</main></div>'+
