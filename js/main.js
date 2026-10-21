@@ -1272,7 +1272,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   } catch (_) {}
   var firstPartyEndpoint = 'https://qfwvrcfkrsydycbfjsxf.supabase.co/functions/v1/analytics-ingest';
-  var firstPartyEvents = new Set(['page_view','view_item','view_item_list','select_item','search','add_to_cart','view_cart','begin_checkout','order_submit','order_success','track_order','whatsapp_click','phone_click']);
+  var firstPartyEvents = new Set(['page_view','page_engagement','view_item','view_item_list','select_item','search','add_to_cart','view_cart','begin_checkout','order_submit','order_success','track_order','whatsapp_click','phone_click']);
   function sendFirstPartyEvent(eventName, params) {
     if (!firstPartyEvents.has(eventName)) return;
     var p = params || {};
@@ -1324,6 +1324,31 @@ document.addEventListener("DOMContentLoaded", () => {
   } else {
     window.halalTrack('page_view', {page_title: document.title});
   }
+
+  // First-party on-site page timing only. Deliberately does not forward this custom event to GA4/GTM/Meta.
+  var pageVisibleMs = 0;
+  var visibleSince = document.visibilityState === 'visible' ? performance.now() : null;
+  var pageEngagementSent = false;
+  function pausePageVisibleClock() {
+    if (visibleSince !== null) {
+      pageVisibleMs += Math.max(0, performance.now() - visibleSince);
+      visibleSince = null;
+    }
+  }
+  document.addEventListener('visibilitychange', function() {
+    if (document.hidden) {
+      pausePageVisibleClock();
+    } else if (!pageEngagementSent && visibleSince === null) {
+      visibleSince = performance.now();
+    }
+  });
+  window.addEventListener('pagehide', function() {
+    if (pageEngagementSent) return;
+    pageEngagementSent = true;
+    pausePageVisibleClock();
+    // analytics_events.value stores seconds for page_engagement events.
+    sendFirstPartyEvent('page_engagement', {value: Math.min(86400, Math.round(pageVisibleMs / 1000))});
+  }, {once:true});
 
   window.halalTrackItems=function(items){
     return (Array.isArray(items)?items:[]).map(function(item){
