@@ -587,6 +587,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const money = (value) => `৳ ${Math.round(Number(value) || 0).toLocaleString("en-BD")}`;
   const singleProductName = params.get("product") || "";
   let singleProduct = null;
+  let singleProductUnavailable = false;
 
   if (singleProductName) {
     productInput && (productInput.value = singleProductName);
@@ -646,6 +647,7 @@ document.addEventListener("DOMContentLoaded", () => {
     );
     if (!fresh) {
       singleProduct = null;
+      singleProductUnavailable = true;
       if (productDisplay) productDisplay.textContent = "This product is no longer available.";
       if (productPrice) productPrice.textContent = "Price unavailable";
       if (productLineTotal) productLineTotal.textContent = money(0);
@@ -653,6 +655,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
     singleProduct = fresh;
+    singleProductUnavailable = false;
     if (productInput) productInput.value = fresh.name;
     if (productDisplay) productDisplay.textContent = fresh.name;
     const latestPrice = priceNumber(fresh.price);
@@ -748,9 +751,9 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      if (!isCartOrder && !singleProductName) {
+      if (!isCartOrder && (!singleProductName || !singleProduct || singleProductUnavailable)) {
         if (error) {
-          error.textContent = "কোনো পণ্য নির্বাচন করা হয়নি। আবার পণ্য নির্বাচন করুন।";
+          error.textContent = singleProductUnavailable ? "এই পণ্যটি এখন আর পাওয়া যাচ্ছে না। আবার সক্রিয় পণ্য নির্বাচন করুন।" : (!singleProduct ? "পণ্যের তথ্য লোড হয়নি। একটু পর আবার চেষ্টা করুন।" : "কোনো পণ্য নির্বাচন করা হয়নি। আবার পণ্য নির্বাচন করুন।");
           error.style.display = "block";
         }
         if (submit) {
