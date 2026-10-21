@@ -227,8 +227,16 @@
   const html = { escape: s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])) };
 
   function renderCounts() {
-    const qty = totalQty();
-    document.querySelectorAll("[data-cart-count]").forEach(el => { el.textContent = String(qty); el.classList.toggle("is-empty", qty === 0); });
+    const items = read();
+    const qty = totalQty(items);
+    const amount = money(total(items));
+    document.querySelectorAll("[data-cart-count]").forEach(el => {
+      el.textContent = String(qty);
+      el.classList.toggle("is-empty", qty === 0);
+    });
+    document.querySelectorAll("[data-cart-total]").forEach(el => {
+      el.textContent = amount;
+    });
   }
 
   // Keep the shopper on the current page and turn added product buttons into quantity steppers.
