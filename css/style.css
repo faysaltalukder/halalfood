@@ -2789,4 +2789,11 @@ main .section-head h3 {
     max-width: 100%;
     box-sizing: border-box;
   }
+  /* Simplified mobile order form: keep these labels visible on desktop only. */
+  .checkout-page .checkout-page-heading,
+  .checkout-page .checkout-step-label,
+  .checkout-page .checkout-products-helper {
+    display: none !important;
+  }
+
 }
