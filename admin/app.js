@@ -149,7 +149,7 @@ window.HFAdminReady.then(async H=>{
    if(catalogGaps>0)add("warning","Active products need catalog details",catalogGaps,"Add a valid positive price and/or a product image where needed.","./products.html","Review catalog");
    const issueCount=actions.filter(a=>a.kind!=="info").length;
    const badge=$("overviewActionCount");
-   if(badge){badge.textContent=issueCount?issueCount.toLocaleString("en-BD")+" to review":"Clear";badge.className="hf-status "+(issueCount?"hf-status-pending":"hf-status-confirmed");}
+   if(badge){badge.innerHTML=issueCount?"<strong>"+issueCount.toLocaleString("en-BD")+"</strong> <span>"+esc("to review")+"</span>":esc("Clear");badge.className="hf-status "+(issueCount?"hf-status-pending":"hf-status-confirmed");}
    if(!actions.length){
     list.innerHTML='<div class="hf-action-clear"><span class="hf-action-clear-icon">✓</span><div><strong>'+esc("Everything looks clear")+'</strong><p>'+esc("No pending orders or tracked stock alerts were found in the loaded records.")+'</p></div></div>';
    }else{
