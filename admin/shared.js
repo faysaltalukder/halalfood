@@ -72,13 +72,22 @@ function lastDateKeys(days){
  for(let i=Math.max(1,days)-1;i>=0;i--){const d=new Date(today);d.setDate(d.getDate()-i);keys.push(d.toISOString().slice(0,10));}
  return keys;
 }
-const palette={navy:"#2B2A3D",orange:"#C97B3D",blue:"#5B86B5",green:"#4A9870",purple:"#9276C4",yellow:"#D6A34D",red:"#C96A5D",teal:"#539AA1",cream:"#F2F0EA",muted:"#9392A0"};
-const colorSet=[palette.orange,palette.blue,palette.green,palette.purple,palette.yellow,palette.red,palette.teal,"#9A7C6B","#7E8FB8","#B6A06B"];
+const palette={navy:"#C9D5E6",orange:"#F59E0B",blue:"#4F7CFF",green:"#10B981",purple:"#9B6DFF",yellow:"#FBBF24",red:"#F05274",teal:"#06B6D4",cream:"#111C2E",muted:"#96A6BE"};
+const colorSet=[palette.purple,palette.blue,palette.teal,palette.green,palette.yellow,palette.red,"#E879F9","#818CF8","#F97316","#38BDF8"];
 const charts={};
+if(window.Chart){
+ Chart.defaults.color=palette.navy;
+ Chart.defaults.font.family='Inter, "Segoe UI Variable", "Segoe UI", system-ui, sans-serif';
+ Chart.defaults.font.size=11;
+ Chart.defaults.plugins.legend.labels.usePointStyle=true;
+}
 function drawChart(id,config){
  const canvas=document.getElementById(id);if(!canvas||!window.Chart)return;
  if(charts[id])charts[id].destroy();
- const base={responsive:true,maintainAspectRatio:false,animation:{duration:450},plugins:{legend:{labels:{color:palette.navy,usePointStyle:true,boxWidth:8,padding:16,font:{family:"Inter, system-ui",size:11}}},tooltip:{backgroundColor:palette.navy,padding:11,displayColors:true,titleFont:{family:"Inter, system-ui"},bodyFont:{family:"Inter, system-ui"}}}};
+ const base={responsive:true,maintainAspectRatio:false,animation:{duration:380},plugins:{
+  legend:{labels:{color:palette.navy,usePointStyle:true,boxWidth:9,boxHeight:9,padding:18,font:{family:'Inter, "Segoe UI Variable", "Segoe UI", system-ui, sans-serif',size:11,weight:600}}},
+  tooltip:{backgroundColor:"#07101F",titleColor:"#F2F6FF",bodyColor:"#CFD9E8",borderColor:"#344966",borderWidth:1,cornerRadius:10,padding:12,displayColors:true,titleFont:{family:'Inter, "Segoe UI Variable", "Segoe UI", system-ui, sans-serif',weight:700},bodyFont:{family:'Inter, "Segoe UI Variable", "Segoe UI", system-ui, sans-serif'}}
+ }};
  const opts={...base,...config.options,plugins:{...base.plugins,...(config.options?.plugins||{})}};
  charts[id]=new Chart(canvas,{...config,options:opts});
  return charts[id];
