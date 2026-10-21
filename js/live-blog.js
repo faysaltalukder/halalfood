@@ -83,7 +83,20 @@
     if(meta) meta.content = post.seo_description || post.excerpt || post.title;
     const canonical = document.querySelector('link[rel="canonical"]');
     if(canonical) canonical.href = post.cms_created ? rootURL("blog/post.html?slug="+encodeURIComponent(post.slug)) : rootURL("blog/"+encodeURIComponent(post.slug)+".html");
-    document.title = (post.seo_title || post.title) + " — Halal Food Blog";
+    const pageTitle = (post.seo_title || post.title) + " — Halal Food Blog";
+    document.title = pageTitle;
+    const ogTitle = document.querySelector('meta[property="og:title"]');
+    const ogDescription = document.querySelector('meta[property="og:description"]');
+    const ogUrl = document.querySelector('meta[property="og:url"]');
+    const twitterTitle = document.querySelector('meta[name="twitter:title"]');
+    const twitterDescription = document.querySelector('meta[name="twitter:description"]');
+    const twitterUrl = document.querySelector('meta[name="twitter:url"]');
+    if(ogTitle) ogTitle.content = pageTitle;
+    if(ogDescription) ogDescription.content = post.seo_description || post.excerpt || post.title;
+    if(ogUrl && canonical) ogUrl.content = canonical.href;
+    if(twitterTitle) twitterTitle.content = pageTitle;
+    if(twitterDescription) twitterDescription.content = post.seo_description || post.excerpt || post.title;
+    if(twitterUrl && canonical) twitterUrl.content = canonical.href;
   }
   async function start() {
     const pathname = location.pathname;
