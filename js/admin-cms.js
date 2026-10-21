@@ -289,6 +289,7 @@
       let image = el("categoryImageUrl").value.trim() || null;
       const uploaded = await uploadImage(el("categoryImageFile"), "categories", slug);
       if (uploaded) image = uploaded;
+      if (!id && !image) throw new Error("Add a category image by uploading a file or entering an image URL.");
       const row = { name, slug, cms_created: id ? Boolean(state.categories.find(x => x.id === id)?.cms_created) : true, cms_managed: true, description: el("categoryDescription").value.trim(), image_url: image,
         sort_order: Number(el("categorySortOrder").value || 0), is_active: el("categoryActive").checked, updated_at: new Date().toISOString() };
       let result;
