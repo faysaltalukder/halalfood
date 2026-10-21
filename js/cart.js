@@ -12,7 +12,7 @@
       if (!Array.isArray(value)) return [];
       const products = Array.isArray(window.PRODUCTS_DATA) ? window.PRODUCTS_DATA : [];
       const catalogReady = window.HALAL_LIVE_CATALOG_READY === true;
-      return value.filter(item => item && item.slug && item.name && (!catalogReady || products.some(p => String(p.slug || "") === String(item.slug || ""))).map(item => {
+      return value.filter(item => item && item.slug && item.name && (!catalogReady || products.some(p => String(p.slug || "") === String(item.slug || "")))).map(item => {
         const source = products.find(p => String(p.slug || "") === String(item.slug || ""));
         const displayPrice = String(source?.price || visibleDisplayPrice(item.slug) || item.displayPrice || item.price || "");
         // Prefer the visible unit price: older product markup could turn "৳ 950 / 500g"
