@@ -498,15 +498,32 @@ async function load(){
  $("ordersBody").innerHTML=cache.length?cache.map((x,i)=>{
    const items=(x.order_items||[]).map(it=>'<div class="item">'+(it.product_image_url?'<img src="'+escapeHtml(it.product_image_url)+'" alt="">':'')+'<span>'+escapeHtml(it.product_name)+' × '+escapeHtml(it.quantity)+' '+escapeHtml(it.unit)+' — '+money(it.line_total)+'</span></div>').join("")||'<span class="muted">No items</span>';
    const area=x.delivery_zone==="inside_dhaka"?"Inside Dhaka":x.delivery_zone==="outside_dhaka"?"Outside Dhaka":"—";
-   return '<tr><td>'+(escapeHtml(x.order_number||x.id.slice(0,8)))+'</td><td>'+escapeHtml(x.customer_name)+'</td><td>'+escapeHtml(x.customer_phone)+'</td><td>'+money(x.delivery_zone ? x.subtotal : (Number(x.subtotal)||Number(x.total)||0))+"</td><td>"+money(x.delivery_charge)+"</td><td>"+money(x.total)+'</td><td>'+area+'</td><td>'+escapeHtml(x.payment_method||"—")+'</td><td><select class="status" data-status="'+x.id+'">'+["pending","processing","shipped","delivered","cancelled"].map(s=>'<option '+(s===x.status?'selected':'')+'>'+s+'</option>').join("")+'</select></td><td>'+new Date(x.ordered_at).toLocaleString("en-BD")+'</td><td><button class="secondary" data-detail="'+i+'">Details</button></td></tr><tr class="details" id="detail-'+i+'"><td colspan="11"><b>Products subtotal:</b> '+money(x.delivery_zone ? x.subtotal : (Number(x.subtotal)||Number(x.total)||0))+"<br><b>Delivery charge:</b> "+money(x.delivery_charge)+'<br><b>Total:</b> '+money(x.total)+'<br><b>Delivery area:</b> '+area+'<br><b>Payment:</b> '+escapeHtml(x.payment_method||"—")+'<br><b>Address:</b> '+escapeHtml(x.delivery_address)+'<br><b>Email:</b> '+escapeHtml(x.customer_email||"—")+'<br>'+items+'</td></tr>';
+   return '<tr><td>'+(escapeHtml(x.order_number||x.id.slice(0,8)))+'</td><td>'+escapeHtml(x.customer_name)+'</td><td>'+escapeHtml(x.customer_phone)+'</td><td>'+money(x.delivery_zone ? x.subtotal : (Number(x.subtotal)||Number(x.total)||0))+"</td><td>"+money(x.delivery_charge)+"</td><td>"+money(x.total)+'</td><td>'+area+'</td><td>'+escapeHtml(x.payment_method||"—")+'</td><td><select class="status" data-status="'+x.id+'">'+["pending","processing","shipped","delivered","cancelled"].map(s=>'<option '+(s===x.status?'selected ':'')+(x.status==="cancelled"&&s!=="cancelled"?'disabled ':'')+'>'+s+'</option>').join("")+'</select></td><td>'+new Date(x.ordered_at).toLocaleString("en-BD")+'</td><td><button class="secondary" data-detail="'+i+'">Details</button></td></tr><tr class="details" id="detail-'+i+'"><td colspan="11"><b>Products subtotal:</b> '+money(x.delivery_zone ? x.subtotal : (Number(x.subtotal)||Number(x.total)||0))+"<br><b>Delivery charge:</b> "+money(x.delivery_charge)+'<br><b>Total:</b> '+money(x.total)+'<br><b>Delivery area:</b> '+area+'<br><b>Payment:</b> '+escapeHtml(x.payment_method||"—")+'<br><b>Address:</b> '+escapeHtml(x.delivery_address)+'<br><b>Email:</b> '+escapeHtml(x.customer_email||"—")+'<br>'+items+'</td></tr>';
  }).join(""):'<tr><td colspan="11" class="muted">No orders yet.</td></tr>';
  document.querySelectorAll("[data-status]").forEach(el=>el.addEventListener("change",()=>updateStatus(el.dataset.status,el.value)));
  document.querySelectorAll("[data-detail]").forEach(el=>el.addEventListener("click",()=>$(("detail-"+el.dataset.detail)).classList.toggle("open")));
 }
 async function updateStatus(id,status){
- const {error}=await client.from("orders").update({status,updated_at:new Date().toISOString()}).eq("id",id);
- if(error){alert(error.message);load();return}
- load();
+ const order=cache.find(row=>row.id===id);
+ if(!order)return;
+ const previous=order.status;
+ if(status===previous)return;
+ let cancellationReason=null;
+ if(status==="cancelled"){
+  cancellationReason=window.prompt("Why is this order being cancelled? This reason is saved in the order history.","");
+  if(cancellationReason===null){load();return;}
+  cancellationReason=cancellationReason.trim();
+  if(cancellationReason.length<3||cancellationReason.length>500){alert("Enter a cancellation reason between 3 and 500 characters.");load();return;}
+ }
+ if((status==="cancelled"||status==="delivered")&&!confirm("Change order "+(order.order_number||String(order.id).slice(0,8))+" from "+previous+" to "+status+"?")){load();return;}
+ try{
+  const {error}=await client.rpc("admin_update_order_status",{p_order_id:id,p_next_status:status,p_cancellation_reason:cancellationReason});
+  if(error)throw error;
+  await load();
+ }catch(err){
+  alert("Order status was not saved. "+(err?.message||"Check your admin access and try again."));
+  await load();
+ }
 }
 $("refresh").onclick=()=>{load();loadAnalytics();loadCustomers();};
 $("refreshCustomers").onclick=()=>loadCustomers();
