@@ -2,7 +2,7 @@
 (function () {
   "use strict";
   const ADMIN_EMAIL = "halalfoodbd.official@gmail.com";
-  const PRODUCT_FIELDS = "id,name,slug,category,category_slug,price,unit_type,display_price,image_url,short_description,full_description,stock_quantity,is_active,is_featured,sort_order,seo_title,seo_description,cms_created,updated_at,created_at";
+  const PRODUCT_FIELDS = "id,name,slug,category,category_slug,price,unit_type,display_price,image_url,short_description,full_description,stock_quantity,is_active,is_featured,sort_order,seo_title,seo_description,cms_created,cms_managed,updated_at,created_at";
   const CATEGORY_FIELDS = "id,name,slug,description,image_url,is_active,sort_order,cms_created,updated_at,created_at";
   const POST_FIELDS = "id,title,slug,excerpt,content,featured_image_url,category,status,published_at,seo_title,seo_description,cms_created,updated_at,created_at";
   const state = { products: [], categories: [], posts: [], ready: false, loading: false };
@@ -223,6 +223,7 @@
       const row = {
         name, slug, category: category.name, category_slug: category.slug,
         cms_created: id ? Boolean(state.products.find(p => p.id === id)?.cms_created || state.products.find(p => p.id === id)?.slug !== slug) : true,
+        cms_managed: true,
         price, unit_type: unit, display_price: displayPrice, image_url: image,
         short_description: el("productShortDescription").value.trim(),
         full_description: el("productFullDescription").value.trim(),
