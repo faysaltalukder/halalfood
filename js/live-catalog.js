@@ -4,6 +4,7 @@
   const API_ROOT = "https://qfwvrcfkrsydycbfjsxf.supabase.co";
   const PUBLIC_KEY = "sb_publishable_X32Rb8W-axGIfgFuppdfZQ_jbc38pcL";
   const SITE_ROOT = "https://faysaltalukder.github.io/halalfood/";
+  let currentCategories = [];
   const CART_ICON = '<svg aria-hidden="true" class="btn-icon" viewBox="0 0 24 24"><path d="M6 6h15l-1.5 9h-12z"></path><circle cx="9" cy="20" r="1.4"></circle><circle cx="18" cy="20" r="1.4"></circle><path d="M2 3h2l1 3"></path></svg>';
   const $ = (selector, root) => (root || document).querySelector(selector);
   const $$ = (selector, root) => Array.from((root || document).querySelectorAll(selector));
@@ -342,12 +343,14 @@
       readTable("products", { select: "id,name,slug,category,category_slug,price,unit_type,display_price,image_url,short_description,full_description,description,is_active,is_featured,cms_created,cms_managed,sort_order,seo_title,seo_description,stock_quantity", is_active: "eq.true", order: "sort_order.asc,name.asc", limit: "1000" }),
       readTable("categories", { select: "id,name,slug,description,image_url,is_active,cms_created,cms_managed,sort_order", is_active: "eq.true", order: "sort_order.asc,name.asc", limit: "500" })
     ]);
+    currentCategories = categories;
     syncProductData(products, categories);
     syncCategoryMenus(categories);
     if (info.kind === "home") renderHome(products, categories);
     else if (info.kind === "category") renderCategory(products, categories, info);
     else if (info.kind === "product") renderProductDetail(products, info);
   }
+  window.addEventListener("halalnav:ready", () => { if (currentCategories.length) syncCategoryMenus(currentCategories); });
   const initLiveCatalog = () => start().catch(error => {
     console.warn("Live catalog could not connect; leaving the static catalog in place.", error);
     const status = $("#live-catalog-status");
