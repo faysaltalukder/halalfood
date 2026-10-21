@@ -2738,3 +2738,55 @@ main .section-head h3 {
     overflow-wrap: anywhere !important;
   }
 }
+
+
+/* Order form refinement — mobile phones only, 2026-10-21.
+   Remove wasted horizontal space so the product, customer and summary cards
+   have a little more usable width without changing typography. */
+@media screen and (max-width: 600px) {
+  .checkout-section .wrap.order-page.checkout-page {
+    width: calc(100% - 18px) !important;
+    max-width: 640px !important;
+    padding-left: 14px !important;
+    padding-right: 14px !important;
+  }
+
+  .checkout-page .checkout-items-section,
+  .checkout-page .checkout-form,
+  .checkout-page .checkout-details-grid,
+  .checkout-page .order-review,
+  .checkout-page .order-review-card,
+  .checkout-page .checkout-customer-card,
+  .checkout-page .checkout-summary-card {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .checkout-page .checkout-details-grid {
+    gap: 18px !important;
+  }
+
+  .checkout-page .checkout-customer-card,
+  .checkout-page .checkout-summary-card {
+    padding: 16px !important;
+  }
+
+  .checkout-page .checkout-section-heading {
+    margin-bottom: 14px !important;
+  }
+
+  .checkout-page .checkout-section-heading h2 {
+    overflow-wrap: anywhere;
+  }
+
+  .checkout-page .checkout-summary-rows,
+  .checkout-page .checkout-delivery-fieldset,
+  .checkout-page .checkout-payment-box,
+  .checkout-page .checkout-grand-total-row {
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+}
