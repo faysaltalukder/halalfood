@@ -4,7 +4,7 @@
   const ADMIN_EMAIL = "halalfoodbd.official@gmail.com";
   const PRODUCT_FIELDS = "id,name,slug,category,category_slug,price,unit_type,display_price,image_url,short_description,full_description,stock_quantity,is_active,is_featured,sort_order,seo_title,seo_description,cms_created,cms_managed,updated_at,created_at";
   const CATEGORY_FIELDS = "id,name,slug,description,image_url,is_active,sort_order,cms_created,updated_at,created_at";
-  const POST_FIELDS = "id,title,slug,excerpt,content,featured_image_url,category,status,published_at,seo_title,seo_description,cms_created,updated_at,created_at";
+  const POST_FIELDS = "id,title,slug,excerpt,content,featured_image_url,category,status,published_at,seo_title,seo_description,cms_created,cms_managed,updated_at,created_at";
   const state = { products: [], categories: [], posts: [], ready: false, loading: false };
   const el = id => document.getElementById(id);
   const esc = value => String(value ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
@@ -352,7 +352,7 @@
       const status = el("postStatus").value;
       const old = state.posts.find(p => p.id === id);
       const row = {
-        title, slug, cms_created: id ? Boolean(state.posts.find(p => p.id === id)?.cms_created) : true, excerpt: el("postExcerpt").value.trim(), content: el("postContent").value.trim(),
+        title, slug, cms_created: id ? Boolean(state.posts.find(p => p.id === id)?.cms_created) : true, cms_managed: true, excerpt: el("postExcerpt").value.trim(), content: el("postContent").value.trim(),
         featured_image_url: image, category: el("postCategory").value.trim() || "Guides", status,
         published_at: status === "published" ? (old?.published_at || new Date().toISOString()) : null,
         seo_title: el("postSeoTitle").value.trim() || title + " | Halal Food Blog",
