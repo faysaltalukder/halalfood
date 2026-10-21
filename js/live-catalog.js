@@ -276,12 +276,43 @@
   function handleProductResult(product, info) {
     if (info.kind === "product") renderProductDetail([product], info);
   }
+  function syncProductData(products) {
+    if (!Array.isArray(window.PRODUCTS_DATA)) return;
+    const previous = window.PRODUCTS_DATA.slice();
+    const active = products.filter(item => item.is_active).map(item => {
+      const old = previous.find(entry => String(entry.slug || "") === String(item.slug || "")) || {};
+      return Object.assign(old, {
+        slug: item.slug, name: item.name, category: item.category || "",
+        categorySlug: item.category_slug || "",
+        price: priceText(item), image: item.image_url || "",
+        shortDescription: item.short_description || "",
+        fullDescription: item.full_description || item.description || "",
+        cmsCreated: Boolean(item.cms_created), cmsManaged: Boolean(item.cms_managed)
+      });
+    });
+    window.PRODUCTS_DATA.splice(0, window.PRODUCTS_DATA.length, ...active);
+    try {
+      if (typeof PRODUCTS_INDEX !== "undefined" && Array.isArray(PRODUCTS_INDEX)) {
+        const nextIndex = active.map(item => [
+          item.name,
+          item.cmsCreated ? rootURL("cms-product.html?slug=" + encodeURIComponent(item.slug)) :
+            rootURL("products/" + encodeURIComponent(item.slug) + ".html")
+        ]);
+        PRODUCTS_INDEX.splice(0, PRODUCTS_INDEX.length, ...nextIndex);
+      }
+    } catch (_) {}
+    window.dispatchEvent(new CustomEvent("halalcatalog:updated", { detail: { products: active, categories: stateCategories(products) } }));
+  }
+  function stateCategories(products) {
+    return products;
+  }
   async function start() {
     const info = pathInfo();
     const [products, categories] = await Promise.all([
       readTable("products", { select: "id,name,slug,category,category_slug,price,unit_type,display_price,image_url,short_description,full_description,description,is_active,is_featured,cms_created,cms_managed,sort_order,seo_title,seo_description,stock_quantity", is_active: "eq.true", order: "sort_order.asc,name.asc", limit: "1000" }),
       readTable("categories", { select: "id,name,slug,description,image_url,is_active,cms_created,sort_order", is_active: "eq.true", order: "sort_order.asc,name.asc", limit: "500" })
     ]);
+    syncProductData(products);
     if (info.kind === "home") renderHome(products, categories);
     else if (info.kind === "category") renderCategory(products, categories, info);
     else if (info.kind === "product") renderProductDetail(products, info);
