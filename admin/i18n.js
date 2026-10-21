@@ -423,6 +423,7 @@
     "+ Create post": "+ পোস্ট তৈরি",
     "Choose a category": "ক্যাটাগরি বেছে নিন",
     "Visible on the store": "স্টোরে দেখানো হবে",
+    "Search all tables…": "সব টেবিলে খুঁজুন…",
   };
 
   const textState = new WeakMap();
