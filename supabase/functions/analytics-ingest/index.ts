@@ -59,9 +59,6 @@ function safeEvent(input: Record<string, unknown>) {
     value,
     quantity,
     search_term: textValue(input.search_term, 120),
-    source: textValue(input.source, 100),
-    medium: textValue(input.medium, 100),
-    campaign: textValue(input.campaign, 150),
     // Store only a fixed, non-personal marker for page timing; arbitrary client metadata is discarded.
     metadata: eventName === "page_engagement" ? { measurement: "visible_seconds" } : {}
   };
