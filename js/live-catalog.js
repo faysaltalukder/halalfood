@@ -191,8 +191,10 @@
   function renderHome(products, categories) {
     const featuredGrid = $("#products .product-grid");
     if (featuredGrid) {
-      const featured = products.filter(item => item.is_featured && item.is_active).sort((a,b) => Number(a.sort_order||0)-Number(b.sort_order||0)).slice(0,4);
-      const rows = featured.length ? featured : products.slice(0,4);
+      const featured = products.filter(item => item.is_featured && item.is_active).sort((a,b) => Number(a.sort_order||0)-Number(b.sort_order||0));
+      const featuredSlugs = new Set(featured.map(item => item.slug));
+      const remaining = products.filter(item => item.is_active && !featuredSlugs.has(item.slug)).sort((a,b) => Number(a.sort_order||0)-Number(b.sort_order||0));
+      const rows = [...featured, ...remaining].slice(0,4);
       featuredGrid.replaceChildren(...rows.map(item => makeProductCard(item, "standard")));
       featuredGrid.classList.add("featured-grid-4");
     }
