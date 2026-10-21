@@ -108,7 +108,13 @@ async function fetchEvents(range=null,limit=15000){
  },limit);
 }
 async function fetchProducts(limit=2000){
- return paginateQuery(()=>client.from("products").select("id,name,slug,category,category_slug,price,display_price,unit_type,image_url,stock_quantity,is_active,is_featured,sort_order,short_description,full_description,seo_title,seo_description,cms_created,cms_managed,created_at,updated_at").order("sort_order",{ascending:true}).order("name",{ascending:true}).order("id",{ascending:true}),limit);
+ const products=await paginateQuery(()=>client.from("products").select("id,name,slug,category,category_slug,price,display_price,unit_type,image_url,stock_quantity,is_active,is_featured,sort_order,short_description,full_description,seo_title,seo_description,cms_created,cms_managed,created_at,updated_at").order("sort_order",{ascending:true}).order("name",{ascending:true}).order("id",{ascending:true}),limit);
+ const costs=await paginateQuery(()=>client.from("admin_product_costs").select("product_id,cost_price,packaging_cost,low_stock_threshold,updated_by,updated_at").order("product_id",{ascending:true}),Math.max(limit,1000));
+ const costById=new Map(costs.map(row=>[row.product_id,row]));
+ return products.map(product=>{
+  const cost=costById.get(product.id);
+  return {...product,cost_price:cost?.cost_price??null,packaging_cost:Number(cost?.packaging_cost??0),low_stock_threshold:Number(cost?.low_stock_threshold??5),cost_updated_by:cost?.updated_by??null,cost_updated_at:cost?.updated_at??null};
+ });
 }
 async function fetchCategories(){
  return paginateQuery(()=>client.from("categories").select("id,name,slug,description,image_url,is_active,sort_order,cms_created,cms_managed,created_at,updated_at").order("sort_order",{ascending:true}).order("name",{ascending:true}).order("id",{ascending:true}),500);
