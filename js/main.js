@@ -504,7 +504,11 @@ document.addEventListener("DOMContentLoaded", () => {
       const image=safeUrl(row.image_url,currentSrc);
       if(row.image_url&&image){
         const source=anchor.querySelector("picture source");
-        if(source){source.srcset=image;source.removeAttribute("sizes");}
+        if(source){
+          if(/\.webp(?:$|[?#])/i.test(image))source.srcset=image;
+          else source.removeAttribute("srcset");
+          source.removeAttribute("sizes");
+        }
         img.src=image;img.srcset=image;img.removeAttribute("sizes");
       }
       if(row.alt_text)img.alt=String(row.alt_text).slice(0,240);
