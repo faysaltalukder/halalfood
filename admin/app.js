@@ -749,6 +749,7 @@ async function refresh(){[products,categories]=await Promise.all([fetchProducts(
    overview:initOverview,
    analytics:initAnalytics,
    orders:initOrders,
+   operations:()=>{if(typeof window.HFOpsInit==="function")return window.HFOpsInit();throw new Error("Operations module did not load.");},
    products:initProducts,
    content:initContent,
    customers:initCustomers,
