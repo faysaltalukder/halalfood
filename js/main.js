@@ -613,6 +613,37 @@ document.addEventListener("DOMContentLoaded", () => {
   };
   document.querySelectorAll('input[name="deliveryZone"]').forEach((radio) => radio.addEventListener("change", updateCheckoutTotals));
   window.addEventListener("halalcart:updated", updateCheckoutTotals);
+  // When the live catalog arrives, use the server-managed price/name/image for a single-product checkout.
+  window.addEventListener("halalcatalog:updated", () => {
+    if (!singleProductName || checkoutIsCart) return;
+    const source = Array.isArray(window.PRODUCTS_DATA) ? window.PRODUCTS_DATA : [];
+    const normalized = singleProductName.trim().toLowerCase();
+    const fresh = source.find(item =>
+      String(item.slug || "").toLowerCase() === normalized ||
+      String(item.name || "").toLowerCase() === normalized
+    );
+    if (!fresh) {
+      singleProduct = null;
+      if (productDisplay) productDisplay.textContent = "This product is no longer available.";
+      if (productPrice) productPrice.textContent = "Price unavailable";
+      if (productLineTotal) productLineTotal.textContent = money(0);
+      updateCheckoutTotals();
+      return;
+    }
+    singleProduct = fresh;
+    if (productInput) productInput.value = fresh.name;
+    if (productDisplay) productDisplay.textContent = fresh.name;
+    const latestPrice = priceNumber(fresh.price);
+    if (productPrice) productPrice.textContent = fresh.price || money(latestPrice);
+    if (productImage && fresh.image) {
+      productImage.src = fresh.image;
+      productImage.alt = fresh.name || "Selected product";
+      if (productImageWrap) productImageWrap.hidden = false;
+    }
+    if (productLineTotal) productLineTotal.textContent = money(latestPrice * Math.max(1, Number(quantityInput?.value) || 1));
+    updateCheckoutTotals();
+  });
+
 
   const syncQuantity = (value) => {
     const n = Math.max(1, Math.min(99, Number(value) || 1));
