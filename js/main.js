@@ -1278,7 +1278,6 @@ document.addEventListener("DOMContentLoaded", () => {
     var p = params || {};
     var items = Array.isArray(p.items) ? p.items : [];
     var first = items.length && items[0] && typeof items[0] === 'object' ? items[0] : {};
-    var urlParams = new URLSearchParams(location.search);
     var row = {
       event_name: eventName,
       occurred_at: new Date().toISOString(),
@@ -1290,10 +1289,7 @@ document.addEventListener("DOMContentLoaded", () => {
       item_category: first.item_category || first.category || null,
       value: typeof p.value === 'number' && Number.isFinite(p.value) ? p.value : null,
       quantity: typeof first.quantity === 'number' ? first.quantity : null,
-      search_term: typeof p.search_term === 'string' ? p.search_term.slice(0,120) : null,
-      source: urlParams.get('utm_source'),
-      medium: urlParams.get('utm_medium'),
-      campaign: urlParams.get('utm_campaign')
+      search_term: typeof p.search_term === 'string' ? p.search_term.slice(0,120) : null
     };
     try {
       fetch(firstPartyEndpoint, {
