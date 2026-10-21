@@ -236,7 +236,7 @@ document.addEventListener("DOMContentLoaded", () => {
         image.alt = "";
         image.referrerPolicy = "no-referrer";
         image.src = photo;
-        image.style.cssText = "display:block;width:100%;height:100%;object-fit:cover;border-radius:50%;padding:2px";
+        image.style.cssText = "display:block;width:100%;height:100%;object-fit:cover;border-radius:50%;padding:" + (desktop ? "1px" : "2px");
         image.addEventListener("error", fallback, { once: true });
         target.appendChild(image);
       } else {
