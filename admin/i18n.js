@@ -468,7 +468,7 @@
       "body>header .hf-language-picker>span{color:#B9C6D8}" +
       "body>header .hf-language-picker select{background:#17243A;color:#F2F6FF;border-color:#30425C}" +
       "html[data-admin-theme=\"light\"] .hf-language-picker select{background:#FFFDF8;color:#2B2A3D;border-color:#E5E0D6}" +
-      "@media(max-width:620px){.admin-topbar{gap:6px!important}.hf-language-picker{gap:4px}.hf-language-picker>span{display:none}.hf-language-picker select{min-width:70px;width:75px;max-width:75px;padding:6px 4px;font-size:10px}.admin-topbar .hf-language-picker{order:3}}";
+      "@media(max-width:620px){.admin-topbar{gap:6px!important;height:auto!important;min-height:66px;flex-wrap:wrap;align-content:center;padding-top:10px;padding-bottom:10px}.admin-topbar-spacer{display:none}.admin-global-search{order:10;flex:1 0 100%;width:100%;max-width:none}.hf-language-picker{gap:4px}.hf-language-picker>span{display:none}.hf-language-picker select{min-width:70px;width:75px;max-width:75px;padding:6px 4px;font-size:10px}body>header{flex-wrap:wrap;gap:8px}body>header .hf-language-picker{margin-left:auto;margin-right:0}}";
     document.head.appendChild(style);
   }
 
