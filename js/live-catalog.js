@@ -239,6 +239,53 @@
       });
     });
   }
+  function syncCategoryMenus(categories) {
+    // Keep desktop mega menus and the mobile drawer in sync with active categories.
+    $(".mega-menu").forEach(menu => {
+      categories.filter(cat => cat.is_active).forEach(cat => {
+        let link = Array.from(menu.querySelectorAll("a")).find(a => {
+          const href = a.getAttribute("href") || "";
+          const match = href.match(/categories\/([^/?#]+)\.html/i) || href.match(/[?&]slug=([^&]+)/);
+          return match && decodeURIComponent(match[1]) === cat.slug;
+        });
+        if (!link) {
+          link = document.createElement("a");
+          link.href = cat.cms_created ? rootURL("category.html?slug=" + encodeURIComponent(cat.slug)) :
+            rootURL("categories/" + encodeURIComponent(cat.slug) + ".html");
+          menu.appendChild(link);
+        }
+        link.textContent = cat.name;
+        if (cat.cms_created) link.href = rootURL("category.html?slug=" + encodeURIComponent(cat.slug));
+      });
+      Array.from(menu.querySelectorAll("a")).forEach(link => {
+        const href = link.getAttribute("href") || "";
+        const match = href.match(/categories\/([^/?#]+)\.html/i) || href.match(/[?&]slug=([^&]+)/);
+        if (match && !categories.some(cat => cat.slug === decodeURIComponent(match[1]) && cat.is_active)) link.remove();
+      });
+    });
+    const mobileLinks = $(".mobile-category-links");
+    if (mobileLinks) {
+      categories.filter(cat => cat.is_active).forEach(cat => {
+        let link = Array.from(mobileLinks.querySelectorAll("a")).find(a => {
+          const href = a.getAttribute("href") || "";
+          const match = href.match(/categories\/([^/?#]+)\.html/i) || href.match(/[?&]slug=([^&]+)/);
+          return match && decodeURIComponent(match[1]) === cat.slug;
+        });
+        if (!link) {
+          link = document.createElement("a");
+          mobileLinks.appendChild(link);
+        }
+        link.textContent = cat.name;
+        link.href = cat.cms_created ? rootURL("category.html?slug=" + encodeURIComponent(cat.slug)) :
+          rootURL("categories/" + encodeURIComponent(cat.slug) + ".html");
+      });
+      Array.from(mobileLinks.querySelectorAll("a")).forEach(link => {
+        const href = link.getAttribute("href") || "";
+        const match = href.match(/categories\/([^/?#]+)\.html/i) || href.match(/[?&]slug=([^&]+)/);
+        if (match && !categories.some(cat => cat.slug === decodeURIComponent(match[1]) && cat.is_active)) link.remove();
+      });
+    }
+  }
   function renderProductDetail(products, info) {
     const product = products.find(item => item.slug === info.slug && item.is_active);
     if (!product) {
@@ -311,6 +358,7 @@
       readTable("categories", { select: "id,name,slug,description,image_url,is_active,cms_created,sort_order", is_active: "eq.true", order: "sort_order.asc,name.asc", limit: "500" })
     ]);
     syncProductData(products, categories);
+    syncCategoryMenus(categories);
     if (info.kind === "home") renderHome(products, categories);
     else if (info.kind === "category") renderCategory(products, categories, info);
     else if (info.kind === "product") renderProductDetail(products, info);
