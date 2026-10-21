@@ -84,7 +84,7 @@
     if (image) setPictureImage(image, product.image_url, product.name);
     if (categoryTag) categoryTag.textContent = product.category || "";
     if (price) price.textContent = priceText(product);
-    if (description && product.cms_created) description.textContent = product.short_description || "";
+    if (description && product.cms_managed) description.textContent = product.short_description || "";
     if (button) setProductControls(button, product);
     const orderLink = $(".category-order-btn, .product-body .order-btn", card);
     if (orderLink) {
