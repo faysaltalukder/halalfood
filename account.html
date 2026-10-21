@@ -86,7 +86,7 @@ main.account-main{width:min(1180px,calc(100% - 48px));max-width:1180px;margin:34
 <section id="accountPanel" class="hidden">
 <div class="account-dashboard-intro"><div><span class="account-dashboard-kicker">YOUR HALAL FOOD ACCOUNT</span><h2 class="section-title">You're signed in</h2></div><p id="accountEmail" class="muted"></p></div>
 <div class="account-stats" aria-label="Your shopping summary">
- <article class="account-stat"><span>Items in your saved cart</span><strong id="accountCartCount">0</strong><small>Across your current saved cart</small></article>
+ <article class="account-stat"><span>Products in your saved cart</span><strong id="accountCartCount">0</strong><small id="accountCartUnits">0 total units in your saved cart</small></article>
  <article class="account-stat"><span>Items in order history</span><strong id="accountOrderedCount">0</strong><small>All items in your recorded orders</small></article>
  <article class="account-stat"><span>Orders on this account</span><strong id="accountOrderCount">0</strong><small>Records linked to your login email</small></article>
 </div>
@@ -173,7 +173,7 @@ async function ensureProfile(user,name){
 }
 function escapeHtml(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
 function money(v){return "৳"+Number(v||0).toLocaleString("en-BD",{maximumFractionDigits:2})}
-function updateCartCount(){const countEl=$("accountCartCount");if(!countEl)return;const items=window.HALAL_CART_API?.read?.()||[];countEl.textContent=String(items.reduce((sum,item)=>sum+Math.max(0,Number(item.qty)||0),0))}
+function updateCartCount(){const countEl=$("accountCartCount");if(!countEl)return;const items=window.HALAL_CART_API?.read?.()||[];countEl.textContent=String(items.length);const unitsEl=$("accountCartUnits");if(unitsEl)unitsEl.textContent=String(items.reduce((sum,item)=>sum+Math.max(0,Number(item.qty)||0),0))+" total units in your saved cart"}
 window.addEventListener("halalcart:updated",updateCartCount);window.addEventListener("halalcloudcart:ready",updateCartCount);
 function renderProfileAvatar(user){const el=$("accountProfileAvatar");if(!el)return;const metadata=user?.user_metadata||{};const identity=String(metadata.full_name||metadata.name||metadata.given_name||user?.email||"Account").trim();const initial=Array.from(identity)[0]?.toLocaleUpperCase("en-US")||"A";el.replaceChildren();const photo=[metadata.avatar_url,metadata.picture,metadata.photo_url,metadata.profile_image].find(value=>typeof value==="string"&&value.startsWith("https://"));if(photo){const img=document.createElement("img");img.alt="";img.referrerPolicy="no-referrer";img.src=photo;img.addEventListener("error",()=>{el.textContent=initial},{once:true});el.appendChild(img)}else{el.textContent=initial}}
 async function loadMyOrders(user){
