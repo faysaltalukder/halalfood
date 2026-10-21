@@ -463,7 +463,7 @@ async function refresh(){[products,categories]=await Promise.all([fetchProducts(
    orders.forEach(o=>{
     const phoneKey=normalizePhone(o.customer_phone);
     let group=o.customer_id?profileGroups.get(o.customer_id):null;
-    if(!group&&phoneKey){
+    if(!group&&phoneKey&&!o.customer_id){
      const matches=profilesByPhone.get(phoneKey)||[];
      if(matches.length===1)group=profileGroups.get(matches[0].user_id)||null;
     }
