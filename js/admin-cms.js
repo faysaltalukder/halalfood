@@ -352,7 +352,7 @@
       const status = el("postStatus").value;
       const old = state.posts.find(p => p.id === id);
       const row = {
-        title, slug, cms_created: id ? Boolean(state.posts.find(p => p.id === id)?.cms_created) : true, cms_managed: true, excerpt: el("postExcerpt").value.trim(), content: el("postContent").value.trim(),
+        title, slug, cms_created: id ? Boolean(state.posts.find(p => p.id === id)?.cms_created || state.posts.find(p => p.id === id)?.slug !== slug) : true, cms_managed: true, excerpt: el("postExcerpt").value.trim(), content: el("postContent").value.trim(),
         featured_image_url: image, category: el("postCategory").value.trim() || "Guides", status,
         published_at: status === "published" ? (old?.published_at || new Date().toISOString()) : null,
         seo_title: el("postSeoTitle").value.trim() || title + " | Halal Food Blog",
