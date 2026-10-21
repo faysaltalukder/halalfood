@@ -395,6 +395,8 @@
     setImagePreview("categoryImageFile", "categoryImageUrl", "categoryPreview");
     setImagePreview("postImageFile", "postImageUrl", "postPreview");
     document.addEventListener("click", event => {
+      const closeButton = event.target.closest("[data-close-dialog]");
+      if (closeButton) closeDialog(closeButton.dataset.closeDialog);
       const productEdit = event.target.closest("[data-edit-product]");
       if (productEdit) editProduct(productEdit.dataset.editProduct);
       const productToggle = event.target.closest("[data-toggle-product]");
