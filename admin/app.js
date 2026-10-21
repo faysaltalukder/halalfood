@@ -444,33 +444,94 @@ async function refresh(){[products,categories]=await Promise.all([fetchProducts(
   $("globalSearch")?.addEventListener("input",()=>{renderPosts();renderBlocks();});
   await refresh();attachRefresh(refresh);
  } async function initCustomers(){
-  let profiles=[],orders=[];
+  let profiles=[],orders=[],customers=[];
+  function normalizePhone(value){
+   let digits=String(value||"").replace(/\D/g,"");
+   if(digits.startsWith("00"))digits=digits.slice(2);
+   if(digits.length===11&&digits.startsWith("01"))digits="88"+digits;
+   else if(digits.length===10&&digits.startsWith("1"))digits="880"+digits;
+   return digits;
+  }
+  function buildDirectory(){
+   const groups=new Map(),profileGroups=new Map(),profilesByPhone=new Map();
+   profiles.forEach(p=>{
+    const key="profile:"+p.user_id,phoneKey=normalizePhone(p.phone);
+    const group={key,user_id:p.user_id,full_name:p.full_name||"Name not provided",phone:p.phone||"",isProfile:true,created_at:p.created_at,orders:[]};
+    groups.set(key,group);profileGroups.set(p.user_id,group);
+    if(phoneKey){const matches=profilesByPhone.get(phoneKey)||[];matches.push(p);profilesByPhone.set(phoneKey,matches);}
+   });
+   orders.forEach(o=>{
+    const phoneKey=normalizePhone(o.customer_phone);
+    let group=o.customer_id?profileGroups.get(o.customer_id):null;
+    if(!group&&phoneKey){
+     const matches=profilesByPhone.get(phoneKey)||[];
+     if(matches.length===1)group=profileGroups.get(matches[0].user_id)||null;
+    }
+    if(!group){
+     const key=o.customer_id?"user:"+o.customer_id:phoneKey?"phone:"+phoneKey:"order:"+o.id;
+     group=groups.get(key);
+     if(!group){
+      group={key,user_id:o.customer_id||null,full_name:o.customer_name||"Name not provided",phone:o.customer_phone||"",isProfile:false,created_at:null,orders:[]};
+      groups.set(key,group);
+     }
+     if((!group.full_name||group.full_name==="Name not provided")&&o.customer_name)group.full_name=o.customer_name;
+     if(!group.phone&&o.customer_phone)group.phone=o.customer_phone;
+    }
+    group.orders.push(o);
+   });
+   return Array.from(groups.values()).map(g=>{
+    const sorted=[...g.orders].sort((a,b)=>new Date(b.ordered_at||0)-new Date(a.ordered_at||0));
+    const active=sorted.filter(o=>o.status!=="cancelled");
+    return {...g,orders:sorted,latestOrder:sorted[0]||null,orderCount:sorted.length,activeOrderCount:active.length,lifetimeValue:active.reduce((sum,o)=>sum+Number(o.total||0),0),isRepeat:active.length>=2};
+   }).sort((a,b)=>new Date(b.latestOrder?.ordered_at||b.created_at||0)-new Date(a.latestOrder?.ordered_at||a.created_at||0));
+  }
   function render(){
+   customers=buildDirectory();
    const search=String($("customerSearch")?.value||$("globalSearch")?.value||"").toLowerCase().trim();
-   const rows=profiles.filter(p=>!search||[p.full_name,p.phone,p.user_id].join(" ").toLowerCase().includes(search));
-   $("customersTableBody").innerHTML=rows.length?rows.map(p=>{const own=orders.filter(o=>(p.phone&&String(o.customer_phone||"").replace(/\D/g,"")===String(p.phone).replace(/\D/g,""))||(p.full_name&&String(o.customer_name||"").trim().toLowerCase()===String(p.full_name).trim().toLowerCase()));return '<tr><td><strong>'+esc(p.full_name||"Name not provided")+'</strong><small>'+esc(String(p.user_id||"").slice(0,10))+'</small></td><td>'+esc(p.phone||"—")+'</td><td>'+dateOnly(p.created_at)+'</td><td>'+own.length+'</td><td>'+money(own.filter(o=>o.status!=="cancelled").reduce((s,o)=>s+Number(o.total||0),0))+'<small>Order value, not actual collected income</small></td><td><button class="hf-button hf-button-secondary hf-button-small" data-customer-id="'+esc(p.user_id)+'">Order history</button></td></tr>';}).join(""):'<tr><td colspan="6">'+makeEmpty("No matching customer profiles","Try a different name or phone number.")+'</td></tr>';
-   $("customerCount").textContent=rows.length.toLocaleString("en-BD");$("customerOrdersCount").textContent=orders.length.toLocaleString("en-BD");
+   const rows=customers.filter(c=>!search||[c.full_name,c.phone,c.user_id,c.key,...c.orders.map(o=>o.order_number||"")].join(" ").toLowerCase().includes(search));
+   $("customersTableBody").innerHTML=rows.length?rows.map(c=>'<tr><td><strong>'+esc(c.full_name||"Name not provided")+'</strong><small>'+(c.isProfile?"Registered profile":"Order-only record")+(c.isRepeat?" · Repeat buyer":"")+'</small></td><td>'+esc(c.phone||"Not provided")+'</td><td>'+c.orderCount+'<small>'+c.activeOrderCount+' non-cancelled</small></td><td><strong>'+money(c.lifetimeValue)+'</strong><small>Recorded order value only</small></td><td>'+dateOnly(c.latestOrder?.ordered_at||c.created_at)+'</td><td><button class="hf-button hf-button-secondary hf-button-small" data-customer-key="'+esc(c.key)+'">Order history</button></td></tr>').join(""):'<tr><td colspan="6">'+makeEmpty("No matching customer records","Try another name, phone number or order number.")+'</td></tr>';
+   $("customerCount").textContent=customers.length.toLocaleString("en-BD");
+   $("customerRepeatCount").textContent=customers.filter(c=>c.isRepeat).length.toLocaleString("en-BD");
+   $("customerProfilesCount").textContent=profiles.length.toLocaleString("en-BD");
+   $("customerOrdersCount").textContent=orders.length.toLocaleString("en-BD");
   }
   async function refresh(){
    const res=await Promise.all([
     signedQuery(client.from("customer_profiles").select("user_id,full_name,phone,created_at,updated_at").order("created_at",{ascending:false}).limit(1000)),
     fetchOrders(null,5000)
-   ]);profiles=res[0];orders=res[1];render();
+   ]);
+   profiles=res[0];orders=res[1];render();
   }
   $("customerSearch")?.addEventListener("input",render);$("globalSearch")?.addEventListener("input",render);
   $("customersTableBody")?.addEventListener("click",e=>{
-   const btn=e.target.closest("[data-customer-id]");if(!btn)return;
-   const p=profiles.find(x=>x.user_id===btn.dataset.customerId);if(!p)return;
-   const own=orders.filter(o=>(p.phone&&String(o.customer_phone||"").replace(/\D/g,"")===String(p.phone).replace(/\D/g,""))||(p.full_name&&String(o.customer_name||"").trim().toLowerCase()===String(p.full_name).trim().toLowerCase()));
-   $("customerDetailTitle").textContent=p.full_name||"Customer profile";
-   $("customerDetailContent").innerHTML='<p><strong>Profile ID:</strong> '+esc(p.user_id)+'</p><p><strong>Phone:</strong> '+esc(p.phone||"Not provided")+'</p><p><strong>Registered:</strong> '+dateTime(p.created_at)+'</p><p><strong>Matched email-based orders:</strong> '+own.length+'</p><div class="hf-table-wrap"><table class="hf-table"><thead><tr><th>Order</th><th>Date</th><th>Total</th><th>Status</th></tr></thead><tbody>'+((own.map(o=>'<tr><td>'+esc(o.order_number||String(o.id).slice(0,8))+'</td><td>'+dateOnly(o.ordered_at)+'</td><td>'+money(o.total)+'</td><td>'+makeStatus(o.status)+'</td></tr>').join(""))||'<tr><td colspan="4">No email-linked order found.</td></tr>')+'</tbody></table></div><p class="hf-data-note">Order-to-profile matching depends on email being available in the current records; this may not include every order.</p>';
+   const btn=e.target.closest("[data-customer-key]");if(!btn)return;
+   const c=customers.find(x=>x.key===btn.dataset.customerKey);if(!c)return;
+   const own=[...c.orders].sort((a,b)=>new Date(b.ordered_at||0)-new Date(a.ordered_at||0));
+   $("customerDetailTitle").textContent=c.full_name||"Customer";
+   const orderRows=own.length?own.map(o=>{
+    const itemSummary=(o.order_items||[]).map(i=>(i.product_name||"Product")+" × "+String(i.quantity??"")+" "+String(i.unit||"")).join(", ");
+    return '<tr><td><strong>'+esc(o.order_number||String(o.id).slice(0,8))+'</strong><small>'+esc(itemSummary||"No item details recorded")+'</small></td><td>'+dateOnly(o.ordered_at)+'</td><td>'+money(o.total)+'</td><td>'+makeStatus(o.status)+'</td></tr>';
+   }).join(""):'<tr><td colspan="4">No linked orders found.</td></tr>';
+   $("customerDetailContent").innerHTML='<p><strong>Record type:</strong> '+(c.isProfile?"Registered profile":"Order-only customer record")+'</p><p><strong>Phone:</strong> '+esc(c.phone||"Not provided")+'</p>'+(c.isProfile?'<p><strong>Registered:</strong> '+dateTime(c.created_at)+'</p>':'')+'<p><strong>Orders in loaded history:</strong> '+c.orderCount+' · <strong>Non-cancelled:</strong> '+c.activeOrderCount+'</p><p><strong>Recorded lifetime order value:</strong> '+money(c.lifetimeValue)+'</p><div class="hf-table-wrap"><table class="hf-table"><thead><tr><th>Order / items</th><th>Date</th><th>Recorded total</th><th>Status</th></tr></thead><tbody>'+orderRows+'</tbody></table></div><p class="hf-data-note">Records are grouped by matching profile ID or exact normalized phone number; a name alone is never treated as a match. Cancelled orders are excluded from the recorded lifetime value. These values are not proof of payment or actual collected revenue. The directory uses up to the latest 5,000 order records and 1,000 registered profiles.</p>';
    $("customerDialog").showModal();
   });
   $("closeCustomerDialog")?.addEventListener("click",()=>$("customerDialog").close());
+  $("closeCustomerDialogBottom")?.addEventListener("click",()=>$("customerDialog").close());
   await refresh();attachRefresh(refresh);
  }
  async function initFinance(){
   let entries=[],orders=[];
+  function linkedIncomeTotal(orderId){
+   return entries.filter(e=>e.related_order_id===orderId&&e.entry_type==="income"&&e.status==="confirmed").reduce((sum,e)=>sum+Number(e.amount||0),0);
+  }
+  function renderReconciliation(){
+   const body=$("orderReconciliationTableBody");if(!body)return;
+   body.innerHTML=orders.length?orders.map(o=>{
+    const linked=linkedIncomeTotal(o.id),cancelled=o.status==="cancelled",difference=Number(o.total||0)-linked;
+    return '<tr><td><strong>'+esc(o.order_number||String(o.id).slice(0,8))+'</strong><small>'+esc(o.customer_name||"Customer not named")+' · '+esc(o.customer_phone||"No phone")+'</small></td><td>'+dateOnly(o.ordered_at)+'</td><td>'+makeStatus(o.status)+'</td><td><strong>'+money(o.total)+'</strong><small>Recorded order value</small></td><td>'+money(linked)+'<small>Confirmed linked income only</small></td><td>'+(cancelled?"Not compared":money(difference))+'</td><td><button class="hf-button hf-button-secondary hf-button-small" data-record-income="'+esc(o.id)+'">Record income</button></td></tr>';
+   }).join(""):'<tr><td colspan="7">'+makeEmpty("No order records available","Orders will appear here when they are loaded.")+'</td></tr>';
+   $("financeReconcileNote").textContent="Showing "+orders.length.toLocaleString("en-BD")+" recent order records. Confirmed income is a manual ledger entry linked to the order; it is not checked by a payment gateway. The difference is for review only—not profit, debt, or an amount due.";
+  }
   function totals(){
    const active=entries.filter(e=>e.status==="confirmed"),income=active.filter(e=>e.entry_type==="income").reduce((s,e)=>s+Number(e.amount||0),0),expense=active.filter(e=>e.entry_type==="expense").reduce((s,e)=>s+Number(e.amount||0),0);
    $("financeIncomeTotal").textContent=money(income);$("financeExpenseTotal").textContent=money(expense);$("financeNetTotal").textContent=money(income-expense);$("financePendingCount").textContent=entries.filter(e=>e.status==="draft").length.toLocaleString("en-BD");
@@ -486,11 +547,23 @@ async function refresh(){[products,categories]=await Promise.all([fetchProducts(
    const search=String($("financeSearch")?.value||$("globalSearch")?.value||"").toLowerCase().trim(),type=$("financeTypeFilter")?.value||"",status=$("financeStatusFilter")?.value||"";
    const rows=entries.filter(e=>(!type||e.entry_type===type)&&(!status||e.status===status)&&(!search||[e.category,e.description,e.reference,e.status].join(" ").toLowerCase().includes(search)));
    $("financeTableBody").innerHTML=rows.length?rows.map(e=>'<tr><td>'+dateOnly(e.entry_date)+'</td><td>'+makeStatus(e.entry_type)+'</td><td><strong>'+esc(e.category)+'</strong><small>'+esc(e.description||"No description")+'</small></td><td><strong>'+money(e.amount)+'</strong></td><td>'+makeStatus(e.status)+'</td><td>'+esc(e.reference||"—")+'</td><td><div class="hf-table-actions"><button class="hf-button hf-button-secondary hf-button-small" data-edit-finance="'+esc(e.id)+'">Edit</button>'+(e.status!=="void"?'<button class="hf-button hf-button-danger hf-button-small" data-void-finance="'+esc(e.id)+'">Void</button>':'')+'</div></td></tr>').join(""):'<tr><td colspan="7">'+makeEmpty("No matching entries","Add an income or expense record, or change your filters.")+'</td></tr>';
-   totals();
+   totals();renderReconciliation();
   }
-  async function refresh(){[entries,orders]=await Promise.all([fetchFinance(null,3000),fetchOrders(null,1000)]);const sel=$("financeOrderId");if(sel)sel.innerHTML='<option value="">No linked order</option>'+orders.slice(0,300).map(o=>'<option value="'+esc(o.id)+'">'+esc(o.order_number||String(o.id).slice(0,8))+' · '+money(o.total)+'</option>').join("");render();}
-  function openEntry(e=null){
-   $("financeForm").reset();$("financeId").value=e?.id||"";$("financeEntryType").value=e?.entry_type||"expense";$("financeCategory").value=e?.category||"Supplies";$("financeAmount").value=e?.amount??"";$("financeDate").value=e?.entry_date||todayISO();$("financeDescription").value=e?.description||"";$("financeReference").value=e?.reference||"";$("financeStatus").value=e?.status||"draft";$("financeOrderId").value=e?.related_order_id||"";$("financeFormError").textContent="";$("financeDialogTitle").textContent=e?"Edit finance entry":"Record an entry";$("financeDialog").showModal();
+  async function refresh(){
+   [entries,orders]=await Promise.all([fetchFinance(null,3000),fetchOrders(null,1000)]);
+   const sel=$("financeOrderId");if(sel)sel.innerHTML='<option value="">No linked order</option>'+orders.slice(0,300).map(o=>'<option value="'+esc(o.id)+'">'+esc(o.order_number||String(o.id).slice(0,8))+' · '+money(o.total)+'</option>').join("");
+   render();
+  }
+  function openEntry(e=null,order=null){
+   $("financeForm").reset();$("financeId").value=e?.id||"";
+   $("financeEntryType").value=order?"income":e?.entry_type||"expense";
+   $("financeCategory").value=order?"Verified income":e?.category||"Supplies";
+   $("financeAmount").value=e?.amount??"";
+   $("financeDate").value=e?.entry_date||todayISO();
+   $("financeDescription").value=e?.description||(order?"Manually verify any actual payment before confirming this entry.":"");
+   $("financeReference").value=e?.reference||(order?(order.order_number||String(order.id).slice(0,8)):"");
+   $("financeStatus").value=e?.status||"draft";$("financeOrderId").value=order?.id||e?.related_order_id||"";
+   $("financeFormError").textContent="";$("financeDialogTitle").textContent=e?"Edit finance entry":order?"Record income linked to order":"Record an entry";$("financeDialog").showModal();
   }
   $("addFinanceEntryBtn")?.addEventListener("click",()=>openEntry());
   $("financeForm")?.addEventListener("submit",async e=>{
@@ -511,6 +584,10 @@ async function refresh(){[products,categories]=await Promise.all([fetchProducts(
    const edit=e.target.closest("[data-edit-finance]"),voidBtn=e.target.closest("[data-void-finance]");
    if(edit){openEntry(entries.find(x=>x.id===edit.dataset.editFinance));return;}
    if(voidBtn){const item=entries.find(x=>x.id===voidBtn.dataset.voidFinance);if(!item)return;if(!confirm("Mark this finance entry as void? It will remain in the history but no longer count in totals."))return;try{const {error}=await client.from("admin_finance_entries").update({status:"void"}).eq("id",item.id);if(error)throw error;await audit("finance_entry_voided","finance_entry",item.id,"Finance entry marked void",{entry_type:item.entry_type});toast("Entry marked as void.");await refresh();}catch(err){toast(err.message||"Entry could not be updated.","error");}}
+  });
+  $("orderReconciliationTableBody")?.addEventListener("click",e=>{
+   const btn=e.target.closest("[data-record-income]");if(!btn)return;
+   const order=orders.find(o=>o.id===btn.dataset.recordIncome);if(order)openEntry(null,order);
   });
   document.querySelectorAll("[data-close-dialog]").forEach(b=>b.addEventListener("click",()=>$(b.dataset.closeDialog)?.close()));
   $("financeSearch")?.addEventListener("input",render);$("financeTypeFilter")?.addEventListener("change",render);$("financeStatusFilter")?.addEventListener("change",render);$("globalSearch")?.addEventListener("input",render);
