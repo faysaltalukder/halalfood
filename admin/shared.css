@@ -486,7 +486,7 @@ html[data-admin-theme="light"] .auth-gate-card p{color:#737487}
 }
 .hf-status-partially-received,.hf-status-partially-shipped,.hf-status-partially-refunded,
 .hf-status-awaiting,.hf-status-on-hold,.hf-status-hold,.hf-status-low-stock,.hf-status-limited-stock,
-.hf-status-requested,.hf-status-to-do,.hf-status-todo,.hf-status-unpaid{
+.hf-status-requested,.hf-status-to-do,.hf-status-todo{
  background:rgba(245,158,11,.13);color:#FBC66A;border-color:rgba(245,158,11,.28)
 }
 .hf-status-failed,.hf-status-rejected,.hf-status-inactive,.hf-status-disabled,.hf-status-blocked,
