@@ -6,6 +6,7 @@
   const CART_KEY = "halal_food_cart_v1";
   const MAX_QTY = 99;
   const AUTH_STORAGE_KEY = "sb-qfwvrcfkrsydycbfjsxf-auth-token";
+  const CART_OWNER_KEY = "halal_food_cart_owner_v1";
   const SUPABASE_URL = "https://qfwvrcfkrsydycbfjsxf.supabase.co";
   const SUPABASE_KEY = "sb_publishable_X32Rb8W-axGIfgFuppdfZQ_jbc38pcL";
   let cloudCartClient = null;
@@ -167,7 +168,10 @@
       if (error) throw error;
 
       const products = Array.isArray(window.PRODUCTS_DATA) ? window.PRODUCTS_DATA : [];
-      const localItems = read();
+      const storedCartOwner = (() => { try { return localStorage.getItem(CART_OWNER_KEY) || ""; } catch (_) { return ""; } })();
+      // A cart owned by another signed-in account must never be merged into this user's cart.
+      // A missing owner means the items are a guest cart and can be merged during sign-in.
+      const localItems = storedCartOwner && storedCartOwner !== user.id ? [] : read();
       const merged = new Map(localItems.map(item => [String(item.slug), { ...item }]));
       (rows || []).forEach(row => {
         const slug = String(row.product_slug || "");
@@ -190,6 +194,7 @@
         }
       });
 
+      try { localStorage.setItem(CART_OWNER_KEY, user.id); } catch (_) {}
       cloudCartPaused++;
       try { write(Array.from(merged.values())); }
       finally { cloudCartPaused--; }
@@ -235,6 +240,9 @@
   }
   function write(items) {
     localStorage.setItem(CART_KEY, JSON.stringify(items));
+    if (cloudCartReady && cloudCartUserId) {
+      try { localStorage.setItem(CART_OWNER_KEY, cloudCartUserId); } catch (_) {}
+    }
     window.dispatchEvent(new CustomEvent("halalcart:updated", { detail: items }));
     scheduleCloudCartSave();
   }
@@ -647,7 +655,16 @@
     const detail = event.detail || {};
     const user = Object.prototype.hasOwnProperty.call(detail, "user") ? detail.user : readStoredAuthUser();
     if (user?.id) startCloudCartSync(detail.client || window.halalSupabaseClient || null, user);
-    else { cloudCartReady = false; cloudCartUserId = null; cloudCartClient = null; window.clearTimeout(cloudCartSaveTimer); }
+    else {
+      cloudCartReady = false; cloudCartUserId = null; cloudCartClient = null;
+      window.clearTimeout(cloudCartSaveTimer);
+      if (detail.reason === "signout") {
+        // The signed-in cart remains in the cloud; clear device-only state on sign-out.
+        // A later guest cart can then be merged safely into whichever account signs in next.
+        try { localStorage.removeItem(CART_KEY); localStorage.removeItem(CART_OWNER_KEY); } catch (_) {}
+        window.dispatchEvent(new CustomEvent("halalcart:updated", { detail: [] }));
+      }
+    }
   });
   window.addEventListener("halalcatalog:updated", () => { renderAll(); scheduleCloudCartSave(); });
 
