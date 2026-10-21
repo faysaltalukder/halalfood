@@ -187,7 +187,7 @@
     el("productImageUrl").value = item?.image_url || "";
     el("productShortDescription").value = item?.short_description || "";
     el("productFullDescription").value = item?.full_description || item?.description || "";
-    el("productStock").value = item?.stock_quantity ?? "";
+    el("productStock").value = item?.stock_quantity ?? 1000;
     el("productSortOrder").value = item?.sort_order ?? 0;
     el("productSeoTitle").value = item?.seo_title || "";
     el("productSeoDescription").value = item?.seo_description || "";
@@ -222,6 +222,8 @@
       if (!image) throw new Error("Add a product image by uploading a file or entering an image URL.");
       const displayPrice = money(price) + (unit.toLowerCase() === "piece" ? " / piece" : " / " + unit);
       const stockRaw = el("productStock").value.trim();
+      const stockQuantity = stockRaw === "" ? (id ? state.products.find(p => p.id === id)?.stock_quantity : 1000) : Number(stockRaw);
+      if (!Number.isInteger(stockQuantity) || stockQuantity < 0 || stockQuantity > 1000) throw new Error("Stock quantity must be a whole number between 0 and 1,000.");
       const row = {
         name, slug, category: category.name, category_slug: category.slug,
         cms_created: id ? Boolean(state.products.find(p => p.id === id)?.cms_created || state.products.find(p => p.id === id)?.slug !== slug) : true,
@@ -230,7 +232,7 @@
         short_description: el("productShortDescription").value.trim(),
         full_description: el("productFullDescription").value.trim(),
         description: el("productFullDescription").value.trim(),
-        stock_quantity: stockRaw === "" ? null : Number(stockRaw),
+        stock_quantity: stockQuantity,
         is_active: el("productActive").checked, is_featured: el("productFeatured").checked,
         sort_order: Number(el("productSortOrder").value || 0),
         seo_title: el("productSeoTitle").value.trim() || name + " | Halal Food",
