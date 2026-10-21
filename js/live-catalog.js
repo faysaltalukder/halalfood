@@ -135,7 +135,7 @@
     const foot = document.createElement("div"); foot.className = "product-foot"; foot.appendChild(price);
     const add = document.createElement("button"); add.type = "button"; add.className = "cart-add-btn"; add.innerHTML = CART_ICON + "<span>Add to Cart</span>"; setProductControls(add, product);
     const order = document.createElement("a"); order.className = "order-btn category-order-btn"; order.href = rootURL("order.html?product=" + encodeURIComponent(product.name)); order.innerHTML = CART_ICON + "<span>Order Now</span>";
-    foot.append(order, add);
+    foot.append(add, order);
     body.append(tag, nameLink, description, foot);
     card.append(imageLink, body);
     return card;
@@ -158,7 +158,20 @@
     if (heading && (info.generic || category?.cms_created || category?.cms_managed)) heading.textContent = category?.name || "Category unavailable";
     const meta = document.querySelector('meta[name="description"]');
     if (category && meta && (info.generic || category.cms_created || category.cms_managed)) meta.content = category.description || "Browse " + category.name + " products from Halal Food.";
-    if (info.generic || category?.cms_created || category?.cms_managed) document.title = category ? category.name + " | Halal Food" : "Category | Halal Food";
+    if (info.generic || category?.cms_created || category?.cms_managed) {
+      const pageTitle = category ? category.name + " | Halal Food" : "Category | Halal Food";
+      document.title = pageTitle;
+      const canonical = document.querySelector('link[rel="canonical"]');
+      if (canonical) canonical.href = info.generic ?
+        rootURL("category.html?slug=" + encodeURIComponent(info.slug)) :
+        rootURL("categories/" + encodeURIComponent(info.slug) + ".html");
+      const ogTitle = document.querySelector('meta[property="og:title"]');
+      const ogDescription = document.querySelector('meta[property="og:description"]');
+      const ogUrl = document.querySelector('meta[property="og:url"]');
+      if (ogTitle) ogTitle.content = pageTitle;
+      if (ogDescription && meta) ogDescription.content = meta.content;
+      if (ogUrl && canonical) ogUrl.content = canonical.href;
+    }
     if (!grid) return;
     if (info.generic) grid.replaceChildren();
     const records = products.filter(item => item.category_slug === info.slug && item.is_active);
