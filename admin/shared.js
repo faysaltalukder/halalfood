@@ -75,6 +75,10 @@ function lastDateKeys(days){
 const palette={navy:"#C9D5E6",orange:"#F59E0B",blue:"#4F7CFF",green:"#10B981",purple:"#9B6DFF",yellow:"#FBBF24",red:"#F05274",teal:"#06B6D4",cream:"#111C2E",muted:"#96A6BE"};
 const colorSet=[palette.purple,palette.blue,palette.teal,palette.green,palette.yellow,palette.red,"#E879F9","#818CF8","#F97316","#38BDF8"];
 const charts={};
+function chartTheme(){
+ const light=document.documentElement.dataset.adminTheme==="light";
+ return {text:light?"#2B2A3D":"#C9D5E6",muted:light?"#737487":"#A6B4C8",grid:light?"#E5E0D6":"#2A3A52",surface:light?"#FFFDF8":"#111C2E",border:light?"#DED8CD":"#2D405A"};
+}
 if(window.Chart){
  Chart.defaults.color=palette.navy;
  Chart.defaults.font.family='Inter, "Segoe UI Variable", "Segoe UI", system-ui, sans-serif';
@@ -84,13 +88,27 @@ if(window.Chart){
 function drawChart(id,config){
  const canvas=document.getElementById(id);if(!canvas||!window.Chart)return;
  if(charts[id])charts[id].destroy();
+ const t=chartTheme();
  const base={responsive:true,maintainAspectRatio:false,animation:{duration:380},plugins:{
-  legend:{labels:{color:palette.navy,usePointStyle:true,boxWidth:9,boxHeight:9,padding:18,font:{family:'Inter, "Segoe UI Variable", "Segoe UI", system-ui, sans-serif',size:11,weight:600}}},
+  legend:{labels:{color:t.text,usePointStyle:true,boxWidth:9,boxHeight:9,padding:18,font:{family:'Inter, "Segoe UI Variable", "Segoe UI", system-ui, sans-serif',size:11,weight:600}}},
   tooltip:{backgroundColor:"#07101F",titleColor:"#F2F6FF",bodyColor:"#CFD9E8",borderColor:"#344966",borderWidth:1,cornerRadius:10,padding:12,displayColors:true,titleFont:{family:'Inter, "Segoe UI Variable", "Segoe UI", system-ui, sans-serif',weight:700},bodyFont:{family:'Inter, "Segoe UI Variable", "Segoe UI", system-ui, sans-serif'}}
  }};
  const opts={...base,...config.options,plugins:{...base.plugins,...(config.options?.plugins||{})}};
  charts[id]=new Chart(canvas,{...config,options:opts});
  return charts[id];
+}
+function syncChartsForTheme(){
+ const t=chartTheme();
+ Object.values(charts).forEach(chart=>{
+  if(chart.options.plugins?.legend?.labels)chart.options.plugins.legend.labels.color=t.text;
+  if(chart.options.scales)Object.values(chart.options.scales).forEach(scale=>{
+   if(scale.ticks)scale.ticks.color=t.muted;
+   if(scale.grid&&scale.grid.display!==false)scale.grid.color=t.grid;
+   if(scale.border)scale.border.color=t.border;
+  });
+  if(["pie","doughnut"].includes(chart.config.type))chart.data.datasets.forEach(dataset=>{dataset.borderColor=t.surface;});
+  chart.update("none");
+ });
 }
 async function paginateQuery(buildQuery,limit=1000){
  const rows=[],pageSize=1000;
@@ -150,7 +168,7 @@ function makeShell(){
  '<div class="admin-sidebar-note"><strong>Easy Mode + Advanced Tools</strong>Clear guidance for everyday tasks, with deeper reports when you need them.</div></aside>'+
  '<div class="admin-frame"><header class="admin-topbar"><button id="adminMenuToggle" class="admin-menu-toggle" type="button" aria-label="Open navigation">☰</button>'+
  '<div class="admin-global-search"><input id="globalSearch" type="search" placeholder="Search this page…" aria-label="Search current page"></div><span class="admin-topbar-spacer"></span>'+
- '<button class="admin-top-button" id="modeToggle" type="button">Advanced view</button><button class="admin-top-button" id="helpBtn" type="button">? Help</button><button class="admin-top-button" id="logoutBtn" type="button">Sign out</button>'+
+ '<button class="admin-top-button theme-toggle" id="themeToggle" type="button" aria-label="Switch to light theme" title="Switch to light theme" aria-pressed="false"><span class="theme-toggle-icon" aria-hidden="true">☼</span><span class="theme-toggle-label">Light theme</span></button><button class="admin-top-button" id="modeToggle" type="button">Advanced view</button><button class="admin-top-button" id="helpBtn" type="button">? Help</button><button class="admin-top-button" id="logoutBtn" type="button">Sign out</button>'+
  '<div class="admin-account-chip"><span class="admin-account-avatar">HF</span><span class="admin-account-meta"><strong>Admin</strong><small id="accountEmail">Authorized account</small></span></div></header>'+
  '<main class="admin-main" id="adminMain">'+initialContent+'</main></div>'+
  '<div id="hfToast" class="hf-toast" role="status" aria-live="polite"></div>'+
@@ -159,6 +177,30 @@ function makeShell(){
  adminApp.hidden=false;gate.hidden=true;
  const sidebar=document.getElementById("adminSidebar");
  const modeKey="hf_admin_display_mode";
+ const themeKey="hf_admin_theme";
+ const themeBtn=document.getElementById("themeToggle");
+ const applyTheme=(theme=localStorage.getItem(themeKey)||"dark")=>{
+  const active=theme==="light"?"light":"dark";
+  document.documentElement.dataset.adminTheme=active;
+  palette.navy=active==="light"?"#2B2A3D":"#C9D5E6";
+  palette.muted=active==="light"?"#737487":"#96A6BE";
+  palette.cream=active==="light"?"#FFFDF8":"#111C2E";
+  if(themeBtn){
+   const toLight=active==="dark";
+   const label=toLight?"Light theme":"Dark theme";
+   themeBtn.innerHTML='<span class="theme-toggle-icon" aria-hidden="true">'+(toLight?"☼":"☾")+'</span><span class="theme-toggle-label">'+label+'</span>';
+   themeBtn.setAttribute("aria-label","Switch to "+(toLight?"light":"dark")+" theme");
+   themeBtn.setAttribute("title","Switch to "+(toLight?"light":"dark")+" theme");
+   themeBtn.setAttribute("aria-pressed",String(active==="light"));
+  }
+  syncChartsForTheme();
+ };
+ applyTheme();
+ themeBtn?.addEventListener("click",()=>{
+  const next=document.documentElement.dataset.adminTheme==="light"?"dark":"light";
+  localStorage.setItem(themeKey,next);
+  applyTheme(next);
+ });
  const modeBtn=document.getElementById("modeToggle");
  const applyMode=()=>{const advanced=localStorage.getItem(modeKey)==="advanced";adminApp.classList.toggle("simple-mode",!advanced);if(modeBtn)modeBtn.textContent=advanced?"Simple view":"Advanced view";};
  applyMode();
@@ -180,7 +222,7 @@ window.HFAdminReady=(async()=>{
   if(aal.error||aal.data?.currentLevel!=="aal2"){location.replace("./index.html");return null;}
   const user=await client.auth.getUser();currentUser=user.data?.user||data.session.user;
   makeShell();
-  window.HFAdmin={client,ADMIN_EMAIL,esc,money,shortNum,dateTime,dateOnly,toast,audit,signedQuery,downloadFile,csvText,slugify,dayISO,dateRangeFromControls,rangeQuery,showTableMessage,statusClass,makeStatus,makeEmpty,groupBy,dateKey,lastDateKeys,fetchOrders,fetchEvents,fetchProducts,fetchCategories,fetchPosts,fetchFinance,palette,colorSet,drawChart,charts};
+  window.HFAdmin={client,ADMIN_EMAIL,esc,money,shortNum,dateTime,dateOnly,toast,audit,signedQuery,downloadFile,csvText,slugify,dayISO,dateRangeFromControls,rangeQuery,showTableMessage,statusClass,makeStatus,makeEmpty,groupBy,dateKey,lastDateKeys,fetchOrders,fetchEvents,fetchProducts,fetchCategories,fetchPosts,fetchFinance,palette,colorSet,chartTheme,drawChart,charts};
   return window.HFAdmin;
  }catch(err){console.error("Admin access check failed",err);gate.innerHTML='<div class="auth-gate-card"><strong>Secure sign-in could not be verified</strong><p>Please refresh and sign in again. No admin data was loaded.</p><p style="margin-top:14px"><a href="./index.html" class="hf-button hf-button-primary">Return to sign-in</a></p></div>';return null;}
 })();
