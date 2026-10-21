@@ -95,7 +95,7 @@ async function paginateQuery(buildQuery,limit=1000){
 }
 async function fetchOrders(range=null,limit=5000){
  return paginateQuery(()=>{
-  let q=client.from("orders").select("id,order_number,customer_name,customer_phone,customer_email,delivery_address,subtotal,delivery_charge,delivery_zone,payment_method,total,status,cancellation_reason,source,notes,ordered_at,updated_at,order_items(id,product_id,product_name,quantity,unit,unit_price,line_total,product_image_url)").order("ordered_at",{ascending:false}).order("id",{ascending:true});
+  let q=client.from("orders").select("id,order_number,customer_id,customer_name,customer_phone,customer_email,delivery_address,subtotal,delivery_charge,delivery_zone,payment_method,total,status,cancellation_reason,source,notes,ordered_at,updated_at,order_items(id,product_id,product_name,quantity,unit,unit_price,line_total,product_image_url)").order("ordered_at",{ascending:false}).order("id",{ascending:true});
   if(range)q=rangeQuery(q,"ordered_at",range);
   return q;
  },limit);
