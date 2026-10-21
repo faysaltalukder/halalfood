@@ -276,8 +276,8 @@
   function handleProductResult(product, info) {
     if (info.kind === "product") renderProductDetail([product], info);
   }
-  function syncProductData(products) {
-    if (!Array.isArray(window.PRODUCTS_DATA)) return;
+  function syncProductData(products, categories) {
+    if (!Array.isArray(window.PRODUCTS_DATA)) window.PRODUCTS_DATA = [];
     const previous = window.PRODUCTS_DATA.slice();
     const active = products.filter(item => item.is_active).map(item => {
       const old = previous.find(entry => String(entry.slug || "") === String(item.slug || "")) || {};
@@ -301,10 +301,7 @@
         PRODUCTS_INDEX.splice(0, PRODUCTS_INDEX.length, ...nextIndex);
       }
     } catch (_) {}
-    window.dispatchEvent(new CustomEvent("halalcatalog:updated", { detail: { products: active, categories: stateCategories(products) } }));
-  }
-  function stateCategories(products) {
-    return products;
+    window.dispatchEvent(new CustomEvent("halalcatalog:updated", { detail: { products: active, categories } }));
   }
   async function start() {
     const info = pathInfo();
@@ -312,7 +309,7 @@
       readTable("products", { select: "id,name,slug,category,category_slug,price,unit_type,display_price,image_url,short_description,full_description,description,is_active,is_featured,cms_created,cms_managed,sort_order,seo_title,seo_description,stock_quantity", is_active: "eq.true", order: "sort_order.asc,name.asc", limit: "1000" }),
       readTable("categories", { select: "id,name,slug,description,image_url,is_active,cms_created,sort_order", is_active: "eq.true", order: "sort_order.asc,name.asc", limit: "500" })
     ]);
-    syncProductData(products);
+    syncProductData(products, categories);
     if (info.kind === "home") renderHome(products, categories);
     else if (info.kind === "category") renderCategory(products, categories, info);
     else if (info.kind === "product") renderProductDetail(products, info);
