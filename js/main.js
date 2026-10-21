@@ -180,13 +180,13 @@ document.addEventListener("DOMContentLoaded", () => {
     drawerNav.prepend(drawerAccountCta);
   }
   const refreshMobileDrawerAccount = () => {
-    if (!drawerAccountCta) return;
+    const headerAccount = document.querySelector(".header-account-link");
+    if (!drawerAccountCta && !headerAccount) return;
     let user = null;
     try {
       let rawStored = localStorage.getItem("sb-qfwvrcfkrsydycbfjsxf-auth-token");
       let stored = null;
       if (rawStored) {
-        // Supabase may base64-encode larger persisted sessions with this prefix.
         if (rawStored.startsWith("base64-")) {
           const encoded = rawStored.slice(7).replace(/-/g, "+").replace(/_/g, "/");
           const padded = encoded.padEnd(Math.ceil(encoded.length / 4) * 4, "=");
@@ -203,45 +203,60 @@ document.addEventListener("DOMContentLoaded", () => {
     const name = String(metadata.full_name || metadata.name || metadata.given_name || metadata.display_name || "").trim();
     const identity = name || email || "Account";
     const initial = Array.from(identity)[0]?.toLocaleUpperCase("en-US") || "A";
-    const avatar = drawerAccountCta.querySelector(".mobile-drawer-account-avatar");
-    const title = drawerAccountCta.querySelector(".mobile-drawer-account-copy strong");
-    const subtitle = drawerAccountCta.querySelector(".mobile-drawer-account-copy small");
-    avatar?.replaceChildren();
-    drawerAccountCta.classList.toggle("is-signed-in", Boolean(user));
-    drawerAccountCta.href = drawerHref("account.html");
+    const photo = [metadata.avatar_url, metadata.picture, metadata.photo_url, metadata.profile_image]
+      .find(value => typeof value === "string" && /^https:\/\//i.test(value));
+    const fallbackPersonIcon = '<svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"></circle><path d="M5 20c.6-3.8 3.1-5.7 7-5.7s6.4 1.9 7 5.7"></path></svg>';
 
-    const fallbackInitial = () => {
-      if (avatar) {
-        avatar.replaceChildren();
-        avatar.textContent = initial;
-        avatar.classList.add("has-initial");
+    const renderAvatar = (target, desktop = false) => {
+      if (!target) return;
+      target.replaceChildren();
+      target.classList.remove("has-initial");
+      target.classList.toggle("is-signed-in", Boolean(user));
+      if (desktop) {
+        target.style.overflow = "hidden";
+        target.style.backgroundColor = user ? "var(--navy)" : "";
+        target.style.color = user ? "var(--cream)" : "";
+        target.style.fontSize = user ? "16px" : "";
+        target.style.fontWeight = user ? "800" : "";
+        target.href = drawerHref("account.html");
+        target.title = user ? identity : "Sign in or create account";
+        target.setAttribute("aria-label", user ? "My account, " + (email || identity) : "Customer account — sign in or create account");
       }
-    };
-    avatar?.classList.remove("has-initial");
-    if (user) {
-      const photo = [metadata.avatar_url, metadata.picture, metadata.photo_url, metadata.profile_image]
-        .find(value => typeof value === "string" && /^https:\/\//i.test(value));
-      if (photo && avatar) {
+      const fallback = () => {
+        target.replaceChildren();
+        if (user) {
+          target.textContent = initial;
+          target.classList.add("has-initial");
+        } else {
+          target.innerHTML = fallbackPersonIcon;
+        }
+      };
+      if (user && photo) {
         const image = document.createElement("img");
         image.alt = "";
         image.referrerPolicy = "no-referrer";
         image.src = photo;
-        image.addEventListener("error", fallbackInitial, { once: true });
-        avatar.appendChild(image);
+        image.style.cssText = "display:block;width:100%;height:100%;object-fit:cover;border-radius:50%;padding:2px";
+        image.addEventListener("error", fallback, { once: true });
+        target.appendChild(image);
       } else {
-        fallbackInitial();
+        fallback();
       }
-      if (title) title.textContent = name || "My account";
-      if (subtitle) subtitle.textContent = email ? "Signed in · " + email : "Signed in — manage your account";
-      drawerAccountCta.setAttribute("aria-label", "My account" + (email ? ", " + email : ""));
-    } else {
-      if (avatar) {
-        avatar.innerHTML = '<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"></circle><path d="M5 20c.6-3.8 3.1-5.7 7-5.7s6.4 1.9 7 5.7"></path></svg>';
-      }
-      if (title) title.textContent = "Sign in to your account";
-      if (subtitle) subtitle.textContent = "Log in or create an account";
-      drawerAccountCta.setAttribute("aria-label", "Sign in to your account");
-    }
+    };
+
+    renderAvatar(headerAccount, true);
+    if (!drawerAccountCta) return;
+    const avatar = drawerAccountCta.querySelector(".mobile-drawer-account-avatar");
+    const title = drawerAccountCta.querySelector(".mobile-drawer-account-copy strong");
+    const subtitle = drawerAccountCta.querySelector(".mobile-drawer-account-copy small");
+    drawerAccountCta.classList.toggle("is-signed-in", Boolean(user));
+    drawerAccountCta.href = drawerHref("account.html");
+    renderAvatar(avatar, false);
+    if (title) title.textContent = user ? (name || "My account") : "Sign in to your account";
+    if (subtitle) subtitle.textContent = user
+      ? (email ? "Signed in · " + email : "Signed in — manage your account")
+      : "Log in or create an account";
+    drawerAccountCta.setAttribute("aria-label", user ? "My account" + (email ? ", " + email : "") : "Sign in to your account");
   };
   window.halalRefreshMobileAccountCTA = refreshMobileDrawerAccount;
   window.addEventListener("storage", refreshMobileDrawerAccount);
