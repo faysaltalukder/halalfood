@@ -207,6 +207,7 @@
         .sort((a, b) =>
           Number(Boolean(b.is_featured)) - Number(Boolean(a.is_featured)) ||
           Number(a.sort_order || 0) - Number(b.sort_order || 0) ||
+          (Date.parse(b.created_at || "") || 0) - (Date.parse(a.created_at || "") || 0) ||
           String(a.name || "").localeCompare(String(b.name || ""))
         )
         .slice(0, cardLimit);
@@ -223,16 +224,24 @@
   function renderHome(products, categories) {
     const featuredGrid = $("#products .product-grid");
     if (featuredGrid) {
-      const featured = products.filter(item => item.is_featured && item.is_active).sort((a,b) => Number(a.sort_order||0)-Number(b.sort_order||0));
+      const catalogOrder = (a, b) =>
+        Number(a.sort_order || 0) - Number(b.sort_order || 0) ||
+        (Date.parse(b.created_at || "") || 0) - (Date.parse(a.created_at || "") || 0) ||
+        String(a.name || "").localeCompare(String(b.name || ""));
+      const featured = products.filter(item => item.is_featured && item.is_active).sort(catalogOrder);
       const featuredSlugs = new Set(featured.map(item => item.slug));
-      const remaining = products.filter(item => item.is_active && !featuredSlugs.has(item.slug)).sort((a,b) => Number(a.sort_order||0)-Number(b.sort_order||0));
+      const remaining = products.filter(item => item.is_active && !featuredSlugs.has(item.slug)).sort(catalogOrder);
       const rows = [...featured, ...remaining].slice(0,4);
       featuredGrid.replaceChildren(...rows.map(item => makeProductCard(item, "standard")));
       featuredGrid.classList.add("featured-grid-4");
     }
     const jfy = $("#just-for-you .jfy-grid");
     if (jfy) {
-      const rows = products.filter(item => item.is_active).sort((a,b) => Number(a.sort_order||0)-Number(b.sort_order||0)).slice(0,10);
+      const rows = products.filter(item => item.is_active).sort((a,b) =>
+        Number(a.sort_order || 0) - Number(b.sort_order || 0) ||
+        (Date.parse(b.created_at || "") || 0) - (Date.parse(a.created_at || "") || 0) ||
+        String(a.name || "").localeCompare(String(b.name || ""))
+      ).slice(0,10);
       jfy.replaceChildren(...rows.map(item => makeProductCard(item, "jfy")));
     }
     // Rebuild category product rails from the current database so new products and edits appear here too.
@@ -388,7 +397,7 @@
   async function start() {
     const info = pathInfo();
     const [products, categories] = await Promise.all([
-      readTable("products", { select: "id,name,slug,category,category_slug,price,unit_type,display_price,image_url,short_description,full_description,description,is_active,is_featured,cms_created,cms_managed,sort_order,seo_title,seo_description,stock_quantity", is_active: "eq.true", order: "sort_order.asc,name.asc", limit: "1000" }),
+      readTable("products", { select: "id,name,slug,category,category_slug,price,unit_type,display_price,image_url,short_description,full_description,description,is_active,is_featured,cms_created,cms_managed,sort_order,seo_title,seo_description,stock_quantity,created_at", is_active: "eq.true", order: "sort_order.asc,name.asc", limit: "1000" }),
       readTable("categories", { select: "id,name,slug,description,image_url,is_active,cms_created,cms_managed,sort_order", is_active: "eq.true", order: "sort_order.asc,name.asc", limit: "500" })
     ]);
     currentCategories = categories;
