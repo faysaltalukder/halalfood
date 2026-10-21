@@ -2993,3 +2993,10 @@ main .section-head h3 {
     font-size: .88rem;
   }
 }
+
+
+/* Desktop-only account controls refinement (mobile layout remains unchanged). */
+@media (min-width: 901px) {
+  .header-actions .header-account-link { margin-right: 5px; }
+  .header-actions .header-track-order { margin-left: 4px; }
+}
