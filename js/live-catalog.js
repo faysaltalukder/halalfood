@@ -222,22 +222,6 @@
         if (cat.cms_created) card.href = rootURL("category.html?slug=" + encodeURIComponent(cat.slug));
       });
     }
-    // Keep category menus in sync with active database categories.
-    $$(".mega-menu").forEach(menu => {
-      categories.filter(cat => cat.is_active).forEach(cat => {
-        const present = Array.from(menu.querySelectorAll("a")).some(a => /(?:^|\/)categories\/[^/?#]+\.html(?:$|\?)/i.test(a.getAttribute("href") || "") &&
-          (a.getAttribute("href") || "").toLowerCase().includes("/" + cat.slug.toLowerCase() + ".html"));
-        if (!present) {
-          const a = document.createElement("a");
-          a.href = cat.cms_created ? rootURL("category.html?slug=" + encodeURIComponent(cat.slug)) : rootURL("categories/" + encodeURIComponent(cat.slug) + ".html");
-          a.textContent = cat.name; menu.appendChild(a);
-        }
-      });
-      Array.from(menu.querySelectorAll("a")).forEach(a => {
-        const match = (a.getAttribute("href") || "").match(/categories\/([^/?#]+)\.html/i) || (a.getAttribute("href") || "").match(/[?&]slug=([^&]+)/);
-        if (match && !categories.some(cat => cat.slug === decodeURIComponent(match[1]) && cat.is_active)) a.remove();
-      });
-    });
   }
   function syncCategoryMenus(categories) {
     // Keep desktop mega menus and the mobile drawer in sync with active categories.
