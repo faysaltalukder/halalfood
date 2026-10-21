@@ -709,7 +709,7 @@ async function refresh(){[products,categories]=await Promise.all([fetchProducts(
    }catch(err){toast(err.message||"Excel export failed.","error");}
   });
   $("downloadPdfBtn")?.addEventListener("click",async()=>{try{if(!report.rows.length)await buildReport();$("printReportTitle").textContent=report.title;$("printReportDetails").textContent=report.rangeLabel+" · "+report.rows.length+" records · "+new Date().toLocaleString("en-BD");await audit("report_printed","report",null,report.title+" opened for PDF/printing",{rows:report.rows.length,type:report.type});window.print();}catch(err){toast(err.message||"Could not prepare print report.","error");}});
-  $("includePersonalData")?.addEventListener("change",()=>{buildReport().catch(err=>toast(err.message||"Could not refresh the report preview.","error"));});
+  $("includePersonalData")?.addEventListener("change",()=>{if($("reportType")?.value==="orders")buildReport().catch(err=>toast(err.message||"Could not refresh the report preview.","error"));});
   bindRangeControls(()=>buildReport());await buildReport();attachRefresh(buildReport);
  }
  async function initSettings(){
