@@ -37,11 +37,11 @@ window.HFAdminReady.then(async H=>{
   return {labels:keys.map(k=>dateOnly(k)),datasets:evtNames.map((name,i)=>({label:name.label,data:keys.map(k=>events.filter(e=>e.event_name===name.key&&String(e.occurred_at||"").slice(0,10)===k).length),borderColor:name.color||colorSet[i],backgroundColor:(name.color||colorSet[i])+"24",pointRadius:2,pointHoverRadius:5,borderWidth:2,tension:.32,fill:name.fill===true}))};
  }
  function chartAxisOptions(){
-  return {scales:{x:{ticks:{color:"#858293",maxRotation:0,autoSkip:true,maxTicksLimit:12},grid:{display:false}},y:{beginAtZero:true,ticks:{color:"#858293",precision:0},grid:{color:"#eeeae2"}}}};
+  return {scales:{x:{ticks:{color:"#A6B4C8",maxRotation:0,autoSkip:true,maxTicksLimit:12},grid:{display:false}},y:{beginAtZero:true,ticks:{color:"#A6B4C8",precision:0},grid:{color:"#2A3A52"}}}};
  }
  function orderStatusCounts(orders){
   const labels=["pending","processing","shipped","delivered","cancelled"];
-  return {labels,datasets:[{data:labels.map(s=>orders.filter(o=>o.status===s).length),backgroundColor:[palette.yellow,palette.blue,palette.purple,palette.green,palette.red],borderColor:"#fffdf9",borderWidth:3,hoverOffset:7}]};
+  return {labels,datasets:[{data:labels.map(s=>orders.filter(o=>o.status===s).length),backgroundColor:[palette.yellow,palette.blue,palette.purple,palette.green,palette.red],borderColor:"#111C2E",borderWidth:3,hoverOffset:7}]};
  }
  function stageActors(events,name){
   const rows=events.filter(e=>e.event_name===name);
@@ -115,8 +115,8 @@ window.HFAdminReady.then(async H=>{
     :"Finance summary could not be loaded. Refresh after signing in to the authorized admin account and completing MFA. Cash-on-hand and courier settlement are not currently tracked.";
    const labels=dateKeys(14);
    drawChart("overviewOperationsChart",{type:"line",data:{labels:labels.map(dateOnly),datasets:[
-    {label:"Order item lines",data:labels.map(day=>orders.filter(o=>localDateKey(o.ordered_at)===day&&o.status!=="cancelled").reduce((sum,o)=>sum+(o.order_items||[]).length,0)),borderColor:palette.orange,backgroundColor:"#C97B3D22",fill:true,tension:.32,pointRadius:2,borderWidth:2},
-    {label:"Add-to-cart events",data:labels.map(day=>events.filter(e=>e.event_name==="add_to_cart"&&localDateKey(e.occurred_at)===day).length),borderColor:palette.blue,backgroundColor:"#5B86B51a",fill:false,tension:.32,pointRadius:2,borderWidth:2}
+    {label:"Order item lines",data:labels.map(day=>orders.filter(o=>localDateKey(o.ordered_at)===day&&o.status!=="cancelled").reduce((sum,o)=>sum+(o.order_items||[]).length,0)),borderColor:palette.orange,backgroundColor:"#F59E0B22",fill:true,tension:.32,pointRadius:2,borderWidth:2},
+    {label:"Add-to-cart events",data:labels.map(day=>events.filter(e=>e.event_name==="add_to_cart"&&localDateKey(e.occurred_at)===day).length),borderColor:palette.blue,backgroundColor:"#4F7CFF20",fill:false,tension:.32,pointRadius:2,borderWidth:2}
    ]},options:{...chartAxisOptions(),plugins:{legend:{position:"bottom"}},onClick:(ev,items)=>{if(items.length)location.href=items[0].datasetIndex===0?"./orders.html":"./analytics.html";}}});
    const financeCanvas=$("overviewFinanceChart");
    if(financeAvailable){
@@ -131,7 +131,7 @@ window.HFAdminReady.then(async H=>{
     $("overviewFinanceChartNote").textContent="Finance data is unavailable for this session. Complete admin MFA to view confirmed ledger entries.";
    }
    drawChart("overviewTrafficChart",{type:"line",data:{labels:labels.map(dateOnly),datasets:[
-    {label:"Page views",data:labels.map(day=>events.filter(e=>e.event_name==="page_view"&&localDateKey(e.occurred_at)===day).length),borderColor:palette.blue,backgroundColor:"#5B86B51a",fill:true,tension:.35,pointRadius:2,borderWidth:2},
+    {label:"Page views",data:labels.map(day=>events.filter(e=>e.event_name==="page_view"&&localDateKey(e.occurred_at)===day).length),borderColor:palette.blue,backgroundColor:"#4F7CFF20",fill:true,tension:.35,pointRadius:2,borderWidth:2},
     {label:"Product views",data:labels.map(day=>events.filter(e=>e.event_name==="view_item"&&localDateKey(e.occurred_at)===day).length),borderColor:palette.orange,backgroundColor:"#C97B3D18",fill:true,tension:.35,pointRadius:2,borderWidth:2}
    ]},options:{...chartAxisOptions(),plugins:{legend:{position:"bottom"}}}});
    drawChart("overviewStatusChart",{type:"doughnut",data:orderStatusCounts(orders),options:{cutout:"67%",plugins:{legend:{position:"bottom"}},onClick:(ev,items)=>{if(items.length)location.href="./orders.html?status="+encodeURIComponent(["pending","processing","shipped","delivered","cancelled"][items[0].index]);}}});
@@ -147,14 +147,14 @@ window.HFAdminReady.then(async H=>{
    const range=selectedRange();const [events,orders,products]=await Promise.all([fetchEvents(range),fetchOrders(range,5000),fetchProducts()]);
    const chartDays=Math.min(range.days||90,90),keys=lastDateKeys(chartDays);
    drawChart("analyticsTrafficChart",{type:"line",data:{labels:keys.map(dateOnly),datasets:[
-    {label:"Page views",data:keys.map(k=>events.filter(e=>e.event_name==="page_view"&&String(e.occurred_at).slice(0,10)===k).length),borderColor:palette.blue,backgroundColor:"#5B86B51a",fill:true,tension:.32,pointRadius:1.5,borderWidth:2},
+    {label:"Page views",data:keys.map(k=>events.filter(e=>e.event_name==="page_view"&&String(e.occurred_at).slice(0,10)===k).length),borderColor:palette.blue,backgroundColor:"#4F7CFF20",fill:true,tension:.32,pointRadius:1.5,borderWidth:2},
     {label:"Product views",data:keys.map(k=>events.filter(e=>e.event_name==="view_item"&&String(e.occurred_at).slice(0,10)===k).length),borderColor:palette.orange,backgroundColor:"#C97B3D15",fill:true,tension:.32,pointRadius:1.5,borderWidth:2},
-    {label:"Cart additions",data:keys.map(k=>events.filter(e=>e.event_name==="add_to_cart"&&String(e.occurred_at).slice(0,10)===k).length),borderColor:palette.green,backgroundColor:"#4A987016",fill:false,tension:.32,pointRadius:1.5,borderWidth:2}
+    {label:"Cart additions",data:keys.map(k=>events.filter(e=>e.event_name==="add_to_cart"&&String(e.occurred_at).slice(0,10)===k).length),borderColor:palette.green,backgroundColor:"#10B9811A",fill:false,tension:.32,pointRadius:1.5,borderWidth:2}
    ]},options:{...chartAxisOptions(),plugins:{legend:{position:"bottom"}}}});
    const top=topProducts(events,products);
-   drawChart("analyticsProductChart",{type:"doughnut",data:{labels:top.slice(0,7).map(x=>x.name),datasets:[{data:top.slice(0,7).map(x=>x.count),backgroundColor:colorSet,borderColor:"#fffdf9",borderWidth:3,hoverOffset:8}]},options:{cutout:"57%",plugins:{legend:{position:"bottom"}}}});
+   drawChart("analyticsProductChart",{type:"doughnut",data:{labels:top.slice(0,7).map(x=>x.name),datasets:[{data:top.slice(0,7).map(x=>x.count),backgroundColor:colorSet,borderColor:"#111C2E",borderWidth:3,hoverOffset:8}]},options:{cutout:"57%",plugins:{legend:{position:"bottom"}}}});
    const sources=groupBy(events.filter(e=>e.event_name==="page_view"),e=>[e.source,e.medium].filter(Boolean).join(" / ")||"Direct or unknown").slice(0,7);
-   drawChart("analyticsSourceChart",{type:"bar",data:{labels:sources.map(x=>x.label),datasets:[{label:"Page views",data:sources.map(x=>x.count),backgroundColor:colorSet,borderRadius:7,maxBarThickness:36}]},options:{indexAxis:"y",plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,ticks:{precision:0,color:"#858293"},grid:{color:"#eeeae2"}},y:{ticks:{color:palette.navy},grid:{display:false}}}}});
+   drawChart("analyticsSourceChart",{type:"bar",data:{labels:sources.map(x=>x.label),datasets:[{label:"Page views",data:sources.map(x=>x.count),backgroundColor:colorSet,borderRadius:7,maxBarThickness:36}]},options:{indexAxis:"y",plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,ticks:{precision:0,color:"#A6B4C8"},grid:{color:"#2A3A52"}},y:{ticks:{color:palette.navy},grid:{display:false}}}}});
    const funnelEvents=events.map(e=>e);renderFunnel(funnelEvents);
    drawChart("analyticsOrdersChart",{type:"doughnut",data:orderStatusCounts(orders),options:{cutout:"60%",plugins:{legend:{position:"bottom"}},onClick:(ev,items)=>{if(items.length)location.href="./orders.html?status="+encodeURIComponent(["pending","processing","shipped","delivered","cancelled"][items[0].index]);}}});
    const total=events.length,views=events.filter(e=>e.event_name==="page_view").length,pv=events.filter(e=>e.event_name==="view_item").length,carts=events.filter(e=>e.event_name==="add_to_cart").length,wa=events.filter(e=>e.event_name==="whatsapp_click").length;
@@ -536,12 +536,12 @@ async function refresh(){[products,categories]=await Promise.all([fetchProducts(
    const active=entries.filter(e=>e.status==="confirmed"),income=active.filter(e=>e.entry_type==="income").reduce((s,e)=>s+Number(e.amount||0),0),expense=active.filter(e=>e.entry_type==="expense").reduce((s,e)=>s+Number(e.amount||0),0);
    $("financeIncomeTotal").textContent=money(income);$("financeExpenseTotal").textContent=money(expense);$("financeNetTotal").textContent=money(income-expense);$("financePendingCount").textContent=entries.filter(e=>e.status==="draft").length.toLocaleString("en-BD");
    const cats=groupBy(active.filter(e=>e.entry_type==="expense"),e=>e.category);
-   drawChart("financeExpenseChart",{type:"doughnut",data:{labels:cats.map(x=>x.label),datasets:[{data:cats.map(x=>entries.filter(e=>e.status==="confirmed"&&e.entry_type==="expense"&&e.category===x.label).reduce((s,e)=>s+Number(e.amount||0),0)),backgroundColor:colorSet,borderColor:"#fffdf9",borderWidth:3,hoverOffset:6}]},options:{cutout:"62%",plugins:{legend:{position:"bottom"}}}});
+   drawChart("financeExpenseChart",{type:"doughnut",data:{labels:cats.map(x=>x.label),datasets:[{data:cats.map(x=>entries.filter(e=>e.status==="confirmed"&&e.entry_type==="expense"&&e.category===x.label).reduce((s,e)=>s+Number(e.amount||0),0)),backgroundColor:colorSet,borderColor:"#111C2E",borderWidth:3,hoverOffset:6}]},options:{cutout:"62%",plugins:{legend:{position:"bottom"}}}});
    const monthKeys=[];const now=new Date();for(let i=5;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1);monthKeys.push(d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"));}
    drawChart("financeTrendChart",{type:"bar",data:{labels:monthKeys.map(k=>{const [y,m]=k.split("-");return new Date(Number(y),Number(m)-1,1).toLocaleDateString("en-BD",{month:"short",year:"2-digit"});}),datasets:[
     {label:"Confirmed income records",data:monthKeys.map(k=>active.filter(e=>e.entry_type==="income"&&String(e.entry_date).startsWith(k)).reduce((s,e)=>s+Number(e.amount||0),0)),backgroundColor:palette.green,borderRadius:6},
     {label:"Confirmed expense records",data:monthKeys.map(k=>active.filter(e=>e.entry_type==="expense"&&String(e.entry_date).startsWith(k)).reduce((s,e)=>s+Number(e.amount||0),0)),backgroundColor:palette.orange,borderRadius:6}
-   ]},options:{scales:{x:{ticks:{color:"#858293"},grid:{display:false}},y:{beginAtZero:true,ticks:{color:"#858293",callback:v=>"৳"+Number(v).toLocaleString("en-BD")},grid:{color:"#eeeae2"}}},plugins:{legend:{position:"bottom"}}}});
+   ]},options:{scales:{x:{ticks:{color:"#A6B4C8"},grid:{display:false}},y:{beginAtZero:true,ticks:{color:"#A6B4C8",callback:v=>"৳"+Number(v).toLocaleString("en-BD")},grid:{color:"#2A3A52"}}},plugins:{legend:{position:"bottom"}}}});
   }
   function render(){
    const search=String($("financeSearch")?.value||$("globalSearch")?.value||"").toLowerCase().trim(),type=$("financeTypeFilter")?.value||"",status=$("financeStatusFilter")?.value||"";
