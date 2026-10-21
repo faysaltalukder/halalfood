@@ -302,6 +302,7 @@
       }
     } catch (_) {}
     window.dispatchEvent(new CustomEvent("halalcatalog:updated", { detail: { products: active, categories } }));
+    window.dispatchEvent(new CustomEvent("halalcart:updated", { detail: window.HALAL_CART_API?.read?.() || [] }));
   }
   async function start() {
     const info = pathInfo();
