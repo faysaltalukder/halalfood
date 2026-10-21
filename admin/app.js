@@ -151,8 +151,8 @@ window.HFAdminReady.then(async H=>{
    $("financeSummaryExpenses").textContent=financeAvailable?money(expenses):"Unavailable";
    $("financeSummaryNet").textContent=financeAvailable?money(income-expenses):"Unavailable";
    $("financeSummaryNote").textContent=financeAvailable
-    ?"All-time totals use confirmed manual ledger entries only. Net recorded ledger is not a cash-on-hand balance; cash accounts and courier COD settlement are not tracked yet."
-    :"Finance summary could not be loaded. Refresh after signing in to the authorized admin account and completing MFA. Cash-on-hand and courier settlement are not currently tracked.";
+    ?"All-time totals use confirmed manual ledger entries only. Net recorded ledger is not cash on hand. Courier COD entries remain manual placeholders in Operations and are not yet reconciled into this finance ledger."
+    :"Finance summary could not be loaded. Refresh after signing in to the authorized admin account and completing MFA. Courier entries are manual placeholders and are not verified cash receipts.";
    const labels=dateKeys(14);
    drawChart("overviewOperationsChart",{type:"line",data:{labels:labels.map(dateOnly),datasets:[
     {label:"Order item lines",data:labels.map(day=>orders.filter(o=>localDateKey(o.ordered_at)===day&&o.status!=="cancelled").reduce((sum,o)=>sum+(o.order_items||[]).length,0)),borderColor:palette.orange,backgroundColor:"#F59E0B22",fill:true,tension:.32,pointRadius:2,borderWidth:2},
