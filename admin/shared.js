@@ -99,6 +99,7 @@ function drawChart(id,config){
  }};
  const opts={...base,...config.options,plugins:{...base.plugins,...(config.options?.plugins||{})}};
  charts[id]=new Chart(canvas,{...config,options:opts});
+ window.HFAdminLanguage?.translateChart?.(charts[id]);
  return charts[id];
 }
 function syncChartsForTheme(){
