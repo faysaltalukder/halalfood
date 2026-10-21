@@ -47,6 +47,11 @@ input,button,select{font:inherit;padding:11px 13px;border-radius:10px;border:1px
  .table-wrap th,.table-wrap td{padding:8px;font-size:12px}
  #ordersCard .table-wrap table{min-width:1180px}
 }
+
+/* CMS product, category and blog editor */
+.cms-panel{margin-bottom:20px;min-width:0}.cms-panel>.top{margin-bottom:14px}.cms-panel h2{font-size:19px}.cms-panel .muted{font-size:13px}.cms-toolbar{display:flex;gap:9px;align-items:center;margin:14px 0;flex-wrap:wrap}.cms-toolbar input{flex:1 1 220px;min-width:180px}.cms-toolbar select{min-width:140px;background:#fff}.cms-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:14px 0}.cms-metric{padding:12px 14px;border:1px solid var(--border);border-radius:12px;background:#faf9f6}.cms-metric strong{display:block;font-size:22px;margin-top:4px}.cms-product-cell{display:flex;align-items:center;gap:10px;min-width:180px;white-space:normal}.cms-product-cell img,.cms-image-placeholder{flex:0 0 44px;width:44px;height:44px;border-radius:9px;object-fit:contain;background:#f4f0e7;border:1px solid var(--border)}.cms-image-placeholder{display:grid;place-items:center;color:#777;font-size:9px;text-align:center}.cms-product-cell strong{display:block;max-width:260px;line-height:1.35}.cms-product-cell small{display:block;color:var(--muted);font-size:10px;margin-top:3px;overflow-wrap:anywhere}.cms-row-actions{display:flex;gap:6px;align-items:center}.cms-row-actions button{padding:7px 9px;font-size:12px;white-space:nowrap}.cms-status{display:inline-flex;padding:4px 7px;border-radius:999px;background:#f0eee8;color:#544e44;font-size:10px;font-weight:750;text-transform:capitalize;margin:0 3px 3px 0}.cms-status.active,.cms-status.published{background:#e8f6ed;color:#17663c}.cms-status.inactive,.cms-status.archived{background:#fceeed;color:#96382e}.cms-status.featured{background:#f8efd8;color:#835913}.cms-status.draft{background:#ececf4;color:#545477}.cms-global-msg{margin:0 0 22px}.msg.error{color:#9d2929}.msg.success{color:#1b6d46}.cms-dialog{width:min(820px,calc(100vw - 24px));max-width:none;max-height:min(92vh,1000px);padding:0;border:1px solid var(--border);border-radius:18px;box-shadow:0 25px 90px #17263c33;overflow:auto}.cms-dialog::backdrop{background:#17233c88;backdrop-filter:blur(3px)}.cms-dialog-wide{width:min(980px,calc(100vw - 24px))}.cms-form{display:block;max-width:none;padding:22px}.cms-dialog-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:18px}.cms-dialog-head h2{font-size:24px;margin:0}.cms-kicker{font-size:10px;font-weight:850;letter-spacing:.14em;color:#a56a2e;margin:0 0 6px}.cms-close{font-size:20px;line-height:1;padding:8px 12px}.cms-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.cms-form-grid>label,.cms-inline-fields>label{display:grid;align-content:start;gap:7px;font-size:12px;font-weight:750;color:var(--navy);min-width:0}.cms-form input:not([type=checkbox]):not([type=file]),.cms-form select,.cms-form textarea{width:100%;min-width:0;background:#fff;color:var(--navy);font-size:14px;border:1px solid var(--border);border-radius:10px;padding:11px 12px}.cms-form textarea{resize:vertical;line-height:1.55}.cms-form input[type=file]{display:block;width:100%;max-width:100%;font-size:12px;padding:8px;background:#faf9f6;border:1px dashed #d2c7b4;border-radius:10px}.cms-form small{display:block;font-weight:400;color:var(--muted);font-size:11px;margin-top:-2px;line-height:1.45}.cms-span-2{grid-column:1/-1}.cms-inline-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;min-width:0}.cms-check-row{display:flex;gap:18px;flex-wrap:wrap}.cms-check-row label,.cms-check-single{display:flex!important;align-items:center;gap:8px!important;font-size:13px!important}.cms-check-row input[type=checkbox],.cms-check-single input[type=checkbox]{width:17px;height:17px;accent-color:#c97b3d}.cms-preview-row{display:flex;align-items:center;gap:12px;min-height:0}.cms-preview-row img{max-width:150px;max-height:100px;object-fit:contain;border-radius:10px;border:1px solid var(--border);background:#faf9f6;padding:4px}.cms-dialog-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}.cms-dialog-actions button{min-width:112px}.cms-form .msg{margin:10px 0}.cms-panel .table-wrap{border:1px solid var(--border);border-radius:10px;max-width:100%;overscroll-behavior:contain}.cms-panel table{min-width:820px}.cms-panel thead th{position:sticky;top:0;background:#fff;z-index:2}.cms-panel .table-wrap td{vertical-align:middle}.cms-panel .table-wrap td:nth-child(3){font-variant-numeric:tabular-nums}
+@media(max-width:700px){.cms-panel>.top{align-items:flex-start}.cms-panel>.top button{white-space:nowrap}.cms-metrics{gap:7px}.cms-metric{padding:10px}.cms-metric strong{font-size:19px}.cms-toolbar{align-items:stretch}.cms-toolbar input,.cms-toolbar select,.cms-toolbar button{flex:1 1 100%;width:100%;min-width:0}.cms-form{padding:16px}.cms-form-grid{grid-template-columns:minmax(0,1fr);gap:12px}.cms-span-2{grid-column:auto}.cms-inline-fields{grid-template-columns:minmax(0,1fr)}.cms-dialog-head h2{font-size:20px}.cms-dialog-actions button{min-width:0;flex:1}.cms-check-row{gap:12px}.cms-product-cell strong{max-width:190px}}
+
 </style>
 </head>
 <body>
@@ -84,7 +89,7 @@ input,button,select{font:inherit;padding:11px 13px;border-radius:10px;border:1px
 </section>
 
 <section id="dashboard" class="hidden">
-<div class="top"><div><h1>Dashboard</h1><p class="muted">Manage orders, customer accounts, and customer order history in one place.</p></div><div class="actions"><a class="nav-link" href="#customerAccountsCard">Customers</a><a class="nav-link" href="#customerOrderHistoryCard">Customer Orders</a><a class="nav-link" href="#ordersCard">All Orders</a><button id="refresh">Refresh</button></div></div>
+<div class="top"><div><h1>Dashboard</h1><p class="muted">Manage orders, customer accounts, and customer order history in one place.</p></div><div class="actions"><a class="nav-link" href="#catalogCard">Products</a><a class="nav-link" href="#categoriesCard">Categories</a><a class="nav-link" href="#blogPostsCard">Blog Posts</a><a class="nav-link" href="#customerAccountsCard">Customers</a><a class="nav-link" href="#customerOrderHistoryCard">Customer Orders</a><a class="nav-link" href="#ordersCard">All Orders</a><button id="refresh">Refresh</button></div></div>
 <div class="stats">
 <div class="card stat"><span class="muted">Orders</span><strong id="ordersCount">0</strong></div>
 <div class="card stat"><span class="muted">Pending</span><strong id="pendingCount">0</strong></div>
@@ -101,6 +106,98 @@ input,button,select{font:inherit;padding:11px 13px;border-radius:10px;border:1px
   </div>
   <p id="analyticsMsg" class="muted">Loading analytics…</p>
 </div>
+
+<div id="catalogCard" class="card cms-panel">
+  <div class="top"><div><h2>Product Catalog</h2><p class="muted">Create, update, feature, or hide products. Changes are saved to Supabase.</p></div><button id="newProductBtn">+ Add product</button></div>
+  <div class="cms-metrics">
+    <div class="cms-metric"><span class="muted">Catalog products</span><strong id="cmsProductsCount">—</strong></div>
+    <div class="cms-metric"><span class="muted">Visible</span><strong id="cmsProductsActive">—</strong></div>
+    <div class="cms-metric"><span class="muted">Hidden</span><strong id="cmsProductsHidden">—</strong></div>
+  </div>
+  <div class="cms-toolbar"><input id="productSearch" type="search" placeholder="Search product name or slug" aria-label="Search products"><select id="categoryFilter" aria-label="Filter by category"><option value="">All categories</option></select><select id="productStatusFilter" aria-label="Filter product visibility"><option value="">All visibility</option><option value="active">Visible</option><option value="hidden">Hidden</option></select><button id="cmsRefresh" class="secondary" type="button">Refresh CMS</button></div>
+  <div class="table-wrap"><table><thead><tr><th>Product</th><th>Category</th><th>Price</th><th>Visibility</th><th>Updated</th><th>Actions</th></tr></thead><tbody id="cmsProductsBody"><tr><td colspan="6" class="muted">Checking admin session…</td></tr></tbody></table></div>
+  <p id="cmsProductMsg" class="msg muted" role="status"></p>
+</div>
+
+<div id="categoriesCard" class="card cms-panel">
+  <div class="top"><div><h2>Category Manager</h2><p class="muted">Rename, reorder, update artwork, or hide a category without deleting its products.</p></div><button id="newCategoryBtn">+ Add category</button></div>
+  <p id="cmsCategoriesCount" class="muted">— categories</p>
+  <div class="table-wrap"><table><thead><tr><th>Category</th><th>Visible products</th><th>Visibility</th><th>Order</th><th>Actions</th></tr></thead><tbody id="cmsCategoriesBody"><tr><td colspan="5" class="muted">Loading categories…</td></tr></tbody></table></div>
+  <p id="cmsCategoryMsg" class="msg muted" role="status"></p>
+</div>
+
+<div id="blogPostsCard" class="card cms-panel">
+  <div class="top"><div><h2>Blog & Content</h2><p class="muted">Write a post, add a cover image, save drafts, and publish to the live blog.</p></div><button id="newPostBtn">+ Create post</button></div>
+  <div class="cms-toolbar"><input id="postSearch" type="search" placeholder="Search blog posts" aria-label="Search posts"><select id="postStatusFilter" aria-label="Filter posts"><option value="">All statuses</option><option value="published">Published</option><option value="draft">Draft</option><option value="archived">Archived</option></select></div>
+  <div class="table-wrap"><table><thead><tr><th>Post</th><th>Topic</th><th>Status</th><th>Updated</th><th>Actions</th></tr></thead><tbody id="cmsPostsBody"><tr><td colspan="5" class="muted">Loading posts…</td></tr></tbody></table></div>
+  <p id="cmsPostMsg" class="msg muted" role="status"></p>
+</div>
+<p id="cmsGlobalMsg" class="cms-global-msg muted" role="status" aria-live="polite"></p>
+
+<dialog id="productDialog" class="cms-dialog">
+  <form id="productForm" class="cms-form">
+    <div class="cms-dialog-head"><div><p class="cms-kicker">CATALOG</p><h2 id="productDialogTitle">Add product</h2></div><button type="button" class="secondary cms-close" data-close-dialog="productDialog" aria-label="Close">×</button></div>
+    <input id="productId" type="hidden">
+    <div class="cms-form-grid">
+      <label>Product name<input id="productName" maxlength="140" required placeholder="e.g. Pure Cow Ghee"></label>
+      <label>Product slug<input id="productSlug" maxlength="90" pattern="[a-z0-9]+(-[a-z0-9]+)*" required placeholder="pure-cow-ghee"></label>
+      <label>Category<select id="productCategory" required><option value="">Choose a category</option></select></label>
+      <div class="cms-inline-fields"><label>Price (৳)<input id="productPrice" type="number" min="0" step="0.01" required></label><label>Unit label<input id="productUnit" maxlength="40" required placeholder="kg, 500g, bottle, 1L"></label></div>
+      <label class="cms-span-2">Cover image<input id="productImageFile" type="file" accept="image/jpeg,image/png,image/webp,image/avif"><small>JPG, PNG, WebP or AVIF · max 5 MB</small></label>
+      <label class="cms-span-2">Or image URL<input id="productImageUrl" type="url" placeholder="https://…"></label>
+      <div class="cms-preview-row cms-span-2"><img id="productPreview" class="hidden" alt="Product preview"><p class="muted">Image preview</p></div>
+      <label class="cms-span-2">Short description<textarea id="productShortDescription" rows="2" maxlength="500" placeholder="Shown on product cards and search results"></textarea></label>
+      <label class="cms-span-2">Full description<textarea id="productFullDescription" rows="5" placeholder="Product details shown on its detail page"></textarea></label>
+      <div class="cms-inline-fields"><label>Stock quantity (optional)<input id="productStock" type="number" min="0" step="any" placeholder="Leave blank if not tracked"></label><label>Display order<input id="productSortOrder" type="number" step="1" value="0"></label></div>
+      <label>SEO title<input id="productSeoTitle" maxlength="180"></label>
+      <label>SEO description<input id="productSeoDescription" maxlength="320"></label>
+      <div class="cms-check-row cms-span-2"><label><input id="productActive" type="checkbox" checked> Visible on the store</label><label><input id="productFeatured" type="checkbox"> Feature on the homepage</label></div>
+    </div>
+    <p id="productFormMsg" class="msg muted" role="status"></p>
+    <div class="cms-dialog-actions"><button type="button" class="secondary" data-close-dialog="productDialog">Cancel</button><button id="saveProductBtn" type="submit">Save product</button></div>
+  </form>
+</dialog>
+
+<dialog id="categoryDialog" class="cms-dialog">
+  <form id="categoryForm" class="cms-form">
+    <div class="cms-dialog-head"><div><p class="cms-kicker">STORE STRUCTURE</p><h2 id="categoryDialogTitle">Add category</h2></div><button type="button" class="secondary cms-close" data-close-dialog="categoryDialog" aria-label="Close">×</button></div>
+    <input id="categoryId" type="hidden">
+    <div class="cms-form-grid">
+      <label>Category name<input id="categoryName" maxlength="100" required></label>
+      <label>Category slug<input id="categorySlug" maxlength="90" pattern="[a-z0-9]+(-[a-z0-9]+)*" required></label>
+      <label class="cms-span-2">Description<textarea id="categoryDescription" rows="3" maxlength="500"></textarea></label>
+      <label class="cms-span-2">Category image<input id="categoryImageFile" type="file" accept="image/jpeg,image/png,image/webp,image/avif"><small>JPG, PNG, WebP or AVIF · max 5 MB</small></label>
+      <label class="cms-span-2">Or image URL<input id="categoryImageUrl" type="url" placeholder="https://…"></label>
+      <div class="cms-preview-row cms-span-2"><img id="categoryPreview" class="hidden" alt="Category preview"><p class="muted">Image preview</p></div>
+      <div class="cms-inline-fields"><label>Display order<input id="categorySortOrder" type="number" step="1" value="0"></label><label class="cms-check-single"><input id="categoryActive" type="checkbox" checked> Visible on the store</label></div>
+    </div>
+    <p id="categoryFormMsg" class="msg muted" role="status"></p>
+    <div class="cms-dialog-actions"><button type="button" class="secondary" data-close-dialog="categoryDialog">Cancel</button><button id="saveCategoryBtn" type="submit">Save category</button></div>
+  </form>
+</dialog>
+
+<dialog id="postDialog" class="cms-dialog cms-dialog-wide">
+  <form id="postForm" class="cms-form">
+    <div class="cms-dialog-head"><div><p class="cms-kicker">PUBLISHING</p><h2 id="postDialogTitle">Create blog post</h2></div><button type="button" class="secondary cms-close" data-close-dialog="postDialog" aria-label="Close">×</button></div>
+    <input id="postId" type="hidden">
+    <div class="cms-form-grid">
+      <label>Post title<input id="postTitle" maxlength="180" required></label>
+      <label>Post slug<input id="postSlug" maxlength="90" pattern="[a-z0-9]+(-[a-z0-9]+)*" required></label>
+      <label>Topic/category<input id="postCategory" maxlength="80" value="Guides" placeholder="Guides, Ghee, Dates…"></label>
+      <label>Status<select id="postStatus"><option value="draft">Draft</option><option value="published">Published</option><option value="archived">Archived</option></select></label>
+      <label class="cms-span-2">Excerpt<input id="postExcerpt" maxlength="500" placeholder="A short introduction for the blog list"></label>
+      <label class="cms-span-2">Cover image<input id="postImageFile" type="file" accept="image/jpeg,image/png,image/webp,image/avif"><small>JPG, PNG, WebP or AVIF · max 5 MB</small></label>
+      <label class="cms-span-2">Or image URL<input id="postImageUrl" type="url" placeholder="https://…"></label>
+      <div class="cms-preview-row cms-span-2"><img id="postPreview" class="hidden" alt="Post cover preview"><p class="muted">Cover preview</p></div>
+      <label class="cms-span-2">Article content<textarea id="postContent" rows="12" required placeholder="Write your post here. Separate paragraphs with a blank line."></textarea><small>Paragraphs are preserved in the public article page.</small></label>
+      <label>SEO title<input id="postSeoTitle" maxlength="180"></label>
+      <label>SEO description<input id="postSeoDescription" maxlength="320"></label>
+    </div>
+    <p id="postFormMsg" class="msg muted" role="status"></p>
+    <div class="cms-dialog-actions"><button type="button" class="secondary" data-close-dialog="postDialog">Cancel</button><button id="savePostBtn" type="submit">Save post</button></div>
+  </form>
+</dialog>
+
 <div id="customerAccountsCard" class="card" style="margin-bottom:20px"><div class="top"><div><h2>Customer Accounts</h2><p class="muted">Registered customer profiles · visible to the authorized admin only</p></div><button id="refreshCustomers" class="secondary">Refresh customers</button></div><div class="table-wrap"><table><thead><tr><th>Customer name</th><th>Phone</th><th>Account ID</th><th>Registered</th></tr></thead><tbody id="customersBody"><tr><td colspan="4" class="muted">Loading customer accounts…</td></tr></tbody></table></div><p id="customersMsg" class="muted"></p></div>
 <div id="customerOrderHistoryCard" class="card" style="margin-bottom:20px"><div class="top"><div><h2>Customer Order History</h2><p class="muted">Choose a customer email to review their orders without leaving the admin panel.</p></div><select id="customerOrderSelect" aria-label="Select customer email"><option value="">Load orders to choose a customer</option></select></div><div class="table-wrap"><table><thead><tr><th>Order</th><th>Date</th><th>Items</th><th>Products subtotal</th><th>Delivery</th><th>Total</th><th>Delivery area</th><th>Status</th></tr></thead><tbody id="customerOrderBody"><tr><td colspan="8" class="muted">Customer order history will appear here.</td></tr></tbody></table></div><p id="customerOrderMsg" class="muted"></p></div>
 <div id="ordersCard" class="card"><div class="top"><h2>Orders</h2><span id="lastUpdated" class="muted"></span></div>
@@ -354,4 +451,5 @@ client.auth.onAuthStateChange((_event,session)=>{
 });
 client.auth.getSession().then(({data})=>routeSession(data.session));
 </script>
+<script src="../js/admin-cms.js?v=20261021-cms-v1"></script>
 </body></html>
