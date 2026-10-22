@@ -14,7 +14,7 @@
 <div id="authGate" class="auth-gate"><div class="auth-gate-card"><strong>Checking secure admin access…</strong><p>Your dashboard data will load only after the authorized account and two-step verification are confirmed.</p></div></div>
 <div id="adminApp" hidden><main id="pageContent">
 <div class="page-heading"><div><p class="page-eyebrow">BUSINESS OPERATING SYSTEM</p><h1>Operations Center</h1><p>Coordinate packing, placeholder courier records, COD reconciliation, team tasks, purchasing and returns from one workspace.</p></div><div class="page-actions"><span class="hf-status hf-status-review">Courier API disabled</span><button class="hf-button hf-button-secondary" data-refresh-page type="button">↻ Refresh</button></div></div>
-<div class="ops-note"><strong>Testing mode:</strong> This page stores operational records only. It does not book a real courier, send parcels, collect COD, issue refunds or pay suppliers. Courier integration is intentionally disabled until you provide the provider and API details. Do not treat sample entries or order totals as real payments.</div>
+<div class="ops-note"><strong>Testing-project safety:</strong> Saving a placeholder parcel does not contact a courier. However, the explicit Book with Steadfast/Pathao action sends a live API request and may create a real shipment. This site does not take online payments, and courier cancellation is not yet available here. Confirm the customer, phone, full address, COD amount and parcel weight before booking. Do not treat sample entries or order totals as real payments.</div>
 <nav class="ops-subnav"><a href="#packingSection">Packing queue</a><a href="#courierSection">Courier & COD</a><a href="#tasksSection">Team tasks</a><a href="#suppliersSection">Suppliers</a><a href="#purchaseSection">Purchase orders</a><a href="#returnsSection">Returns & refunds</a></nav>
 <div class="ops-metrics">
 <section class="hf-card ops-metric"><small>Orders waiting for packing</small><strong id="metricPacking">—</strong></section>
@@ -131,5 +131,5 @@
 </div><p id="shipmentFormError" class="hf-form-error" role="alert"></p><div class="hf-dialog-actions"><button class="hf-button hf-button-secondary" data-close-dialog="shipmentDialog" type="button">Cancel</button><button class="hf-button hf-button-primary" id="saveShipmentBtn" type="submit">Save placeholder record</button></div></form></dialog>
 </main></div>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script defer src="./i18n.js?v=20261022-bilingual-v11"></script><script defer src="./shared.js?v=20261022-bilingual-v3"></script><script defer src="./operations.js?v=20261022-courier-v1"></script><script defer src="./app.js?v=20261022-business-ux-v8"></script>
+<script defer src="./i18n.js?v=20261022-bilingual-v11"></script><script defer src="./shared.js?v=20261022-bilingual-v3"></script><script defer src="./operations.js?v=20261022-confirm-book-v1"></script><script defer src="./app.js?v=20261022-business-ux-v8"></script>
 </body></html>
