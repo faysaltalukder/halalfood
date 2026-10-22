@@ -379,6 +379,25 @@ Deno.serve(async (req: Request) => {
               areas = matchedAreas.map((a: any) => ({ id: a.id, name: a.name }));
               resolvedDistrict = districtName;
             } else {
+              const redxSandboxHost = new URL(providerBase("redx")).hostname.toLowerCase() === "sandbox.redx.com.bd";
+              const sandboxTestAreas = redxSandboxHost
+                ? allMapped.filter((a: any) => normalizeDistrict(a.name) === "testdistrict" || normalizeDistrict(a.district) === "testdistrict")
+                : [];
+              if (sandboxTestAreas.length) {
+                console.info("REDX Sandbox test fixture offered for district test:", JSON.stringify({
+                  requestedDistrict: districtName,
+                  availableTestAreas: sandboxTestAreas.map((a: any) => ({ id: a.id, name: a.name })),
+                }));
+                return reply({
+                  success: true,
+                  provider: "REDX",
+                  district_name: districtName,
+                  resolved_district_name: "Test District",
+                  sandbox_test_mode: true,
+                  areas: sandboxTestAreas.map((a: any) => ({ id: a.id, name: a.name, sandbox_test_only: true })),
+                  message: "SANDBOX TEST ONLY: REDX Sandbox exposes Test District, not " + districtName + ". Selecting this fixture tests the API integration only; it does not represent the customer's real destination.",
+                });
+              }
               const availableDistricts = Array.from(new Set(allMapped
                 .map((a: any) => clean(a.district, 100))
                 .filter((name: string) => name && !/^\d+$/.test(name))))
@@ -615,6 +634,14 @@ Deno.serve(async (req: Request) => {
     const savedProviderMeta = shipment.provider_response && typeof shipment.provider_response === "object" ? shipment.provider_response : {};
     const redxAreaId = Number(savedProviderMeta.redx_delivery_area_id);
     const redxAreaName = clean(savedProviderMeta.redx_delivery_area, 120);
+    const redxSandboxTestOnly = savedProviderMeta.redx_sandbox_test_area === true;
+    const redxSandboxHost = new URL(providerBase("redx")).hostname.toLowerCase() === "sandbox.redx.com.bd";
+    if (provider === "redx" && redxSandboxTestOnly && (!redxSandboxHost || redxAreaName.toLowerCase() !== "test district")) {
+      throw new Error("The REDX Test District fixture is permitted only against the REDX Sandbox host. Reload actual delivery areas before production booking.");
+    }
+    if (provider === "redx" && redxAreaName.toLowerCase() === "test district" && !redxSandboxHost) {
+      throw new Error("REDX Test District is a Sandbox-only area and cannot be used for a real delivery.");
+    }
     if (provider === "redx" && (!Number.isInteger(redxAreaId) || redxAreaId <= 0 || !redxAreaName)) {
       throw new Error("Before REDX booking, use the REDX area lookup and save the exact delivery area and area ID matching the customer address.");
     }
@@ -815,6 +842,7 @@ Deno.serve(async (req: Request) => {
             tracking_id: trackingId || null,
             redx_delivery_area_id: redxAreaId,
             redx_delivery_area: redxAreaName,
+            redx_sandbox_test_area: redxSandboxTestOnly,
           };
     const { error: saveError } = await db.from("admin_shipments").update({
       courier_name: expectedProvider,
