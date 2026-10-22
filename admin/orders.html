@@ -21,7 +21,7 @@
 <section id="confirmBookSteadfastFields" class="hf-span-2 hf-field-grid" style="display:none" aria-label="Steadfast courier fields">
 <div class="hf-span-2"><strong>Steadfast booking details</strong><p class="hf-data-note">Customer, phone, full address and COD are copied from the order. This integration sends Home Delivery (delivery_type 0); it does not ask for parcel weight in the current Steadfast payload.</p></div>
 <label class="hf-field">Delivery type<input class="hf-input" value="Home Delivery (0)" readonly aria-readonly="true"><small>Matches the current Steadfast create-order request.</small></label>
-<label class="hf-field">Item summary<input id="confirmBookSteadfastItemSummary" class="hf-input" readonly aria-readonly="true" placeholder="Loaded from order items"><small>Calculated from saved products; quantity is not manually entered.</small></label>
+<label class="hf-field">Order items (review only)<input id="confirmBookSteadfastItemSummary" class="hf-input" readonly aria-readonly="true" placeholder="Loaded from order items"><small>Auto-filled for review. The current Steadfast adapter sends its existing invoice/customer/address/COD/note fields; this display is not a separate API field.</small></label>
 <label class="hf-field hf-span-2">Steadfast note (optional, max 250 characters)<textarea id="confirmBookSteadfastNotes" class="hf-textarea" rows="2" maxlength="250" placeholder="Delivery instructions for Steadfast"></textarea></label>
 </section>
 <section id="confirmBookPathaoFields" class="hf-span-2 hf-field-grid" style="display:none" aria-label="Pathao courier fields">
