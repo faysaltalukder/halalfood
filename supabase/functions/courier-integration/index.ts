@@ -434,7 +434,7 @@ Deno.serve(async (req: Request) => {
         areas,
         message: areas.length
           ? "REDX delivery areas loaded" + (resolvedDistrict.toLowerCase() !== districtName.toLowerCase() ? " using district spelling " + resolvedDistrict : "") + ". Select the exact area matching the customer address."
-          : "No REDX delivery areas were returned for " + candidates.join(" / ") + ". Check the English district name and Sandbox API access.",
+          : "No REDX delivery areas were returned for " + candidates.join(" / ") + ". Check the English district name and Production API access.",
       });
     }
 
