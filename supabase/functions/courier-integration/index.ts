@@ -276,12 +276,6 @@ Deno.serve(async (req: Request) => {
     if (!["not_started", "failed"].includes(shipment.booking_state || "not_started")) {
       return reply({ success: false, error: "Booking state is " + shipment.booking_state + ". Verify the courier dashboard before retrying; duplicate booking is blocked." }, 409);
     }
-    const expectedProvider = providerName(provider);
-    const selectedCourier = clean(shipment.courier_name, 120).toLowerCase();
-    if (!selectedCourier.includes(provider)) {
-      return reply({ success: false, error: "The saved parcel's courier choice does not match. Edit the parcel, select " + expectedProvider + ", save it, then retry." }, 400);
-    }
-
     const { data: order, error: orderError } = await db.from("orders")
       .select("id,order_number,customer_name,customer_phone,customer_email,delivery_address,total,status,notes,payment_method")
       .eq("id", shipment.order_id).maybeSingle();
