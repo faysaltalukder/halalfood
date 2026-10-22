@@ -386,13 +386,22 @@ Deno.serve(async (req: Request) => {
           upstream = await fetchJson(areasUrl.toString(), { method: "GET", headers: redxHeaders() });
         } catch (networkError) {
           const detail = clean(networkError instanceof Error ? networkError.message : networkError, 220);
-          console.error("REDX area API network failure:", JSON.stringify({ district: candidate, error: detail }));
+          console.error("REDX area API network failure:", JSON.stringify({
+            district_name_sent: candidate,
+            upstream_http_status: null,
+            error_summary: redxErrorSummary(detail),
+          }));
           return reply({ success: false, error: "Could not reach the REDX Production area API for district " + candidate + ". " + (detail || "Network, DNS, TLS or timeout error.") }, 502);
         }
         const { response, data } = upstream;
         if (!response.ok || providerRejected(data, response.ok)) {
-          upstreamIssue = "HTTP " + response.status + ". " + providerError(data);
-          console.error("REDX area API rejected the request:", JSON.stringify({ district: candidate, status: response.status, message: clean(providerError(data), 250) }));
+          const areaError = redxErrorSummary(data);
+          upstreamIssue = "HTTP " + response.status + ". " + areaError;
+          console.error("REDX area API rejected the request:", JSON.stringify({
+            district_name_sent: candidate,
+            upstream_http_status: response.status,
+            error_summary: areaError,
+          }));
           if (response.status === 401 || response.status === 403) {
             return reply({ success: false, error: "REDX Production area lookup was rejected (HTTP " + response.status + "). Verify REDX_API_TOKEN is a Production token and the merchant has API access. " + providerError(data) }, 502);
           }
@@ -476,9 +485,11 @@ Deno.serve(async (req: Request) => {
               }, 404);
             }
           } else {
+            const fallbackError = redxErrorSummary(allData);
             console.error("REDX unfiltered area fallback failed:", JSON.stringify({
-              status: allResponse.status,
-              message: clean(providerError(allData), 250),
+              district_name_sent: districtName,
+              upstream_http_status: allResponse.status,
+              error_summary: fallbackError,
             }));
             return reply({
               success: false,
@@ -487,7 +498,11 @@ Deno.serve(async (req: Request) => {
           }
         } catch (fallbackError) {
           const detail = clean(fallbackError instanceof Error ? fallbackError.message : fallbackError, 220);
-          console.error("REDX unfiltered area fallback network failure:", detail);
+          console.error("REDX unfiltered area fallback network failure:", JSON.stringify({
+            district_name_sent: districtName,
+            upstream_http_status: null,
+            error_summary: redxErrorSummary(detail),
+          }));
           return reply({
             success: false,
             error: "REDX district lookup failed (" + upstreamIssue + "). Could not retrieve the full active-area list: " + (detail || "network error"),
