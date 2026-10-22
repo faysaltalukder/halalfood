@@ -49,7 +49,7 @@ function missingSecrets(names: string[]) {
 }
 function providerBase(provider: string) {
   if (provider === "steadfast") return "https://portal.packzy.com/api/v1";
-  if (provider === "redx") return (Deno.env.get("REDX_BASE_URL") || "https://openapi.redx.com.bd/v1.0.0-beta").replace(/\/+$/, "");
+  if (provider === "redx") return (Deno.env.get("REDX_BASE_URL") || "https://sandbox.redx.com.bd/v1.0.0-beta").replace(/\/+$/, "");
   return (Deno.env.get("PATHAO_BASE_URL") || "https://api-hermes.pathao.com").replace(/\/+$/, "");
 }
 function redxHeaders() {
