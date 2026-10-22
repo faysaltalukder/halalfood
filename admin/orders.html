@@ -11,6 +11,7 @@
 <input id="confirmBookOrderId" type="hidden">
 <div class="hf-banner hf-banner-info"><span>ⓘ</span><div id="confirmBookOrderSummary" style="white-space:pre-wrap;overflow-wrap:anywhere">Order summary</div></div>
 <div class="hf-field-grid">
+<label class="hf-field hf-span-2">Full delivery address *<textarea id="confirmBookAddress" class="hf-textarea" rows="3" minlength="10" maxlength="250" required placeholder="House/road or village, area/upazila, district"></textarea><small>Review and correct this field before booking. For Pathao, separate the real house/road or village, area/upazila, and district with commas. This address is saved to the order before booking.</small></label>
 <label class="hf-field">Courier provider *<select id="confirmBookProvider" class="hf-select" required><option value="">Choose courier</option><option value="steadfast">Steadfast</option><option value="pathao">Pathao</option></select></label>
 <label id="confirmBookWeightField" class="hf-field" style="display:none">Packed parcel weight (kg) *<input id="confirmBookWeight" class="hf-input" type="number" min="0.5" max="10" step="0.1" placeholder="e.g. 0.5"><small>Pathao requires 0.5–10 kg. Use a realistic packed weight.</small></label>
 <label class="hf-field hf-span-2">Parcel notes (optional)<textarea id="confirmBookNotes" class="hf-textarea" rows="2" maxlength="1500" placeholder="Packing or delivery instructions"></textarea></label>
@@ -21,4 +22,4 @@
 <div class="hf-dialog-actions"><button id="confirmBookCancel" class="hf-button hf-button-secondary" type="button">Cancel</button><button id="confirmBookSubmit" class="hf-button hf-button-primary" type="submit">Confirm &amp; Book Courier</button></div>
 </form></dialog>
 
-</main></div><script defer src="./i18n.js?v=20261022-bilingual-v11"></script><script defer src="./shared.js?v=20261022-bilingual-v3"></script><script defer src="./app.js?v=20261022-confirm-book-v2"></script></body></html>
+</main></div><script defer src="./i18n.js?v=20261022-bilingual-v11"></script><script defer src="./shared.js?v=20261022-bilingual-v3"></script><script defer src="./app.js?v=20261022-confirm-book-v3"></script></body></html>
