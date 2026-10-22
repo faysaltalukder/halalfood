@@ -28,7 +28,9 @@ async function invoke(action, payload = {}) {
         details = await error.context.json();
         if (details?.error) message = details.error;
       }
-      if (details?.providerCode) message += " (Meta error code: " + details.providerCode + ")";
+      if (details?.providerCode) message += " (Meta code: " + details.providerCode + (details?.providerSubcode ? "/" + details.providerSubcode : "") + ")";
+      if (details?.providerType) message += " [" + details.providerType + "]";
+      if (details?.httpStatus) message += " [HTTP " + details.httpStatus + "]";
       if (details?.step) message = details.step + ": " + message;
     } catch {}
     throw new Error(message);
