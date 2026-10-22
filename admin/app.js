@@ -374,6 +374,48 @@ window.HFAdminReady.then(async H=>{
     $("confirmBookRedxAreaHint").textContent="Find areas for the customer’s district, then select the matching delivery area.";
    }
   });
+  function renderConfirmBookItems(items){
+   const rows=Array.isArray(items)?items:[];
+   const panel=$("confirmBookItemsPanel");
+   const container=$("confirmBookItems");
+   if(panel){
+    const heading=panel.querySelector("strong");
+    if(heading)heading.textContent=rows.length
+     ?"Products and quantities · "+rows.length+" item line"+(rows.length===1?"":"s")
+     :"Products and quantities · details unavailable";
+   }
+   container.innerHTML='<table class="hf-table"><thead><tr><th>Product</th><th>Quantity</th><th>Line total</th></tr></thead><tbody>'+
+    (rows.map(item=>{
+     const n=Number(item.quantity);
+     const quantity=Number.isFinite(n)?String(n):String(item.quantity??"—");
+     const unit=String(item.unit||"");
+     const lineTotal=item.line_total!=null?item.line_total:(Number(item.unit_price||0)*Number(item.quantity||0));
+     return '<tr><td>'+esc(item.product_name||"Item")+'</td><td><strong>'+esc(quantity)+(unit?' '+esc(unit):"")+'</strong></td><td>'+money(lineTotal)+'</td></tr>';
+    }).join("")||'<tr><td colspan="3">No product quantity was returned for this order. Refresh the order list before booking.</td></tr>')+
+    '</tbody></table>';
+  }
+  async function refreshConfirmBookItems(orderId,fallbackItems){
+   try{
+    const rows=await signedQuery(client.from("order_items")
+     .select("id,product_id,product_name,quantity,unit,unit_price,line_total,product_image_url")
+     .eq("order_id",orderId)
+     .order("created_at",{ascending:true}));
+    if(String($("confirmBookOrderId").value)!==String(orderId))return;
+    renderConfirmBookItems(rows.length?rows:fallbackItems);
+   }catch(_){
+    if(String($("confirmBookOrderId").value)!==String(orderId))return;
+    renderConfirmBookItems(fallbackItems);
+    if(!fallbackItems.length){
+     const panel=$("confirmBookItemsPanel");
+     if(panel){
+      const note=document.createElement("small");
+      note.className="hf-data-note";
+      note.textContent="Product quantities could not be loaded from the saved order. Refresh Orders and verify the order items before booking.";
+      panel.appendChild(note);
+     }
+    }
+   }
+  }
   function openConfirmBook(orderId){
    redxAreaLookupError="";
    const order=all.find(row=>row.id===orderId);
@@ -384,13 +426,14 @@ window.HFAdminReady.then(async H=>{
    const existing=shipmentFor(order.id);
    if(courierBookingLocked(existing)){toast("This order already has a booked or uncertain courier record. Open Operations Center and verify the provider before doing anything else; duplicate booking is blocked.","error");return;}
    $("confirmBookOrderId").value=order.id;
-   const itemSummary=(order.order_items||[]).map(item=>String(item.product_name||"Item")+" × "+String(item.quantity||1)+" "+String(item.unit||"")).join(", ")||"No item details recorded";
-   $("confirmBookOrderSummary").textContent="Order "+(order.order_number||String(order.id).slice(0,8))+" · "+(order.status==="pending"?"Pending confirmation":"Processing")+". Customer and product information below is loaded from this saved order.";
+   const orderItems=Array.isArray(order.order_items)?order.order_items:[];
+   $("confirmBookOrderSummary").textContent="Order "+(order.order_number||String(order.id).slice(0,8))+" · "+(order.status==="pending"?"Pending confirmation":"Processing")+". Customer, product names and quantities load automatically from this saved order.";
    $("confirmBookCustomerName").value=order.customer_name||"";
    $("confirmBookCustomerPhone").value=order.customer_phone||"";
    $("confirmBookCustomerEmail").value=order.customer_email||"";
    $("confirmBookCodAmount").value=money(order.total);
-   $("confirmBookItems").innerHTML='<table class="hf-table"><thead><tr><th>Product</th><th>Quantity</th><th>Line total</th></tr></thead><tbody>'+((order.order_items||[]).map(item=>'<tr><td>'+esc(item.product_name||"Item")+'</td><td>'+esc(item.quantity)+' '+esc(item.unit||"")+'</td><td>'+money(item.line_total!=null?item.line_total:(Number(item.unit_price||0)*Number(item.quantity||0)))+'</td></tr>').join("")||'<tr><td colspan="3">No products were saved with this order. Review it before booking.</td></tr>')+'</tbody></table>';
+   renderConfirmBookItems(orderItems);
+   void refreshConfirmBookItems(order.id,orderItems);
    $("confirmBookAddress").value=order.delivery_address||"";
    $("confirmBookProvider").value=courierCode(existing?.courier_name)||"";
    $("confirmBookWeight").value=existing?.parcel_weight_kg||"";
