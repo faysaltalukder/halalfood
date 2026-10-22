@@ -279,7 +279,7 @@ window.HFAdminReady.then(async H=>{
   bindRangeControls(()=>refresh());await refresh();attachRefresh(refresh);
  }
  async function initOrders(){
-  let all=[],activeOrderId=null,shipmentRows=[],shipmentRowsReady=false,shipmentLoadMessage="";
+  let all=[],activeOrderId=null,shipmentRows=[],shipmentRowsReady=false,shipmentLoadMessage="",redxAreaLookupError="";
   const courierCode=value=>{const v=String(value||"").toLowerCase();return v.includes("steadfast")?"steadfast":v.includes("pathao")?"pathao":v.includes("redx")?"redx":"";};
   const courierLabel=value=>value==="steadfast"?"Steadfast":value==="pathao"?"Pathao":"REDX";
   const shipmentFor=orderId=>shipmentRows.find(row=>row.order_id===orderId)||null;
@@ -299,7 +299,7 @@ window.HFAdminReady.then(async H=>{
   }
   async function loadConfirmBookRedxAreas(){
    const button=$("confirmBookRedxLoadAreas"),district=$("confirmBookRedxDistrict").value.trim(),select=$("confirmBookRedxArea"),prior=select.value;
-   button.disabled=true;$("confirmBookFormError").textContent="";
+   button.disabled=true;$("confirmBookFormError").textContent="";redxAreaLookupError="";
    try{
     if(district.length<2)throw new Error("Enter the destination district in English first.");
     const {data,error}=await client.functions.invoke("courier-integration",{body:{action:"areas",provider:"redx",district_name:district}});
@@ -312,12 +312,13 @@ window.HFAdminReady.then(async H=>{
     select.innerHTML='<option value="">Choose exact REDX delivery area</option>'+(data.areas||[]).map(a=>'<option value="'+esc(a.id)+'">'+esc(a.name)+'</option>').join("");
     if(prior&&Array.from(select.options).some(o=>o.value===String(prior)))select.value=String(prior);
     if(!data.areas?.length)throw new Error(data.message||"No areas returned. Try the official English district spelling.");
-   }catch(err){$("confirmBookFormError").textContent=err.message||"REDX area lookup failed.";}
+   }catch(err){redxAreaLookupError=err.message||"REDX area lookup failed.";$("confirmBookFormError").textContent="REDX area loading failed: "+redxAreaLookupError;}
    finally{button.disabled=false;}
   }
   $("confirmBookRedxLoadAreas")?.addEventListener("click",loadConfirmBookRedxAreas);
   $("confirmBookProvider")?.addEventListener("change",updateConfirmBookProviderFields);
   function openConfirmBook(orderId){
+   redxAreaLookupError="";
    const order=all.find(row=>row.id===orderId);
    if(!order){toast("Order not found. Refresh and try again.","error");return;}
    if(!shipmentRowsReady){toast(shipmentLoadMessage||"Courier records could not be verified. Refresh the page before booking.","error");return;}
@@ -452,7 +453,7 @@ window.HFAdminReady.then(async H=>{
     if(provider==="pathao"&&(!Number.isFinite(weight)||weight<0.5||weight>10))throw new Error("For Pathao, enter a realistic packed weight between 0.5 kg and 10 kg.");
     if(provider==="redx"&&(!Number.isFinite(weight)||weight<=0||weight>10))throw new Error("For REDX, enter a packed parcel weight greater than 0 and no more than 10 kg.");
     const redxAreaId=Number($("confirmBookRedxArea").value),redxAreaName=$("confirmBookRedxArea").selectedOptions?.[0]?.textContent?.trim()||"";
-    if(provider==="redx"&&(!Number.isInteger(redxAreaId)||redxAreaId<=0||!redxAreaName||!$("confirmBookRedxArea").value)){const areaSelect=$("confirmBookRedxArea"),hasAreas=Array.from(areaSelect.options).some(option=>option.value.trim());throw new Error(hasAreas?"REDX areas are loaded, but no destination area is selected. Choose the area matching the customer address from the dropdown.":"No REDX areas are loaded. Enter the destination district in English, click “Load REDX areas”, then choose the matching destination area. If the list is empty, note the area-loading error above.");}
+    if(provider==="redx"&&(!Number.isInteger(redxAreaId)||redxAreaId<=0||!redxAreaName||!$("confirmBookRedxArea").value)){const areaSelect=$("confirmBookRedxArea"),hasAreas=Array.from(areaSelect.options).some(option=>option.value.trim());const reason=redxAreaLookupError?"REDX area lookup failed: "+redxAreaLookupError:(hasAreas?"REDX areas are loaded, but no destination area is selected. Choose the area matching the customer address from the dropdown.":"No REDX areas are loaded. Enter the destination district in English, click “Load REDX areas”, then choose the matching destination area.");throw new Error(reason+" Do not book until the area lookup succeeds.");}
     const recipientAddress=String($("confirmBookAddress").value||"").trim();
     if(recipientAddress.length<10)throw new Error("The saved address is too short. Enter the full house/road or village, area/upazila and district address (at least 10 characters).");
     if(recipientAddress.length>250)throw new Error("The delivery address must be 250 characters or fewer.");
