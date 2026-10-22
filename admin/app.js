@@ -290,20 +290,28 @@ window.HFAdminReady.then(async H=>{
   const shipmentFor=orderId=>shipmentRows.find(row=>row.order_id===orderId)||null;
   const courierBookingLocked=record=>!!record&&(record.integration_mode==="live_api"||["in_progress","succeeded","unknown"].includes(record.booking_state)||["booked","picked_up","in_transit","delivered","returned"].includes(record.shipment_status)||!!record.provider_order_id||!!String(record.tracking_id||"").trim());
   function updateConfirmBookProviderFields(){
-   const provider=$("confirmBookProvider").value,needsWeight=provider==="pathao"||provider==="redx";
-   $("confirmBookWeightField").style.display=needsWeight?"grid":"none";
-   $("confirmBookRedxAreasBlock").style.display=provider==="redx"?"grid":"none";
-   $("confirmBookWeightHint").textContent=provider==="pathao"?"Enter the packed parcel weight in kilograms (0.5–10 kg).":provider==="redx"?"Enter the actual packed parcel weight in kilograms (0.1–10 kg). The system converts it for REDX automatically.":"Enter the actual packed parcel weight.";
+   const provider=$("confirmBookProvider").value;
+   $("confirmBookSteadfastFields").style.display=provider==="steadfast"?"grid":"none";
+   $("confirmBookPathaoFields").style.display=provider==="pathao"?"grid":"none";
+   $("confirmBookRedxFields").style.display=provider==="redx"?"grid":"none";
+   $("confirmBookPathaoWeight").required=provider==="pathao";
+   $("confirmBookRedxWeight").required=provider==="redx";
+   $("confirmBookRedxDistrict").required=provider==="redx";
+   $("confirmBookRedxArea").required=provider==="redx";
+   $("confirmBookPathaoWeight").disabled=provider!=="pathao";
+   $("confirmBookRedxWeight").disabled=provider!=="redx";
+   $("confirmBookRedxDistrict").disabled=provider!=="redx";
+   $("confirmBookRedxArea").disabled=provider!=="redx";
    $("confirmBookProviderHint").textContent=provider==="steadfast"
-    ?"Steadfast API booking is blocked until the merchant account/API permission is activated."
+    ?"Steadfast uses the order invoice, customer name/phone, full address, COD and its current Home Delivery setting. You can add a courier note below. API credentials and merchant permissions must be active."
     :provider==="pathao"
-      ?"Check the customer’s full address and packed weight before booking."
+      ?"Pathao uses the saved customer details, full address, automatically calculated item count, Normal Delivery and parcel type. Enter the packed weight in kg; add an optional special instruction."
       :provider==="redx"
-        ?"1. Enter the customer’s district and find areas. 2. Select the matching delivery area—the Area ID is assigned automatically. 3. Confirm only after the customer and parcel details are correct."
-        :"Choose the courier and review the details. Confirming creates a real courier booking.";
+        ?"REDX requires a Production delivery area from its own list and the actual packed weight. Choose the exact area; its ID is assigned automatically. The pickup store is configured on the server."
+        :"Choose a courier to show its matching fields. Customer and product information stays linked to the saved order.";
    if(provider==="redx"){
     const district=$("confirmBookRedxDistrict").value.trim();
-    if(district.length>=2&&redxLoadedDistrict.toLowerCase()!==district.toLowerCase())void loadConfirmBookRedxAreas();
+    if(district.length>=2&&redxLoadedDistrict.toLowerCase()!==district.toLowerCase()&&!button?.disabled)void loadConfirmBookRedxAreas();
    }
   }
   async function loadConfirmBookRedxAreas(){
@@ -348,6 +356,7 @@ window.HFAdminReady.then(async H=>{
     button.disabled=false;select.disabled=false;
    }
   }
+  $("confirmBookProvider")?.addEventListener("change",updateConfirmBookProviderFields);
   $("confirmBookRedxLoadAreas")?.addEventListener("click",loadConfirmBookRedxAreas);
   $("confirmBookRedxArea")?.addEventListener("change",()=>{
    const chosen=redxLoadedAreas.find(a=>a.id===String($("confirmBookRedxArea").value||""));
@@ -433,11 +442,20 @@ window.HFAdminReady.then(async H=>{
    $("confirmBookCustomerEmail").value=order.customer_email||"";
    $("confirmBookCodAmount").value=money(order.total);
    renderConfirmBookItems(orderItems);
+   const pathaoItemQuantity=Math.max(1,Math.min(999,orderItems.reduce((sum,item)=>{
+    const unit=String(item?.unit||"").toLowerCase(),q=Number(item?.quantity||1);
+    return sum+(["piece","pieces","pcs","pc"].includes(unit)?Math.max(1,Math.ceil(Number.isFinite(q)?q:1)):1);
+   },0)));
+   $("confirmBookPathaoItemQuantity").value=String(pathaoItemQuantity);
+   $("confirmBookSteadfastItemSummary").value=orderItems.map(item=>String(item.product_name||"Item")+" × "+String(item.quantity??"—")+" "+String(item.unit||"")).join(", ").slice(0,250)||"No saved item details";
    void refreshConfirmBookItems(order.id,orderItems);
    $("confirmBookAddress").value=order.delivery_address||"";
    $("confirmBookProvider").value=courierCode(existing?.courier_name)||"";
-   $("confirmBookWeight").value=existing?.parcel_weight_kg||"";
-   $("confirmBookNotes").value=existing?.parcel_notes||"";
+   $("confirmBookPathaoWeight").value=existing?.parcel_weight_kg||"";
+   $("confirmBookRedxWeight").value=existing?.parcel_weight_kg||"";
+   $("confirmBookSteadfastNotes").value=existing?.parcel_notes||"";
+   $("confirmBookPathaoInstruction").value=existing?.parcel_notes||"";
+   $("confirmBookRedxInstruction").value=existing?.parcel_notes||"";
    const meta=existing?.provider_response&&typeof existing.provider_response==="object"?existing.provider_response:{};
    $("confirmBookRedxDistrict").value=meta.redx_delivery_district||inferRedxDistrict(order.delivery_address)||"";
    redxLoadedAreas=[];redxLoadedDistrict="";
@@ -558,7 +576,7 @@ window.HFAdminReady.then(async H=>{
     if(!["steadfast","pathao","redx"].includes(provider))throw new Error("Choose Steadfast, Pathao or REDX.");
     if(String(order.payment_method||"cash_on_delivery").toLowerCase()!=="cash_on_delivery")throw new Error("Only Cash on Delivery orders are enabled for courier booking.");
     if(!$("confirmBookCustomerCheck").checked)throw new Error("Confirm that you have contacted the customer and verified the order details.");
-    const weightRaw=$("confirmBookWeight").value.trim(),weight=weightRaw===""?null:Number(weightRaw);
+    const weightRaw=(provider==="pathao"?$("confirmBookPathaoWeight").value:provider==="redx"?$("confirmBookRedxWeight").value:"").trim(),weight=weightRaw===""?null:Number(weightRaw);
     if(provider==="pathao"&&(!Number.isFinite(weight)||weight<0.5||weight>10))throw new Error("For Pathao, enter a realistic packed weight between 0.5 kg and 10 kg.");
     if(provider==="redx"&&(!Number.isFinite(weight)||weight<0.1||weight>10))throw new Error("For REDX, enter a packed parcel weight between 0.1 kg and 10 kg.");
     const areaSelect=$("confirmBookRedxArea"),selectedRedxArea=redxLoadedAreas.find(a=>a.id===String(areaSelect.value||""));
@@ -595,7 +613,7 @@ window.HFAdminReady.then(async H=>{
     const shipmentPayload={
      order_id:orderId,courier_name:providerName,tracking_id:null,shipment_status:"draft",integration_mode:"manual_placeholder",
      cod_amount:Number(freshOrder.total),courier_fee:0,settlement_status:"pending",settled_amount:0,
-     parcel_weight_kg:["pathao","redx"].includes(provider)?weight:null,parcel_notes:$("confirmBookNotes").value.trim(),
+     parcel_weight_kg:["pathao","redx"].includes(provider)?weight:null,parcel_notes:(provider==="steadfast"?$("confirmBookSteadfastNotes").value:provider==="pathao"?$("confirmBookPathaoInstruction").value:$("confirmBookRedxInstruction").value).trim(),
      created_by:existing?.created_by||H.ADMIN_EMAIL,updated_by:H.ADMIN_EMAIL,
      booking_state:existing?.booking_state==="failed"?"failed":"not_started",booking_error:"",booking_requested_at:null,
      provider_order_id:null,provider_response:provider==="redx"?{redx_delivery_area_id:redxAreaId,redx_delivery_area:redxAreaName,redx_delivery_district:$("confirmBookRedxDistrict").value.trim(),redx_sandbox_test_area:false}:{}
