@@ -22,9 +22,10 @@ async function invoke(action, payload = {}) {
   const { data, error } = await H.client.functions.invoke("whatsapp-send", { body: { action, ...payload } });
   if (error) {
     let message = error.message || "WhatsApp server request failed.";
+    let details = null;
     try {
       if (error.context && typeof error.context.json === "function") {
-        const details = await error.context.json();
+        details = await error.context.json();
         if (details?.error) message = details.error;
       }
       if (details?.providerCode) message += " (Meta error code: " + details.providerCode + ")";
@@ -239,6 +240,43 @@ async function refreshAll() {
   await loadConversations(true);
   if (activeConversationId) await loadMessages(activeConversationId);
 }
+function subscribeToLiveInbox() {
+  if (!H?.client) return null;
+  const channel = H.client.channel("hf-whatsapp-inbox")
+    .on("postgres_changes", {
+      event: "*",
+      schema: "public",
+      table: "messaging_conversations",
+      filter: "channel=eq.whatsapp"
+    }, (payload) => {
+      const row = payload.new || payload.old || {};
+      if (row.channel !== "whatsapp") return;
+      void loadConversations(true);
+      if (activeConversationId) void loadMessages(activeConversationId);
+    })
+    .on("postgres_changes", {
+      event: "*",
+      schema: "public",
+      table: "messaging_messages",
+      filter: "channel=eq.whatsapp"
+    }, (payload) => {
+      const row = payload.new || payload.old || {};
+      if (row.channel !== "whatsapp") return;
+      void loadConversations(true);
+      if (row.conversation_id && row.conversation_id === activeConversationId) {
+        void loadMessages(activeConversationId);
+      }
+    })
+    .subscribe((status) => {
+      if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+        console.warn("WhatsApp realtime unavailable; periodic inbox refresh remains enabled.");
+      }
+    });
+  window.addEventListener("beforeunload", () => {
+    try { H.client.removeChannel(channel); } catch {}
+  }, { once: true });
+  return channel;
+}
 async function connectWhatsAppAccount() {
   const button = $("waConnectBtn");
   const result = $("waConnectionDiagnostic");
@@ -291,11 +329,12 @@ window.HFAdminReady?.then(async (ready) => {
   $("waMessageText")?.addEventListener("input", () => updateComposerState(selectedConversation()));
   $("waComposer")?.addEventListener("submit", sendReply);
   await refreshAll();
+  subscribeToLiveInbox();
   window.setInterval(async () => {
     if (document.visibilityState === "visible") {
       await loadConversations(true);
       if (activeConversationId) await loadMessages(activeConversationId);
     }
-  }, 15000);
+  }, 30000);
 });
 })();
