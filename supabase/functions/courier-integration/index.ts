@@ -129,6 +129,65 @@ function providerError(data: any) {
   }
   return clean(parts.join("; "), 350) || "Provider returned an error without a specific message. Check the saved order fields and merchant API access.";
 }
+function redxErrorSummary(
+  data: unknown,
+  context: { phone?: unknown; address?: unknown } = {},
+): string {
+  const redactions: string[] = [];
+  const token = Deno.env.get("REDX_API_TOKEN")?.trim() || "";
+  if (token) {
+    redactions.push(token, token.replace(/^Bearer\\s+/i, ""));
+  }
+  for (const value of [context.phone, context.address]) {
+    const raw = String(value ?? "").trim();
+    if (raw.length >= 3) redactions.push(raw);
+  }
+  const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\function providerRejected(data: any, responseOk: boolean) {");
+  const redactText = (value: unknown) => {
+    let output = clean(value, 3000);
+    for (const raw of [...new Set(redactions)].sort((a, b) => b.length - a.length)) {
+      if (raw.length >= 3) {
+        output = output.replace(new RegExp(escapeRegex(raw), "gi"), "[REDACTED]");
+      }
+    }
+    const phoneDigits = String(context.phone ?? "").replace(/\\D/g, "");
+    if (phoneDigits.length >= 7) {
+      const flexibleDigits = phoneDigits.split("").map(escapeRegex).join("\\D*");
+      output = output.replace(new RegExp(flexibleDigits, "g"), "[REDACTED_PHONE]");
+    }
+    return output;
+  };
+  const secretKey = /token|authorization|secret|password|api[-_ ]?key/i;
+  const privateValueKey = /^(?:customer_?|recipient_?|delivery_?)?(?:phone|phone_number|address)$/i;
+  const validationContainer = /^(?:errors?|validation(?:_errors)?|fields?|details?)$/i;
+  const sanitize = (value: unknown, key = "", parentKey = "", depth = 0): unknown => {
+    if (depth > 6) return "[TRUNCATED]";
+    if (Array.isArray(value)) return value.slice(0, 20).map((item) => sanitize(item, "", key, depth + 1));
+    if (value && typeof value === "object") {
+      const result: Record<string, unknown> = {};
+      for (const [childKey, childValue] of Object.entries(value as Record<string, unknown>).slice(0, 40)) {
+        if (secretKey.test(childKey)) {
+          result[childKey] = "[REDACTED]";
+        } else if (privateValueKey.test(childKey) && !validationContainer.test(key)) {
+          result[childKey] = "[REDACTED]";
+        } else {
+          result[childKey] = sanitize(childValue, childKey, key, depth + 1);
+        }
+      }
+      return result;
+    }
+    if (typeof value === "string") return redactText(value);
+    if (typeof value === "number" || typeof value === "boolean" || value === null) return value;
+    return redactText(value);
+  };
+  let serialized = "";
+  try {
+    serialized = JSON.stringify(sanitize(data));
+  } catch {
+    serialized = redactText(data);
+  }
+  return clean(serialized, 600) || "REDX returned an unreadable error response.";
+}
 function providerRejected(data: any, responseOk: boolean) {
   const candidates: any[] = [
     data,
@@ -777,7 +836,7 @@ Deno.serve(async (req: Request) => {
         });
         responseData = data;
         if (!response.ok || providerRejected(data, response.ok)) {
-          const detail = providerError(data);
+          const detail = redxErrorSummary(data, { phone, address });
           const ambiguous = response.status >= 500;
           const displayed = ambiguous
             ? "REDX returned HTTP " + response.status + ". " + detail + " Check the REDX Merchant Dashboard before retrying; the booking outcome may be uncertain."
@@ -785,11 +844,11 @@ Deno.serve(async (req: Request) => {
           const previous = shipment.provider_response && typeof shipment.provider_response === "object" ? shipment.provider_response : {};
           await db.from("admin_shipments").update({
             booking_state: ambiguous ? "unknown" : "failed",
-            booking_error: clean(displayed, 350),
-            provider_response: { ...previous, http_status: response.status, outcome: ambiguous ? "unknown" : "rejected", error_detail: clean(detail, 300) },
+            booking_error: clean(displayed, 700),
+            provider_response: { ...previous, http_status: response.status, outcome: ambiguous ? "unknown" : "rejected", error_detail: clean(detail, 600) },
             updated_at: new Date().toISOString(),
           }).eq("id", shipmentId);
-          return reply({ success: false, error: clean(displayed, 500) }, 502);
+          return reply({ success: false, error: clean(displayed, 700) }, 502);
         }
         const record = providerBookingRecord(data);
         providerOrderId = clean(record?.parcel_id ?? record?.id ?? record?.tracking_id ?? record?.tracking_number ?? record?.tracking_code ?? "", 100);
