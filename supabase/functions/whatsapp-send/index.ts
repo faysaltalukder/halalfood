@@ -101,12 +101,18 @@ Deno.serve(async (req: Request) => {
     }
 
     if (!phonesResponse!.ok) {
-      return reply({
-        success: false,
+      const diagnostic = {
         step: "verify_business_account",
-        error: "Meta could not read phone numbers for this Business Account. Check that the saved Business Account ID is correct and that this token has whatsapp_business_management access.",
+        httpStatus: phonesResponse!.status,
         providerCode: clean(phonesData?.error?.code, 50) || null,
         providerSubcode: clean(phonesData?.error?.error_subcode, 50) || null,
+        providerType: clean(phonesData?.error?.type, 100) || null,
+      };
+      console.error("WhatsApp connection diagnostic", JSON.stringify(diagnostic));
+      return reply({
+        success: false,
+        ...diagnostic,
+        error: "Meta could not read phone numbers for this Business Account. Check that the saved Business Account ID is correct and that this token has whatsapp_business_management access.",
       }, 502);
     }
 
@@ -137,12 +143,18 @@ Deno.serve(async (req: Request) => {
     }
 
     if (!subscribeResponse!.ok || !(subscribeData?.success === true || subscribeData?.success === "true")) {
-      return reply({
-        success: false,
+      const diagnostic = {
         step: "subscribe_waba",
-        error: "Meta did not confirm the WABA subscription. Check the token's WhatsApp Business Account permissions and assigned assets.",
+        httpStatus: subscribeResponse!.status,
         providerCode: clean(subscribeData?.error?.code, 50) || null,
         providerSubcode: clean(subscribeData?.error?.error_subcode, 50) || null,
+        providerType: clean(subscribeData?.error?.type, 100) || null,
+      };
+      console.error("WhatsApp connection diagnostic", JSON.stringify(diagnostic));
+      return reply({
+        success: false,
+        ...diagnostic,
+        error: "Meta did not confirm the WABA subscription. Check the token's WhatsApp Business Account permissions and assigned assets.",
       }, 502);
     }
 
