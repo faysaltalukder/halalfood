@@ -303,11 +303,20 @@ Deno.serve(async (req: Request) => {
       for (const candidate of candidates) {
         const areasUrl = new URL(providerBase("redx") + "/areas");
         areasUrl.searchParams.set("district_name", candidate);
-        const { response, data } = await fetchJson(areasUrl.toString(), { method: "GET", headers: redxHeaders() });
+        let upstream: { response: Response; data: any };
+        try {
+          upstream = await fetchJson(areasUrl.toString(), { method: "GET", headers: redxHeaders() });
+        } catch (networkError) {
+          const detail = clean(networkError instanceof Error ? networkError.message : networkError, 220);
+          console.error("REDX area API network failure:", JSON.stringify({ district: candidate, error: detail }));
+          return reply({ success: false, error: "Could not reach REDX Sandbox area API for district " + candidate + ". " + (detail || "Network, DNS, TLS or timeout error.") }, 502);
+        }
+        const { response, data } = upstream;
         if (!response.ok || providerRejected(data, response.ok)) {
           upstreamIssue = "HTTP " + response.status + ". " + providerError(data);
+          console.error("REDX area API rejected the request:", JSON.stringify({ district: candidate, status: response.status, message: clean(providerError(data), 250) }));
           if (response.status === 401 || response.status === 403) {
-            return reply({ success: false, error: "REDX area lookup was rejected. Check that this token is valid for the configured Sandbox API. " + providerError(data) }, 502);
+            return reply({ success: false, error: "REDX area lookup was rejected (HTTP " + response.status + "). Check that REDX_API_TOKEN is the Sandbox token for the configured Sandbox Base URL. " + providerError(data) }, 502);
           }
           continue;
         }
