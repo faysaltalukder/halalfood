@@ -311,14 +311,20 @@ window.HFAdminReady.then(async H=>{
         :"Choose a courier to show its matching fields. Customer and product information stays linked to the saved order.";
    if(provider==="redx"){
     const district=$("confirmBookRedxDistrict").value.trim();
-    if(district.length>=2&&redxLoadedDistrict.toLowerCase()!==district.toLowerCase()&&!button?.disabled)void loadConfirmBookRedxAreas();
+    if(district.length>=2&&redxLoadedDistrict.toLowerCase()!==district.toLowerCase())void loadConfirmBookRedxAreas();
    }
   }
   async function loadConfirmBookRedxAreas(){
-   const button=$("confirmBookRedxLoadAreas"),district=$("confirmBookRedxDistrict").value.trim(),select=$("confirmBookRedxArea"),priorId=String(select.value||redxPreferredAreaId||"");
+   const button=$("confirmBookRedxLoadAreas"),select=$("confirmBookRedxArea"),priorId=String(select.value||redxPreferredAreaId||"");
    button.disabled=true;$("confirmBookFormError").textContent="";redxAreaLookupError="";
    select.disabled=true;
    try{
+    let district=$("confirmBookRedxDistrict").value.trim();
+    const districtFromAddress=inferRedxDistrict(district);
+    if(districtFromAddress&&districtFromAddress.toLowerCase()!==district.toLowerCase()){
+     district=districtFromAddress;
+     $("confirmBookRedxDistrict").value=district;
+    }
     if(district.length<2)throw new Error("Enter the customer’s destination district in English first (for example, Patuakhali).");
     const {data,error}=await client.functions.invoke("courier-integration",{body:{action:"areas",provider:"redx",district_name:district}});
     if(error){
@@ -371,16 +377,18 @@ window.HFAdminReady.then(async H=>{
    if(inferred&&inferred.toLowerCase()!==$("confirmBookRedxDistrict").value.trim().toLowerCase()){
     $("confirmBookRedxDistrict").value=inferred;
     $("confirmBookRedxDistrict").dispatchEvent(new Event("change",{bubbles:true}));
-    void loadConfirmBookRedxAreas();
    }
   });
   $("confirmBookRedxDistrict")?.addEventListener("change",()=>{
-   const district=$("confirmBookRedxDistrict").value.trim();
+   const rawDistrict=$("confirmBookRedxDistrict").value.trim();
+   const district=inferRedxDistrict(rawDistrict)||rawDistrict;
+   if(district!==rawDistrict)$("confirmBookRedxDistrict").value=district;
    if(district.toLowerCase()!==redxLoadedDistrict.toLowerCase()){
     redxLoadedAreas=[];redxLoadedDistrict="";redxPreferredAreaId="";redxPreferredAreaName="";
-    $("confirmBookRedxArea").innerHTML='<option value="">Load areas for this district first</option>';
+    $("confirmBookRedxArea").innerHTML='<option value="">Loading areas for this district…</option>';
     $("confirmBookRedxArea").value="";
-    $("confirmBookRedxAreaHint").textContent="Find areas for the customer’s district, then select the matching delivery area.";
+    $("confirmBookRedxAreaHint").textContent="Loading Production areas for "+district+"…";
+    if(district.length>=2&&$("confirmBookProvider").value==="redx")void loadConfirmBookRedxAreas();
    }
   });
   function renderConfirmBookItems(items){
