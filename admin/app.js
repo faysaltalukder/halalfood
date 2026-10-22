@@ -324,8 +324,14 @@ window.HFAdminReady.then(async H=>{
     if(!redxLoadedAreas.length)throw new Error(data.message||"REDX did not return any active areas for this district. Check the spelling or Production API access.");
     redxLoadedDistrict=district;
     select.innerHTML='<option value="">Select the customer’s delivery area</option>'+redxLoadedAreas.map(a=>'<option value="'+esc(a.id)+'" data-area-name="'+esc(a.name)+'">'+esc(a.name)+'</option>').join("");
+    const currentOrder=all.find(row=>row.id===$("confirmBookOrderId").value);
+    const addressText=String($("confirmBookAddress").value||currentOrder?.delivery_address||"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
+    const addressMatch=redxLoadedAreas.find(a=>{
+     const normalizedName=a.name.toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
+     return normalizedName.length>=4&&(" "+addressText+" ").includes(" "+normalizedName+" ");
+    });
     const preferred=redxLoadedAreas.find(a=>a.id===priorId)||redxLoadedAreas.find(a=>a.name.toLowerCase()===redxPreferredAreaName.toLowerCase());
-    const chosen=preferred||(redxLoadedAreas.length===1?redxLoadedAreas[0]:null);
+    const chosen=preferred||addressMatch||(redxLoadedAreas.length===1?redxLoadedAreas[0]:null);
     if(chosen){
      select.value=chosen.id;redxPreferredAreaId=chosen.id;redxPreferredAreaName=chosen.name;
      $("confirmBookRedxAreaHint").textContent="Selected area: "+chosen.name+". Its REDX Area ID has been assigned automatically.";
@@ -350,6 +356,15 @@ window.HFAdminReady.then(async H=>{
     ?"Selected destination: "+chosen.name+". REDX Area ID is handled automatically."
     :"Select the delivery area matching the customer’s address.";
   });
+  $("confirmBookAddress")?.addEventListener("change",()=>{
+   if($("confirmBookProvider").value!=="redx")return;
+   const inferred=inferRedxDistrict($("confirmBookAddress").value);
+   if(inferred&&inferred.toLowerCase()!==$("confirmBookRedxDistrict").value.trim().toLowerCase()){
+    $("confirmBookRedxDistrict").value=inferred;
+    $("confirmBookRedxDistrict").dispatchEvent(new Event("change",{bubbles:true}));
+    void loadConfirmBookRedxAreas();
+   }
+  });
   $("confirmBookRedxDistrict")?.addEventListener("change",()=>{
    const district=$("confirmBookRedxDistrict").value.trim();
    if(district.toLowerCase()!==redxLoadedDistrict.toLowerCase()){
@@ -370,7 +385,12 @@ window.HFAdminReady.then(async H=>{
    if(courierBookingLocked(existing)){toast("This order already has a booked or uncertain courier record. Open Operations Center and verify the provider before doing anything else; duplicate booking is blocked.","error");return;}
    $("confirmBookOrderId").value=order.id;
    const itemSummary=(order.order_items||[]).map(item=>String(item.product_name||"Item")+" × "+String(item.quantity||1)+" "+String(item.unit||"")).join(", ")||"No item details recorded";
-   $("confirmBookOrderSummary").textContent="Order "+(order.order_number||String(order.id).slice(0,8))+" · "+(order.customer_name||"Customer")+" · "+money(order.total)+" COD\nItems: "+itemSummary;
+   $("confirmBookOrderSummary").textContent="Order "+(order.order_number||String(order.id).slice(0,8))+" · "+(order.status==="pending"?"Pending confirmation":"Processing")+". Customer and product information below is loaded from this saved order.";
+   $("confirmBookCustomerName").value=order.customer_name||"";
+   $("confirmBookCustomerPhone").value=order.customer_phone||"";
+   $("confirmBookCustomerEmail").value=order.customer_email||"";
+   $("confirmBookCodAmount").value=money(order.total);
+   $("confirmBookItems").innerHTML='<table class="hf-table"><thead><tr><th>Product</th><th>Quantity</th><th>Line total</th></tr></thead><tbody>'+((order.order_items||[]).map(item=>'<tr><td>'+esc(item.product_name||"Item")+'</td><td>'+esc(item.quantity)+' '+esc(item.unit||"")+'</td><td>'+money(item.line_total!=null?item.line_total:(Number(item.unit_price||0)*Number(item.quantity||0)))+'</td></tr>').join("")||'<tr><td colspan="3">No products were saved with this order. Review it before booking.</td></tr>')+'</tbody></table>';
    $("confirmBookAddress").value=order.delivery_address||"";
    $("confirmBookProvider").value=courierCode(existing?.courier_name)||"";
    $("confirmBookWeight").value=existing?.parcel_weight_kg||"";
@@ -515,7 +535,8 @@ window.HFAdminReady.then(async H=>{
     if(existingError)throw new Error("Could not verify whether this order already has a courier parcel. Refresh and retry.");
     if(courierBookingLocked(existing))throw new Error("A courier booking already exists or its result is uncertain. Verify the courier dashboard before retrying; duplicate booking is blocked.");
     const providerName=courierLabel(provider);
-    const confirmMessage="CREATE REAL COURIER BOOKING — "+providerName+"\n\nOrder: "+(freshOrder.order_number||String(freshOrder.id).slice(0,8))+"\nCustomer: "+(freshOrder.customer_name||"Customer")+"\nPhone: "+(freshOrder.customer_phone||"Not recorded")+"\nFull address: "+recipientAddress+"\nCOD to collect: "+money(freshOrder.total)+(["pathao","redx"].includes(provider)?"\nPacked weight: "+weight+" kg":"")+(provider==="redx"?"\nREDX delivery area: "+redxAreaName:"")+"\n\nThis sends customer/order details to "+providerName+" and may create a real shipment. Check the details carefully. Courier cancellation is not available inside this page. Continue with the real booking?";
+    const confirmationItems=(freshOrder.order_items||order.order_items||[]).map(item=>String(item.product_name||"Item")+" × "+String(item.quantity||1)+" "+String(item.unit||"")).join(", ")||"No item details";
+    const confirmMessage="CREATE REAL COURIER BOOKING — "+providerName+"\n\nOrder: "+(freshOrder.order_number||String(freshOrder.id).slice(0,8))+"\nCustomer: "+(freshOrder.customer_name||"Customer")+"\nPhone: "+(freshOrder.customer_phone||"Not recorded")+"\nProducts: "+confirmationItems+"\nFull address: "+recipientAddress+"\nCOD to collect: "+money(freshOrder.total)+(["pathao","redx"].includes(provider)?"\nPacked weight: "+weight+" kg":"")+(provider==="redx"?"\nREDX delivery area: "+redxAreaName:"")+"\n\nThis sends the saved customer and order details to "+providerName+" and may create a real shipment. Check the details carefully. Courier cancellation is not available inside this page. Continue with the real booking?";
     if(!confirm(confirmMessage))return;
     if(String(freshOrder.delivery_address||"").trim()!==recipientAddress){
      const {error:addressError}=await client.rpc("admin_update_order_delivery_address",{p_order_id:orderId,p_delivery_address:recipientAddress});
