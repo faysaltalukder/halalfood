@@ -87,7 +87,7 @@ async function processWebhookPayload(db: ReturnType<typeof createClient>, payloa
           channel: "whatsapp",
           external_contact_id: externalId,
           phone_number: externalId,
-          display_name: displayName,
+          ...(displayName ? { display_name: displayName } : {}),
           updated_at: new Date().toISOString(),
         }, { onConflict: "channel,external_contact_id" }).select("id").single();
         if (contactResult.error || !contactResult.data?.id) throw new Error("contact_upsert_failed");
