@@ -27,6 +27,8 @@ async function invoke(action, payload = {}) {
         const details = await error.context.json();
         if (details?.error) message = details.error;
       }
+      if (details?.providerCode) message += " (Meta error code: " + details.providerCode + ")";
+      if (details?.step) message = details.step + ": " + message;
     } catch {}
     throw new Error(message);
   }
@@ -237,6 +239,38 @@ async function refreshAll() {
   await loadConversations(true);
   if (activeConversationId) await loadMessages(activeConversationId);
 }
+async function connectWhatsAppAccount() {
+  const button = $("waConnectBtn");
+  const result = $("waConnectionDiagnostic");
+  if (!button || button.disabled) return;
+  if (result) { result.hidden = false; result.className = "wa-diagnostic-result"; result.textContent = "Checking the saved Phone Number ID against the Business Account, then requesting the WABA webhook subscription from Meta. No message will be sent."; }
+  button.disabled = true;
+  const originalText = button.textContent;
+  button.textContent = "Checking connection…";
+  try {
+    const data = await invoke("connect");
+    if (result) {
+      result.hidden = false;
+      result.className = "wa-diagnostic-result";
+      const phone = data.displayPhoneNumber ? "Phone: " + H.esc(data.displayPhoneNumber) : "Phone Number ID verified";
+      const name = data.verifiedName ? " · " + H.esc(data.verifiedName) : "";
+      result.innerHTML = "<strong>WABA subscription confirmed by Meta</strong><p>" + phone + name + "</p><p>Phone Number ID matches the Business Account. The server requested the WABA subscription successfully.</p><p><b>Next:</b> In Meta App Dashboard, ensure the WhatsApp webhook field <code>messages</code> is subscribed. Also ensure the app's mode and test recipient setup allow this test. This tool cannot verify that app-level field toggle.</p>";
+    }
+    H.toast("Business Account subscription succeeded. Confirm the messages webhook field in Meta, then send a new test message.", "success");
+    await refreshAll();
+  } catch (err) {
+    if (result) {
+      result.hidden = false;
+      result.className = "wa-diagnostic-result error";
+      const message = err?.message || "Could not connect to the Business Account.";
+      result.innerHTML = "<strong>Connection check failed</strong><p>" + H.esc(message) + "</p><p>Possible causes: incorrect Business Account ID or Phone Number ID, expired token, missing whatsapp_business_management permission, or the token user does not have access to this WABA.</p>";
+    }
+    H.toast(err?.message || "WhatsApp connection check failed.", "error");
+  } finally {
+    button.disabled = false;
+    button.textContent = originalText;
+  }
+}
 function copyWebhook() {
   const text = WEBHOOK_URL;
   if (navigator.clipboard?.writeText) {
@@ -252,6 +286,7 @@ window.HFAdminReady?.then(async (ready) => {
   H = ready;
   $("waCopyWebhookBtn")?.addEventListener("click", copyWebhook);
   $("waRefreshBtn")?.addEventListener("click", refreshAll);
+  $("waConnectBtn")?.addEventListener("click", connectWhatsAppAccount);
   $("waConversationSearch")?.addEventListener("input", renderConversations);
   $("waMessageText")?.addEventListener("input", () => updateComposerState(selectedConversation()));
   $("waComposer")?.addEventListener("submit", sendReply);
