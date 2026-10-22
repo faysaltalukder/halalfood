@@ -74,8 +74,75 @@ async function issuePathaoToken() {
   return String(token);
 }
 function providerError(data: any) {
-  const message = clean(data?.message ?? data?.error ?? data?.errors?.message ?? data?.errors ?? "Courier provider rejected the request.", 350);
-  return message || "Courier provider rejected the request.";
+  const candidates: any[] = [];
+  const addCandidate = (value: any) => {
+    if (value && !candidates.includes(value)) candidates.push(value);
+  };
+  addCandidate(data);
+  addCandidate(Array.isArray(data) ? data[0] : null);
+  addCandidate(data?.consignment);
+  addCandidate(data?.data);
+  addCandidate(Array.isArray(data?.data) ? data.data[0] : null);
+  addCandidate(data?.data?.consignment);
+  addCandidate(data?.data?.data);
+  addCandidate(Array.isArray(data?.data?.data) ? data.data.data[0] : null);
+
+  const parts: string[] = [];
+  const addText = (value: unknown, label = "") => {
+    if (typeof value !== "string" && typeof value !== "number") return;
+    const valueText = clean(value, 180);
+    if (!valueText || /^(?:\[object Object\]|null|undefined)$/i.test(valueText)) return;
+    const entry = label ? label + ": " + valueText : valueText;
+    if (!parts.includes(entry)) parts.push(entry);
+  };
+  for (const row of candidates) {
+    if (!row || typeof row !== "object") continue;
+    addText(row.message);
+    addText(row.error);
+    addText(row.detail);
+    addText(row.title);
+    const errors = row.errors;
+    if (typeof errors === "string") addText(errors);
+    else if (Array.isArray(errors)) errors.forEach((entry) => {
+      if (typeof entry === "string") addText(entry);
+      else if (entry && typeof entry === "object") {
+        addText((entry as any).message);
+        addText((entry as any).error);
+      }
+    });
+    else if (errors && typeof errors === "object") {
+      for (const [key, value] of Object.entries(errors as Record<string, unknown>).slice(0, 8)) {
+        if (typeof value === "string") addText(value, key);
+        else if (Array.isArray(value)) value.slice(0, 3).forEach((item) => addText(item, key));
+      }
+    }
+  }
+  return clean(parts.join("; "), 350) || "Provider returned an error without a specific message. Check the saved order fields and merchant API access.";
+}
+function providerRejected(data: any, responseOk: boolean) {
+  const candidates: any[] = [
+    data,
+    Array.isArray(data) ? data[0] : null,
+    data?.consignment,
+    data?.data,
+    Array.isArray(data?.data) ? data.data[0] : null,
+    data?.data?.consignment,
+    data?.data?.data,
+    Array.isArray(data?.data?.data) ? data.data.data[0] : null,
+  ].filter(Boolean);
+  return !responseOk || candidates.some((row) =>
+    row && typeof row === "object" && (
+      String(row.status ?? "").toLowerCase() === "error" ||
+      String(row.type ?? "").toLowerCase() === "error" ||
+      row.success === false ||
+      (row.code !== undefined && Number(row.code) >= 400)
+    )
+  );
+}
+function providerBookingRecord(data: any) {
+  if (Array.isArray(data)) return data[0] ?? {};
+  if (Array.isArray(data?.data)) return data.data[0] ?? {};
+  return data?.consignment ?? data?.data?.consignment ?? data?.data?.data ?? data?.data ?? data ?? {};
 }
 
 function mapCourierStatus(value: unknown): string | null {
@@ -345,18 +412,23 @@ Deno.serve(async (req: Request) => {
           body: JSON.stringify(payload),
         });
         responseData = data;
-        if (!response.ok || String(data?.status || "").toLowerCase() === "error" || data?.success === false) {
+        if (providerRejected(data, response.ok)) {
+          const detail = providerError(data);
+          const ambiguous = response.status >= 500;
+          const displayed = ambiguous
+            ? "Steadfast returned HTTP " + response.status + ". " + detail + " Check the merchant dashboard before retrying; the booking outcome may be uncertain."
+            : "Steadfast rejected the booking (HTTP " + response.status + "). " + detail;
           await db.from("admin_shipments").update({
-            booking_state: response.status >= 500 ? "unknown" : "failed",
-            booking_error: response.status >= 500 ? "Provider server error; verify the courier dashboard before retrying." : "Steadfast rejected the booking. Review order data and merchant API response.",
+            booking_state: ambiguous ? "unknown" : "failed",
+            booking_error: clean(displayed, 350),
+            provider_response: { http_status: response.status, outcome: ambiguous ? "unknown" : "rejected", error_detail: clean(detail, 300) },
             updated_at: new Date().toISOString(),
           }).eq("id", shipmentId);
-          return reply({ success: false, error: response.status >= 500
-            ? "Steadfast returned a server error. Verify the merchant dashboard before any retry."
-            : "Steadfast rejected the booking. Check phone, address, invoice and merchant API access." }, 502);
+          return reply({ success: false, error: clean(displayed, 500) }, 502);
         }
-        providerOrderId = clean(data?.consignment_id ?? data?.data?.consignment_id ?? "", 100);
-        trackingId = clean(data?.tracking_code ?? data?.data?.tracking_code ?? providerOrderId, 180);
+        const record = providerBookingRecord(data);
+        providerOrderId = clean(record?.consignment_id ?? data?.consignment_id ?? data?.data?.consignment_id ?? "", 100);
+        trackingId = clean(record?.tracking_code ?? data?.tracking_code ?? data?.data?.tracking_code ?? providerOrderId, 180);
       } else {
         const token = await issuePathaoToken();
         const itemRows = Array.isArray(items) ? items : [];
@@ -389,18 +461,21 @@ Deno.serve(async (req: Request) => {
           body: JSON.stringify(payload),
         });
         responseData = data;
-        const apiError = data?.type === "error" || (data?.code && Number(data.code) >= 400) || data?.success === false;
-        if (!response.ok || apiError) {
+        if (providerRejected(data, response.ok)) {
+          const detail = providerError(data);
+          const ambiguous = response.status >= 500;
+          const displayed = ambiguous
+            ? "Pathao returned HTTP " + response.status + ". " + detail + " Check the merchant dashboard before retrying; the booking outcome may be uncertain."
+            : "Pathao rejected the booking (HTTP " + response.status + "). " + detail;
           await db.from("admin_shipments").update({
-            booking_state: response.status >= 500 ? "unknown" : "failed",
-            booking_error: response.status >= 500 ? "Provider server error; verify the courier dashboard before retrying." : "Pathao rejected the booking. Review order data and merchant API access.",
+            booking_state: ambiguous ? "unknown" : "failed",
+            booking_error: clean(displayed, 350),
+            provider_response: { http_status: response.status, outcome: ambiguous ? "unknown" : "rejected", error_detail: clean(detail, 300) },
             updated_at: new Date().toISOString(),
           }).eq("id", shipmentId);
-          return reply({ success: false, error: response.status >= 500
-            ? "Pathao returned a server error. Verify the merchant dashboard before any retry."
-            : "Pathao rejected the booking. Check complete address, phone, parcel weight, store ID and merchant API access." }, 502);
+          return reply({ success: false, error: clean(displayed, 500) }, 502);
         }
-        const d = data?.data?.data ?? data?.data ?? data;
+        const d = providerBookingRecord(data);
         providerOrderId = clean(d?.consignment_id ?? d?.order_id ?? "", 100);
         trackingId = clean(d?.tracking_code ?? d?.consignment_id ?? d?.order_id ?? "", 180);
       }
