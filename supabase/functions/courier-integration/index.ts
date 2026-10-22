@@ -174,10 +174,16 @@ function redxErrorSummary(
     if (Array.isArray(value)) return value.slice(0, 20).map((item) => sanitize(item, "", key, depth + 1));
     if (value && typeof value === "object") {
       const result: Record<string, unknown> = {};
-      for (const [childKey, childValue] of Object.entries(value as Record<string, unknown>).slice(0, 40)) {
+      const entries = Object.entries(value as Record<string, unknown>)
+        .sort(([a], [b]) => {
+          const priority = (name: string) => /validation|invalid|errors?|fields?|message|detail/i.test(name) ? 0 : 1;
+          return priority(a) - priority(b);
+        })
+        .slice(0, 40);
+      for (const [childKey, childValue] of entries) {
         if (secretKey.test(childKey)) {
           result[childKey] = "[REDACTED]";
-        } else if (privateValueKey.test(childKey) && !validationContainer.test(key)) {
+        } else if (privateValueKey.test(childKey) && !(validationContainer.test(key) || validationContainer.test(parentKey))) {
           result[childKey] = "[REDACTED]";
         } else {
           result[childKey] = sanitize(childValue, childKey, key, depth + 1);
