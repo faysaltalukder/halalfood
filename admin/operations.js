@@ -35,8 +35,9 @@ window.HFOpsInit = async function () {
     const o=orders.find(z=>z.id===x.order_id)||{},provider=courierCode(x.courier_name);
     const locked=["in_progress","succeeded","unknown"].includes(x.booking_state)||x.integration_mode==="live_api"||x.shipment_status==="booked";
     const bookButton=provider&&!locked?'<button class="hf-button hf-button-primary hf-button-small" data-book-shipment="'+esc(x.id)+'">Book with '+esc(provider==="steadfast"?"Steadfast":"Pathao")+'</button>':"";
+    const trackButton=x.integration_mode==="live_api"?'<button class="hf-button hf-button-secondary hf-button-small" data-track-shipment="'+esc(x.id)+'">Refresh status</button>':"";
     const bookingLabel=x.booking_state==="unknown"?"Unknown — verify provider":x.booking_state==="in_progress"?"Booking in progress":x.booking_state==="succeeded"?"API booking succeeded":x.integration_mode==="live_api"?"Live API":(x.booking_state==="failed"?"Last attempt failed":"Not booked");
-    return '<tr><td><strong>'+esc(o.order_number||String(x.order_id).slice(0,8))+'</strong><small>'+esc(o.customer_name||"Customer")+'</small></td><td>'+esc(x.courier_name)+'<small>'+esc(x.tracking_id||"No tracking ID yet")+'</small><small>API: '+esc(bookingLabel)+'</small></td><td><span class="ops-pill">'+esc(labelStatus(x.shipment_status))+'</span></td><td>'+money(x.cod_amount)+'<small>'+esc(labelStatus(x.settlement_status))+'</small></td><td>'+money(x.courier_fee)+'</td><td>'+money(x.settled_amount)+'</td><td><div class="ops-actions">'+bookButton+'<button class="hf-button hf-button-secondary hf-button-small" data-edit-shipment="'+esc(x.id)+'" '+(locked?'disabled title="Verify live/uncertain booking first"':"")+'>'+((x.integration_mode==="live_api")?"Booked":"Edit")+'</button><select class="hf-select ops-status" data-shipment-status="'+esc(x.id)+'" aria-label="Update parcel status" '+(x.integration_mode==="live_api"?'disabled title="Live courier status sync is not implemented yet"':"")+'>'+shipmentStatuses.map(v=>'<option value="'+v+'" '+(v===x.shipment_status?"selected":"")+'>'+esc(labelStatus(v))+'</option>').join("")+'</select></div></td></tr>';
+    return '<tr><td><strong>'+esc(o.order_number||String(x.order_id).slice(0,8))+'</strong><small>'+esc(o.customer_name||"Customer")+'</small></td><td>'+esc(x.courier_name)+'<small>'+esc(x.tracking_id||"No tracking ID yet")+'</small><small>API: '+esc(bookingLabel)+'</small></td><td><span class="ops-pill">'+esc(labelStatus(x.shipment_status))+'</span></td><td>'+money(x.cod_amount)+'<small>'+esc(labelStatus(x.settlement_status))+'</small></td><td>'+money(x.courier_fee)+'</td><td>'+money(x.settled_amount)+'</td><td><div class="ops-actions">'+bookButton+trackButton+'<button class="hf-button hf-button-secondary hf-button-small" data-edit-shipment="'+esc(x.id)+'" '+(locked?'disabled title="Verify live/uncertain booking first"':"")+'>'+((x.integration_mode==="live_api")?"Booked":"Edit")+'</button><select class="hf-select ops-status" data-shipment-status="'+esc(x.id)+'" aria-label="Update parcel status" '+(x.integration_mode==="live_api"?'disabled title="Live courier status sync is not implemented yet"':"")+'>'+shipmentStatuses.map(v=>'<option value="'+v+'" '+(v===x.shipment_status?"selected":"")+'>'+esc(labelStatus(v))+'</option>').join("")+'</select></div></td></tr>';
    }).join(""):'<tr><td colspan="7">'+makeEmpty("No courier records yet","Prepare a parcel record, then test the API and book only when ready.")+'</td></tr>';
   }
  function renderTasks(){
@@ -96,6 +97,20 @@ window.HFOpsInit = async function () {
   $("shipmentsBody").addEventListener("click",async e=>{
    const edit=e.target.closest("[data-edit-shipment]");
    if(edit){const row=shipments.find(x=>x.id===edit.dataset.editShipment);if(row)openShipment("",row);return;}
+   const track=e.target.closest("[data-track-shipment]");
+   if(track){
+    const tracked=shipments.find(x=>x.id===track.dataset.trackShipment);if(!tracked)return;
+    const provider=courierCode(tracked.courier_name);if(!provider){toast("Could not identify the courier provider.","error");return;}
+    track.disabled=true;track.textContent="Refreshing…";
+    try{
+     const {data,error}=await client.functions.invoke("courier-integration",{body:{action:"track",provider,shipment_id:tracked.id}});
+     if(error)throw new Error(await courierErrorMessage(error));
+     if(!data?.success)throw new Error(data?.error||"Courier tracking refresh failed.");
+     await load();toast(data.provider+" status: "+(data.provider_status||"unknown")+" · Local status: "+(data.shipment_status||"unchanged"));
+    }catch(err){const message=await courierErrorMessage(err);toast(message,"error");await load();}
+    finally{track.disabled=false;}
+    return;
+   }
    const book=e.target.closest("[data-book-shipment]");if(!book)return;
    const shipment=shipments.find(x=>x.id===book.dataset.bookShipment);if(!shipment)return;
    const provider=courierCode(shipment.courier_name),order=orders.find(o=>o.id===shipment.order_id);
