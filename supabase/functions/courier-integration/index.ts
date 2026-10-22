@@ -135,30 +135,39 @@ function redxErrorSummary(
 ): string {
   const redactions: string[] = [];
   const token = Deno.env.get("REDX_API_TOKEN")?.trim() || "";
-  if (token) {
-    redactions.push(token, token.replace(/^Bearer\\s+/i, ""));
-  }
+  if (token) redactions.push(token, token.replace(/^Bearer\s+/i, ""));
   for (const value of [context.phone, context.address]) {
     const raw = String(value ?? "").trim();
     if (raw.length >= 3) redactions.push(raw);
   }
-  const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\function providerRejected(data: any, responseOk: boolean) {");
+  const replaceInsensitive = (source: string, search: string, replacement: string) => {
+    if (!search) return source;
+    let result = "";
+    let cursor = 0;
+    const lowerSource = source.toLowerCase();
+    const lowerSearch = search.toLowerCase();
+    while (cursor < source.length) {
+      const found = lowerSource.indexOf(lowerSearch, cursor);
+      if (found < 0) break;
+      result += source.slice(cursor, found) + replacement;
+      cursor = found + search.length;
+    }
+    return result + source.slice(cursor);
+  };
   const redactText = (value: unknown) => {
     let output = clean(value, 3000);
     for (const raw of [...new Set(redactions)].sort((a, b) => b.length - a.length)) {
-      if (raw.length >= 3) {
-        output = output.replace(new RegExp(escapeRegex(raw), "gi"), "[REDACTED]");
-      }
+      if (raw.length >= 3) output = replaceInsensitive(output, raw, "[REDACTED]");
     }
-    const phoneDigits = String(context.phone ?? "").replace(/\\D/g, "");
+    const phoneDigits = String(context.phone ?? "").replace(/\D/g, "");
     if (phoneDigits.length >= 7) {
-      const flexibleDigits = phoneDigits.split("").map(escapeRegex).join("\\D*");
+      const flexibleDigits = phoneDigits.split("").join("\\D*");
       output = output.replace(new RegExp(flexibleDigits, "g"), "[REDACTED_PHONE]");
     }
     return output;
   };
   const secretKey = /token|authorization|secret|password|api[-_ ]?key/i;
-  const privateValueKey = /^(?:customer_?|recipient_?|delivery_?)?(?:phone|phone_number|address)$/i;
+  const privateValueKey = /(?:phone|phone_number|address)$/i;
   const validationContainer = /^(?:errors?|validation(?:_errors)?|fields?|details?)$/i;
   const sanitize = (value: unknown, key = "", parentKey = "", depth = 0): unknown => {
     if (depth > 6) return "[TRUNCATED]";
