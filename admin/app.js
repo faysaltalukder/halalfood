@@ -280,10 +280,43 @@ window.HFAdminReady.then(async H=>{
  }
  async function initOrders(){
   let all=[],activeOrderId=null,shipmentRows=[],shipmentRowsReady=false,shipmentLoadMessage="";
-  const courierCode=value=>{const v=String(value||"").toLowerCase();return v.includes("steadfast")?"steadfast":v.includes("pathao")?"pathao":"";};
-  const courierLabel=value=>value==="steadfast"?"Steadfast":"Pathao";
+  const courierCode=value=>{const v=String(value||"").toLowerCase();return v.includes("steadfast")?"steadfast":v.includes("pathao")?"pathao":v.includes("redx")?"redx":"";};
+  const courierLabel=value=>value==="steadfast"?"Steadfast":value==="pathao"?"Pathao":"REDX";
   const shipmentFor=orderId=>shipmentRows.find(row=>row.order_id===orderId)||null;
   const courierBookingLocked=record=>!!record&&(record.integration_mode==="live_api"||["in_progress","succeeded","unknown"].includes(record.booking_state)||["booked","picked_up","in_transit","delivered","returned"].includes(record.shipment_status)||!!record.provider_order_id||!!String(record.tracking_id||"").trim());
+  function updateConfirmBookProviderFields(){
+   const provider=$("confirmBookProvider").value,needsWeight=provider==="pathao"||provider==="redx";
+   $("confirmBookWeightField").style.display=needsWeight?"grid":"none";
+   $("confirmBookRedxAreasBlock").style.display=provider==="redx"?"grid":"none";
+   $("confirmBookWeightHint").textContent=provider==="pathao"?"Pathao requires 0.5–10 kg. Use a realistic packed weight.":provider==="redx"?"Enter the packed parcel weight in kilograms. REDX booking also requires an exact delivery area and configured pickup store.":"Enter a realistic packed weight.";
+   $("confirmBookProviderHint").textContent=provider==="steadfast"
+    ?"Steadfast API booking is blocked until the merchant account/API permission is activated."
+    :provider==="pathao"
+      ?"Pathao requires a packed weight from 0.5 to 10 kg. Confirm the full address, area/upazila and district."
+      :provider==="redx"
+        ?"REDX needs a pickup store configured in Supabase and the exact destination area returned by REDX. Loading areas does not create a parcel; booking can create a real shipment."
+        :"Choose the courier. Confirming booking sends order/customer details to the selected courier.";
+  }
+  async function loadConfirmBookRedxAreas(){
+   const button=$("confirmBookRedxLoadAreas"),district=$("confirmBookRedxDistrict").value.trim(),select=$("confirmBookRedxArea"),prior=select.value;
+   button.disabled=true;$("confirmBookFormError").textContent="";
+   try{
+    if(district.length<2)throw new Error("Enter the destination district in English first.");
+    const {data,error}=await client.functions.invoke("courier-integration",{body:{action:"areas",provider:"redx",district_name:district}});
+    if(error){
+     let message=error.message||"REDX area lookup failed.";
+     try{if(error.context&&typeof error.context.clone==="function"){const payload=await error.context.clone().json();message=payload?.error||payload?.message||message;}}catch(_){}
+     throw new Error(message);
+    }
+    if(!data?.success)throw new Error(data?.error||"Could not load REDX delivery areas.");
+    select.innerHTML='<option value="">Choose exact REDX delivery area</option>'+(data.areas||[]).map(a=>'<option value="'+esc(a.id)+'">'+esc(a.name)+'</option>').join("");
+    if(prior&&Array.from(select.options).some(o=>o.value===String(prior)))select.value=String(prior);
+    if(!data.areas?.length)throw new Error(data.message||"No areas returned. Try the official English district spelling.");
+   }catch(err){$("confirmBookFormError").textContent=err.message||"REDX area lookup failed.";}
+   finally{button.disabled=false;}
+  }
+  $("confirmBookRedxLoadAreas")?.addEventListener("click",loadConfirmBookRedxAreas);
+  $("confirmBookProvider")?.addEventListener("change",updateConfirmBookProviderFields);
   function openConfirmBook(orderId){
    const order=all.find(row=>row.id===orderId);
    if(!order){toast("Order not found. Refresh and try again.","error");return;}
@@ -299,26 +332,15 @@ window.HFAdminReady.then(async H=>{
    $("confirmBookProvider").value=courierCode(existing?.courier_name)||"";
    $("confirmBookWeight").value=existing?.parcel_weight_kg||"";
    $("confirmBookNotes").value=existing?.parcel_notes||"";
+   const meta=existing?.provider_response&&typeof existing.provider_response==="object"?existing.provider_response:{};
+   $("confirmBookRedxDistrict").value=meta.redx_delivery_district||"";
+   $("confirmBookRedxArea").innerHTML='<option value="">Load areas first</option>';
+   if(meta.redx_delivery_area_id&&meta.redx_delivery_area)$("confirmBookRedxArea").innerHTML='<option value="'+esc(meta.redx_delivery_area_id)+'">'+esc(meta.redx_delivery_area)+'</option>';
    $("confirmBookCustomerCheck").checked=false;
    $("confirmBookFormError").textContent="";
-   const showWeight=$("confirmBookProvider").value==="pathao";
-   $("confirmBookWeightField").style.display=showWeight?"grid":"none";
-   $("confirmBookProviderHint").textContent=$("confirmBookProvider").value==="steadfast"
-    ?"Steadfast's last connection test reported ৳0 merchant balance. Review any booking/fee requirements in the Merchant Dashboard first."
-    :showWeight
-      ?"Pathao requires a parcel weight from 0.5 to 10 kg. Enter a realistic packed weight and make sure the full address includes the area/upazila and district."
-      :"Choose the courier. Submitting creates a real courier booking; it does not merely change the order status.";
+   updateConfirmBookProviderFields();
    $("confirmBookDialog").showModal();
   }
-  $("confirmBookProvider")?.addEventListener("change",()=>{
-   const provider=$("confirmBookProvider").value;
-   $("confirmBookWeightField").style.display=provider==="pathao"?"grid":"none";
-   $("confirmBookProviderHint").textContent=provider==="steadfast"
-    ?"Steadfast's last connection test reported ৳0 merchant balance. Review any booking/fee requirements in the Merchant Dashboard first."
-    :provider==="pathao"
-      ?"Pathao requires a parcel weight from 0.5 to 10 kg. Enter a realistic packed weight and make sure the full address includes the area/upazila and district."
-      :"Choose the courier. Submitting creates a real courier booking; it does not merely change the order status.";
-  });
   $("confirmBookClose")?.addEventListener("click",()=>$("confirmBookDialog")?.close());
   $("confirmBookCancel")?.addEventListener("click",()=>$("confirmBookDialog")?.close());
   function normalizePhone(phone){
@@ -423,11 +445,14 @@ window.HFAdminReady.then(async H=>{
     if(!shipmentRowsReady)throw new Error(shipmentLoadMessage||"Courier records could not be verified. Refresh and retry.");
     if(!["pending","processing"].includes(order.status))throw new Error("Only pending or processing orders can be confirmed for courier booking.");
     const provider=$("confirmBookProvider").value;
-    if(!["steadfast","pathao"].includes(provider))throw new Error("Choose Steadfast or Pathao.");
+    if(!["steadfast","pathao","redx"].includes(provider))throw new Error("Choose Steadfast, Pathao or REDX.");
     if(String(order.payment_method||"cash_on_delivery").toLowerCase()!=="cash_on_delivery")throw new Error("Only Cash on Delivery orders are enabled for courier booking.");
     if(!$("confirmBookCustomerCheck").checked)throw new Error("Confirm that you have contacted the customer and verified the order details.");
     const weightRaw=$("confirmBookWeight").value.trim(),weight=weightRaw===""?null:Number(weightRaw);
     if(provider==="pathao"&&(!Number.isFinite(weight)||weight<0.5||weight>10))throw new Error("For Pathao, enter a realistic packed weight between 0.5 kg and 10 kg.");
+    if(provider==="redx"&&(!Number.isFinite(weight)||weight<=0||weight>10))throw new Error("For REDX, enter a packed parcel weight greater than 0 and no more than 10 kg.");
+    const redxAreaId=Number($("confirmBookRedxArea").value),redxAreaName=$("confirmBookRedxArea").selectedOptions?.[0]?.textContent?.trim()||"";
+    if(provider==="redx"&&(!Number.isInteger(redxAreaId)||redxAreaId<=0||!redxAreaName||!$("confirmBookRedxArea").value))throw new Error("Load REDX areas and select the exact destination area before booking.");
     const recipientAddress=String($("confirmBookAddress").value||"").trim();
     if(recipientAddress.length<10)throw new Error("The saved address is too short. Enter the full house/road or village, area/upazila and district address (at least 10 characters).");
     if(recipientAddress.length>250)throw new Error("The delivery address must be 250 characters or fewer.");
@@ -441,7 +466,7 @@ window.HFAdminReady.then(async H=>{
     if(existingError)throw new Error("Could not verify whether this order already has a courier parcel. Refresh and retry.");
     if(courierBookingLocked(existing))throw new Error("A courier booking already exists or its result is uncertain. Verify the courier dashboard before retrying; duplicate booking is blocked.");
     const providerName=courierLabel(provider);
-    const confirmMessage="REAL COURIER BOOKING — "+providerName+"\n\nOrder: "+(freshOrder.order_number||String(freshOrder.id).slice(0,8))+"\nCustomer: "+(freshOrder.customer_name||"Customer")+"\nPhone: "+(freshOrder.customer_phone||"Not recorded")+"\nFull address: "+recipientAddress+"\nCOD to collect: "+money(freshOrder.total)+(provider==="pathao"?"\nPacked weight: "+weight+" kg":"")+"\n\nThis sends customer/order details to "+providerName+" and can create a real courier shipment. Halal Food cannot cancel the courier booking from this page yet. Continue only if you intentionally want a live booking.";
+    const confirmMessage="REAL COURIER BOOKING — "+providerName+"\n\nOrder: "+(freshOrder.order_number||String(freshOrder.id).slice(0,8))+"\nCustomer: "+(freshOrder.customer_name||"Customer")+"\nPhone: "+(freshOrder.customer_phone||"Not recorded")+"\nFull address: "+recipientAddress+"\nCOD to collect: "+money(freshOrder.total)+(["pathao","redx"].includes(provider)?"\nPacked weight: "+weight+" kg":"")+(provider==="redx"?"\nREDX delivery area: "+redxAreaName+" (ID "+redxAreaId+")":"")+"\n\nThis sends customer/order details to "+providerName+" and can create a real courier shipment. Halal Food cannot cancel the courier booking from this page yet. Continue only if you intentionally want a live booking.";
     if(!confirm(confirmMessage))return;
     if(String(freshOrder.delivery_address||"").trim()!==recipientAddress){
      const {error:addressError}=await client.rpc("admin_update_order_delivery_address",{p_order_id:orderId,p_delivery_address:recipientAddress});
@@ -457,10 +482,10 @@ window.HFAdminReady.then(async H=>{
     const shipmentPayload={
      order_id:orderId,courier_name:providerName,tracking_id:null,shipment_status:"draft",integration_mode:"manual_placeholder",
      cod_amount:Number(freshOrder.total),courier_fee:0,settlement_status:"pending",settled_amount:0,
-     parcel_weight_kg:provider==="pathao"?weight:null,parcel_notes:$("confirmBookNotes").value.trim(),
+     parcel_weight_kg:["pathao","redx"].includes(provider)?weight:null,parcel_notes:$("confirmBookNotes").value.trim(),
      created_by:existing?.created_by||H.ADMIN_EMAIL,updated_by:H.ADMIN_EMAIL,
      booking_state:existing?.booking_state==="failed"?"failed":"not_started",booking_error:"",booking_requested_at:null,
-     provider_order_id:null,provider_response:{}
+     provider_order_id:null,provider_response:provider==="redx"?{redx_delivery_area_id:redxAreaId,redx_delivery_area:redxAreaName,redx_delivery_district:$("confirmBookRedxDistrict").value.trim()}:{}
     };
     let shipmentId="";
     if(existing){
