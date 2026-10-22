@@ -66,3 +66,8 @@
 .wa-state-badge.error{background:rgba(180,69,58,.12);color:var(--hf-red)}
 .wa-window-badge{display:inline-flex;align-items:center;padding:6px 10px;border-radius:999px;font-size:11px;font-weight:800;white-space:nowrap;background:rgba(180,69,58,.1);color:var(--hf-red)}
 .wa-window-badge.open{background:rgba(40,122,82,.13);color:var(--hf-green)}
+
+.wa-diagnostic-result{margin-top:12px;padding:12px 13px;border:1px solid var(--hf-border);border-radius:10px;background:rgba(40,122,82,.08);font-size:12px;overflow-wrap:anywhere}
+.wa-diagnostic-result.error{background:rgba(180,69,58,.08);border-color:rgba(180,69,58,.3)}
+.wa-diagnostic-result strong{display:block;margin-bottom:4px}
+.wa-diagnostic-result p{margin:5px 0;color:var(--hf-muted)}
