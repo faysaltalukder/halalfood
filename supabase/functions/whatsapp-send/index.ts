@@ -136,7 +136,7 @@ Deno.serve(async (req: Request) => {
       return reply({ success: false, step: "subscribe_waba", error: "Could not reach Meta to subscribe this Business Account. No message was sent." }, 502);
     }
 
-    if (!subscribeResponse!.ok || subscribeData?.success !== true) {
+    if (!subscribeResponse!.ok || !(subscribeData?.success === true || subscribeData?.success === "true")) {
       return reply({
         success: false,
         step: "subscribe_waba",
