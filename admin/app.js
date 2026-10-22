@@ -279,7 +279,46 @@ window.HFAdminReady.then(async H=>{
   bindRangeControls(()=>refresh());await refresh();attachRefresh(refresh);
  }
  async function initOrders(){
-  let all=[],activeOrderId=null;
+  let all=[],activeOrderId=null,shipmentRows=[],shipmentRowsReady=false,shipmentLoadMessage="";
+  const courierCode=value=>{const v=String(value||"").toLowerCase();return v.includes("steadfast")?"steadfast":v.includes("pathao")?"pathao":"";};
+  const courierLabel=value=>value==="steadfast"?"Steadfast":"Pathao";
+  const shipmentFor=orderId=>shipmentRows.find(row=>row.order_id===orderId)||null;
+  const courierBookingLocked=record=>!!record&&(record.integration_mode==="live_api"||["in_progress","succeeded","unknown"].includes(record.booking_state)||record.shipment_status==="booked"||!!record.provider_order_id);
+  function openConfirmBook(orderId){
+   const order=all.find(row=>row.id===orderId);
+   if(!order){toast("Order not found. Refresh and try again.","error");return;}
+   if(!shipmentRowsReady){toast(shipmentLoadMessage||"Courier records could not be verified. Refresh the page before booking.","error");return;}
+   if(!["pending","processing"].includes(order.status)){toast("Only pending or processing orders can be confirmed for courier booking.","error");return;}
+   if(String(order.payment_method||"cash_on_delivery").toLowerCase()!=="cash_on_delivery"){toast("Only Cash on Delivery orders are enabled for courier booking.","error");return;}
+   const existing=shipmentFor(order.id);
+   if(courierBookingLocked(existing)){toast("This order already has a booked or uncertain courier record. Open Operations Center and verify the provider before doing anything else; duplicate booking is blocked.","error");return;}
+   $("confirmBookOrderId").value=order.id;
+   $("confirmBookOrderSummary").textContent="Order "+(order.order_number||String(order.id).slice(0,8))+" · "+(order.customer_name||"Customer")+" · "+money(order.total)+" COD\nAddress: "+(order.delivery_address||"Not recorded");
+   $("confirmBookProvider").value=courierCode(existing?.courier_name)||"";
+   $("confirmBookWeight").value=existing?.parcel_weight_kg||"";
+   $("confirmBookNotes").value=existing?.parcel_notes||"";
+   $("confirmBookCustomerCheck").checked=false;
+   $("confirmBookFormError").textContent="";
+   const showWeight=$("confirmBookProvider").value==="pathao";
+   $("confirmBookWeightField").style.display=showWeight?"grid":"none";
+   $("confirmBookProviderHint").textContent=$("confirmBookProvider").value==="steadfast"
+    ?"Steadfast's last connection test reported ৳0 merchant balance. Review any booking/fee requirements in the Merchant Dashboard first."
+    :showWeight
+      ?"Pathao requires a parcel weight from 0.5 to 10 kg. Enter a realistic packed weight and make sure the full address includes the area/upazila and district."
+      :"Choose the courier. Submitting creates a real courier booking; it does not merely change the order status.";
+   $("confirmBookDialog").showModal();
+  }
+  $("confirmBookProvider")?.addEventListener("change",()=>{
+   const provider=$("confirmBookProvider").value;
+   $("confirmBookWeightField").style.display=provider==="pathao"?"grid":"none";
+   $("confirmBookProviderHint").textContent=provider==="steadfast"
+    ?"Steadfast's last connection test reported ৳0 merchant balance. Review any booking/fee requirements in the Merchant Dashboard first."
+    :provider==="pathao"
+      ?"Pathao requires a parcel weight from 0.5 to 10 kg. Enter a realistic packed weight and make sure the full address includes the area/upazila and district."
+      :"Choose the courier. Submitting creates a real courier booking; it does not merely change the order status.";
+  });
+  $("confirmBookClose")?.addEventListener("click",()=>$("confirmBookDialog")?.close());
+  $("confirmBookCancel")?.addEventListener("click",()=>$("confirmBookDialog")?.close());
   function normalizePhone(phone){
    let digits=String(phone||"").replace(/\D/g,"");
    if(digits.startsWith("00"))digits=digits.slice(2);
@@ -291,7 +330,7 @@ window.HFAdminReady.then(async H=>{
    const phone=normalizePhone(order.customer_phone);if(!phone)return "";
    const orderNo=order.order_number||String(order.id).slice(0,8),customer=order.customer_name||"Customer";
    const cancellation=order.status==="cancelled"&&order.cancellation_reason?" Cancellation reason: "+order.cancellation_reason+".":"";
-   const message="Assalamu Alaikum "+customer+", this is a test update for your Halal Food order "+orderNo+". Current recorded status: "+String(order.status||"pending").toUpperCase()+". Recorded order value: "+money(order.total)+"."+cancellation+" This is a website testing project; no real payment or delivery is available.";
+   const message="Assalamu Alaikum "+customer+", this is an update for your Halal Food order "+orderNo+". Current recorded status: "+String(order.status||"pending").toUpperCase()+". Recorded order value: "+money(order.total)+"."+cancellation+" This is a learning/testing project and does not take online payments. A courier booking is created only when an admin explicitly confirms and books it; this message is not proof of payment or delivery.";
    return "https://wa.me/"+phone+"?text="+encodeURIComponent(message);
   }
   function printPackingSlip(order){
@@ -306,15 +345,49 @@ window.HFAdminReady.then(async H=>{
    const search=String($("orderSearch")?.value||$("globalSearch")?.value||"").toLowerCase().trim(),status=$("orderStatusFilter")?.value||"";
    const rows=all.filter(o=>(!status||o.status===status)&&(!search||[o.order_number,o.customer_name,o.customer_phone,o.customer_email,o.id,...(o.order_items||[]).map(i=>i.product_name)].join(" ").toLowerCase().includes(search)));
    $("ordersFoundCount").textContent=rows.length.toLocaleString("en-BD")+" orders";
-   $("ordersDataBody").innerHTML=rows.length?rows.map(o=>'<tr><td><strong>'+esc(o.order_number||String(o.id).slice(0,8))+'</strong><small>'+esc(String(o.id).slice(0,8))+'</small></td><td><strong>'+esc(o.customer_name||"Guest")+'</strong><small>'+esc(o.customer_phone||"No phone")+'</small></td><td>'+esc((o.order_items||[]).slice(0,2).map(x=>x.product_name+" × "+x.quantity+" "+(x.unit||"")).join(", ")||"No item detail")+'</td><td>'+money(o.subtotal)+'</td><td>'+money(o.delivery_charge)+'</td><td><strong>'+money(o.total)+'</strong></td><td><select class="hf-select order-status-select" data-order-id="'+esc(o.id)+'" style="min-width:120px;padding:7px;font-size:11px">'+statusOptions.map(s=>'<option value="'+s+'" '+(s===o.status?"selected ":"")+(o.status==="cancelled"&&s!=="cancelled"?"disabled ":"")+'>'+s.charAt(0).toUpperCase()+s.slice(1)+'</option>').join("")+'</select>'+(o.status==="cancelled"&&o.cancellation_reason?'<small>'+esc(o.cancellation_reason)+'</small>':"")+'</td><td>'+dateTime(o.ordered_at)+'</td><td><div class="hf-table-actions"><button class="hf-button hf-button-secondary hf-button-small" data-order-details="'+esc(o.id)+'">Details</button></div></td></tr>').join(""):'<tr><td colspan="9">'+makeEmpty("No matching orders","Try another status or a shorter search term.")+'</td></tr>';
+   $("ordersDataBody").innerHTML=rows.length?rows.map(o=>{
+    const shipment=shipmentFor(o.id),locked=courierBookingLocked(shipment),eligible=["pending","processing"].includes(o.status);
+    let courierAction="";
+    if(eligible&&shipmentRowsReady&&!locked){
+     const label=shipment?.booking_state==="failed"?"Retry courier booking":o.status==="pending"?"Confirm & Book":"Book Courier";
+     courierAction='<button class="hf-button hf-button-primary hf-button-small" data-confirm-book="'+esc(o.id)+'">'+label+'</button>';
+    }else if(eligible&&!shipmentRowsReady){
+     courierAction='<button class="hf-button hf-button-secondary hf-button-small" type="button" disabled title="Refresh to verify current courier state">Courier state unavailable</button>';
+    }else if(locked){
+     const state=shipment.booking_state==="unknown"?"Unknown — verify provider":shipment.booking_state==="in_progress"?"Booking in progress":shipment.booking_state==="succeeded"?"API booking succeeded":"Courier record is locked";
+     courierAction='<span class="hf-status hf-status-review">'+esc(state)+'</span><a class="hf-button hf-button-secondary hf-button-small" href="./operations.html">Review</a>';
+    }
+    const stateText=shipment?(shipment.booking_error||(shipment.booking_state==="failed"?"Booking failed":shipment.booking_state==="succeeded"?"Booking succeeded":shipment.booking_state==="unknown"?"Verify with provider":shipment.booking_state==="in_progress"?"Booking in progress":"Not booked")):"";
+    const shipmentInfo=shipment?'<small style="display:block;white-space:normal;min-width:150px">'+esc(shipment.courier_name||"Courier")+': '+esc(stateText)+'</small>':"";
+    return '<tr><td><strong>'+esc(o.order_number||String(o.id).slice(0,8))+'</strong><small>'+esc(String(o.id).slice(0,8))+'</small></td><td><strong>'+esc(o.customer_name||"Guest")+'</strong><small>'+esc(o.customer_phone||"No phone")+'</small></td><td>'+esc((o.order_items||[]).slice(0,2).map(x=>x.product_name+" × "+x.quantity+" "+(x.unit||"")).join(", ")||"No item detail")+'</td><td>'+money(o.subtotal)+'</td><td>'+money(o.delivery_charge)+'</td><td><strong>'+money(o.total)+'</strong></td><td><select class="hf-select order-status-select" data-order-id="'+esc(o.id)+'" style="min-width:120px;padding:7px;font-size:11px">'+statusOptions.map(s=>'<option value="'+s+'" '+(s===o.status?"selected ":"")+(o.status==="cancelled"&&s!=="cancelled"?"disabled ":"")+'>'+s.charAt(0).toUpperCase()+s.slice(1)+'</option>').join("")+'</select>'+(o.status==="cancelled"&&o.cancellation_reason?'<small>'+esc(o.cancellation_reason)+'</small>':"")+'</td><td>'+dateTime(o.ordered_at)+'</td><td><div class="hf-table-actions" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">'+courierAction+'<button class="hf-button hf-button-secondary hf-button-small" data-order-details="'+esc(o.id)+'">Details</button>'+shipmentInfo+'</div></td></tr>';
+   }).join(""):'<tr><td colspan="9">'+makeEmpty("No matching orders","Try another status or a shorter search term.")+'</td></tr>';
   }
-  async function refresh(){all=await fetchOrders(null,5000);render();$("ordersUpdated").textContent="Updated "+dateTime(new Date().toISOString());}
+  async function refresh(){
+   all=await fetchOrders(null,5000);
+   try{
+    const {data,error}=await client.from("admin_shipments").select("id,order_id,courier_name,tracking_id,shipment_status,integration_mode,booking_state,booking_error,provider_order_id,parcel_weight_kg,parcel_notes,created_by").order("updated_at",{ascending:false}).limit(5000);
+    if(error)throw error;
+    shipmentRows=data||[];shipmentRowsReady=true;shipmentLoadMessage="";
+   }catch(err){
+    shipmentRows=[];shipmentRowsReady=false;shipmentLoadMessage="Could not read courier records. Refresh and verify Admin/MFA access before booking.";
+    console.error("Courier records could not be loaded.",err);
+   }
+   render();$("ordersUpdated").textContent="Updated "+dateTime(new Date().toISOString());
+  }
   $("orderSearch")?.addEventListener("input",render);$("orderStatusFilter")?.addEventListener("change",render);
   const qStatus=new URLSearchParams(location.search).get("status");if(qStatus&&statusOptions.includes(qStatus))$("orderStatusFilter").value=qStatus;
   $("ordersDataBody")?.addEventListener("change",async e=>{
    const select=e.target.closest(".order-status-select");if(!select)return;
    const order=all.find(o=>o.id===select.dataset.orderId);if(!order)return;
    const next=select.value,old=order.status;if(next===old)return;
+   if(next==="processing"&&old!=="processing"){select.value=old;openConfirmBook(order.id);return;}
+   const shipment=shipmentFor(order.id);
+   if(next==="cancelled"&&courierBookingLocked(shipment)){
+    select.value=old;toast("Changing the order to Cancelled will not cancel its courier shipment. Verify/cancel the parcel with the courier first; the site does not yet provide a courier-cancel action.","error");return;
+   }
+   if(next==="shipped"&&!(shipment&&shipment.integration_mode==="live_api"&&shipment.booking_state==="succeeded"&&["picked_up","in_transit","delivered"].includes(shipment.shipment_status))){
+    select.value=old;toast("A status change alone does not book or dispatch a courier. Use Confirm & Book first and verify courier pickup/status before marking Shipped.","error");return;
+   }
    let reason=null;
    if(next==="cancelled"){reason=window.prompt("Why is this order being cancelled? This reason will be saved in the order and status history.","");if(reason===null){select.value=old;return;}reason=reason.trim();if(reason.length<3||reason.length>500){toast("Enter a cancellation reason between 3 and 500 characters.","error");select.value=old;return;}}
    if((next==="cancelled"||next==="delivered")&&!confirm("Change order "+(order.order_number||String(order.id).slice(0,8))+" to "+next+"?")){select.value=old;return;}
@@ -324,6 +397,8 @@ window.HFAdminReady.then(async H=>{
    finally{select.disabled=false;}
   });
   $("ordersDataBody")?.addEventListener("click",async e=>{
+   const confirmButton=e.target.closest("[data-confirm-book]");
+   if(confirmButton){openConfirmBook(confirmButton.dataset.confirmBook);return;}
    const button=e.target.closest("[data-order-details]");if(!button)return;
    const order=all.find(x=>x.id===button.dataset.orderDetails);if(!order)return;
    activeOrderId=order.id;$("orderDetailTitle").textContent="Order "+(order.order_number||String(order.id).slice(0,8));
@@ -333,6 +408,78 @@ window.HFAdminReady.then(async H=>{
    $("orderHistoryContent").innerHTML='<p class="hf-loading">Loading status history…</p>';$("orderDialog")?.showModal();
    try{const history=await signedQuery(client.from("order_status_history").select("id,from_status,to_status,reason,changed_by,changed_at").eq("order_id",order.id).order("changed_at",{ascending:false}).limit(30));$("orderHistoryContent").innerHTML=history.length?'<div class="hf-status-timeline">'+history.map(item=>'<div class="hf-status-timeline-row"><span class="hf-status-timeline-dot"></span><div><strong>'+esc((item.from_status||"Initial")+" → "+item.to_status)+'</strong><p>'+esc(item.reason||"No note recorded")+'</p><small>'+esc(dateTime(item.changed_at))+' · '+esc(item.changed_by||"Admin")+'</small></div></div>').join("")+'</div>':makeEmpty("No status changes recorded","Earlier transitions are not available; new changes will appear here.");}
    catch(err){$("orderHistoryContent").innerHTML=makeEmpty("History could not be loaded","Check the admin session and status-history table permissions.");}
+  });
+  $("confirmBookForm")?.addEventListener("submit",async e=>{
+   e.preventDefault();
+   const form=e.currentTarget,button=$("confirmBookSubmit");
+   if(form.dataset.submitting==="true")return;
+   form.dataset.submitting="true";button.disabled=true;button.textContent="Confirming & booking…";
+   $("confirmBookFormError").textContent="";
+   try{
+    const orderId=$("confirmBookOrderId").value,order=all.find(row=>row.id===orderId);
+    if(!order)throw new Error("Order not found. Refresh and retry.");
+    if(!shipmentRowsReady)throw new Error(shipmentLoadMessage||"Courier records could not be verified. Refresh and retry.");
+    if(!["pending","processing"].includes(order.status))throw new Error("Only pending or processing orders can be confirmed for courier booking.");
+    const provider=$("confirmBookProvider").value;
+    if(!["steadfast","pathao"].includes(provider))throw new Error("Choose Steadfast or Pathao.");
+    if(String(order.payment_method||"cash_on_delivery").toLowerCase()!=="cash_on_delivery")throw new Error("Only Cash on Delivery orders are enabled for courier booking.");
+    if(!$("confirmBookCustomerCheck").checked)throw new Error("Confirm that you have contacted the customer and verified the order details.");
+    const weightRaw=$("confirmBookWeight").value.trim(),weight=weightRaw===""?null:Number(weightRaw);
+    if(provider==="pathao"&&(!Number.isFinite(weight)||weight<0.5||weight>10))throw new Error("For Pathao, enter a realistic packed weight between 0.5 kg and 10 kg.");
+    if(provider==="pathao"&&String(order.delivery_address||"").trim().length<10)throw new Error("The full delivery address is required for Pathao. Include the area/upazila and district.");
+    if(provider==="steadfast"&&String(order.delivery_address||"").trim().length<5)throw new Error("Enter a complete delivery address before booking.");
+    const {data:freshOrder,error:orderReadError}=await client.from("orders").select("id,order_number,customer_name,customer_phone,customer_email,delivery_address,total,status,payment_method,notes").eq("id",orderId).maybeSingle();
+    if(orderReadError||!freshOrder)throw new Error("Could not verify the latest order record. Refresh and try again.");
+    if(!["pending","processing"].includes(freshOrder.status))throw new Error("The order changed to "+freshOrder.status+" and can no longer be booked from this action.");
+    if(String(freshOrder.payment_method||"cash_on_delivery").toLowerCase()!=="cash_on_delivery")throw new Error("The latest order is not marked Cash on Delivery.");
+    const {data:existing,error:existingError}=await client.from("admin_shipments").select("*").eq("order_id",orderId).maybeSingle();
+    if(existingError)throw new Error("Could not verify whether this order already has a courier parcel. Refresh and retry.");
+    if(courierBookingLocked(existing))throw new Error("A courier booking already exists or its result is uncertain. Verify the courier dashboard before retrying; duplicate booking is blocked.");
+    const providerName=courierLabel(provider);
+    const confirmMessage="REAL COURIER BOOKING — "+providerName+"\n\nOrder: "+(freshOrder.order_number||String(freshOrder.id).slice(0,8))+"\nCustomer: "+(freshOrder.customer_name||"Customer")+"\nPhone: "+(freshOrder.customer_phone||"Not recorded")+"\nCOD to collect: "+money(freshOrder.total)+(provider==="pathao"?"\nPacked weight: "+weight+" kg":"")+"\n\nThis sends customer/order details to "+providerName+" and can create a real courier shipment. Halal Food cannot cancel the courier booking from this page yet. Continue only if you intentionally want a live booking.";
+    if(!confirm(confirmMessage))return;
+    if(freshOrder.status!=="processing"){
+     const {error:statusError}=await client.rpc("admin_update_order_status",{p_order_id:orderId,p_next_status:"processing",p_cancellation_reason:null});
+     if(statusError)throw new Error("The order could not be confirmed: "+(statusError.message||"check admin access and status history."));
+     await audit("order_status_changed","order",orderId,"Order confirmed before courier booking",{status:"processing",courier_provider:providerName});
+    }
+    const shipmentPayload={
+     order_id:orderId,courier_name:providerName,tracking_id:null,shipment_status:"draft",integration_mode:"manual_placeholder",
+     cod_amount:Number(freshOrder.total),courier_fee:0,settlement_status:"pending",settled_amount:0,
+     parcel_weight_kg:provider==="pathao"?weight:null,parcel_notes:$("confirmBookNotes").value.trim(),
+     created_by:existing?.created_by||H.ADMIN_EMAIL,updated_by:H.ADMIN_EMAIL,
+     booking_state:existing?.booking_state==="failed"?"failed":"not_started",booking_error:"",booking_requested_at:null,
+     provider_order_id:null,provider_response:{}
+    };
+    let shipmentId="";
+    if(existing){
+     const {data:saved,error:saveError}=await client.from("admin_shipments").update(shipmentPayload).eq("id",existing.id).select("id").single();
+     if(saveError||!saved)throw new Error("Order is confirmed, but the parcel record could not be prepared. Reopen Operations Center and review this order before retrying.");
+     shipmentId=saved.id;
+    }else{
+     const {data:saved,error:saveError}=await client.from("admin_shipments").insert(shipmentPayload).select("id").single();
+     if(saveError||!saved)throw new Error("Order is confirmed, but the parcel record could not be prepared. Refresh and review this order before retrying.");
+     shipmentId=saved.id;
+    }
+    await audit("courier_booking_requested","shipment",shipmentId,"Admin confirmed order and requested live courier booking",{order_id:orderId,provider:providerName,cod_amount:Number(freshOrder.total)});
+    const {data:booking,error:bookingError}=await client.functions.invoke("courier-integration",{body:{action:"book",provider,shipment_id:shipmentId}});
+    if(bookingError){
+     let message=bookingError.message||"Courier API booking failed.";
+     try{if(bookingError.context&&typeof bookingError.context.clone==="function"){const payload=await bookingError.context.clone().json();message=payload?.error||payload?.message||message;}}catch(_){}
+     throw new Error(message);
+    }
+    if(!booking?.success)throw new Error(booking?.error||"The courier did not confirm the booking.");
+    await audit("courier_booking_succeeded","shipment",shipmentId,"Courier API accepted the parcel booking",{order_id:orderId,provider:providerName,tracking_id:booking.tracking_id||null});
+    $("confirmBookDialog").close();
+    toast(providerName+" booking succeeded · Tracking: "+(booking.tracking_id||"check the courier dashboard"),"success");
+    await refresh();
+   }catch(err){
+    const message=err?.message||"Could not confirm and book this order.";
+    $("confirmBookFormError").textContent=message;toast(message,"error");
+    try{await refresh();}catch(_){}
+   }finally{
+    form.dataset.submitting="false";button.disabled=false;button.textContent="Confirm & Book Courier";
+   }
   });
   $("orderPrintBtn")?.addEventListener("click",()=>{const order=all.find(x=>x.id===activeOrderId);if(order)printPackingSlip(order);});
   $("closeOrderDialog")?.addEventListener("click",()=>$("orderDialog")?.close());
