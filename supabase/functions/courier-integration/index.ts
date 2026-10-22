@@ -283,23 +283,51 @@ Deno.serve(async (req: Request) => {
       if (missing.length) return reply({ success: false, error: "Missing Supabase Secrets: " + missing.join(", ") }, 400);
       const districtName = clean(body?.district_name, 80);
       if (districtName.length < 2) return reply({ success: false, error: "Enter the destination district name in English, then load REDX areas." }, 400);
-      const areasUrl = new URL(providerBase("redx") + "/areas");
-      areasUrl.searchParams.set("district_name", districtName);
-      const { response, data } = await fetchJson(areasUrl.toString(), { method: "GET", headers: redxHeaders() });
-      if (!response.ok || providerRejected(data, response.ok)) {
-        return reply({ success: false, error: "REDX area lookup failed (HTTP " + response.status + "). " + providerError(data) }, 502);
+      const districtAliases: Record<string, string[]> = {
+        barishal: ["Barisal"], barisal: ["Barishal"],
+        bogura: ["Bogra"], bogra: ["Bogura"],
+        chattogram: ["Chittagong"], chittagong: ["Chattogram"],
+        cumilla: ["Comilla"], comilla: ["Cumilla"],
+        jashore: ["Jessore"], jessore: ["Jashore"],
+      };
+      const candidates = [districtName, ...(districtAliases[districtName.toLowerCase()] || [])];
+      let resolvedDistrict = districtName;
+      let areas: { id: string; name: string }[] = [];
+      let upstreamIssue = "";
+      for (const candidate of candidates) {
+        const areasUrl = new URL(providerBase("redx") + "/areas");
+        areasUrl.searchParams.set("district_name", candidate);
+        const { response, data } = await fetchJson(areasUrl.toString(), { method: "GET", headers: redxHeaders() });
+        if (!response.ok || providerRejected(data, response.ok)) {
+          upstreamIssue = "HTTP " + response.status + ". " + providerError(data);
+          if (response.status === 401 || response.status === 403) {
+            return reply({ success: false, error: "REDX area lookup was rejected. Check that this token is valid for the configured Sandbox API. " + providerError(data) }, 502);
+          }
+          continue;
+        }
+        const rawAreas = Array.isArray(data) ? data : data?.areas ?? data?.data?.areas ?? data?.data?.data ?? data?.data ?? data?.results ?? [];
+        const found = (Array.isArray(rawAreas) ? rawAreas : []).map((a: any) => ({
+          id: clean(a?.redx_delivery_area_id ?? a?.area_id ?? a?.delivery_area_id ?? a?.id, 40),
+          name: clean(a?.redx_delivery_area ?? a?.area_name ?? a?.delivery_area ?? a?.name ?? a?.title, 120),
+        })).filter((a: any) => a.id && a.name);
+        if (found.length) {
+          resolvedDistrict = candidate;
+          areas = found.slice(0, 250);
+          break;
+        }
       }
-      const rawAreas = Array.isArray(data) ? data : data?.data?.data ?? data?.data?.areas ?? data?.areas ?? data?.data ?? data?.results ?? [];
-      const areas = (Array.isArray(rawAreas) ? rawAreas : []).map((a: any) => ({
-        id: clean(a?.redx_delivery_area_id ?? a?.area_id ?? a?.delivery_area_id ?? a?.id, 40),
-        name: clean(a?.redx_delivery_area ?? a?.area_name ?? a?.delivery_area ?? a?.name ?? a?.title, 120),
-      })).filter((a: any) => a.id && a.name).slice(0, 250);
+      if (!areas.length && upstreamIssue) {
+        return reply({ success: false, error: "REDX area lookup failed. " + upstreamIssue }, 502);
+      }
       return reply({
         success: true,
         provider: "REDX",
         district_name: districtName,
+        resolved_district_name: resolvedDistrict,
         areas,
-        message: areas.length ? "REDX delivery areas loaded. Select the exact area matching the customer address." : "No REDX delivery areas were returned for that district name. Try the official English spelling or the spelling shown in REDX documentation.",
+        message: areas.length
+          ? "REDX delivery areas loaded" + (resolvedDistrict.toLowerCase() !== districtName.toLowerCase() ? " using district spelling " + resolvedDistrict : "") + ". Select the exact area matching the customer address."
+          : "No REDX delivery areas were returned for " + candidates.join(" / ") + ". Check the English district name and Sandbox API access.",
       });
     }
 
