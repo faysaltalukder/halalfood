@@ -431,9 +431,8 @@ window.HFAdminReady.then(async H=>{
     const recipientAddress=String($("confirmBookAddress").value||"").trim();
     if(recipientAddress.length<10)throw new Error("The saved address is too short. Enter the full house/road or village, area/upazila and district address (at least 10 characters).");
     if(recipientAddress.length>250)throw new Error("The delivery address must be 250 characters or fewer.");
-    if(provider==="pathao"&&recipientAddress.split(",").map(part=>part.trim()).filter(part=>part.length>=2).length<3){
-     throw new Error("For Pathao, enter at least three comma-separated parts: actual house/road or village, area/upazila, and district. Use the real address confirmed with the customer.");
-    }
+    // Accept addresses written in normal local language; punctuation/component-count is not a courier requirement.
+    // The admin must still confirm the address is real and sufficiently specific before live booking.
     const {data:freshOrder,error:orderReadError}=await client.from("orders").select("id,order_number,customer_name,customer_phone,customer_email,delivery_address,total,status,payment_method,notes").eq("id",orderId).maybeSingle();
     if(orderReadError||!freshOrder)throw new Error("Could not verify the latest order record. Refresh and try again.");
     if(!["pending","processing"].includes(freshOrder.status))throw new Error("The order changed to "+freshOrder.status+" and can no longer be booked from this action.");
