@@ -87,7 +87,7 @@ window.HFOpsInit = async function () {
     if(provider==="steadfast"&&data.balance!==null&&data.balance!==undefined)message+=" Current merchant balance: "+money(data.balance)+".";
     if(provider==="pathao"&&Array.isArray(data.stores)&&data.stores.length)message+=" Stores: "+data.stores.map(s=>s.id+" — "+s.name).join("; ")+".";
     result.textContent=message;result.style.background="#edf7ef";result.style.borderColor="#bfdfc7";result.style.color="#215c33";
-    toast(provider==="pathao"&&!data.storeMatched?"Pathao login tested; verify PATHAO_STORE_ID in Supabase Secrets.":(provider==="pathao"&&!data.storeIdConfigured?"Pathao login tested; add PATHAO_STORE_ID before booking.":data.message||"Courier API test succeeded."),provider==="pathao"&&(!data.storeMatched||!data.storeIdConfigured)?"error":"success");
+    toast(provider==="pathao"&&!data.storeIdConfigured?"Pathao login tested; add PATHAO_STORE_ID before booking.":(provider==="pathao"&&!data.storeMatched?"Pathao login tested; verify PATHAO_STORE_ID in Supabase Secrets.":data.message||"Courier API test succeeded."),provider==="pathao"&&(!data.storeMatched||!data.storeIdConfigured)?"error":"success");
    }catch(err){const message=await courierErrorMessage(err);result.textContent=message;result.style.background="#fff0ed";result.style.borderColor="#f0c3bb";result.style.color="#8a3020";toast(message,"error");}
    finally{if(button)button.disabled=false;}
   }
