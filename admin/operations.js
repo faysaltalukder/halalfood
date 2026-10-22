@@ -9,6 +9,7 @@ window.HFOpsInit = async function () {
  const taskStatuses=["todo","in_progress","blocked","done","cancelled"];
  const returnStatuses=["requested","approved","rejected","awaiting_item","received","inspected","refunded","exchanged","closed"];
  const labelStatus=v=>String(v||"—").replace(/_/g," ");
+ const courierCode=value=>{const v=String(value||"").toLowerCase();return v.includes("steadfast")?"steadfast":v.includes("pathao")?"pathao":"";};
  const validNum=v=>Number.isFinite(Number(v))&&Number(v)>=0;
  const todayISO=()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");};
  const setOptions=(el,rows,first)=>{if(el)el.innerHTML='<option value="">'+esc(first)+'</option>'+rows.map(r=>'<option value="'+esc(r.value)+'">'+esc(r.label)+'</option>').join("");};
@@ -28,10 +29,16 @@ window.HFOpsInit = async function () {
   $("packingBody").innerHTML=rows.length?rows.map(o=>'<tr><td><strong>'+esc(o.order_number||String(o.id).slice(0,8))+'</strong><small>'+dateTime(o.ordered_at)+'</small></td><td>'+esc(o.customer_name||"Guest")+'<small>'+esc(o.customer_phone||"")+'</small></td><td>'+((o.order_items||[]).length)+' line(s)</td><td>'+money(o.total)+'</td><td>'+makeStatus(o.status)+'</td><td><button class="hf-button hf-button-secondary hf-button-small" data-pack="'+esc(o.id)+'">'+(shipments.some(x=>x.order_id===o.id)?"Review parcel":"Prepare parcel")+'</button> <a class="hf-button hf-button-secondary hf-button-small" href="./orders.html">Order details</a></td></tr>').join(""):'<tr><td colspan="6">'+makeEmpty("No orders waiting for packing","New pending or processing orders will appear here.")+'</td></tr>';
  }
  function renderShipments(){
-  const q=$("shipmentSearch").value.toLowerCase().trim(),st=$("shipmentStatusFilter").value,cod=$("codFilter").value;
-  const rows=shipments.filter(x=>{const o=orders.find(z=>z.id===x.order_id)||{};return(!st||x.shipment_status===st)&&(!cod||x.settlement_status===cod)&&(!q||[o.order_number,o.customer_name,x.courier_name,x.tracking_id].join(" ").toLowerCase().includes(q));});
-  $("shipmentsBody").innerHTML=rows.length?rows.map(x=>{const o=orders.find(z=>z.id===x.order_id)||{};return '<tr><td><strong>'+esc(o.order_number||String(x.order_id).slice(0,8))+'</strong><small>'+esc(o.customer_name||"Customer")+'</small></td><td>'+esc(x.courier_name)+'<small>'+esc(x.tracking_id||"No tracking ID yet")+'</small></td><td><span class="ops-pill">'+esc(labelStatus(x.shipment_status))+'</span></td><td>'+money(x.cod_amount)+'<small>'+esc(labelStatus(x.settlement_status))+'</small></td><td>'+money(x.courier_fee)+'</td><td>'+money(x.settled_amount)+'</td><td><div class="ops-actions"><button class="hf-button hf-button-secondary hf-button-small" data-edit-shipment="'+esc(x.id)+'">Edit</button><select class="hf-select ops-status" data-shipment-status="'+esc(x.id)+'" aria-label="Update parcel status">'+shipmentStatuses.map(v=>'<option value="'+v+'" '+(v===x.shipment_status?"selected":"")+'>'+esc(labelStatus(v))+'</option>').join("")+'</select></div></td></tr>';}).join(""):'<tr><td colspan="7">'+makeEmpty("No courier records yet","Prepare a placeholder parcel record. No real courier will be contacted.")+'</td></tr>';
- }
+   const q=$("shipmentSearch").value.toLowerCase().trim(),st=$("shipmentStatusFilter").value,cod=$("codFilter").value;
+   const rows=shipments.filter(x=>{const o=orders.find(z=>z.id===x.order_id)||{};return(!st||x.shipment_status===st)&&(!cod||x.settlement_status===cod)&&(!q||[o.order_number,o.customer_name,x.courier_name,x.tracking_id,x.provider_order_id].join(" ").toLowerCase().includes(q));});
+   $("shipmentsBody").innerHTML=rows.length?rows.map(x=>{
+    const o=orders.find(z=>z.id===x.order_id)||{},provider=courierCode(x.courier_name);
+    const locked=["in_progress","succeeded","unknown"].includes(x.booking_state)||x.integration_mode==="live_api"||x.shipment_status==="booked";
+    const bookButton=provider&&!locked?'<button class="hf-button hf-button-primary hf-button-small" data-book-shipment="'+esc(x.id)+'">Book with '+esc(provider==="steadfast"?"Steadfast":"Pathao")+'</button>':"";
+    const bookingLabel=x.booking_state==="unknown"?"Unknown — verify provider":x.booking_state==="in_progress"?"Booking in progress":x.booking_state==="succeeded"?"API booking succeeded":x.integration_mode==="live_api"?"Live API":(x.booking_state==="failed"?"Last attempt failed":"Not booked");
+    return '<tr><td><strong>'+esc(o.order_number||String(x.order_id).slice(0,8))+'</strong><small>'+esc(o.customer_name||"Customer")+'</small></td><td>'+esc(x.courier_name)+'<small>'+esc(x.tracking_id||"No tracking ID yet")+'</small><small>API: '+esc(bookingLabel)+'</small></td><td><span class="ops-pill">'+esc(labelStatus(x.shipment_status))+'</span></td><td>'+money(x.cod_amount)+'<small>'+esc(labelStatus(x.settlement_status))+'</small></td><td>'+money(x.courier_fee)+'</td><td>'+money(x.settled_amount)+'</td><td><div class="ops-actions">'+bookButton+'<button class="hf-button hf-button-secondary hf-button-small" data-edit-shipment="'+esc(x.id)+'" '+(locked?'disabled title="Verify live/uncertain booking first"':"")+'>'+((x.integration_mode==="live_api")?"Booked":"Edit")+'</button><select class="hf-select ops-status" data-shipment-status="'+esc(x.id)+'" aria-label="Update parcel status">'+shipmentStatuses.map(v=>'<option value="'+v+'" '+(v===x.shipment_status?"selected":"")+'>'+esc(labelStatus(v))+'</option>').join("")+'</select></div></td></tr>';
+   }).join(""):'<tr><td colspan="7">'+makeEmpty("No courier records yet","Prepare a parcel record, then test the API and book only when ready.")+'</td></tr>';
+  }
  function renderTasks(){
   const q=$("taskSearch").value.toLowerCase().trim(),st=$("taskStatusFilter").value;
   const rows=tasks.filter(t=>(!st||t.status===st)&&(!q||[t.title,t.assigned_to,t.department,t.notes].join(" ").toLowerCase().includes(q)));
@@ -56,6 +63,7 @@ window.HFOpsInit = async function () {
   [orders,products,shipments,tasks,team,suppliers,purchases,returns]=r;fillOrderSelects();setOptions($("purchaseProduct"),products.map(p=>({value:p.id,label:p.name+" · stock "+Number(p.stock_quantity||0)})),"Choose product");metrics();packing();renderShipments();renderTasks();renderTeam();renderSuppliers();renderPurchases();renderReturns();
  }
  function openShipment(orderId="",row=null){
+   if(row&&(["in_progress","succeeded","unknown"].includes(row.booking_state)||row.integration_mode==="live_api")){toast("This parcel has a live or uncertain courier booking. Verify it in the provider dashboard before changing or retrying.","error");return;}
   $("shipmentForm").reset();$("shipmentId").value=row?.id||"";$("shipmentDialogTitle").textContent=row?"Edit parcel record":"Prepare parcel";fillOrderSelects();$("shipmentOrder").value=row?.order_id||orderId||"";$("shipmentOrder").disabled=!!row;
   const o=orders.find(x=>x.id===$("shipmentOrder").value);$("shipmentCourier").value=row?.courier_name||"Manual / Placeholder";$("shipmentTracking").value=row?.tracking_id||"";$("shipmentStatus").value=row?.shipment_status||"draft";$("shipmentCod").value=row?.cod_amount??o?.total??0;$("shipmentFee").value=row?.courier_fee??0;$("shipmentSettlement").value=row?.settlement_status||"pending";$("shipmentSettled").value=row?.settled_amount??0;$("shipmentWeight").value=row?.parcel_weight_kg??"";$("shipmentNotes").value=row?.parcel_notes||"";$("shipmentFormError").textContent="";$("shipmentDialog").showModal();
  }
@@ -63,7 +71,47 @@ window.HFOpsInit = async function () {
  $("newShipmentBtn").addEventListener("click",()=>openShipment());
  $("shipmentForm").addEventListener("submit",async e=>{e.preventDefault();const b=$("saveShipmentBtn");b.disabled=true;try{const orderId=$("shipmentOrder").value;if(!orderId)throw Error("Choose an order.");const order=orders.find(o=>o.id===orderId);if(!order)throw Error("The selected order could not be found. Refresh and try again.");const cod=Number($("shipmentCod").value),fee=Number($("shipmentFee").value),settled=Number($("shipmentSettled").value),weight=$("shipmentWeight").value?Number($("shipmentWeight").value):null;if(![cod,fee,settled].every(validNum)||settled>cod)throw Error("Amounts must be non-negative and settled amount cannot exceed the COD reference.");if(Math.abs(cod-Number(order.total||0))>0.01)throw Error("For COD-only mode, the parcel COD reference must match this order total. Update the order total before changing the COD amount.");if(weight!==null&&(!Number.isFinite(weight)||weight<=0))throw Error("Parcel weight must be positive.");const p={order_id:orderId,courier_name:$("shipmentCourier").value.trim()||"Manual / Placeholder",tracking_id:$("shipmentTracking").value.trim()||null,shipment_status:$("shipmentStatus").value,integration_mode:"manual_placeholder",cod_amount:cod,courier_fee:fee,settlement_status:$("shipmentSettlement").value,settled_amount:settled,parcel_weight_kg:weight,parcel_notes:$("shipmentNotes").value.trim(),updated_by:H.ADMIN_EMAIL,updated_at:new Date().toISOString()};if(p.settlement_status==="settled"&&settled<=0&&cod>0)throw Error("Enter the amount actually reconciled before marking settlement as settled.");let res;if($("shipmentId").value)res=await client.from("admin_shipments").update(p).eq("id",$("shipmentId").value);else{p.created_by=H.ADMIN_EMAIL;res=await client.from("admin_shipments").upsert(p,{onConflict:"order_id"});}if(res.error)throw res.error;await audit("shipment_record_saved","shipment",orderId,"Courier placeholder record saved",{shipment_status:p.shipment_status,integration_mode:"manual_placeholder"});$("shipmentDialog").close();await load();toast("Placeholder parcel saved. No courier API was called.");}catch(err){$("shipmentFormError").textContent=err.message||"Could not save parcel.";}finally{b.disabled=false;}});
  $("packingBody").addEventListener("click",e=>{const b=e.target.closest("[data-pack]");if(!b)return;const existing=shipments.find(x=>x.order_id===b.dataset.pack);if(existing)openShipment("",existing);else openShipment(b.dataset.pack);});
- $("shipmentsBody").addEventListener("click",e=>{const b=e.target.closest("[data-edit-shipment]");if(b){const r=shipments.find(x=>x.id===b.dataset.editShipment);if(r)openShipment("",r);}});
+ async function courierErrorMessage(err){
+   let message=err?.message||"Courier action failed.";
+   try{const context=err?.context;if(context&&typeof context.json==="function"){const data=await context.clone().json();message=data?.error||data?.message||message;}}catch(_){/* keep the SDK message */}
+   return String(message);
+  }
+  async function testCourier(provider,buttonId){
+   const button=$(buttonId);if(button)button.disabled=true;
+   const result=$("courierTestResult");result.hidden=false;result.textContent="Testing "+(provider==="steadfast"?"Steadfast":"Pathao")+" API…";
+   try{
+    const {data,error}=await client.functions.invoke("courier-integration",{body:{action:"test",provider}});
+    if(error)throw new Error(await courierErrorMessage(error));
+    if(!data?.success)throw new Error(data?.error||"Courier API test failed.");
+    let message=data.message||"Courier API test succeeded.";
+    if(provider==="steadfast"&&data.balance!==null&&data.balance!==undefined)message+=" Current merchant balance: "+money(data.balance)+".";
+    if(provider==="pathao"&&Array.isArray(data.stores)&&data.stores.length)message+=" Stores: "+data.stores.map(s=>s.id+" — "+s.name).join("; ")+".";
+    result.textContent=message;result.style.background="#edf7ef";result.style.borderColor="#bfdfc7";result.style.color="#215c33";
+    toast(provider==="pathao"&&!data.storeMatched?"Pathao login tested; verify PATHAO_STORE_ID in Supabase Secrets.":(provider==="pathao"&&!data.storeIdConfigured?"Pathao login tested; add PATHAO_STORE_ID before booking.":data.message||"Courier API test succeeded."),provider==="pathao"&&(!data.storeMatched||!data.storeIdConfigured)?"error":"success");
+   }catch(err){const message=await courierErrorMessage(err);result.textContent=message;result.style.background="#fff0ed";result.style.borderColor="#f0c3bb";result.style.color="#8a3020";toast(message,"error");}
+   finally{if(button)button.disabled=false;}
+  }
+  $("testSteadfastBtn").addEventListener("click",()=>testCourier("steadfast","testSteadfastBtn"));
+  $("testPathaoBtn").addEventListener("click",()=>testCourier("pathao","testPathaoBtn"));
+  $("shipmentsBody").addEventListener("click",async e=>{
+   const edit=e.target.closest("[data-edit-shipment]");
+   if(edit){const row=shipments.find(x=>x.id===edit.dataset.editShipment);if(row)openShipment("",row);return;}
+   const book=e.target.closest("[data-book-shipment]");if(!book)return;
+   const shipment=shipments.find(x=>x.id===book.dataset.bookShipment);if(!shipment)return;
+   const provider=courierCode(shipment.courier_name),order=orders.find(o=>o.id===shipment.order_id);
+   if(!provider||!order){toast("Choose a saved order and courier provider first.","error");return;}
+   const providerLabel=provider==="steadfast"?"Steadfast":"Pathao";
+   const confirmed=confirm("REAL COURIER BOOKING\n\nProvider: "+providerLabel+"\nOrder: "+(order.order_number||String(order.id).slice(0,8))+"\nCustomer: "+(order.customer_name||"Customer")+"\nCOD: "+money(order.total)+"\n\nThis sends customer name, phone, address, parcel details and COD amount to "+providerLabel+" and may create an actual shipment. It cannot be undone from this site. Continue?");
+   if(!confirmed)return;
+   book.disabled=true;book.textContent="Booking…";
+   try{
+    const {data,error}=await client.functions.invoke("courier-integration",{body:{action:"book",provider,shipment_id:shipment.id}});
+    if(error)throw new Error(await courierErrorMessage(error));
+    if(!data?.success)throw new Error(data?.error||"Courier booking failed.");
+    await load();toast(data.provider+" booking succeeded · Tracking: "+(data.tracking_id||"check provider dashboard"));
+   }catch(err){const message=await courierErrorMessage(err);toast(message,"error");await load();}
+   finally{book.disabled=false;}
+  });
  $("shipmentsBody").addEventListener("change",async e=>{const el=e.target.closest("[data-shipment-status]");if(!el)return;const row=shipments.find(x=>x.id===el.dataset.shipmentStatus);if(!row)return;const next=el.value;if(!confirm("Update this placeholder parcel record to '"+labelStatus(next)+"'? No courier will be contacted and the customer order status will remain unchanged.")){el.value=row.shipment_status;return;}try{const p={shipment_status:next,updated_by:H.ADMIN_EMAIL,updated_at:new Date().toISOString()};if(next==="picked_up"&&!row.handed_over_at)p.handed_over_at=new Date().toISOString();if(next==="delivered"&&!row.delivered_at)p.delivered_at=new Date().toISOString();const {error}=await client.from("admin_shipments").update(p).eq("id",row.id);if(error)throw error;await audit("shipment_status_changed","shipment",row.order_id,"Placeholder parcel status changed; order status unchanged",{from:row.shipment_status,to:next,integration_mode:"manual_placeholder"});await load();toast("Placeholder parcel status saved. Order status is unchanged; no courier contacted.");}catch(err){toast(err.message||"Could not update parcel status.","error");await load();}});
  $("tasksBody").addEventListener("change",async e=>{const el=e.target.closest("[data-task-status]");if(!el)return;const row=tasks.find(t=>t.id===el.dataset.taskStatus);if(!row)return;const next=el.value;if(next===row.status)return;el.disabled=true;try{const {error}=await client.from("admin_operational_tasks").update({status:next,updated_at:new Date().toISOString()}).eq("id",row.id);if(error)throw error;await audit("task_status_changed","task",row.id,"Task status updated",{from:row.status,to:next});await load();toast("Task status updated.");}catch(err){el.value=row.status;toast(err.message||"Could not update task.","error");}finally{el.disabled=false;}});
  $("taskForm").addEventListener("submit",async e=>{e.preventDefault();const form=e.currentTarget;const button=e.submitter||form.querySelector('button[type="submit"],button:not([type])');if(form.dataset.submitting==="true")return;form.dataset.submitting="true";if(button)button.disabled=true;try{const p={title:$("taskTitle").value.trim(),department:$("taskDepartment").value,assigned_to:$("taskAssignee").value.trim(),priority:$("taskPriority").value,status:"todo",due_date:$("taskDueDate").value||null,related_order_id:$("taskOrder").value||null,notes:$("taskNotes").value.trim(),created_by:H.ADMIN_EMAIL};const {error}=await client.from("admin_operational_tasks").insert(p);if(error)throw error;await audit("task_created","task",null,p.title,{department:p.department,priority:p.priority});e.target.reset();await load();toast("Team task created.");}catch(err){toast(err.message||"Could not create task.","error");}finally{form.dataset.submitting="false";if(button)button.disabled=false;}});
