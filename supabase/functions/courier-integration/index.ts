@@ -332,7 +332,89 @@ Deno.serve(async (req: Request) => {
         }
       }
       if (!areas.length && upstreamIssue) {
-        return reply({ success: false, error: "REDX area lookup failed. " + upstreamIssue }, 502);
+        // Some REDX environments return 404 for a district-filtered lookup even though
+        // the general active-area list is available. Retry /areas without a district
+        // and keep only entries that explicitly match the requested district.
+        try {
+          const allAreasUrl = new URL(providerBase("redx") + "/areas");
+          const { response: allResponse, data: allData } = await fetchJson(allAreasUrl.toString(), {
+            method: "GET",
+            headers: redxHeaders(),
+          });
+          if (allResponse.ok && !providerRejected(allData, allResponse.ok)) {
+            const rawAllAreas = Array.isArray(allData)
+              ? allData
+              : allData?.areas ?? allData?.data?.areas ?? allData?.data?.data ?? allData?.data ?? allData?.results ?? [];
+            const districtAliasesForMatch: Record<string, string> = {
+              barisal: "barishal", barishal: "barishal",
+              bogra: "bogura", bogura: "bogura",
+              chittagong: "chattogram", chattogram: "chattogram",
+              comilla: "cumilla", cumilla: "cumilla",
+              jessore: "jashore", jashore: "jashore",
+            };
+            const normalizeDistrict = (value: unknown) => {
+              const key = clean(value, 100).toLowerCase().replace(/[^a-z]/g, "");
+              return districtAliasesForMatch[key] || key;
+            };
+            const targetDistrict = normalizeDistrict(districtName);
+            const allMapped = (Array.isArray(rawAllAreas) ? rawAllAreas : []).map((a: any) => {
+              const name = clean(a?.redx_delivery_area ?? a?.area_name ?? a?.delivery_area ?? a?.name ?? a?.title, 120);
+              const explicitDistrict = clean(a?.district_name ?? a?.district ?? a?.districtName, 100);
+              const suffixMatch = name.match(/\(([^)]+)\)\s*$/);
+              const labelDistrict = suffixMatch?.[1] || "";
+              return {
+                id: clean(a?.redx_delivery_area_id ?? a?.area_id ?? a?.delivery_area_id ?? a?.id, 40),
+                name,
+                district: explicitDistrict || labelDistrict,
+                raw: a,
+              };
+            }).filter((a: any) => a.id && a.name);
+            const matchedAreas = allMapped.filter((a: any) => {
+              const explicit = normalizeDistrict(a.district);
+              const exactName = normalizeDistrict(a.name);
+              const nameStartsWithDistrict = exactName.startsWith(targetDistrict) && targetDistrict.length >= 4;
+              return explicit === targetDistrict || exactName === targetDistrict || nameStartsWithDistrict;
+            }).slice(0, 250);
+            if (matchedAreas.length) {
+              areas = matchedAreas.map((a: any) => ({ id: a.id, name: a.name }));
+              resolvedDistrict = districtName;
+            } else {
+              const availableDistricts = Array.from(new Set(allMapped
+                .map((a: any) => clean(a.district, 100))
+                .filter((name: string) => name && !/^\d+$/.test(name))))
+                .sort((a, b) => a.localeCompare(b))
+                .slice(0, 12);
+              const hint = availableDistricts.length
+                ? " District labels returned by REDX include: " + availableDistricts.join(", ") + "."
+                : "";
+              console.error("REDX full area list had no exact district match:", JSON.stringify({
+                requestedDistrict: districtName,
+                totalActiveAreas: allMapped.length,
+                exampleAreas: allMapped.slice(0, 5).map((a: any) => a.name),
+              }));
+              return reply({
+                success: false,
+                error: "REDX found no active area for district '" + districtName + "'. The unfiltered Sandbox area list was checked (" + allMapped.length + " areas) but no exact district match was found." + hint + " Use the district name for the actual destination; for a Sandbox parcel test, choose a supported test destination rather than a mismatched area.",
+              }, 404);
+            }
+          } else {
+            console.error("REDX unfiltered area fallback failed:", JSON.stringify({
+              status: allResponse.status,
+              message: clean(providerError(allData), 250),
+            }));
+            return reply({
+              success: false,
+              error: "REDX district lookup failed (" + upstreamIssue + "). The fallback request for the full active-area list also failed (HTTP " + allResponse.status + "). " + providerError(allData),
+            }, 502);
+          }
+        } catch (fallbackError) {
+          const detail = clean(fallbackError instanceof Error ? fallbackError.message : fallbackError, 220);
+          console.error("REDX unfiltered area fallback network failure:", detail);
+          return reply({
+            success: false,
+            error: "REDX district lookup failed (" + upstreamIssue + "). Could not retrieve the full active-area list: " + (detail || "network error"),
+          }, 502);
+        }
       }
       return reply({
         success: true,
