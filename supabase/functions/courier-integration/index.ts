@@ -121,7 +121,7 @@ Deno.serve(async (req: Request) => {
             "Accept": "application/json",
           },
         });
-        if (!response.ok || (data?.status && Number(data.status) >= 400)) {
+        if (!response.ok || String(data?.status || "").toLowerCase() === "error" || data?.success === false || (data?.status && Number(data.status) >= 400)) {
           return reply({ success: false, error: "Steadfast connection test failed. Verify the API credentials and merchant API access." }, 502);
         }
         const balance = data?.current_balance ?? data?.data?.current_balance ?? null;
