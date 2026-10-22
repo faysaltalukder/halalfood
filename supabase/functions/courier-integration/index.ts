@@ -395,7 +395,7 @@ Deno.serve(async (req: Request) => {
                   resolved_district_name: "Test District",
                   sandbox_test_mode: true,
                   areas: sandboxTestAreas.map((a: any) => ({ id: a.id, name: a.name, sandbox_test_only: true })),
-                  message: "SANDBOX TEST ONLY: REDX Sandbox exposes Test District, not " + districtName + ". Selecting this fixture tests the API integration only; it does not represent the customer's real destination.",
+                  message: "SANDBOX TEST ONLY: REDX returned a test fixture (" + sandboxTestAreas.map((a: any) => a.name).join(", ") + ") for testing instead of " + districtName + ". Selecting this fixture tests the API integration only; it does not represent the customer's real destination.",
                 });
               }
               const availableDistricts = Array.from(new Set(allMapped
@@ -636,11 +636,11 @@ Deno.serve(async (req: Request) => {
     const redxAreaName = clean(savedProviderMeta.redx_delivery_area, 120);
     const redxSandboxTestOnly = savedProviderMeta.redx_sandbox_test_area === true;
     const redxSandboxHost = new URL(providerBase("redx")).hostname.toLowerCase() === "sandbox.redx.com.bd";
-    if (provider === "redx" && redxSandboxTestOnly && (!redxSandboxHost || redxAreaName.toLowerCase() !== "test district")) {
-      throw new Error("The REDX Test District fixture is permitted only against the REDX Sandbox host. Reload actual delivery areas before production booking.");
+    if (provider === "redx" && redxSandboxTestOnly && !redxSandboxHost) {
+      throw new Error("The REDX Sandbox test area is permitted only against the REDX Sandbox host. Confirm REDX_BASE_URL is https://sandbox.redx.com.bd/v1.0.0-beta before testing.");
     }
-    if (provider === "redx" && redxAreaName.toLowerCase() === "test district" && !redxSandboxHost) {
-      throw new Error("REDX Test District is a Sandbox-only area and cannot be used for a real delivery.");
+    if (provider === "redx" && ["test district", "test area"].includes(redxAreaName.toLowerCase()) && !redxSandboxHost) {
+      throw new Error("REDX Sandbox test areas cannot be used for a real delivery. Reload actual delivery areas from the production API.");
     }
     if (provider === "redx" && (!Number.isInteger(redxAreaId) || redxAreaId <= 0 || !redxAreaName)) {
       throw new Error("Before REDX booking, use the REDX area lookup and save the exact delivery area and area ID matching the customer address.");
