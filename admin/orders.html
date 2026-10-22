@@ -18,13 +18,13 @@
 <div class="hf-span-2" id="confirmBookItemsPanel"><strong>Products and quantities</strong><div id="confirmBookItems" class="hf-table-wrap" style="margin-top:8px"><p class="hf-data-note">Product quantities will load from this order automatically.</p></div><small class="hf-data-note">Products, quantities and prices are read from the saved order; edit the original order if these details are wrong.</small></div>
 <label class="hf-field hf-span-2">Full delivery address *<textarea id="confirmBookAddress" class="hf-textarea" rows="3" minlength="10" maxlength="250" required placeholder="Confirm the customer’s complete address"></textarea><small>This is filled from the order. You can correct it before booking. Check house/road or village, area/upazila, district and a nearby landmark.</small></label>
 <label class="hf-field">Courier provider *<select id="confirmBookProvider" class="hf-select" required><option value="">Choose courier</option><option value="steadfast">Steadfast</option><option value="pathao">Pathao</option><option value="redx">REDX</option></select></label>
-<section id="confirmBookSteadfastFields" class="hf-span-2" style="display:none;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px" aria-label="Steadfast courier fields">
+<section id="confirmBookSteadfastFields" class="hf-span-2 hf-field-grid" style="display:none" aria-label="Steadfast courier fields">
 <div class="hf-span-2"><strong>Steadfast booking details</strong><p class="hf-data-note">Customer, phone, full address and COD are copied from the order. This integration sends Home Delivery (delivery_type 0); it does not ask for parcel weight in the current Steadfast payload.</p></div>
 <label class="hf-field">Delivery type<input class="hf-input" value="Home Delivery (0)" readonly aria-readonly="true"><small>Matches the current Steadfast create-order request.</small></label>
 <label class="hf-field">Item summary<input id="confirmBookSteadfastItemSummary" class="hf-input" readonly aria-readonly="true" placeholder="Loaded from order items"><small>Calculated from saved products; quantity is not manually entered.</small></label>
 <label class="hf-field hf-span-2">Steadfast note (optional, max 250 characters)<textarea id="confirmBookSteadfastNotes" class="hf-textarea" rows="2" maxlength="250" placeholder="Delivery instructions for Steadfast"></textarea></label>
 </section>
-<section id="confirmBookPathaoFields" class="hf-span-2" style="display:none;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px" aria-label="Pathao courier fields">
+<section id="confirmBookPathaoFields" class="hf-span-2 hf-field-grid" style="display:none" aria-label="Pathao courier fields">
 <div class="hf-span-2"><strong>Pathao booking details</strong><p class="hf-data-note">Normal delivery (delivery_type 48) and Parcel (item_type 2). City, zone and area IDs are omitted so Pathao can resolve them from the full customer address, following Pathao’s 23 July 2025 API update.</p></div>
 <label class="hf-field">Delivery type<input class="hf-input" value="Normal Delivery (48)" readonly aria-readonly="true"></label>
 <label class="hf-field">Parcel item count<input id="confirmBookPathaoItemQuantity" class="hf-input" value="Calculated from order" readonly aria-readonly="true"><small>Calculated automatically from saved item quantities and units.</small></label>
@@ -32,7 +32,7 @@
 <label class="hf-field">Pickup store<input class="hf-input" value="Configured securely in Supabase" readonly aria-readonly="true"><small>PATHAO_STORE_ID is not typed into the browser form.</small></label>
 <label class="hf-field hf-span-2">Pathao special instruction (optional, max 250 characters)<textarea id="confirmBookPathaoInstruction" class="hf-textarea" rows="2" maxlength="250" placeholder="Delivery instructions for Pathao"></textarea></label>
 </section>
-<section id="confirmBookRedxFields" class="hf-span-2" style="display:none;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px" aria-label="REDX courier fields">
+<section id="confirmBookRedxFields" class="hf-span-2 hf-field-grid" style="display:none" aria-label="REDX courier fields">
 <div class="hf-span-2"><strong>REDX booking details</strong><p class="hf-data-note">The pickup store is configured securely in Supabase. COD and declared value come from the saved order total; the selected delivery area's ID is assigned automatically.</p></div>
 <label class="hf-field">District (English) *<input id="confirmBookRedxDistrict" class="hf-input" maxlength="80" placeholder="e.g. Patuakhali" autocomplete="address-level2"><small>Enter the district only, not the upazila + district together.</small></label>
 <div class="hf-field" style="align-content:start"><button id="confirmBookRedxLoadAreas" class="hf-button hf-button-secondary" type="button">Find delivery areas</button><small>Loading areas does not book a parcel.</small></div>
