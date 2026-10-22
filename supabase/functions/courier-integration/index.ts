@@ -398,7 +398,7 @@ Deno.serve(async (req: Request) => {
       } else {
         const trackingIdForLookup = clean(shipment.tracking_id || shipment.provider_order_id, 180);
         if (!trackingIdForLookup) return reply({ success: false, error: "No REDX tracking ID is stored for this parcel." }, 409);
-        const { response, data } = await fetchJson(providerBase("redx") + "/parcel/info/" + encodeURIComponent(trackingIdForLookup), {
+        const { response, data } = await fetchJson(providerBase("redx") + "/parcel/track/" + encodeURIComponent(trackingIdForLookup), {
           method: "GET",
           headers: redxHeaders(),
         });
@@ -415,10 +415,10 @@ Deno.serve(async (req: Request) => {
           return reply({ success: false, error: "REDX status refresh failed (HTTP " + response.status + "). " + detail + " The local parcel status was not changed; verify the REDX Merchant Dashboard." }, 502);
         }
         const info = data?.data?.data ?? data?.data ?? data;
-        providerStatus = clean(info?.parcel?.status ?? info?.status ?? info?.parcel_status ?? info?.delivery_status ?? info?.tracking_status ?? info?.current_status ?? info?.status_label ?? "", 100);
+        providerStatus = clean(info?.status ?? info?.parcel?.status ?? info?.parcel_status ?? info?.delivery_status ?? info?.tracking_status ?? info?.current_status ?? info?.status_label ?? "", 100);
         trackingData = {
           provider_status: providerStatus,
-          tracking_code: clean(info?.parcel?.tracking_id ?? info?.tracking_id ?? info?.tracking_number ?? info?.tracking_code ?? shipment.tracking_id ?? "", 180),
+          tracking_code: clean(info?.tracking_id ?? info?.tracking_number ?? info?.tracking_code ?? info?.parcel?.tracking_id ?? shipment.tracking_id ?? "", 180),
         };
       }
       const mapped = mapCourierStatus(providerStatus);
@@ -614,15 +614,15 @@ Deno.serve(async (req: Request) => {
         const payload: Record<string, unknown> = {
           customer_name: recipientName,
           customer_phone: phone,
-          redx_delivery_area: redxAreaName,
-          redx_delivery_area_id: redxAreaId,
+          delivery_area: redxAreaName,
+          delivery_area_id: redxAreaId,
           customer_address: address,
           merchant_invoice_id: invoice,
           cash_collection_amount: Math.round(total * 100) / 100,
           parcel_weight: weight,
           declared_value: Math.round(total * 100) / 100,
           instruction: clean([shipment.parcel_notes, order.notes].filter(Boolean).join(" · "), 250),
-          redx_pickup_store_id: redxPickupStoreId,
+          pickup_store_id: redxPickupStoreId,
         };
         if (description) payload.item_description = description;
         const { response, data } = await fetchJson(providerBase("redx") + "/parcel", {
