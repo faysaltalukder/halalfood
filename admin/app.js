@@ -452,7 +452,7 @@ window.HFAdminReady.then(async H=>{
     if(provider==="pathao"&&(!Number.isFinite(weight)||weight<0.5||weight>10))throw new Error("For Pathao, enter a realistic packed weight between 0.5 kg and 10 kg.");
     if(provider==="redx"&&(!Number.isFinite(weight)||weight<=0||weight>10))throw new Error("For REDX, enter a packed parcel weight greater than 0 and no more than 10 kg.");
     const redxAreaId=Number($("confirmBookRedxArea").value),redxAreaName=$("confirmBookRedxArea").selectedOptions?.[0]?.textContent?.trim()||"";
-    if(provider==="redx"&&(!Number.isInteger(redxAreaId)||redxAreaId<=0||!redxAreaName||!$("confirmBookRedxArea").value))throw new Error("Load REDX areas and select the exact destination area before booking.");
+    if(provider==="redx"&&(!Number.isInteger(redxAreaId)||redxAreaId<=0||!redxAreaName||!$("confirmBookRedxArea").value)){const areaSelect=$("confirmBookRedxArea"),hasAreas=Array.from(areaSelect.options).some(option=>option.value.trim());throw new Error(hasAreas?"REDX areas are loaded, but no destination area is selected. Choose the area matching the customer address from the dropdown.":"No REDX areas are loaded. Enter the destination district in English, click “Load REDX areas”, then choose the matching destination area. If the list is empty, note the area-loading error above.");}
     const recipientAddress=String($("confirmBookAddress").value||"").trim();
     if(recipientAddress.length<10)throw new Error("The saved address is too short. Enter the full house/road or village, area/upazila and district address (at least 10 characters).");
     if(recipientAddress.length>250)throw new Error("The delivery address must be 250 characters or fewer.");
