@@ -28,18 +28,39 @@ const previewFor = (body: string, type: string) => {
   return value || "[message]";
 };
 
-async function verifySignature(raw: Uint8Array, signatureHeader: string, appSecret: string) {
-  if (!signatureHeader.startsWith("sha256=")) return false;
-  const key = await crypto.subtle.importKey(
-    "raw",
-    new TextEncoder().encode(appSecret),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"],
-  );
-  const digest = new Uint8Array(await crypto.subtle.sign("HMAC", key, raw));
-  const expected = "sha256=" + Array.from(digest, (byte) => byte.toString(16).padStart(2, "0")).join("");
-  return equalSecret(expected.toLowerCase(), signatureHeader.toLowerCase());
+type SignatureCheck = {
+  valid: boolean;
+  reason: "valid" | "missing_signature_header" | "malformed_signature_header" | "signature_mismatch" | "signature_verification_error";
+};
+
+async function verifySignature(raw: Uint8Array, signatureHeader: string, appSecret: string): Promise<SignatureCheck> {
+  const value = signatureHeader.trim();
+  if (!value) return { valid: false, reason: "missing_signature_header" };
+
+  const match = /^sha256=([a-f0-9]{64})$/i.exec(value);
+  if (!match) return { valid: false, reason: "malformed_signature_header" };
+
+  try {
+    const hex = match[1];
+    const providedSignature = new Uint8Array(32);
+    for (let i = 0; i < providedSignature.length; i++) {
+      providedSignature[i] = Number.parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+    }
+
+    const key = await crypto.subtle.importKey(
+      "raw",
+      new TextEncoder().encode(appSecret),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["verify"],
+    );
+    const valid = await crypto.subtle.verify({ name: "HMAC" }, key, providedSignature, raw);
+    return valid
+      ? { valid: true, reason: "valid" }
+      : { valid: false, reason: "signature_mismatch" };
+  } catch {
+    return { valid: false, reason: "signature_verification_error" };
+  }
 }
 
 async function processWebhookPayload(db: ReturnType<typeof createClient>, payload: any) {
@@ -174,13 +195,19 @@ Deno.serve(async (req: Request) => {
 
   const signature = req.headers.get("x-hub-signature-256") || "";
   const rawBuffer = new Uint8Array(await req.arrayBuffer());
-  let valid = false;
-  try {
-    valid = await verifySignature(rawBuffer, signature, appSecret);
-  } catch {
-    valid = false;
+  const verification = await verifySignature(rawBuffer, signature, appSecret);
+  if (!verification.valid) {
+    // Safe diagnostics only: never log the app secret, signature value, raw body,
+    // phone numbers, or message contents.
+    console.warn("WhatsApp webhook signature validation rejected", JSON.stringify({
+      reason: verification.reason,
+      signatureHeaderPresent: Boolean(signature.trim()),
+      signatureHeaderFormatValid: /^sha256=[a-f0-9]{64}$/i.test(signature.trim()),
+      rawBodyBytes: rawBuffer.byteLength,
+      appSecretConfigured: Boolean(appSecret),
+    }));
+    return json({ success: false, error: "Invalid webhook signature" }, 401);
   }
-  if (!valid) return json({ success: false, error: "Invalid webhook signature" }, 401);
 
   let payload: any;
   try {
