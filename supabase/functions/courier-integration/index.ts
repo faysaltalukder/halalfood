@@ -78,6 +78,28 @@ function providerError(data: any) {
   return message || "Courier provider rejected the request.";
 }
 
+function mapCourierStatus(value: unknown): string | null {
+  const s = String(value ?? "").toLowerCase().trim().replace(/[\s-]+/g, "_");
+  if (!s) return null;
+  if (s.includes("delivered")) return "delivered";
+  if (s.includes("return")) return "returned";
+  if (s.includes("cancelled") || s.includes("canceled")) return "cancelled";
+  if (s.includes("delivery_failed") || s.includes("failed") || s.includes("attempt_fail")) return "delivery_failed";
+  if (s.includes("picked_up") || s === "picked" || s.includes("picked")) return "picked_up";
+  if (s.includes("in_transit") || s.includes("out_for_delivery") || s.includes("transit") || s.includes("assigned")) return "in_transit";
+  if (s === "pending" || s.includes("in_review") || s === "booked" || s.includes("confirmed")) return "booked";
+  return null;
+}
+function shouldAdvanceStatus(current: string, next: string): boolean {
+  const terminal = ["delivered", "returned", "cancelled", "delivery_failed"];
+  if (terminal.includes(current)) return terminal.includes(next);
+  if (terminal.includes(next)) return true;
+  const rank: Record<string, number> = {
+    draft: 0, ready_for_pickup: 1, booked: 2, picked_up: 3, in_transit: 4, delivered: 5,
+  };
+  return (rank[next] ?? -1) >= (rank[current] ?? 0);
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return reply({ success: false, error: "Method not allowed." }, 405);
@@ -155,19 +177,99 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    if (action !== "book") return reply({ success: false, error: "Unsupported action." }, 400);
+    if (!["book", "track"].includes(action)) return reply({ success: false, error: "Unsupported action." }, 400);
     const shipmentId = clean(body?.shipment_id, 80);
     if (!shipmentId) return reply({ success: false, error: "Choose a saved parcel record first." }, 400);
 
     const required = provider === "steadfast"
       ? ["STEADFAST_API_KEY", "STEADFAST_SECRET_KEY"]
-      : ["PATHAO_CLIENT_ID", "PATHAO_CLIENT_SECRET", "PATHAO_USERNAME", "PATHAO_PASSWORD", "PATHAO_STORE_ID"];
+      : action === "book"
+        ? ["PATHAO_CLIENT_ID", "PATHAO_CLIENT_SECRET", "PATHAO_USERNAME", "PATHAO_PASSWORD", "PATHAO_STORE_ID"]
+        : ["PATHAO_CLIENT_ID", "PATHAO_CLIENT_SECRET", "PATHAO_USERNAME", "PATHAO_PASSWORD"];
     const missing = missingSecrets(required);
     if (missing.length) return reply({ success: false, error: "Missing Supabase Secrets: " + missing.join(", ") }, 400);
 
     const { data: shipment, error: shipmentError } = await db.from("admin_shipments")
       .select("*").eq("id", shipmentId).maybeSingle();
     if (shipmentError || !shipment) return reply({ success: false, error: "Saved parcel record not found. Refresh Operations Center and try again." }, 404);
+
+    const expectedProvider = providerName(provider);
+    const selectedCourier = clean(shipment.courier_name, 120).toLowerCase();
+    if (!selectedCourier.includes(provider)) {
+      return reply({ success: false, error: "The saved parcel's courier choice does not match the requested provider." }, 400);
+    }
+
+    if (action === "track") {
+      if (shipment.integration_mode !== "live_api" || shipment.booking_state !== "succeeded") {
+        return reply({ success: false, error: "Only successfully API-booked parcels can refresh courier status." }, 409);
+      }
+      const { data: linkedOrder, error: linkedOrderError } = await db.from("orders")
+        .select("id,order_number").eq("id", shipment.order_id).maybeSingle();
+      if (linkedOrderError || !linkedOrder) return reply({ success: false, error: "Linked order not found." }, 404);
+      const invoice = clean(linkedOrder.order_number || ("HF-" + String(linkedOrder.id).replace(/-/g, "").slice(0, 12)), 50);
+      let providerStatus = "";
+      let trackingData: any = {};
+      if (provider === "steadfast") {
+        const { response, data } = await fetchJson(providerBase(provider) + "/status_by_invoice/" + encodeURIComponent(invoice), {
+          method: "GET",
+          headers: {
+            "Api-Key": Deno.env.get("STEADFAST_API_KEY")!,
+            "Secret-Key": Deno.env.get("STEADFAST_SECRET_KEY")!,
+            "Accept": "application/json",
+          },
+        });
+        if (!response.ok || String(data?.status || "").toLowerCase() === "error" || data?.success === false) {
+          return reply({ success: false, error: "Steadfast could not return tracking status. Check the provider dashboard and try again later." }, 502);
+        }
+        providerStatus = clean(data?.delivery_status ?? data?.data?.delivery_status ?? data?.status_label ?? "", 100);
+        trackingData = {
+          provider_status: providerStatus,
+          tracking_code: clean(data?.tracking_code ?? data?.data?.tracking_code ?? shipment.tracking_id ?? "", 180),
+        };
+      } else {
+        const token = await issuePathaoToken();
+        const consignmentId = clean(shipment.provider_order_id, 100);
+        if (!consignmentId) return reply({ success: false, error: "No Pathao consignment ID is stored for this parcel." }, 409);
+        const { response, data } = await fetchJson(providerBase(provider) + "/aladdin/api/v1/orders/" + encodeURIComponent(consignmentId) + "/info", {
+          method: "GET",
+          headers: { "Authorization": "Bearer " + token, "Accept": "application/json", "Content-Type": "application/json" },
+        });
+        if (!response.ok || data?.type === "error" || (data?.code && Number(data.code) >= 400) || data?.success === false) {
+          return reply({ success: false, error: "Pathao could not return tracking status. Check the provider dashboard and try again later." }, 502);
+        }
+        const info = data?.data?.data ?? data?.data ?? data;
+        providerStatus = clean(info?.order_status ?? info?.delivery_status ?? info?.status ?? "", 100);
+        trackingData = {
+          provider_status: providerStatus,
+          tracking_code: clean(info?.tracking_code ?? info?.consignment_id ?? shipment.tracking_id ?? "", 180),
+          consignment_id: clean(info?.consignment_id ?? shipment.provider_order_id ?? "", 100),
+        };
+      }
+      const mapped = mapCourierStatus(providerStatus);
+      let nextStatus = shipment.shipment_status;
+      if (mapped && shouldAdvanceStatus(String(shipment.shipment_status || "booked"), mapped)) nextStatus = mapped;
+      const now = new Date().toISOString();
+      const existingMeta = shipment.provider_response && typeof shipment.provider_response === "object" ? shipment.provider_response : {};
+      const patch: Record<string, unknown> = {
+        provider_response: { ...existingMeta, ...trackingData, status_checked_at: now },
+        updated_by: "halalfoodbd.official@gmail.com",
+        updated_at: now,
+      };
+      if (mapped && nextStatus !== shipment.shipment_status) patch.shipment_status = nextStatus;
+      if (nextStatus === "picked_up" && !shipment.handed_over_at) patch.handed_over_at = now;
+      if (nextStatus === "delivered" && !shipment.delivered_at) patch.delivered_at = now;
+      const { error: trackingSaveError } = await db.from("admin_shipments").update(patch).eq("id", shipmentId);
+      if (trackingSaveError) return reply({ success: false, error: "Courier status was retrieved, but the local record could not be updated." }, 500);
+      return reply({
+        success: true,
+        provider: expectedProvider,
+        provider_status: providerStatus || "Not returned by provider",
+        mapped_status: mapped,
+        shipment_status: nextStatus,
+        updated: nextStatus !== shipment.shipment_status,
+        message: mapped ? "Courier tracking status refreshed." : "Courier responded, but the status was not recognised; the saved shipment status was left unchanged.",
+      });
+    }
     if (shipment.booking_state === "succeeded" || shipment.integration_mode === "live_api" || shipment.shipment_status === "booked") {
       return reply({ success: false, error: "This parcel is already booked or marked booked. Do not send it again." }, 409);
     }
