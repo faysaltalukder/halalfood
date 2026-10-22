@@ -49,7 +49,7 @@ function missingSecrets(names: string[]) {
 }
 function providerBase(provider: string) {
   if (provider === "steadfast") {
-    return (Deno.env.get("STEADFAST_BASE_URL") || "https://portal.packzy.com/api/v1").replace(/\/+$/, "");
+    return "https://portal.packzy.com/api/v1";
   }
   return (Deno.env.get("PATHAO_BASE_URL") || "https://api-hermes.pathao.com").replace(/\/+$/, "");
 }
