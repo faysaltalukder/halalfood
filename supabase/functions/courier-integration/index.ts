@@ -230,7 +230,12 @@ Deno.serve(async (req: Request) => {
       if (provider === "redx") {
         const missing = missingSecrets(["REDX_API_TOKEN"]);
         if (missing.length) return reply({ success: false, error: "Missing Supabase Secrets: " + missing.join(", ") }, 400);
-        const { response, data } = await fetchJson(providerBase("redx") + "/pickup/stores", {
+        const apiBase = providerBase("redx");
+        const apiHost = new URL(apiBase).hostname.toLowerCase();
+        const apiEnvironment = apiHost === "openapi.redx.com.bd"
+          ? "Production"
+          : apiHost === "sandbox.redx.com.bd" ? "Sandbox" : "Custom-host";
+        const { response, data } = await fetchJson(apiBase + "/pickup/stores", {
           method: "GET",
           headers: redxHeaders(),
         });
@@ -248,8 +253,10 @@ Deno.serve(async (req: Request) => {
           success: true,
           provider: "REDX",
           message: storeId
-            ? (matched ? "REDX API token and configured pickup store were verified." : "REDX API token works, but REDX_PICKUP_STORE_ID does not match the returned pickup stores.")
-            : "REDX API token works. Choose a pickup store and configure REDX_PICKUP_STORE_ID before booking.",
+            ? (matched ? "REDX " + apiEnvironment + " API token and configured pickup store were verified." : "REDX API token works, but REDX_PICKUP_STORE_ID does not match the returned pickup stores.")
+            : "REDX " + apiEnvironment + " API token works. Choose a pickup store and configure REDX_PICKUP_STORE_ID before booking.",
+          api_environment: apiEnvironment.toLowerCase(),
+          api_host: apiHost,
           storeIdConfigured: Boolean(storeId),
           storeMatched: matched,
           stores: stores.slice(0, 30),
@@ -449,9 +456,9 @@ Deno.serve(async (req: Request) => {
         delivery_area_id: Number(testArea.id),
         customer_address: address,
         merchant_invoice_id: sandboxInvoice,
-        cash_collection_amount: Math.round(total * 100) / 100,
-        parcel_weight: 1,
-        value: Math.round(total * 100) / 100,
+        cash_collection_amount: String(Math.round(total * 100) / 100),
+        parcel_weight: 1000,
+        value: Math.round(total),
         is_closed_box: false,
         instruction: "SANDBOX API INTEGRATION TEST ONLY — NOT A REAL DELIVERY.",
         pickup_store_id: Number(configuredStoreId),
@@ -890,8 +897,8 @@ Deno.serve(async (req: Request) => {
     if (provider === "pathao" && (!Number.isFinite(weight) || weight! < 0.5 || weight! > 10)) {
       throw new Error("For Pathao, enter a parcel weight between 0.5 kg and 10 kg in the saved parcel record.");
     }
-    if (provider === "redx" && (!Number.isFinite(weight) || weight! <= 0)) {
-      throw new Error("For REDX, enter a positive packed parcel weight in kilograms in the saved parcel record.");
+    if (provider === "redx" && (!Number.isFinite(weight) || weight! < 0.1 || weight! > 10)) {
+      throw new Error("For REDX, enter a packed parcel weight between 0.1 kg and 10 kg in the saved parcel record.");
     }
     const savedProviderMeta = shipment.provider_response && typeof shipment.provider_response === "object" ? shipment.provider_response : {};
     const redxAreaId = Number(savedProviderMeta.redx_delivery_area_id);
@@ -1030,9 +1037,9 @@ Deno.serve(async (req: Request) => {
           delivery_area_id: redxAreaId,
           customer_address: address,
           merchant_invoice_id: invoice,
-          cash_collection_amount: Math.round(total * 100) / 100,
-          parcel_weight: weight,
-          value: Math.round(total * 100) / 100,
+          cash_collection_amount: String(Math.round(total * 100) / 100),
+          parcel_weight: Math.round(weight! * 1000),
+          value: Math.round(total),
           is_closed_box: false,
           instruction: clean([shipment.parcel_notes, order.notes].filter(Boolean).join(" · "), 250),
           pickup_store_id: redxPickupStoreId,
