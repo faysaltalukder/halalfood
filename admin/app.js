@@ -403,6 +403,12 @@ window.HFAdminReady.then(async H=>{
      ?"Products and quantities · "+rows.length+" item line"+(rows.length===1?"":"s")
      :"Products and quantities · details unavailable";
    }
+   const pathaoItemQuantity=Math.max(1,Math.min(999,rows.reduce((sum,item)=>{
+    const unit=String(item?.unit||"").toLowerCase(),q=Number(item?.quantity||1);
+    return sum+(["piece","pieces","pcs","pc"].includes(unit)?Math.max(1,Math.ceil(Number.isFinite(q)?q:1)):1);
+   },0)));
+   $("confirmBookPathaoItemQuantity").value=String(pathaoItemQuantity);
+   $("confirmBookSteadfastItemSummary").value=rows.map(item=>String(item.product_name||"Item")+" × "+String(item.quantity??"—")+" "+String(item.unit||"")).join(", ").slice(0,250)||"No saved item details";
    container.innerHTML='<table class="hf-table"><thead><tr><th>Product</th><th>Quantity</th><th>Line total</th></tr></thead><tbody>'+
     (rows.map(item=>{
      const n=Number(item.quantity);
@@ -452,12 +458,6 @@ window.HFAdminReady.then(async H=>{
    $("confirmBookCustomerEmail").value=order.customer_email||"";
    $("confirmBookCodAmount").value=money(order.total);
    renderConfirmBookItems(orderItems);
-   const pathaoItemQuantity=Math.max(1,Math.min(999,orderItems.reduce((sum,item)=>{
-    const unit=String(item?.unit||"").toLowerCase(),q=Number(item?.quantity||1);
-    return sum+(["piece","pieces","pcs","pc"].includes(unit)?Math.max(1,Math.ceil(Number.isFinite(q)?q:1)):1);
-   },0)));
-   $("confirmBookPathaoItemQuantity").value=String(pathaoItemQuantity);
-   $("confirmBookSteadfastItemSummary").value=orderItems.map(item=>String(item.product_name||"Item")+" × "+String(item.quantity??"—")+" "+String(item.unit||"")).join(", ").slice(0,250)||"No saved item details";
    void refreshConfirmBookItems(order.id,orderItems);
    $("confirmBookAddress").value=order.delivery_address||"";
    $("confirmBookProvider").value=courierCode(existing?.courier_name)||"";
