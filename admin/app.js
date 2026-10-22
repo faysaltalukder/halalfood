@@ -157,6 +157,38 @@ window.HFAdminReady.then(async H=>{
    }
    $("overviewActionNote").textContent="Checks use saved catalog and order records. This testing project does not process real payments or deliveries.";
   }
+  async function runRedxSandboxTest(orderId,button){
+   const order=all.find(row=>row.id===orderId);
+   if(!order){toast("Order not found. Refresh the Orders page.","error");return;}
+   if(!["pending","processing"].includes(order.status)){toast("REDX Sandbox Test is only available for a pending or processing order.","error");return;}
+   if(String(order.payment_method||"cash_on_delivery").toLowerCase()!=="cash_on_delivery"){toast("Only Cash on Delivery orders can be used for this test.","error");return;}
+   if(!shipmentRowsReady){toast("Courier records could not be verified. Refresh and try again.","error");return;}
+   if(courierBookingLocked(shipmentFor(order.id))){toast("This order already has a successful or uncertain courier result. Verify it before sending another request.","error");return;}
+   const orderLabel=order.order_number||String(order.id).slice(0,8);
+   const accepted=confirm("REDX SANDBOX API TEST — NOT A REAL DELIVERY\n\nOrder: "+orderLabel+"\nTotal: "+money(order.total)+" COD reference\n\nThis sends this order’s name, phone, address and amount to REDX Sandbox only. The system will use a Sandbox test area and 1 kg test weight. It will not create a real delivery or change the order status.\n\nSend one Sandbox test parcel now?");
+   if(!accepted)return;
+   const originalText=button?.textContent||"REDX Sandbox Test";
+   if(button){button.disabled=true;button.textContent="Testing REDX Sandbox…";}
+   try{
+    const {data,error}=await client.functions.invoke("courier-integration",{body:{action:"sandbox_test_book",provider:"redx",order_id:order.id}});
+    if(error){
+     let message=error.message||"REDX Sandbox test failed.";
+     try{if(error.context&&typeof error.context.clone==="function"){const payload=await error.context.clone().json();message=payload?.error||payload?.message||message;}}catch(_){}
+     throw new Error(message);
+    }
+    if(!data?.success)throw new Error(data?.error||"REDX Sandbox did not confirm the test parcel.");
+    try{await audit("redx_sandbox_test_succeeded","shipment",order.id,"REDX Sandbox accepted a test parcel; no real delivery was booked",{order_number:orderLabel,tracking_id:data.tracking_id||null,sandbox_test_only:true});}catch(auditError){console.warn("Sandbox test succeeded, but audit logging failed.",auditError);}
+    toast("REDX Sandbox test succeeded · Test reference: "+(data.tracking_id||"check the Sandbox dashboard"),"success");
+    await refresh();
+   }catch(err){
+    const message=err?.message||"REDX Sandbox test failed.";
+    toast("REDX Sandbox test failed: "+message,"error");
+    try{await refresh();}catch(_){}
+   }finally{
+    if(button){button.disabled=false;button.textContent=originalText;}
+   }
+  }
+
   async function refresh(){
    const now=new Date();
    const range30={from:new Date(now.getTime()-30*86400000).toISOString(),to:now.toISOString(),days:30,label:"Last 30 days"};
@@ -372,7 +404,10 @@ window.HFAdminReady.then(async H=>{
    $("ordersFoundCount").textContent=rows.length.toLocaleString("en-BD")+" orders";
    $("ordersDataBody").innerHTML=rows.length?rows.map(o=>{
     const shipment=shipmentFor(o.id),locked=courierBookingLocked(shipment),eligible=["pending","processing"].includes(o.status);
-    let courierAction="";
+    let courierAction="",sandboxTestAction="";
+    if(eligible&&shipmentRowsReady&&!locked&&String(o.payment_method||"cash_on_delivery").toLowerCase()==="cash_on_delivery"){
+     sandboxTestAction='<button class="hf-button hf-button-secondary hf-button-small" data-redx-sandbox-test="'+esc(o.id)+'" title="Creates one test parcel in REDX Sandbox only">REDX Sandbox Test</button>';
+    }
     if(eligible&&shipmentRowsReady&&!locked){
      const label=shipment?.booking_state==="failed"?"Retry courier booking":o.status==="pending"?"Confirm & Book":"Book Courier";
      courierAction='<button class="hf-button hf-button-primary hf-button-small" data-confirm-book="'+esc(o.id)+'">'+label+'</button>';
@@ -382,15 +417,16 @@ window.HFAdminReady.then(async H=>{
      const state=shipment.booking_state==="unknown"?"Unknown — verify provider":shipment.booking_state==="in_progress"?"Booking in progress":shipment.booking_state==="succeeded"?"API booking succeeded":"Courier record is locked";
      courierAction='<span class="hf-status hf-status-review">'+esc(state)+'</span><a class="hf-button hf-button-secondary hf-button-small" href="./operations.html">Review</a>';
     }
-    const stateText=shipment?(shipment.booking_error||(shipment.booking_state==="failed"?"Booking failed":shipment.booking_state==="succeeded"?"Booking succeeded":shipment.booking_state==="unknown"?"Verify with provider":shipment.booking_state==="in_progress"?"Booking in progress":"Not booked")):"";
+    const sandboxTest=shipment?.provider_response?.redx_sandbox_quick_test===true;
+    const stateText=shipment?(shipment.booking_error||(sandboxTest&&shipment.booking_state==="succeeded"?"REDX Sandbox test succeeded":sandboxTest&&shipment.booking_state==="in_progress"?"REDX Sandbox test in progress":sandboxTest&&shipment.booking_state==="unknown"?"REDX Sandbox result uncertain — verify first":shipment.booking_state==="failed"?"Booking failed":shipment.booking_state==="succeeded"?"Booking succeeded":shipment.booking_state==="unknown"?"Verify with provider":shipment.booking_state==="in_progress"?"Booking in progress":"Not booked")):"";
     const shipmentInfo=shipment?'<small style="display:block;white-space:normal;min-width:150px">'+esc(shipment.courier_name||"Courier")+': '+esc(stateText)+'</small>':"";
-    return '<tr><td><strong>'+esc(o.order_number||String(o.id).slice(0,8))+'</strong><small>'+esc(String(o.id).slice(0,8))+'</small></td><td><strong>'+esc(o.customer_name||"Guest")+'</strong><small>'+esc(o.customer_phone||"No phone")+'</small></td><td>'+esc((o.order_items||[]).slice(0,2).map(x=>x.product_name+" × "+x.quantity+" "+(x.unit||"")).join(", ")||"No item detail")+'</td><td>'+money(o.subtotal)+'</td><td>'+money(o.delivery_charge)+'</td><td><strong>'+money(o.total)+'</strong></td><td><select class="hf-select order-status-select" data-order-id="'+esc(o.id)+'" style="min-width:120px;padding:7px;font-size:11px">'+statusOptions.map(s=>'<option value="'+s+'" '+(s===o.status?"selected ":"")+(o.status==="cancelled"&&s!=="cancelled"?"disabled ":"")+'>'+s.charAt(0).toUpperCase()+s.slice(1)+'</option>').join("")+'</select>'+(o.status==="cancelled"&&o.cancellation_reason?'<small>'+esc(o.cancellation_reason)+'</small>':"")+'</td><td>'+dateTime(o.ordered_at)+'</td><td><div class="hf-table-actions" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">'+courierAction+'<button class="hf-button hf-button-secondary hf-button-small" data-order-details="'+esc(o.id)+'">Details</button>'+shipmentInfo+'</div></td></tr>';
+    return '<tr><td><strong>'+esc(o.order_number||String(o.id).slice(0,8))+'</strong><small>'+esc(String(o.id).slice(0,8))+'</small></td><td><strong>'+esc(o.customer_name||"Guest")+'</strong><small>'+esc(o.customer_phone||"No phone")+'</small></td><td>'+esc((o.order_items||[]).slice(0,2).map(x=>x.product_name+" × "+x.quantity+" "+(x.unit||"")).join(", ")||"No item detail")+'</td><td>'+money(o.subtotal)+'</td><td>'+money(o.delivery_charge)+'</td><td><strong>'+money(o.total)+'</strong></td><td><select class="hf-select order-status-select" data-order-id="'+esc(o.id)+'" style="min-width:120px;padding:7px;font-size:11px">'+statusOptions.map(s=>'<option value="'+s+'" '+(s===o.status?"selected ":"")+(o.status==="cancelled"&&s!=="cancelled"?"disabled ":"")+'>'+s.charAt(0).toUpperCase()+s.slice(1)+'</option>').join("")+'</select>'+(o.status==="cancelled"&&o.cancellation_reason?'<small>'+esc(o.cancellation_reason)+'</small>':"")+'</td><td>'+dateTime(o.ordered_at)+'</td><td><div class="hf-table-actions" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">'+courierAction+sandboxTestAction+'<button class="hf-button hf-button-secondary hf-button-small" data-order-details="'+esc(o.id)+'">Details</button>'+shipmentInfo+'</div></td></tr>';
    }).join(""):'<tr><td colspan="9">'+makeEmpty("No matching orders","Try another status or a shorter search term.")+'</td></tr>';
   }
   async function refresh(){
    all=await fetchOrders(null,5000);
    try{
-    const {data,error}=await client.from("admin_shipments").select("id,order_id,courier_name,tracking_id,shipment_status,integration_mode,booking_state,booking_error,provider_order_id,parcel_weight_kg,parcel_notes,created_by").order("updated_at",{ascending:false}).limit(5000);
+    const {data,error}=await client.from("admin_shipments").select("id,order_id,courier_name,tracking_id,shipment_status,integration_mode,booking_state,booking_error,provider_order_id,parcel_weight_kg,parcel_notes,created_by,provider_response").order("updated_at",{ascending:false}).limit(5000);
     if(error)throw error;
     shipmentRows=data||[];shipmentRowsReady=true;shipmentLoadMessage="";
    }catch(err){
@@ -422,6 +458,8 @@ window.HFAdminReady.then(async H=>{
    finally{select.disabled=false;}
   });
   $("ordersDataBody")?.addEventListener("click",async e=>{
+   const sandboxButton=e.target.closest("[data-redx-sandbox-test]");
+   if(sandboxButton){await runRedxSandboxTest(sandboxButton.dataset.redxSandboxTest,sandboxButton);return;}
    const confirmButton=e.target.closest("[data-confirm-book]");
    if(confirmButton){openConfirmBook(confirmButton.dataset.confirmBook);return;}
    const button=e.target.closest("[data-order-details]");if(!button)return;
