@@ -291,269 +291,10 @@ Deno.serve(async (req: Request) => {
     }
 
 
-    // Safe, one-click REDX Sandbox parcel test for one explicitly selected order.
-    // This branch hardcodes the Sandbox host and never uses REDX_BASE_URL, so it cannot create a production shipment.
-    if (action === "sandbox_test_book") {
-      if (provider !== "redx") return reply({ success: false, error: "This quick test is available for REDX Sandbox only." }, 400);
-      const missing = missingSecrets(["REDX_API_TOKEN", "REDX_PICKUP_STORE_ID"]);
-      if (missing.length) return reply({ success: false, error: "Missing Supabase Secrets: " + missing.join(", ") }, 400);
-
-      const sandboxBase = "https://sandbox.redx.com.bd/v1.0.0-beta";
-      const configuredStoreId = Deno.env.get("REDX_PICKUP_STORE_ID")?.trim() || "";
-      if (!/^\d+$/.test(configuredStoreId) || Number(configuredStoreId) <= 0) {
-        return reply({ success: false, error: "REDX_PICKUP_STORE_ID must be a numeric pickup-store ID." }, 400);
-      }
-
-      // Verify this exact store against the Sandbox store list before sending any test parcel.
-      const { response: storeResponse, data: storeData } = await fetchJson(sandboxBase + "/pickup/stores", {
-        method: "GET",
-        headers: redxHeaders(),
-      });
-      if (!storeResponse.ok || providerRejected(storeData, storeResponse.ok)) {
-        return reply({
-          success: false,
-          error: "REDX Sandbox pickup-store check failed (HTTP " + storeResponse.status + "). " + providerError(storeData) + " Confirm REDX_API_TOKEN is a Sandbox token.",
-        }, 502);
-      }
-      const rawStores = Array.isArray(storeData) ? storeData : storeData?.data?.data ?? storeData?.data?.pickup_stores ?? storeData?.pickup_stores ?? storeData?.stores ?? storeData?.data ?? [];
-      const stores = (Array.isArray(rawStores) ? rawStores : []).map((s: any) => ({
-        id: clean(s?.pickup_store_id ?? s?.store_id ?? s?.id, 40),
-        name: clean(s?.pickup_store_name ?? s?.store_name ?? s?.name ?? s?.address, 120),
-      })).filter((s: any) => s.id);
-      const pickupStore = stores.find((s: any) => s.id === configuredStoreId);
-      if (!pickupStore) {
-        const options = stores.map((s: any) => s.id + (s.name ? " — " + s.name : "")).slice(0, 10).join("; ");
-        return reply({
-          success: false,
-          error: "REDX Sandbox did not return pickup store ID " + configuredStoreId + ". The configured ID may be a dashboard/shop ID or belong to another environment. IDs returned by Sandbox: " + (options || "none"),
-        }, 400);
-      }
-
-      const orderId = clean(body?.order_id, 80);
-      if (!/^[0-9a-f-]{36}$/i.test(orderId)) return reply({ success: false, error: "Choose one valid order from the Orders page." }, 400);
-      const { data: order, error: orderError } = await db.from("orders")
-        .select("id,order_number,customer_name,customer_phone,customer_email,delivery_address,total,status,notes,payment_method")
-        .eq("id", orderId).maybeSingle();
-      if (orderError || !order) return reply({ success: false, error: "The selected order was not found. Refresh the Orders page." }, 404);
-      const orderStatus = String(order.status || "").toLowerCase();
-      if (!["pending", "processing"].includes(orderStatus)) {
-        return reply({ success: false, error: "For safety, the REDX Sandbox test is limited to a pending or processing order." }, 400);
-      }
-      if (String(order.payment_method || "cash_on_delivery").toLowerCase() !== "cash_on_delivery") {
-        return reply({ success: false, error: "Only Cash on Delivery orders can be used for this Sandbox test." }, 400);
-      }
-
-      const recipientName = clean(order.customer_name, 100);
-      const phone = normalizePhone(order.customer_phone);
-      const address = clean(order.delivery_address, 250);
-      const total = Number(order.total);
-      if (recipientName.length < 3) return reply({ success: false, error: "The selected order needs a customer name with at least 3 characters." }, 400);
-      if (address.length < 10) return reply({ success: false, error: "The selected order needs a delivery address of at least 10 characters." }, 400);
-      if (!Number.isFinite(total) || total < 0) return reply({ success: false, error: "The selected order has an invalid COD total." }, 400);
-
-      // The Sandbox can expose a test fixture instead of the customer's actual district.
-      // Only select a fixture whose name/district explicitly says Test Area/Test District.
-      const { response: areaResponse, data: areaData } = await fetchJson(sandboxBase + "/areas", {
-        method: "GET",
-        headers: redxHeaders(),
-      });
-      if (!areaResponse.ok || providerRejected(areaData, areaResponse.ok)) {
-        return reply({
-          success: false,
-          error: "REDX Sandbox area-list check failed (HTTP " + areaResponse.status + "). " + providerError(areaData),
-        }, 502);
-      }
-      const rawAreas = Array.isArray(areaData) ? areaData : areaData?.areas ?? areaData?.data?.areas ?? areaData?.data?.data ?? areaData?.data ?? areaData?.results ?? [];
-      const sandboxAreas = (Array.isArray(rawAreas) ? rawAreas : []).map((a: any) => ({
-        id: clean(a?.redx_delivery_area_id ?? a?.area_id ?? a?.delivery_area_id ?? a?.id, 40),
-        name: clean(a?.redx_delivery_area ?? a?.area_name ?? a?.delivery_area ?? a?.name ?? a?.title, 120),
-        district: clean(a?.district_name ?? a?.district ?? a?.districtName, 100),
-      })).filter((a: any) => a.id && a.name);
-      const testArea = sandboxAreas.find((a: any) => /test\s*(area|district)|sandbox/i.test(a.name + " " + a.district));
-      if (!testArea || !Number.isInteger(Number(testArea.id)) || Number(testArea.id) <= 0) {
-        return reply({
-          success: false,
-          error: "REDX Sandbox did not return a recognizable Test Area/Test District fixture. No parcel was submitted. Areas returned: " + (sandboxAreas.map((a: any) => a.name + (a.district ? " (" + a.district + ")" : "")).slice(0, 10).join("; ") || "none"),
-        }, 404);
-      }
-
-      const { data: existingShipment, error: existingError } = await db.from("admin_shipments")
-        .select("*").eq("order_id", order.id).maybeSingle();
-      if (existingError) return reply({ success: false, error: "Could not check the selected order's courier record. Refresh and try again." }, 500);
-      let shipment: any = existingShipment;
-      if (shipment) {
-        const oldState = String(shipment.booking_state || "not_started");
-        const oldCourier = String(shipment.courier_name || "").toLowerCase();
-        if (["in_progress", "succeeded", "unknown"].includes(oldState) ||
-            shipment.integration_mode === "live_api" || ["booked", "picked_up", "in_transit", "delivered", "cancelled", "returned"].includes(String(shipment.shipment_status || ""))) {
-          return reply({ success: false, error: "This order already has a booked, successful or uncertain courier record. Do not submit another parcel; verify that record first." }, 409);
-        }
-        if (oldCourier && !oldCourier.includes("redx") && !oldCourier.includes("manual") && !oldCourier.includes("placeholder")) {
-          return reply({ success: false, error: "This order already has a parcel record for another courier. Do not replace it with the REDX Sandbox test." }, 409);
-        }
-      } else {
-        const { data: createdShipment, error: createShipmentError } = await db.from("admin_shipments").insert({
-          order_id: order.id,
-          courier_name: "REDX",
-          shipment_status: "draft",
-          integration_mode: "api_ready",
-          cod_amount: total,
-          courier_fee: 0,
-          settlement_status: "pending",
-          settled_amount: 0,
-          parcel_weight_kg: 1,
-          parcel_notes: "REDX SANDBOX API TEST ONLY — not a real delivery.",
-          created_by: "halalfoodbd.official@gmail.com",
-          updated_by: "halalfoodbd.official@gmail.com",
-          booking_state: "not_started",
-          booking_error: "",
-          provider_response: {},
-        }).select("*").single();
-        if (createShipmentError || !createdShipment) {
-          return reply({ success: false, error: "Could not create a local test record for this order. Refresh before retrying; no REDX parcel was submitted." }, 409);
-        }
-        shipment = createdShipment;
-      }
-
-      const requestedAt = new Date().toISOString();
-      const priorMeta = shipment.provider_response && typeof shipment.provider_response === "object" ? shipment.provider_response : {};
-      const sandboxMeta = {
-        ...priorMeta,
-        redx_delivery_area_id: Number(testArea.id),
-        redx_delivery_area: testArea.name,
-        redx_sandbox_test_area: true,
-        redx_sandbox_quick_test: true,
-        redx_sandbox_test_only: true,
-        redx_sandbox_pickup_store_id: configuredStoreId,
-        redx_sandbox_test_weight_kg: 1,
-        redx_sandbox_requested_at: requestedAt,
-      };
-      const { data: claim, error: claimError } = await db.from("admin_shipments").update({
-        courier_name: "REDX",
-        integration_mode: "api_ready",
-        booking_state: "in_progress",
-        booking_error: "",
-        booking_requested_at: requestedAt,
-        cod_amount: total,
-        parcel_weight_kg: 1,
-        parcel_notes: "REDX SANDBOX API TEST ONLY — not a real delivery.",
-        provider_response: sandboxMeta,
-        updated_by: "halalfoodbd.official@gmail.com",
-        updated_at: requestedAt,
-      }).eq("id", shipment.id).in("booking_state", ["not_started", "failed"])
-        .neq("integration_mode", "live_api").neq("shipment_status", "booked")
-        .select("id").maybeSingle();
-      if (claimError || !claim) {
-        return reply({ success: false, error: "Another test may already be running, or this order's courier record changed. Refresh and verify the row before retrying." }, 409);
-      }
-
-      const invoice = clean(order.order_number || ("HF-" + String(order.id).replace(/-/g, "").slice(0, 12)), 50);
-      const sandboxInvoice = clean(invoice.slice(0, 46) + "-SBX", 50);
-      const payload: Record<string, unknown> = {
-        customer_name: recipientName,
-        customer_phone: phone,
-        delivery_area: testArea.name,
-        delivery_area_id: Number(testArea.id),
-        customer_address: address,
-        merchant_invoice_id: sandboxInvoice,
-        cash_collection_amount: String(Math.round(total * 100) / 100),
-        parcel_weight: 1000,
-        value: Math.round(total),
-        is_closed_box: false,
-        instruction: "SANDBOX API INTEGRATION TEST ONLY — NOT A REAL DELIVERY.",
-        pickup_store_id: Number(configuredStoreId),
-      };
-
-      let parcelResponse: { response: Response; data: any };
-      try {
-        parcelResponse = await fetchJson(sandboxBase + "/parcel", {
-          method: "POST",
-          headers: redxHeaders(),
-          body: JSON.stringify(payload),
-        });
-      } catch (networkError) {
-        const detail = clean(networkError instanceof Error ? networkError.message : networkError, 220);
-        const displayed = "REDX Sandbox did not return a clear response. Check the Sandbox parcel list before retrying to avoid a duplicate test. " + detail;
-        await db.from("admin_shipments").update({
-          booking_state: "unknown",
-          booking_error: clean(displayed, 350),
-          provider_response: { ...sandboxMeta, outcome: "unknown", error_detail: clean(detail, 250) },
-          updated_at: new Date().toISOString(),
-        }).eq("id", shipment.id);
-        return reply({ success: false, error: displayed }, 502);
-      }
-
-      const { response: parcelHttp, data: parcelData } = parcelResponse;
-      if (!parcelHttp.ok || providerRejected(parcelData, parcelHttp.ok)) {
-        const detail = providerError(parcelData);
-        const ambiguous = parcelHttp.status >= 500;
-        const displayed = "REDX Sandbox rejected the test (HTTP " + parcelHttp.status + "). " + detail +
-          (ambiguous ? " Check the Sandbox parcel list before retrying; the result may be uncertain." : "");
-        await db.from("admin_shipments").update({
-          booking_state: ambiguous ? "unknown" : "failed",
-          booking_error: clean(displayed, 350),
-          provider_response: { ...sandboxMeta, http_status: parcelHttp.status, outcome: ambiguous ? "unknown" : "rejected", error_detail: clean(detail, 300) },
-          updated_at: new Date().toISOString(),
-        }).eq("id", shipment.id);
-        return reply({ success: false, error: clean(displayed, 500), http_status: parcelHttp.status }, 502);
-      }
-
-      const record = providerBookingRecord(parcelData);
-      const providerOrderId = clean(record?.parcel_id ?? record?.id ?? record?.tracking_id ?? record?.tracking_number ?? record?.tracking_code ?? "", 100);
-      const trackingId = clean(record?.tracking_id ?? record?.tracking_number ?? record?.tracking_code ?? parcelData?.tracking_id ?? parcelData?.tracking_number ?? parcelData?.data?.tracking_id ?? providerOrderId, 180);
-      if (!providerOrderId && !trackingId) {
-        await db.from("admin_shipments").update({
-          booking_state: "unknown",
-          booking_error: "REDX Sandbox responded, but no parcel/tracking ID was returned. Check Sandbox before retrying.",
-          provider_response: { ...sandboxMeta, http_status: parcelHttp.status, outcome: "unknown_response", response_status: clean(parcelData?.status ?? parcelData?.data?.status ?? "received", 60) },
-          updated_at: new Date().toISOString(),
-        }).eq("id", shipment.id);
-        return reply({ success: false, error: "REDX Sandbox responded without a parcel/tracking ID. Check the Sandbox parcel list before retrying." }, 502);
-      }
-
-      const saved = {
-        ...sandboxMeta,
-        outcome: "sandbox_test_succeeded",
-        http_status: parcelHttp.status,
-        parcel_id: providerOrderId || null,
-        tracking_id: trackingId || providerOrderId,
-        redx_delivery_area_id: Number(testArea.id),
-        redx_delivery_area: testArea.name,
-        redx_sandbox_test_area: true,
-        redx_sandbox_quick_test: true,
-        redx_sandbox_test_only: true,
-        redx_sandbox_response_status: clean(parcelData?.status ?? parcelData?.data?.status ?? "success", 60),
-      };
-      const { error: saveResultError } = await db.from("admin_shipments").update({
-        provider_order_id: providerOrderId || trackingId,
-        tracking_id: trackingId || providerOrderId,
-        shipment_status: "draft",
-        integration_mode: "api_ready",
-        booking_state: "succeeded",
-        booking_error: "",
-        provider_response: saved,
-        updated_by: "halalfoodbd.official@gmail.com",
-        updated_at: new Date().toISOString(),
-      }).eq("id", shipment.id);
-      if (saveResultError) {
-        console.error("REDX Sandbox accepted a test parcel but local result save failed; order:", invoice);
-        return reply({ success: false, error: "REDX Sandbox may have accepted the test, but the local test result could not be saved. Check the Sandbox parcel list before retrying." }, 500);
-      }
-      return reply({
-        success: true,
-        provider: "REDX Sandbox",
-        sandbox_test_only: true,
-        order_number: invoice,
-        test_area: testArea.name,
-        test_weight_kg: 1,
-        pickup_store_id: configuredStoreId,
-        tracking_id: trackingId || providerOrderId,
-        message: "REDX Sandbox accepted a test parcel. This is not a real delivery and did not mark the customer order as shipped.",
-      });
-    }
-
     if (action === "areas") {
       if (provider !== "redx") return reply({ success: false, error: "Delivery-area lookup is available for REDX only." }, 400);
+      const redxHost = new URL(providerBase("redx")).hostname.toLowerCase();
+      if (redxHost !== "openapi.redx.com.bd") return reply({ success: false, error: "REDX delivery areas are disabled until Production is configured. Set REDX_BASE_URL to https://openapi.redx.com.bd/v1.0.0-beta and use the Production API token." }, 400);
       const missing = missingSecrets(["REDX_API_TOKEN"]);
       if (missing.length) return reply({ success: false, error: "Missing Supabase Secrets: " + missing.join(", ") }, 400);
       const districtName = clean(body?.district_name, 80);
@@ -578,14 +319,14 @@ Deno.serve(async (req: Request) => {
         } catch (networkError) {
           const detail = clean(networkError instanceof Error ? networkError.message : networkError, 220);
           console.error("REDX area API network failure:", JSON.stringify({ district: candidate, error: detail }));
-          return reply({ success: false, error: "Could not reach REDX Sandbox area API for district " + candidate + ". " + (detail || "Network, DNS, TLS or timeout error.") }, 502);
+          return reply({ success: false, error: "Could not reach the REDX Production area API for district " + candidate + ". " + (detail || "Network, DNS, TLS or timeout error.") }, 502);
         }
         const { response, data } = upstream;
         if (!response.ok || providerRejected(data, response.ok)) {
           upstreamIssue = "HTTP " + response.status + ". " + providerError(data);
           console.error("REDX area API rejected the request:", JSON.stringify({ district: candidate, status: response.status, message: clean(providerError(data), 250) }));
           if (response.status === 401 || response.status === 403) {
-            return reply({ success: false, error: "REDX area lookup was rejected (HTTP " + response.status + "). Check that REDX_API_TOKEN is the Sandbox token for the configured Sandbox Base URL. " + providerError(data) }, 502);
+            return reply({ success: false, error: "REDX Production area lookup was rejected (HTTP " + response.status + "). Verify REDX_API_TOKEN is a Production token and the merchant has API access. " + providerError(data) }, 502);
           }
           continue;
         }
@@ -648,25 +389,6 @@ Deno.serve(async (req: Request) => {
               areas = matchedAreas.map((a: any) => ({ id: a.id, name: a.name }));
               resolvedDistrict = districtName;
             } else {
-              const redxSandboxHost = new URL(providerBase("redx")).hostname.toLowerCase() === "sandbox.redx.com.bd";
-              const sandboxTestAreas = redxSandboxHost
-                ? allMapped.filter((a: any) => normalizeDistrict(a.name) === "testdistrict" || normalizeDistrict(a.district) === "testdistrict")
-                : [];
-              if (sandboxTestAreas.length) {
-                console.info("REDX Sandbox test fixture offered for district test:", JSON.stringify({
-                  requestedDistrict: districtName,
-                  availableTestAreas: sandboxTestAreas.map((a: any) => ({ id: a.id, name: a.name })),
-                }));
-                return reply({
-                  success: true,
-                  provider: "REDX",
-                  district_name: districtName,
-                  resolved_district_name: "Test District",
-                  sandbox_test_mode: true,
-                  areas: sandboxTestAreas.map((a: any) => ({ id: a.id, name: a.name, sandbox_test_only: true })),
-                  message: "SANDBOX TEST ONLY: REDX returned a test fixture (" + sandboxTestAreas.map((a: any) => a.name).join(", ") + ") for testing instead of " + districtName + ". Selecting this fixture tests the API integration only; it does not represent the customer's real destination.",
-                });
-              }
               const availableDistricts = Array.from(new Set(allMapped
                 .map((a: any) => clean(a.district, 100))
                 .filter((name: string) => name && !/^\d+$/.test(name))))
@@ -682,7 +404,7 @@ Deno.serve(async (req: Request) => {
               }));
               return reply({
                 success: false,
-                error: "REDX found no active area for district '" + districtName + "'. The unfiltered Sandbox area list was checked (" + allMapped.length + " areas) but no exact district match was found." + hint + " Use the district name for the actual destination; for a Sandbox parcel test, choose a supported test destination rather than a mismatched area.",
+                error: "REDX found no active Production delivery area for district '" + districtName + "'. The unfiltered Production area list was checked (" + allMapped.length + " areas) but no exact district match was found." + hint + " Verify the district spelling and the destination before booking.",
               }, 404);
             }
           } else {
@@ -717,6 +439,10 @@ Deno.serve(async (req: Request) => {
     }
 
     if (!["book", "track"].includes(action)) return reply({ success: false, error: "Unsupported action." }, 400);
+    if (provider === "redx") {
+      const redxHost = new URL(providerBase("redx")).hostname.toLowerCase();
+      if (redxHost !== "openapi.redx.com.bd") return reply({ success: false, error: "REDX live booking and tracking are disabled until Production is configured. Set REDX_BASE_URL to https://openapi.redx.com.bd/v1.0.0-beta and use the Production API token." }, 400);
+    }
     const shipmentId = clean(body?.shipment_id, 80);
     if (!shipmentId) return reply({ success: false, error: "Choose a saved parcel record first." }, 400);
 
