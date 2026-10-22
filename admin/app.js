@@ -282,7 +282,7 @@ window.HFAdminReady.then(async H=>{
   let all=[],activeOrderId=null,shipmentRows=[],shipmentRowsReady=false,shipmentLoadMessage="",redxAreaLookupError="",redxLoadedAreas=[],redxLoadedDistrict="",redxPreferredAreaId="",redxPreferredAreaName="";
   function inferRedxDistrict(address){
    // Division names must not be mistaken for the destination district.
-   const withoutDivision=String(address||"").replace(/\\b[a-z]+\\s+division\\b/gi," ");
+   const withoutDivision=String(address||"").replace(/\b[a-z]+\s+division\b/gi," ");
    const normalized=" "+withoutDivision.toLowerCase().replace(/[^a-z]+/g," ")+" ";
    const districts=["Bagerhat","Bandarban","Barguna","Barishal","Bhola","Bogura","Brahmanbaria","Chandpur","Chapainawabganj","Chuadanga","Cox's Bazar","Cumilla","Dhaka","Dinajpur","Faridpur","Feni","Gaibandha","Gazipur","Gopalganj","Habiganj","Jamalpur","Jashore","Jhalokathi","Jhenaidah","Joypurhat","Khagrachhari","Khulna","Kishoreganj","Kurigram","Kushtia","Lakshmipur","Lalmonirhat","Madaripur","Magura","Manikganj","Meherpur","Moulvibazar","Munshiganj","Mymensingh","Naogaon","Narail","Narayanganj","Narsingdi","Natore","Netrokona","Nilphamari","Noakhali","Pabna","Panchagarh","Patuakhali","Pirojpur","Rajbari","Rajshahi","Rangamati","Rangpur","Satkhira","Shariatpur","Sherpur","Sirajganj","Sunamganj","Sylhet","Tangail","Thakurgaon"];
    return districts.find(name=>normalized.includes(" "+name.toLowerCase().replace(/[^a-z]+/g," ")+" "))||"";
