@@ -15,7 +15,7 @@ function showStatus(message, type = "info") {
   const badge = $("waCredentialsBadge");
   if (badge) {
     badge.textContent = type === "success" ? "Credentials present" : type === "error" ? "Check configuration" : "Setup required";
-    badge.className = "hf-badge" + (type === "success" ? " hf-badge-success" : type === "error" ? " hf-badge-danger" : "");
+    badge.className = "wa-state-badge" + (type === "success" ? " success" : type === "error" ? " error" : "");
   }
 }
 async function invoke(action, payload = {}) {
@@ -164,7 +164,7 @@ function updateComposerState(conversation = selectedConversation()) {
   const badge = $("waReplyWindowBadge");
   if (badge) {
     badge.textContent = !conversation ? "No conversation selected" : windowOpen ? "24-hour reply window open" : "24-hour window closed";
-    badge.className = "hf-badge " + (windowOpen ? "hf-badge-success" : "hf-badge-warning");
+    badge.className = "wa-window-badge" + (windowOpen ? " open" : "");
   }
   const text = $("waMessageText");
   const button = $("waSendBtn");
