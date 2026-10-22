@@ -276,6 +276,7 @@ Deno.serve(async (req: Request) => {
       const invoice = clean(linkedOrder.order_number || ("HF-" + String(linkedOrder.id).replace(/-/g, "").slice(0, 12)), 50);
       let providerStatus = "";
       let trackingData: any = {};
+      let providerHttpStatus = 200;
       if (provider === "steadfast") {
         const { response, data } = await fetchJson(providerBase(provider) + "/status_by_invoice/" + encodeURIComponent(invoice), {
           method: "GET",
@@ -285,8 +286,17 @@ Deno.serve(async (req: Request) => {
             "Accept": "application/json",
           },
         });
+        providerHttpStatus = response.status;
         if (!response.ok || String(data?.status || "").toLowerCase() === "error" || data?.success === false) {
-          return reply({ success: false, error: "Steadfast could not return tracking status. Check the provider dashboard and try again later." }, 502);
+          const detail = providerError(data);
+          const checkedAt = new Date().toISOString();
+          const previous = shipment.provider_response && typeof shipment.provider_response === "object" ? shipment.provider_response : {};
+          await db.from("admin_shipments").update({
+            provider_response: { ...previous, status_sync: { outcome: "error", http_status: response.status, error_detail: clean(detail, 300), checked_at: checkedAt } },
+            updated_by: "halalfoodbd.official@gmail.com",
+            updated_at: checkedAt,
+          }).eq("id", shipmentId);
+          return reply({ success: false, error: "Steadfast status refresh failed (HTTP " + response.status + "). " + detail + " The local parcel status was not changed; verify the Steadfast Merchant Dashboard." }, 502);
         }
         providerStatus = clean(data?.delivery_status ?? data?.data?.delivery_status ?? data?.status_label ?? "", 100);
         trackingData = {
@@ -301,13 +311,24 @@ Deno.serve(async (req: Request) => {
           method: "GET",
           headers: { "Authorization": "Bearer " + token, "Accept": "application/json", "Content-Type": "application/json" },
         });
+        providerHttpStatus = response.status;
         if (!response.ok || data?.type === "error" || (data?.code && Number(data.code) >= 400) || data?.success === false) {
-          return reply({ success: false, error: "Pathao could not return tracking status. Check the provider dashboard and try again later." }, 502);
+          const detail = providerError(data);
+          const checkedAt = new Date().toISOString();
+          const previous = shipment.provider_response && typeof shipment.provider_response === "object" ? shipment.provider_response : {};
+          await db.from("admin_shipments").update({
+            provider_response: { ...previous, status_sync: { outcome: "error", http_status: response.status, error_detail: clean(detail, 300), checked_at: checkedAt } },
+            updated_by: "halalfoodbd.official@gmail.com",
+            updated_at: checkedAt,
+          }).eq("id", shipmentId);
+          return reply({ success: false, error: "Pathao status refresh failed (HTTP " + response.status + "). " + detail + " The local parcel status was not changed; verify the Pathao Merchant Dashboard." }, 502);
         }
         const info = data?.data?.data ?? data?.data ?? data;
-        providerStatus = clean(info?.order_status ?? info?.delivery_status ?? info?.status ?? "", 100);
+        // Prefer Pathao's status slug when available; it is the most useful value for mapping terminal states such as cancelled.
+        providerStatus = clean(info?.order_status_slug ?? info?.status_slug ?? info?.order_status ?? info?.delivery_status ?? info?.status ?? "", 100);
         trackingData = {
           provider_status: providerStatus,
+          provider_status_slug: clean(info?.order_status_slug ?? info?.status_slug ?? "", 100),
           tracking_code: clean(info?.tracking_code ?? info?.consignment_id ?? shipment.tracking_id ?? "", 180),
           consignment_id: clean(info?.consignment_id ?? shipment.provider_order_id ?? "", 100),
         };
@@ -318,7 +339,12 @@ Deno.serve(async (req: Request) => {
       const now = new Date().toISOString();
       const existingMeta = shipment.provider_response && typeof shipment.provider_response === "object" ? shipment.provider_response : {};
       const patch: Record<string, unknown> = {
-        provider_response: { ...existingMeta, ...trackingData, status_checked_at: now },
+        provider_response: {
+          ...existingMeta,
+          ...trackingData,
+          status_checked_at: now,
+          status_sync: { outcome: "success", http_status: providerHttpStatus, provider_status: providerStatus || null, mapped_status: mapped, checked_at: now },
+        },
         updated_by: "halalfoodbd.official@gmail.com",
         updated_at: now,
       };
@@ -334,7 +360,7 @@ Deno.serve(async (req: Request) => {
         mapped_status: mapped,
         shipment_status: nextStatus,
         updated: nextStatus !== shipment.shipment_status,
-        message: mapped ? "Courier tracking status refreshed." : "Courier responded, but the status was not recognised; the saved shipment status was left unchanged.",
+        message: mapped ? "Courier tracking status refreshed." : "Courier responded, but the status was not recognised; the saved shipment status was left unchanged. The provider status and response were saved for diagnosis.",
       });
     }
     if (shipment.booking_state === "succeeded" || shipment.integration_mode === "live_api" || shipment.shipment_status === "booked") {
@@ -415,9 +441,12 @@ Deno.serve(async (req: Request) => {
         if (providerRejected(data, response.ok)) {
           const detail = providerError(data);
           const ambiguous = response.status >= 500;
-          const displayed = ambiguous
-            ? "Steadfast returned HTTP " + response.status + ". " + detail + " Check the merchant dashboard before retrying; the booking outcome may be uncertain."
-            : "Steadfast rejected the booking (HTTP " + response.status + "). " + detail;
+          const inactiveAccount = /account is not active/i.test(detail);
+          const displayed = inactiveAccount
+            ? "Steadfast rejected API booking (HTTP " + response.status + "): the merchant account is not active for API-created shipments. This is a Steadfast account/API activation issue, not an address-format problem. Ask Steadfast support to confirm API booking activation; do not retry until they confirm."
+            : ambiguous
+              ? "Steadfast returned HTTP " + response.status + ". " + detail + " Check the merchant dashboard before retrying; the booking outcome may be uncertain."
+              : "Steadfast rejected the booking (HTTP " + response.status + "). " + detail;
           await db.from("admin_shipments").update({
             booking_state: ambiguous ? "unknown" : "failed",
             booking_error: clean(displayed, 350),
