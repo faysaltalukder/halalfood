@@ -279,7 +279,12 @@ window.HFAdminReady.then(async H=>{
   bindRangeControls(()=>refresh());await refresh();attachRefresh(refresh);
  }
  async function initOrders(){
-  let all=[],activeOrderId=null,shipmentRows=[],shipmentRowsReady=false,shipmentLoadMessage="",redxAreaLookupError="",redxLoadedAreas=[];
+  let all=[],activeOrderId=null,shipmentRows=[],shipmentRowsReady=false,shipmentLoadMessage="",redxAreaLookupError="",redxLoadedAreas=[],redxLoadedDistrict="",redxPreferredAreaId="",redxPreferredAreaName="";
+  function inferRedxDistrict(address){
+   const normalized=" "+String(address||"").toLowerCase().replace(/[^a-z]+/g," ")+" ";
+   const districts=["Bagerhat","Bandarban","Barguna","Barishal","Bhola","Bogura","Brahmanbaria","Chandpur","Chapainawabganj","Chuadanga","Cox's Bazar","Cumilla","Dhaka","Dinajpur","Faridpur","Feni","Gaibandha","Gazipur","Gopalganj","Habiganj","Jamalpur","Jashore","Jhalokathi","Jhenaidah","Joypurhat","Khagrachhari","Khulna","Kishoreganj","Kurigram","Kushtia","Lakshmipur","Lalmonirhat","Madaripur","Magura","Manikganj","Meherpur","Moulvibazar","Munshiganj","Mymensingh","Naogaon","Narail","Narayanganj","Narsingdi","Natore","Netrokona","Nilphamari","Noakhali","Pabna","Panchagarh","Patuakhali","Pirojpur","Rajbari","Rajshahi","Rangamati","Rangpur","Satkhira","Shariatpur","Sherpur","Sirajganj","Sunamganj","Sylhet","Tangail","Thakurgaon"];
+   return districts.find(name=>normalized.includes(" "+name.toLowerCase().replace(/[^a-z]+/g," ")+" "))||"";
+  }
   const courierCode=value=>{const v=String(value||"").toLowerCase();return v.includes("steadfast")?"steadfast":v.includes("pathao")?"pathao":v.includes("redx")?"redx":"";};
   const courierLabel=value=>value==="steadfast"?"Steadfast":value==="pathao"?"Pathao":"REDX";
   const shipmentFor=orderId=>shipmentRows.find(row=>row.order_id===orderId)||null;
@@ -288,59 +293,72 @@ window.HFAdminReady.then(async H=>{
    const provider=$("confirmBookProvider").value,needsWeight=provider==="pathao"||provider==="redx";
    $("confirmBookWeightField").style.display=needsWeight?"grid":"none";
    $("confirmBookRedxAreasBlock").style.display=provider==="redx"?"grid":"none";
-   $("confirmBookWeightHint").textContent=provider==="pathao"?"Pathao requires 0.5–10 kg. Use a realistic packed weight.":provider==="redx"?"Enter the packed parcel weight in kilograms. REDX booking also requires an exact delivery area and configured pickup store.":"Enter a realistic packed weight.";
+   $("confirmBookWeightHint").textContent=provider==="pathao"?"Enter the packed parcel weight in kilograms (0.5–10 kg).":provider==="redx"?"Enter the actual packed parcel weight in kilograms (0.1–10 kg). The system converts it for REDX automatically.":"Enter the actual packed parcel weight.";
    $("confirmBookProviderHint").textContent=provider==="steadfast"
     ?"Steadfast API booking is blocked until the merchant account/API permission is activated."
     :provider==="pathao"
-      ?"Pathao requires a packed weight from 0.5 to 10 kg. Confirm the full address, area/upazila and district."
+      ?"Check the customer’s full address and packed weight before booking."
       :provider==="redx"
-        ?"REDX needs a pickup store configured in Supabase and the exact destination area returned by REDX. Loading areas does not create a parcel; booking can create a real shipment."
-        :"Choose the courier. Confirming booking sends order/customer details to the selected courier.";
+        ?"1. Enter the customer’s district and find areas. 2. Select the matching delivery area—the Area ID is assigned automatically. 3. Confirm only after the customer and parcel details are correct."
+        :"Choose the courier and review the details. Confirming creates a real courier booking.";
+   if(provider==="redx"){
+    const district=$("confirmBookRedxDistrict").value.trim();
+    if(district.length>=2&&redxLoadedDistrict.toLowerCase()!==district.toLowerCase())void loadConfirmBookRedxAreas();
+   }
   }
   async function loadConfirmBookRedxAreas(){
-   const button=$("confirmBookRedxLoadAreas"),district=$("confirmBookRedxDistrict").value.trim(),nameInput=$("confirmBookRedxAreaName"),areaIdInput=$("confirmBookRedxAreaId"),list=$("confirmBookRedxAreasList"),priorName=nameInput.value.trim(),priorId=areaIdInput.value.trim();
+   const button=$("confirmBookRedxLoadAreas"),district=$("confirmBookRedxDistrict").value.trim(),select=$("confirmBookRedxArea"),priorId=String(select.value||redxPreferredAreaId||"");
    button.disabled=true;$("confirmBookFormError").textContent="";redxAreaLookupError="";
+   select.disabled=true;
    try{
-    if(district.length<2)throw new Error("Enter the destination district in English first.");
+    if(district.length<2)throw new Error("Enter the customer’s destination district in English first (for example, Patuakhali).");
     const {data,error}=await client.functions.invoke("courier-integration",{body:{action:"areas",provider:"redx",district_name:district}});
     if(error){
-     let message=error.message||"REDX area lookup failed.";
+     let message=error.message||"Could not load REDX delivery areas.";
      try{if(error.context&&typeof error.context.clone==="function"){const payload=await error.context.clone().json();message=payload?.error||payload?.message||message;}}catch(_){}
      throw new Error(message);
     }
     if(!data?.success)throw new Error(data?.error||"Could not load REDX delivery areas.");
-    redxLoadedAreas=(Array.isArray(data.areas)?data.areas:[]).map(a=>({id:String(a?.id??"").trim(),name:String(a?.name??"").trim(),sandbox_test_only:a?.sandbox_test_only===true})).filter(a=>a.id&&a.name);
-    list.innerHTML=redxLoadedAreas.map(a=>'<option value="'+esc(a.name)+'"></option>').join("");
-    if(!redxLoadedAreas.length)throw new Error(data.message||"No areas returned. Try the official English district spelling, or enter the exact area name and ID manually.");
-    const match=redxLoadedAreas.find(a=>a.id===priorId&&a.name.toLowerCase()===priorName.toLowerCase())||redxLoadedAreas.find(a=>a.name.toLowerCase()===priorName.toLowerCase());
-    const chosen=match||(redxLoadedAreas.length===1?redxLoadedAreas[0]:null);
+    if(String(data.api_environment||"").toLowerCase()==="sandbox"||data.sandbox_test_mode===true)throw new Error("REDX is returning Sandbox data. Ask the administrator to verify REDX_BASE_URL and the Production API token before booking a real parcel.");
+    redxLoadedAreas=(Array.isArray(data.areas)?data.areas:[]).map(a=>({id:String(a?.id??"").trim(),name:String(a?.name??"").trim(),sandbox_test_only:a?.sandbox_test_only===true})).filter(a=>a.id&&a.name&&!a.sandbox_test_only);
+    if(!redxLoadedAreas.length)throw new Error(data.message||"REDX did not return any active areas for this district. Check the spelling or Production API access.");
+    redxLoadedDistrict=district;
+    select.innerHTML='<option value="">Select the customer’s delivery area</option>'+redxLoadedAreas.map(a=>'<option value="'+esc(a.id)+'" data-area-name="'+esc(a.name)+'">'+esc(a.name)+'</option>').join("");
+    const preferred=redxLoadedAreas.find(a=>a.id===priorId)||redxLoadedAreas.find(a=>a.name.toLowerCase()===redxPreferredAreaName.toLowerCase());
+    const chosen=preferred||(redxLoadedAreas.length===1?redxLoadedAreas[0]:null);
     if(chosen){
-     nameInput.value=chosen.name;areaIdInput.value=chosen.id;
-     nameInput.dataset.sandboxTestOnly=chosen.sandbox_test_only?"true":"false";
-     $("confirmBookRedxAreaHint").textContent=chosen.sandbox_test_only?"Loaded Sandbox test area: "+chosen.name+" (ID "+chosen.id+"). This is not the real destination.":"Area list loaded; "+chosen.name+" has ID "+chosen.id+". Verify it matches the customer's destination.";
+     select.value=chosen.id;redxPreferredAreaId=chosen.id;redxPreferredAreaName=chosen.name;
+     $("confirmBookRedxAreaHint").textContent="Selected area: "+chosen.name+". Its REDX Area ID has been assigned automatically.";
     }else{
-     $("confirmBookRedxAreaHint").textContent="Loaded "+redxLoadedAreas.length+" areas. Type an area name or choose a suggestion; its ID will fill automatically.";
+     select.value="";$("confirmBookRedxAreaHint").textContent=redxLoadedAreas.length+" areas found. Choose the one matching the customer’s actual destination.";
     }
    }catch(err){
+    redxLoadedAreas=[];redxLoadedDistrict="";
+    select.innerHTML='<option value="">Areas not loaded — try again</option>';select.value="";
     redxAreaLookupError=err.message||"REDX area lookup failed.";
-    $("confirmBookFormError").textContent="REDX area loading failed: "+redxAreaLookupError;
-    $("confirmBookRedxAreaHint").textContent="Area lookup failed. You can still enter the exact area name and Area ID manually, but REDX may reject an invalid pair.";
-   }finally{button.disabled=false;}
+    $("confirmBookFormError").textContent=redxAreaLookupError;
+    $("confirmBookRedxAreaHint").textContent="Areas could not be loaded. Check the district and Production API connection in Operations Center.";
+   }finally{
+    button.disabled=false;select.disabled=false;
+   }
   }
   $("confirmBookRedxLoadAreas")?.addEventListener("click",loadConfirmBookRedxAreas);
-  $("confirmBookRedxAreaName")?.addEventListener("input",()=>{
-   const name=$("confirmBookRedxAreaName").value.trim();
-   const match=redxLoadedAreas.find(a=>a.name.toLowerCase()===name.toLowerCase());
-   if(match){
-    $("confirmBookRedxAreaId").value=match.id;
-    $("confirmBookRedxAreaName").dataset.sandboxTestOnly=match.sandbox_test_only?"true":"false";
-    $("confirmBookRedxAreaHint").textContent=match.sandbox_test_only?"Sandbox test area selected. It is not the customer's real destination.":"Matched the loaded REDX area; confirm the ID and destination.";
-   }else{
-    $("confirmBookRedxAreaName").dataset.sandboxTestOnly=/^(test area|test district)$/i.test(name)?"true":"false";
-    $("confirmBookRedxAreaHint").textContent=name?"Manual area entry: enter the exact numeric REDX Area ID from REDX's API response. The area name alone is not enough.":"Load area suggestions or enter the exact name and ID manually.";
+  $("confirmBookRedxArea")?.addEventListener("change",()=>{
+   const chosen=redxLoadedAreas.find(a=>a.id===String($("confirmBookRedxArea").value||""));
+   redxPreferredAreaId=chosen?.id||"";redxPreferredAreaName=chosen?.name||"";
+   $("confirmBookRedxAreaHint").textContent=chosen
+    ?"Selected destination: "+chosen.name+". REDX Area ID is handled automatically."
+    :"Select the delivery area matching the customer’s address.";
+  });
+  $("confirmBookRedxDistrict")?.addEventListener("change",()=>{
+   const district=$("confirmBookRedxDistrict").value.trim();
+   if(district.toLowerCase()!==redxLoadedDistrict.toLowerCase()){
+    redxLoadedAreas=[];redxLoadedDistrict="";redxPreferredAreaId="";redxPreferredAreaName="";
+    $("confirmBookRedxArea").innerHTML='<option value="">Load areas for this district first</option>';
+    $("confirmBookRedxArea").value="";
+    $("confirmBookRedxAreaHint").textContent="Find areas for the customer’s district, then select the matching delivery area.";
    }
   });
-  $("confirmBookProvider")?.addEventListener("change",updateConfirmBookProviderFields);
   function openConfirmBook(orderId){
    redxAreaLookupError="";
    const order=all.find(row=>row.id===orderId);
@@ -358,13 +376,12 @@ window.HFAdminReady.then(async H=>{
    $("confirmBookWeight").value=existing?.parcel_weight_kg||"";
    $("confirmBookNotes").value=existing?.parcel_notes||"";
    const meta=existing?.provider_response&&typeof existing.provider_response==="object"?existing.provider_response:{};
-   $("confirmBookRedxDistrict").value=meta.redx_delivery_district||"";
-   redxLoadedAreas=[];
-   $("confirmBookRedxAreasList").innerHTML="";
-   $("confirmBookRedxAreaName").value=meta.redx_delivery_area||"";
-   $("confirmBookRedxAreaId").value=meta.redx_delivery_area_id||"";
-   $("confirmBookRedxAreaName").dataset.sandboxTestOnly=meta.redx_sandbox_test_area?"true":"false";
-   $("confirmBookRedxAreaHint").textContent=meta.redx_delivery_area?"Saved area loaded. If needed, load the REDX area list or enter the exact area name and ID manually.":"Load areas to get suggestions, or enter an exact area name and ID manually.";
+   $("confirmBookRedxDistrict").value=meta.redx_delivery_district||inferRedxDistrict(order.delivery_address)||"";
+   redxLoadedAreas=[];redxLoadedDistrict="";
+   redxPreferredAreaId=String(meta.redx_delivery_area_id||"");redxPreferredAreaName=String(meta.redx_delivery_area||"");
+   $("confirmBookRedxArea").innerHTML='<option value="">Load areas for the customer’s district first</option>';
+   $("confirmBookRedxArea").value="";
+   $("confirmBookRedxAreaHint").textContent=redxPreferredAreaName?"Saved delivery area: "+redxPreferredAreaName+". Load areas to verify it and assign its ID automatically.":"Enter the customer’s district and find areas, then select the correct destination.";
    $("confirmBookCustomerCheck").checked=false;
    $("confirmBookFormError").textContent="";
    updateConfirmBookProviderFields();
@@ -400,55 +417,21 @@ window.HFAdminReady.then(async H=>{
    $("ordersFoundCount").textContent=rows.length.toLocaleString("en-BD")+" orders";
    $("ordersDataBody").innerHTML=rows.length?rows.map(o=>{
     const shipment=shipmentFor(o.id),locked=courierBookingLocked(shipment),eligible=["pending","processing"].includes(o.status);
-    let courierAction="",sandboxTestAction="";
+    let courierAction="";
     if(eligible&&shipmentRowsReady&&!locked&&String(o.payment_method||"cash_on_delivery").toLowerCase()==="cash_on_delivery"){
-     sandboxTestAction='<button class="hf-button hf-button-secondary hf-button-small" data-redx-sandbox-test="'+esc(o.id)+'" title="Creates one test parcel in REDX Sandbox only">REDX Sandbox Test</button>';
-    }
-    if(eligible&&shipmentRowsReady&&!locked){
-     const label=shipment?.booking_state==="failed"?"Retry courier booking":o.status==="pending"?"Confirm & Book":"Book Courier";
+     const label=shipment?.booking_state==="failed"?"Resolve issue & retry":o.status==="pending"?"Confirm & Book":"Book Courier";
      courierAction='<button class="hf-button hf-button-primary hf-button-small" data-confirm-book="'+esc(o.id)+'">'+label+'</button>';
     }else if(eligible&&!shipmentRowsReady){
-     courierAction='<button class="hf-button hf-button-secondary hf-button-small" type="button" disabled title="Refresh to verify current courier state">Courier state unavailable</button>';
+     courierAction='<span class="hf-status hf-status-review">Courier state unavailable</span>';
     }else if(locked){
-     const state=shipment.booking_state==="unknown"?"Unknown — verify provider":shipment.booking_state==="in_progress"?"Booking in progress":shipment.booking_state==="succeeded"?"API booking succeeded":"Courier record is locked";
-     courierAction='<span class="hf-status hf-status-review">'+esc(state)+'</span><a class="hf-button hf-button-secondary hf-button-small" href="./operations.html">Review</a>';
+     const legacyTest=shipment.provider_response?.redx_sandbox_test_area===true||shipment.provider_response?.redx_sandbox_quick_test===true;
+     const state=legacyTest?"Legacy courier record — verify with REDX":shipment.booking_state==="unknown"?"Booking outcome uncertain — verify with courier":shipment.booking_state==="in_progress"?"Booking in progress":shipment.booking_state==="succeeded"?"Booking succeeded":shipment.booking_state==="failed"?"Booking failed":"Courier record locked";
+     courierAction='<span class="hf-status hf-status-review">'+esc(state)+'</span>';
     }
-    const sandboxTest=shipment?.provider_response?.redx_sandbox_quick_test===true;
-    const stateText=shipment?(shipment.booking_error||(sandboxTest&&shipment.booking_state==="succeeded"?"REDX Sandbox test succeeded":sandboxTest&&shipment.booking_state==="in_progress"?"REDX Sandbox test in progress":sandboxTest&&shipment.booking_state==="unknown"?"REDX Sandbox result uncertain — verify first":shipment.booking_state==="failed"?"Booking failed":shipment.booking_state==="succeeded"?"Booking succeeded":shipment.booking_state==="unknown"?"Verify with provider":shipment.booking_state==="in_progress"?"Booking in progress":"Not booked")):"";
+    const stateText=shipment?(shipment.booking_error||(shipment.booking_state==="failed"?"Booking failed":shipment.booking_state==="succeeded"?"Booking succeeded":shipment.booking_state==="unknown"?"Verify with courier":shipment.booking_state==="in_progress"?"Booking in progress":"Not booked")):"";
     const shipmentInfo=shipment?'<small style="display:block;white-space:normal;min-width:150px">'+esc(shipment.courier_name||"Courier")+': '+esc(stateText)+'</small>':"";
-    return '<tr><td><strong>'+esc(o.order_number||String(o.id).slice(0,8))+'</strong><small>'+esc(String(o.id).slice(0,8))+'</small></td><td><strong>'+esc(o.customer_name||"Guest")+'</strong><small>'+esc(o.customer_phone||"No phone")+'</small></td><td>'+esc((o.order_items||[]).slice(0,2).map(x=>x.product_name+" × "+x.quantity+" "+(x.unit||"")).join(", ")||"No item detail")+'</td><td>'+money(o.subtotal)+'</td><td>'+money(o.delivery_charge)+'</td><td><strong>'+money(o.total)+'</strong></td><td><select class="hf-select order-status-select" data-order-id="'+esc(o.id)+'" style="min-width:120px;padding:7px;font-size:11px">'+statusOptions.map(s=>'<option value="'+s+'" '+(s===o.status?"selected ":"")+(o.status==="cancelled"&&s!=="cancelled"?"disabled ":"")+'>'+s.charAt(0).toUpperCase()+s.slice(1)+'</option>').join("")+'</select>'+(o.status==="cancelled"&&o.cancellation_reason?'<small>'+esc(o.cancellation_reason)+'</small>':"")+'</td><td>'+dateTime(o.ordered_at)+'</td><td><div class="hf-table-actions" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">'+courierAction+sandboxTestAction+'<button class="hf-button hf-button-secondary hf-button-small" data-order-details="'+esc(o.id)+'">Details</button>'+shipmentInfo+'</div></td></tr>';
+    return '<tr><td><strong>'+esc(o.order_number||String(o.id).slice(0,8))+'</strong><small>'+esc(String(o.id).slice(0,8))+'</small></td><td><strong>'+esc(o.customer_name||"Guest")+'</strong><small>'+esc(o.customer_phone||"No phone")+'</small></td><td>'+esc((o.order_items||[]).slice(0,2).map(x=>x.product_name+" × "+x.quantity+" "+(x.unit||"")).join(", ")||"No item detail")+'</td><td>'+money(o.subtotal)+'</td><td>'+money(o.delivery_charge)+'</td><td><strong>'+money(o.total)+'</strong></td><td><select class="hf-select order-status-select" data-order-id="'+esc(o.id)+'" style="min-width:120px;padding:7px;font-size:11px">'+statusOptions.map(s=>'<option value="'+s+'" '+(s===o.status?"selected ":"")+(o.status==="cancelled"&&s!=="cancelled"?"disabled ":"")+'>'+s.charAt(0).toUpperCase()+s.slice(1)+'</option>').join("")+'</select>'+(o.status==="cancelled"&&o.cancellation_reason?'<small>'+esc(o.cancellation_reason)+'</small>':"")+'</td><td>'+dateTime(o.ordered_at)+'</td><td><div class="hf-table-actions" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">'+courierAction+'<button class="hf-button hf-button-secondary hf-button-small" data-order-details="'+esc(o.id)+'">Details</button>'+shipmentInfo+'</div></td></tr>';
    }).join(""):'<tr><td colspan="9">'+makeEmpty("No matching orders","Try another status or a shorter search term.")+'</td></tr>';
-  }
-  async function runRedxSandboxTest(orderId,button){
-   const order=all.find(row=>row.id===orderId);
-   if(!order){toast("Order not found. Refresh the Orders page.","error");return;}
-   if(!["pending","processing"].includes(order.status)){toast("REDX Sandbox Test is only available for a pending or processing order.","error");return;}
-   if(String(order.payment_method||"cash_on_delivery").toLowerCase()!=="cash_on_delivery"){toast("Only Cash on Delivery orders can be used for this test.","error");return;}
-   if(!shipmentRowsReady){toast("Courier records could not be verified. Refresh and try again.","error");return;}
-   if(courierBookingLocked(shipmentFor(order.id))){toast("This order already has a successful or uncertain courier result. Verify it before sending another request.","error");return;}
-   const orderLabel=order.order_number||String(order.id).slice(0,8);
-   const accepted=confirm("REDX SANDBOX API TEST — NOT A REAL DELIVERY\n\nOrder: "+orderLabel+"\nTotal: "+money(order.total)+" COD reference\n\nThis sends this order’s name, phone, address and amount to REDX Sandbox only. The system will use a Sandbox test area and 1 kg test weight. It will not create a real delivery or change the order status.\n\nSend one Sandbox test parcel now?");
-   if(!accepted)return;
-   const originalText=button?.textContent||"REDX Sandbox Test";
-   if(button){button.disabled=true;button.textContent="Testing REDX Sandbox…";}
-   try{
-    const {data,error}=await client.functions.invoke("courier-integration",{body:{action:"sandbox_test_book",provider:"redx",order_id:order.id}});
-    if(error){
-     let message=error.message||"REDX Sandbox test failed.";
-     try{if(error.context&&typeof error.context.clone==="function"){const payload=await error.context.clone().json();message=payload?.error||payload?.message||message;}}catch(_){}
-     throw new Error(message);
-    }
-    if(!data?.success)throw new Error(data?.error||"REDX Sandbox did not confirm the test parcel.");
-    try{await audit("redx_sandbox_test_succeeded","shipment",order.id,"REDX Sandbox accepted a test parcel; no real delivery was booked",{order_number:orderLabel,tracking_id:data.tracking_id||null,sandbox_test_only:true});}catch(auditError){console.warn("Sandbox test succeeded, but audit logging failed.",auditError);}
-    toast("REDX Sandbox test succeeded · Test reference: "+(data.tracking_id||"check the Sandbox dashboard"),"success");
-    await refresh();
-   }catch(err){
-    const message=err?.message||"REDX Sandbox test failed.";
-    toast("REDX Sandbox test failed: "+message,"error");
-    try{await refresh();}catch(_){}
-   }finally{
-    if(button){button.disabled=false;button.textContent=originalText;}
-   }
   }
   async function refresh(){
    all=await fetchOrders(null,5000);
@@ -485,8 +468,6 @@ window.HFAdminReady.then(async H=>{
    finally{select.disabled=false;}
   });
   $("ordersDataBody")?.addEventListener("click",async e=>{
-   const sandboxButton=e.target.closest("[data-redx-sandbox-test]");
-   if(sandboxButton){await runRedxSandboxTest(sandboxButton.dataset.redxSandboxTest,sandboxButton);return;}
    const confirmButton=e.target.closest("[data-confirm-book]");
    if(confirmButton){openConfirmBook(confirmButton.dataset.confirmBook);return;}
    const button=e.target.closest("[data-order-details]");if(!button)return;
@@ -516,9 +497,11 @@ window.HFAdminReady.then(async H=>{
     if(!$("confirmBookCustomerCheck").checked)throw new Error("Confirm that you have contacted the customer and verified the order details.");
     const weightRaw=$("confirmBookWeight").value.trim(),weight=weightRaw===""?null:Number(weightRaw);
     if(provider==="pathao"&&(!Number.isFinite(weight)||weight<0.5||weight>10))throw new Error("For Pathao, enter a realistic packed weight between 0.5 kg and 10 kg.");
-    if(provider==="redx"&&(!Number.isFinite(weight)||weight<=0||weight>10))throw new Error("For REDX, enter a packed parcel weight greater than 0 and no more than 10 kg.");
-    const redxAreaName=String($("confirmBookRedxAreaName").value||"").trim(),redxAreaId=Number($("confirmBookRedxAreaId").value),redxAreaIdText=String($("confirmBookRedxAreaId").value||"").trim(),redxSandboxTestOnly=$("confirmBookRedxAreaName").dataset.sandboxTestOnly==="true"||/^(test area|test district)$/i.test(redxAreaName);
-    if(provider==="redx"&&(!Number.isInteger(redxAreaId)||redxAreaId<=0||!redxAreaIdText||!redxAreaName)){throw new Error("Enter a REDX delivery area name and its exact numeric Area ID. Load the REDX area list to fill the ID automatically, or enter both values from REDX's API response. An area name alone cannot be booked.");}
+    if(provider==="redx"&&(!Number.isFinite(weight)||weight<0.1||weight>10))throw new Error("For REDX, enter a packed parcel weight between 0.1 kg and 10 kg.");
+    const areaSelect=$("confirmBookRedxArea"),selectedRedxArea=redxLoadedAreas.find(a=>a.id===String(areaSelect.value||""));
+    const redxAreaName=selectedRedxArea?.name||"",redxAreaId=Number(selectedRedxArea?.id||0);
+    if(provider==="redx"&&(!selectedRedxArea||!Number.isInteger(redxAreaId)||redxAreaId<=0||selectedRedxArea.sandbox_test_only))throw new Error("Load the Production REDX delivery areas and select the correct area for the customer’s address. Area IDs are assigned automatically.");
+    if(provider==="redx"&&redxLoadedDistrict.toLowerCase()!==String($("confirmBookRedxDistrict").value||"").trim().toLowerCase())throw new Error("The destination district changed. Reload the delivery areas before booking.");
     const recipientAddress=String($("confirmBookAddress").value||"").trim();
     if(recipientAddress.length<10)throw new Error("The saved address is too short. Enter the full house/road or village, area/upazila and district address (at least 10 characters).");
     if(recipientAddress.length>250)throw new Error("The delivery address must be 250 characters or fewer.");
@@ -532,7 +515,7 @@ window.HFAdminReady.then(async H=>{
     if(existingError)throw new Error("Could not verify whether this order already has a courier parcel. Refresh and retry.");
     if(courierBookingLocked(existing))throw new Error("A courier booking already exists or its result is uncertain. Verify the courier dashboard before retrying; duplicate booking is blocked.");
     const providerName=courierLabel(provider);
-    const confirmMessage=(redxSandboxTestOnly?"REDX SANDBOX TEST — NOT A REAL DELIVERY":"REAL COURIER BOOKING — "+providerName)+"\n\nOrder: "+(freshOrder.order_number||String(freshOrder.id).slice(0,8))+"\nCustomer: "+(freshOrder.customer_name||"Customer")+"\nPhone: "+(freshOrder.customer_phone||"Not recorded")+"\nFull address: "+recipientAddress+"\nCOD to collect: "+money(freshOrder.total)+(["pathao","redx"].includes(provider)?"\nPacked weight: "+weight+" kg":"")+(provider==="redx"?"\nREDX delivery area: "+redxAreaName+" (ID "+redxAreaId+")":"")+"\n\n"+(redxSandboxTestOnly?"WARNING: This uses a REDX Sandbox test-area fixture, which may not match the customer's actual destination. The Sandbox call is for API testing only and must not be used for a real delivery.":"This sends customer/order details to "+providerName+" and can create a real courier shipment. Halal Food cannot cancel the courier booking from this page yet. Continue only if you intentionally want a live booking.");
+    const confirmMessage="CREATE REAL COURIER BOOKING — "+providerName+"\n\nOrder: "+(freshOrder.order_number||String(freshOrder.id).slice(0,8))+"\nCustomer: "+(freshOrder.customer_name||"Customer")+"\nPhone: "+(freshOrder.customer_phone||"Not recorded")+"\nFull address: "+recipientAddress+"\nCOD to collect: "+money(freshOrder.total)+(["pathao","redx"].includes(provider)?"\nPacked weight: "+weight+" kg":"")+(provider==="redx"?"\nREDX delivery area: "+redxAreaName:"")+"\n\nThis sends customer/order details to "+providerName+" and may create a real shipment. Check the details carefully. Courier cancellation is not available inside this page. Continue with the real booking?";
     if(!confirm(confirmMessage))return;
     if(String(freshOrder.delivery_address||"").trim()!==recipientAddress){
      const {error:addressError}=await client.rpc("admin_update_order_delivery_address",{p_order_id:orderId,p_delivery_address:recipientAddress});
@@ -551,7 +534,7 @@ window.HFAdminReady.then(async H=>{
      parcel_weight_kg:["pathao","redx"].includes(provider)?weight:null,parcel_notes:$("confirmBookNotes").value.trim(),
      created_by:existing?.created_by||H.ADMIN_EMAIL,updated_by:H.ADMIN_EMAIL,
      booking_state:existing?.booking_state==="failed"?"failed":"not_started",booking_error:"",booking_requested_at:null,
-     provider_order_id:null,provider_response:provider==="redx"?{redx_delivery_area_id:redxAreaId,redx_delivery_area:redxAreaName,redx_delivery_district:$("confirmBookRedxDistrict").value.trim(),redx_sandbox_test_area:redxSandboxTestOnly,redx_area_manual_entry:!redxLoadedAreas.some(a=>a.id===redxAreaIdText&&a.name.toLowerCase()===redxAreaName.toLowerCase())}:{}
+     provider_order_id:null,provider_response:provider==="redx"?{redx_delivery_area_id:redxAreaId,redx_delivery_area:redxAreaName,redx_delivery_district:$("confirmBookRedxDistrict").value.trim(),redx_sandbox_test_area:false}:{}
     };
     let shipmentId="";
     if(existing){
