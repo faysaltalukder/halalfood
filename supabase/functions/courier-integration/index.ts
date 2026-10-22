@@ -609,8 +609,6 @@ Deno.serve(async (req: Request) => {
         trackingId = clean(d?.tracking_code ?? d?.consignment_id ?? d?.order_id ?? "", 180);
       } else {
         const redxPickupStoreId = Number(Deno.env.get("REDX_PICKUP_STORE_ID"));
-        const itemRows = Array.isArray(items) ? items : [];
-        const description = itemRows.map((item: any) => clean(item?.product_name, 70)).filter(Boolean).join(", ").slice(0, 250);
         const payload: Record<string, unknown> = {
           customer_name: recipientName,
           customer_phone: phone,
@@ -620,11 +618,11 @@ Deno.serve(async (req: Request) => {
           merchant_invoice_id: invoice,
           cash_collection_amount: Math.round(total * 100) / 100,
           parcel_weight: weight,
-          declared_value: Math.round(total * 100) / 100,
+          value: Math.round(total * 100) / 100,
+          is_closed_box: false,
           instruction: clean([shipment.parcel_notes, order.notes].filter(Boolean).join(" · "), 250),
           pickup_store_id: redxPickupStoreId,
         };
-        if (description) payload.item_description = description;
         const { response, data } = await fetchJson(providerBase("redx") + "/parcel", {
           method: "POST",
           headers: redxHeaders(),
