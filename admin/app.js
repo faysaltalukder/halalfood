@@ -431,8 +431,8 @@ window.HFAdminReady.then(async H=>{
     const recipientAddress=String($("confirmBookAddress").value||"").trim();
     if(recipientAddress.length<10)throw new Error("The saved address is too short. Enter the full house/road or village, area/upazila and district address (at least 10 characters).");
     if(recipientAddress.length>250)throw new Error("The delivery address must be 250 characters or fewer.");
-    if(provider==="pathao"&&!/(district|zilla|জেলা|upazila|thana|উপজেলা|থানা|kalapara|patuakhali|barishal|dhaka|chattogram|rajshahi|khulna|sylhet|rangpur|mymensingh|cumilla|jashore|bogura|noakhali|cox'?s bazar)/i.test(recipientAddress)){
-     throw new Error("For Pathao, add the actual district name and the area/upazila to the full delivery address. Do not guess or append a district if you do not know the real address.");
+    if(provider==="pathao"&&recipientAddress.split(",").map(part=>part.trim()).filter(part=>part.length>=2).length<3){
+     throw new Error("For Pathao, enter at least three comma-separated parts: actual house/road or village, area/upazila, and district. Use the real address confirmed with the customer.");
     }
     const {data:freshOrder,error:orderReadError}=await client.from("orders").select("id,order_number,customer_name,customer_phone,customer_email,delivery_address,total,status,payment_method,notes").eq("id",orderId).maybeSingle();
     if(orderReadError||!freshOrder)throw new Error("Could not verify the latest order record. Refresh and try again.");
