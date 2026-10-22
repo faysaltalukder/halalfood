@@ -293,7 +293,8 @@ window.HFAdminReady.then(async H=>{
    const existing=shipmentFor(order.id);
    if(courierBookingLocked(existing)){toast("This order already has a booked or uncertain courier record. Open Operations Center and verify the provider before doing anything else; duplicate booking is blocked.","error");return;}
    $("confirmBookOrderId").value=order.id;
-   $("confirmBookOrderSummary").textContent="Order "+(order.order_number||String(order.id).slice(0,8))+" · "+(order.customer_name||"Customer")+" · "+money(order.total)+" COD\nAddress: "+(order.delivery_address||"Not recorded");
+   const itemSummary=(order.order_items||[]).map(item=>String(item.product_name||"Item")+" × "+String(item.quantity||1)+" "+String(item.unit||"")).join(", ")||"No item details recorded";
+   $("confirmBookOrderSummary").textContent="Order "+(order.order_number||String(order.id).slice(0,8))+" · "+(order.customer_name||"Customer")+" · "+money(order.total)+" COD\nItems: "+itemSummary+"\nAddress: "+(order.delivery_address||"Not recorded");
    $("confirmBookProvider").value=courierCode(existing?.courier_name)||"";
    $("confirmBookWeight").value=existing?.parcel_weight_kg||"";
    $("confirmBookNotes").value=existing?.parcel_notes||"";
