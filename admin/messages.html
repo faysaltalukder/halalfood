@@ -6,7 +6,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <title>Messaging · Halal Food Admin</title>
 <link rel="stylesheet" href="./shared.css?v=20261023-whatsapp-v1">
-<link rel="stylesheet" href="./messages.css?v=20261023-whatsapp-v1">
+<link rel="stylesheet" href="./messages.css?v=20261023-whatsapp-v2">
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
 </head>
 <body data-page="messages">
@@ -18,7 +18,8 @@
   <div class="hf-section-head"><div><h2>WhatsApp Cloud API connection</h2><p>Credentials are read only on the server. The dashboard never receives your WhatsApp access token.</p></div><span class="wa-state-badge" id="waCredentialsBadge">Checking server…</span></div>
   <div class="wa-setup-grid">
     <div class="wa-setup-status"><strong id="waCredentialsTitle">Checking server credentials</strong><p id="waCredentialsText">Checking whether the five required secret names are available to the messaging function.</p><ul id="waCredentialsList"><li>Access Token</li><li>Phone Number ID</li><li>Business Account ID</li><li>App Secret</li><li>Webhook Verify Token</li></ul></div>
-    <div class="wa-webhook-setup"><strong>Next: verify the Meta webhook</strong><p>Add this HTTPS callback URL to Meta for Developers → WhatsApp → Configuration. Enter the same Verify Token you saved in Supabase, then verify and subscribe to the <code>messages</code> webhook field.</p><label class="wa-url-label" for="waWebhookUrl">Callback URL</label><div class="wa-url-copy"><input id="waWebhookUrl" type="text" readonly value="https://qfwvrcfkrsydycbfjsxf.supabase.co/functions/v1/whatsapp-webhook"><button class="hf-button hf-button-secondary" id="waCopyWebhookBtn" type="button">Copy URL</button></div><a class="hf-button hf-button-secondary" href="https://developers.facebook.com/apps/" target="_blank" rel="noopener noreferrer">Open Meta for Developers ↗</a><p class="hf-data-note">This page cannot yet confirm whether Meta has saved the callback or subscribed the app to messages. Incoming chats will appear after that verification succeeds and a customer sends a message.</p></div>
+    <div class="wa-webhook-setup"><strong>Next: verify the Meta webhook</strong><p>Add this HTTPS callback URL to Meta for Developers → WhatsApp → Configuration. Enter the same Verify Token you saved in Supabase, then verify and subscribe to the <code>messages</code> webhook field.</p><label class="wa-url-label" for="waWebhookUrl">Callback URL</label><div class="wa-url-copy"><input id="waWebhookUrl" type="text" readonly value="https://qfwvrcfkrsydycbfjsxf.supabase.co/functions/v1/whatsapp-webhook"><button class="hf-button hf-button-secondary" id="waCopyWebhookBtn" type="button">Copy URL</button></div><button class="hf-button hf-button-primary" id="waConnectBtn" type="button">Check &amp; connect WhatsApp Business Account</button><div id="waConnectionDiagnostic" class="wa-diagnostic-result" role="status" aria-live="polite" hidden></div>
+    <a class="hf-button hf-button-secondary" href="https://developers.facebook.com/apps/" target="_blank" rel="noopener noreferrer">Open Meta for Developers ↗</a><p class="hf-data-note">This page cannot yet confirm whether Meta has saved the callback or subscribed the app to messages. Incoming chats will appear after that verification succeeds and a customer sends a message.</p></div>
   </div>
 </section>
 <div class="wa-channel-note"><strong>WhatsApp only — first release.</strong> This inbox starts with text messages and text replies. Media messages are recorded by type, but media previews/downloads and approved template sending are not included yet. Free-form replies are disabled after the 24-hour customer-service window.</div>
@@ -39,7 +40,7 @@
 </div>
 <p class="hf-data-note wa-privacy-note">Customer messages and phone numbers are private operational data. Do not export or share them casually. This first release does not automatically answer customers or trigger order/courier actions.</p>
 </main></div>
-<script defer src="./i18n.js?v=20261023-whatsapp-v1"></script>
-<script defer src="./shared.js?v=20261023-whatsapp-v1"></script>
-<script defer src="./messages.js?v=20261023-whatsapp-v1"></script>
+<script defer src="./i18n.js?v=20261023-whatsapp-v2"></script>
+<script defer src="./shared.js?v=20261023-whatsapp-v2"></script>
+<script defer src="./messages.js?v=20261023-whatsapp-v2"></script>
 </body></html>
