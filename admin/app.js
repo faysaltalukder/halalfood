@@ -283,7 +283,7 @@ window.HFAdminReady.then(async H=>{
   const courierCode=value=>{const v=String(value||"").toLowerCase();return v.includes("steadfast")?"steadfast":v.includes("pathao")?"pathao":"";};
   const courierLabel=value=>value==="steadfast"?"Steadfast":"Pathao";
   const shipmentFor=orderId=>shipmentRows.find(row=>row.order_id===orderId)||null;
-  const courierBookingLocked=record=>!!record&&(record.integration_mode==="live_api"||["in_progress","succeeded","unknown"].includes(record.booking_state)||record.shipment_status==="booked"||!!record.provider_order_id);
+  const courierBookingLocked=record=>!!record&&(record.integration_mode==="live_api"||["in_progress","succeeded","unknown"].includes(record.booking_state)||["booked","picked_up","in_transit","delivered","returned"].includes(record.shipment_status)||!!record.provider_order_id||!!String(record.tracking_id||"").trim());
   function openConfirmBook(orderId){
    const order=all.find(row=>row.id===orderId);
    if(!order){toast("Order not found. Refresh and try again.","error");return;}
@@ -380,8 +380,8 @@ window.HFAdminReady.then(async H=>{
    const select=e.target.closest(".order-status-select");if(!select)return;
    const order=all.find(o=>o.id===select.dataset.orderId);if(!order)return;
    const next=select.value,old=order.status;if(next===old)return;
-   if(next==="processing"&&old!=="processing"){select.value=old;openConfirmBook(order.id);return;}
    const shipment=shipmentFor(order.id);
+   if(next==="processing"&&old!=="processing"&&!(shipment&&shipment.integration_mode==="live_api"&&shipment.booking_state==="succeeded")){select.value=old;openConfirmBook(order.id);return;}
    if(next==="cancelled"&&courierBookingLocked(shipment)){
     select.value=old;toast("Changing the order to Cancelled will not cancel its courier shipment. Verify/cancel the parcel with the courier first; the site does not yet provide a courier-cancel action.","error");return;
    }
