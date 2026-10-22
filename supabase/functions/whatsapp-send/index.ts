@@ -70,11 +70,95 @@ Deno.serve(async (req: Request) => {
   if (action === "status") {
     return reply({ success: true, configured, allConfigured: Object.values(configured).every(Boolean), sendMode: "text-only", graphApiVersion: "v26.0" });
   }
-  if (action !== "send") return reply({ success: false, error: "Unsupported action." }, 400);
+
+  if (!["send", "connect"].includes(action)) return reply({ success: false, error: "Unsupported action." }, 400);
 
   if (!Object.values(configured).every(Boolean)) {
     const missing = Object.keys(configured).filter((key) => !configured[key]);
     return reply({ success: false, error: "WhatsApp server credentials are incomplete.", missing }, 503);
+  }
+
+  if (action === "connect") {
+    const accessTokenSecret = Deno.env.get("WHATSAPP_ACCESS_TOKEN") || "";
+    const phoneNumberId = Deno.env.get("WHATSAPP_PHONE_NUMBER_ID") || "";
+    const businessAccountId = Deno.env.get("WHATSAPP_BUSINESS_ACCOUNT_ID") || "";
+    const graphBase = "https://graph.facebook.com/v26.0/";
+    const graphHeaders = { "Authorization": "Bearer " + accessTokenSecret, "Content-Type": "application/json" };
+
+    let phonesResponse: Response;
+    let phonesData: any;
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 15000);
+      try {
+        phonesResponse = await fetch(graphBase + encodeURIComponent(businessAccountId) + "/phone_numbers?fields=id,display_phone_number,verified_name,quality_rating", {
+          method: "GET", headers: graphHeaders, signal: controller.signal,
+        });
+        phonesData = await phonesResponse.json().catch(() => ({}));
+      } finally { clearTimeout(timer); }
+    } catch {
+      return reply({ success: false, error: "Could not reach Meta to verify the WhatsApp Business Account. Try again shortly." }, 502);
+    }
+
+    if (!phonesResponse!.ok) {
+      return reply({
+        success: false,
+        step: "verify_business_account",
+        error: "Meta could not read phone numbers for this Business Account. Check that the saved Business Account ID is correct and that this token has whatsapp_business_management access.",
+        providerCode: clean(phonesData?.error?.code, 50) || null,
+        providerSubcode: clean(phonesData?.error?.error_subcode, 50) || null,
+      }, 502);
+    }
+
+    const phoneList = Array.isArray(phonesData?.data) ? phonesData.data : [];
+    const matchingPhone = phoneList.find((item: any) => clean(item?.id, 100) === phoneNumberId);
+    if (!matchingPhone) {
+      return reply({
+        success: false,
+        step: "verify_phone_number",
+        error: "The saved Phone Number ID was not found under the saved WhatsApp Business Account ID. Check the two IDs in Meta and update the Supabase secrets if needed.",
+        phoneNumberFound: false,
+      }, 409);
+    }
+
+    let subscribeResponse: Response;
+    let subscribeData: any;
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 15000);
+      try {
+        subscribeResponse = await fetch(graphBase + encodeURIComponent(businessAccountId) + "/subscribed_apps", {
+          method: "POST", headers: graphHeaders, signal: controller.signal,
+        });
+        subscribeData = await subscribeResponse.json().catch(() => ({}));
+      } finally { clearTimeout(timer); }
+    } catch {
+      return reply({ success: false, step: "subscribe_waba", error: "Could not reach Meta to subscribe this Business Account. No message was sent." }, 502);
+    }
+
+    if (!subscribeResponse!.ok || subscribeData?.success !== true) {
+      return reply({
+        success: false,
+        step: "subscribe_waba",
+        error: "Meta did not confirm the WABA subscription. Check the token's WhatsApp Business Account permissions and assigned assets.",
+        providerCode: clean(subscribeData?.error?.code, 50) || null,
+        providerSubcode: clean(subscribeData?.error?.error_subcode, 50) || null,
+      }, 502);
+    }
+
+    // Do not return the access token or any secret value to the browser.
+    return reply({
+      success: true,
+      action: "connect",
+      wabaSubscribed: true,
+      phoneNumberFound: true,
+      phoneNumberId,
+      displayPhoneNumber: clean(matchingPhone?.display_phone_number, 40) || null,
+      verifiedName: clean(matchingPhone?.verified_name, 160) || null,
+      qualityRating: clean(matchingPhone?.quality_rating, 40) || null,
+      graphApiVersion: "v26.0",
+      nextStep: "Confirm the Meta App is subscribed to the messages webhook field, then send a new test message to the verified number.",
+    });
   }
 
   const conversationId = clean(body?.conversationId, 80);
