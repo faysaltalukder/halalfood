@@ -26,7 +26,11 @@ window.HFOpsInit = async function () {
  function packing(){
   const q=$("packingSearch").value.toLowerCase().trim(),st=$("packingFilter").value;
   const rows=orders.filter(o=>["pending","processing"].includes(o.status)&&(!st||o.status===st)&&(!q||[o.order_number,o.customer_name,o.customer_phone,...(o.order_items||[]).map(i=>i.product_name)].join(" ").toLowerCase().includes(q)));
-  $("packingBody").innerHTML=rows.length?rows.map(o=>'<tr><td><strong>'+esc(o.order_number||String(o.id).slice(0,8))+'</strong><small>'+dateTime(o.ordered_at)+'</small></td><td>'+esc(o.customer_name||"Guest")+'<small>'+esc(o.customer_phone||"")+'</small></td><td>'+((o.order_items||[]).length)+' line(s)</td><td>'+money(o.total)+'</td><td>'+makeStatus(o.status)+'</td><td><button class="hf-button hf-button-secondary hf-button-small" data-pack="'+esc(o.id)+'">'+(shipments.some(x=>x.order_id===o.id)?"Review parcel":"Prepare parcel")+'</button> <a class="hf-button hf-button-secondary hf-button-small" href="./orders.html">Order details</a></td></tr>').join(""):'<tr><td colspan="6">'+makeEmpty("No orders waiting for packing","New pending or processing orders will appear here.")+'</td></tr>';
+  $("packingBody").innerHTML=rows.length?rows.map(o=>{
+   const parcel=shipments.find(x=>x.order_id===o.id);
+   const parcelAction=!parcel?"Prepare parcel":parcel.shipment_status==="cancelled"?"View cancelled parcel":parcel.shipment_status==="delivered"?"View delivered parcel":parcel.shipment_status==="returned"?"View returned parcel":parcel.booking_state==="failed"?"Review failed booking":parcel.booking_state==="unknown"?"Verify courier status":"Review parcel";
+   return '<tr><td><strong>'+esc(o.order_number||String(o.id).slice(0,8))+'</strong><small>'+dateTime(o.ordered_at)+'</small></td><td>'+esc(o.customer_name||"Guest")+'<small>'+esc(o.customer_phone||"")+'</small></td><td>'+((o.order_items||[]).length)+' line(s)</td><td>'+money(o.total)+'</td><td>'+makeStatus(o.status)+'</td><td><button class="hf-button hf-button-secondary hf-button-small" data-pack="'+esc(o.id)+'">'+esc(parcelAction)+'</button> <a class="hf-button hf-button-secondary hf-button-small" href="./orders.html">Order details</a></td></tr>';
+  }).join(""):'<tr><td colspan="6">'+makeEmpty("No orders waiting for packing","New pending or processing orders will appear here.")+'</td></tr>';
  }
  function renderShipments(){
    const q=$("shipmentSearch").value.toLowerCase().trim(),st=$("shipmentStatusFilter").value,cod=$("codFilter").value;
@@ -36,8 +40,11 @@ window.HFOpsInit = async function () {
     const locked=["in_progress","succeeded","unknown"].includes(x.booking_state)||x.integration_mode==="live_api"||x.shipment_status==="booked";
     const bookButton=provider&&!locked?'<button class="hf-button hf-button-primary hf-button-small" data-book-shipment="'+esc(x.id)+'">Book with '+esc(provider==="steadfast"?"Steadfast":"Pathao")+'</button>':"";
     const trackButton=x.integration_mode==="live_api"?'<button class="hf-button hf-button-secondary hf-button-small" data-track-shipment="'+esc(x.id)+'">Refresh status</button>':"";
+    const reconcileCancelButton=x.integration_mode==="live_api"&&!["cancelled","delivered","returned"].includes(x.shipment_status)?'<button class="hf-button hf-button-secondary hf-button-small" data-reconcile-cancel="'+esc(x.id)+'">Confirm cancelled</button>':"";
     const bookingLabel=x.booking_state==="unknown"?"Unknown — verify provider":x.booking_state==="in_progress"?"Booking in progress":x.booking_state==="succeeded"?"API booking succeeded":x.integration_mode==="live_api"?"Live API":(x.booking_state==="failed"?"Last attempt failed":"Not booked");
-    return '<tr><td><strong>'+esc(o.order_number||String(x.order_id).slice(0,8))+'</strong><small>'+esc(o.customer_name||"Customer")+'</small></td><td>'+esc(x.courier_name)+'<small>'+esc(x.tracking_id||"No tracking ID yet")+'</small><small>API: '+esc(bookingLabel)+'</small></td><td><span class="ops-pill">'+esc(labelStatus(x.shipment_status))+'</span></td><td>'+money(x.cod_amount)+'<small>'+esc(labelStatus(x.settlement_status))+'</small></td><td>'+money(x.courier_fee)+'</td><td>'+money(x.settled_amount)+'</td><td><div class="ops-actions">'+bookButton+trackButton+'<button class="hf-button hf-button-secondary hf-button-small" data-edit-shipment="'+esc(x.id)+'" '+(locked?'disabled title="Verify live/uncertain booking first"':"")+'>'+((x.integration_mode==="live_api")?"Booked":"Edit")+'</button><select class="hf-select ops-status" data-shipment-status="'+esc(x.id)+'" aria-label="Update parcel status" '+(x.integration_mode==="live_api"?'disabled title="Live courier status sync is not implemented yet"':"")+'>'+shipmentStatuses.map(v=>'<option value="'+v+'" '+(v===x.shipment_status?"selected":"")+'>'+esc(labelStatus(v))+'</option>').join("")+'</select></div></td></tr>';
+    const statusSync=x.provider_response?.status_sync;
+    const syncHint=statusSync?.outcome==="error"?"<small>Last sync failed: "+esc("HTTP "+(statusSync.http_status??"—")+" · "+(statusSync.error_detail||"Provider did not return status"))+"</small>":statusSync?.checked_at?"<small>Last checked: "+esc(dateTime(statusSync.checked_at))+"</small>":"";
+    return '<tr><td><strong>'+esc(o.order_number||String(x.order_id).slice(0,8))+'</strong><small>'+esc(o.customer_name||"Customer")+'</small></td><td>'+esc(x.courier_name)+'<small>'+esc(x.tracking_id||"No tracking ID yet")+'</small><small>API: '+esc(bookingLabel)+'</small>'+syncHint+'</td><td><span class="ops-pill">'+esc(labelStatus(x.shipment_status))+'</span></td><td>'+money(x.cod_amount)+'<small>'+esc(labelStatus(x.settlement_status))+'</small></td><td>'+money(x.courier_fee)+'</td><td>'+money(x.settled_amount)+'</td><td><div class="ops-actions">'+bookButton+trackButton+reconcileCancelButton+'<button class="hf-button hf-button-secondary hf-button-small" data-edit-shipment="'+esc(x.id)+'" '+(locked?'disabled title="Verify live/uncertain booking first"':"")+'>'+((x.integration_mode==="live_api")?"Booked":"Edit")+'</button><select class="hf-select ops-status" data-shipment-status="'+esc(x.id)+'" aria-label="Update parcel status" '+(x.integration_mode==="live_api"?'disabled title="Use Refresh status or Sync live statuses for API-booked parcels"':"")+'>'+shipmentStatuses.map(v=>'<option value="'+v+'" '+(v===x.shipment_status?"selected":"")+'>'+esc(labelStatus(v))+'</option>').join("")+'</select></div></td></tr>';
    }).join(""):'<tr><td colspan="7">'+makeEmpty("No courier records yet","Prepare a parcel record, then test the API and book only when ready.")+'</td></tr>';
   }
  function renderTasks(){
@@ -94,7 +101,54 @@ window.HFOpsInit = async function () {
   }
   $("testSteadfastBtn").addEventListener("click",()=>testCourier("steadfast","testSteadfastBtn"));
   $("testPathaoBtn").addEventListener("click",()=>testCourier("pathao","testPathaoBtn"));
+  async function syncLiveCourierStatuses(){
+   const button=$("syncLiveStatusesBtn"),result=$("courierTestResult");
+   const terminal=["cancelled","delivered","returned","delivery_failed"];
+   const targets=shipments.filter(x=>x.integration_mode==="live_api"&&x.booking_state==="succeeded"&&!terminal.includes(x.shipment_status)).slice(0,20);
+   if(!targets.length){toast("No non-terminal API-booked parcels need a status refresh.","success");return;}
+   if(button){button.disabled=true;button.textContent="Syncing statuses…";}
+   const successes=[],failures=[];
+   try{
+    for(const row of targets){
+     const order=orders.find(o=>o.id===row.order_id);
+     const label=order?.order_number||String(row.order_id).slice(0,8);
+     try{
+      const {data,error}=await client.functions.invoke("courier-integration",{body:{action:"track",provider:courierCode(row.courier_name),shipment_id:row.id}});
+      if(error)throw new Error(await courierErrorMessage(error));
+      if(!data?.success)throw new Error(data?.error||"Provider did not return a refreshed status.");
+      successes.push(label+": "+(data.provider_status||"unknown")+" → "+(data.shipment_status||"unchanged"));
+     }catch(err){failures.push(label+": "+(await courierErrorMessage(err)));}
+    }
+    await load();
+    if(result){
+     result.hidden=false;
+     result.textContent="Status sync finished. Updated/read successfully: "+successes.length+"; failed: "+failures.length+". "+[...successes,...failures].join(" | ");
+     result.style.background=failures.length?"#fff6e8":"#edf7ef";
+     result.style.borderColor=failures.length?"#efd2a3":"#bfdfc7";
+     result.style.color=failures.length?"#765018":"#215c33";
+    }
+    toast("Courier sync finished: "+successes.length+" successful, "+failures.length+" failed.",failures.length?"error":"success");
+   }finally{if(button){button.disabled=false;button.textContent="↻ Sync live statuses";}}
+  }
+  $("syncLiveStatusesBtn")?.addEventListener("click",syncLiveCourierStatuses);
   $("shipmentsBody").addEventListener("click",async e=>{
+   const reconcile=e.target.closest("[data-reconcile-cancel]");
+   if(reconcile){
+    const row=shipments.find(x=>x.id===reconcile.dataset.reconcileCancel);if(!row)return;
+    const provider=courierCode(row.courier_name),providerLabel=provider==="steadfast"?"Steadfast":"Pathao";
+    if(!confirm("Confirm local reconciliation only\n\nHave you verified that this exact parcel is already cancelled in the "+providerLabel+" Merchant Dashboard?\n\nThis will mark the local parcel record as cancelled. It will NOT send a cancellation request or change anything at "+providerLabel+"."))return;
+    reconcile.disabled=true;
+    try{
+     const now=new Date().toISOString(),previous=row.provider_response&&typeof row.provider_response==="object"?row.provider_response:{};
+     const patch={shipment_status:"cancelled",provider_response:{...previous,manual_reconciliation:{status:"cancelled",source:providerLabel+" Merchant Dashboard",verified_by:H.ADMIN_EMAIL,reconciled_at:now,reason:"Admin confirmed the parcel was already cancelled in the provider dashboard; this action mirrors that status locally only."}},updated_by:H.ADMIN_EMAIL,updated_at:now};
+     const {data,error}=await client.from("admin_shipments").update(patch).eq("id",row.id).eq("integration_mode","live_api").select("id").maybeSingle();
+     if(error)throw error;if(!data)throw new Error("The live parcel record was not updated. Refresh the page and verify its current status.");
+     await audit("shipment_cancelled_reconciled","shipment",row.order_id,"Provider-dashboard cancellation mirrored to the local parcel record",{courier:providerLabel,previous_status:row.shipment_status,new_status:"cancelled",source:"provider_merchant_dashboard"});
+     await load();toast(providerLabel+" cancellation mirrored locally. No provider API request was sent.");
+    }catch(err){toast(err.message||"Could not reconcile the cancelled parcel.","error");await load();}
+    finally{reconcile.disabled=false;}
+    return;
+   }
    const edit=e.target.closest("[data-edit-shipment]");
    if(edit){const row=shipments.find(x=>x.id===edit.dataset.editShipment);if(row)openShipment("",row);return;}
    const track=e.target.closest("[data-track-shipment]");
