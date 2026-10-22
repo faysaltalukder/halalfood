@@ -13,7 +13,7 @@ const reply = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: corsHeaders });
 const clean = (value: unknown, max: number) =>
   String(value ?? "").replace(/[\u0000-\u001F\u007F]/g, " ").trim().slice(0, max);
-const providerName = (provider: string) => provider === "steadfast" ? "Steadfast" : "Pathao";
+const providerName = (provider: string) => provider === "steadfast" ? "Steadfast" : provider === "pathao" ? "Pathao" : "REDX";
 const readJwtPayload = (token: string): Record<string, unknown> => {
   const part = token.split(".")[1];
   if (!part) throw new Error("Invalid session token.");
@@ -48,10 +48,14 @@ function missingSecrets(names: string[]) {
   return names.filter((name) => !Deno.env.get(name)?.trim());
 }
 function providerBase(provider: string) {
-  if (provider === "steadfast") {
-    return "https://portal.packzy.com/api/v1";
-  }
+  if (provider === "steadfast") return "https://portal.packzy.com/api/v1";
+  if (provider === "redx") return (Deno.env.get("REDX_BASE_URL") || "https://openapi.redx.com.bd/v1.0.0-beta").replace(/\/+$/, "");
   return (Deno.env.get("PATHAO_BASE_URL") || "https://api-hermes.pathao.com").replace(/\/+$/, "");
+}
+function redxHeaders() {
+  const rawToken = Deno.env.get("REDX_API_TOKEN")?.trim() || "";
+  const token = /^Bearer\s/i.test(rawToken) ? rawToken : "Bearer " + rawToken;
+  return { "API-ACCESS-TOKEN": token, "Accept": "application/json", "Content-Type": "application/json" };
 }
 async function issuePathaoToken() {
   const missing = missingSecrets(["PATHAO_CLIENT_ID", "PATHAO_CLIENT_SECRET", "PATHAO_USERNAME", "PATHAO_PASSWORD"]);
@@ -135,7 +139,7 @@ function providerRejected(data: any, responseOk: boolean) {
       String(row.status ?? "").toLowerCase() === "error" ||
       String(row.type ?? "").toLowerCase() === "error" ||
       row.success === false ||
-      (row.code !== undefined && Number(row.code) >= 400)
+      (row.code !== undefined && Number(row.code) >= 400) || (row.status_code !== undefined && Number(row.status_code) >= 400)
     )
   );
 }
@@ -196,7 +200,7 @@ Deno.serve(async (req: Request) => {
     catch { return reply({ success: false, error: "Invalid JSON body." }, 400); }
     const action = clean(body?.action, 30).toLowerCase();
     const provider = clean(body?.provider, 30).toLowerCase();
-    if (!["steadfast", "pathao"].includes(provider)) return reply({ success: false, error: "Choose Steadfast or Pathao." }, 400);
+    if (!["steadfast", "pathao", "redx"].includes(provider)) return reply({ success: false, error: "Choose Steadfast, Pathao or REDX." }, 400);
 
     if (action === "test") {
       if (provider === "steadfast") {
@@ -215,6 +219,35 @@ Deno.serve(async (req: Request) => {
         }
         const balance = data?.current_balance ?? data?.data?.current_balance ?? null;
         return reply({ success: true, provider: "Steadfast", message: "Steadfast API responded successfully.", balance });
+      }
+
+      if (provider === "redx") {
+        const missing = missingSecrets(["REDX_API_TOKEN"]);
+        if (missing.length) return reply({ success: false, error: "Missing Supabase Secrets: " + missing.join(", ") }, 400);
+        const { response, data } = await fetchJson(providerBase("redx") + "/pickup/stores", {
+          method: "GET",
+          headers: redxHeaders(),
+        });
+        if (!response.ok || providerRejected(data, response.ok)) {
+          return reply({ success: false, error: "REDX connection test failed (HTTP " + response.status + "). " + providerError(data) + " Check the merchant API token and access." }, 502);
+        }
+        const rawStores = Array.isArray(data) ? data : data?.data?.data ?? data?.data?.pickup_stores ?? data?.pickup_stores ?? data?.stores ?? data?.data ?? [];
+        const stores = (Array.isArray(rawStores) ? rawStores : []).map((s: any) => ({
+          id: clean(s?.pickup_store_id ?? s?.store_id ?? s?.id, 40),
+          name: clean(s?.pickup_store_name ?? s?.store_name ?? s?.name ?? s?.address, 120),
+        })).filter((s: any) => s.id);
+        const storeId = Deno.env.get("REDX_PICKUP_STORE_ID")?.trim() || "";
+        const matched = storeId ? stores.some((s: any) => s.id === storeId) : false;
+        return reply({
+          success: true,
+          provider: "REDX",
+          message: storeId
+            ? (matched ? "REDX API token and configured pickup store were verified." : "REDX API token works, but REDX_PICKUP_STORE_ID does not match the returned pickup stores.")
+            : "REDX API token works. Choose a pickup store and configure REDX_PICKUP_STORE_ID before booking.",
+          storeIdConfigured: Boolean(storeId),
+          storeMatched: matched,
+          stores: stores.slice(0, 30),
+        });
       }
 
       const token = await issuePathaoToken();
@@ -244,15 +277,45 @@ Deno.serve(async (req: Request) => {
       });
     }
 
+    if (action === "areas") {
+      if (provider !== "redx") return reply({ success: false, error: "Delivery-area lookup is available for REDX only." }, 400);
+      const missing = missingSecrets(["REDX_API_TOKEN"]);
+      if (missing.length) return reply({ success: false, error: "Missing Supabase Secrets: " + missing.join(", ") }, 400);
+      const districtName = clean(body?.district_name, 80);
+      if (districtName.length < 2) return reply({ success: false, error: "Enter the destination district name in English, then load REDX areas." }, 400);
+      const areasUrl = new URL(providerBase("redx") + "/areas");
+      areasUrl.searchParams.set("district_name", districtName);
+      const { response, data } = await fetchJson(areasUrl.toString(), { method: "GET", headers: redxHeaders() });
+      if (!response.ok || providerRejected(data, response.ok)) {
+        return reply({ success: false, error: "REDX area lookup failed (HTTP " + response.status + "). " + providerError(data) }, 502);
+      }
+      const rawAreas = Array.isArray(data) ? data : data?.data?.data ?? data?.data?.areas ?? data?.areas ?? data?.data ?? data?.results ?? [];
+      const areas = (Array.isArray(rawAreas) ? rawAreas : []).map((a: any) => ({
+        id: clean(a?.redx_delivery_area_id ?? a?.area_id ?? a?.delivery_area_id ?? a?.id, 40),
+        name: clean(a?.redx_delivery_area ?? a?.area_name ?? a?.delivery_area ?? a?.name ?? a?.title, 120),
+      })).filter((a: any) => a.id && a.name).slice(0, 250);
+      return reply({
+        success: true,
+        provider: "REDX",
+        district_name: districtName,
+        areas,
+        message: areas.length ? "REDX delivery areas loaded. Select the exact area matching the customer address." : "No REDX delivery areas were returned for that district name. Try the official English spelling or the spelling shown in REDX documentation.",
+      });
+    }
+
     if (!["book", "track"].includes(action)) return reply({ success: false, error: "Unsupported action." }, 400);
     const shipmentId = clean(body?.shipment_id, 80);
     if (!shipmentId) return reply({ success: false, error: "Choose a saved parcel record first." }, 400);
 
     const required = provider === "steadfast"
       ? ["STEADFAST_API_KEY", "STEADFAST_SECRET_KEY"]
-      : action === "book"
-        ? ["PATHAO_CLIENT_ID", "PATHAO_CLIENT_SECRET", "PATHAO_USERNAME", "PATHAO_PASSWORD", "PATHAO_STORE_ID"]
-        : ["PATHAO_CLIENT_ID", "PATHAO_CLIENT_SECRET", "PATHAO_USERNAME", "PATHAO_PASSWORD"];
+      : provider === "pathao"
+        ? action === "book"
+          ? ["PATHAO_CLIENT_ID", "PATHAO_CLIENT_SECRET", "PATHAO_USERNAME", "PATHAO_PASSWORD", "PATHAO_STORE_ID"]
+          : ["PATHAO_CLIENT_ID", "PATHAO_CLIENT_SECRET", "PATHAO_USERNAME", "PATHAO_PASSWORD"]
+        : action === "book"
+          ? ["REDX_API_TOKEN", "REDX_PICKUP_STORE_ID"]
+          : ["REDX_API_TOKEN"];
     const missing = missingSecrets(required);
     if (missing.length) return reply({ success: false, error: "Missing Supabase Secrets: " + missing.join(", ") }, 400);
 
@@ -303,7 +366,7 @@ Deno.serve(async (req: Request) => {
           provider_status: providerStatus,
           tracking_code: clean(data?.tracking_code ?? data?.data?.tracking_code ?? shipment.tracking_id ?? "", 180),
         };
-      } else {
+      } else if (provider === "pathao") {
         const token = await issuePathaoToken();
         const consignmentId = clean(shipment.provider_order_id, 100);
         if (!consignmentId) return reply({ success: false, error: "No Pathao consignment ID is stored for this parcel." }, 409);
@@ -331,6 +394,31 @@ Deno.serve(async (req: Request) => {
           provider_status_slug: clean(info?.order_status_slug ?? info?.status_slug ?? "", 100),
           tracking_code: clean(info?.tracking_code ?? info?.consignment_id ?? shipment.tracking_id ?? "", 180),
           consignment_id: clean(info?.consignment_id ?? shipment.provider_order_id ?? "", 100),
+        };
+      } else {
+        const trackingIdForLookup = clean(shipment.tracking_id || shipment.provider_order_id, 180);
+        if (!trackingIdForLookup) return reply({ success: false, error: "No REDX tracking ID is stored for this parcel." }, 409);
+        const { response, data } = await fetchJson(providerBase("redx") + "/parcel/track/" + encodeURIComponent(trackingIdForLookup), {
+          method: "GET",
+          headers: redxHeaders(),
+        });
+        providerHttpStatus = response.status;
+        if (!response.ok || providerRejected(data, response.ok)) {
+          const detail = providerError(data);
+          const checkedAt = new Date().toISOString();
+          const previous = shipment.provider_response && typeof shipment.provider_response === "object" ? shipment.provider_response : {};
+          await db.from("admin_shipments").update({
+            provider_response: { ...previous, status_sync: { outcome: "error", http_status: response.status, error_detail: clean(detail, 300), checked_at: checkedAt } },
+            updated_by: "halalfoodbd.official@gmail.com",
+            updated_at: checkedAt,
+          }).eq("id", shipmentId);
+          return reply({ success: false, error: "REDX status refresh failed (HTTP " + response.status + "). " + detail + " The local parcel status was not changed; verify the REDX Merchant Dashboard." }, 502);
+        }
+        const info = data?.data?.data ?? data?.data ?? data;
+        providerStatus = clean(info?.status ?? info?.parcel_status ?? info?.delivery_status ?? info?.tracking_status ?? info?.current_status ?? info?.status_label ?? "", 100);
+        trackingData = {
+          provider_status: providerStatus,
+          tracking_code: clean(info?.tracking_id ?? info?.tracking_number ?? info?.tracking_code ?? shipment.tracking_id ?? "", 180),
         };
       }
       const mapped = mapCourierStatus(providerStatus);
@@ -385,7 +473,7 @@ Deno.serve(async (req: Request) => {
     const address = clean(order.delivery_address, provider === "pathao" ? 220 : 250);
     const total = Number(order.total);
     if (recipientName.length < 3) throw new Error("The customer name must contain at least 3 characters.");
-    if (address.length < (provider === "pathao" ? 10 : 5)) throw new Error("The order needs a complete delivery address.");
+    if (address.length < 10) throw new Error("The order needs a complete delivery address (at least 10 characters).");
     if (!Number.isFinite(total) || total < 0) throw new Error("The order total is invalid.");
     if (String(order.payment_method || "cash_on_delivery") !== "cash_on_delivery") {
       throw new Error("Only Cash on Delivery orders are enabled for courier booking.");
@@ -395,6 +483,18 @@ Deno.serve(async (req: Request) => {
     const weight = shipment.parcel_weight_kg == null ? null : Number(shipment.parcel_weight_kg);
     if (provider === "pathao" && (!Number.isFinite(weight) || weight! < 0.5 || weight! > 10)) {
       throw new Error("For Pathao, enter a parcel weight between 0.5 kg and 10 kg in the saved parcel record.");
+    }
+    if (provider === "redx" && (!Number.isFinite(weight) || weight! <= 0)) {
+      throw new Error("For REDX, enter a positive packed parcel weight in kilograms in the saved parcel record.");
+    }
+    const savedProviderMeta = shipment.provider_response && typeof shipment.provider_response === "object" ? shipment.provider_response : {};
+    const redxAreaId = Number(savedProviderMeta.redx_delivery_area_id);
+    const redxAreaName = clean(savedProviderMeta.redx_delivery_area, 120);
+    if (provider === "redx" && (!Number.isInteger(redxAreaId) || redxAreaId <= 0 || !redxAreaName)) {
+      throw new Error("Before REDX booking, use the REDX area lookup and save the exact delivery area and area ID matching the customer address.");
+    }
+    if (provider === "redx" && (!Number.isInteger(Number(Deno.env.get("REDX_PICKUP_STORE_ID"))) || Number(Deno.env.get("REDX_PICKUP_STORE_ID")) <= 0)) {
+      throw new Error("REDX_PICKUP_STORE_ID must be the numeric pickup-store ID returned by REDX's API, not the shop ID from the dashboard URL.");
     }
     if (Math.abs(Number(shipment.cod_amount || 0) - total) > 0.01) {
       throw new Error("The parcel COD amount must match the saved order total.");
@@ -458,7 +558,7 @@ Deno.serve(async (req: Request) => {
         const record = providerBookingRecord(data);
         providerOrderId = clean(record?.consignment_id ?? data?.consignment_id ?? data?.data?.consignment_id ?? "", 100);
         trackingId = clean(record?.tracking_code ?? data?.tracking_code ?? data?.data?.tracking_code ?? providerOrderId, 180);
-      } else {
+      } else if (provider === "pathao") {
         const token = await issuePathaoToken();
         const itemRows = Array.isArray(items) ? items : [];
         const itemQuantity = Math.max(1, Math.min(999, itemRows.reduce((sum: number, item: any) => {
@@ -507,10 +607,53 @@ Deno.serve(async (req: Request) => {
         const d = providerBookingRecord(data);
         providerOrderId = clean(d?.consignment_id ?? d?.order_id ?? "", 100);
         trackingId = clean(d?.tracking_code ?? d?.consignment_id ?? d?.order_id ?? "", 180);
+      } else {
+        const redxPickupStoreId = Number(Deno.env.get("REDX_PICKUP_STORE_ID"));
+        const itemRows = Array.isArray(items) ? items : [];
+        const description = itemRows.map((item: any) => clean(item?.product_name, 70)).filter(Boolean).join(", ").slice(0, 250);
+        const payload: Record<string, unknown> = {
+          customer_name: recipientName,
+          customer_phone: phone,
+          redx_delivery_area: redxAreaName,
+          redx_delivery_area_id: redxAreaId,
+          customer_address: address,
+          merchant_invoice_id: invoice,
+          cash_collection_amount: Math.round(total * 100) / 100,
+          parcel_weight: weight,
+          declared_value: Math.round(total * 100) / 100,
+          instruction: clean([shipment.parcel_notes, order.notes].filter(Boolean).join(" · "), 250),
+          pickup_store_id: redxPickupStoreId,
+        };
+        if (description) payload.item_description = description;
+        const { response, data } = await fetchJson(providerBase("redx") + "/parcel", {
+          method: "POST",
+          headers: redxHeaders(),
+          body: JSON.stringify(payload),
+        });
+        responseData = data;
+        if (!response.ok || providerRejected(data, response.ok)) {
+          const detail = providerError(data);
+          const ambiguous = response.status >= 500;
+          const displayed = ambiguous
+            ? "REDX returned HTTP " + response.status + ". " + detail + " Check the REDX Merchant Dashboard before retrying; the booking outcome may be uncertain."
+            : "REDX rejected the booking (HTTP " + response.status + "). " + detail;
+          const previous = shipment.provider_response && typeof shipment.provider_response === "object" ? shipment.provider_response : {};
+          await db.from("admin_shipments").update({
+            booking_state: ambiguous ? "unknown" : "failed",
+            booking_error: clean(displayed, 350),
+            provider_response: { ...previous, http_status: response.status, outcome: ambiguous ? "unknown" : "rejected", error_detail: clean(detail, 300) },
+            updated_at: new Date().toISOString(),
+          }).eq("id", shipmentId);
+          return reply({ success: false, error: clean(displayed, 500) }, 502);
+        }
+        const record = providerBookingRecord(data);
+        providerOrderId = clean(record?.parcel_id ?? record?.id ?? record?.tracking_id ?? record?.tracking_number ?? record?.tracking_code ?? "", 100);
+        trackingId = clean(record?.tracking_id ?? record?.tracking_number ?? record?.tracking_code ?? data?.tracking_id ?? data?.tracking_number ?? data?.data?.tracking_id ?? providerOrderId, 180);
+        if (!providerOrderId) providerOrderId = trackingId;
       }
     } catch (providerErrorValue) {
       const message = providerErrorValue instanceof Error ? providerErrorValue.message : "Courier request failed.";
-      const isValidation = /Missing Supabase Secrets|Pathao authentication failed/.test(message);
+      const isValidation = /Missing Supabase Secrets|Pathao authentication failed|REDX_API_TOKEN|REDX_PICKUP_STORE_ID/.test(message);
       await db.from("admin_shipments").update({
         booking_state: isValidation ? "failed" : "unknown",
         booking_error: isValidation ? clean(message, 350) : "Courier request response was ambiguous. Check the provider dashboard before retrying.",
@@ -535,13 +678,21 @@ Deno.serve(async (req: Request) => {
           consignment_id: providerOrderId || null,
           tracking_code: trackingId || null,
         }
-      : {
-          type: clean(responseData?.type ?? "success", 60),
-          code: Number(responseData?.code || 200),
-          consignment_id: providerOrderId || null,
-          tracking_code: trackingId || null,
-          order_status: clean(responseData?.data?.order_status ?? responseData?.data?.data?.order_status ?? "", 80),
-        };
+      : provider === "pathao"
+        ? {
+            type: clean(responseData?.type ?? "success", 60),
+            code: Number(responseData?.code || 200),
+            consignment_id: providerOrderId || null,
+            tracking_code: trackingId || null,
+            order_status: clean(responseData?.data?.order_status ?? responseData?.data?.data?.order_status ?? "", 80),
+          }
+        : {
+            outcome: "success",
+            parcel_id: providerOrderId || null,
+            tracking_id: trackingId || null,
+            redx_delivery_area_id: redxAreaId,
+            redx_delivery_area: redxAreaName,
+          };
     const { error: saveError } = await db.from("admin_shipments").update({
       courier_name: expectedProvider,
       provider_order_id: providerOrderId || trackingId,
