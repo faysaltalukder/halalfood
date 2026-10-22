@@ -294,7 +294,8 @@ window.HFAdminReady.then(async H=>{
    if(courierBookingLocked(existing)){toast("This order already has a booked or uncertain courier record. Open Operations Center and verify the provider before doing anything else; duplicate booking is blocked.","error");return;}
    $("confirmBookOrderId").value=order.id;
    const itemSummary=(order.order_items||[]).map(item=>String(item.product_name||"Item")+" × "+String(item.quantity||1)+" "+String(item.unit||"")).join(", ")||"No item details recorded";
-   $("confirmBookOrderSummary").textContent="Order "+(order.order_number||String(order.id).slice(0,8))+" · "+(order.customer_name||"Customer")+" · "+money(order.total)+" COD\nItems: "+itemSummary+"\nAddress: "+(order.delivery_address||"Not recorded");
+   $("confirmBookOrderSummary").textContent="Order "+(order.order_number||String(order.id).slice(0,8))+" · "+(order.customer_name||"Customer")+" · "+money(order.total)+" COD\nItems: "+itemSummary;
+   $("confirmBookAddress").value=order.delivery_address||"";
    $("confirmBookProvider").value=courierCode(existing?.courier_name)||"";
    $("confirmBookWeight").value=existing?.parcel_weight_kg||"";
    $("confirmBookNotes").value=existing?.parcel_notes||"";
@@ -427,8 +428,12 @@ window.HFAdminReady.then(async H=>{
     if(!$("confirmBookCustomerCheck").checked)throw new Error("Confirm that you have contacted the customer and verified the order details.");
     const weightRaw=$("confirmBookWeight").value.trim(),weight=weightRaw===""?null:Number(weightRaw);
     if(provider==="pathao"&&(!Number.isFinite(weight)||weight<0.5||weight>10))throw new Error("For Pathao, enter a realistic packed weight between 0.5 kg and 10 kg.");
-    if(provider==="pathao"&&String(order.delivery_address||"").trim().length<10)throw new Error("The full delivery address is required for Pathao. Include the area/upazila and district.");
-    if(provider==="steadfast"&&String(order.delivery_address||"").trim().length<5)throw new Error("Enter a complete delivery address before booking.");
+    const recipientAddress=String($("confirmBookAddress").value||"").trim();
+    if(recipientAddress.length<10)throw new Error("The saved address is too short. Enter the full house/road or village, area/upazila and district address (at least 10 characters).");
+    if(recipientAddress.length>250)throw new Error("The delivery address must be 250 characters or fewer.");
+    if(provider==="pathao"&&!/(district|zilla|জেলা|upazila|thana|উপজেলা|থানা|kalapara|patuakhali|barishal|dhaka|chattogram|rajshahi|khulna|sylhet|rangpur|mymensingh|cumilla|jashore|bogura|noakhali|cox'?s bazar)/i.test(recipientAddress)){
+     throw new Error("For Pathao, add the actual district name and the area/upazila to the full delivery address. Do not guess or append a district if you do not know the real address.");
+    }
     const {data:freshOrder,error:orderReadError}=await client.from("orders").select("id,order_number,customer_name,customer_phone,customer_email,delivery_address,total,status,payment_method,notes").eq("id",orderId).maybeSingle();
     if(orderReadError||!freshOrder)throw new Error("Could not verify the latest order record. Refresh and try again.");
     if(!["pending","processing"].includes(freshOrder.status))throw new Error("The order changed to "+freshOrder.status+" and can no longer be booked from this action.");
@@ -437,8 +442,14 @@ window.HFAdminReady.then(async H=>{
     if(existingError)throw new Error("Could not verify whether this order already has a courier parcel. Refresh and retry.");
     if(courierBookingLocked(existing))throw new Error("A courier booking already exists or its result is uncertain. Verify the courier dashboard before retrying; duplicate booking is blocked.");
     const providerName=courierLabel(provider);
-    const confirmMessage="REAL COURIER BOOKING — "+providerName+"\n\nOrder: "+(freshOrder.order_number||String(freshOrder.id).slice(0,8))+"\nCustomer: "+(freshOrder.customer_name||"Customer")+"\nPhone: "+(freshOrder.customer_phone||"Not recorded")+"\nCOD to collect: "+money(freshOrder.total)+(provider==="pathao"?"\nPacked weight: "+weight+" kg":"")+"\n\nThis sends customer/order details to "+providerName+" and can create a real courier shipment. Halal Food cannot cancel the courier booking from this page yet. Continue only if you intentionally want a live booking.";
+    const confirmMessage="REAL COURIER BOOKING — "+providerName+"\n\nOrder: "+(freshOrder.order_number||String(freshOrder.id).slice(0,8))+"\nCustomer: "+(freshOrder.customer_name||"Customer")+"\nPhone: "+(freshOrder.customer_phone||"Not recorded")+"\nFull address: "+recipientAddress+"\nCOD to collect: "+money(freshOrder.total)+(provider==="pathao"?"\nPacked weight: "+weight+" kg":"")+"\n\nThis sends customer/order details to "+providerName+" and can create a real courier shipment. Halal Food cannot cancel the courier booking from this page yet. Continue only if you intentionally want a live booking.";
     if(!confirm(confirmMessage))return;
+    if(String(freshOrder.delivery_address||"").trim()!==recipientAddress){
+     const {error:addressError}=await client.rpc("admin_update_order_delivery_address",{p_order_id:orderId,p_delivery_address:recipientAddress});
+     if(addressError)throw new Error("The delivery address could not be saved: "+(addressError.message||"check admin access and order state."));
+     await audit("order_delivery_address_corrected","order",orderId,"Delivery address corrected before courier booking",{provider:providerName,address_length:recipientAddress.length});
+     freshOrder.delivery_address=recipientAddress;
+    }
     if(freshOrder.status!=="processing"){
      const {error:statusError}=await client.rpc("admin_update_order_status",{p_order_id:orderId,p_next_status:"processing",p_cancellation_reason:null});
      if(statusError)throw new Error("The order could not be confirmed: "+(statusError.message||"check admin access and status history."));
