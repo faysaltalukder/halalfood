@@ -109,10 +109,13 @@ Deno.serve(async (req: Request) => {
         providerType: clean(phonesData?.error?.type, 100) || null,
       };
       console.error("WhatsApp connection diagnostic", JSON.stringify(diagnostic));
+      const providerErrorMessage = diagnostic.providerCode === "190"
+        ? "Meta rejected WHATSAPP_ACCESS_TOKEN (OAuth error 190). The token is invalid, expired, revoked, malformed, or not accepted for this app. Replace only WHATSAPP_ACCESS_TOKEN with a fresh valid token. For an ongoing setup, use a System User access token with the WhatsApp account and app assigned, plus whatsapp_business_management and whatsapp_business_messaging permissions. The Business Account ID has not been verified yet because authentication failed first."
+        : "Meta could not read phone numbers for this Business Account. Check the saved Business Account ID, account assignment, and whatsapp_business_management permission.";
       return reply({
         success: false,
         ...diagnostic,
-        error: "Meta could not read phone numbers for this Business Account. Check that the saved Business Account ID is correct and that this token has whatsapp_business_management access.",
+        error: providerErrorMessage,
       }, 502);
     }
 
