@@ -1,0 +1,51 @@
+/* Products & inventory — status-first layout that follows Halal Food's existing brand system. */
+.hf-products-hero{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:23px 24px;margin-bottom:18px;border:1px solid var(--hf-border);border-radius:var(--hf-radius);background:var(--hf-paper);box-shadow:var(--hf-shadow)}
+.hf-products-hero-copy{min-width:0}
+.hf-products-hero h1{font-size:clamp(27px,2.3vw,35px);line-height:1.12;letter-spacing:-.045em;margin:0;color:var(--hf-navy)}
+.hf-products-hero-copy>p:not(.page-eyebrow){margin:8px 0 0;max-width:690px;color:var(--hf-muted)}
+.hf-products-meta{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:14px;font-size:11px;color:var(--hf-muted)}
+.hf-products-date-label{font-weight:750;color:var(--hf-navy)}
+.hf-products-meta time{font-variant-numeric:tabular-nums}
+.hf-products-hero-actions{max-width:460px;flex:0 0 auto;gap:8px}
+.hf-products-hero-actions .hf-button{flex:0 0 auto}
+.hf-products-stock-overview{margin:20px 0 18px}
+.hf-products-stock-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:12px}
+.hf-products-stock-heading h2{margin:0;font-size:17px;letter-spacing:-.02em;color:var(--hf-navy)}
+.hf-products-stock-heading p:not(.page-eyebrow){font-size:11px;line-height:1.5;color:var(--hf-muted);margin:5px 0 0;max-width:780px}
+.hf-products-stock-heading .page-eyebrow{margin-bottom:4px!important}
+.hf-products-stock-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+.hf-products-stock-card{display:flex;flex-direction:column;gap:9px;min-width:0;padding:15px 16px;text-align:left;color:var(--hf-navy);cursor:pointer;transition:transform .15s,border-color .15s,box-shadow .15s;background:var(--hf-paper)}
+.hf-products-stock-card:hover{transform:translateY(-2px);border-color:#cfab8e}
+.hf-products-stock-card.is-active{border-color:var(--hf-orange);box-shadow:inset 0 0 0 1px var(--hf-orange),var(--hf-shadow)}
+.hf-products-stock-card:focus-visible{outline:2px solid var(--hf-orange);outline-offset:3px}
+.hf-products-stock-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.hf-products-stock-label{font-size:11px;font-weight:750;color:var(--hf-muted)}
+.hf-products-stock-icon{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;font-size:15px;font-weight:850;flex:0 0 auto}
+.hf-products-stock-icon.is-all{background:#F0EEE8;color:#5C596B}
+.hf-products-stock-icon.is-in{background:#E8F5ED;color:#287A52}
+.hf-products-stock-icon.is-low{background:#FFF0D9;color:#98641C}
+.hf-products-stock-icon.is-out{background:#FFEBE7;color:#A33E32}
+.hf-products-stock-icon.is-untracked{background:#EAF1FB;color:#416F9D}
+.hf-products-stock-value{font-size:clamp(23px,2vw,29px);font-weight:850;line-height:1;letter-spacing:-.04em;font-variant-numeric:tabular-nums;color:var(--hf-navy)}
+.hf-products-stock-note{font-size:10px;line-height:1.4;color:var(--hf-muted);margin-top:auto}
+@media(max-width:1200px){
+ .hf-products-stock-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .hf-products-hero{align-items:flex-start}
+}
+@media(max-width:760px){
+ .hf-products-hero{display:block;padding:18px}
+ .hf-products-hero-actions{max-width:none;justify-content:flex-start;margin-top:17px}
+ .hf-products-hero-actions .hf-button{flex:1 1 auto}
+ .hf-products-stock-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+ .hf-products-stock-card{padding:12px}
+ .hf-products-stock-heading{align-items:flex-start}
+}
+@media(max-width:460px){
+ .hf-products-hero-actions{display:grid;grid-template-columns:1fr 1fr}
+ .hf-products-hero-actions .hf-button:last-child{grid-column:1/-1}
+ .hf-products-meta{gap:7px}
+ .hf-products-stock-heading{display:block}
+ .hf-products-stock-heading>.hf-status{display:inline-flex;margin-top:9px}
+ .hf-products-stock-note{font-size:9px}
+}
+@media(prefers-reduced-motion:reduce){.hf-products-stock-card{transition:none}}
