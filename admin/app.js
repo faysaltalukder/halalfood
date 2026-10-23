@@ -123,7 +123,7 @@ window.HFAdminReady.then(async H=>{
    const setFinanceMasked=masked=>{
     financeStrip.classList.toggle("is-masked",masked);
     financeStrip.dataset.masked=String(masked);
-    financeToggle.setAttribute("aria-pressed",String(masked));
+    financeToggle.setAttribute("aria-pressed",String(!masked));
     financeToggle.setAttribute("aria-label",masked?"Show finance amounts":"Hide finance amounts");
     const label=financeToggle.querySelector("[data-visibility-label]");
     if(label)label.textContent=masked?"Show amounts":"Hide amounts";
