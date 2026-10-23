@@ -355,12 +355,14 @@ function makeShell(){
  };
  const closeSidebar=(returnFocus=false)=>{
   sidebar.classList.remove("open");sidebarBackdrop.hidden=true;
+  sidebar.removeAttribute("aria-modal");sidebar.removeAttribute("role");sidebar.setAttribute("aria-label","Primary navigation");
   menuToggle.setAttribute("aria-expanded","false");menuToggle.setAttribute("aria-label","Open navigation");
   document.body.classList.remove("admin-sidebar-open");
   if(returnFocus)menuToggle.focus({preventScroll:true});
  };
  const openSidebar=(focusSearch=false)=>{
   sidebar.classList.add("open");sidebarBackdrop.hidden=false;
+  if(window.innerWidth<=900){sidebar.setAttribute("role","dialog");sidebar.setAttribute("aria-modal","true");sidebar.setAttribute("aria-label","Admin navigation");}
   menuToggle.setAttribute("aria-expanded","true");menuToggle.setAttribute("aria-label","Close navigation");
   document.body.classList.add("admin-sidebar-open");
   (focusSearch?navSearchInput:sidebar.querySelector(".admin-nav-link"))?.focus({preventScroll:true});
@@ -394,12 +396,19 @@ function makeShell(){
   }
  });
  menuToggle?.addEventListener("click",()=>sidebar.classList.contains("open")?closeSidebar():openSidebar());
- sidebarBackdrop?.addEventListener("click",()=>closeSidebar());
+ sidebarBackdrop?.addEventListener("click",()=>closeSidebar(true));
  sidebar.querySelectorAll(".admin-nav-link,.admin-favorite-link").forEach(link=>link.addEventListener("click",()=>{if(window.innerWidth<=900)closeSidebar();}));
  window.addEventListener("resize",()=>{if(window.innerWidth>900)closeSidebar();});
  document.addEventListener("keydown",event=>{
   const target=event.target;
   const typing=!!target?.closest?.('input,textarea,select,[contenteditable="true"]');
+  if(event.key==="Tab"&&sidebar.classList.contains("open")&&window.innerWidth<=900&&!document.querySelector("dialog[open]")){
+   const focusable=[...sidebar.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')].filter(node=>!node.hidden&&!node.closest("[hidden]")&&node.getClientRects().length>0);
+   if(!focusable.length){event.preventDefault();menuToggle.focus({preventScroll:true});return;}
+   const first=focusable[0],last=focusable[focusable.length-1];
+   if(event.shiftKey&&(document.activeElement===first||!sidebar.contains(document.activeElement))){event.preventDefault();last.focus({preventScroll:true});return;}
+   if(!event.shiftKey&&(document.activeElement===last||!sidebar.contains(document.activeElement))){event.preventDefault();first.focus({preventScroll:true});return;}
+  }
   if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==="k"){
    event.preventDefault();
    if(window.innerWidth<=900&&!sidebar.classList.contains("open"))openSidebar(true);
@@ -432,7 +441,7 @@ function makeShell(){
   if(themeBtn){
    const toLight=active==="dark";const label=toLight?"Light theme":"Dark theme";
    themeBtn.innerHTML='<span class="topbar-button-icon theme-toggle-icon" aria-hidden="true">'+shellIcon(toLight?"sun":"moon")+'</span><span class="topbar-label theme-toggle-label">'+label+'</span>';
-   themeBtn.setAttribute("aria-label","Switch to "+(toLight?"light":"dark")+" theme");themeBtn.setAttribute("title","Switch to "+(toLight?"light":"dark")+" theme");themeBtn.setAttribute("aria-pressed",String(active==="light"));
+   themeBtn.setAttribute("aria-label","Toggle color theme");themeBtn.setAttribute("title","Switch to "+(toLight?"light":"dark")+" theme");themeBtn.setAttribute("aria-pressed",String(active==="light"));
   }
   syncChartsForTheme();
  };
