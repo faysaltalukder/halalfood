@@ -242,6 +242,22 @@ function makeShell(){
  const menuToggle=document.getElementById("adminMenuToggle");
  const searchInput=document.getElementById("globalSearch");
  const accountMenu=document.getElementById("adminAccountMenu");
+ if((pageName==="messages"||pageName==="messenger")&&searchInput){
+  const conversationSearch=document.getElementById("waConversationSearch");
+  if(conversationSearch){
+   searchInput.placeholder="Search conversations…";
+   searchInput.setAttribute("aria-label","Search conversations by name or contact");
+   searchInput.addEventListener("input",()=>{
+    if(conversationSearch.value!==searchInput.value){
+     conversationSearch.value=searchInput.value;
+     conversationSearch.dispatchEvent(new Event("input",{bubbles:true}));
+    }
+   });
+   conversationSearch.addEventListener("input",()=>{
+    if(searchInput.value!==conversationSearch.value)searchInput.value=conversationSearch.value;
+   });
+  }
+ }
  const avatarImage=adminApp.querySelector(".admin-account-avatar-image");
  avatarImage?.addEventListener("error",()=>{
   avatarImage.hidden=true;
