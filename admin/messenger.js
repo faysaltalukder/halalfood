@@ -93,13 +93,13 @@ function renderConversations() {
   });
   $("waConversationCount").textContent = conversations.length + " conversation" + (conversations.length === 1 ? "" : "s");
   if (!rows.length) {
-    list.innerHTML = '<div class="wa-empty-list">' + (conversations.length ? "No conversations match your search." : "No Messenger messages yet. Complete Meta webhook setup, then send a message to the Messenger number.") + "</div>";
+    list.innerHTML = '<div class="wa-empty-list">' + (conversations.length ? "No conversations match your search." : "No Messenger conversations yet. Verify the Meta webhook, then message the connected Facebook Page from an eligible account.") + "</div>";
     return;
   }
   list.innerHTML = rows.map((c) => {
     const name = c.contact?.display_name || c.contact?.phone_number || "Messenger contact";
     const phone = c.contact?.phone_number || c.contact?.external_contact_id || "";
-    return '<button type="button" class="wa-conversation-item ' + (c.id === activeConversationId ? "active" : "") + '" data-conversation-id="' + H.esc(c.id) + '" aria-current="' + (c.id === activeConversationId ? "true" : "false") + '">' +
+    return '<button type="button" class="wa-conversation-item ' + (c.id === activeConversationId ? "active" : "") + '" data-conversation-id="' + H.esc(c.id) + '" aria-pressed="' + (c.id === activeConversationId ? "true" : "false") + '">' +
       '<span class="wa-avatar-small">' + H.esc(initials(name)) + "</span>" +
       '<span class="wa-conversation-main"><span class="wa-conversation-top"><span class="wa-conversation-name">' + H.esc(name) + '</span><span class="wa-conversation-time">' + H.esc(formatTime(c.last_message_at)) + "</span></span>" +
       '<span class="wa-conversation-preview">' + H.esc(c.last_message_preview || phone || "No message preview") + "</span>" +
@@ -295,7 +295,7 @@ async function connectMessengerAccount() {
     if (result) {
       result.hidden = false;
       result.className = "wa-diagnostic-result";
-      result.innerHTML = "<strong>Messenger Page subscription confirmed by Meta</strong><p>Page: " + H.esc(data.pageName || "Facebook Page") + "</p><p>The Page ID was verified and Meta confirmed its subscription to the <code>messages</code> webhook field.</p><p><b>Next:</b> In Meta App Dashboard, ensure the Page webhook object has the <code>messages</code> field subscribed to this callback URL, then send a new message to the Facebook Page.</p>";
+      result.innerHTML = "<strong>Messenger Page subscription confirmed by Meta</strong><p>Page: " + H.esc(data.pageName || "Facebook Page") + "</p><p>The Page ID was verified and Meta confirmed its subscription to the <code>messages</code> webhook field.</p><p><b>Next:</b> In Meta App Dashboard, verify the Messenger webhook callback and confirm the Page’s <code>messages</code> field is subscribed to this app, then send a new message to the Facebook Page.</p>";
     }
     H.toast("Messenger Page subscription succeeded. Confirm the App webhook field in Meta, then send a new Page message.", "success");
     await refreshAll();
