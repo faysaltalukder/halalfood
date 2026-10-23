@@ -6,7 +6,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <title>Messenger Inbox · Halal Food Admin</title>
 <link rel="stylesheet" href="./shared.css?v=20261023-phase5-v2">
-<link rel="stylesheet" href="./messenger.css?v=20261023-phase6-v2">
+<link rel="stylesheet" href="./messenger.css?v=20261023-phase7-v1">
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
 </head>
 <body data-page="messenger">
@@ -29,12 +29,12 @@
 <div class="wa-channel-note"><strong>Messenger only — first release.</strong> This inbox starts with text messages and text replies. Media messages are recorded by type, but media previews/downloads and approved template sending are not included yet. Free-form replies are disabled after the 24-hour customer-service window.</div>
 <div class="wa-inbox-layout">
   <section class="hf-card wa-conversation-card" aria-label="Messenger conversations">
-    <div class="wa-list-head"><div><h2>Inbox</h2><p id="waConversationCount" role="status" aria-live="polite">Loading conversations…</p></div><span class="wa-live-dot" title="The inbox refreshes periodically">●</span></div>
+    <div class="wa-list-head"><div><h2>Inbox</h2><p id="waConversationCount" role="status" aria-live="polite">Loading conversations…</p></div><span class="wa-refresh-indicator" role="status" aria-label="The inbox automatically refreshes every 30 seconds"><span class="wa-live-dot" aria-hidden="true">●</span><span>Auto-refresh · 30 sec</span></span></div>
     <label class="wa-search-label" for="waConversationSearch">Search conversations</label><input id="waConversationSearch" class="hf-input wa-search" type="search" placeholder="Name or Messenger ID">
     <div id="waConversationList" class="wa-conversation-list" aria-live="polite"><div class="wa-empty-list">Loading your Messenger inbox…</div></div>
   </section>
   <section class="hf-card wa-chat-card" aria-label="Selected Messenger conversation">
-    <div id="waChatEmpty" class="wa-chat-empty"><div class="wa-empty-icon">✉</div><h2>Your conversations will appear here</h2><p>Finish Meta webhook verification, then send a message to your Messenger test number from an eligible recipient account.</p></div>
+    <div id="waChatEmpty" class="wa-chat-empty"><div class="wa-empty-icon">✉</div><h2>Your conversations will appear here</h2><p>After Meta webhook verification, messages will appear when someone contacts the connected Facebook Page from an eligible account.</p></div>
     <div id="waChatView" class="wa-chat-view" hidden>
       <header class="wa-chat-header"><div class="wa-contact-avatar" id="waContactAvatar">W</div><div class="wa-contact-info"><strong id="waContactName">Messenger contact</strong><span id="waContactPhone"></span></div><span id="waReplyWindowBadge" role="status" aria-live="polite" class="wa-window-badge">Checking reply window…</span></header>
       <div id="waMessages" class="wa-messages" aria-live="polite"><div class="wa-empty-list">Loading messages…</div></div>
@@ -46,5 +46,5 @@
 </main></div>
 <script defer src="./i18n.js?v=20261023-dual-channel-v1"></script>
 <script defer src="./shared.js?v=20261023-phase6-v2"></script>
-<script defer src="./messenger.js?v=20261023-dual-channel-v1"></script>
+<script defer src="./messenger.js?v=20261023-phase7-v1"></script>
 </body></html>
