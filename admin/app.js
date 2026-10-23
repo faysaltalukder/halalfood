@@ -112,6 +112,25 @@ window.HFAdminReady.then(async H=>{
   body.innerHTML=orders.length?orders.slice(0,7).map(o=>'<tr><td><strong>'+esc(o.order_number||String(o.id).slice(0,8))+'</strong><small>'+dateTime(o.ordered_at)+'</small></td><td>'+esc(o.customer_name||"Guest")+'</td><td>'+money(o.total)+'</td><td>'+makeStatus(o.status)+'</td><td><a class="hf-button hf-button-secondary hf-button-small" href="./orders.html">Open</a></td></tr>').join(""):'<tr><td colspan="5">'+makeEmpty("No orders in this period","New order records will appear here.")+'</td></tr>';
  }
  async function initOverview(){
+  const overviewDateLabel=$("overviewDateLabel");
+  if(overviewDateLabel){
+   try{overviewDateLabel.textContent=new Intl.DateTimeFormat("en-BD",{timeZone:"Asia/Dhaka",weekday:"long",day:"numeric",month:"long",year:"numeric"}).format(new Date());}
+   catch(_dateError){overviewDateLabel.textContent=new Date().toDateString();}
+  }
+  const financeStrip=$("overviewFinanceStrip");
+  const financeToggle=$("overviewFinanceToggle");
+  if(financeStrip&&financeToggle){
+   const setFinanceMasked=masked=>{
+    financeStrip.classList.toggle("is-masked",masked);
+    financeStrip.dataset.masked=String(masked);
+    financeToggle.setAttribute("aria-pressed",String(masked));
+    financeToggle.setAttribute("aria-label",masked?"Show finance amounts":"Hide finance amounts");
+    const label=financeToggle.querySelector("[data-visibility-label]");
+    if(label)label.textContent=masked?"Show amounts":"Hide amounts";
+   };
+   setFinanceMasked(true);
+   financeToggle.addEventListener("click",()=>setFinanceMasked(!financeStrip.classList.contains("is-masked")));
+  }
   const localDateKey=value=>{
    const d=value instanceof Date?value:new Date(value);
    if(Number.isNaN(d.getTime()))return "";
