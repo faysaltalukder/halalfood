@@ -1157,7 +1157,7 @@ async function refresh(){[products,categories]=await Promise.all([fetchProducts(
  }
  async function initSettings(){
   async function healthCheck(){
-   const targets=[["Products","products"],["Categories","categories"],["Orders","orders"],["Tracking events","analytics_events"],["Homepage content","site_content_blocks"],["Finance entries","admin_finance_entries"],["Activity log","admin_activity_log"]];
+   const targets=[["Products","products"],["Categories","categories"],["Orders","orders"],["Order items","order_items"],["Courier bookings","admin_shipments"],["Tracking events","analytics_events"],["Homepage content","site_content_blocks"],["Finance entries","admin_finance_entries"],["Activity log","admin_activity_log"],["Messaging conversations","messaging_conversations"],["Messaging messages","messaging_messages"]];
    $("connectionStatus").textContent="Checking database access…";
    const result=await Promise.all(targets.map(async item=>{try{const r=await client.from(item[1]).select("id",{count:"exact",head:true});return {name:item[0],table:item[1],count:r.count,error:r.error?.message||null};}catch(err){return {name:item[0],table:item[1],error:err.message||"Connection error"};}}));
    $("systemHealthBody").innerHTML=result.map(r=>'<tr><td><strong>'+esc(r.name)+'</strong><small>'+esc(r.table)+'</small></td><td>'+(r.error?'<span class="hf-status hf-status-cancelled">Needs attention</span>':'<span class="hf-status hf-status-confirmed">Connected</span>')+'</td><td>'+(r.error?esc(r.error):Number(r.count||0).toLocaleString("en-BD")+" records")+'</td></tr>').join("");
