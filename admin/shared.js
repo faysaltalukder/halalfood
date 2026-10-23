@@ -171,6 +171,7 @@ function shellIcon(name){
   content:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M8 13h8M8 17h8"/>',
   customers:'<path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M20 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
   messages:'<path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5 9 9 0 0 1-4-.9L3 21l1.9-5.5a9 9 0 0 1-.9-4A8.5 8.5 0 0 1 12.5 3H13a8.5 8.5 0 0 1 8 8v.5Z"/><path d="M8 11h9M8 15h6"/>',
+  messenger:'<path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5 9 9 0 0 1-4-.9L3 21l1.9-5.5a9 9 0 0 1-.9-4A8.5 8.5 0 0 1 12.5 3H13a8.5 8.5 0 0 1 8 8v.5Z"/><path d="m7.5 14 3.5-3 2.5 2 3.5-3"/>',
   finance:'<rect x="3" y="5" width="18" height="15" rx="2"/><path d="M3 9h18M7 5V3h10v2M16 14h2"/>',
   reports:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M8 17v-3M12 17v-6M16 17v-4"/>',
   settings:'<path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z"/><path d="m19.4 15 .1.1a1.7 1.7 0 0 1-2.4 2.4l-.1-.1a1.7 1.7 0 0 0-2.9 1.2v.2a1.7 1.7 0 0 1-3.4 0v-.2a1.7 1.7 0 0 0-2.9-1.2l-.1.1a1.7 1.7 0 0 1-2.4-2.4l.1-.1a1.7 1.7 0 0 0-1.2-2.9H4a1.7 1.7 0 0 1 0-3.4h.2a1.7 1.7 0 0 0 1.2-2.9l-.1-.1a1.7 1.7 0 0 1 2.4-2.4l.1.1a1.7 1.7 0 0 0 2.9-1.2V2a1.7 1.7 0 0 1 3.4 0v.2a1.7 1.7 0 0 0 2.9 1.2l.1-.1a1.7 1.7 0 0 1 2.4 2.4l-.1.1a1.7 1.7 0 0 0 1.2 2.9h.2a1.7 1.7 0 0 1 0 3.4h-.2a1.7 1.7 0 0 0-1.2 2.9Z"/>',
@@ -181,23 +182,47 @@ function shellIcon(name){
   sliders:'<path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3"/><path d="M1 14h6M9 8h6M17 16h6"/>',
   help:'<circle cx="12" cy="12" r="9"/><path d="M9.6 9a2.5 2.5 0 1 1 4.3 1.7c-1.3 1.2-1.9 1.6-1.9 3.3M12 17.4v.1"/>',
   logout:'<path d="M10 17l5-5-5-5M15 12H3"/><path d="M12 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-6"/>',
-  chevron:'<path d="m7 10 5 5 5-5"/>'
+  chevron:'<path d="m7 10 5 5 5-5"/>',
+  star:'<path d="m12 3 2.75 5.58 6.16.9-4.45 4.33 1.05 6.12L12 17.04l-5.51 2.9 1.05-6.13L3.1 9.48l6.15-.9L12 3Z"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>',
+  close:'<path d="m18 6-12 12M6 6l12 12"/>'
  };
  return '<svg class="hf-shell-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">'+(paths[name]||paths.overview)+'</svg>';
 }
 function makeShell(){
  adminApp.classList.add("admin-app");
- const activePage=pageName==="messenger"?"messages":pageName;
+ const activePage=pageName==="messenger"?"messenger":pageName;
  const menuGroups=[
-  {label:"WORKSPACE",items:[["overview","overview","Overview"]]},
-  {label:"STORE MANAGEMENT",items:[["orders","orders","Orders"],["operations","operations","Operations"],["products","products","Products"],["content","content","Website Content"]]},
-  {label:"CUSTOMERS & MESSAGES",items:[["messages","messages","Messages"],["customers","customers","Customers"]]},
-  {label:"INSIGHTS & FINANCE",items:[["analytics","analytics","Analytics"],["finance","finance","Finance & Cash Flow"],["reports","reports","Reports"]]},
-  {label:"SYSTEM",items:[["settings","settings","Settings"]]}
+  {label:"WORKSPACE",items:[["overview","overview","Overview","dashboard home start"]]},
+  {label:"STORE MANAGEMENT",items:[["orders","orders","Orders","order order management customer orders"],["operations","operations","Operations","operation packing fulfillment"],["products","products","Products","product inventory stock"],["content","content","Website Content","content pages blog seo"]]},
+  {label:"CUSTOMERS & MESSAGES",items:[["messages","messages","WhatsApp Inbox","whatsapp inbox customer chat messages"],["messenger","messenger","Messenger Inbox","facebook messenger messages social inbox"],["customers","customers","Customers","customer contact audience"]]},
+  {label:"INSIGHTS & FINANCE",items:[["analytics","analytics","Analytics","analytics insights website traffic marketing"],["finance","finance","Finance & Cash Flow","finance expenses income bookkeeping cash"],["reports","reports","Reports","report export download csv"]]},
+  {label:"SYSTEM",items:[["settings","settings","Settings & Security","settings security preferences access"]]}
  ];
- const navigation=menuGroups.map(group=>{
-  const links=group.items.map(item=>'<a class="admin-nav-link '+(item[0]===activePage?"active":"")+'" href="./'+item[0]+'.html" '+(item[0]===activePage?'aria-current="page"':'')+'><span class="nav-icon">'+shellIcon(item[1])+'</span><span class="admin-nav-text">'+esc(item[2])+'</span></a>').join("");
-  return '<section class="admin-nav-group" aria-label="'+esc(group.label)+'"><div class="admin-nav-label">'+esc(group.label)+'</div><div class="admin-nav-links">'+links+'</div></section>';
+ const allItems=menuGroups.flatMap(group=>group.items.map(item=>({id:item[0],icon:item[1],label:item[2],href:"./"+item[0]+".html",keys:item[3]})));
+ const itemById=new Map(allItems.map(item=>[item.id,item]));
+ const defaultFavorites=["overview","orders","messages"];
+ const readFavorites=()=>{
+  try{
+   const stored=localStorage.getItem("hf_admin_favorites");
+   if(stored!==null){
+    const parsed=JSON.parse(stored);
+    if(Array.isArray(parsed))return [...new Set(parsed.filter(id=>itemById.has(id)))].slice(0,8);
+   }
+   localStorage.setItem("hf_admin_favorites",JSON.stringify(defaultFavorites));
+  }catch(_favoritesReadError){}
+  return defaultFavorites.slice();
+ };
+ let favorites=readFavorites();
+ let favoritesEditing=false;
+ const favoriteStar=(id,label)=>{
+  const active=favorites.includes(id);
+  const verb=active?"Remove "+label+" from favorites":"Add "+label+" to favorites";
+  return '<button type="button" class="admin-nav-fav-toggle" data-nav-fav="'+esc(id)+'" aria-pressed="'+String(active)+'" aria-label="'+esc(verb)+'" title="'+esc(verb)+'">'+shellIcon("star")+'</button>';
+ };
+ const renderNavigation=()=>menuGroups.map(group=>{
+  const links=group.items.map(item=>'<div class="admin-nav-item" data-nav-item data-nav-keys="'+esc(item[3])+'"><a class="admin-nav-link '+(item[0]===activePage?"active":"")+'" href="./'+item[0]+'.html" '+(item[0]===activePage?'aria-current="page"':'')+'><span class="nav-icon">'+shellIcon(item[1])+'</span><span class="admin-nav-text">'+esc(item[2])+'</span></a>'+favoriteStar(item[0],item[2])+'</div>').join("");
+  return '<section class="admin-nav-group" data-nav-group aria-label="'+esc(group.label)+'"><div class="admin-nav-label">'+esc(group.label)+'</div><div class="admin-nav-links">'+links+'</div></section>';
  }).join("");
  const metadata=currentUser?.user_metadata||{};
  const emailValue=String(currentUser?.email||ADMIN_EMAIL);
@@ -215,13 +240,25 @@ function makeShell(){
     '<span class="admin-brand-mark" style="display:none" aria-hidden="true">HF</span>'+
     '<span class="admin-brand-copy"><strong>Halal Food</strong><small>Admin Control Center</small></span>'+
    '</a>'+
-   '<nav class="admin-sidebar-nav" aria-label="Admin sections">'+navigation+'</nav>'+
+   '<div class="admin-navsearch" role="search" aria-label="Search admin navigation">'+
+    '<span class="admin-navsearch-icon" aria-hidden="true">'+shellIcon("search")+'</span>'+
+    '<input id="adminNavSearch" type="search" autocomplete="off" spellcheck="false" enterkeyhint="go" placeholder="Search menu…" aria-label="Search menu" aria-describedby="adminNavSearchStatus">'+
+    '<kbd class="admin-navsearch-shortcut" aria-hidden="true">/</kbd>'+
+    '<span id="adminNavSearchStatus" class="admin-sr-only" role="status" aria-live="polite"></span>'+
+   '</div>'+
+   '<p class="admin-navsearch-empty" id="adminNavSearchEmpty" hidden>No matching sections found.</p>'+
+   '<nav class="admin-sidebar-nav" aria-label="Admin sections">'+
+    '<section class="admin-favorites" id="adminFavorites" aria-label="Favorites">'+
+     '<div class="admin-favorites-heading"><span>FAVORITES</span><button id="adminFavoritesEdit" class="admin-favorites-edit" type="button" aria-pressed="false">Edit</button></div>'+
+     '<div id="adminFavoriteList" class="admin-favorite-list"></div>'+
+    '</section>'+renderNavigation()+
+   '</nav>'+
    '<div class="admin-sidebar-note"><div class="admin-sidebar-note-head"><span class="admin-test-indicator" aria-hidden="true"></span><strong>Learning &amp; testing project</strong></div><p>Live payments and product deliveries are not enabled.</p></div>'+
   '</aside>'+
   '<button id="adminSidebarBackdrop" class="admin-sidebar-backdrop" type="button" aria-label="Close navigation" hidden></button>'+
   '<div class="admin-frame"><header class="admin-topbar">'+
    '<button id="adminMenuToggle" class="admin-menu-toggle" type="button" aria-label="Open navigation" aria-controls="adminSidebar" aria-expanded="false">'+shellIcon("menu")+'</button>'+
-   '<div class="admin-global-search" role="search"><span class="admin-global-search-icon" aria-hidden="true">'+shellIcon("search")+'</span><input id="globalSearch" type="search" autocomplete="off" placeholder="Search this page\'s records…" aria-label="Search records on this page"><kbd class="admin-global-search__shortcut" aria-hidden="true"><span>Ctrl</span><b>K</b></kbd></div>'+
+   '<div class="admin-global-search" role="search"><span class="admin-global-search-icon" aria-hidden="true">'+shellIcon("search")+'</span><input id="globalSearch" type="search" autocomplete="off" placeholder="Search this page’s records…" aria-label="Search records on this page"></div>'+
    '<span class="admin-topbar-spacer" aria-hidden="true"></span>'+
    '<div class="admin-topbar-actions">'+
     '<button class="admin-top-button theme-toggle" id="themeToggle" type="button" aria-label="Switch to light theme" title="Switch to light theme" aria-pressed="false"><span class="topbar-button-icon theme-toggle-icon" aria-hidden="true">'+shellIcon("sun")+'</span><span class="topbar-label theme-toggle-label">Light theme</span></button>'+
@@ -233,7 +270,7 @@ function makeShell(){
    '</summary><div class="admin-account-dropdown"><div class="admin-account-dropdown-head"><span class="admin-account-dropdown-kicker">SIGNED IN</span><strong>'+esc(displayName)+'</strong><small>'+esc(emailValue)+'</small></div><a class="admin-account-settings-link" href="./settings.html">'+shellIcon("settings")+'<span>Settings &amp; security</span></a><button id="logoutBtn" class="admin-account-logout" type="button">'+shellIcon("logout")+'<span>Sign out</span></button></div></details>'+
   '</header><main class="admin-main" id="adminMain">'+initialContent+'</main></div>'+
   '<div id="hfToast" class="hf-toast" role="status" aria-live="polite"></div>'+
-  '<dialog id="helpDialog" class="hf-dialog"><div class="hf-dialog-inner help-content"><div class="hf-dialog-head"><div><p class="hf-dialog-title-tag">QUICK GUIDE</p><h2>How to use your admin panel</h2><p>Every section is designed for everyday, non-technical use.</p></div><button class="hf-button hf-button-secondary hf-dialog-close" data-close-help type="button" aria-label="Close help">×</button></div><ol><li>Choose a section from the left menu.</li><li>Use the date filters and search boxes to narrow down information.</li><li>Charts are interactive: hover or tap a chart to see values and labels.</li><li>Use Reports to export filtered data. CSV opens in spreadsheets; PDF opens the print dialog where you can choose Save as PDF.</li><li>Finance entries count in summaries only after they are marked Confirmed. Confirm only records you have checked.</li><li>This is a learning/testing storefront. Order value is not proof of collected payment; real delivery and payments are not enabled.</li></ol><div class="hf-dialog-actions"><button class="hf-button hf-button-primary" data-close-help type="button">Got it</button></div></div></dialog>';
+  '<dialog id="helpDialog" class="hf-dialog"><div class="hf-dialog-inner help-content"><div class="hf-dialog-head"><div><p class="hf-dialog-title-tag">QUICK GUIDE</p><h2>How to use your admin panel</h2><p>Every section is designed for everyday, non-technical use.</p></div><button class="hf-button hf-button-secondary hf-dialog-close" data-close-help type="button" aria-label="Close help">×</button></div><ol><li>Choose a section from the left menu.</li><li>Use Search menu or press / to find a section. Use Ctrl/Cmd + K to focus menu search.</li><li>Star important sections to keep them in Favorites. You can save up to eight.</li><li>Use the page search, date filters and search boxes to narrow down records.</li><li>Charts are interactive: hover or tap a chart to see values and labels.</li><li>Use Reports to export filtered data. CSV opens in spreadsheets; PDF opens the print dialog where you can choose Save as PDF.</li><li>Finance entries count in summaries only after they are marked Confirmed. Confirm only records you have checked.</li><li>This is a learning/testing storefront. Order value is not proof of collected payment; real delivery and payments are not enabled.</li></ol><div class="hf-dialog-actions"><button class="hf-button hf-button-primary" data-close-help type="button">Got it</button></div></div></dialog>';
  adminApp.innerHTML=shell;
  adminApp.hidden=false;gate.hidden=true;
 
@@ -241,23 +278,12 @@ function makeShell(){
  const sidebarBackdrop=document.getElementById("adminSidebarBackdrop");
  const menuToggle=document.getElementById("adminMenuToggle");
  const searchInput=document.getElementById("globalSearch");
+ const navSearchInput=document.getElementById("adminNavSearch");
  const accountMenu=document.getElementById("adminAccountMenu");
- if((pageName==="messages"||pageName==="messenger")&&searchInput){
-  const conversationSearch=document.getElementById("waConversationSearch");
-  if(conversationSearch){
-   searchInput.placeholder="Search conversations…";
-   searchInput.setAttribute("aria-label","Search conversations by name or contact");
-   searchInput.addEventListener("input",()=>{
-    if(conversationSearch.value!==searchInput.value){
-     conversationSearch.value=searchInput.value;
-     conversationSearch.dispatchEvent(new Event("input",{bubbles:true}));
-    }
-   });
-   conversationSearch.addEventListener("input",()=>{
-    if(searchInput.value!==conversationSearch.value)searchInput.value=conversationSearch.value;
-   });
-  }
- }
+ const favoriteList=document.getElementById("adminFavoriteList");
+ const favoritesEditButton=document.getElementById("adminFavoritesEdit");
+ const navSearchEmpty=document.getElementById("adminNavSearchEmpty");
+ const navSearchStatus=document.getElementById("adminNavSearchStatus");
  const avatarImage=adminApp.querySelector(".admin-account-avatar-image");
  avatarImage?.addEventListener("error",()=>{
   avatarImage.hidden=true;
@@ -265,102 +291,174 @@ function makeShell(){
   if(fallback)fallback.hidden=false;
  },{once:true});
 
+ const refreshFavoriteButtons=()=>{
+  sidebar.querySelectorAll("[data-nav-fav]").forEach(button=>{
+   const item=itemById.get(button.dataset.navFav);
+   const active=favorites.includes(button.dataset.navFav);
+   button.setAttribute("aria-pressed",String(active));
+   const label=(active?"Remove ":"Add ")+(item?.label||"section")+(active?" from favorites":" to favorites");
+   button.setAttribute("aria-label",label);button.title=label;
+  });
+ };
+ const renderFavorites=()=>{
+  favoriteList.innerHTML=favorites.length?favorites.map(id=>{
+   const item=itemById.get(id);if(!item)return "";
+   return '<div class="admin-favorite-item"><a class="admin-favorite-link '+(id===activePage?"active":"")+'" href="'+item.href+'" '+(id===activePage?'aria-current="page"':'')+'><span class="admin-favorite-icon">'+shellIcon(item.icon)+'</span><span>'+esc(item.label)+'</span></a><button type="button" class="admin-favorite-remove" data-favorite-remove="'+esc(id)+'" aria-label="Remove '+esc(item.label)+' from favorites" title="Remove favorite">'+shellIcon("close")+'</button></div>';
+  }).join(""):'<p class="admin-favorites-empty">Star a section below to add it here.</p>';
+  sidebar.querySelector("#adminFavorites").classList.toggle("is-empty",favorites.length===0);
+  sidebar.querySelector("#adminFavorites").classList.toggle("is-editing",favoritesEditing);
+  favoritesEditButton.textContent=favoritesEditing?"Done":"Edit";
+  favoritesEditButton.setAttribute("aria-pressed",String(favoritesEditing));
+  favoritesEditButton.disabled=favorites.length===0;
+  refreshFavoriteButtons();
+ };
+ const saveFavorites=next=>{
+  const clean=[...new Set(next.filter(id=>itemById.has(id)))].slice(0,8);
+  try{localStorage.setItem("hf_admin_favorites",JSON.stringify(clean));}
+  catch(_favoritesWriteError){toast("Favorites could not be saved in this browser.","error");return false;}
+  favorites=clean;renderFavorites();return true;
+ };
+ const toggleFavorite=id=>{
+  if(!itemById.has(id))return;
+  if(favorites.includes(id)){
+   if(saveFavorites(favorites.filter(value=>value!==id)))toast(itemById.get(id).label+" removed from Favorites.");
+   return;
+  }
+  if(favorites.length>=8){toast("You can save up to 8 favorite sections. Remove one to add another.","error");return;}
+  if(saveFavorites([...favorites,id]))toast(itemById.get(id).label+" added to Favorites.");
+ };
+ const filterNavigation=()=>{
+  const query=String(navSearchInput?.value||"").toLowerCase().trim();
+  const tokens=query.split(/\s+/).filter(Boolean);
+  const items=[...sidebar.querySelectorAll("[data-nav-item]")];
+  let matches=0;const matching=[];
+  items.forEach(row=>{
+   const link=row.querySelector(".admin-nav-link");
+   const haystack=((row.dataset.navKeys||"")+" "+(link?.textContent||"")).toLowerCase();
+   const matched=tokens.every(token=>haystack.includes(token));
+   row.hidden=!matched;
+   row.classList.toggle("is-search-match",matched&&tokens.length>0);
+   link?.classList.remove("is-first");
+   if(matched){matches++;matching.push(link);}
+  });
+  sidebar.querySelectorAll("[data-nav-group]").forEach(group=>{
+   const groupItems=[...group.querySelectorAll("[data-nav-item]")];
+   group.hidden=tokens.length>0&&!groupItems.some(item=>!item.hidden);
+  });
+  if(navSearchEmpty)navSearchEmpty.hidden=!tokens.length||matches>0;
+  if(navSearchStatus)navSearchStatus.textContent=tokens.length?(matches?matches+" matching sections. Press Enter to open the first result.":"No matching sections found."):"";
+  if(tokens.length&&matching[0])matching[0].classList.add("is-first");
+ };
+ const clearMenuSearch=()=>{
+  if(!navSearchInput)return;
+  navSearchInput.value="";filterNavigation();
+ };
  const closeSidebar=(returnFocus=false)=>{
-  sidebar.classList.remove("open");
-  sidebarBackdrop.hidden=true;
-  menuToggle.setAttribute("aria-expanded","false");
-  menuToggle.setAttribute("aria-label","Open navigation");
+  sidebar.classList.remove("open");sidebarBackdrop.hidden=true;
+  menuToggle.setAttribute("aria-expanded","false");menuToggle.setAttribute("aria-label","Open navigation");
   document.body.classList.remove("admin-sidebar-open");
   if(returnFocus)menuToggle.focus({preventScroll:true});
  };
- const openSidebar=()=>{
-  sidebar.classList.add("open");
-  sidebarBackdrop.hidden=false;
-  menuToggle.setAttribute("aria-expanded","true");
-  menuToggle.setAttribute("aria-label","Close navigation");
+ const openSidebar=(focusSearch=false)=>{
+  sidebar.classList.add("open");sidebarBackdrop.hidden=false;
+  menuToggle.setAttribute("aria-expanded","true");menuToggle.setAttribute("aria-label","Close navigation");
   document.body.classList.add("admin-sidebar-open");
-  sidebar.querySelector(".admin-nav-link")?.focus({preventScroll:true});
+  (focusSearch?navSearchInput:sidebar.querySelector(".admin-nav-link"))?.focus({preventScroll:true});
  };
- menuToggle?.addEventListener("click",()=>{
-  if(sidebar.classList.contains("open"))closeSidebar();else openSidebar();
+ renderFavorites();filterNavigation();
+ navSearchInput?.addEventListener("input",filterNavigation);
+ navSearchInput?.addEventListener("keydown",event=>{
+  const links=[...sidebar.querySelectorAll(".admin-nav-item:not([hidden]) .admin-nav-link")];
+  const first=links[0];
+  if(event.key==="Enter"&&String(navSearchInput.value||"").trim()&&first){event.preventDefault();location.href=first.href;}
+  else if(event.key==="ArrowDown"&&first){event.preventDefault();first.focus();}
+  else if(event.key==="Escape"&&navSearchInput.value){event.preventDefault();clearMenuSearch();}
  });
+ sidebar.addEventListener("keydown",event=>{
+  if(!["ArrowDown","ArrowUp"].includes(event.key))return;
+  const link=event.target.closest?.(".admin-nav-link");
+  if(!link||!String(navSearchInput?.value||"").trim())return;
+  const links=[...sidebar.querySelectorAll(".admin-nav-item:not([hidden]) .admin-nav-link")];
+  const index=links.indexOf(link);if(index<0)return;
+  event.preventDefault();
+  if(event.key==="ArrowUp"&&index===0)navSearchInput.focus();
+  else links[Math.max(0,Math.min(links.length-1,index+(event.key==="ArrowDown"?1:-1)))]?.focus();
+ });
+ sidebar.addEventListener("click",event=>{
+  const star=event.target.closest?.("[data-nav-fav]");
+  if(star){event.preventDefault();event.stopPropagation();toggleFavorite(star.dataset.navFav);return;}
+  const remove=event.target.closest?.("[data-favorite-remove]");
+  if(remove){event.preventDefault();event.stopPropagation();toggleFavorite(remove.dataset.favoriteRemove);return;}
+  if(event.target.closest?.("#adminFavoritesEdit")){
+   favoritesEditing=!favoritesEditing;renderFavorites();return;
+  }
+ });
+ menuToggle?.addEventListener("click",()=>sidebar.classList.contains("open")?closeSidebar():openSidebar());
  sidebarBackdrop?.addEventListener("click",()=>closeSidebar());
- sidebar.querySelectorAll(".admin-nav-link").forEach(link=>link.addEventListener("click",()=>{
-  if(window.innerWidth<=900)closeSidebar();
- }));
+ sidebar.querySelectorAll(".admin-nav-link,.admin-favorite-link").forEach(link=>link.addEventListener("click",()=>{if(window.innerWidth<=900)closeSidebar();}));
  window.addEventListener("resize",()=>{if(window.innerWidth>900)closeSidebar();});
  document.addEventListener("keydown",event=>{
   const target=event.target;
   const typing=!!target?.closest?.('input,textarea,select,[contenteditable="true"]');
   if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==="k"){
-   event.preventDefault();searchInput?.focus();searchInput?.select();return;
+   event.preventDefault();
+   if(window.innerWidth<=900&&!sidebar.classList.contains("open"))openSidebar(true);
+   else{navSearchInput?.focus();navSearchInput?.select();}
+   return;
   }
   if(event.key==="/"&&!typing&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&!document.querySelector("dialog[open]")){
-   event.preventDefault();searchInput?.focus();return;
+   event.preventDefault();
+   if(window.innerWidth<=900&&!sidebar.classList.contains("open"))openSidebar(true);
+   else{navSearchInput?.focus();navSearchInput?.select();}
+   return;
   }
   if(event.key==="Escape"){
+   if(navSearchInput?.value&&document.activeElement===navSearchInput){clearMenuSearch();return;}
    if(sidebar.classList.contains("open"))closeSidebar(true);
    if(accountMenu?.open)accountMenu.open=false;
   }
  });
- document.addEventListener("click",event=>{
-  if(accountMenu?.open&&!accountMenu.contains(event.target))accountMenu.open=false;
- });
+ document.addEventListener("click",event=>{if(accountMenu?.open&&!accountMenu.contains(event.target))accountMenu.open=false;});
 
  const modeKey="hf_admin_display_mode";
  const themeKey="hf_admin_theme";
  const themeBtn=document.getElementById("themeToggle");
- const applyTheme=(theme)=>{
+ const applyTheme=theme=>{
   const active=theme==="light"?"light":"dark";
   document.documentElement.dataset.adminTheme=active;
   palette.navy=active==="light"?"#2B2A3D":"#C9D5E6";
   palette.muted=active==="light"?"#737487":"#96A6BE";
   palette.cream=active==="light"?"#FFFDF8":"#111C2E";
   if(themeBtn){
-   const toLight=active==="dark";
-   const label=toLight?"Light theme":"Dark theme";
+   const toLight=active==="dark";const label=toLight?"Light theme":"Dark theme";
    themeBtn.innerHTML='<span class="topbar-button-icon theme-toggle-icon" aria-hidden="true">'+shellIcon(toLight?"sun":"moon")+'</span><span class="topbar-label theme-toggle-label">'+label+'</span>';
-   themeBtn.setAttribute("aria-label","Switch to "+(toLight?"light":"dark")+" theme");
-   themeBtn.setAttribute("title","Switch to "+(toLight?"light":"dark")+" theme");
-   themeBtn.setAttribute("aria-pressed",String(active==="light"));
+   themeBtn.setAttribute("aria-label","Switch to "+(toLight?"light":"dark")+" theme");themeBtn.setAttribute("title","Switch to "+(toLight?"light":"dark")+" theme");themeBtn.setAttribute("aria-pressed",String(active==="light"));
   }
   syncChartsForTheme();
  };
- let savedTheme="dark";
- try{savedTheme=localStorage.getItem(themeKey)||"dark";}catch(_themeReadError){}
+ let savedTheme="dark";try{savedTheme=localStorage.getItem(themeKey)||"dark";}catch(_themeReadError){}
  applyTheme(savedTheme);
- themeBtn?.addEventListener("click",()=>{
-  const next=document.documentElement.dataset.adminTheme==="light"?"dark":"light";
-  try{localStorage.setItem(themeKey,next);}catch(_themeWriteError){}
-  applyTheme(next);
- });
+ themeBtn?.addEventListener("click",()=>{const next=document.documentElement.dataset.adminTheme==="light"?"dark":"light";try{localStorage.setItem(themeKey,next);}catch(_themeWriteError){}applyTheme(next);});
  const modeBtn=document.getElementById("modeToggle");
  const applyMode=()=>{
-  let advanced=false;
-  try{advanced=localStorage.getItem(modeKey)==="advanced";}catch(_modeReadError){}
+  let advanced=false;try{advanced=localStorage.getItem(modeKey)==="advanced";}catch(_modeReadError){}
   adminApp.classList.toggle("simple-mode",!advanced);
-  if(modeBtn){
-   const action=advanced?"Simple view":"Advanced view";
-   modeBtn.innerHTML='<span class="topbar-button-icon">'+shellIcon("sliders")+'</span><span class="topbar-label">'+action+'</span>';
-   modeBtn.setAttribute("aria-label","Switch to "+(advanced?"simple":"advanced")+" view");
-   modeBtn.title="Switch to "+(advanced?"simple":"advanced")+" view";
-  }
+  if(modeBtn){const action=advanced?"Simple view":"Advanced view";modeBtn.innerHTML='<span class="topbar-button-icon">'+shellIcon("sliders")+'</span><span class="topbar-label">'+action+'</span>';modeBtn.setAttribute("aria-label","Switch to "+(advanced?"simple":"advanced")+" view");modeBtn.title="Switch to "+(advanced?"simple":"advanced")+" view";}
  };
  applyMode();
- modeBtn?.addEventListener("click",()=>{
-  const advanced=adminApp.classList.contains("simple-mode");
-  try{localStorage.setItem(modeKey,advanced?"advanced":"simple");}catch(_modeWriteError){}
-  applyMode();
- });
+ modeBtn?.addEventListener("click",()=>{const advanced=adminApp.classList.contains("simple-mode");try{localStorage.setItem(modeKey,advanced?"advanced":"simple");}catch(_modeWriteError){}applyMode();});
  document.getElementById("helpBtn")?.addEventListener("click",()=>document.getElementById("helpDialog")?.showModal());
  document.querySelectorAll("[data-close-help]").forEach(button=>button.addEventListener("click",()=>document.getElementById("helpDialog")?.close()));
- document.getElementById("logoutBtn")?.addEventListener("click",async()=>{
-  if(!confirm("Sign out of the Halal Food admin panel?"))return;
-  await client.auth.signOut();
-  location.replace("./index.html");
- });
- const email=document.getElementById("accountEmail");
- if(email)email.textContent=emailValue;
+ document.getElementById("logoutBtn")?.addEventListener("click",async()=>{if(!confirm("Sign out of the Halal Food admin panel?"))return;await client.auth.signOut();location.replace("./index.html");});
+ if(searchInput&&((pageName==="messages")||(pageName==="messenger"))){
+  const conversationSearch=document.getElementById("waConversationSearch");
+  if(conversationSearch){
+   searchInput.placeholder="Search conversations…";searchInput.setAttribute("aria-label","Search conversations by name or contact");
+   searchInput.addEventListener("input",()=>{if(conversationSearch.value!==searchInput.value){conversationSearch.value=searchInput.value;conversationSearch.dispatchEvent(new Event("input",{bubbles:true}));}});
+   conversationSearch.addEventListener("input",()=>{if(searchInput.value!==conversationSearch.value)searchInput.value=conversationSearch.value;});
+  }
+ }
+ const email=document.getElementById("accountEmail");if(email)email.textContent=emailValue;
 }
 
 window.HFAdminReady=(async()=>{
