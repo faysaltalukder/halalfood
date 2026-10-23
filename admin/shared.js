@@ -161,30 +161,140 @@ async function fetchFinance(range=null,limit=3000){
   return q;
  },limit);
 }
+function shellIcon(name){
+ const paths={
+  overview:'<rect x="3.5" y="3.5" width="7" height="7" rx="1.4"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.4"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.4"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.4"/>',
+  analytics:'<path d="M3 3v18h18"/><path d="m7 14 4-4 3 3 6-7"/>',
+  orders:'<path d="M21 8.5 12 13 3 8.5"/><path d="M12 22V13"/><path d="m3.3 7.2 8-4a1.6 1.6 0 0 1 1.4 0l8 4A1.6 1.6 0 0 1 21.5 8.6v7.8a1.6 1.6 0 0 1-.8 1.4l-8 4.1a1.6 1.6 0 0 1-1.4 0l-8-4.1a1.6 1.6 0 0 1-.8-1.4V8.6a1.6 1.6 0 0 1 .8-1.4Z"/>',
+  operations:'<rect x="4" y="4" width="16" height="17" rx="2"/><path d="M9 4.5V3h6v1.5M8 11l2.5 2.5L16 8"/><path d="M8 17h8"/>',
+  products:'<path d="m12 3 9 4.5v9L12 21l-9-4.5v-9L12 3Z"/><path d="m3.5 7.7 8.5 4.4 8.5-4.4M12 12v9"/><path d="m7.5 5.3 9 4.6"/>',
+  content:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M8 13h8M8 17h8"/>',
+  customers:'<path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M20 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
+  messages:'<path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5 9 9 0 0 1-4-.9L3 21l1.9-5.5a9 9 0 0 1-.9-4A8.5 8.5 0 0 1 12.5 3H13a8.5 8.5 0 0 1 8 8v.5Z"/><path d="M8 11h9M8 15h6"/>',
+  finance:'<rect x="3" y="5" width="18" height="15" rx="2"/><path d="M3 9h18M7 5V3h10v2M16 14h2"/>',
+  reports:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M8 17v-3M12 17v-6M16 17v-4"/>',
+  settings:'<path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z"/><path d="m19.4 15 .1.1a1.7 1.7 0 0 1-2.4 2.4l-.1-.1a1.7 1.7 0 0 0-2.9 1.2v.2a1.7 1.7 0 0 1-3.4 0v-.2a1.7 1.7 0 0 0-2.9-1.2l-.1.1a1.7 1.7 0 0 1-2.4-2.4l.1-.1a1.7 1.7 0 0 0-1.2-2.9H4a1.7 1.7 0 0 1 0-3.4h.2a1.7 1.7 0 0 0 1.2-2.9l-.1-.1a1.7 1.7 0 0 1 2.4-2.4l.1.1a1.7 1.7 0 0 0 2.9-1.2V2a1.7 1.7 0 0 1 3.4 0v.2a1.7 1.7 0 0 0 2.9 1.2l.1-.1a1.7 1.7 0 0 1 2.4 2.4l-.1.1a1.7 1.7 0 0 0 1.2 2.9h.2a1.7 1.7 0 0 1 0 3.4h-.2a1.7 1.7 0 0 0-1.2 2.9Z"/>',
+  search:'<circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/>',
+  menu:'<path d="M4 6h16M4 12h16M4 18h16"/>',
+  sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.65 17.65l1.42 1.42M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.65 6.35l1.42-1.42"/>',
+  moon:'<path d="M20.5 14.4A8.5 8.5 0 0 1 9.6 3.5 8.5 8.5 0 1 0 20.5 14.4Z"/>',
+  sliders:'<path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3"/><path d="M1 14h6M9 8h6M17 16h6"/>',
+  help:'<circle cx="12" cy="12" r="9"/><path d="M9.6 9a2.5 2.5 0 1 1 4.3 1.7c-1.3 1.2-1.9 1.6-1.9 3.3M12 17.4v.1"/>',
+  logout:'<path d="M10 17l5-5-5-5M15 12H3"/><path d="M12 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-6"/>',
+  chevron:'<path d="m7 10 5 5 5-5"/>'
+ };
+ return '<svg class="hf-shell-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">'+(paths[name]||paths.overview)+'</svg>';
+}
 function makeShell(){
  adminApp.classList.add("admin-app");
- const menu=[
-  ["overview","⌂","Overview"],["analytics","◷","Analytics"],["orders","▣","Orders"],["messages","✉","Messages"],["operations","⚒","Operations"],["products","◇","Products"],["content","▤","Website Content"],["customers","♙","Customers"],["finance","৳","Finance & Cash Flow"],["reports","⇩","Reports"],["settings","⚙","Settings"]
+ const activePage=pageName==="messenger"?"messages":pageName;
+ const menuGroups=[
+  {label:"WORKSPACE",items:[["overview","overview","Overview"]]},
+  {label:"STORE MANAGEMENT",items:[["orders","orders","Orders"],["operations","operations","Operations"],["products","products","Products"],["content","content","Website Content"]]},
+  {label:"CUSTOMERS & MESSAGES",items:[["messages","messages","Messages"],["customers","customers","Customers"]]},
+  {label:"INSIGHTS & FINANCE",items:[["analytics","analytics","Analytics"],["finance","finance","Finance & Cash Flow"],["reports","reports","Reports"]]},
+  {label:"SYSTEM",items:[["settings","settings","Settings"]]}
  ];
- const links=menu.map(x=>'<a class="admin-nav-link '+(x[0]===pageName?"active":"")+'" href="./'+x[0]+'.html" '+(x[0]===pageName?'aria-current="page"':'')+'><span class="nav-icon">'+x[1]+'</span><span>'+x[2]+'</span></a>').join("");
- const shell='<aside class="admin-sidebar" id="adminSidebar">'+
- '<a class="admin-brand" href="./overview.html"><img src="../images/logo-favicon/halal-food-official-logo.svg" alt="" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'grid\'"><span class="admin-brand-mark" style="display:none">HF</span><span><strong>Halal Food</strong><small>Admin Control Center</small></span></a>'+
- '<div class="admin-nav-group"><div class="admin-nav-label">WORKSPACE</div>'+links+'</div>'+
- '<div class="admin-sidebar-note"><strong>Easy Mode + Advanced Tools</strong>Clear guidance for everyday tasks, with deeper reports when you need them.</div></aside>'+
- '<div class="admin-frame"><header class="admin-topbar"><button id="adminMenuToggle" class="admin-menu-toggle" type="button" aria-label="Open navigation">☰</button>'+
- '<div class="admin-global-search"><input id="globalSearch" type="search" placeholder="Search all tables…" aria-label="Search all tables on this page"></div><span class="admin-topbar-spacer"></span>'+
- '<button class="admin-top-button theme-toggle" id="themeToggle" type="button" aria-label="Switch to light theme" title="Switch to light theme" aria-pressed="false"><span class="theme-toggle-icon" aria-hidden="true">☼</span><span class="theme-toggle-label">Light theme</span></button><button class="admin-top-button" id="modeToggle" type="button">Advanced view</button><button class="admin-top-button" id="helpBtn" type="button">? Help</button><button class="admin-top-button" id="logoutBtn" type="button">Sign out</button>'+
- '<div class="admin-account-chip"><span class="admin-account-avatar">HF</span><span class="admin-account-meta"><strong>Admin</strong><small id="accountEmail">Authorized account</small></span></div></header>'+
- '<main class="admin-main" id="adminMain">'+initialContent+'</main></div>'+
- '<div id="hfToast" class="hf-toast" role="status" aria-live="polite"></div>'+
- '<dialog id="helpDialog" class="hf-dialog"><div class="hf-dialog-inner help-content"><div class="hf-dialog-head"><div><p class="hf-dialog-title-tag">QUICK GUIDE</p><h2>How to use your admin panel</h2><p>Every section is designed for everyday, non-technical use.</p></div><button class="hf-button hf-button-secondary hf-dialog-close" data-close-help type="button" aria-label="Close help">×</button></div><ol><li>Choose a section from the left menu.</li><li>Use the date filters and search boxes to narrow down information.</li><li>Charts are interactive: hover or tap a chart to see values and labels.</li><li>Use Reports to export filtered data. CSV opens in spreadsheets; PDF opens the print dialog where you can choose Save as PDF.</li><li>Finance entries count in summaries only after they are marked Confirmed. Confirm only records you have checked.</li><li>This is a learning/testing storefront. Order value is not proof of collected payment; real delivery and payments are not enabled.</li></ol><div class="hf-dialog-actions"><button class="hf-button hf-button-primary" data-close-help type="button">Got it</button></div></div></dialog>';
+ const navigation=menuGroups.map(group=>{
+  const links=group.items.map(item=>'<a class="admin-nav-link '+(item[0]===activePage?"active":"")+'" href="./'+item[0]+'.html" '+(item[0]===activePage?'aria-current="page"':'')+'><span class="nav-icon">'+shellIcon(item[1])+'</span><span class="admin-nav-text">'+esc(item[2])+'</span></a>').join("");
+  return '<section class="admin-nav-group" aria-label="'+esc(group.label)+'"><div class="admin-nav-label">'+esc(group.label)+'</div><div class="admin-nav-links">'+links+'</div></section>';
+ }).join("");
+ const metadata=currentUser?.user_metadata||{};
+ const emailValue=String(currentUser?.email||ADMIN_EMAIL);
+ const displayName=String(metadata.full_name||metadata.name||metadata.given_name||emailValue.split("@")[0]||"Admin").trim().slice(0,80);
+ const initials=displayName.split(/\s+/).filter(Boolean).slice(0,2).map(part=>Array.from(part)[0]||"").join("").toUpperCase()||"HF";
+ const avatarCandidate=String(metadata.avatar_url||metadata.picture||"").trim();
+ const avatarUrl=/^https:\/\/[^"'<>]+$/i.test(avatarCandidate)?avatarCandidate.slice(0,2048):"";
+ const avatarMarkup=avatarUrl
+  ? '<img class="admin-account-avatar-image" src="'+esc(avatarUrl)+'" alt="" referrerpolicy="no-referrer"><span class="admin-account-avatar-fallback" hidden>'+esc(initials)+'</span>'
+  : '<span class="admin-account-avatar-fallback">'+esc(initials)+'</span>';
+ const shell=
+  '<aside class="admin-sidebar" id="adminSidebar" aria-label="Primary navigation">'+
+   '<a class="admin-brand" href="./overview.html" aria-label="Halal Food admin overview">'+
+    '<img src="../images/logo-favicon/halal-food-official-logo.svg" alt="" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'grid\'">'+
+    '<span class="admin-brand-mark" style="display:none" aria-hidden="true">HF</span>'+
+    '<span class="admin-brand-copy"><strong>Halal Food</strong><small>Admin Control Center</small></span>'+
+   '</a>'+
+   '<nav class="admin-sidebar-nav" aria-label="Admin sections">'+navigation+'</nav>'+
+   '<div class="admin-sidebar-note"><div class="admin-sidebar-note-head"><span class="admin-test-indicator" aria-hidden="true"></span><strong>Learning &amp; testing project</strong></div><p>Live payments and product deliveries are not enabled.</p></div>'+
+  '</aside>'+
+  '<button id="adminSidebarBackdrop" class="admin-sidebar-backdrop" type="button" aria-label="Close navigation" hidden></button>'+
+  '<div class="admin-frame"><header class="admin-topbar">'+
+   '<button id="adminMenuToggle" class="admin-menu-toggle" type="button" aria-label="Open navigation" aria-controls="adminSidebar" aria-expanded="false">'+shellIcon("menu")+'</button>'+
+   '<div class="admin-global-search" role="search"><span class="admin-global-search-icon" aria-hidden="true">'+shellIcon("search")+'</span><input id="globalSearch" type="search" autocomplete="off" placeholder="Search this page\'s records…" aria-label="Search records on this page"><kbd class="admin-global-search__shortcut" aria-hidden="true"><span>Ctrl</span><b>K</b></kbd></div>'+
+   '<span class="admin-topbar-spacer" aria-hidden="true"></span>'+
+   '<div class="admin-topbar-actions">'+
+    '<button class="admin-top-button theme-toggle" id="themeToggle" type="button" aria-label="Switch to light theme" title="Switch to light theme" aria-pressed="false"><span class="topbar-button-icon theme-toggle-icon" aria-hidden="true">'+shellIcon("sun")+'</span><span class="topbar-label theme-toggle-label">Light theme</span></button>'+
+    '<button class="admin-top-button admin-mode-toggle" id="modeToggle" type="button" title="Switch to advanced view"><span class="topbar-button-icon">'+shellIcon("sliders")+'</span><span class="topbar-label">Advanced view</span></button>'+
+    '<button class="admin-top-button admin-help-toggle" id="helpBtn" type="button" title="Open quick guide"><span class="topbar-button-icon">'+shellIcon("help")+'</span><span class="topbar-label">Help</span></button>'+
+   '</div>'+
+   '<details class="admin-account-menu" id="adminAccountMenu"><summary class="admin-account-chip" aria-label="Open administrator account menu">'+
+    '<span class="admin-account-avatar">'+avatarMarkup+'</span><span class="admin-account-meta"><strong>'+esc(displayName)+'</strong><small id="accountEmail">'+esc(emailValue)+'</small></span><span class="admin-account-chevron">'+shellIcon("chevron")+'</span>'+
+   '</summary><div class="admin-account-dropdown"><div class="admin-account-dropdown-head"><span class="admin-account-dropdown-kicker">SIGNED IN</span><strong>'+esc(displayName)+'</strong><small>'+esc(emailValue)+'</small></div><a class="admin-account-settings-link" href="./settings.html">'+shellIcon("settings")+'<span>Settings &amp; security</span></a><button id="logoutBtn" class="admin-account-logout" type="button">'+shellIcon("logout")+'<span>Sign out</span></button></div></details>'+
+  '</header><main class="admin-main" id="adminMain">'+initialContent+'</main></div>'+
+  '<div id="hfToast" class="hf-toast" role="status" aria-live="polite"></div>'+
+  '<dialog id="helpDialog" class="hf-dialog"><div class="hf-dialog-inner help-content"><div class="hf-dialog-head"><div><p class="hf-dialog-title-tag">QUICK GUIDE</p><h2>How to use your admin panel</h2><p>Every section is designed for everyday, non-technical use.</p></div><button class="hf-button hf-button-secondary hf-dialog-close" data-close-help type="button" aria-label="Close help">×</button></div><ol><li>Choose a section from the left menu.</li><li>Use the date filters and search boxes to narrow down information.</li><li>Charts are interactive: hover or tap a chart to see values and labels.</li><li>Use Reports to export filtered data. CSV opens in spreadsheets; PDF opens the print dialog where you can choose Save as PDF.</li><li>Finance entries count in summaries only after they are marked Confirmed. Confirm only records you have checked.</li><li>This is a learning/testing storefront. Order value is not proof of collected payment; real delivery and payments are not enabled.</li></ol><div class="hf-dialog-actions"><button class="hf-button hf-button-primary" data-close-help type="button">Got it</button></div></div></dialog>';
  adminApp.innerHTML=shell;
  adminApp.hidden=false;gate.hidden=true;
+
  const sidebar=document.getElementById("adminSidebar");
+ const sidebarBackdrop=document.getElementById("adminSidebarBackdrop");
+ const menuToggle=document.getElementById("adminMenuToggle");
+ const searchInput=document.getElementById("globalSearch");
+ const accountMenu=document.getElementById("adminAccountMenu");
+ const avatarImage=adminApp.querySelector(".admin-account-avatar-image");
+ avatarImage?.addEventListener("error",()=>{
+  avatarImage.hidden=true;
+  const fallback=avatarImage.nextElementSibling;
+  if(fallback)fallback.hidden=false;
+ },{once:true});
+
+ const closeSidebar=(returnFocus=false)=>{
+  sidebar.classList.remove("open");
+  sidebarBackdrop.hidden=true;
+  menuToggle.setAttribute("aria-expanded","false");
+  menuToggle.setAttribute("aria-label","Open navigation");
+  document.body.classList.remove("admin-sidebar-open");
+  if(returnFocus)menuToggle.focus({preventScroll:true});
+ };
+ const openSidebar=()=>{
+  sidebar.classList.add("open");
+  sidebarBackdrop.hidden=false;
+  menuToggle.setAttribute("aria-expanded","true");
+  menuToggle.setAttribute("aria-label","Close navigation");
+  document.body.classList.add("admin-sidebar-open");
+  sidebar.querySelector(".admin-nav-link")?.focus({preventScroll:true});
+ };
+ menuToggle?.addEventListener("click",()=>{
+  if(sidebar.classList.contains("open"))closeSidebar();else openSidebar();
+ });
+ sidebarBackdrop?.addEventListener("click",()=>closeSidebar());
+ sidebar.querySelectorAll(".admin-nav-link").forEach(link=>link.addEventListener("click",()=>{
+  if(window.innerWidth<=900)closeSidebar();
+ }));
+ window.addEventListener("resize",()=>{if(window.innerWidth>900)closeSidebar();});
+ document.addEventListener("keydown",event=>{
+  const target=event.target;
+  const typing=!!target?.closest?.('input,textarea,select,[contenteditable="true"]');
+  if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==="k"){
+   event.preventDefault();searchInput?.focus();searchInput?.select();return;
+  }
+  if(event.key==="/"&&!typing&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&!document.querySelector("dialog[open]")){
+   event.preventDefault();searchInput?.focus();return;
+  }
+  if(event.key==="Escape"){
+   if(sidebar.classList.contains("open"))closeSidebar(true);
+   if(accountMenu?.open)accountMenu.open=false;
+  }
+ });
+ document.addEventListener("click",event=>{
+  if(accountMenu?.open&&!accountMenu.contains(event.target))accountMenu.open=false;
+ });
+
  const modeKey="hf_admin_display_mode";
  const themeKey="hf_admin_theme";
  const themeBtn=document.getElementById("themeToggle");
- const applyTheme=(theme=localStorage.getItem(themeKey)||"dark")=>{
+ const applyTheme=(theme)=>{
   const active=theme==="light"?"light":"dark";
   document.documentElement.dataset.adminTheme=active;
   palette.navy=active==="light"?"#2B2A3D":"#C9D5E6";
@@ -193,30 +303,50 @@ function makeShell(){
   if(themeBtn){
    const toLight=active==="dark";
    const label=toLight?"Light theme":"Dark theme";
-   themeBtn.innerHTML='<span class="theme-toggle-icon" aria-hidden="true">'+(toLight?"☼":"☾")+'</span><span class="theme-toggle-label">'+label+'</span>';
+   themeBtn.innerHTML='<span class="topbar-button-icon theme-toggle-icon" aria-hidden="true">'+shellIcon(toLight?"sun":"moon")+'</span><span class="topbar-label theme-toggle-label">'+label+'</span>';
    themeBtn.setAttribute("aria-label","Switch to "+(toLight?"light":"dark")+" theme");
    themeBtn.setAttribute("title","Switch to "+(toLight?"light":"dark")+" theme");
    themeBtn.setAttribute("aria-pressed",String(active==="light"));
   }
   syncChartsForTheme();
  };
- applyTheme();
+ let savedTheme="dark";
+ try{savedTheme=localStorage.getItem(themeKey)||"dark";}catch(_themeReadError){}
+ applyTheme(savedTheme);
  themeBtn?.addEventListener("click",()=>{
   const next=document.documentElement.dataset.adminTheme==="light"?"dark":"light";
-  localStorage.setItem(themeKey,next);
+  try{localStorage.setItem(themeKey,next);}catch(_themeWriteError){}
   applyTheme(next);
  });
  const modeBtn=document.getElementById("modeToggle");
- const applyMode=()=>{const advanced=localStorage.getItem(modeKey)==="advanced";adminApp.classList.toggle("simple-mode",!advanced);if(modeBtn)modeBtn.textContent=advanced?"Simple view":"Advanced view";};
+ const applyMode=()=>{
+  let advanced=false;
+  try{advanced=localStorage.getItem(modeKey)==="advanced";}catch(_modeReadError){}
+  adminApp.classList.toggle("simple-mode",!advanced);
+  if(modeBtn){
+   const action=advanced?"Simple view":"Advanced view";
+   modeBtn.innerHTML='<span class="topbar-button-icon">'+shellIcon("sliders")+'</span><span class="topbar-label">'+action+'</span>';
+   modeBtn.setAttribute("aria-label","Switch to "+(advanced?"simple":"advanced")+" view");
+   modeBtn.title="Switch to "+(advanced?"simple":"advanced")+" view";
+  }
+ };
  applyMode();
- modeBtn?.addEventListener("click",()=>{const advanced=adminApp.classList.contains("simple-mode");localStorage.setItem(modeKey,advanced?"advanced":"simple");applyMode();});
- document.getElementById("adminMenuToggle")?.addEventListener("click",()=>sidebar.classList.toggle("open"));
- document.getElementById("adminMain")?.addEventListener("click",e=>{if(window.innerWidth<=900&&e.target.closest("a"))sidebar.classList.remove("open");});
+ modeBtn?.addEventListener("click",()=>{
+  const advanced=adminApp.classList.contains("simple-mode");
+  try{localStorage.setItem(modeKey,advanced?"advanced":"simple");}catch(_modeWriteError){}
+  applyMode();
+ });
  document.getElementById("helpBtn")?.addEventListener("click",()=>document.getElementById("helpDialog")?.showModal());
- document.querySelectorAll("[data-close-help]").forEach(b=>b.addEventListener("click",()=>document.getElementById("helpDialog")?.close()));
- document.getElementById("logoutBtn")?.addEventListener("click",async()=>{if(!confirm("Sign out of the Halal Food admin panel?"))return;await client.auth.signOut();location.replace("./index.html");});
- const email=document.getElementById("accountEmail");if(email)email.textContent=currentUser?.email||ADMIN_EMAIL;
+ document.querySelectorAll("[data-close-help]").forEach(button=>button.addEventListener("click",()=>document.getElementById("helpDialog")?.close()));
+ document.getElementById("logoutBtn")?.addEventListener("click",async()=>{
+  if(!confirm("Sign out of the Halal Food admin panel?"))return;
+  await client.auth.signOut();
+  location.replace("./index.html");
+ });
+ const email=document.getElementById("accountEmail");
+ if(email)email.textContent=emailValue;
 }
+
 window.HFAdminReady=(async()=>{
  try{
   const {data,error}=await client.auth.getSession();
