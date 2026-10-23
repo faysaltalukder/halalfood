@@ -1,4 +1,4 @@
-:root{--wa-green:#287a52;--wa-green-soft:rgba(40,122,82,.12)}
+:root{--wa-green:#1877f2;--wa-green-soft:rgba(24,119,242,.12)}
 .wa-setup-card{margin-bottom:18px}
 .wa-setup-grid{display:grid;grid-template-columns:minmax(230px,.85fr) minmax(320px,1.15fr);gap:20px}
 .wa-setup-status,.wa-webhook-setup{border:1px solid var(--hf-border);border-radius:13px;padding:16px;min-width:0}
