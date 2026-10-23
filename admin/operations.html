@@ -4,7 +4,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow">
 <title>Operations | Halal Food Admin</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./shared.css?v=20261023-shell-v2">
+<link rel="stylesheet" href="./shared.css?v=20261023-phase5-v1">
 <style>
 .ops-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:17px;margin-bottom:18px}.ops-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:18px}.ops-metric{padding:15px 17px}.ops-metric small{display:block;color:var(--hf-muted);font-weight:650}.ops-metric strong{display:block;font-size:27px;letter-spacing:-.04em;margin-top:5px}.ops-metric-note{display:block;color:var(--hf-muted);font-size:11px;font-weight:500;line-height:1.4;margin-top:5px}.ops-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:14px}.ops-form label{display:grid;gap:5px;font-size:11px;font-weight:750}.ops-form .wide{grid-column:1/-1}.ops-table{min-width:700px}.ops-table td{vertical-align:middle}.ops-actions{display:flex;gap:6px;flex-wrap:wrap}.ops-note{padding:12px 14px;border-radius:12px;background:#fff4e8;border:1px solid #f0d8be;color:#774a26;font-size:12px;line-height:1.55;margin-bottom:16px}.ops-pill{display:inline-flex;padding:4px 8px;border-radius:99px;background:#f2eee6;font-size:10px;font-weight:800;white-space:nowrap}.ops-section{scroll-margin-top:90px;margin-bottom:18px}.ops-title{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:14px}.ops-title h2{margin:0;font-size:17px}.ops-title p{margin:5px 0 0;color:var(--hf-muted);font-size:12px}.ops-subnav{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:16px}.ops-subnav a{padding:8px 11px;border:1px solid var(--hf-border);background:#fffdf9;border-radius:10px;font-size:12px;font-weight:700}.ops-subnav a:hover{border-color:var(--hf-orange)}.ops-status{min-width:145px}.ops-empty{padding:18px;text-align:center;color:var(--hf-muted);font-size:12px}
 @media(max-width:1000px){.ops-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:760px){.ops-grid{grid-template-columns:1fr}.ops-form{grid-template-columns:1fr}.ops-form .wide{grid-column:auto}.ops-title{flex-direction:column}.ops-metrics{gap:8px}.ops-metric{padding:12px}.ops-metric strong{font-size:22px}}
@@ -26,7 +26,7 @@
 <section id="packingSection" class="hf-card hf-card-pad ops-section">
 <div class="ops-title"><div><h2>Packing queue</h2><p>Orders currently pending or processing. Create a placeholder courier record when a parcel is ready.</p></div><a class="hf-button hf-button-secondary hf-button-small" href="./orders.html">Open full order manager</a></div>
 <div class="hf-toolbar"><input id="packingSearch" class="hf-input" type="search" placeholder="Search order, customer or phone"><select id="packingFilter" class="hf-select"><option value="">All packing stages</option><option value="pending">Pending confirmation</option><option value="processing">Processing / packing</option></select></div>
-<div class="hf-table-wrap"><table class="hf-table ops-table"><thead><tr><th>Order</th><th>Customer</th><th>Items</th><th>Order value</th><th>Order status</th><th>Quick action</th></tr></thead><tbody id="packingBody"><tr><td colspan="6" class="hf-loading">Loading orders…</td></tr></tbody></table></div>
+<div class="hf-table-wrap" tabindex="0" role="region" aria-label="Scrollable table results. On small screens, scroll horizontally to see all columns."><table class="hf-table ops-table"><thead><tr><th>Order</th><th>Customer</th><th>Items</th><th>Order value</th><th>Order status</th><th>Quick action</th></tr></thead><tbody id="packingBody"><tr><td colspan="6" class="hf-loading">Loading orders…</td></tr></tbody></table></div>
 <p class="hf-data-note">The packing queue uses existing order statuses; packing completion is an operations step, not proof of payment or dispatch.</p>
 </section>
 
@@ -35,7 +35,7 @@
  <div class="ops-actions" style="margin:10px 0 12px"><button id="testSteadfastBtn" class="hf-button hf-button-secondary" type="button">Test Steadfast API</button><button id="testPathaoBtn" class="hf-button hf-button-secondary" type="button">Test Pathao API</button><button id="testRedxBtn" class="hf-button hf-button-secondary" type="button">Test REDX API</button><button id="syncLiveStatusesBtn" class="hf-button hf-button-secondary" type="button">↻ Sync live statuses</button></div><div id="courierTestResult" class="ops-note" role="status" aria-live="polite" hidden></div>
  <p class="hf-data-note">Pathao also needs <code>PATHAO_USERNAME</code>, <code>PATHAO_PASSWORD</code> and <code>PATHAO_STORE_ID</code> in Supabase Secrets, in addition to Client ID and Client Secret. For real REDX deliveries, configure <code>REDX_API_TOKEN</code>, <code>REDX_PICKUP_STORE_ID</code> and <code>REDX_BASE_URL=https://openapi.redx.com.bd/v1.0.0-beta</code> using Production credentials. <strong>Test REDX API</strong> checks the token and pickup store only; it does not book a parcel. The REDX area lookup and live booking are restricted to Production, so no Sandbox destination can be used for a real delivery. A successful Steadfast balance/API test does not guarantee create-order activation: if booking returns HTTP 401 “Account is not active!”, ask Steadfast to activate API booking before retrying.</p>
 <div class="hf-toolbar"><input id="shipmentSearch" class="hf-input" type="search" placeholder="Search order or tracking ID"><select id="shipmentStatusFilter" class="hf-select"><option value="">All parcel statuses</option><option value="draft">Draft</option><option value="ready_for_pickup">Ready for pickup</option><option value="booked">Booked (manual placeholder)</option><option value="picked_up">Picked up</option><option value="in_transit">In transit</option><option value="delivered">Delivered</option><option value="delivery_failed">Delivery failed</option><option value="returned">Returned</option><option value="cancelled">Cancelled</option></select><select id="codFilter" class="hf-select"><option value="">All COD settlement</option><option value="pending">Awaiting reconciliation</option><option value="partial">Partially reconciled</option><option value="settled">Settled</option><option value="not_applicable">Not applicable</option></select></div>
-<div class="hf-table-wrap"><table class="hf-table ops-table"><thead><tr><th>Order</th><th>Courier / tracking</th><th>Parcel status</th><th>COD reference</th><th>Courier fee</th><th>Settlement</th><th>Actions</th></tr></thead><tbody id="shipmentsBody"><tr><td colspan="7" class="hf-loading">Loading courier records…</td></tr></tbody></table></div>
+<div class="hf-table-wrap" tabindex="0" role="region" aria-label="Scrollable table results. On small screens, scroll horizontally to see all columns."><table class="hf-table ops-table"><thead><tr><th>Order</th><th>Courier / tracking</th><th>Parcel status</th><th>COD reference</th><th>Courier fee</th><th>Settlement</th><th>Actions</th></tr></thead><tbody id="shipmentsBody"><tr><td colspan="7" class="hf-loading">Loading courier records…</td></tr></tbody></table></div>
 <p class="hf-data-note">COD amount is a planning/reference field, not money collected. Booking sends order/customer details to the selected courier. An unknown API response is blocked from retry until you verify the provider dashboard.</p>
 </section>
 
@@ -53,7 +53,7 @@
 <div class="wide"><button class="hf-button hf-button-primary" type="submit">＋ Add task</button></div>
 </form>
 <div class="hf-toolbar"><select id="taskStatusFilter" class="hf-select"><option value="">All task statuses</option><option value="todo">To do</option><option value="in_progress">In progress</option><option value="blocked">Blocked</option><option value="done">Done</option><option value="cancelled">Cancelled</option></select><input id="taskSearch" class="hf-input" type="search" placeholder="Search task or assignee"></div>
-<div class="hf-table-wrap"><table class="hf-table ops-table"><thead><tr><th>Task</th><th>Owner / due</th><th>Priority</th><th>Status</th><th>Action</th></tr></thead><tbody id="tasksBody"><tr><td colspan="5" class="hf-loading">Loading tasks…</td></tr></tbody></table></div>
+<div class="hf-table-wrap" tabindex="0" role="region" aria-label="Scrollable table results. On small screens, scroll horizontally to see all columns."><table class="hf-table ops-table"><thead><tr><th>Task</th><th>Owner / due</th><th>Priority</th><th>Status</th><th>Action</th></tr></thead><tbody id="tasksBody"><tr><td colspan="5" class="hf-loading">Loading tasks…</td></tr></tbody></table></div>
 <section class="hf-card hf-card-pad" style="margin-top:16px;box-shadow:none">
 <div class="ops-title"><div><h2>Team directory</h2><p>Add staff contacts and assign daily tasks by name. This is not a login or payroll system.</p></div></div>
 <form id="teamForm" class="ops-form">
@@ -65,7 +65,7 @@
 <label class="wide">Notes<input id="teamNotes" class="hf-input" maxlength="1000" placeholder="Shift or handover notes"></label>
 <div class="wide"><button class="hf-button hf-button-primary" type="submit">＋ Add team member</button></div>
 </form>
-<div class="hf-table-wrap"><table class="hf-table ops-table"><thead><tr><th>Team member</th><th>Department / role</th><th>Contact</th><th>Status</th><th>Action</th></tr></thead><tbody id="teamBody"><tr><td colspan="5" class="hf-loading">Loading team…</td></tr></tbody></table></div>
+<div class="hf-table-wrap" tabindex="0" role="region" aria-label="Scrollable table results. On small screens, scroll horizontally to see all columns."><table class="hf-table ops-table"><thead><tr><th>Team member</th><th>Department / role</th><th>Contact</th><th>Status</th><th>Action</th></tr></thead><tbody id="teamBody"><tr><td colspan="5" class="hf-loading">Loading team…</td></tr></tbody></table></div>
 </section>
 </section>
 
@@ -80,7 +80,7 @@
 <label class="wide">Notes<textarea id="supplierNotes" class="hf-textarea" rows="2" maxlength="1200"></textarea></label>
 <div class="wide"><button class="hf-button hf-button-primary" type="submit">＋ Save supplier</button></div>
 </form>
-<div class="hf-table-wrap"><table class="hf-table ops-table"><thead><tr><th>Supplier</th><th>Contact</th><th>Address / notes</th><th>Status</th><th>Action</th></tr></thead><tbody id="suppliersBody"><tr><td colspan="5" class="hf-loading">Loading suppliers…</td></tr></tbody></table></div>
+<div class="hf-table-wrap" tabindex="0" role="region" aria-label="Scrollable table results. On small screens, scroll horizontally to see all columns."><table class="hf-table ops-table"><thead><tr><th>Supplier</th><th>Contact</th><th>Address / notes</th><th>Status</th><th>Action</th></tr></thead><tbody id="suppliersBody"><tr><td colspan="5" class="hf-loading">Loading suppliers…</td></tr></tbody></table></div>
 </section>
 </div>
 
@@ -99,7 +99,7 @@
 <div class="wide"><button class="hf-button hf-button-primary" type="submit">＋ Create purchase order</button></div>
 </form>
 <div class="ops-note">Recording a purchase order does not increase stock or confirm a supplier payment. When goods arrive, count the received quantity and record the stock receipt separately. This avoids overstating inventory.</div>
-<div class="hf-table-wrap"><table class="hf-table ops-table"><thead><tr><th>Purchase order</th><th>Supplier</th><th>Product / quantity</th><th>Amount</th><th>Order / expected date</th><th>Status</th><th>Action</th></tr></thead><tbody id="purchaseBody"><tr><td colspan="7" class="hf-loading">Loading purchase orders…</td></tr></tbody></table></div>
+<div class="hf-table-wrap" tabindex="0" role="region" aria-label="Scrollable table results. On small screens, scroll horizontally to see all columns."><table class="hf-table ops-table"><thead><tr><th>Purchase order</th><th>Supplier</th><th>Product / quantity</th><th>Amount</th><th>Order / expected date</th><th>Status</th><th>Action</th></tr></thead><tbody id="purchaseBody"><tr><td colspan="7" class="hf-loading">Loading purchase orders…</td></tr></tbody></table></div>
 </section>
 
 <section id="returnsSection" class="hf-card hf-card-pad ops-section">
@@ -113,7 +113,7 @@
 <label class="wide">Notes<textarea id="returnNotes" class="hf-textarea" rows="2" maxlength="1200"></textarea></label>
 <div class="wide"><button class="hf-button hf-button-primary" type="submit">＋ Record return request</button></div>
 </form>
-<div class="hf-table-wrap"><table class="hf-table ops-table"><thead><tr><th>Return</th><th>Order</th><th>Reason</th><th>Refund reference</th><th>Condition</th><th>Status</th><th>Actions</th></tr></thead><tbody id="returnsBody"><tr><td colspan="7" class="hf-loading">Loading returns…</td></tr></tbody></table></div>
+<div class="hf-table-wrap" tabindex="0" role="region" aria-label="Scrollable table results. On small screens, scroll horizontally to see all columns."><table class="hf-table ops-table"><thead><tr><th>Return</th><th>Order</th><th>Reason</th><th>Refund reference</th><th>Condition</th><th>Status</th><th>Actions</th></tr></thead><tbody id="returnsBody"><tr><td colspan="7" class="hf-loading">Loading returns…</td></tr></tbody></table></div>
 <p class="hf-data-note">A return record does not automatically refund money or put products back into stock. Mark restock approved only after inspection and a real physical count.</p>
 </section>
 
@@ -133,5 +133,5 @@
 </div><p id="shipmentFormError" class="hf-form-error" role="alert"></p><div class="hf-dialog-actions"><button class="hf-button hf-button-secondary" data-close-dialog="shipmentDialog" type="button">Cancel</button><button class="hf-button hf-button-primary" id="saveShipmentBtn" type="submit">Save placeholder record</button></div></form></dialog>
 </main></div>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script defer src="./i18n.js?v=20261022-bilingual-v11"></script><script defer src="./shared.js?v=20261023-shell-v3"></script><script defer src="./operations.js?v=20261022-redx-sandbox-testarea-v4"></script><script defer src="./app.js?v=20261022-redx-areas-fix-v2"></script>
+<script defer src="./i18n.js?v=20261022-bilingual-v11"></script><script defer src="./shared.js?v=20261023-phase5-v1"></script><script defer src="./operations.js?v=20261022-redx-sandbox-testarea-v4"></script><script defer src="./app.js?v=20261022-redx-areas-fix-v2"></script>
 </body></html>
