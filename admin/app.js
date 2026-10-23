@@ -298,6 +298,11 @@ window.HFAdminReady.then(async H=>{
   bindRangeControls(()=>refresh());await refresh();attachRefresh(refresh);
  }
  async function initOrders(){
+  const ordersDateLabel=$("ordersDateLabel");
+  if(ordersDateLabel){
+   try{ordersDateLabel.textContent=new Intl.DateTimeFormat("en-BD",{timeZone:"Asia/Dhaka",weekday:"long",day:"numeric",month:"long",year:"numeric"}).format(new Date());}
+   catch(_dateError){ordersDateLabel.textContent=new Date().toDateString();}
+  }
   let all=[],activeOrderId=null,shipmentRows=[],shipmentRowsReady=false,shipmentLoadMessage="",redxAreaLookupError="",redxLoadedAreas=[],redxLoadedDistrict="",redxPreferredAreaId="",redxPreferredAreaName="";
   function inferRedxDistrict(address){
    // Division names must not be mistaken for the destination district.
@@ -523,6 +528,16 @@ window.HFAdminReady.then(async H=>{
   }
   function render(){
    const search=String($("orderSearch")?.value||$("globalSearch")?.value||"").toLowerCase().trim(),status=$("orderStatusFilter")?.value||"";
+   const countByStatus={"":all.length,pending:0,processing:0,shipped:0,delivered:0,cancelled:0};
+   all.forEach(order=>{if(Object.prototype.hasOwnProperty.call(countByStatus,order.status))countByStatus[order.status]++;});
+   document.querySelectorAll("[data-order-quick-filter]").forEach(button=>{
+    const filter=button.dataset.orderQuickFilter||"";
+    const count=button.querySelector("[data-order-filter-count]");
+    if(count)count.textContent=shortNum(countByStatus[filter]??0);
+    const active=filter===status;
+    button.classList.toggle("is-active",active);
+    button.setAttribute("aria-pressed",String(active));
+   });
    const rows=all.filter(o=>(!status||o.status===status)&&(!search||[o.order_number,o.customer_name,o.customer_phone,o.customer_email,o.id,...(o.order_items||[]).map(i=>i.product_name)].join(" ").toLowerCase().includes(search)));
    $("ordersFoundCount").textContent=rows.length.toLocaleString("en-BD")+" orders";
    $("ordersDataBody").innerHTML=rows.length?rows.map(o=>{
@@ -557,6 +572,12 @@ window.HFAdminReady.then(async H=>{
   }
   $("orderSearch")?.addEventListener("input",render);$("orderStatusFilter")?.addEventListener("change",render);
   const qStatus=new URLSearchParams(location.search).get("status");if(qStatus&&statusOptions.includes(qStatus))$("orderStatusFilter").value=qStatus;
+  $("ordersStatusOverview")?.addEventListener("click",e=>{
+   const button=e.target.closest("[data-order-quick-filter]");
+   if(!button)return;
+   $("orderStatusFilter").value=button.dataset.orderQuickFilter||"";
+   render();
+  });
   $("ordersDataBody")?.addEventListener("change",async e=>{
    const select=e.target.closest(".order-status-select");if(!select)return;
    const order=all.find(o=>o.id===select.dataset.orderId);if(!order)return;
