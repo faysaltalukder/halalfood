@@ -1,0 +1,55 @@
+/* Steps 11–12: Reports and Settings workspace polish, scoped to these pages. */
+.hf-phase11-workspace-nav{display:grid;gap:10px;margin:0 0 18px}
+.hf-phase11-report-nav{grid-template-columns:repeat(2,minmax(0,1fr))}
+.hf-phase11-settings-nav{grid-template-columns:repeat(4,minmax(0,1fr))}
+.hf-phase11-nav-link{display:grid;grid-template-columns:38px minmax(0,1fr) 14px;align-items:center;gap:11px;min-width:0;padding:12px 13px;border:1px solid #E5E0D6;border-radius:13px;background:#FFFDF8;color:#2B2A3D;text-decoration:none;transition:transform .15s,border-color .15s,box-shadow .15s}
+.hf-phase11-nav-link:hover{border-color:#C97B3D;box-shadow:0 7px 18px rgba(43,42,61,.06);transform:translateY(-1px)}
+.hf-phase11-nav-link:focus-visible{outline:2px solid #C97B3D;outline-offset:2px}
+.hf-phase11-nav-icon{width:38px;height:38px;display:grid;place-items:center;border-radius:11px;background:#F2F0EA;color:#2B2A3D;font-size:17px}
+.hf-phase11-nav-link strong{display:block;font-size:12px;line-height:1.4;font-weight:800;color:inherit}
+.hf-phase11-nav-link small{display:block;margin-top:3px;font-size:10px;line-height:1.45;font-weight:500;color:#737487}
+.hf-phase11-nav-arrow{align-self:center;color:#A9612D;font-size:15px}
+body[data-page="reports"] #reportBuildSection,body[data-page="reports"] #reportPreviewSection,body[data-page="settings"] #settingsAccessSection,body[data-page="settings"] #settingsHealthSection,body[data-page="settings"] #settingsBackupSection,body[data-page="settings"] #settingsActivitySection{scroll-margin-top:92px}
+body[data-page="reports"] #reportBuildSection .hf-section-head,body[data-page="reports"] #reportPreviewSection .hf-section-head,body[data-page="settings"] #settingsHealthSection .hf-section-head,body[data-page="settings"] #settingsBackupSection .hf-section-head,body[data-page="settings"] #settingsActivitySection .hf-section-head{align-items:center}
+body[data-page="reports"] #reportSummary .hf-summary-pill{min-width:0}
+body[data-page="reports"] #reportSummary .hf-summary-pill strong{overflow-wrap:anywhere}
+body[data-page="reports"] #reportPreviewSection .hf-table-wrap{max-width:100%;overscroll-behavior-x:contain}
+body[data-page="reports"] #reportTableHead th{white-space:nowrap}
+body[data-page="reports"] #reportBuildSection .hf-check{min-width:0;flex-wrap:wrap;line-height:1.5}
+body[data-page="settings"] .hf-phase4-settings-top{align-items:stretch}
+body[data-page="settings"] .hf-phase4-settings-top>.hf-card{min-width:0;height:100%}
+body[data-page="settings"] #settingsHealthSection #connectionStatus{max-width:100%;white-space:normal;line-height:1.4}
+body[data-page="settings"] #settingsBackupSection .hf-banner{margin-bottom:14px}
+body[data-page="settings"] #downloadBackupBtn{max-width:100%;white-space:normal;text-align:center}
+@media(max-width:1120px){
+ .hf-phase11-settings-nav{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:760px){
+ .hf-phase11-workspace-nav{gap:8px}
+ .hf-phase11-nav-link{grid-template-columns:32px minmax(0,1fr) 12px;gap:8px;padding:10px}
+ .hf-phase11-nav-icon{width:32px;height:32px;font-size:15px}
+ .hf-phase11-nav-link strong{font-size:11px}
+ .hf-phase11-nav-link small{font-size:10px}
+ body[data-page="reports"] #reportPreviewSection .hf-section-head{align-items:flex-start}
+ body[data-page="settings"] .hf-phase4-settings-top{grid-template-columns:minmax(0,1fr)}
+}
+@media(max-width:480px){
+ .hf-phase11-report-nav,.hf-phase11-settings-nav{grid-template-columns:minmax(0,1fr)}
+ .hf-phase11-nav-link{padding:10px 11px}
+ body[data-page="reports"] #reportBuildSection .hf-report-controls{grid-template-columns:minmax(0,1fr)}
+ body[data-page="reports"] #reportSummary{grid-template-columns:minmax(0,1fr)}
+ body[data-page="reports"] #reportBuildSection .page-actions{display:grid;grid-template-columns:1fr}
+ body[data-page="reports"] #reportBuildSection .page-actions .hf-button{width:100%}
+ body[data-page="settings"] #settingsBackupSection .hf-button{width:100%}
+}
+@media(prefers-reduced-motion:reduce){.hf-phase11-nav-link{transition:none}}
+html[data-admin-theme="dark"] .hf-phase11-nav-link{background:linear-gradient(145deg,#302F40 0%,#292837 100%);border-color:#514F61;color:#F2F0EA;box-shadow:none}
+html[data-admin-theme="dark"] .hf-phase11-nav-link:hover{background:#383747;border-color:#C97B3D;box-shadow:0 8px 22px rgba(0,0,0,.14)}
+html[data-admin-theme="dark"] .hf-phase11-nav-icon{background:#252433;color:#F2F0EA}
+html[data-admin-theme="dark"] .hf-phase11-nav-link small{color:#C5C1CE}
+html[data-admin-theme="dark"] .hf-phase11-nav-arrow{color:#E1A16F}
+html[data-admin-theme="light"] .hf-phase11-nav-link{background:linear-gradient(145deg,#FFFDF8 0%,#FBF9F3 100%);border-color:#E5E0D6;color:#2B2A3D}
+html[data-admin-theme="light"] .hf-phase11-nav-link:hover{background:#FFFDF8;border-color:#C97B3D}
+html[data-admin-theme="light"] .hf-phase11-nav-icon{background:#F2F0EA;color:#2B2A3D}
+html[data-admin-theme="light"] .hf-phase11-nav-link small{color:#737487}
+html[data-admin-theme="light"] .hf-phase11-nav-arrow{color:#A9612D}
