@@ -943,3 +943,24 @@ html{scroll-padding-top:88px}
 @media(prefers-reduced-motion:reduce){
  .admin-nav-link,.hf-button,.hf-kpi-link,.hf-quick-action,.admin-sidebar,.admin-top-button{transition:none!important;animation:none!important;scroll-behavior:auto!important}
 }
+
+
+/* Final theme detail: action rows and form focus also follow the active palette. */
+html[data-admin-theme="dark"] .hf-action-row{background:#353446;border-color:#514F61}
+html[data-admin-theme="dark"] .hf-action-row.is-urgent{background:#452B2C;border-color:#7A4B49}
+html[data-admin-theme="dark"] .hf-action-row.is-warning{background:#4A3524;border-color:#87603A}
+html[data-admin-theme="dark"] .hf-action-count{background:rgba(201,123,61,.16);color:#F4D4B7;border:1px solid rgba(201,123,61,.26)}
+html[data-admin-theme="dark"] .hf-action-count.is-urgent{background:#492A2A;color:#FFD0C8;border-color:#7B4441}
+html[data-admin-theme="dark"] .hf-action-count.is-warning{background:#4A3524;color:#FFE0A6;border-color:#87603A}
+html[data-admin-theme="dark"] .hf-action-clear{background:#203B31;border-color:#416D58}
+html[data-admin-theme="dark"] .hf-action-clear-icon{background:#315645;color:#C7F0D6}
+html[data-admin-theme="dark"] .hf-action-clear strong{color:#E1F9E9}
+html[data-admin-theme="dark"] .hf-action-clear p{color:#C7F0D6}
+html[data-admin-theme="dark"] .admin-global-search input:focus,
+html[data-admin-theme="dark"] .hf-input:focus,
+html[data-admin-theme="dark"] .hf-select:focus,
+html[data-admin-theme="dark"] .hf-textarea:focus{border-color:#C97B3D;box-shadow:0 0 0 3px rgba(201,123,61,.2);outline:none}
+html[data-admin-theme="light"] .admin-global-search input:focus,
+html[data-admin-theme="light"] .hf-input:focus,
+html[data-admin-theme="light"] .hf-select:focus,
+html[data-admin-theme="light"] .hf-textarea:focus{border-color:#9F5726;box-shadow:0 0 0 3px rgba(159,87,38,.14);outline:none}
