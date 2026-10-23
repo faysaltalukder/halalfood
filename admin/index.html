@@ -116,6 +116,23 @@ th{background:#17243A;color:#91A4BF}
 .cms-panel thead th{background:#17243A;color:#91A4BF}
 @media(max-width:700px){main{padding-left:12px;padding-right:12px}.card{padding:16px}}
 
+
+/* Phase 5: visible keyboard focus and compact/touch-friendly sign-in */
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible{
+ outline:3px solid #9F5726;outline-offset:3px;box-shadow:0 0 0 4px rgba(159,87,38,.14)
+}
+input,button,select{min-height:42px}
+button,.nav-link{touch-action:manipulation}
+.table-wrap:focus-visible,.table-x-scroll:focus-visible{outline:3px solid #9F5726;outline-offset:2px}
+@media(max-width:520px){
+ header{padding:13px 14px;gap:10px}
+ header strong{font-size:16px}
+ main{margin:14px auto;padding-left:12px;padding-right:12px}
+ .card{padding:15px;border-radius:14px}
+ .mfa-box img{width:min(220px,100%);height:auto;aspect-ratio:1}
+ .actions{flex-wrap:wrap}
+ .actions>*{max-width:100%}
+}
 </style>
 </head>
 <body>
