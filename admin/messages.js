@@ -94,13 +94,13 @@ function renderConversations() {
   });
   $("waConversationCount").textContent = conversations.length + " conversation" + (conversations.length === 1 ? "" : "s");
   if (!rows.length) {
-    list.innerHTML = '<div class="wa-empty-list">' + (conversations.length ? "No conversations match your search." : "No WhatsApp messages yet. Complete Meta webhook setup, then send a message to the WhatsApp number.") + "</div>";
+    list.innerHTML = '<div class="wa-empty-list">' + (conversations.length ? "No conversations match your search." : "No WhatsApp conversations yet. Verify the Meta webhook, then message the connected WhatsApp Business number from an eligible recipient account.") + "</div>";
     return;
   }
   list.innerHTML = rows.map((c) => {
     const name = c.contact?.display_name || c.contact?.phone_number || "WhatsApp contact";
     const phone = c.contact?.phone_number || c.contact?.external_contact_id || "";
-    return '<button type="button" class="wa-conversation-item ' + (c.id === activeConversationId ? "active" : "") + '" data-conversation-id="' + H.esc(c.id) + '" aria-current="' + (c.id === activeConversationId ? "true" : "false") + '">' +
+    return '<button type="button" class="wa-conversation-item ' + (c.id === activeConversationId ? "active" : "") + '" data-conversation-id="' + H.esc(c.id) + '" aria-pressed="' + (c.id === activeConversationId ? "true" : "false") + '">' +
       '<span class="wa-avatar-small">' + H.esc(initials(name)) + "</span>" +
       '<span class="wa-conversation-main"><span class="wa-conversation-top"><span class="wa-conversation-name">' + H.esc(name) + '</span><span class="wa-conversation-time">' + H.esc(formatTime(c.last_message_at)) + "</span></span>" +
       '<span class="wa-conversation-preview">' + H.esc(c.last_message_preview || phone || "No message preview") + "</span>" +
