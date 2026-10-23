@@ -11,7 +11,7 @@
 .wa-url-copy{display:flex;align-items:center;gap:8px;margin-bottom:12px}
 .wa-url-copy input{min-width:0;flex:1;border:1px solid var(--hf-border);border-radius:9px;padding:10px;background:var(--hf-paper);color:var(--hf-navy);font-size:12px}
 .wa-webhook-setup code{font-size:12px}
-.wa-channel-note{border:1px solid var(--hf-border);border-left:4px solid var(--hf-orange);background:rgba(201,123,61,.08);border-radius:10px;padding:12px 15px;margin:0 0 18px;font-size:13px}
+.wa-channel-note{border:1px solid var(--hf-border);border-left:4px solid var(--wa-green);background:var(--wa-green-soft);border-radius:10px;padding:12px 15px;margin:0 0 18px;font-size:13px}
 .wa-inbox-layout{display:grid;grid-template-columns:minmax(270px,340px) minmax(0,1fr);gap:16px;min-height:590px;align-items:stretch}
 .wa-conversation-card,.wa-chat-card{min-width:0;overflow:hidden}
 .wa-conversation-card{display:flex;flex-direction:column;padding:0}
@@ -22,7 +22,7 @@
 .wa-search{width:calc(100% - 30px);margin:6px 15px 12px}
 .wa-conversation-list{overflow:auto;max-height:590px;border-top:1px solid var(--hf-border)}
 .wa-conversation-item{width:100%;display:flex;text-align:left;align-items:flex-start;gap:11px;padding:13px 14px;border:0;border-bottom:1px solid var(--hf-border);border-radius:0;background:transparent;color:var(--hf-navy);cursor:pointer}
-.wa-conversation-item:hover{background:rgba(201,123,61,.08)}
+.wa-conversation-item:hover{background:var(--wa-green-soft)}
 .wa-conversation-item.active{background:var(--wa-green-soft);box-shadow:inset 3px 0 0 var(--wa-green)}
 .wa-avatar-small,.wa-contact-avatar{display:grid;place-items:center;flex:0 0 auto;border-radius:50%;background:var(--wa-green-soft);color:var(--wa-green);font-weight:800}
 .wa-avatar-small{width:39px;height:39px;font-size:13px}
@@ -46,7 +46,7 @@
 .wa-message-row{display:flex;flex-direction:column;max-width:min(80%,540px);align-self:flex-start}
 .wa-message-row.outbound{align-self:flex-end}
 .wa-message-bubble{padding:10px 12px;border-radius:13px 13px 13px 3px;background:var(--hf-paper);border:1px solid var(--hf-border);white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px;color:var(--hf-navy)}
-.wa-message-row.outbound .wa-message-bubble{background:var(--wa-green-soft);border-color:rgba(40,122,82,.2);border-radius:13px 13px 3px 13px}
+.wa-message-row.outbound .wa-message-bubble{background:var(--wa-green-soft);border-color:color-mix(in srgb,var(--wa-green) 28%,var(--hf-border));border-radius:13px 13px 3px 13px}
 .wa-message-meta{display:flex;gap:8px;align-items:center;color:var(--hf-muted);font-size:10px;margin:4px 4px 0}
 .wa-message-row.outbound .wa-message-meta{justify-content:flex-end}
 .wa-message-status{font-weight:700}
@@ -74,6 +74,63 @@
 
 .hf-channel-tabs{display:flex;gap:8px;margin:0 0 18px;padding:5px;border:1px solid var(--hf-border);border-radius:12px;width:max-content;max-width:100%;background:var(--hf-paper)}
 .hf-channel-tabs a{display:inline-flex;align-items:center;justify-content:center;padding:10px 18px;border-radius:8px;font-size:14px;font-weight:700;text-decoration:none;color:var(--hf-muted);transition:background .15s ease,color .15s ease}
-.hf-channel-tabs a:hover{background:rgba(24,119,242,.08);color:var(--hf-navy)}
-.hf-channel-tabs a.active{background:var(--hf-navy);color:#fff}
+.hf-channel-tabs a:hover{background:var(--wa-green-soft);color:var(--hf-navy)}
+.hf-channel-tabs a.active{background:var(--wa-green);color:#fff}
 @media(max-width:480px){.hf-channel-tabs{width:100%}.hf-channel-tabs a{flex:1;padding:10px 12px}}
+
+/* Phase 6 — keyboard, contrast and touch refinements; channel logic remains unchanged. */
+.hf-channel-tabs a{min-height:42px}
+.hf-channel-tabs a:hover{background:var(--wa-green-soft);color:var(--hf-navy)}
+.hf-channel-tabs a.active{background:var(--wa-green);color:#fff}
+.hf-channel-tabs a:focus-visible,
+.wa-conversation-item:focus-visible,
+.wa-url-copy input:focus-visible,
+.wa-url-copy button:focus-visible,
+.wa-webhook-setup .hf-button:focus-visible,
+.wa-composer textarea:focus-visible,
+.wa-composer button:focus-visible,
+.wa-search:focus-visible{
+ outline:2px solid var(--hf-focus,var(--wa-green));
+ outline-offset:2px;
+}
+.wa-conversation-item:focus-visible{position:relative;z-index:1;box-shadow:inset 0 0 0 1px var(--wa-green)}
+.wa-channel-note{border-left-color:var(--wa-green);background:var(--wa-green-soft)}
+.wa-conversation-item:hover{background:var(--wa-green-soft)}
+.wa-conversation-item.active{background:var(--wa-green-soft);box-shadow:inset 3px 0 0 var(--wa-green)}
+.wa-message-row.outbound .wa-message-bubble{border-color:color-mix(in srgb,var(--wa-green) 28%,var(--hf-border))}
+.wa-composer textarea:disabled{opacity:.68;cursor:not-allowed}
+.wa-composer button{min-height:42px}
+.wa-messages{scrollbar-width:thin;scrollbar-color:var(--hf-border) transparent;overscroll-behavior:contain}
+.wa-conversation-list{scrollbar-width:thin;scrollbar-color:var(--hf-border) transparent;overscroll-behavior:contain}
+:root[data-admin-theme="dark"] .wa-setup-status,
+:root[data-admin-theme="dark"] .wa-webhook-setup{background:rgba(255,255,255,.025)}
+:root[data-admin-theme="dark"] .wa-channel-note{
+ background:color-mix(in srgb,var(--wa-green) 12%,#302F40);
+ border-color:color-mix(in srgb,var(--wa-green) 28%,var(--hf-border));
+ color:var(--hf-navy);
+}
+:root[data-admin-theme="dark"] .wa-messages{background:#262535}
+:root[data-admin-theme="dark"] .wa-message-bubble{
+ background:#302F40;color:var(--hf-navy);border-color:var(--hf-border);
+}
+:root[data-admin-theme="dark"] .wa-message-row.outbound .wa-message-bubble{
+ background:color-mix(in srgb,var(--wa-green) 17%,#302F40);
+ border-color:color-mix(in srgb,var(--wa-green) 44%,var(--hf-border));
+ color:var(--hf-navy);
+}
+:root[data-admin-theme="dark"] .wa-url-copy input{
+ background:var(--hf-paper);color:var(--hf-navy);border-color:var(--hf-border);
+}
+@media(max-width:560px){
+ .hf-channel-tabs a{min-height:44px;padding:10px 12px}
+ .wa-chat-header{align-items:center}
+ .wa-composer{padding:12px}
+ .wa-composer textarea{min-height:82px}
+}
+@media(pointer:coarse){
+ .wa-conversation-item{min-height:62px}
+ .wa-composer button{min-height:44px}
+}
+@media(prefers-reduced-motion:reduce){
+ .hf-channel-tabs a,.wa-conversation-item{transition:none!important}
+}
