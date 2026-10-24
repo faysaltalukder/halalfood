@@ -296,7 +296,7 @@ async function invokeMetaPublish(db: ReturnType<typeof service>, page: Row, body
     const photoId = clean(photo?.id, 120);
     if (!photoId) throw new Error("Meta created the photo asset but did not return a photo ID.");
     response = await graphPost(pageId + "/feed", token, {
-      message: message || " ", attached_media: JSON.stringify([{ media_fbid: photoId }]),
+      message: message || " ", "attached_media[0]": JSON.stringify({ media_fbid: photoId }),
       published: "false", scheduled_publish_time: time,
     });
   } else {
