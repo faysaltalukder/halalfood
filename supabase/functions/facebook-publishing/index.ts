@@ -62,7 +62,7 @@ function appConfig() {
   return {
     appIdReady: Boolean(Deno.env.get("FACEBOOK_APP_ID")),
     appSecretReady: Boolean(Deno.env.get("FACEBOOK_APP_SECRET")),
-    encryptionKeyReady: Boolean(Deno.env.get("FACEBOOK_TOKEN_ENCRYPTION_KEY")),
+    encryptionKeyReady: (Deno.env.get("FACEBOOK_TOKEN_ENCRYPTION_KEY") || "").length >= 32,
     redirectUri: REDIRECT_URI,
   };
 }
