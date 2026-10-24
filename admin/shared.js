@@ -195,7 +195,7 @@ function makeShell(){
  const menuGroups=[
   {label:"WORKSPACE",items:[["overview","overview","Overview","dashboard home start"]]},
   {label:"STORE MANAGEMENT",items:[["orders","orders","Orders","order order management customer orders"],["operations","operations","Operations","operation packing fulfillment"],["products","products","Products","product inventory stock"],["content","content","Website Content","content pages blog seo"]]},
-  {label:"CUSTOMERS & MESSAGES",items:[["messages","messages","WhatsApp Inbox","whatsapp inbox customer chat messages"],["messenger","messenger","Messenger Inbox","facebook messenger messages social inbox"],["customers","customers","Customers","customer contact audience"]]},
+  {label:"CUSTOMERS & MESSAGES",items:[["messages","messages","WhatsApp Inbox","whatsapp inbox customer chat messages"],["messenger","messenger","Messenger Inbox","facebook messenger messages social inbox"],["facebook-publishing","messenger","Facebook Publishing","facebook publishing posts social media schedule"],["customers","customers","Customers","customer contact audience"]]},
   {label:"INSIGHTS & FINANCE",items:[["analytics","analytics","Analytics","analytics insights website traffic marketing"],["finance","finance","Finance & Cash Flow","finance expenses income bookkeeping cash"],["reports","reports","Reports","report export download csv"]]},
   {label:"SYSTEM",items:[["settings","settings","Settings & Security","settings security preferences access"]]}
  ];
