@@ -22,7 +22,7 @@ Add these names in Supabase Dashboard → Edge Functions → Secrets. Never comm
 - Optional: `FACEBOOK_APP_REDIRECT_URI` — set only if deliberately using a different redirect URI. It must exactly match the URI allowlisted in Meta. By default the function uses:
   `https://qfwvrcfkrsydycbfjsxf.supabase.co/functions/v1/facebook-publishing`
 
-Supabase provides `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY\) to Edge Functions. The publishable key in the code is public and is used only to validate the authenticated session with Supabase Auth; it is not a service-role credential.
+Supabase provides `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` to Edge Functions. The publishable key in the code is public and is used only to validate the authenticated session with Supabase Auth; it is not a service-role credential.
 
 ## Meta App configuration
 
