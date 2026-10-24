@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex,nofollow">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<title>Facebook Publishing · Halal Food Admin</title>
+<link rel="stylesheet" href="./shared.css?v=20261024-facebook-publishing-v1">
+<link rel="stylesheet" href="./phase4-pages.css?v=20261024-facebook-publishing-v1">
+<link rel="stylesheet" href="./facebook-publishing.css?v=20261024-facebook-publishing-v1">
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
+</head>
+<body data-page="facebook-publishing">
+<div id="authGate" class="auth-gate"><div class="auth-gate-card"><strong>Checking secure admin access…</strong><p>Facebook publishing is restricted to the authorized Halal Food administrator with completed two-step verification.</p></div></div>
+<div id="adminApp" hidden>
+<main id="pageContent">
+  <div class="page-heading hf-phase4-hero fb-publish-hero">
+    <div><p class="page-eyebrow">SOCIAL MEDIA WORKSPACE</p><h1>Facebook Publishing</h1><p>Connect the Halal Food Facebook Page, prepare a post, publish now or schedule it, and review publishing results—all from this admin dashboard.</p></div>
+    <div class="page-actions"><button class="hf-button hf-button-secondary" id="fbRefreshBtn" type="button">↻ Refresh status</button><a class="hf-button hf-button-secondary" href="https://developers.facebook.com/apps/" target="_blank" rel="noopener noreferrer">Meta Developer App ↗</a></div>
+  </div>
+
+  <div class="hf-banner hf-banner-info fb-important-note"><span aria-hidden="true">ⓘ</span><div><strong>Page publishing only</strong>This workspace publishes to a Facebook Page that you administer—not to a personal Facebook profile. A successful API response confirms Meta accepted the request; scheduled posts and uploaded videos may take time to appear. Only publish content you have rights to use.</div></div>
+
+  <section class="hf-card hf-card-pad fb-connection-card" aria-labelledby="fbConnectionHeading">
+    <div class="hf-section-head"><div><h2 id="fbConnectionHeading">1. Connect your Facebook Page</h2><p>Meta handles the login and consent screen. Access tokens remain on the server and are encrypted before storage.</p></div><span id="fbServerBadge" class="hf-status hf-status-pending">Checking server</span></div>
+    <div class="fb-connection-grid">
+      <div class="fb-connection-panel">
+        <div class="fb-panel-title"><span class="fb-step-number">A</span><div><strong>Server configuration</strong><p>Only readiness is shown here. Secret values are never sent to the browser.</p></div></div>
+        <ul id="fbConfigList" class="fb-config-list" aria-live="polite"><li>Checking Meta app settings…</li></ul>
+        <label class="hf-field fb-redirect-field">OAuth redirect URI
+          <span class="hf-help">Add this exact URL to the Facebook Login / OAuth redirect URI allowlist in your Meta App.</span>
+          <span class="fb-copy-row"><input id="fbRedirectUri" class="hf-input" type="text" readonly value="Loading…"><button id="fbCopyRedirectBtn" type="button" class="hf-button hf-button-secondary">Copy</button></span>
+        </label>
+        <p class="hf-data-note">Do not paste an App Secret, Page Access Token, or encryption key into this page or into GitHub. Add them only in Supabase Edge Function Secrets.</p>
+      </div>
+      <div class="fb-connection-panel">
+        <div class="fb-panel-title"><span class="fb-step-number">B</span><div><strong>Authorize and choose a Page</strong><p>Use the Facebook account that has content-creation access to the Page.</p></div></div>
+        <button id="fbConnectBtn" type="button" class="hf-button hf-button-primary" disabled>Connect Facebook</button>
+        <div id="fbOauthHint" class="fb-inline-status" role="status" aria-live="polite">Checking server configuration…</div>
+        <label class="hf-field" for="fbPageSelect">Available Facebook Pages
+          <select id="fbPageSelect" class="hf-select" disabled><option value="">Connect Facebook to load Pages</option></select>
+        </label>
+        <div class="fb-page-actions">
+          <button id="fbSelectPageBtn" type="button" class="hf-button hf-button-primary" disabled>Use selected Page</button>
+          <button id="fbVerifyPageBtn" type="button" class="hf-button hf-button-secondary" disabled>Verify connection</button>
+          <button id="fbDisconnectBtn" type="button" class="hf-button hf-button-secondary" disabled>Disconnect selected Page</button>
+        </div>
+        <div id="fbSelectedPage" class="fb-selected-page" aria-live="polite">No Page selected yet.</div>
+        <div id="fbPermissionChecks" class="fb-permission-checks" aria-live="polite"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="hf-card hf-card-pad fb-composer-card" aria-labelledby="fbComposerHeading">
+    <div class="hf-section-head"><div><h2 id="fbComposerHeading">2. Create and publish a post</h2><p>Write a caption, optionally add a photo/video or link, then publish now or schedule the post through Meta.</p></div><span id="fbComposerBadge" class="hf-status hf-status-pending">Connect a Page first</span></div>
+    <form id="fbComposerForm">
+      <div class="hf-field-grid">
+        <label class="hf-field" for="fbPostType">Post format
+          <select class="hf-select" id="fbPostType" name="postType">
+            <option value="text">Text post</option>
+            <option value="link">Link post</option>
+            <option value="photo">Photo post</option>
+            <option value="video">Video post</option>
+          </select>
+        </label>
+        <label class="hf-field" for="fbPostLink" id="fbLinkField" hidden>Website link
+          <input class="hf-input" id="fbPostLink" name="link" type="url" placeholder="https://faysaltalukder.github.io/halalfood/">
+          <span class="hf-help">Use a public http/https URL.</span>
+        </label>
+        <label class="hf-field hf-span-2" for="fbPostMessage">Caption / description
+          <textarea class="hf-textarea" id="fbPostMessage" name="message" maxlength="60000" rows="6" placeholder="Write the Facebook post caption…" required></textarea>
+          <span class="hf-help"><span id="fbCharCount">0</span> characters. Check spelling and all claims before publishing.</span>
+        </label>
+        <label class="hf-field hf-span-2" for="fbMediaFile" id="fbMediaField" hidden>Choose media
+          <input class="hf-input" id="fbMediaFile" name="mediaFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime">
+          <span class="hf-help">JPG, PNG, WebP or GIF for photos; MP4 or MOV for video. Current upload limit: 50 MB per file.</span>
+        </label>
+      </div>
+      <div id="fbMediaPreview" class="fb-media-preview" hidden></div>
+      <div class="fb-schedule-row">
+        <label class="hf-field" for="fbScheduleAt">Schedule date and time (Bangladesh local time)
+          <input class="hf-input" id="fbScheduleAt" name="scheduledAt" type="datetime-local">
+          <span class="hf-help">Leave blank to publish now. Facebook scheduling needs at least 10 minutes' notice and generally supports dates up to 75 days ahead.</span>
+        </label>
+        <div class="fb-compose-buttons">
+          <button id="fbPublishNowBtn" class="hf-button hf-button-primary" type="button" disabled>Publish now</button>
+          <button id="fbScheduleBtn" class="hf-button hf-button-secondary" type="button" disabled>Schedule post</button>
+          <button id="fbClearBtn" class="hf-button hf-button-secondary" type="reset">Clear draft</button>
+        </div>
+      </div>
+    </form>
+    <div id="fbPublishResult" class="fb-publish-result" role="status" aria-live="polite" hidden></div>
+    <p class="hf-data-note">Media uploads go to a private Supabase bucket. The publishing service creates a time-limited URL only when Meta needs to fetch the file. Uploaded files are not automatically deleted.</p>
+  </section>
+
+  <section class="hf-card hf-card-pad fb-history-card" aria-labelledby="fbHistoryHeading">
+    <div class="hf-section-head"><div><h2 id="fbHistoryHeading">3. Publishing history</h2><p>Recent API requests, their result, and the returned Facebook ID. A scheduled status means Meta accepted the scheduled post request.</p></div><button id="fbHistoryRefreshBtn" type="button" class="hf-button hf-button-secondary">↻ Refresh history</button></div>
+    <div class="hf-table-wrap" role="region" aria-label="Facebook publishing history; scroll horizontally on small screens" tabindex="0">
+      <table class="hf-table fb-history-table">
+        <thead><tr><th>Time</th><th>Post</th><th>Status</th><th>Page</th><th>Facebook result</th></tr></thead>
+        <tbody id="fbHistoryBody"><tr><td colspan="5" class="hf-loading">Loading history…</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+  <p class="hf-data-note fb-footer-note">The first release is intentionally limited to the owner's Page and admin account. It does not connect external customers or other businesses. Meta permission availability and publishing eligibility remain controlled by Meta.</p>
+</main>
+</div>
+<script defer src="./i18n.js?v=20261023-admin-ultimate-v1"></script>
+<script defer src="./shared.js?v=20261023-admin-ultimate-v1"></script>
+<script defer src="./facebook-publishing.js?v=20261024-facebook-publishing-v1"></script>
+</body></html>
