@@ -4,8 +4,11 @@ const FUNCTION_NAME = "youtube-publishing";
 const FUNCTION_ORIGIN = "https://qfwvrcfkrsydycbfjsxf.supabase.co";
 const REQUIRED_SCOPES = ["https://www.googleapis.com/auth/youtube.upload","https://www.googleapis.com/auth/youtube.readonly"];
 const MAX_FILE_BYTES = 256 * 1024 ** 3;
+const MAX_DESCRIPTION_BYTES = 5000;
+const SHORTS_MAX_SECONDS = 180;
+const UPLOAD_CHUNK_BYTES = 8 * 1024 * 1024;
 const $ = id => document.getElementById(id);
-let H = null, statusData = null, selectedChannel = null, oauthPopup = null, busy = false, previewUrl = null;
+let H = null, statusData = null, selectedChannel = null, oauthPopup = null, busy = false, previewUrl = null, mediaInfo = null;
 
 async function invoke(action, payload = {}) {
   const { data, error } = await H.client.functions.invoke(FUNCTION_NAME, { body: { action, ...payload } });
@@ -33,6 +36,48 @@ function inlineStatus(message, isError = false) {
   $("ytOauthHint").textContent = message;
   $("ytOauthHint").style.color = isError ? "var(--hf-red)" : "";
 }
+function utf8Bytes(value) { return new TextEncoder().encode(String(value || "")).length; }
+function selectedUploadMode() {
+  return document.querySelector('input[name="ytUploadMode"]:checked')?.value === "video" ? "video" : "shorts";
+}
+function updateUploadButton() {
+  if (!$("ytUploadBtn")) return;
+  const file = $("ytVideoFile")?.files?.[0];
+  const ready = Boolean(selectedChannel && statusData?.setupReady &&
+    REQUIRED_SCOPES.every(scope => (selectedChannel.grantedScopes || []).includes(scope)));
+  $("ytUploadBtn").disabled = !ready || busy || !file || !$("ytTermsAccepted")?.checked;
+}
+function modeValidationError() {
+  if (selectedUploadMode() !== "shorts") return "";
+  if (!mediaInfo || !Number.isFinite(mediaInfo.duration) || !mediaInfo.width || !mediaInfo.height)
+    return "Wait for the browser to read the video's dimensions and duration, then try again.";
+  if (mediaInfo.duration > SHORTS_MAX_SECONDS + 0.05)
+    return "This file is longer than 3 minutes. Choose Regular video or trim it to 3:00 or less for Shorts.";
+  if (mediaInfo.height < mediaInfo.width)
+    return "Shorts needs a square or vertical video. This file is landscape; choose Regular video or use a square/vertical export.";
+  return "";
+}
+function updateModeHint() {
+  const mode = selectedUploadMode();
+  const hint = $("ytModeHint");
+  if (!hint) return;
+  let message = mode === "shorts"
+    ? "Shorts mode: square/vertical video, no longer than 3 minutes. YouTube classifies eligible uploads automatically; both modes use the same YouTube upload API."
+    : "Regular video mode: select the format you intend to publish. A square/vertical video up to 3 minutes may still be classified by YouTube as a Short regardless of this selector.";
+  if (mediaInfo) {
+    const duration = Math.round(mediaInfo.duration * 10) / 10;
+    const mins = Math.floor(duration / 60), secs = (duration % 60).toFixed(1).padStart(4,"0");
+    message += " File: " + mediaInfo.width + "×" + mediaInfo.height + ", " + mins + ":" + secs + ".";
+    const issue = modeValidationError();
+    if (issue) message += " " + issue;
+    else if (mode === "shorts") message += " This file matches the basic Shorts format checks.";
+    hint.classList.toggle("warning", Boolean(issue));
+  } else {
+    hint.classList.remove("warning");
+  }
+  hint.textContent = message;
+  if (!busy) $("ytUploadBtn").textContent = mode === "shorts" ? "Upload Short to YouTube" : "Upload video to YouTube";
+}
 function renderConfig(data) {
   const missing = Array.isArray(data?.missingConfig) ? data.missingConfig : [];
   const rows = [
@@ -58,7 +103,7 @@ function renderChannel(data) {
   $("ytDisconnectBtn").disabled = !selectedChannel || busy;
   $("ytComposerBadge").textContent = ready ? "Channel connected" : (selectedChannel ? "Check permissions" : "Connect a channel first");
   $("ytComposerBadge").className = "hf-status " + (ready ? "hf-status-active" : "hf-status-pending");
-  $("ytUploadBtn").disabled = !ready || busy || !$("ytVideoFile").files?.[0];
+  updateUploadButton();
   if (selectedChannel) {
     $("ytSelectedChannel").innerHTML = '<strong>' + H.esc(selectedChannel.channelTitle) + '</strong><span>Channel ID: ' + H.esc(selectedChannel.channelId) + '</span><br><span>Custom URL: ' + H.esc(selectedChannel.channelCustomUrl || "Not returned") + '</span><br><span>Last verified: ' + H.esc(selectedChannel.lastVerifiedAt ? H.dateTime(selectedChannel.lastVerifiedAt) : "Not verified yet") + '</span>';
     $("ytPermissionChecks").innerHTML = REQUIRED_SCOPES.map(scope => {
@@ -125,20 +170,21 @@ async function disconnectChannel() {
 }
 function clearPreview() {
   if (previewUrl) URL.revokeObjectURL(previewUrl);
-  previewUrl = null;
+  previewUrl = null; mediaInfo = null;
   $("ytMediaPreview").hidden = true;
   $("ytMediaPreview").replaceChildren();
+  $("ytVideoMetadata").textContent = "Video dimensions and duration will appear here.";
+  updateModeHint();
 }
 function inspectFile() {
   clearPreview();
   const file = $("ytVideoFile").files?.[0];
-  $("ytUploadBtn").disabled = !selectedChannel || !statusData?.setupReady || busy || !file;
-  if (!file) { $("ytFileInfo").textContent = "No video selected."; return; }
+  if (!file) { $("ytFileInfo").textContent = "No video selected."; updateUploadButton(); return; }
   if (file.size < 1 || file.size > MAX_FILE_BYTES || !(file.type.startsWith("video/") || file.type === "")) {
     H.toast("Choose a valid video file supported by YouTube.", "error");
     $("ytVideoFile").value = "";
     $("ytFileInfo").textContent = "No video selected.";
-    $("ytUploadBtn").disabled = true;
+    updateUploadButton();
     return;
   }
   $("ytFileInfo").textContent = file.name + " · " + (file.size / (1024 * 1024)).toLocaleString("en-BD", {maximumFractionDigits:2}) + " MB";
@@ -147,8 +193,25 @@ function inspectFile() {
   previewUrl = URL.createObjectURL(file);
   const video = document.createElement("video");
   video.src = previewUrl; video.controls = true; video.preload = "metadata"; video.setAttribute("aria-label", "Selected video preview");
+  video.onloadedmetadata = () => {
+    if (!Number.isFinite(video.duration) || !video.videoWidth || !video.videoHeight) {
+      $("ytVideoMetadata").textContent = "The browser could not read the video's dimensions/duration.";
+      mediaInfo = null; updateModeHint(); return;
+    }
+    mediaInfo = {duration:video.duration,width:video.videoWidth,height:video.videoHeight};
+    $("ytVideoMetadata").textContent = "Detected: " + mediaInfo.width + "×" + mediaInfo.height + " · " +
+      Math.floor(mediaInfo.duration/60) + ":" + String(Math.floor(mediaInfo.duration%60)).padStart(2,"0") +
+      " · " + (mediaInfo.height >= mediaInfo.width ? "square/vertical" : "landscape");
+    updateModeHint();
+  };
+  video.onerror = () => {
+    mediaInfo = null;
+    $("ytVideoMetadata").textContent = "Preview metadata was unavailable. Upload checks may need the file to be re-exported in a standard video format.";
+    updateModeHint();
+  };
   const caption = document.createElement("p"); caption.textContent = "Local preview only — the source file remains on this computer until upload begins.";
   $("ytMediaPreview").append(video, caption); $("ytMediaPreview").hidden = false;
+  updateUploadButton();
 }
 function showUploadResult(message, isError = false, link = "") {
   const node = $("ytUploadResult"); node.hidden = false; node.classList.toggle("error", isError); node.replaceChildren();
@@ -163,26 +226,75 @@ function setProgress(pct, label, note) {
   $("ytProgress").value = value; $("ytProgressPercent").textContent = Math.round(value) + "%";
   $("ytProgressLabel").textContent = label; $("ytProgressNote").textContent = note || "";
 }
-async function putChunk(uploadUrl, accessToken, file, start, end) {
-  const body = file.slice(start, end);
-  const response = await fetch(uploadUrl, {
-    method: "PUT",
-    headers: {
-      "Authorization": "Bearer " + accessToken,
-      "Content-Type": file.type || "application/octet-stream",
-      "Content-Range": "bytes " + start + "-" + (end - 1) + "/" + file.size
-    },
-    body
+
+function xhrUpload(uploadUrl, file, start, end, onProgress) {
+  return new Promise((resolve,reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("PUT", uploadUrl, true);
+    xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
+    xhr.setRequestHeader("Content-Range", "bytes " + start + "-" + (end - 1) + "/" + file.size);
+    xhr.setRequestHeader("X-Upload-Content-Type", file.type || "application/octet-stream");
+    xhr.upload.onprogress = event => {
+      if (event.lengthComputable && typeof onProgress === "function")
+        onProgress(start + event.loaded, file.size);
+    };
+    xhr.onerror = () => {
+      const error = new Error("The browser could not read a response from YouTube's upload endpoint (network/CORS interruption).");
+      error.httpStatus = 0; reject(error);
+    };
+    xhr.ontimeout = () => { const e = new Error("YouTube's upload request timed out."); e.httpStatus=0; reject(e); };
+    xhr.timeout = 120000;
+    xhr.onload = () => {
+      if (xhr.status === 200 || xhr.status === 201) {
+        let data = {};
+        try { data = JSON.parse(xhr.responseText || "{}"); } catch {}
+        if (!data.id) { const e = new Error("YouTube completed the transfer response without a video ID. Check Studio before retrying."); e.httpStatus=xhr.status; reject(e); return; }
+        resolve({complete:true,data,next:file.size}); return;
+      }
+      if (xhr.status === 308) {
+        const range = xhr.getResponseHeader("Range");
+        const match = range && range.match(/(\d+)\s*$/);
+        const next = match ? Number(match[1]) + 1 : 0;
+        resolve({complete:false,next}); return;
+      }
+      let message = "";
+      try { message = JSON.parse(xhr.responseText || "{}")?.error?.message || ""; } catch {}
+      const e = new Error(message || ("YouTube returned HTTP " + xhr.status + " while receiving the file."));
+      e.httpStatus = xhr.status; reject(e);
+    };
+    xhr.send(file.slice(start,end));
   });
-  if (response.status === 308) return {complete:false,next:end};
-  if (response.ok) {
-    const data = await response.json().catch(() => ({}));
-    if (!data?.id) throw new Error("YouTube finished the transfer but did not return a video ID. Check YouTube Studio before retrying.");
-    return {complete:true,data};
-  }
-  const data = await response.json().catch(() => ({}));
-  throw new Error((data?.error?.message || ("YouTube upload returned HTTP " + response.status + ".")) + " The transfer may be resumable; check YouTube Studio before starting a duplicate upload.");
 }
+function probeUpload(uploadUrl, file) {
+  return new Promise((resolve,reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("PUT", uploadUrl, true);
+    xhr.setRequestHeader("Content-Range", "bytes */" + file.size);
+    xhr.setRequestHeader("X-Upload-Content-Type", file.type || "application/octet-stream");
+    xhr.onerror = () => { const e = new Error("Could not check YouTube's resumable upload session after a network interruption."); e.httpStatus=0; reject(e); };
+    xhr.ontimeout = () => { const e = new Error("The resumable upload status check timed out."); e.httpStatus=0; reject(e); };
+    xhr.timeout = 45000;
+    xhr.onload = () => {
+      if (xhr.status === 200 || xhr.status === 201) {
+        let data = {};
+        try { data = JSON.parse(xhr.responseText || "{}"); } catch {}
+        if (!data.id) { const e = new Error("The upload status response had no video ID."); e.httpStatus=xhr.status; reject(e); return; }
+        resolve({complete:true,data,next:file.size}); return;
+      }
+      if (xhr.status === 308) {
+        const range = xhr.getResponseHeader("Range");
+        const match = range && range.match(/(\d+)\s*$/);
+        resolve({complete:false,next:match ? Number(match[1])+1 : 0}); return;
+      }
+      let message = "";
+      try { message = JSON.parse(xhr.responseText || "{}")?.error?.message || ""; } catch {}
+      const e = new Error(message || ("YouTube upload-session check returned HTTP " + xhr.status + "."));
+      e.httpStatus = xhr.status; reject(e);
+    };
+    xhr.send();
+  });
+}
+const wait = ms => new Promise(resolve => setTimeout(resolve,ms));
 async function uploadVideo(event) {
   event.preventDefault();
   if (busy) return;
@@ -190,6 +302,19 @@ async function uploadVideo(event) {
   if (!selectedChannel || !file) { H.toast("Connect a channel and choose a video file first.", "error"); return; }
   const title = $("ytTitle").value.trim();
   if (!title) { H.toast("Enter a video title.", "error"); $("ytTitle").focus(); return; }
+  const description = $("ytDescription").value.trim();
+  if (title.length > 100 || /[<>]/.test(title)) {
+    H.toast("YouTube titles must be 100 characters or fewer and cannot contain < or >.", "error"); $("ytTitle").focus(); return;
+  }
+  if (/[<>]/.test(description)) {
+    H.toast("YouTube descriptions cannot contain < or > characters. Remove them before uploading.", "error"); $("ytDescription").focus(); return;
+  }
+  if (utf8Bytes(description) > MAX_DESCRIPTION_BYTES) {
+    H.toast("The description is " + utf8Bytes(description) + " UTF-8 bytes. YouTube's limit is 5,000 bytes for both Shorts and regular videos.", "error"); $("ytDescription").focus(); return;
+  }
+  const formatError = modeValidationError();
+  if (formatError) { H.toast(formatError, "error"); $("ytVideoFile").focus(); return; }
+  if (!$("ytTermsAccepted").checked) { H.toast("Confirm the YouTube Terms and rights notice before uploading.", "error"); return; }
   const tags = $("ytTags").value.split(",").map(v=>v.trim()).filter(Boolean);
   const scheduledLocal = $("ytScheduleAt").value;
   let scheduledAt = "";
@@ -205,21 +330,46 @@ async function uploadVideo(event) {
   try {
     setProgress(0,"Preparing YouTube upload session…","This request sends video metadata only; the video bytes go directly from the browser to YouTube.");
     const session = await invoke("start_upload", {
-      title, description: $("ytDescription").value, tags,
+      title, description, tags,
       categoryId: $("ytCategory").value, privacyStatus: $("ytPrivacy").value,
       scheduledAt, madeForKids: $("ytMadeForKids").checked,
+      containsSyntheticMedia: $("ytSyntheticMedia").checked, uploadMode: selectedUploadMode(),
       fileSizeBytes: file.size, mimeType
     });
     uploadId = session.uploadId;
-    const chunkSize = Number(session.chunkSizeBytes) || (8 * 1024 * 1024);
-    let offset = 0, result = null;
-    while (offset < file.size) {
+    const chunkSize = Number(session.chunkSizeBytes) || UPLOAD_CHUNK_BYTES;
+    let offset = 0, result = null, retryCount = 0, noProgressCount = 0;
+    while (offset < file.size && !result) {
       const end = Math.min(file.size, offset + chunkSize);
       setProgress(offset / file.size * 100, "Uploading video…", "Uploaded " + (offset / (1024*1024)).toFixed(1) + " MB of " + (file.size / (1024*1024)).toFixed(1) + " MB. Keep this tab open.");
-      const step = await putChunk(session.uploadUrl, session.accessToken, file, offset, end);
-      if (step.complete) { result = step.data; offset = file.size; break; }
-      offset = step.next;
-      setProgress(offset / file.size * 100, "Uploading video…", "Uploaded " + (offset / (1024*1024)).toFixed(1) + " MB of " + (file.size / (1024*1024)).toFixed(1) + " MB.");
+      try {
+        const step = await xhrUpload(session.uploadUrl, file, offset, end, (loaded,total) => {
+          setProgress(loaded / total * 100, "Uploading video…", "Sending " + (loaded / (1024*1024)).toFixed(1) + " MB of " + (total / (1024*1024)).toFixed(1) + " MB directly to YouTube.");
+        });
+        if (step.complete) { result = step.data; offset = file.size; break; }
+        if (step.next <= offset) {
+          noProgressCount++;
+          if (noProgressCount > 3) throw new Error("YouTube's resumable session did not advance the upload offset. Check YouTube Studio before retrying.");
+          await wait(800 * noProgressCount);
+        } else {
+          offset = step.next;
+          noProgressCount = 0; retryCount = 0;
+        }
+      } catch (error) {
+        if (error.httpStatus >= 400 && error.httpStatus < 500) throw error;
+        retryCount++;
+        if (retryCount > 5) {
+          throw new Error("Upload was interrupted after 5 retries. The browser reported a network/CORS failure or lost connection. Check YouTube Studio before retrying. Details: " + (error.message || "No HTTP response was exposed."));
+        }
+        const pause = Math.min(1000 * (2 ** (retryCount - 1)), 12000) + Math.floor(Math.random()*500);
+        setProgress(offset / file.size * 100, "Connection interrupted — checking resumable upload…", "Retry " + retryCount + " of 5. Checking how much YouTube received before sending data again.");
+        await wait(pause);
+        const state = await probeUpload(session.uploadUrl, file);
+        if (state.complete) { result = state.data; offset = file.size; break; }
+        if (state.next > file.size) throw new Error("YouTube returned an invalid resumable-upload offset.");
+        if (state.next > offset) { offset = state.next; noProgressCount=0; }
+        else if (state.next < offset) { offset = state.next; }
+      }
     }
     if (!result?.id) throw new Error("Upload session ended without a video ID. Check YouTube Studio before retrying to avoid duplicates.");
     setProgress(100,"Transfer complete — verifying video…","YouTube has returned a video ID. Saving the final status to the server.");
@@ -242,7 +392,9 @@ async function uploadVideo(event) {
     $("ytConnectBtn").disabled = !statusData?.setupReady;
     $("ytRefreshBtn").disabled = false;
     $("ytHistoryRefreshBtn").disabled = false;
+    updateModeHint();
     renderChannel(statusData || {});
+    updateUploadButton();
   }
 }
 async function refreshHistory() {
@@ -274,11 +426,13 @@ function bindEvents() {
   $("ytDisconnectBtn").addEventListener("click",disconnectChannel);
   $("ytVideoFile").addEventListener("change",inspectFile);
   $("ytTitle").addEventListener("input",()=>$("ytTitleCount").textContent=String($("ytTitle").value.length));
-  $("ytDescription").addEventListener("input",()=>$("ytDescriptionCount").textContent=String($("ytDescription").value.length));
+  $("ytDescription").addEventListener("input",()=>$("ytDescriptionCount").textContent=String(utf8Bytes($("ytDescription").value)));
+  $("ytTermsAccepted").addEventListener("change",updateUploadButton);
+  document.querySelectorAll('input[name="ytUploadMode"]').forEach(input => input.addEventListener("change", () => { updateModeHint(); updateUploadButton(); }));
   $("ytComposerForm").addEventListener("submit",uploadVideo);
   $("ytClearBtn").addEventListener("click",()=>setTimeout(()=>{
-    clearPreview(); $("ytFileInfo").textContent="No video selected."; $("ytTitleCount").textContent="0"; $("ytDescriptionCount").textContent="0"; $("ytUploadResult").hidden=true;
-    $("ytProgressWrap").hidden=true; $("ytUploadBtn").disabled=!selectedChannel||!statusData?.setupReady;
+    clearPreview(); $("ytFileInfo").textContent="No video selected."; $("ytVideoMetadata").textContent="Video dimensions and duration will appear here."; $("ytTitleCount").textContent="0"; $("ytDescriptionCount").textContent="0"; $("ytUploadResult").hidden=true;
+    $("ytProgressWrap").hidden=true; updateUploadButton();
   },0));
   $("ytCopyRedirectBtn").addEventListener("click",async()=>{
     try { await navigator.clipboard.writeText($("ytRedirectUri").value); H.toast("OAuth redirect URI copied."); }
