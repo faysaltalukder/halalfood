@@ -435,7 +435,7 @@ async function refreshHistory() {
       return "<tr><td>" + H.esc(time ? H.dateTime(time) : "—") + "</td><td><strong>" + H.esc(short) + "</strong><div class=\"yt-history-id\">" + H.esc(row.channel_title || "—") + "</div>" + err + "</td><td><strong>" + H.esc(mode) + "</strong><div class=\"yt-history-id\">" + H.esc([shape,duration].filter(Boolean).join(" · ")) + "</div>" + synthetic + "</td><td>" + H.makeStatus(row.status) + "</td><td>" + H.esc(visibility) + (row.scheduled_at ? '<div class="yt-history-id">Publish: ' + H.esc(H.dateTime(row.scheduled_at)) + "</div>" : "") + "</td><td>" + link + "</td></tr>";
     }).join("");
   } catch (err) {
-    $("ytHistoryBody").innerHTML = '<tr><td colspan="5" class="yt-history-empty">Could not load history. ' + H.esc(err.message || "") + "</td></tr>";
+    $("ytHistoryBody").innerHTML = '<tr><td colspan="6" class="yt-history-empty">Could not load history. ' + H.esc(err.message || "") + "</td></tr>";
   } finally { $("ytHistoryRefreshBtn").disabled = false; }
 }
 function bindEvents() {
