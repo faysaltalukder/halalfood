@@ -337,7 +337,7 @@ async function uploadVideo(event) {
   const mimeType = file.type || "application/octet-stream";
   busy = true; $("ytUploadBtn").disabled = true; $("ytConnectBtn").disabled = true; $("ytProgressWrap").hidden = false; $("ytUploadResult").hidden = true;
   $("ytRefreshBtn").disabled = true; $("ytHistoryRefreshBtn").disabled = true;
-  let uploadId = null;
+  let uploadId = null, acknowledgedVideoId = null;
   try {
     setProgress(0,"Preparing YouTube upload session…","This request sends video metadata only; the video bytes go directly from the browser to YouTube.");
     const session = await invoke("start_upload", {
@@ -394,6 +394,7 @@ async function uploadVideo(event) {
       }
     }
     if (!result?.id) throw new Error("Upload session ended without a video ID. Check YouTube Studio before retrying to avoid duplicates.");
+    acknowledgedVideoId = String(result.id);
     setProgress(100,"Transfer complete — verifying video…","YouTube has returned a video ID. Saving the final status to the server.");
     const final = await invoke("complete_upload", { uploadId, videoId: result.id });
     showUploadResult("YouTube accepted the video. Current status: " + final.status + ". " + (scheduledAt ? "The video was uploaded as Private and scheduled for " + H.dateTime(scheduledAt) + "." : "Check the selected visibility and any processing in YouTube Studio."), false, final.youtubeUrl);
@@ -402,12 +403,44 @@ async function uploadVideo(event) {
     setProgress(100,"Upload complete","YouTube has returned a video ID and the server history was updated.");
     await refreshHistory();
   } catch (err) {
-    const message = err.message || "YouTube upload failed.";
-    if (uploadId) {
-      try { await invoke("fail_upload", { uploadId, errorMessage: message }); } catch {}
+    const message = err.message || "YouTube upload outcome could not be confirmed.";
+    const httpStatus = Number(err?.httpStatus || err?.context?.status || 0);
+    const uncertain = Boolean(acknowledgedVideoId) || !httpStatus || httpStatus >= 500 ||
+      /failed to fetch|network|CORS|timed out|could not read an HTTP response|connection interrupted|session.*status|response was interrupted/i.test(message);
+    if (uploadId && acknowledgedVideoId) {
+      try {
+        const finalized = await invoke("complete_upload", { uploadId, videoId: acknowledgedVideoId });
+        showUploadResult("YouTube returned a video ID and the server has now confirmed the existing upload. No second post was created. Status: " + finalized.status + ".", false, finalized.youtubeUrl);
+        H.toast("Existing YouTube upload confirmed.");
+        await refreshHistory();
+        return;
+      } catch { /* Reconcile the actual channel uploads before reporting failure. */ }
     }
-    showUploadResult(message + " Before retrying, check YouTube Studio in case YouTube received the video but the final response was interrupted.", true);
-    H.toast(message, "error");
+    if (uploadId && uncertain) {
+      try {
+        const checked = await invoke("reconcile_uploads", { uploadId });
+        if (checked.matchedUpload?.youtubeUrl) {
+          const match = checked.matchedUpload;
+          showUploadResult("YouTube received this video. The browser lost the final response, but the server found the existing upload and linked it here. No duplicate was created by this recovery.", false, match.youtubeUrl);
+          H.toast("Existing YouTube upload verified.");
+          await refreshHistory();
+          return;
+        }
+      } catch (reconcileError) {
+        console.warn("[YouTube upload] Automatic reconciliation could not finish:", reconcileError?.message || reconcileError);
+      }
+    }
+    if (uploadId) {
+      try { await invoke("fail_upload", { uploadId, errorMessage: message, uncertain }); } catch {}
+    }
+    if (uncertain) {
+      const safeMessage = "Upload outcome is not confirmed. The history is marked Needs verification, not Failed. Do not upload the same file again yet. Use “Verify uploads on YouTube” or check YouTube Studio first. Details: " + message;
+      showUploadResult(safeMessage, true);
+      H.toast("Upload needs verification; no automatic re-upload was started.", "error");
+    } else {
+      showUploadResult("YouTube rejected the upload request. " + message, true);
+      H.toast(message, "error");
+    }
     await refreshHistory();
   } finally {
     busy = false;
@@ -417,6 +450,34 @@ async function uploadVideo(event) {
     updateModeHint();
     renderChannel(statusData || {});
     updateUploadButton();
+  }
+}
+async function reconcileUploads() {
+  const button = $("ytReconcileBtn");
+  if (button.disabled) return;
+  button.disabled = true;
+  const original = button.textContent;
+  button.textContent = "Checking YouTube…";
+  try {
+    const result = await invoke("reconcile_uploads");
+    await refreshHistory();
+    const count = Number(result.matchedCount || 0);
+    const matched = Array.isArray(result.matches) ? result.matches : [];
+    if (count) {
+      const links = matched.map(x => String(x.title || "Video") + " — " + String(x.youtubeUrl || "")).join("\n");
+      showUploadResult("YouTube checked " + Number(result.checkedVideos || 0) + " recent videos and linked " + count + " existing upload(s) to history. Nothing was re-uploaded.\n" + links, false, matched[0]?.youtubeUrl || "");
+      H.toast("Verified " + count + " existing YouTube upload(s).");
+    } else {
+      showUploadResult("YouTube was checked, but no exact match was found in the latest " + Number(result.checkedVideos || 0) + " channel videos. No video was uploaded or duplicated. Check YouTube Studio, then run this check again.", true);
+      H.toast("No matching upload found. Nothing was re-published.", "error");
+    }
+  } catch (err) {
+    const message = err?.message || "Could not verify the recent YouTube uploads.";
+    showUploadResult("Server-side verification failed; no new video was uploaded. " + message, true);
+    H.toast(message, "error");
+  } finally {
+    button.disabled = false;
+    button.textContent = original;
   }
 }
 async function refreshHistory() {
@@ -447,6 +508,7 @@ async function refreshHistory() {
 function bindEvents() {
   $("ytRefreshBtn").addEventListener("click",refreshStatus);
   $("ytHistoryRefreshBtn").addEventListener("click",refreshHistory);
+  $("ytReconcileBtn").addEventListener("click",reconcileUploads);
   $("ytConnectBtn").addEventListener("click",connectYouTube);
   $("ytVerifyBtn").addEventListener("click",verifyChannel);
   $("ytDisconnectBtn").addEventListener("click",disconnectChannel);
