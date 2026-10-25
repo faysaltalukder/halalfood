@@ -3,7 +3,7 @@
 const FUNCTION_NAME = "youtube-publishing";
 const FUNCTION_ORIGIN = "https://qfwvrcfkrsydycbfjsxf.supabase.co";
 const REQUIRED_SCOPES = ["https://www.googleapis.com/auth/youtube.upload","https://www.googleapis.com/auth/youtube.readonly"];
-const MAX_FILE_BYTES = 256 * 1024 ** 3;
+const MAX_FILE_BYTES = 256_000_000_000;
 const MAX_DESCRIPTION_BYTES = 5000;
 const SHORTS_MAX_SECONDS = 180;
 const UPLOAD_CHUNK_BYTES = 8 * 1024 * 1024;
