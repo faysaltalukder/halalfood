@@ -317,6 +317,7 @@ async function uploadVideo(event) {
   if (utf8Bytes(description) > MAX_DESCRIPTION_BYTES) {
     H.toast("The description is " + utf8Bytes(description) + " UTF-8 bytes. YouTube's limit is 5,000 bytes for both Shorts and regular videos.", "error"); $("ytDescription").focus(); return;
   }
+  if (!mediaInfo) { H.toast("Wait for the browser to read the video's dimensions and duration before uploading.", "error"); $("ytVideoFile").focus(); return; }
   const formatError = modeValidationError();
   if (formatError) { H.toast(formatError, "error"); $("ytVideoFile").focus(); return; }
   if (!$("ytTermsAccepted").checked) { H.toast("Confirm the YouTube Terms and rights notice before uploading.", "error"); return; }
@@ -339,6 +340,7 @@ async function uploadVideo(event) {
       categoryId: $("ytCategory").value, privacyStatus: $("ytPrivacy").value,
       scheduledAt, madeForKids: $("ytMadeForKids").checked,
       containsSyntheticMedia: $("ytSyntheticMedia").checked, uploadMode: selectedUploadMode(),
+      videoWidth: mediaInfo.width, videoHeight: mediaInfo.height, videoDurationSeconds: mediaInfo.duration,
       fileSizeBytes: file.size, mimeType
     });
     uploadId = session.uploadId;
