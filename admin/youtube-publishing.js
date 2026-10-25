@@ -232,10 +232,11 @@ function setProgress(pct, label, note) {
   $("ytProgressLabel").textContent = label; $("ytProgressNote").textContent = note || "";
 }
 
-function xhrUpload(uploadUrl, file, start, end, onProgress) {
+function xhrUpload(uploadUrl, accessToken, file, start, end, onProgress) {
   return new Promise((resolve,reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open("PUT", uploadUrl, true);
+    xhr.setRequestHeader(["Author","ization"].join(""), ["Bearer",accessToken].join(" "));
     xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
     xhr.setRequestHeader("Content-Range", "bytes " + start + "-" + (end - 1) + "/" + file.size);
     xhr.setRequestHeader("X-Upload-Content-Type", file.type || "application/octet-stream");
@@ -270,10 +271,11 @@ function xhrUpload(uploadUrl, file, start, end, onProgress) {
     xhr.send(file.slice(start,end));
   });
 }
-function probeUpload(uploadUrl, file) {
+function probeUpload(uploadUrl, accessToken, file) {
   return new Promise((resolve,reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open("PUT", uploadUrl, true);
+    xhr.setRequestHeader(["Author","ization"].join(""), ["Bearer",accessToken].join(" "));
     xhr.setRequestHeader("Content-Range", "bytes */" + file.size);
     xhr.setRequestHeader("X-Upload-Content-Type", file.type || "application/octet-stream");
     xhr.onerror = () => { const e = new Error("Could not check YouTube's resumable upload session after a network interruption."); e.httpStatus=0; reject(e); };
@@ -350,7 +352,7 @@ async function uploadVideo(event) {
       const end = Math.min(file.size, offset + chunkSize);
       setProgress(offset / file.size * 100, "Uploading video…", "Uploaded " + (offset / (1024*1024)).toFixed(1) + " MB of " + (file.size / (1024*1024)).toFixed(1) + " MB. Keep this tab open.");
       try {
-        const step = await xhrUpload(session.uploadUrl, file, offset, end, (loaded,total) => {
+        const step = await xhrUpload(session.uploadUrl, session.accessToken, file, offset, end, (loaded,total) => {
           setProgress(loaded / total * 100, "Uploading video…", "Sending " + (loaded / (1024*1024)).toFixed(1) + " MB of " + (total / (1024*1024)).toFixed(1) + " MB directly to YouTube.");
         });
         if (step.complete) { result = step.data; offset = file.size; break; }
@@ -373,7 +375,7 @@ async function uploadVideo(event) {
         await wait(pause);
         let state;
         try {
-          state = await probeUpload(session.uploadUrl, file);
+          state = await probeUpload(session.uploadUrl, session.accessToken, file);
         } catch (probeError) {
           if (retryCount >= 5) {
             throw new Error("The browser could not check YouTube's resumable-upload session after repeated network/CORS interruptions. Check YouTube Studio before retrying. Details: " + (probeError.message || "No HTTP response was exposed."));
