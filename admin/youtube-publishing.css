@@ -75,6 +75,7 @@ html[data-admin-theme="dark"] body[data-page="youtube-publishing"] .yt-upload-re
 .yt-mode-help,.yt-mode-hint{margin:10px 0 0;font-size:12px;line-height:1.55;color:var(--hf-muted)}
 .yt-mode-hint{padding:9px 11px;border-radius:9px;background:rgba(127,127,127,.045)}
 .yt-mode-hint.warning{color:#98531f;background:rgba(201,123,61,.11)}
+.yt-over-limit{color:var(--hf-red)!important;font-weight:800}
 .yt-video-metadata{margin-top:7px;font-size:11px;line-height:1.5;color:var(--hf-muted);overflow-wrap:anywhere}
 .yt-terms-check{display:flex;align-items:flex-start;gap:10px;margin-top:14px;padding:13px;border:1px solid var(--hf-border);border-radius:11px;font-size:12px;line-height:1.6;color:var(--hf-muted);cursor:pointer}
 .yt-terms-check input{margin-top:4px;flex:0 0 auto;accent-color:var(--hf-orange)}
