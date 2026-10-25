@@ -133,14 +133,14 @@ function inspectCommunityImages() {
   }
   updateCommunityButtons();
 }
-async function saveCommunityDraft(status = "draft", draftId = activeCommunityDraftId, draftFiles = null, draftText = null, desiredSchedule = null) {
+async function saveCommunityDraft(status = "draft", draftId = activeCommunityDraftId, draftFiles = null, draftText = null, desiredSchedule = undefined) {
   if (!selectedChannel) throw new Error("Connect your YouTube channel before saving a draft.");
   const files = draftFiles || Array.from($("ytCommunityImages").files || []);
   const postText = draftText !== null ? draftText : $("ytCommunityText").value.trim();
   const names = files.map(f => typeof f === "string" ? ({name:f,type:"image/jpeg",size:1}) : ({name:f.name,type:f.type,size:f.size}));
   if (!postText && !names.length) throw new Error("Add a caption or select at least one image.");
   if (names.length > 10 || names.some(f => !["image/jpeg","image/png","image/gif","image/webp"].includes(f.type) || !Number.isSafeInteger(f.size) || f.size < 1 || f.size > 16*1024*1024)) throw new Error("Select up to 10 JPG, PNG, GIF, or WEBP images, each no larger than 16 MB.");
-  let scheduledAt=null;const schedule=desiredSchedule!==null?desiredSchedule:$("ytCommunitySchedule").value;
+  let scheduledAt=null;const schedule=desiredSchedule!==undefined?desiredSchedule:$("ytCommunitySchedule").value;
   if(schedule){const date=new Date(schedule);if(Number.isNaN(date.getTime())||date.getTime()<Date.now()+60000)throw new Error("Choose a desired posting time in the future.");scheduledAt=date.toISOString();}
   const result=await invoke("community_draft_save",{draftId:draftId||undefined,postText,images:names,scheduledAt,status});
   activeCommunityDraftId=result.draft?.id||draftId||null;
