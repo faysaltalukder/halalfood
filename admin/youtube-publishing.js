@@ -154,6 +154,8 @@ async function openCommunityStudio(draftId = null) {
   const openId=draftId||activeCommunityDraftId;
   const currentFiles=Array.from($("ytCommunityImages").files||[]);
   let text=$("ytCommunityText").value.trim(),schedule=$("ytCommunitySchedule").value;
+  let clipboardPromise=Promise.resolve(true);
+  if(text){try{clipboardPromise=navigator.clipboard.writeText(text).then(()=>true).catch(()=>false);}catch{clipboardPromise=Promise.resolve(false);}}
   try{
     if(draftId){
       const saved=await invoke("community_drafts_list"),row=(saved.rows||[]).find(x=>x.id===draftId);
@@ -166,7 +168,7 @@ async function openCommunityStudio(draftId = null) {
       const draft=await saveCommunityDraft("ready_for_studio",openId,currentFiles,text,schedule);
       activeCommunityDraftId=draft.id;
     }
-    if(text){try{await navigator.clipboard.writeText(text);}catch{H.toast("Caption saved, but the browser blocked clipboard access. Copy it from the dashboard manually.","error");}}
+    if(!(await clipboardPromise))H.toast("Caption saved, but the browser blocked clipboard access. Copy it from the dashboard manually.","error");
     tab.location.href="https://studio.youtube.com/channel/"+encodeURIComponent(selectedChannel.channelId)+"/posts";
     $("ytCommunityResult").hidden=false;$("ytCommunityResult").classList.remove("error");$("ytCommunityResult").replaceChildren();
     const strong=document.createElement("strong");strong.textContent="Draft ready for YouTube Studio";
