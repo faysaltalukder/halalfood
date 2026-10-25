@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex,nofollow">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<title>Meta Ads Review · Halal Food Admin</title>
+<link rel="stylesheet" href="./shared.css?v=20261025-meta-ads-review-v1">
+<link rel="stylesheet" href="./phase4-pages.css?v=20261025-meta-ads-review-v1">
+<link rel="stylesheet" href="./meta-ads-review.css?v=20261025-meta-ads-review-v1">
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
+</head>
+<body data-page="meta-ads-review">
+<div id="authGate" class="auth-gate"><div class="auth-gate-card"><strong>Checking secure admin access…</strong><p>This review workspace is restricted to the Halal Food administrator with completed two-step verification.</p></div></div>
+<div id="adminApp" hidden>
+<main id="pageContent">
+  <div class="page-heading hf-phase4-hero mar-hero">
+    <div><p class="page-eyebrow">PAID MEDIA WORKSPACE</p><h1>Meta Ads Review</h1><p>Prepare campaign briefs, check copy and setup, and inspect ads from your own Meta ad account. This first release is review-only: it cannot create, edit, publish, pause, or spend on ads.</p></div>
+    <div class="page-actions"><button id="marRefreshAll" type="button" class="hf-button hf-button-secondary">↻ Refresh</button><a class="hf-button hf-button-secondary" href="https://developers.facebook.com/apps/" target="_blank" rel="noopener noreferrer">Meta Developer App ↗</a><a class="hf-button hf-button-secondary" href="https://adsmanager.facebook.com/" target="_blank" rel="noopener noreferrer">Open Ads Manager ↗</a></div>
+  </div>
+
+  <div class="hf-banner hf-banner-info mar-scope-note"><span aria-hidden="true">ⓘ</span><div><strong>Read-only Meta connection</strong>This setup requests only <code>ads_read</code>. Your app will not request <code>ads_management</code>, and this workspace has no action to change or publish ads. Meta controls whether the account can authorize the app. Only connect an ad account you own or are authorized to access.</div></div>
+
+  <section class="hf-card hf-card-pad mar-connection" aria-labelledby="marConnectionHeading">
+    <div class="hf-section-head"><div><h2 id="marConnectionHeading">1. Connect Meta Ads</h2><p>Use the same Meta App as the Page-publishing integration. Credentials stay in Supabase Edge Function Secrets; access tokens are encrypted on the server.</p></div><span id="marServerBadge" class="hf-status hf-status-pending">Checking setup</span></div>
+    <div class="mar-connect-grid">
+      <div class="mar-connect-panel">
+        <div class="mar-panel-heading"><span class="mar-step">A</span><div><strong>Server and redirect setup</strong><p>The status shows readiness only. Secret values are never sent to the browser.</p></div></div>
+        <ul id="marConfigList" class="mar-config-list" aria-live="polite"><li>Checking configuration…</li></ul>
+        <label class="hf-field" for="marRedirectUri">OAuth redirect URI
+          <span class="hf-help">Copy this exact URL into your Meta App's Valid OAuth Redirect URIs. The URI must match exactly.</span>
+          <span class="mar-copy-row"><input id="marRedirectUri" class="hf-input" type="text" readonly value="Loading…"><button id="marCopyRedirect" class="hf-button hf-button-secondary" type="button">Copy</button></span>
+        </label>
+        <a class="mar-doc-link" href="https://developers.facebook.com/docs/marketing-api/get-started/" target="_blank" rel="noopener noreferrer">Read Meta Marketing API setup guide ↗</a>
+      </div>
+      <div class="mar-connect-panel">
+        <div class="mar-panel-heading"><span class="mar-step">B</span><div><strong>Authorize read-only access</strong><p>Sign in with the Facebook user who has access to the intended ad account and an Admin/Developer/Tester role on the Meta App while it is in Development mode.</p></div></div>
+        <div class="mar-connect-actions"><button id="marConnectBtn" class="hf-button hf-button-primary" type="button" disabled>Connect Meta Ads</button><button id="marSyncAccounts" class="hf-button hf-button-secondary" type="button" disabled>↻ Refresh ad accounts</button><button id="marDisconnectBtn" class="hf-button hf-button-secondary" type="button" disabled>Disconnect</button></div>
+        <div id="marConnectHint" class="mar-inline-status" role="status" aria-live="polite">Checking server configuration…</div>
+        <label class="hf-field" for="marAccountSelect">Ad account
+          <select id="marAccountSelect" class="hf-select" disabled><option value="">Connect Meta Ads to load accounts</option></select>
+        </label>
+        <div class="mar-connect-actions"><button id="marSelectAccount" class="hf-button hf-button-primary" type="button" disabled>Use selected account</button><button id="marVerifyAccount" class="hf-button hf-button-secondary" type="button" disabled>Load campaigns & ads</button></div>
+        <div id="marSelectedAccount" class="mar-selected-account" aria-live="polite">No ad account selected.</div>
+        <div id="marPermissions" class="mar-permissions" aria-live="polite"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="hf-card hf-card-pad mar-draft-section" id="marDraftBuilder" aria-labelledby="marDraftHeading">
+    <div class="hf-section-head"><div><h2 id="marDraftHeading">2. Create an ad brief / draft</h2><p>Save your idea before building it in Ads Manager. Fill in the copy and the campaign plan so it can be reviewed consistently.</p></div><span id="marDraftMode" class="hf-status hf-status-pending">New draft</span></div>
+    <form id="marDraftForm" class="mar-form">
+      <input type="hidden" id="marDraftId">
+      <div class="mar-form-grid">
+        <label class="hf-field" for="marDraftName">Draft name <span class="mar-required">*</span><input class="hf-input" id="marDraftName" maxlength="150" required placeholder="e.g. Ghee awareness — November test"></label>
+        <label class="hf-field" for="marPlatform">Platform <select id="marPlatform" class="hf-select"><option value="facebook">Facebook</option><option value="instagram">Instagram</option><option value="both">Facebook + Instagram</option></select></label>
+        <label class="hf-field" for="marObjective">Campaign objective <span class="mar-required">*</span><select id="marObjective" class="hf-select" required><option value="awareness">Awareness</option><option value="traffic" selected>Traffic</option><option value="engagement">Engagement</option><option value="leads">Leads</option><option value="sales">Sales</option><option value="app_promotion">App promotion</option></select><small>Choose the result you want Meta to optimize toward; it should match the real business goal.</small></label>
+        <label class="hf-field" for="marCampaignType">Campaign setup <select id="marCampaignType" class="hf-select"><option value="manual">Manual campaign</option><option value="advantage_plus">Advantage+ campaign (where eligible)</option><option value="not_decided">Not decided — need guidance</option></select></label>
+        <label class="hf-field mar-span-2" for="marPrimaryText">Primary text / ad copy <span class="mar-required">*</span><textarea id="marPrimaryText" class="hf-textarea" rows="5" maxlength="5000" required placeholder="Write the main ad text here…"></textarea><small><span id="marPrimaryCount">0</span> characters. Avoid unsupported guarantees, misleading claims, and language that implies knowledge of sensitive personal traits.</small></label>
+        <label class="hf-field" for="marHeadline">Headline<input id="marHeadline" class="hf-input" maxlength="255" placeholder="Short, specific headline"></label>
+        <label class="hf-field" for="marDescription">Description<input id="marDescription" class="hf-input" maxlength="500" placeholder="Optional supporting line"></label>
+        <label class="hf-field" for="marCta">Call to action<select id="marCta" class="hf-select"><option value="LEARN_MORE">Learn More</option><option value="SHOP_NOW">Shop Now</option><option value="SEND_MESSAGE">Send Message</option><option value="CONTACT_US">Contact Us</option><option value="SIGN_UP">Sign Up</option><option value="GET_QUOTE">Get Quote</option><option value="NO_BUTTON">No button / other</option></select></label>
+        <label class="hf-field" for="marDestination">Destination / landing page<input id="marDestination" class="hf-input" type="url" maxlength="2000" placeholder="https://example.com/product"><small>For Traffic, Leads or Sales, confirm that the landing page works and matches the offer.</small></label>
+        <label class="hf-field" for="marCreativeUrl">Creative URL (optional)<input id="marCreativeUrl" class="hf-input" type="url" maxlength="2000" placeholder="Public image or video URL"></label>
+        <label class="hf-field" for="marCreativeNotes">Creative notes<textarea id="marCreativeNotes" class="hf-textarea" rows="2" maxlength="1200" placeholder="Describe the image/video, offer, text overlay, format, and rights to use it."></textarea></label>
+        <label class="hf-field" for="marLocation">Target location<input id="marLocation" class="hf-input" maxlength="500" value="Bangladesh" placeholder="Country, city, or eligible local area"></label>
+        <div class="hf-field mar-age-fields"><span>Age range</span><div><label for="marAgeMin">Min<input class="hf-input" id="marAgeMin" type="number" min="18" max="65" value="18" required></label><label for="marAgeMax">Max<input class="hf-input" id="marAgeMax" type="number" min="18" max="65" value="65" required></label></div><small>Use only an age range permitted for the product, objective and applicable ad policies.</small></div>
+        <label class="hf-field" for="marInterests">Audience / interests<textarea id="marInterests" class="hf-textarea" rows="2" maxlength="1200" placeholder="Broad audience, interests to test, exclusions or rationale"></textarea><small>Do not target or infer sensitive personal attributes.</small></label>
+        <label class="hf-field" for="marPlacements">Placements<select id="marPlacements" class="hf-select"><option value="Advantage+ placements">Advantage+ placements (default to consider)</option><option value="Manual placements">Manual placements</option><option value="Not decided">Not decided — need guidance</option></select></label>
+        <label class="hf-field" for="marBudget">Test budget (BDT)<input id="marBudget" class="hf-input" type="number" min="0" step="1" placeholder="e.g. 300"><small>This is a planning amount only. Saving this brief does not set a Meta budget or spend money.</small></label>
+        <label class="hf-field" for="marBudgetPeriod">Budget type<select id="marBudgetPeriod" class="hf-select"><option value="daily">Daily budget</option><option value="lifetime">Lifetime budget</option></select></label>
+        <label class="hf-field" for="marStart">Planned start (optional)<input id="marStart" class="hf-input" type="datetime-local"></label>
+        <label class="hf-field" for="marEnd">Planned end (optional)<input id="marEnd" class="hf-input" type="datetime-local"></label>
+      </div>
+      <div class="mar-form-actions"><button class="hf-button hf-button-primary" type="submit" id="marSaveDraft">Save draft</button><button class="hf-button hf-button-secondary" type="button" id="marPreflight">Run checklist</button><button class="hf-button hf-button-secondary" type="button" id="marCopyPacket">Copy review packet</button><button class="hf-button hf-button-secondary" type="button" id="marNewDraft">New draft</button></div>
+      <div id="marDraftResult" class="mar-result" role="status" aria-live="polite" hidden></div>
+      <div id="marPreflightResults" class="mar-preflight-results" aria-live="polite"></div>
+    </form>
+  </section>
+
+  <section class="hf-card hf-card-pad mar-saved-section" aria-labelledby="marSavedHeading">
+    <div class="hf-section-head"><div><h2 id="marSavedHeading">3. Saved ad-review drafts</h2><p>These are internal planning briefs. They are not published ads or Meta Ads Manager drafts.</p></div><button id="marRefreshDrafts" class="hf-button hf-button-secondary" type="button">↻ Refresh drafts</button></div>
+    <div class="mar-toolbar"><input id="marDraftSearch" class="hf-input" type="search" placeholder="Search draft name or copy…" aria-label="Search saved ad drafts"><select id="marStatusFilter" class="hf-select" aria-label="Filter drafts by review status"><option value="all">All review states</option><option value="draft">Draft</option><option value="ready_for_review">Ready for review</option><option value="changes_needed">Changes needed</option><option value="reviewed">Reviewed here</option><option value="ready_for_meta">Ready to build in Meta</option><option value="archived">Archived</option></select></div>
+    <div class="hf-table-wrap mar-table-wrap" role="region" aria-label="Saved ad review drafts" tabindex="0"><table class="hf-table"><thead><tr><th>Draft</th><th>Objective</th><th>Review state</th><th>Updated</th><th>Actions</th></tr></thead><tbody id="marDraftRows"><tr><td colspan="5" class="hf-loading">Loading saved drafts…</td></tr></tbody></table></div>
+    <p id="marDraftListNote" class="hf-data-note"></p>
+  </section>
+
+  <section class="hf-card hf-card-pad mar-meta-objects" aria-labelledby="marRemoteHeading">
+    <div class="hf-section-head"><div><h2 id="marRemoteHeading">4. Ads and campaigns read from Meta</h2><p>Read-only view of objects already available through Marketing API. An unsaved editor draft inside Ads Manager may not exist as a readable API object yet.</p></div><div class="mar-form-actions"><button id="marLoadCampaigns" class="hf-button hf-button-secondary" type="button" disabled>Load campaigns</button><button id="marLoadAds" class="hf-button hf-button-secondary" type="button" disabled>Load ads</button></div></div>
+    <div id="marRemoteNotice" class="mar-inline-status">Connect Meta Ads, choose an account, then load the available campaign or ad records.</div>
+    <div class="mar-subsection"><div class="mar-subsection-title"><h3>Campaigns</h3><span id="marCampaignCount" class="hf-status hf-status-pending">Not loaded</span></div><div class="hf-table-wrap mar-table-wrap" role="region" aria-label="Meta campaigns" tabindex="0"><table class="hf-table"><thead><tr><th>Campaign</th><th>Objective</th><th>Status</th><th>Effective status</th><th>Budget</th></tr></thead><tbody id="marCampaignRows"><tr><td colspan="5" class="mar-empty">Campaigns have not been loaded yet.</td></tr></tbody></table></div></div>
+    <div class="mar-subsection"><div class="mar-subsection-title"><h3>Ads / creative copy</h3><span id="marAdCount" class="hf-status hf-status-pending">Not loaded</span></div><div class="hf-table-wrap mar-table-wrap" role="region" aria-label="Meta ads and creative copy" tabindex="0"><table class="hf-table"><thead><tr><th>Ad / creative</th><th>Primary text</th><th>Headline</th><th>Status</th><th>Actions</th></tr></thead><tbody id="marAdRows"><tr><td colspan="5" class="mar-empty">Ads have not been loaded yet.</td></tr></tbody></table></div></div>
+  </section>
+
+  <div class="hf-banner hf-banner-info mar-review-note"><span aria-hidden="true">ⓘ</span><div><strong>How to get an actual AI review</strong>The dashboard can save drafts, run a basic checklist, and read Meta objects. To get a full language-model review in this ChatGPT conversation without a paid automation bridge, click <b>Copy review packet</b> and paste the packet into this chat. I can then review copy, policy risks and setup with you. The checklist is only a preflight aid, not Meta's approval decision.</div></div>
+  <p class="hf-data-note mar-footer">No ad publishing or budget-changing calls are implemented in this workspace. API access depends on Meta App settings, granted permissions, your own ad-account access, and Meta's rate limits.</p>
+</main>
+</div>
+<script defer src="./i18n.js?v=20261023-admin-ultimate-v1"></script>
+<script defer src="./shared.js?v=20261025-meta-ads-review-v1"></script>
+<script defer src="./meta-ads-review.js?v=20261025-meta-ads-review-v1"></script>
+</body></html>
