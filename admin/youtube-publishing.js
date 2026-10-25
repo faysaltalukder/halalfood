@@ -239,14 +239,14 @@ function xhrUpload(uploadUrl, accessToken, file, start, end, onProgress) {
     xhr.setRequestHeader(["Author","ization"].join(""), ["Bearer",accessToken].join(" "));
     xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
     xhr.setRequestHeader("Content-Range", "bytes " + start + "-" + (end - 1) + "/" + file.size);
-    xhr.setRequestHeader("X-Upload-Content-Type", file.type || "application/octet-stream");
     xhr.upload.onprogress = event => {
       if (event.lengthComputable && typeof onProgress === "function")
         onProgress(start + event.loaded, file.size);
     };
     xhr.onerror = () => {
-      const error = new Error("The browser could not read a response from YouTube's upload endpoint (network/CORS interruption).");
-      error.httpStatus = 0; reject(error);
+      console.error("[YouTube upload] Media PUT failed without an HTTP response. Check the browser Network panel for a CORS/preflight block or network interruption.", { phase: "media-put", status: xhr.status, readyState: xhr.readyState });
+      const error = new Error("The browser could not read an HTTP response from YouTube's media-upload request. This points to a browser/network/CORS path; inspect DevTools Network for the blocked request.");
+      error.httpStatus = 0; error.stage = "media-put"; reject(error);
     };
     xhr.ontimeout = () => { const e = new Error("YouTube's upload request timed out."); e.httpStatus=0; reject(e); };
     xhr.timeout = 120000;
@@ -277,8 +277,11 @@ function probeUpload(uploadUrl, accessToken, file) {
     xhr.open("PUT", uploadUrl, true);
     xhr.setRequestHeader(["Author","ization"].join(""), ["Bearer",accessToken].join(" "));
     xhr.setRequestHeader("Content-Range", "bytes */" + file.size);
-    xhr.setRequestHeader("X-Upload-Content-Type", file.type || "application/octet-stream");
-    xhr.onerror = () => { const e = new Error("Could not check YouTube's resumable upload session after a network interruption."); e.httpStatus=0; reject(e); };
+    xhr.onerror = () => {
+      console.error("[YouTube upload] Resumable-session status check failed without an HTTP response. Check browser Network for CORS/preflight or network filtering.", { phase: "session-status", status: xhr.status, readyState: xhr.readyState });
+      const e = new Error("The browser could not read an HTTP response from YouTube's resumable-session status check. Inspect DevTools Network for the blocked request.");
+      e.httpStatus=0; e.stage="session-status"; reject(e);
+    };
     xhr.ontimeout = () => { const e = new Error("The resumable upload status check timed out."); e.httpStatus=0; reject(e); };
     xhr.timeout = 45000;
     xhr.onload = () => {
@@ -347,7 +350,7 @@ async function uploadVideo(event) {
     });
     uploadId = session.uploadId;
     const chunkSize = Number(session.chunkSizeBytes) || UPLOAD_CHUNK_BYTES;
-    let offset = 0, result = null, retryCount = 0, noProgressCount = 0;
+    let offset = 0, result = null, retryCount = 0, noProgressCount = 0, lastMediaError = null;
     while (offset < file.size && !result) {
       const end = Math.min(file.size, offset + chunkSize);
       setProgress(offset / file.size * 100, "Uploading video…", "Uploaded " + (offset / (1024*1024)).toFixed(1) + " MB of " + (file.size / (1024*1024)).toFixed(1) + " MB. Keep this tab open.");
@@ -366,6 +369,7 @@ async function uploadVideo(event) {
         }
       } catch (error) {
         if (error.httpStatus >= 400 && error.httpStatus < 500) throw error;
+        lastMediaError = error;
         retryCount++;
         if (retryCount > 5) {
           throw new Error("Upload was interrupted after 5 retries. The browser reported a network/CORS failure or lost connection. Check YouTube Studio before retrying. Details: " + (error.message || "No HTTP response was exposed."));
@@ -378,7 +382,7 @@ async function uploadVideo(event) {
           state = await probeUpload(session.uploadUrl, session.accessToken, file);
         } catch (probeError) {
           if (retryCount >= 5) {
-            throw new Error("The browser could not check YouTube's resumable-upload session after repeated network/CORS interruptions. Check YouTube Studio before retrying. Details: " + (probeError.message || "No HTTP response was exposed."));
+            throw new Error("Both the media-upload request and the resumable-session status check failed without an HTTP response. Likely boundary: browser ↔ Google upload endpoint (CORS/preflight, network filtering, or connectivity), not a confirmed Supabase database error. Media request: " + (lastMediaError?.message || "no response") + " Status check: " + (probeError.message || "no response") + ". Check YouTube Studio before retrying to avoid duplicates.");
           }
           setProgress(offset / file.size * 100, "Network interrupted — retrying status check…", "Retry " + retryCount + " of 5. No file copy is stored on Supabase.");
           continue;
