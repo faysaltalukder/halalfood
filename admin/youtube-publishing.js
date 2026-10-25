@@ -255,9 +255,13 @@ function renderChannel(data) {
   const ready = Boolean(selectedChannel && data?.setupReady && REQUIRED_SCOPES.every(scope => (selectedChannel.grantedScopes || []).includes(scope)));
   $("ytVerifyBtn").disabled = !selectedChannel || busy;
   $("ytDisconnectBtn").disabled = !selectedChannel || busy;
+  $("ytOverviewRefreshBtn").disabled = !selectedChannel || overviewBusy;
+  $("ytCommunityDraftRefreshBtn").disabled = !selectedChannel || busy;
+  $("ytApplyExistingThumbnailBtn").disabled = !selectedChannel || busy || !$("ytExistingVideoId").value.trim() || !$("ytExistingThumbnailFile").files?.[0];
   $("ytComposerBadge").textContent = ready ? "Channel connected" : (selectedChannel ? "Check permissions" : "Connect a channel first");
   $("ytComposerBadge").className = "hf-status " + (ready ? "hf-status-active" : "hf-status-pending");
   updateUploadButton();
+  updateCommunityButtons();
   if (selectedChannel) {
     $("ytSelectedChannel").innerHTML = '<strong>' + H.esc(selectedChannel.channelTitle) + '</strong><span>Channel ID: ' + H.esc(selectedChannel.channelId) + '</span><br><span>Custom URL: ' + H.esc(selectedChannel.channelCustomUrl || "Not returned") + '</span><br><span>Last verified: ' + H.esc(selectedChannel.lastVerifiedAt ? H.dateTime(selectedChannel.lastVerifiedAt) : "Not verified yet") + '</span>';
     $("ytPermissionChecks").innerHTML = REQUIRED_SCOPES.map(scope => {
@@ -277,6 +281,7 @@ async function refreshStatus() {
     statusData = await invoke("status");
     renderConfig(statusData);
     renderChannel(statusData);
+    await Promise.all([refreshOverview(), refreshCommunityDrafts()]);
   } catch (err) {
     H.toast(err.message || "Could not read YouTube status.", "error");
     inlineStatus(err.message || "Status check failed.", true);
@@ -546,11 +551,25 @@ async function uploadVideo(event) {
     acknowledgedVideoId = String(result.id);
     setProgress(100,"Transfer complete — verifying video…","YouTube has returned a video ID. Saving the final status to the server.");
     const final = await invoke("complete_upload", { uploadId, videoId: result.id });
-    showUploadResult("YouTube accepted the video. Current status: " + final.status + ". " + (scheduledAt ? "The video was uploaded as Private and scheduled for " + H.dateTime(scheduledAt) + "." : "Check the selected visibility and any processing in YouTube Studio."), false, final.youtubeUrl);
+    let thumbnailNote = "";
+    const thumbnailFile = $("ytThumbnailFile").files?.[0];
+    if (thumbnailFile) {
+      try {
+        setProgress(100,"Setting custom thumbnail…","The video exists on YouTube. The image is sent through the protected server, not stored in Supabase.");
+        await uploadThumbnail(result.id, thumbnailFile);
+        thumbnailNote = " The custom thumbnail was set successfully.";
+        $("ytThumbnailFile").value = "";
+        videoThumbnailPreviewUrl = clearImagePreview("ytThumbnailPreview", videoThumbnailPreviewUrl);
+      } catch (thumbnailError) {
+        thumbnailNote = " The video uploaded successfully, but its thumbnail could not be set: " + (thumbnailError.message || "Unknown thumbnail error") + ". You can retry below; do not re-upload the video.";
+        H.toast("Video uploaded, but thumbnail setting needs attention.", "error");
+      }
+    }
+    showUploadResult("YouTube accepted the video. Current status: " + final.status + ". " + (scheduledAt ? "The video was uploaded as Private and scheduled for " + H.dateTime(scheduledAt) + "." : "Check the selected visibility and any processing in YouTube Studio.") + thumbnailNote, false, final.youtubeUrl);
     H.toast("YouTube upload completed.");
     $("ytProgressWrap").hidden = false;
-    setProgress(100,"Upload complete","YouTube has returned a video ID and the server history was updated.");
-    await refreshHistory();
+    setProgress(100,"Upload complete","YouTube returned a video ID and the server history was updated. A thumbnail-only error does not require re-uploading.");
+    await Promise.all([refreshHistory(), refreshOverview()]);
   } catch (err) {
     const message = err.message || "YouTube upload outcome could not be confirmed.";
     const httpStatus = Number(err?.httpStatus || err?.context?.status || 0);
@@ -646,12 +665,13 @@ async function refreshHistory() {
         ? '<a class="yt-mini-link" target="_blank" rel="noopener noreferrer" href="' + H.esc(row.youtube_url) + '">Open video ↗</a><div class="yt-history-id">' + H.esc(row.video_id || "") + "</div>"
         : '<div class="yt-history-id">' + H.esc(row.video_id || "—") + "</div>";
       const err = row.error_message ? '<small class="yt-history-id">' + H.esc(row.error_message) + "</small>" : "";
+      const thumbnailLink = row.thumbnail_url && /^https:\/\//.test(row.thumbnail_url) ? '<div class="yt-history-id"><a target="_blank" rel="noopener noreferrer" href="' + H.esc(row.thumbnail_url) + '">Custom thumbnail ↗</a></div>' : "";
       const title = String(row.title || ""), short = title.length > 110 ? title.slice(0,110) + "…" : title;
       const mode = row.upload_mode === "shorts" ? "YouTube Shorts" : "Regular video";
       const shape = row.video_width && row.video_height ? (row.video_width + "×" + row.video_height) : "";
       const duration = Number.isFinite(Number(row.video_duration_seconds)) && row.video_duration_seconds ? (Math.floor(Number(row.video_duration_seconds)/60) + ":" + String(Math.floor(Number(row.video_duration_seconds)%60)).padStart(2,"0")) : "";
       const synthetic = row.contains_synthetic_media ? '<div class="yt-history-id">AI/altered disclosure: yes</div>' : "";
-      return "<tr><td>" + H.esc(time ? H.dateTime(time) : "—") + "</td><td><strong>" + H.esc(short) + "</strong><div class=\"yt-history-id\">" + H.esc(row.channel_title || "—") + "</div>" + err + "</td><td><strong>" + H.esc(mode) + "</strong><div class=\"yt-history-id\">" + H.esc([shape,duration].filter(Boolean).join(" · ")) + "</div>" + synthetic + "</td><td>" + H.makeStatus(row.status) + "</td><td>" + H.esc(visibility) + (row.scheduled_at ? '<div class="yt-history-id">Publish: ' + H.esc(H.dateTime(row.scheduled_at)) + "</div>" : "") + "</td><td>" + link + "</td></tr>";
+      return "<tr><td>" + H.esc(time ? H.dateTime(time) : "—") + "</td><td><strong>" + H.esc(short) + "</strong><div class=\"yt-history-id\">" + H.esc(row.channel_title || "—") + "</div>" + thumbnailLink + err + "</td><td><strong>" + H.esc(mode) + "</strong><div class=\"yt-history-id\">" + H.esc([shape,duration].filter(Boolean).join(" · ")) + "</div>" + synthetic + "</td><td>" + H.makeStatus(row.status) + "</td><td>" + H.esc(visibility) + (row.scheduled_at ? '<div class="yt-history-id">Publish: ' + H.esc(H.dateTime(row.scheduled_at)) + "</div>" : "") + "</td><td>" + link + "</td></tr>";
     }).join("");
   } catch (err) {
     $("ytHistoryBody").innerHTML = '<tr><td colspan="6" class="yt-history-empty">Could not load history. ' + H.esc(err.message || "") + "</td></tr>";
@@ -661,6 +681,70 @@ function bindEvents() {
   $("ytRefreshBtn").addEventListener("click",refreshStatus);
   $("ytHistoryRefreshBtn").addEventListener("click",refreshHistory);
   $("ytReconcileBtn").addEventListener("click",reconcileUploads);
+  $("ytOverviewRefreshBtn").addEventListener("click",refreshOverview);
+  $("ytCommunityDraftRefreshBtn").addEventListener("click",refreshCommunityDrafts);
+  $("ytSaveCommunityDraftBtn").addEventListener("click",async()=>{
+    try{await saveCommunityDraft("draft");H.toast("Community draft saved.");$("ytCommunityResult").hidden=false;$("ytCommunityResult").classList.remove("error");$("ytCommunityResult").textContent="Draft metadata saved. Image files remain on this computer; select them again in YouTube Studio when publishing.";}
+    catch(err){H.toast(err.message||"Could not save Community draft.","error");}
+  });
+  $("ytOpenStudioBtn").addEventListener("click",()=>openCommunityStudio());
+  $("ytCommunityImages").addEventListener("change",inspectCommunityImages);
+  $("ytCommunityText").addEventListener("input",()=>{
+    $("ytCommunityTextCount").textContent=String($("ytCommunityText").value.length);updateCommunityButtons();
+  });
+  $("ytThumbnailFile").addEventListener("change",async()=>{
+    const file=$("ytThumbnailFile").files?.[0];
+    if(file&&(!["image/jpeg","image/png"].includes(file.type)||file.size<1||file.size>50*1024*1024)){
+      H.toast("Choose a JPEG/PNG thumbnail no larger than 50 MB.","error");$("ytThumbnailFile").value="";
+      videoThumbnailPreviewUrl=clearImagePreview("ytThumbnailPreview",videoThumbnailPreviewUrl);return;
+    }
+    videoThumbnailPreviewUrl=await setThumbnailPreview(file,"ytThumbnailPreview",videoThumbnailPreviewUrl,"Selected custom video thumbnail");
+  });
+  $("ytExistingVideoId").addEventListener("input",()=>{$("ytApplyExistingThumbnailBtn").disabled=!selectedChannel||busy||!$("ytExistingVideoId").value.trim()||!$("ytExistingThumbnailFile").files?.[0];});
+  $("ytExistingThumbnailFile").addEventListener("change",async()=>{
+    const file=$("ytExistingThumbnailFile").files?.[0];
+    if(file&&(!["image/jpeg","image/png"].includes(file.type)||file.size<1||file.size>50*1024*1024)){
+      H.toast("Choose a JPEG/PNG thumbnail no larger than 50 MB.","error");$("ytExistingThumbnailFile").value="";
+      existingThumbnailPreviewUrl=clearImagePreview("ytExistingThumbnailPreview",existingThumbnailPreviewUrl);
+    }else existingThumbnailPreviewUrl=await setThumbnailPreview(file,"ytExistingThumbnailPreview",existingThumbnailPreviewUrl,"Thumbnail for existing video");
+    $("ytApplyExistingThumbnailBtn").disabled=!selectedChannel||busy||!$("ytExistingVideoId").value.trim()||!$("ytExistingThumbnailFile").files?.[0];
+  });
+  $("ytThumbnailManagerForm").addEventListener("submit",async(event)=>{
+    event.preventDefault();if(busy)return;
+    const videoId=$("ytExistingVideoId").value.trim(),file=$("ytExistingThumbnailFile").files?.[0];
+    if(!videoId||!file){H.toast("Enter a video ID and choose a thumbnail.","error");return;}
+    busy=true;$("ytApplyExistingThumbnailBtn").disabled=true;
+    try{
+      await uploadThumbnail(videoId,file);
+      $("ytThumbnailManagerResult").hidden=false;$("ytThumbnailManagerResult").classList.remove("error");$("ytThumbnailManagerResult").replaceChildren();
+      $("ytThumbnailManagerResult").textContent="Custom thumbnail set for the existing YouTube video.";
+      H.toast("Custom thumbnail set.");
+      $("ytExistingThumbnailFile").value="";existingThumbnailPreviewUrl=clearImagePreview("ytExistingThumbnailPreview",existingThumbnailPreviewUrl);
+      await refreshHistory();
+    }catch(err){
+      $("ytThumbnailManagerResult").hidden=false;$("ytThumbnailManagerResult").classList.add("error");
+      $("ytThumbnailManagerResult").textContent=err.message||"Could not set thumbnail.";
+      H.toast(err.message||"Could not set thumbnail.","error");
+    }finally{busy=false;renderChannel(statusData||{});}
+  });
+  $("ytCommunityDrafts").addEventListener("click",async(event)=>{
+    const button=event.target.closest("button[data-community-open],button[data-community-mark],button[data-community-delete]");
+    if(!button)return;
+    const id=button.dataset.communityOpen||button.dataset.communityMark||button.dataset.communityDelete;
+    if(button.dataset.communityOpen){
+      try{
+        const drafts=await invoke("community_drafts_list"),row=(drafts.rows||[]).find(x=>x.id===id);
+        if(row){$("ytCommunityText").value=row.post_text||"";$("ytCommunityTextCount").textContent=String($("ytCommunityText").value.length);activeCommunityDraftId=id;}
+        await openCommunityStudio(id);
+      }catch(err){H.toast(err.message||"Could not open Community draft.","error");}
+      return;
+    }
+    try{
+      if(button.dataset.communityMark){await invoke("community_draft_mark_published",{draftId:id});H.toast("Draft marked as published in YouTube Studio.");}
+      else if(button.dataset.communityDelete){if(!confirm("Delete this saved Community draft? No YouTube post will be deleted."))return;await invoke("community_draft_delete",{draftId:id});H.toast("Community draft deleted.");}
+      await refreshCommunityDrafts();
+    }catch(err){H.toast(err.message||"Could not update Community draft.","error");}
+  });
   $("ytConnectBtn").addEventListener("click",connectYouTube);
   $("ytVerifyBtn").addEventListener("click",verifyChannel);
   $("ytDisconnectBtn").addEventListener("click",disconnectChannel);
@@ -672,6 +756,7 @@ function bindEvents() {
   $("ytComposerForm").addEventListener("submit",uploadVideo);
   $("ytClearBtn").addEventListener("click",()=>setTimeout(()=>{
     clearPreview(); $("ytFileInfo").textContent="No video selected."; $("ytVideoMetadata").textContent="Video dimensions and duration will appear here."; $("ytTitleCount").textContent="0"; updateDescriptionCount(); $("ytUploadResult").hidden=true;
+    videoThumbnailPreviewUrl=clearImagePreview("ytThumbnailPreview",videoThumbnailPreviewUrl);$("ytThumbnailFile").value="";
     $("ytProgressWrap").hidden=true; updateUploadButton();
   },0));
   $("ytCopyRedirectBtn").addEventListener("click",async()=>{
