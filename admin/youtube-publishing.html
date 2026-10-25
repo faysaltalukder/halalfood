@@ -10,7 +10,7 @@
 <title>YouTube Publishing · Halal Food Admin</title>
 <link rel="stylesheet" href="./shared.css?v=20261025-youtube-publishing-v4">
 <link rel="stylesheet" href="./phase4-pages.css?v=20261025-youtube-publishing-v4">
-<link rel="stylesheet" href="./youtube-publishing.css?v=20261025-youtube-publishing-v4">
+<link rel="stylesheet" href="./youtube-publishing.css?v=20261025-youtube-publishing-v9">
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
 </head>
 <body data-page="youtube-publishing">
@@ -22,7 +22,7 @@
     <div class="page-actions"><button class="hf-button hf-button-secondary" id="ytRefreshBtn" type="button">↻ Refresh status</button><a class="hf-button hf-button-secondary" href="https://console.cloud.google.com/auth/clients" target="_blank" rel="noopener noreferrer">Google OAuth Clients ↗</a></div>
   </div>
 
-  <div class="hf-banner hf-banner-info yt-important-note"><span aria-hidden="true">ⓘ</span><div><strong>No video storage on our server</strong>The Supabase server stores encrypted authorization data and upload history only. The video file is sent from your browser directly to YouTube using a resumable upload session. Never place Google Client Secret or token keys in dashboard code. Only upload videos you have rights to use.</div></div>
+  <div class="hf-banner hf-banner-info yt-important-note"><span aria-hidden="true">ⓘ</span><div><strong>Media files are not stored on Supabase</strong>The server stores encrypted authorization, channel metadata, upload history, and Community draft text/file names only. Video files go from this browser to YouTube; custom thumbnails pass through the protected server to YouTube; Community images remain on this computer and must be selected again in YouTube Studio to publish.</div></div>
 
   <section class="hf-card hf-card-pad yt-connection-card" aria-labelledby="ytConnectionHeading">
     <div class="hf-section-head"><div><h2 id="ytConnectionHeading">1. Connect your YouTube channel</h2><p>Google opens its own consent page. The long-lived refresh token is encrypted on Supabase and never returned to this page.</p></div><span id="ytServerBadge" class="hf-status hf-status-pending">Checking server</span></div>
@@ -50,8 +50,15 @@
     </div>
   </section>
 
+  <section class="hf-card hf-card-pad yt-overview-card" aria-labelledby="ytOverviewHeading">
+    <div class="hf-section-head"><div><h2 id="ytOverviewHeading">2. Channel overview</h2><p>Refresh the connected channel's public statistics and its latest uploaded videos.</p></div><button id="ytOverviewRefreshBtn" type="button" class="hf-button hf-button-secondary" disabled>↻ Refresh overview</button></div>
+    <div id="ytChannelMetrics" class="yt-channel-metrics" aria-live="polite"><div class="yt-overview-placeholder">Connect a channel to load its overview.</div></div>
+    <div class="yt-recent-heading"><strong>Recent uploads</strong><span class="hf-help">Latest videos returned by YouTube</span></div>
+    <div id="ytRecentVideos" class="yt-recent-videos"><div class="yt-overview-placeholder">No channel data loaded.</div></div>
+  </section>
+
   <section class="hf-card hf-card-pad yt-composer-card" aria-labelledby="ytComposerHeading">
-    <div class="hf-section-head"><div><h2 id="ytComposerHeading">2. Upload and publish a video</h2><p>Select a video on this computer, prepare metadata, and send the file straight to YouTube.</p></div><span id="ytComposerBadge" class="hf-status hf-status-pending">Connect a channel first</span></div>
+    <div class="hf-section-head"><div><h2 id="ytComposerHeading">3. Upload and publish a video</h2><p>Select a video on this computer, prepare metadata, and send the file straight to YouTube.</p></div><span id="ytComposerBadge" class="hf-status hf-status-pending">Connect a channel first</span></div>
     <form id="ytComposerForm">
       <fieldset class="yt-mode-choice" aria-describedby="ytModeHelp">
         <legend>Choose what you are uploading</legend>
@@ -70,6 +77,13 @@
         <div><div id="ytFileInfo" class="yt-file-info">No video selected.</div><div id="ytVideoMetadata" class="yt-video-metadata" aria-live="polite">Video dimensions and duration will appear here.</div></div>
       </div>
       <div id="ytMediaPreview" class="yt-media-preview" hidden></div>
+      <div class="yt-thumbnail-pick">
+        <label class="hf-field" for="ytThumbnailFile">Optional custom video thumbnail
+          <input class="hf-input" id="ytThumbnailFile" name="thumbnailFile" type="file" accept="image/jpeg,image/png">
+          <span class="hf-help">Optional: JPEG or PNG, up to 50 MB. It will be set on the new video after YouTube returns its video ID. The image is sent through the protected server and is not stored in Supabase Storage.</span>
+        </label>
+        <div id="ytThumbnailPreview" class="yt-thumbnail-preview" hidden></div>
+      </div>
       <div class="yt-metadata-grid">
         <label class="hf-field yt-full" for="ytTitle">Video title *
           <input class="hf-input" id="ytTitle" name="title" maxlength="100" required placeholder="Enter a clear, accurate video title">
@@ -114,8 +128,46 @@
     <p class="hf-data-note">Upload progress is shown in this browser. If the tab closes before finalization, the video may have reached YouTube but the history record may need checking. Supabase does not store the video file or a permanent copy of the temporary upload-session URL.</p>
   </section>
 
+  <section class="hf-card hf-card-pad yt-thumbnail-manager-card" aria-labelledby="ytThumbnailManagerHeading">
+    <div class="hf-section-head"><div><h2 id="ytThumbnailManagerHeading">4. Custom thumbnail for an existing video</h2><p>Paste a video ID from your channel and set a replacement JPEG/PNG thumbnail.</p></div></div>
+    <form id="ytThumbnailManagerForm" class="yt-thumbnail-manager-form">
+      <label class="hf-field" for="ytExistingVideoId">YouTube video ID *<input class="hf-input" id="ytExistingVideoId" name="videoId" required maxlength="40" placeholder="e.g. pp9-Xyv67DI"></label>
+      <label class="hf-field" for="ytExistingThumbnailFile">Thumbnail image *<input class="hf-input" id="ytExistingThumbnailFile" name="thumbnailFile" type="file" accept="image/jpeg,image/png" required><span class="hf-help">JPEG/PNG · maximum 50 MB. The server verifies that the video belongs to the connected channel.</span></label>
+      <div class="yt-thumbnail-manager-actions"><button id="ytApplyExistingThumbnailBtn" class="hf-button hf-button-primary" type="submit" disabled>Set thumbnail</button><div id="ytExistingThumbnailPreview" class="yt-thumbnail-preview" hidden></div></div>
+    </form>
+    <div id="ytThumbnailManagerResult" class="yt-upload-result" role="status" aria-live="polite" hidden></div>
+  </section>
+
+  <section class="hf-card hf-card-pad yt-community-card" aria-labelledby="ytCommunityHeading">
+    <div class="hf-section-head"><div><h2 id="ytCommunityHeading">5. Community image post</h2><p>Prepare a caption and up to 10 images, save the draft on the server, then finish Post or Schedule in YouTube Studio.</p></div><span class="hf-status hf-status-pending">Studio confirmation required</span></div>
+    <div class="hf-banner hf-banner-info yt-community-note"><span aria-hidden="true">ⓘ</span><div><strong>Why is publishing completed in Studio?</strong>The published YouTube Data API does not expose a documented Community image-post creation method. This dashboard will not claim an image post is published automatically. It validates and previews images locally, saves caption/file-name metadata only, copies the caption, and opens your channel's Posts page in YouTube Studio.</div></div>
+    <form id="ytCommunityForm">
+      <label class="hf-field yt-full" for="ytCommunityText">Community post caption
+        <textarea class="hf-textarea" id="ytCommunityText" rows="4" maxlength="5000" placeholder="Write a post for the Halal Food BD YouTube community…"></textarea>
+        <span class="hf-help"><span id="ytCommunityTextCount">0</span>/5000 characters. Check all claims, links and image rights before posting.</span>
+      </label>
+      <label class="hf-field yt-community-images-field" for="ytCommunityImages">Images * (up to 10)
+        <input class="hf-input" id="ytCommunityImages" name="communityImages" type="file" accept="image/jpeg,image/png,image/gif,image/webp" multiple>
+        <span class="hf-help">JPG, PNG, GIF or WEBP · maximum 16 MB per image. A 1:1 image is recommended for the feed. Images stay in this browser and are not uploaded to Supabase.</span>
+      </label>
+      <div id="ytCommunityFileSummary" class="yt-file-info">No Community images selected.</div>
+      <div id="ytCommunityPreview" class="yt-community-preview" aria-live="polite"></div>
+      <label class="hf-field yt-community-schedule" for="ytCommunitySchedule">Desired publish time (Bangladesh local time, optional)
+        <input class="hf-input" id="ytCommunitySchedule" type="datetime-local">
+        <span class="hf-help">This is saved as a reminder only. Confirm the actual schedule in YouTube Studio.</span>
+      </label>
+      <div class="yt-community-actions">
+        <button id="ytSaveCommunityDraftBtn" class="hf-button hf-button-secondary" type="button" disabled>Save draft</button>
+        <button id="ytOpenStudioBtn" class="hf-button hf-button-primary" type="button" disabled>Copy caption &amp; open YouTube Studio</button>
+      </div>
+    </form>
+    <div id="ytCommunityResult" class="yt-upload-result" role="status" aria-live="polite" hidden></div>
+    <div class="yt-community-drafts-heading"><strong>Saved Community drafts</strong><button id="ytCommunityDraftRefreshBtn" type="button" class="hf-button hf-button-secondary" disabled>↻ Refresh drafts</button></div>
+    <div id="ytCommunityDrafts" class="yt-community-drafts"><div class="yt-overview-placeholder">Connect a channel to load drafts.</div></div>
+  </section>
+
   <section class="hf-card hf-card-pad yt-history-card" aria-labelledby="ytHistoryHeading">
-    <div class="hf-section-head"><div><h2 id="ytHistoryHeading">3. YouTube upload history</h2><p>Recent uploads, visibility, scheduled publication time, and YouTube results. You can check YouTube before retrying any uncertain upload.</p></div><div class="yt-history-actions"><button id="ytReconcileBtn" type="button" class="hf-button hf-button-primary">Verify uploads on YouTube</button><button id="ytHistoryRefreshBtn" type="button" class="hf-button hf-button-secondary">↻ Refresh history</button></div></div>
+    <div class="hf-section-head"><div><h2 id="ytHistoryHeading">6. YouTube upload history</h2><p>Recent uploads, visibility, scheduled publication time, and YouTube results. You can check YouTube before retrying any uncertain upload.</p></div><div class="yt-history-actions"><button id="ytReconcileBtn" type="button" class="hf-button hf-button-primary">Verify uploads on YouTube</button><button id="ytHistoryRefreshBtn" type="button" class="hf-button hf-button-secondary">↻ Refresh history</button></div></div>
     <div class="hf-table-wrap" role="region" aria-label="YouTube publishing history; scroll horizontally on small screens" tabindex="0">
       <table class="hf-table yt-history-table">
         <thead><tr><th>Time</th><th>Video</th><th>Type</th><th>Status</th><th>Visibility</th><th>YouTube result</th></tr></thead>
@@ -128,5 +180,5 @@
 </div>
 <script defer src="./i18n.js?v=20261023-admin-ultimate-v1"></script>
 <script defer src="./shared.js?v=20261025-youtube-publishing-v2"></script>
-<script defer src="./youtube-publishing.js?v=20261025-youtube-publishing-v8"></script>
+<script defer src="./youtube-publishing.js?v=20261025-youtube-publishing-v9"></script>
 </body></html>
