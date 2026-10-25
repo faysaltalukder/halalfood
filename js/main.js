@@ -559,6 +559,21 @@ document.addEventListener("DOMContentLoaded", () => {
     let timer = null;
     let paused = false;
 
+    const updateMobileHeight = () => {
+      if (!window.matchMedia("(max-width: 768px)").matches) {
+        hero.style.removeProperty("height");
+        return;
+      }
+      const img = slides[index]?.querySelector("img");
+      if (!img || !img.complete || !img.naturalWidth || !img.naturalHeight) return;
+      const width = track.clientWidth;
+      if (!width) return;
+      const height = Math.ceil(width * img.naturalHeight / img.naturalWidth);
+      hero.style.setProperty("height", `${height}px`, "important");
+    };
+    slides.forEach(slide => slide.querySelector("img")?.addEventListener("load", updateMobileHeight));
+    window.addEventListener("resize", updateMobileHeight, { passive: true });
+
     const go = (nextIndex, smooth = true) => {
       index = (nextIndex + slides.length) % slides.length;
       if (smooth || index !== 0) track.scrollTo({ left: track.clientWidth * index, behavior: smooth ? "smooth" : "auto" });
@@ -566,6 +581,7 @@ document.addEventListener("DOMContentLoaded", () => {
         dot.classList.toggle("active", i === index);
         dot.setAttribute("aria-selected", String(i === index));
       });
+      updateMobileHeight();
     };
     slides.forEach((_, i) => {
       const dot = document.createElement("button");
@@ -596,6 +612,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (Number.isFinite(next)) {
           index = Math.max(0, Math.min(slides.length - 1, next));
           dots?.querySelectorAll("button").forEach((dot, i) => dot.classList.toggle("active", i === index));
+          updateMobileHeight();
         }
       }, 80);
     });
