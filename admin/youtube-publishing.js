@@ -57,6 +57,11 @@ function modeValidationError() {
     return "Shorts needs a square or vertical video. This file is landscape; choose Regular video or use a square/vertical export.";
   return "";
 }
+function updateDescriptionCount() {
+  const count = utf8Bytes($("ytDescription").value);
+  $("ytDescriptionCount").textContent = String(count);
+  $("ytDescriptionCount").parentElement.classList.toggle("yt-over-limit", count > MAX_DESCRIPTION_BYTES);
+}
 function updateModeHint() {
   const mode = selectedUploadMode();
   const hint = $("ytModeHint");
@@ -364,11 +369,20 @@ async function uploadVideo(event) {
         const pause = Math.min(1000 * (2 ** (retryCount - 1)), 12000) + Math.floor(Math.random()*500);
         setProgress(offset / file.size * 100, "Connection interrupted — checking resumable upload…", "Retry " + retryCount + " of 5. Checking how much YouTube received before sending data again.");
         await wait(pause);
-        const state = await probeUpload(session.uploadUrl, file);
+        let state;
+        try {
+          state = await probeUpload(session.uploadUrl, file);
+        } catch (probeError) {
+          if (retryCount >= 5) {
+            throw new Error("The browser could not check YouTube's resumable-upload session after repeated network/CORS interruptions. Check YouTube Studio before retrying. Details: " + (probeError.message || "No HTTP response was exposed."));
+          }
+          setProgress(offset / file.size * 100, "Network interrupted — retrying status check…", "Retry " + retryCount + " of 5. No file copy is stored on Supabase.");
+          continue;
+        }
         if (state.complete) { result = state.data; offset = file.size; break; }
         if (state.next > file.size) throw new Error("YouTube returned an invalid resumable-upload offset.");
         if (state.next > offset) { offset = state.next; noProgressCount=0; }
-        else if (state.next < offset) { offset = state.next; }
+        else if (state.next < offset) { offset = state.next; noProgressCount=0; }
       }
     }
     if (!result?.id) throw new Error("Upload session ended without a video ID. Check YouTube Studio before retrying to avoid duplicates.");
@@ -430,12 +444,12 @@ function bindEvents() {
   $("ytDisconnectBtn").addEventListener("click",disconnectChannel);
   $("ytVideoFile").addEventListener("change",inspectFile);
   $("ytTitle").addEventListener("input",()=>$("ytTitleCount").textContent=String($("ytTitle").value.length));
-  $("ytDescription").addEventListener("input",()=>$("ytDescriptionCount").textContent=String(utf8Bytes($("ytDescription").value)));
+  $("ytDescription").addEventListener("input",updateDescriptionCount);
   $("ytTermsAccepted").addEventListener("change",updateUploadButton);
   document.querySelectorAll('input[name="ytUploadMode"]').forEach(input => input.addEventListener("change", () => { updateModeHint(); updateUploadButton(); }));
   $("ytComposerForm").addEventListener("submit",uploadVideo);
   $("ytClearBtn").addEventListener("click",()=>setTimeout(()=>{
-    clearPreview(); $("ytFileInfo").textContent="No video selected."; $("ytVideoMetadata").textContent="Video dimensions and duration will appear here."; $("ytTitleCount").textContent="0"; $("ytDescriptionCount").textContent="0"; $("ytUploadResult").hidden=true;
+    clearPreview(); $("ytFileInfo").textContent="No video selected."; $("ytVideoMetadata").textContent="Video dimensions and duration will appear here."; $("ytTitleCount").textContent="0"; updateDescriptionCount(); $("ytUploadResult").hidden=true;
     $("ytProgressWrap").hidden=true; updateUploadButton();
   },0));
   $("ytCopyRedirectBtn").addEventListener("click",async()=>{
