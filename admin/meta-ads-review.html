@@ -10,7 +10,7 @@
 <title>Meta Ads Review · Halal Food Admin</title>
 <link rel="stylesheet" href="./shared.css?v=20261025-meta-ads-review-v1">
 <link rel="stylesheet" href="./phase4-pages.css?v=20261025-meta-ads-review-v1">
-<link rel="stylesheet" href="./meta-ads-review.css?v=20261025-meta-ads-review-v1">
+<link rel="stylesheet" href="./meta-ads-review.css?v=20261025-meta-ads-review-v2">
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
 </head>
 <body data-page="meta-ads-review">
@@ -59,11 +59,13 @@
         <label class="hf-field" for="marPlatform">Platform <select id="marPlatform" class="hf-select"><option value="facebook">Facebook</option><option value="instagram">Instagram</option><option value="both">Facebook + Instagram</option></select></label>
         <label class="hf-field" for="marObjective">Campaign objective <span class="mar-required">*</span><select id="marObjective" class="hf-select" required><option value="awareness">Awareness</option><option value="traffic" selected>Traffic</option><option value="engagement">Engagement</option><option value="leads">Leads</option><option value="sales">Sales</option><option value="app_promotion">App promotion</option></select><small>Choose the result you want Meta to optimize toward; it should match the real business goal.</small></label>
         <label class="hf-field" for="marCampaignType">Campaign setup <select id="marCampaignType" class="hf-select"><option value="manual">Manual campaign</option><option value="advantage_plus">Advantage+ campaign (where eligible)</option><option value="not_decided">Not decided — need guidance</option></select></label>
+        <label class="hf-field" for="marSpecialCategory">Special Ad Category<select id="marSpecialCategory" class="hf-select"><option value="not_sure">Not sure — check before launch</option><option value="none">No special category applies</option><option value="credit">Credit / financial products</option><option value="employment">Employment</option><option value="housing">Housing</option><option value="social_issues">Social issues / elections / politics, where applicable</option></select><small>If an ad relates to a restricted category, choose the category required by Meta for the market and account. Options can vary.</small></label>
         <label class="hf-field mar-span-2" for="marPrimaryText">Primary text / ad copy <span class="mar-required">*</span><textarea id="marPrimaryText" class="hf-textarea" rows="5" maxlength="5000" required placeholder="Write the main ad text here…"></textarea><small><span id="marPrimaryCount">0</span> characters. Avoid unsupported guarantees, misleading claims, and language that implies knowledge of sensitive personal traits.</small></label>
         <label class="hf-field" for="marHeadline">Headline<input id="marHeadline" class="hf-input" maxlength="255" placeholder="Short, specific headline"></label>
         <label class="hf-field" for="marDescription">Description<input id="marDescription" class="hf-input" maxlength="500" placeholder="Optional supporting line"></label>
         <label class="hf-field" for="marCta">Call to action<select id="marCta" class="hf-select"><option value="LEARN_MORE">Learn More</option><option value="SHOP_NOW">Shop Now</option><option value="SEND_MESSAGE">Send Message</option><option value="CONTACT_US">Contact Us</option><option value="SIGN_UP">Sign Up</option><option value="GET_QUOTE">Get Quote</option><option value="NO_BUTTON">No button / other</option></select></label>
         <label class="hf-field" for="marDestination">Destination / landing page<input id="marDestination" class="hf-input" type="url" maxlength="2000" placeholder="https://example.com/product"><small>For Traffic, Leads or Sales, confirm that the landing page works and matches the offer.</small></label>
+        <label class="hf-field" for="marCreativeFormat">Creative format<select id="marCreativeFormat" class="hf-select"><option value="not_sure">Not decided</option><option value="image">Single image</option><option value="video">Single video / Reel</option><option value="carousel">Carousel</option><option value="collection">Collection</option><option value="other">Other format</option></select></label>
         <label class="hf-field" for="marCreativeUrl">Creative URL (optional)<input id="marCreativeUrl" class="hf-input" type="url" maxlength="2000" placeholder="Public image or video URL"></label>
         <label class="hf-field" for="marCreativeNotes">Creative notes<textarea id="marCreativeNotes" class="hf-textarea" rows="2" maxlength="1200" placeholder="Describe the image/video, offer, text overlay, format, and rights to use it."></textarea></label>
         <label class="hf-field" for="marLocation">Target location<input id="marLocation" class="hf-input" maxlength="500" value="Bangladesh" placeholder="Country, city, or eligible local area"></label>
@@ -102,6 +104,6 @@
 </main>
 </div>
 <script defer src="./i18n.js?v=20261023-admin-ultimate-v1"></script>
-<script defer src="./shared.js?v=20261025-meta-ads-review-v1"></script>
-<script defer src="./meta-ads-review.js?v=20261025-meta-ads-review-v1"></script>
+<script defer src="./shared.js?v=20261025-meta-ads-review-v2"></script>
+<script defer src="./meta-ads-review.js?v=20261025-meta-ads-review-v2"></script>
 </body></html>
