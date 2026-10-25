@@ -84,3 +84,10 @@ html[data-admin-theme="dark"] body[data-page="youtube-publishing"] .yt-upload-re
 html[data-admin-theme="dark"] body[data-page="youtube-publishing"] .yt-mode-choice,html[data-admin-theme="dark"] body[data-page="youtube-publishing"] .yt-mode-option,html[data-admin-theme="dark"] body[data-page="youtube-publishing"] .yt-terms-check{background:#242331;border-color:#514F61}
 html[data-admin-theme="dark"] body[data-page="youtube-publishing"] .yt-mode-option strong,html[data-admin-theme="dark"] body[data-page="youtube-publishing"] .yt-mode-choice legend{color:#F2F0EA}
 @media(max-width:560px){.yt-mode-grid{grid-template-columns:minmax(0,1fr)}.yt-mode-choice{padding:12px}}
+
+.yt-history-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+.yt-history-actions .hf-button{white-space:normal}
+.yt-history-table .hf-status-needs-verification{background:rgba(201,123,61,.18);color:#8b5619;border:1px solid rgba(201,123,61,.38)}
+.yt-upload-result a{display:inline-block;margin-top:8px}
+.yt-upload-result{white-space:pre-line}
+@media(max-width:700px){.yt-history-actions{width:100%;display:grid;grid-template-columns:1fr}.yt-history-actions .hf-button{width:100%}}
