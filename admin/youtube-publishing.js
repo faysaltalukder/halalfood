@@ -403,7 +403,7 @@ async function refreshHistory() {
     const result = await invoke("history");
     const rows = Array.isArray(result.rows) ? result.rows : [];
     const body = $("ytHistoryBody");
-    if (!rows.length) { body.innerHTML = '<tr><td colspan="5" class="yt-history-empty">No YouTube uploads yet.</td></tr>'; return; }
+    if (!rows.length) { body.innerHTML = '<tr><td colspan="6" class="yt-history-empty">No YouTube uploads yet.</td></tr>'; return; }
     body.innerHTML = rows.map(row => {
       const time = row.scheduled_at || row.created_at;
       const visibility = row.privacy_status ? row.privacy_status.charAt(0).toUpperCase() + row.privacy_status.slice(1) : "—";
@@ -412,7 +412,11 @@ async function refreshHistory() {
         : '<div class="yt-history-id">' + H.esc(row.video_id || "—") + "</div>";
       const err = row.error_message ? '<small class="yt-history-id">' + H.esc(row.error_message) + "</small>" : "";
       const title = String(row.title || ""), short = title.length > 110 ? title.slice(0,110) + "…" : title;
-      return "<tr><td>" + H.esc(time ? H.dateTime(time) : "—") + "</td><td><strong>" + H.esc(short) + "</strong><div class=\"yt-history-id\">" + H.esc(row.channel_title || "—") + "</div>" + err + "</td><td>" + H.makeStatus(row.status) + "</td><td>" + H.esc(visibility) + (row.scheduled_at ? '<div class="yt-history-id">Publish: ' + H.esc(H.dateTime(row.scheduled_at)) + "</div>" : "") + "</td><td>" + link + "</td></tr>";
+      const mode = row.upload_mode === "shorts" ? "YouTube Shorts" : "Regular video";
+      const shape = row.video_width && row.video_height ? (row.video_width + "×" + row.video_height) : "";
+      const duration = Number.isFinite(Number(row.video_duration_seconds)) && row.video_duration_seconds ? (Math.floor(Number(row.video_duration_seconds)/60) + ":" + String(Math.floor(Number(row.video_duration_seconds)%60)).padStart(2,"0")) : "";
+      const synthetic = row.contains_synthetic_media ? '<div class="yt-history-id">AI/altered disclosure: yes</div>' : "";
+      return "<tr><td>" + H.esc(time ? H.dateTime(time) : "—") + "</td><td><strong>" + H.esc(short) + "</strong><div class=\"yt-history-id\">" + H.esc(row.channel_title || "—") + "</div>" + err + "</td><td><strong>" + H.esc(mode) + "</strong><div class=\"yt-history-id\">" + H.esc([shape,duration].filter(Boolean).join(" · ")) + "</div>" + synthetic + "</td><td>" + H.makeStatus(row.status) + "</td><td>" + H.esc(visibility) + (row.scheduled_at ? '<div class="yt-history-id">Publish: ' + H.esc(H.dateTime(row.scheduled_at)) + "</div>" : "") + "</td><td>" + link + "</td></tr>";
     }).join("");
   } catch (err) {
     $("ytHistoryBody").innerHTML = '<tr><td colspan="5" class="yt-history-empty">Could not load history. ' + H.esc(err.message || "") + "</td></tr>";
