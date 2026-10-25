@@ -196,7 +196,7 @@ function fillForm(row){
  $("marDraftMode").textContent=row.id?"Editing saved draft":"New draft";
  $("marDraftMode").className="hf-status "+(row.id?"hf-status-active":"hf-status-pending");
  $("marPrimaryCount").textContent=String(val("marPrimaryText").length);
- lastChecks=Array.isArray(row.checklist)?row.checklist:[];
+ lastChecks=row.checklist&&typeof row.checklist==="object"?Object.entries(row.checklist).map(([key,value])=>({key,...value})):[];
  renderPreflight(lastChecks);
  $("marDraftBuilder").scrollIntoView({behavior:"smooth",block:"start"});
  clearResult();
