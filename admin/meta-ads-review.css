@@ -66,3 +66,5 @@
 @media(max-width:850px){.mar-connect-grid{grid-template-columns:minmax(0,1fr)}.mar-hero{align-items:flex-start}.mar-hero .page-actions{justify-content:flex-start}}
 @media(max-width:650px){.mar-form-grid{grid-template-columns:minmax(0,1fr)}.mar-span-2{grid-column:auto}.mar-toolbar{grid-template-columns:minmax(0,1fr)}.mar-copy-row{align-items:stretch}.mar-copy-row button{flex:0 0 auto}.mar-form-actions .hf-button{flex:1 1 calc(50% - 8px)}.mar-hero .page-actions .hf-button{flex:1 1 100%;justify-content:center}.mar-subsection-title{align-items:flex-start}}
 html[data-admin-theme="light"] .mar-connect-panel{background:#FFFDF8}
+
+.mar-preflight-summary{display:grid;gap:4px;padding:12px 14px;border:1px solid var(--hf-border);border-radius:11px;background:rgba(127,127,127,.045);font-size:12px}.mar-preflight-summary strong{font-size:13px}.mar-preflight-summary span{color:var(--hf-muted)}.mar-preflight-summary small{color:var(--hf-muted);font-size:10px;line-height:1.5}
