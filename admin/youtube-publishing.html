@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex,nofollow">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<title>YouTube Publishing · Halal Food Admin</title>
+<link rel="stylesheet" href="./shared.css?v=20261025-youtube-publishing-v1">
+<link rel="stylesheet" href="./phase4-pages.css?v=20261025-youtube-publishing-v1">
+<link rel="stylesheet" href="./youtube-publishing.css?v=20261025-youtube-publishing-v1">
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
+</head>
+<body data-page="youtube-publishing">
+<div id="authGate" class="auth-gate"><div class="auth-gate-card"><strong>Checking secure admin access…</strong><p>YouTube publishing is restricted to the authorized Halal Food administrator with completed two-step verification.</p></div></div>
+<div id="adminApp" hidden>
+<main id="pageContent">
+  <div class="page-heading hf-phase4-hero yt-publish-hero">
+    <div><p class="page-eyebrow">VIDEO PUBLISHING WORKSPACE</p><h1>YouTube Publishing</h1><p>Connect your YouTube channel, upload videos directly from this computer, schedule publication, and review upload history.</p></div>
+    <div class="page-actions"><button class="hf-button hf-button-secondary" id="ytRefreshBtn" type="button">↻ Refresh status</button><a class="hf-button hf-button-secondary" href="https://console.cloud.google.com/auth/clients" target="_blank" rel="noopener noreferrer">Google OAuth Clients ↗</a></div>
+  </div>
+
+  <div class="hf-banner hf-banner-info yt-important-note"><span aria-hidden="true">ⓘ</span><div><strong>No video storage on our server</strong>The Supabase server stores encrypted authorization data and upload history only. The video file is sent from your browser directly to YouTube using a resumable upload session. Never place Google Client Secret or token keys in dashboard code. Only upload videos you have rights to use.</div></div>
+
+  <section class="hf-card hf-card-pad yt-connection-card" aria-labelledby="ytConnectionHeading">
+    <div class="hf-section-head"><div><h2 id="ytConnectionHeading">1. Connect your YouTube channel</h2><p>Google opens its own consent page. The long-lived refresh token is encrypted on Supabase and never returned to this page.</p></div><span id="ytServerBadge" class="hf-status hf-status-pending">Checking server</span></div>
+    <div class="yt-connection-grid">
+      <div class="yt-connection-panel">
+        <div class="yt-panel-title"><span class="yt-step-number">A</span><div><strong>Server configuration</strong><p>Only readiness is displayed; secret values stay private.</p></div></div>
+        <ul id="ytConfigList" class="yt-config-list" aria-live="polite"><li>Checking Google OAuth settings…</li></ul>
+        <label class="hf-field yt-redirect-field">OAuth redirect URI
+          <span class="hf-help">This exact URL must be listed under the Google OAuth Web Client's Authorized redirect URIs.</span>
+          <span class="yt-copy-row"><input id="ytRedirectUri" class="hf-input" type="text" readonly value="Loading…"><button id="ytCopyRedirectBtn" type="button" class="hf-button hf-button-secondary">Copy</button></span>
+        </label>
+        <p class="hf-data-note">If configuration is incomplete, add the missing values at Supabase → Edge Function Secrets and refresh. Never paste secrets here.</p>
+      </div>
+      <div class="yt-connection-panel">
+        <div class="yt-panel-title"><span class="yt-step-number">B</span><div><strong>Authorize and verify channel</strong><p>Use the Google account that owns or manages the intended YouTube channel.</p></div></div>
+        <button id="ytConnectBtn" type="button" class="hf-button hf-button-primary" disabled>Connect YouTube</button>
+        <div id="ytOauthHint" class="yt-inline-status" role="status" aria-live="polite">Checking server configuration…</div>
+        <div id="ytSelectedChannel" class="yt-selected-channel" aria-live="polite">No YouTube channel connected yet.</div>
+        <div class="yt-channel-actions">
+          <button id="ytVerifyBtn" type="button" class="hf-button hf-button-secondary" disabled>Verify connection</button>
+          <button id="ytDisconnectBtn" type="button" class="hf-button hf-button-secondary" disabled>Disconnect channel</button>
+        </div>
+        <div id="ytPermissionChecks" class="yt-permission-checks" aria-live="polite"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="hf-card hf-card-pad yt-composer-card" aria-labelledby="ytComposerHeading">
+    <div class="hf-section-head"><div><h2 id="ytComposerHeading">2. Upload and publish a video</h2><p>Select a video on this computer, prepare metadata, and send the file straight to YouTube.</p></div><span id="ytComposerBadge" class="hf-status hf-status-pending">Connect a channel first</span></div>
+    <form id="ytComposerForm">
+      <div class="yt-file-picker">
+        <label class="hf-field" for="ytVideoFile">Video file *
+          <input class="hf-input" id="ytVideoFile" name="videoFile" type="file" accept="video/*" required>
+          <span class="hf-help">Your video is not uploaded to Supabase Storage. File size limit shown by the YouTube Data API is up to 256 GB; the real limit may also depend on YouTube account eligibility.</span>
+        </label>
+        <div id="ytFileInfo" class="yt-file-info">No video selected.</div>
+      </div>
+      <div id="ytMediaPreview" class="yt-media-preview" hidden></div>
+      <div class="yt-metadata-grid">
+        <label class="hf-field yt-full" for="ytTitle">Video title *
+          <input class="hf-input" id="ytTitle" name="title" maxlength="100" required placeholder="Enter a clear, accurate video title">
+          <span class="hf-help"><span id="ytTitleCount">0</span>/100 characters</span>
+        </label>
+        <label class="hf-field yt-full" for="ytDescription">Description
+          <textarea class="hf-textarea" id="ytDescription" name="description" maxlength="5000" rows="5" placeholder="Write the video description, useful context, and links…"></textarea>
+          <span class="hf-help"><span id="ytDescriptionCount">0</span>/5000 characters</span>
+        </label>
+        <label class="hf-field yt-full" for="ytTags">Tags
+          <input class="hf-input" id="ytTags" name="tags" maxlength="500" placeholder="halal food, cooking, grocery">
+          <span class="hf-help">Separate tags with commas. Combined tag text is limited to 500 characters in this first release.</span>
+        </label>
+        <label class="hf-field" for="ytCategory">Category
+          <select class="hf-select" id="ytCategory" name="categoryId">
+            <option value="22" selected>People &amp; Blogs</option><option value="26">Howto &amp; Style</option><option value="27">Education</option><option value="10">Music</option><option value="17">Sports</option><option value="20">Gaming</option><option value="23">Comedy</option><option value="24">Entertainment</option><option value="25">News &amp; Politics</option><option value="28">Science &amp; Technology</option><option value="1">Film &amp; Animation</option><option value="2">Autos &amp; Vehicles</option><option value="15">Pets &amp; Animals</option><option value="19">Travel &amp; Events</option><option value="29">Nonprofits &amp; Activism</option>
+          </select>
+        </label>
+        <label class="hf-field" for="ytPrivacy">Visibility
+          <select class="hf-select" id="ytPrivacy" name="privacyStatus"><option value="private" selected>Private</option><option value="unlisted">Unlisted</option><option value="public">Public</option></select>
+          <span class="hf-help">Scheduled videos are uploaded as Private, then YouTube is asked to publish them at the selected time.</span>
+        </label>
+        <label class="hf-field yt-full" for="ytScheduleAt">Schedule publication (Bangladesh local time)
+          <input class="hf-input" id="ytScheduleAt" name="scheduledAt" type="datetime-local">
+          <span class="hf-help">Leave blank to upload with the chosen visibility now. A scheduled upload must be set to Private.</span>
+        </label>
+      </div>
+      <label class="yt-kids-check" for="ytMadeForKids"><input type="checkbox" id="ytMadeForKids" name="madeForKids"><span><strong>Made for kids</strong><small>Check this only if the content is specifically directed at children. Choose accurately for each video.</small></span></label>
+      <div class="yt-upload-actions">
+        <button id="ytUploadBtn" class="hf-button hf-button-primary" type="submit" disabled>Upload video to YouTube</button>
+        <button id="ytClearBtn" class="hf-button hf-button-secondary" type="reset">Clear draft</button>
+      </div>
+    </form>
+    <div id="ytProgressWrap" class="yt-progress-wrap" hidden>
+      <div class="yt-progress-heading"><strong id="ytProgressLabel">Preparing upload…</strong><span id="ytProgressPercent">0%</span></div>
+      <progress id="ytProgress" max="100" value="0">0%</progress>
+      <p id="ytProgressNote" class="hf-data-note">The browser sends the file directly to YouTube. Keep this tab open until the upload finishes.</p>
+    </div>
+    <div id="ytUploadResult" class="yt-upload-result" role="status" aria-live="polite" hidden></div>
+    <p class="hf-data-note">Upload progress is shown in this browser. If the tab closes before finalization, the video may have reached YouTube but the history record may need checking. Supabase does not store the video file or a permanent copy of the temporary upload-session URL.</p>
+  </section>
+
+  <section class="hf-card hf-card-pad yt-history-card" aria-labelledby="ytHistoryHeading">
+    <div class="hf-section-head"><div><h2 id="ytHistoryHeading">3. YouTube upload history</h2><p>Recent uploads, visibility, scheduled publication time, and YouTube results.</p></div><button id="ytHistoryRefreshBtn" type="button" class="hf-button hf-button-secondary">↻ Refresh history</button></div>
+    <div class="hf-table-wrap" role="region" aria-label="YouTube publishing history; scroll horizontally on small screens" tabindex="0">
+      <table class="hf-table yt-history-table">
+        <thead><tr><th>Time</th><th>Video</th><th>Status</th><th>Visibility</th><th>YouTube result</th></tr></thead>
+        <tbody id="ytHistoryBody"><tr><td colspan="5" class="hf-loading">Loading history…</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+  <p class="hf-data-note yt-footer-note">This first release handles the connected owner's YouTube channel, video metadata, direct resumable uploads, private/public/unlisted visibility, scheduling, and history. Other Google services, comments, playlists, Studio analytics and livestream controls are not connected yet. OAuth scopes and YouTube policy determine which actions are available.</p>
+</main>
+</div>
+<script defer src="./i18n.js?v=20261023-admin-ultimate-v1"></script>
+<script defer src="./shared.js?v=20261025-youtube-publishing-v1"></script>
+<script defer src="./youtube-publishing.js?v=20261025-youtube-publishing-v1"></script>
+</body></html>
