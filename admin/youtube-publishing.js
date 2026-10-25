@@ -2,6 +2,7 @@
 "use strict";
 const FUNCTION_NAME = "youtube-publishing";
 const FUNCTION_ORIGIN = "https://qfwvrcfkrsydycbfjsxf.supabase.co";
+const SUPABASE_PUBLIC_KEY = "sb_publishable_X32Rb8W-axGIfgFuppdfZQ_jbc38pcL";
 const REQUIRED_SCOPES = ["https://www.googleapis.com/auth/youtube.upload","https://www.googleapis.com/auth/youtube.readonly"];
 const MAX_FILE_BYTES = 256_000_000_000;
 const MAX_DESCRIPTION_BYTES = 5000;
@@ -9,6 +10,7 @@ const SHORTS_MAX_SECONDS = 180;
 const UPLOAD_CHUNK_BYTES = 8 * 1024 * 1024;
 const $ = id => document.getElementById(id);
 let H = null, statusData = null, selectedChannel = null, oauthPopup = null, busy = false, previewUrl = null, mediaInfo = null;
+let videoThumbnailPreviewUrl = null, existingThumbnailPreviewUrl = null, communityPreviewUrls = [], activeCommunityDraftId = null, overviewBusy = false;
 
 async function invoke(action, payload = {}) {
   const { data, error } = await H.client.functions.invoke(FUNCTION_NAME, { body: { action, ...payload } });
@@ -31,6 +33,153 @@ async function invoke(action, payload = {}) {
     throw new Error(message);
   }
   return data;
+}
+async function uploadThumbnail(videoId, file) {
+  if (!selectedChannel) throw new Error("Connect a YouTube channel first.");
+  if (!/^[A-Za-z0-9_-]{6,40}$/.test(String(videoId || ""))) throw new Error("Enter a valid YouTube video ID.");
+  if (!file || !["image/jpeg","image/png"].includes(file.type)) throw new Error("Choose a JPEG or PNG thumbnail image.");
+  if (file.size < 1 || file.size > 50 * 1024 * 1024) throw new Error("The thumbnail must be no larger than 50 MB.");
+  const { data, error } = await H.client.auth.getSession();
+  const session = data?.session;
+  if (error || !session?.access_token) throw new Error("Your admin session expired. Sign in again before setting the thumbnail.");
+  const response = await fetch(FUNCTION_ORIGIN + "/functions/v1/youtube-publishing?action=set_thumbnail&videoId=" + encodeURIComponent(videoId), {
+    method: "POST",
+    headers: { Authorization: "Bearer " + session.access_token, apikey: SUPABASE_PUBLIC_KEY, "Content-Type": file.type },
+    body: file
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok || !result?.success) throw new Error(result?.error || ("Thumbnail upload failed (HTTP " + response.status + ")."));
+  return result;
+}
+function clearImagePreview(nodeId, storedUrl) {
+  if (storedUrl) URL.revokeObjectURL(storedUrl);
+  const node = $(nodeId);
+  if (node) { node.hidden = true; node.replaceChildren(); }
+  return null;
+}
+async function refreshOverview() {
+  if (!$("ytChannelMetrics")) return;
+  if (!selectedChannel) {
+    $("ytChannelMetrics").innerHTML = '<div class="yt-overview-placeholder">Connect a channel to load its overview.</div>';
+    $("ytRecentVideos").innerHTML = '<div class="yt-overview-placeholder">No channel data loaded.</div>';
+    return;
+  }
+  if (overviewBusy) return;
+  overviewBusy = true; $("ytOverviewRefreshBtn").disabled = true; $("ytOverviewRefreshBtn").textContent = "Loading…";
+  try {
+    const data = await invoke("channel_overview"), ch = data.channel || {};
+    const metrics = [
+      ["Subscribers", ch.hiddenSubscriberCount ? "Hidden" : Number(ch.subscriberCount || 0).toLocaleString("en-BD")],
+      ["Channel views", Number(ch.viewCount || 0).toLocaleString("en-BD")],
+      ["Videos", Number(ch.videoCount || 0).toLocaleString("en-BD")],
+      ["Channel created", ch.publishedAt ? new Date(ch.publishedAt).toLocaleDateString("en-BD") : "—"]
+    ];
+    $("ytChannelMetrics").innerHTML = metrics.map(([label,value]) => '<div class="yt-metric"><span>' + H.esc(label) + '</span><strong>' + H.esc(value) + '</strong></div>').join("");
+    const videos = Array.isArray(data.recentVideos) ? data.recentVideos : [];
+    if (!videos.length) $("ytRecentVideos").innerHTML = '<div class="yt-overview-placeholder">No recent uploads were returned by YouTube.</div>';
+    else $("ytRecentVideos").innerHTML = videos.map(v => {
+      const thumb = v.thumbnailUrl && /^https:\/\//.test(v.thumbnailUrl) ? '<img loading="lazy" src="' + H.esc(v.thumbnailUrl) + '" alt="" class="yt-recent-thumb">' : '<div class="yt-recent-thumb yt-recent-thumb-empty">YT</div>';
+      return '<article class="yt-recent-video">' + thumb + '<div class="yt-recent-video-body"><strong>' + H.esc(v.title || "Untitled video") + '</strong><span>' + H.esc(v.publishedAt ? H.dateTime(v.publishedAt) : "Upload date unavailable") + '</span><span>' + H.esc(v.privacyStatus || "Unknown visibility") + ' · ' + H.esc(v.uploadStatus || "status unavailable") + '</span><span>' + Number(v.viewCount || 0).toLocaleString("en-BD") + ' views</span></div><a class="yt-mini-link" target="_blank" rel="noopener noreferrer" href="' + H.esc(v.youtubeUrl) + '">Open ↗</a></article>';
+    }).join("");
+  } catch (err) {
+    $("ytChannelMetrics").innerHTML = '<div class="yt-overview-placeholder">Could not load channel metrics: ' + H.esc(err.message || "Unknown error") + '</div>';
+    H.toast(err.message || "Could not load YouTube channel overview.", "error");
+  } finally {
+    overviewBusy = false; $("ytOverviewRefreshBtn").disabled = !selectedChannel; $("ytOverviewRefreshBtn").textContent = "↻ Refresh overview";
+  }
+}
+async function refreshCommunityDrafts() {
+  const body = $("ytCommunityDrafts");
+  if (!body) return;
+  if (!selectedChannel) { body.innerHTML = '<div class="yt-overview-placeholder">Connect a channel to load drafts.</div>'; return; }
+  $("ytCommunityDraftRefreshBtn").disabled = true;
+  try {
+    const result = await invoke("community_drafts_list"), rows = Array.isArray(result.rows) ? result.rows : [];
+    if (!rows.length) { body.innerHTML = '<div class="yt-overview-placeholder">No saved Community drafts yet.</div>'; return; }
+    body.innerHTML = rows.map(row => {
+      const names = Array.isArray(row.image_names) ? row.image_names.map(x => x && typeof x === "object" ? x.name : x).filter(Boolean) : [];
+      const when = row.scheduled_at ? "Desired time: " + H.dateTime(row.scheduled_at) : "No desired time saved";
+      const status = row.status === "published_manually" ? "Marked published in Studio" : row.status === "ready_for_studio" ? "Ready for Studio" : "Draft";
+      return '<article class="yt-community-draft"><div class="yt-community-draft-main"><strong>' + H.esc(row.post_text ? String(row.post_text).slice(0,180) : "Image post without caption") + '</strong><span>' + names.length + ' image(s): ' + H.esc(names.join(", ") || "No image filenames saved") + '</span><span>' + H.esc(when) + ' · ' + H.esc(status) + '</span><span class="yt-history-id">Saved ' + H.esc(row.created_at ? H.dateTime(row.created_at) : "—") + '</span></div><div class="yt-community-draft-actions"><button type="button" class="hf-button hf-button-secondary" data-community-open="' + H.esc(row.id) + '">Open in Studio</button>' + (row.status !== "published_manually" ? '<button type="button" class="hf-button hf-button-secondary" data-community-mark="' + H.esc(row.id) + '">Mark posted</button>' : '') + '<button type="button" class="hf-button hf-button-secondary" data-community-delete="' + H.esc(row.id) + '">Delete</button></div></article>';
+    }).join("");
+  } catch (err) {
+    body.innerHTML = '<div class="yt-overview-placeholder">Could not load Community drafts: ' + H.esc(err.message || "Unknown error") + '</div>';
+  } finally { $("ytCommunityDraftRefreshBtn").disabled = !selectedChannel; }
+}
+function updateCommunityButtons() {
+  const files = Array.from($("ytCommunityImages").files || []), text = $("ytCommunityText").value.trim();
+  const validCount = files.length >= 1 && files.length <= 10;
+  const validFiles = files.every(f => ["image/jpeg","image/png","image/gif","image/webp"].includes(f.type) && f.size > 0 && f.size <= 16 * 1024 * 1024);
+  const ready = Boolean(selectedChannel && !busy && validFiles && validCount);
+  $("ytSaveCommunityDraftBtn").disabled = !ready || (!text && !files.length);
+  $("ytOpenStudioBtn").disabled = !ready || (!text && !files.length);
+}
+function inspectCommunityImages() {
+  communityPreviewUrls.forEach(url => URL.revokeObjectURL(url)); communityPreviewUrls = [];
+  const files = Array.from($("ytCommunityImages").files || []), summary = $("ytCommunityFileSummary"), preview = $("ytCommunityPreview");
+  preview.replaceChildren();
+  if (files.length > 10) { summary.textContent = "Too many images. YouTube Community posts support up to 10 images; select 10 or fewer."; updateCommunityButtons(); return; }
+  const bad = files.find(f => !["image/jpeg","image/png","image/gif","image/webp"].includes(f.type) || f.size < 1 || f.size > 16 * 1024 * 1024);
+  if (bad) { summary.textContent = "Invalid image: " + bad.name + ". Choose JPG, PNG, GIF, or WEBP files up to 16 MB each."; updateCommunityButtons(); return; }
+  summary.textContent = files.length ? files.length + " image(s) selected · " + (files.reduce((n,f)=>n+f.size,0)/(1024*1024)).toLocaleString("en-BD",{maximumFractionDigits:2}) + " MB total. Files remain on this computer." : "No Community images selected.";
+  for (const file of files) {
+    const url = URL.createObjectURL(file); communityPreviewUrls.push(url);
+    const card=document.createElement("div");card.className="yt-community-image-card";
+    const img=document.createElement("img");img.loading="lazy";img.src=url;img.alt=file.name;
+    const name=document.createElement("strong");name.textContent=file.name;
+    const meta=document.createElement("span");meta.textContent=(file.size/(1024*1024)).toLocaleString("en-BD",{maximumFractionDigits:2})+" MB";
+    img.onload=()=>{const ratio=img.naturalWidth&&img.naturalHeight?img.naturalWidth/img.naturalHeight:0;meta.textContent=img.naturalWidth+"×"+img.naturalHeight+" · "+(file.size/(1024*1024)).toLocaleString("en-BD",{maximumFractionDigits:2})+" MB"+(ratio>0.95&&ratio<1.05?" · near-square":" · consider square crop");};
+    card.append(img,name,meta);preview.append(card);
+  }
+  updateCommunityButtons();
+}
+async function saveCommunityDraft(status = "draft", draftId = activeCommunityDraftId, draftFiles = null, draftText = null, desiredSchedule = null) {
+  if (!selectedChannel) throw new Error("Connect your YouTube channel before saving a draft.");
+  const files = draftFiles || Array.from($("ytCommunityImages").files || []);
+  const postText = draftText !== null ? draftText : $("ytCommunityText").value.trim();
+  const names = files.map(f => typeof f === "string" ? ({name:f,type:"image/jpeg",size:1}) : ({name:f.name,type:f.type,size:f.size}));
+  if (!postText && !names.length) throw new Error("Add a caption or select at least one image.");
+  if (names.length > 10 || names.some(f => !["image/jpeg","image/png","image/gif","image/webp"].includes(f.type) || !Number.isSafeInteger(f.size) || f.size < 1 || f.size > 16*1024*1024)) throw new Error("Select up to 10 JPG, PNG, GIF, or WEBP images, each no larger than 16 MB.");
+  let scheduledAt=null;const schedule=desiredSchedule!==null?desiredSchedule:$("ytCommunitySchedule").value;
+  if(schedule){const date=new Date(schedule);if(Number.isNaN(date.getTime())||date.getTime()<Date.now()+60000)throw new Error("Choose a desired posting time in the future.");scheduledAt=date.toISOString();}
+  const result=await invoke("community_draft_save",{draftId:draftId||undefined,postText,images:names,scheduledAt,status});
+  activeCommunityDraftId=result.draft?.id||draftId||null;
+  await refreshCommunityDrafts();
+  return result.draft;
+}
+async function openCommunityStudio(draftId = null) {
+  if (!selectedChannel) { H.toast("Connect your YouTube channel first.", "error"); return; }
+  const tab=window.open("about:blank","_blank");
+  if(!tab){H.toast("Allow popups for this dashboard to open YouTube Studio.","error");return;}
+  const openId=draftId||activeCommunityDraftId;
+  const currentFiles=Array.from($("ytCommunityImages").files||[]);
+  let text=$("ytCommunityText").value.trim(),schedule=$("ytCommunitySchedule").value;
+  try{
+    if(draftId){
+      const saved=await invoke("community_drafts_list"),row=(saved.rows||[]).find(x=>x.id===draftId);
+      if(!row)throw new Error("Saved Community draft was not found.");
+      text=row.post_text||"";
+      const draft=await saveCommunityDraft("ready_for_studio",draftId,row.image_names||[],text,row.scheduled_at||null);
+      activeCommunityDraftId=draft.id;$("ytCommunityText").value=text;
+      $("ytCommunityTextCount").textContent=String(text.length);
+    } else {
+      const draft=await saveCommunityDraft("ready_for_studio",openId,currentFiles,text,schedule);
+      activeCommunityDraftId=draft.id;
+    }
+    if(text){try{await navigator.clipboard.writeText(text);}catch{H.toast("Caption saved, but the browser blocked clipboard access. Copy it from the dashboard manually.","error");}}
+    tab.location.href="https://studio.youtube.com/channel/"+encodeURIComponent(selectedChannel.channelId)+"/posts";
+    $("ytCommunityResult").hidden=false;$("ytCommunityResult").classList.remove("error");$("ytCommunityResult").replaceChildren();
+    const strong=document.createElement("strong");strong.textContent="Draft ready for YouTube Studio";
+    const p=document.createElement("p");p.textContent="The draft metadata is saved on the Halal Food server. The caption was copied if clipboard permission was available. In Studio, create an Image post, select these same local images again, then choose Post or Schedule. No Community post was auto-published.";
+    $("ytCommunityResult").append(strong,p);H.toast("Community draft saved. Finish publication in YouTube Studio.");
+  }catch(err){try{tab.close();}catch{}H.toast(err.message||"Could not prepare the Community post.","error");}
+}
+async function setThumbnailPreview(file,nodeId,oldUrl,altText){
+ const node=$(nodeId);if(oldUrl)URL.revokeObjectURL(oldUrl);node.replaceChildren();node.hidden=true;
+ if(!file)return null;
+ const url=URL.createObjectURL(file),img=document.createElement("img");img.src=url;img.alt=altText||file.name;
+ const label=document.createElement("span");label.textContent=file.name+" · "+(file.size/(1024*1024)).toLocaleString("en-BD",{maximumFractionDigits:2})+" MB";
+ node.append(img,label);node.hidden=false;return url;
 }
 function inlineStatus(message, isError = false) {
   $("ytOauthHint").textContent = message;
