@@ -467,9 +467,12 @@ async function reconcileUploads() {
       const links = matched.map(x => String(x.title || "Video") + " — " + String(x.youtubeUrl || "")).join("\n");
       showUploadResult("YouTube checked " + Number(result.checkedVideos || 0) + " recent videos and linked " + count + " existing upload(s) to history. Nothing was re-uploaded.\n" + links, false, matched[0]?.youtubeUrl || "");
       H.toast("Verified " + count + " existing YouTube upload(s).");
+    } else if (Number(result.checkedRecords || 0) === 0) {
+      showUploadResult("All recent upload records are already reconciled. There are no unresolved uploads left to match. The existing YouTube videos were not uploaded again.", false);
+      H.toast("Upload history is already verified.");
     } else {
-      showUploadResult("YouTube was checked, but no exact match was found in the latest " + Number(result.checkedVideos || 0) + " channel videos. No video was uploaded or duplicated. Check YouTube Studio, then run this check again.", true);
-      H.toast("No matching upload found. Nothing was re-published.", "error");
+      showUploadResult("YouTube was checked, but no exact match was found for " + Number(result.checkedRecords || 0) + " unresolved record(s) among the latest " + Number(result.checkedVideos || 0) + " channel videos. No video was uploaded or duplicated. Check YouTube Studio before trying again.", true);
+      H.toast("Some uploads still need verification. Nothing was re-published.", "error");
     }
   } catch (err) {
     const message = err?.message || "Could not verify the recent YouTube uploads.";
