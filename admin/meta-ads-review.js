@@ -174,7 +174,7 @@ function draftPayload(){
  const budget=val("marBudget");
  if(budget!==""&&(!Number.isFinite(Number(budget))||Number(budget)<0))throw new Error("Budget must be a number equal to or greater than zero.");
  return {
-  draft_name:val("marDraftName"),platform:val("marPlatform"),objective:val("marObjective"),campaign_type:val("marCampaignType"),
+  draft_name:val("marDraftName"),platform:val("marPlatform"),objective:val("marObjective"),campaign_type:val("marCampaignType"),special_ad_category:val("marSpecialCategory"),creative_format:val("marCreativeFormat"),
   primary_text:val("marPrimaryText"),headline:val("marHeadline"),description:val("marDescription"),destination_url:dest,
   call_to_action:val("marCta"),creative_url:creative,creative_notes:val("marCreativeNotes"),audience_location:val("marLocation"),
   age_min:ageMin,age_max:ageMax,audience_interests:val("marInterests"),placements:val("marPlacements"),
@@ -187,7 +187,7 @@ function draftPayload(){
 }
 function fillForm(row){
  $("marDraftId").value=row.id||"";
- for(const [id,key] of [["marDraftName","draft_name"],["marPlatform","platform"],["marObjective","objective"],["marCampaignType","campaign_type"],["marPrimaryText","primary_text"],["marHeadline","headline"],["marDescription","description"],["marCta","call_to_action"],["marDestination","destination_url"],["marCreativeUrl","creative_url"],["marCreativeNotes","creative_notes"],["marLocation","audience_location"],["marAgeMin","age_min"],["marAgeMax","age_max"],["marInterests","audience_interests"],["marPlacements","placements"],["marBudget","budget_amount"],["marBudgetPeriod","budget_period"],["marReviewStatus","review_status"],["marReviewNotes","review_notes"]]){
+ for(const [id,key] of [["marDraftName","draft_name"],["marPlatform","platform"],["marObjective","objective"],["marCampaignType","campaign_type"],["marSpecialCategory","special_ad_category"],["marCreativeFormat","creative_format"],["marPrimaryText","primary_text"],["marHeadline","headline"],["marDescription","description"],["marCta","call_to_action"],["marDestination","destination_url"],["marCreativeUrl","creative_url"],["marCreativeNotes","creative_notes"],["marLocation","audience_location"],["marAgeMin","age_min"],["marAgeMax","age_max"],["marInterests","audience_interests"],["marPlacements","placements"],["marBudget","budget_amount"],["marBudgetPeriod","budget_period"],["marReviewStatus","review_status"],["marReviewNotes","review_notes"]]){
   if($(id))$(id).value=row[key]===null||row[key]===undefined?"":row[key];
  }
  const localValue=iso=>iso?new Date(iso).getTime()&&!Number.isNaN(new Date(iso).getTime())?new Date(new Date(iso).getTime()-new Date(iso).getTimezoneOffset()*60000).toISOString().slice(0,16):"": "";
@@ -202,7 +202,7 @@ function fillForm(row){
  clearResult();
 }
 function newDraft(){
- $("marDraftForm").reset();$("marDraftId").value="";$("marPlatform").value="facebook";$("marObjective").value="traffic";$("marCampaignType").value="manual";$("marCta").value="LEARN_MORE";$("marLocation").value="Bangladesh";$("marAgeMin").value="18";$("marAgeMax").value="65";$("marPlacements").value="Advantage+ placements";$("marBudgetPeriod").value="daily";$("marReviewStatus").value="draft";
+ $("marDraftForm").reset();$("marDraftId").value="";$("marPlatform").value="facebook";$("marObjective").value="traffic";$("marCampaignType").value="manual";$("marSpecialCategory").value="not_sure";$("marCreativeFormat").value="not_sure";$("marCta").value="LEARN_MORE";$("marLocation").value="Bangladesh";$("marAgeMin").value="18";$("marAgeMax").value="65";$("marPlacements").value="Advantage+ placements";$("marBudgetPeriod").value="daily";$("marReviewStatus").value="draft";
  $("marPrimaryCount").textContent="0";$("marDraftMode").textContent="New draft";$("marDraftMode").className="hf-status hf-status-pending";sourceMetaAdId="";sourceMetaCampaignId="";lastChecks=[];renderPreflight([]);clearResult();
 }
 function buildChecks(d){
@@ -212,8 +212,10 @@ function buildChecks(d){
  add("primary_text",d.primary_text.length>=30?"pass":d.primary_text.length?"warn":"risk","Primary text",d.primary_text.length>=30?"Main ad text is present.":d.primary_text.length?"Copy is very short; make sure the offer and value are clear.":"Primary text is missing.");
  add("headline",d.headline?"pass":"warn","Headline",d.headline?"Headline is present.":"Add a short headline where the chosen ad format uses one.");
  add("objective",d.objective?"pass":"risk","Objective",d.objective?"Objective is selected.":"Select the business outcome the campaign should optimize for.");
+ add("special_category",d.special_ad_category==="not_sure"?"warn":"pass","Special Ad Category",d.special_ad_category==="not_sure"?"Confirm whether a special category applies before creating the campaign.":"Special Ad Category choice is recorded; confirm it against Meta’s current market-specific rules.");
  const needsDestination=["traffic","leads","sales","app_promotion"].includes(d.objective);
  add("destination",!needsDestination||/^https?:\/\/[^\s]+$/i.test(d.destination_url)?"pass":"risk","Destination",!needsDestination||/^https?:\/\/[^\s]+$/i.test(d.destination_url)?"Destination fits the current brief.":"This objective usually needs a working destination, form or app path. Add and test it.");
+ add("creative_format",d.creative_format&&d.creative_format!=="not_sure"?"pass":"warn","Creative format",d.creative_format&&d.creative_format!=="not_sure"?"A creative format is selected.":"Choose a creative format so the copy and asset can be checked together.");
  add("creative",d.creative_url||d.creative_notes?"pass":"warn","Creative asset",d.creative_url||d.creative_notes?"A creative URL or a production note is included.":"No creative URL or creative description is supplied; visual consistency cannot yet be checked.");
  add("audience",d.audience_location?"pass":"warn","Audience",d.audience_location?"Target location is described.":"Specify the market or location you intend to reach.");
  add("budget",d.budget_amount!==null&&Number(d.budget_amount)>0?"pass":"warn","Test budget",d.budget_amount!==null&&Number(d.budget_amount)>0?"A positive planning budget is recorded.":"No positive test budget is set. This is a plan only, not a live Meta budget.");
@@ -269,6 +271,8 @@ function makeReviewPacket(d,sourceLabel){
  "Platform: "+(d.platform||"facebook"),
  "Campaign objective: "+(d.objective||"not selected"),
  "Campaign setup: "+(d.campaign_type||"not specified"),
+ "Special Ad Category: "+(d.special_ad_category||"not specified"),
+ "Creative format: "+(d.creative_format||"not specified"),
  "",
  "PRIMARY TEXT:",
  d.primary_text||"(not supplied)",
@@ -328,6 +332,7 @@ function creativePacketFromAd(ad){
   platform:"facebook",
   objective:"traffic",
   campaign_type:"manual",
+  special_ad_category:"not_sure",creative_format:"not_sure",
   primary_text:ad.primaryText||"",
   headline:ad.headline||"",
   description:ad.description||"",
