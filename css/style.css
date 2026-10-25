@@ -2002,7 +2002,7 @@ button.cart-qty-action:focus-visible {
     width: 100% !important;
     max-width: none !important;
     height: auto !important;
-    aspect-ratio: auto !important;
+    aspect-ratio: 2.7 / 1 !important;
     margin: 0 !important;
     border: 0 !important;
     border-radius: 0 !important;
@@ -2012,9 +2012,9 @@ button.cart-qty-action:focus-visible {
   .hero-visual-only .hero-carousel-track {
     display: flex !important;
     flex-direction: row !important;
-    align-items: flex-start !important;
+    align-items: stretch !important;
     width: 100% !important;
-    height: auto !important;
+    height: 100% !important;
     overflow-x: auto !important;
     overflow-y: hidden !important;
     scroll-snap-type: x mandatory !important;
@@ -2025,7 +2025,7 @@ button.cart-qty-action:focus-visible {
   .hero-visual-only .hero-slide picture {
     display: block !important;
     width: 100% !important;
-    height: auto !important;
+    height: 100% !important;
     min-width: 100% !important;
   }
   .hero-visual-only .hero-slide {
@@ -2035,7 +2035,7 @@ button.cart-qty-action:focus-visible {
   .hero-visual-only .hero-slide img {
     display: block !important;
     width: 100% !important;
-    height: auto !important;
+    height: 100% !important;
     object-fit: contain !important;
     object-position: center !important;
     background: var(--cream-deep) !important;
@@ -2999,4 +2999,25 @@ main .section-head h3 {
 @media (min-width: 901px) {
   .header-actions .header-account-link { margin-right: 5px; }
   .header-actions .header-track-order { margin-left: 4px; }
+}
+
+
+/* Use the specially cropped hero artwork only on touch-first phone-sized viewports. */
+@media (max-width: 768px) and (pointer: coarse) {
+  .hero-visual-only .hero-carousel {
+    height: auto !important;
+    aspect-ratio: auto !important;
+  }
+  .hero-visual-only .hero-carousel-track {
+    height: auto !important;
+    align-items: flex-start !important;
+  }
+  .hero-visual-only .hero-slide,
+  .hero-visual-only .hero-slide picture {
+    height: auto !important;
+  }
+  .hero-visual-only .hero-slide img {
+    height: auto !important;
+    object-fit: contain !important;
+  }
 }

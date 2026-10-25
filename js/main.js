@@ -560,7 +560,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let paused = false;
 
     const updateMobileHeight = () => {
-      if (!window.matchMedia("(max-width: 768px)").matches) {
+      if (!window.matchMedia("(max-width: 768px) and (pointer: coarse)").matches) {
         hero.style.removeProperty("height");
         return;
       }
