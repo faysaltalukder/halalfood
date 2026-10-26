@@ -437,7 +437,7 @@ Deno.serve(async (req: Request) => {
 
       const [queuedCount, publishedCount, metaScheduledCount] = await Promise.all([
         db.from("post_queue").select("id", { count: "exact", head: true })
-          .eq("platform", "facebook").in("status", ["pending", "processing", "published"])
+          .eq("platform", "facebook").in("status", ["pending", "processing"])
           .gte("publish_at", dayStart).lt("publish_at", dayEnd),
         db.from("facebook_publish_history").select("id", { count: "exact", head: true })
           .eq("status", "published").gte("published_at", dayStart).lt("published_at", dayEnd),
