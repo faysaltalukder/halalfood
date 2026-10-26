@@ -181,18 +181,14 @@
       (Date.parse(a.created_at || "") || 0) - (Date.parse(b.created_at || "") || 0) ||
       String(a.name || "").localeCompare(String(b.name || ""))
     );
-    const cardSlugs = new Set($$(".product-card", grid).map(card => $("[data-add-to-cart][data-slug]", card)?.dataset.slug).filter(Boolean));
-    $$(".product-card", grid).forEach(card => {
-      const slug = $("[data-add-to-cart][data-slug]", card)?.dataset.slug;
-      if (!slug || !records.some(item => item.slug === slug)) card.remove();
-    });
-    const stillThere = new Set($$(".product-card", grid).map(card => $("[data-add-to-cart][data-slug]", card)?.dataset.slug).filter(Boolean));
-    records.forEach(item => {
-      const existing = stillThere.has(item.slug) ? $$(".product-card", grid).find(card => $("[data-add-to-cart][data-slug]", card)?.dataset.slug === item.slug) : null;
-      if (existing) updateProductCard(existing, item);
-      else grid.appendChild(makeProductCard(item, "standard"));
-    });
-    if (!records.length) grid.innerHTML = '<p class="muted">No active products are currently listed in this category.</p>';
+    // Rebuild the category grid entirely from the live database catalog. This prevents
+    // the static HTML list from hiding newly-added CMS products and keeps card/button
+    // markup identical for old and newly-created products.
+    if (records.length) {
+      grid.replaceChildren(...records.map(item => makeProductCard(item, "standard")));
+    } else {
+      grid.innerHTML = '<p class="muted">No active products are currently listed in this category.</p>';
+    }
   }
   // Render the homepage's category product rails from the same live catalog as category pages.
   // Keep each rail's card count stable so existing carousel controls remain compatible.

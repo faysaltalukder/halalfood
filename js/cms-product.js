@@ -128,17 +128,41 @@
     else notFound("This product is no longer listed in the active catalog.");
   });
 
+  let lastRenderedProduct = null;
+  const renderCurrentProduct = render;
+  render = function (item) {
+    lastRenderedProduct = item;
+    renderCurrentProduct(item);
+  };
+
+  async function refreshCurrentProduct() {
+    if (!requestedSlug || document.visibilityState === "hidden") return;
+    try {
+      const rows = await getProducts(requestedSlug);
+      if (!rows.length) { notFound("This product is no longer listed in the active catalog."); return; }
+      const fresh = rows[0];
+      const signature = item => JSON.stringify(item ? {
+        name: item.name, category: item.category, category_slug: item.category_slug,
+        price: item.price, display_price: item.display_price, unit_type: item.unit_type,
+        image_url: item.image_url, short_description: item.short_description,
+        full_description: item.full_description, description: item.description,
+        is_active: item.is_active, seo_title: item.seo_title, seo_description: item.seo_description
+      } : null);
+      if (signature(lastRenderedProduct) !== signature(fresh)) render(fresh);
+    } catch (error) {
+      console.warn("Current product refresh failed; keeping the last rendered details.", error);
+    }
+  }
+
   document.addEventListener("DOMContentLoaded", async () => {
     const slug = new URLSearchParams(location.search).get("slug");
     requestedSlug = slug || "";
     if (!slug) { notFound("Choose a product from the store catalog."); return; }
-    try {
-      const rows = await getProducts(slug);
-      if (!rows.length) { notFound("This product is no longer listed in the active catalog."); return; }
-      render(rows[0]);
-    } catch (error) {
-      notFound(error?.message || "Product details could not be loaded. Please refresh.");
-      console.error("Dynamic product load failed", error);
-    }
+    await refreshCurrentProduct();
+    window.setInterval(refreshCurrentProduct, 60000);
+    window.addEventListener("focus", refreshCurrentProduct);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") refreshCurrentProduct();
+    });
   });
 })();
