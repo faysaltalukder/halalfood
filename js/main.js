@@ -12,7 +12,7 @@
   try {
     const siteRoot = new URL("../", mainScript.src);
     const script = document.createElement("script");
-    script.src = new URL("js/live-catalog.js?v=20261021-catalog-v2", siteRoot).href;
+    script.src = new URL("js/live-catalog.js?v=20261026-catalog-sync-v1", siteRoot).href;
     script.async = true;
     document.head.appendChild(script);
   } catch (error) {
@@ -1134,11 +1134,12 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll("[data-mrow]").forEach((wrap) => {
     const track = wrap.querySelector("[data-mrow-track]");
     const dotsBox = wrap.parentElement.querySelector("[data-mrow-dots]");
-    const cards = Array.from(track.children);
-    if (!cards.length) return;
+    if (!track || !dotsBox) return;
+    const getCards = () => Array.from(track.children).filter(card => card.classList.contains("mrow-card"));
+    if (!getCards().length) return;
 
     const visibleCount = () => (window.innerWidth <= 600 ? 2 : window.innerWidth <= 900 ? 3 : 5);
-    const pageCount = () => Math.max(1, Math.ceil(cards.length / visibleCount()));
+    const pageCount = () => Math.max(1, Math.ceil(getCards().length / visibleCount()));
 
     const buildDots = () => {
       dotsBox.innerHTML = "";
@@ -1149,6 +1150,8 @@ document.addEventListener("DOMContentLoaded", () => {
         dot.setAttribute("aria-label", `Go to slide group ${i + 1}`);
         if (i === 0) dot.classList.add("active");
         dot.addEventListener("click", () => {
+          const cards = getCards();
+          if (!cards.length) return;
           const cardWidth = cards[0].getBoundingClientRect().width + 18;
           track.scrollTo({ left: i * visibleCount() * cardWidth, behavior: "smooth" });
         });
@@ -1156,9 +1159,13 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     };
     buildDots();
-    window.addEventListener("resize", () => { buildDots(); });
+    const catalogObserver = new MutationObserver(() => { buildDots(); updateActiveDot(); });
+    catalogObserver.observe(track, { childList: true });
+    window.addEventListener("resize", () => { buildDots(); updateActiveDot(); });
 
     const updateActiveDot = () => {
+      const cards = getCards();
+      if (!cards.length) return;
       const cardWidth = cards[0].getBoundingClientRect().width + 18;
       const page = Math.round(track.scrollLeft / (visibleCount() * cardWidth));
       Array.from(dotsBox.children).forEach((d, i) => d.classList.toggle("active", i === page));
@@ -1193,6 +1200,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let auto = setInterval(advance, 5500);
     function advance() {
+      const cards = getCards();
+      if (!cards.length) return;
       const cardWidth = cards[0].getBoundingClientRect().width + 18;
       const maxScroll = track.scrollWidth - track.clientWidth;
       const next = track.scrollLeft + visibleCount() * cardWidth;
