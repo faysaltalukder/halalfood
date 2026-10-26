@@ -1222,6 +1222,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // Extra products are kept inside a <template> so they do not weigh down the page until requested.
         const grid = document.createElement("div");
         grid.className = "jfy-grid jfy-shown";
+        grid.dataset.jfyHidden = "";
         grid.appendChild(hidden.content.cloneNode(true));
         hidden.replaceWith(grid);
       } else if (hidden) {

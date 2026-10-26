@@ -241,12 +241,28 @@
     }
     const jfy = $("#just-for-you .jfy-grid");
     if (jfy) {
-      const rows = products.filter(item => item.is_active).sort((a,b) =>
+      const allRows = products.filter(item => item.is_active).sort((a,b) =>
         Number(a.sort_order || 0) - Number(b.sort_order || 0) ||
-        (Date.parse(b.created_at || "") || 0) - (Date.parse(a.created_at || "") || 0) ||
+        (Date.parse(a.created_at || "") || 0) - (Date.parse(b.created_at || "") || 0) ||
         String(a.name || "").localeCompare(String(b.name || ""))
-      ).slice(0,10);
+      );
+      const rows = allRows.slice(0,10);
       jfy.replaceChildren(...rows.map(item => makeProductCard(item, "jfy")));
+
+      // The homepage Load More template must come from the current database too,
+      // not from the original static product cards baked into index.html.
+      const moreTarget = document.querySelector("[data-jfy-hidden]");
+      if (moreTarget) {
+        const moreCards = allRows.slice(10).map(item => makeProductCard(item, "jfy"));
+        if (moreTarget.tagName === "TEMPLATE") moreTarget.content.replaceChildren(...moreCards);
+        else moreTarget.replaceChildren(...moreCards);
+      }
+      const loadMoreBtn = document.querySelector("[data-jfy-load-more]");
+      if (loadMoreBtn) {
+        loadMoreBtn.hidden = allRows.length <= 10;
+        const wrap = loadMoreBtn.closest(".jfy-load-more-wrap");
+        if (wrap) wrap.hidden = allRows.length <= 10;
+      }
     }
     // Rebuild category product rails from the current database so new products and edits appear here too.
     renderMerchandisingRails(products);
