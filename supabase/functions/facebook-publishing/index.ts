@@ -409,6 +409,8 @@ Deno.serve(async (req: Request) => {
       const scheduledAtRaw = clean(body?.scheduledAt, 80);
       const scheduledAt = scheduledAtRaw ? new Date(scheduledAtRaw) : null;
       if (!["text", "link", "photo", "video"].includes(postType)) throw new Error("Choose text, link, photo, or video for this post.");
+      if (postType === "text" && !message) throw new Error("Write a caption for a text post.");
+      if (postType !== "link" && link) throw new Error("Only link posts can include a separate link.");
       if (!scheduledAtRaw || !scheduledAt || Number.isNaN(scheduledAt.getTime())) throw new Error("Choose a valid schedule date and time for the automated queue.");
       const delay = scheduledAt.getTime() - Date.now();
       if (delay < 10 * 60 * 1000) throw new Error("Automated publishing requires a time at least 10 minutes in the future.");
