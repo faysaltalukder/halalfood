@@ -638,15 +638,21 @@ window.HFAdminReady.then(async H=>{
     if(recipientAddress.length>250)throw new Error("The delivery address must be 250 characters or fewer.");
     // Accept addresses written in normal local language; punctuation/component-count is not a courier requirement.
     // The admin must still confirm the address is real and sufficiently specific before live booking.
-    const {data:freshOrder,error:orderReadError}=await client.from("orders").select("id,order_number,customer_name,customer_phone,customer_email,delivery_address,total,status,payment_method,notes").eq("id",orderId).maybeSingle();
+    const {data:freshOrder,error:orderReadError}=await client.from("orders").select("id,order_number,customer_name,customer_phone,customer_email,delivery_address,total,status,payment_method,notes,order_items").eq("id",orderId).maybeSingle();
     if(orderReadError||!freshOrder)throw new Error("Could not verify the latest order record. Refresh and try again.");
     if(!["pending","processing"].includes(freshOrder.status))throw new Error("The order changed to "+freshOrder.status+" and can no longer be booked from this action.");
     if(String(freshOrder.payment_method||"cash_on_delivery").toLowerCase()!=="cash_on_delivery")throw new Error("The latest order is not marked Cash on Delivery.");
+    if(!String(freshOrder.customer_name||"").trim())throw new Error("The saved order has no customer name. Verify the customer details before booking.");
+    if(String(freshOrder.customer_phone||"").replace(/\D/g,"").length<8)throw new Error("The saved order has no usable customer phone number. Verify the customer contact before booking.");
+    const freshTotal=Number(freshOrder.total);
+    if(!Number.isFinite(freshTotal)||freshTotal<=0)throw new Error("The saved COD amount is invalid. Verify the order total before booking.");
+    const freshItems=Array.isArray(freshOrder.order_items)?freshOrder.order_items:[];
+    if(!freshItems.length||freshItems.some(item=>!String(item?.product_name||"").trim()||!Number.isFinite(Number(item?.quantity))||Number(item.quantity)<=0))throw new Error("Saved product names or quantities are missing/invalid. Refresh and verify the order items before booking.");
     const {data:existing,error:existingError}=await client.from("admin_shipments").select("*").eq("order_id",orderId).maybeSingle();
     if(existingError)throw new Error("Could not verify whether this order already has a courier parcel. Refresh and retry.");
     if(courierBookingLocked(existing))throw new Error("A courier booking already exists or its result is uncertain. Verify the courier dashboard before retrying; duplicate booking is blocked.");
     const providerName=courierLabel(provider);
-    const confirmationItems=(freshOrder.order_items||order.order_items||[]).map(item=>String(item.product_name||"Item")+" × "+String(item.quantity||1)+" "+String(item.unit||"")).join(", ")||"No item details";
+    const confirmationItems=freshItems.map(item=>String(item.product_name)+" × "+String(item.quantity)+" "+String(item.unit||"")).join(", ");
     const confirmMessage="CREATE REAL COURIER BOOKING — "+providerName+"\n\nOrder: "+(freshOrder.order_number||String(freshOrder.id).slice(0,8))+"\nCustomer: "+(freshOrder.customer_name||"Customer")+"\nPhone: "+(freshOrder.customer_phone||"Not recorded")+"\nProducts: "+confirmationItems+"\nFull address: "+recipientAddress+"\nCOD to collect: "+money(freshOrder.total)+(["pathao","redx"].includes(provider)?"\nPacked weight: "+weight+" kg":"")+(provider==="redx"?"\nREDX delivery area: "+redxAreaName:"")+"\n\nThis sends the saved customer and order details to "+providerName+" and may create a real shipment. Check the details carefully. Courier cancellation is not available inside this page. Continue with the real booking?";
     if(!confirm(confirmMessage))return;
     if(String(freshOrder.delivery_address||"").trim()!==recipientAddress){
@@ -1039,7 +1045,7 @@ async function refresh(){[products,categories]=await Promise.all([fetchProducts(
    const body=$("orderReconciliationTableBody");if(!body)return;
    body.innerHTML=orders.length?orders.map(o=>{
     const linked=linkedIncomeTotal(o.id),cancelled=o.status==="cancelled",difference=Number(o.total||0)-linked,method=String(o.payment_method||"").toLowerCase()==="cash_on_delivery"?"Cash on Delivery (COD)":String(o.payment_method||"not recorded").replace(/[_-]+/g," ");
-    return '<tr><td><strong>'+esc(o.order_number||String(o.id).slice(0,8))+'</strong><small>'+esc(o.customer_name||"Customer not named")+' · '+esc(o.customer_phone||"No phone")+'</small></td><td>'+dateOnly(o.ordered_at)+'</td><td>'+esc(method)+'</td><td>'+makeStatus(o.status)+'</td><td><strong>'+money(o.total)+'</strong><small>Recorded order value</small></td><td>'+money(linked)+'<small>Confirmed linked income only</small></td><td>'+(cancelled?"Not compared":money(difference))+'</td><td><button class="hf-button hf-button-secondary hf-button-small" data-record-income="'+esc(o.id)+'">Record income</button></td></tr>';
+    return '<tr><td><strong>'+esc(o.order_number||String(o.id).slice(0,8))+'</strong><small>'+esc(o.customer_name||"Customer not named")+' · '+esc(o.customer_phone||"No phone")+'</small></td><td>'+dateOnly(o.ordered_at)+'</td><td>'+esc(method)+'</td><td>'+makeStatus(o.status)+'</td><td><strong>'+money(o.total)+'</strong><small>Recorded order value</small></td><td>'+money(linked)+'<small>Confirmed linked income only</small></td><td>'+(cancelled?"Not compared":money(difference))+'</td><td>'+(cancelled?'<span class="hf-status hf-status-cancelled">Cancelled — no income</span>':'<button class="hf-button hf-button-secondary hf-button-small" data-record-income="'+esc(o.id)+'">Record income</button>')+'</td></tr>';
    }).join(""):'<tr><td colspan="8">'+makeEmpty("No order records available","Orders will appear here when they are loaded.")+'</td></tr>';
    $("financeReconcileNote").textContent="Showing "+orders.length.toLocaleString("en-BD")+" recent order records (up to the latest 1,000). The selected payment method is not proof of payment. Confirmed income is a manually verified ledger entry linked to the order; no payment gateway is connected. The difference is for review only—not profit, debt, or an amount due.";
   }
@@ -1084,6 +1090,11 @@ async function refresh(){[products,categories]=await Promise.all([fetchProducts(
     if(!Number.isFinite(amount)||amount<=0)throw new Error("Enter an amount greater than zero.");
     if(!category)throw new Error("Choose a category.");if(!date)throw new Error("Choose an entry date.");
     const payload={entry_type:$("financeEntryType").value,category,amount,entry_date:date,description:$("financeDescription").value.trim(),reference:$("financeReference").value.trim()||null,status:$("financeStatus").value,related_order_id:$("financeOrderId").value||null};
+    if(payload.entry_type==="income"&&payload.status==="confirmed"&&payload.related_order_id){
+     const {data:linkedOrder,error:linkedOrderError}=await client.from("orders").select("id,status").eq("id",payload.related_order_id).maybeSingle();
+     if(linkedOrderError||!linkedOrder)throw new Error("Could not verify the linked order. Refresh and retry before confirming income.");
+     if(linkedOrder.status==="cancelled")throw new Error("A cancelled order cannot be confirmed as income. Record any real receipt as a separate, documented adjustment instead.");
+    }
     if(!id)payload.created_by=H.ADMIN_EMAIL;
     if(id){const {error}=await client.from("admin_finance_entries").update(payload).eq("id",id);if(error)throw error;await audit("finance_entry_updated","finance_entry",id,"Finance entry updated",{entry_type:payload.entry_type,status:payload.status});}
     else{const {data,error}=await client.from("admin_finance_entries").insert(payload).select("id").single();if(error)throw error;await audit("finance_entry_created","finance_entry",data.id,"Finance entry added",{entry_type:payload.entry_type,status:payload.status});}
@@ -1098,7 +1109,7 @@ async function refresh(){[products,categories]=await Promise.all([fetchProducts(
   });
   $("orderReconciliationTableBody")?.addEventListener("click",e=>{
    const btn=e.target.closest("[data-record-income]");if(!btn)return;
-   const order=orders.find(o=>o.id===btn.dataset.recordIncome);if(order)openEntry(null,order);
+   const order=orders.find(o=>o.id===btn.dataset.recordIncome);if(!order)return;if(order.status==="cancelled"){toast("Cancelled orders cannot be recorded as income. If money was actually received, reconcile it separately with a documented adjustment.","error");return;}openEntry(null,order);
   });
   document.querySelectorAll("[data-close-dialog]").forEach(b=>b.addEventListener("click",()=>$(b.dataset.closeDialog)?.close()));
   $("financeSearch")?.addEventListener("input",render);$("financeTypeFilter")?.addEventListener("change",render);$("financeStatusFilter")?.addEventListener("change",render);$("globalSearch")?.addEventListener("input",render);
