@@ -141,10 +141,12 @@ function updatePostFields() {
   $("fbMediaField").hidden = type !== "photo" && type !== "video";
   $("fbPostLink").required = type === "link";
   $("fbMediaFile").required = type === "photo" || type === "video";
+  $("fbPostMessage").required = type === "text";
   $("fbMediaFile").accept = type === "video" ? "video/mp4,video/quicktime" : "image/jpeg,image/png,image/webp,image/gif";
   const composerReady = Boolean(selectedPage?.canPublish && statusData?.setupReady && !busy);
   $("fbPublishNowBtn").disabled = !composerReady;
   $("fbScheduleBtn").disabled = !composerReady;
+  $("fbQueueBtn").disabled = !composerReady;
 }
 function clearPreview() {
   if (mediaPreviewUrl) URL.revokeObjectURL(mediaPreviewUrl);
@@ -240,8 +242,9 @@ async function connectFacebook() {
     $("fbConnectBtn").disabled = !(statusData?.setupReady) || busy;
   }
 }
-async function publishPost(schedule) {
+async function publishPost(schedule, mode = "meta") {
   if (busy) return;
+  const queueMode = mode === "queue";
   const type = $("fbPostType").value;
   const message = $("fbPostMessage").value.trim();
   const link = $("fbPostLink").value.trim();
@@ -273,12 +276,15 @@ async function publishPost(schedule) {
     return;
   }
   if (file && file.size > MAX_MEDIA_BYTES) { H.toast("Choose a media file no larger than 50 MB.", "error"); return; }
-  const title = schedule ? "Schedule this post on " + selectedPage.pageName + "?" : "Publish this post to " + selectedPage.pageName + " now?";
-  if (!confirm(title + "\n\nReview your caption, media and destination before continuing.")) return;
+  const title = queueMode
+    ? "Add this post to the automated publishing queue for " + selectedPage.pageName + "?"
+    : schedule ? "Schedule this post on " + selectedPage.pageName + "?" : "Publish this post to " + selectedPage.pageName + " now?";
+  const queueNote = queueMode ? "\n\nThe server will dispatch it after the scheduled time, subject to the Facebook daily limit and Meta availability." : "";
+  if (!confirm(title + "\n\nReview your caption, media and destination before continuing." + queueNote)) return;
   busy = true;
-  $("fbPublishNowBtn").disabled = true; $("fbScheduleBtn").disabled = true;
-  $("fbPublishNowBtn").textContent = "Working…"; $("fbScheduleBtn").textContent = "Working…";
-  showResult(file ? "Uploading media securely, then sending the publishing request to Meta…" : "Sending the publishing request to Meta…");
+  $("fbPublishNowBtn").disabled = true; $("fbScheduleBtn").disabled = true; $("fbQueueBtn").disabled = true;
+  $("fbPublishNowBtn").textContent = "Working…"; $("fbScheduleBtn").textContent = "Working…"; $("fbQueueBtn").textContent = "Working…";
+  showResult(file ? "Uploading media securely, then preparing the publishing request…" : (queueMode ? "Adding the scheduled post to the server queue…" : "Sending the publishing request to Meta…"));
   let mediaPath = "";
   try {
     if (file) {
@@ -289,28 +295,33 @@ async function publishPost(schedule) {
       if (uploadError) throw new Error("Secure media upload failed: " + (uploadError.message || "check Supabase Storage access and upload size."));
       mediaPath = storagePath;
     }
-    const result = await invoke("publish", {
+    const result = await invoke(queueMode ? "queue_post" : "publish", {
       postType: type, message, link, mediaPath, scheduledAt,
     });
     const dateText = result.scheduledAt ? " Scheduled for " + H.dateTime(result.scheduledAt) + "." : " Meta accepted the publish request.";
     const idText = result.facebookPostId ? " Facebook ID: " + result.facebookPostId + "." : "";
     const warningText = result.warning ? " Warning: " + result.warning : "";
-    showResult((result.status === "scheduled" ? "Post scheduled successfully." : "Post request accepted.") + dateText + idText + warningText, false, result.permalinkUrl || "");
-    H.toast(result.status === "scheduled" ? "Facebook accepted the scheduled post." : "Facebook accepted the publishing request.");
+    const successText = queueMode
+      ? "Post added to the automated publishing queue."
+      : result.status === "scheduled" ? "Post scheduled successfully with Meta." : "Post request accepted by Meta.";
+    const queueLimitText = queueMode && result.dailyLimit ? " Daily automation limit: " + result.dailyLimit + " posts per Bangladesh day." : "";
+    showResult(successText + dateText + queueLimitText + idText + warningText, false, result.permalinkUrl || "");
+    H.toast(queueMode ? "Post added to automation queue." : result.status === "scheduled" ? "Facebook accepted the scheduled post." : "Facebook accepted the publishing request.");
     if (result.warning) H.toast(result.warning, "error");
     $("fbComposerForm").reset();
     clearPreview();
     updatePostFields();
     minimumScheduleValue();
-    await Promise.all([refreshStatus(), refreshHistory()]);
+    await Promise.all([refreshStatus(), refreshHistory(), refreshQueue()]);
   } catch (err) {
     showResult(err.message || "Facebook publishing failed. Check the error and retry only after checking whether Meta already created the post.", true);
     H.toast(err.message || "Facebook publishing failed.", "error");
-    await refreshHistory();
+    await Promise.all([refreshHistory(), refreshQueue()]);
   } finally {
     busy = false;
     $("fbPublishNowBtn").textContent = "Publish now";
-    $("fbScheduleBtn").textContent = "Schedule post";
+    $("fbScheduleBtn").textContent = "Schedule with Meta";
+    $("fbQueueBtn").textContent = "Queue for automation";
     renderPages(statusData || {});
     updatePostFields();
   }
@@ -339,9 +350,61 @@ async function refreshHistory() {
     $("fbHistoryBody").innerHTML = '<tr><td colspan="5" class="fb-history-empty">Could not load history. ' + H.esc(err.message || "") + "</td></tr>";
   } finally { $("fbHistoryRefreshBtn").disabled = false; }
 }
+async function refreshQueue() {
+  const button = $("fbQueueRefreshBtn");
+  if (button) button.disabled = true;
+  try {
+    const result = await invoke("queue_history");
+    const rows = Array.isArray(result.rows) ? result.rows : [];
+    const pending = rows.filter((row) => row.status === "pending").length;
+    const processing = rows.filter((row) => row.status === "processing").length;
+    const status = $("fbQueueStatus");
+    if (status) {
+      status.textContent = pending + " pending · " + processing + " processing";
+      status.className = "hf-status " + (processing ? "hf-status-review" : pending ? "hf-status-pending" : "hf-status-active");
+    }
+    const body = $("fbQueueBody");
+    if (!rows.length) {
+      body.innerHTML = '<tr><td colspan="5" class="fb-history-empty">No automated posts in the queue yet. Use “Queue for automation” after choosing a schedule.</td></tr>';
+      return;
+    }
+    body.innerHTML = rows.map((row) => {
+      const type = String(row.post_type || "text").toUpperCase();
+      const message = String(row.message || "").trim();
+      const summary = message.length > 130 ? message.slice(0, 130) + "…" : message;
+      const mediaNote = row.post_type === "photo" ? "Photo attached" : row.post_type === "video" ? "Video attached" : row.link ? String(row.link) : "Text post";
+      const error = row.error ? '<small class="fb-queue-error">' + H.esc(row.error) + "</small>" : "";
+      const result = row.permalink && /^https:\/\/(?:www\.)?facebook\.com\//i.test(row.permalink)
+        ? '<a class="fb-mini-link" href="' + H.esc(row.permalink) + '" target="_blank" rel="noopener noreferrer">Open post ↗</a>'
+        : '<div class="fb-history-id">' + H.esc(row.external_id || "—") + "</div>";
+      const action = row.status === "pending"
+        ? '<button class="hf-button hf-button-danger hf-button-small fb-queue-action" type="button" data-cancel-queue="' + H.esc(row.id) + '">Cancel</button>'
+        : '<span class="hf-data-note">—</span>';
+      return "<tr><td>" + H.esc(row.publish_at ? H.dateTime(row.publish_at) : "—") + "</td><td><div class=\"fb-queue-copy\"><strong>" + H.esc(type) + "</strong><span>" + H.esc(summary || mediaNote) + "</span><small>" + H.esc(mediaNote) + "</small>" + error + "</div></td><td>" + H.makeStatus(row.status) + "</td><td>" + result + "</td><td>" + action + "</td></tr>";
+    }).join("");
+  } catch (err) {
+    const status = $("fbQueueStatus");
+    if (status) { status.textContent = "Queue unavailable"; status.className = "hf-status hf-status-cancelled"; }
+    $("fbQueueBody").innerHTML = '<tr><td colspan="5" class="fb-history-empty">Could not load the automation queue. ' + H.esc(err.message || "") + "</td></tr>";
+  } finally { if (button) button.disabled = false; }
+}
+async function cancelQueuedPost(queueId) {
+  if (!queueId || !confirm("Cancel this pending automated post? It will not be sent by the queue.")) return;
+  const row = document.querySelector('[data-cancel-queue="' + CSS.escape(queueId) + '"]');
+  if (row) row.disabled = true;
+  try {
+    await invoke("cancel_queued", { queueId });
+    H.toast("Pending automated post cancelled.");
+    await refreshQueue();
+  } catch (err) {
+    H.toast(err.message || "Could not cancel this queued post.", "error");
+    await refreshQueue();
+  } finally { if (row && row.isConnected) row.disabled = false; }
+}
 function bindEvents() {
   $("fbRefreshBtn").addEventListener("click", refreshStatus);
   $("fbHistoryRefreshBtn").addEventListener("click", refreshHistory);
+  $("fbQueueRefreshBtn").addEventListener("click", refreshQueue);
   $("fbConnectBtn").addEventListener("click", connectFacebook);
   $("fbSelectPageBtn").addEventListener("click", choosePage);
   $("fbVerifyPageBtn").addEventListener("click", verifyPage);
@@ -358,7 +421,12 @@ function bindEvents() {
   $("fbMediaFile").addEventListener("change", previewSelectedFile);
   $("fbPostMessage").addEventListener("input", () => { $("fbCharCount").textContent = String($("fbPostMessage").value.length); });
   $("fbPublishNowBtn").addEventListener("click", () => publishPost(false));
-  $("fbScheduleBtn").addEventListener("click", () => publishPost(true));
+  $("fbScheduleBtn").addEventListener("click", () => publishPost(true, "meta"));
+  $("fbQueueBtn").addEventListener("click", () => publishPost(true, "queue"));
+  $("fbQueueBody").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-cancel-queue]");
+    if (button) cancelQueuedPost(button.dataset.cancelQueue);
+  });
   $("fbClearBtn").addEventListener("click", () => setTimeout(() => {
     $("fbCharCount").textContent = "0"; clearPreview(); updatePostFields(); $("fbPublishResult").hidden = true;
   }, 0));
@@ -387,6 +455,6 @@ window.HFAdminReady.then(async (admin) => {
   bindEvents();
   minimumScheduleValue();
   updatePostFields();
-  await Promise.all([refreshStatus(), refreshHistory()]);
+  await Promise.all([refreshStatus(), refreshHistory(), refreshQueue()]);
 });
 })();

@@ -10,7 +10,7 @@
 <title>Facebook Publishing · Halal Food Admin</title>
 <link rel="stylesheet" href="./shared.css?v=20261026-full-dashboard-v2">
 <link rel="stylesheet" href="./phase4-pages.css?v=20261024-facebook-publishing-v1">
-<link rel="stylesheet" href="./facebook-publishing.css?v=20261024-facebook-publishing-v1">
+<link rel="stylesheet" href="./facebook-publishing.css?v=20261026-phase3-automation-queue">
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
 </head>
 <body data-page="facebook-publishing">
@@ -87,7 +87,8 @@
         </label>
         <div class="fb-compose-buttons">
           <button id="fbPublishNowBtn" class="hf-button hf-button-primary" type="button" disabled>Publish now</button>
-          <button id="fbScheduleBtn" class="hf-button hf-button-secondary" type="button" disabled>Schedule post</button>
+          <button id="fbScheduleBtn" class="hf-button hf-button-secondary" type="button" disabled>Schedule with Meta</button>
+          <button id="fbQueueBtn" class="hf-button hf-button-secondary" type="button" disabled>Queue for automation</button>
           <button id="fbClearBtn" class="hf-button hf-button-secondary" type="reset">Clear draft</button>
         </div>
       </div>
@@ -96,8 +97,19 @@
     <p class="hf-data-note">Media uploads go to a private Supabase bucket. The publishing service creates a time-limited URL only when Meta needs to fetch the file. Uploaded files are not automatically deleted.</p>
   </section>
 
+  <section class="hf-card hf-card-pad fb-history-card" aria-labelledby="fbQueueHeading">
+    <div class="hf-section-head"><div><h2 id="fbQueueHeading">3. Automated publishing queue</h2><p>Posts here are sent by the server after their scheduled time. The queue follows the Facebook platform's daily limit and leaves failed posts visible for review.</p></div><div class="fb-queue-head-actions"><span id="fbQueueStatus" class="hf-status hf-status-pending" role="status">Checking queue</span><button id="fbQueueRefreshBtn" type="button" class="hf-button hf-button-secondary">↻ Refresh queue</button></div></div>
+    <div class="hf-table-wrap" role="region" aria-label="Automated publishing queue; scroll horizontally on small screens" tabindex="0">
+      <table class="hf-table fb-queue-table">
+        <thead><tr><th>Scheduled (Bangladesh)</th><th>Post</th><th>Queue status</th><th>Facebook result</th><th>Action</th></tr></thead>
+        <tbody id="fbQueueBody"><tr><td colspan="5" class="fb-history-empty">Loading automation queue…</td></tr></tbody>
+      </table>
+    </div>
+    <p class="hf-data-note">The automation worker checks due queue items periodically. A queued time is a target, not a guarantee of exact-second publication; a daily limit, disabled platform, missing Page connection, or Meta API error can delay or stop dispatch. Use “Schedule with Meta” for Meta-native scheduled posts.</p>
+  </section>
+
   <section class="hf-card hf-card-pad fb-history-card" aria-labelledby="fbHistoryHeading">
-    <div class="hf-section-head"><div><h2 id="fbHistoryHeading">3. Publishing history</h2><p>Recent API requests, their result, and the returned Facebook ID. A scheduled status means Meta accepted the scheduled post request.</p></div><button id="fbHistoryRefreshBtn" type="button" class="hf-button hf-button-secondary">↻ Refresh history</button></div>
+    <div class="hf-section-head"><div><h2 id="fbHistoryHeading">4. Meta publishing history</h2><p>Recent API requests, their result, and the returned Facebook ID. A scheduled status means Meta accepted the scheduled post request.</p></div><button id="fbHistoryRefreshBtn" type="button" class="hf-button hf-button-secondary">↻ Refresh history</button></div>
     <div class="hf-table-wrap" role="region" aria-label="Facebook publishing history; scroll horizontally on small screens" tabindex="0">
       <table class="hf-table fb-history-table">
         <thead><tr><th>Time</th><th>Post</th><th>Status</th><th>Page</th><th>Facebook result</th></tr></thead>
@@ -110,5 +122,5 @@
 </div>
 <script defer src="./i18n.js?v=20261023-admin-ultimate-v1"></script>
 <script defer src="./shared.js?v=20261026-phase1-light-default"></script>
-<script defer src="./facebook-publishing.js?v=20261024-facebook-publishing-v1"></script>
+<script defer src="./facebook-publishing.js?v=20261026-phase3-automation-queue"></script>
 </body></html>

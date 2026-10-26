@@ -1,4 +1,4 @@
-name: Admin Phase 1–2 Integrity
+name: Admin Phase 1–3 Integrity
 
 on:
   push:
@@ -6,12 +6,18 @@ on:
     paths:
       - "admin/**"
       - "supabase/functions/courier-integration/**"
+      - "supabase/functions/facebook-publishing/**"
+      - "supabase/functions/post-dispatcher/**"
+      - "supabase/migrations/**"
       - "scripts/admin-phase12-check.mjs"
       - ".github/workflows/admin-phase12-integrity.yml"
   pull_request:
     paths:
       - "admin/**"
       - "supabase/functions/courier-integration/**"
+      - "supabase/functions/facebook-publishing/**"
+      - "supabase/functions/post-dispatcher/**"
+      - "supabase/migrations/**"
       - "scripts/admin-phase12-check.mjs"
       - ".github/workflows/admin-phase12-integrity.yml"
   workflow_dispatch:
@@ -21,7 +27,7 @@ permissions:
 
 jobs:
   admin-integrity:
-    name: Validate Phase 1–2 dashboard integrity
+    name: Validate Phase 1–3 dashboard and automation integrity
     runs-on: ubuntu-latest
     steps:
       - name: Check out source
@@ -30,5 +36,14 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
+      - name: Set up Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+          cache: true
+      - name: Type-check changed Edge Functions
+        run: |
+          deno check supabase/functions/facebook-publishing/index.ts
+          deno check supabase/functions/post-dispatcher/index.ts
       - name: Run admin regression checks
         run: node scripts/admin-phase12-check.mjs
