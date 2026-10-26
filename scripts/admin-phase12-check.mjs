@@ -87,9 +87,9 @@ assert.ok(courier.includes('provider === "pathao" ? 220 : 250'), "Frontend addre
 
 
 const overview = read("admin/overview.html");
-assert.ok(overview.includes("তৃতীয় ডিপ্লয়মেন্ট"), "Overview must show the requested temporary third-deployment marker.");
+assert.ok(overview.includes("চতুর্থ ডিপ্লয়মেন্ট"), "Overview must show the requested temporary fourth-deployment marker.");
 assert.ok(overview.includes('class="hf-deployment-marker"'), "Overview deployment marker must use the dedicated accessible component.");
-assert.ok(overview.includes("overview.css?v=20261026-phase3-deployment-marker"), "Overview marker stylesheet must be cache-busted.");
+assert.ok(overview.includes("overview.css?v=20261026-phase4-final-polish"), "Overview marker stylesheet must be cache-busted.");
 
 const facebookPage = read("admin/facebook-publishing.html");
 assert.ok(facebookPage.includes("facebook-publishing.js?v=20261026-phase3-automation-queue"), "Facebook publishing script cache key must include the queue UI update.");
@@ -141,10 +141,7 @@ assert.ok(sharedShell.includes('<div class="admin-main" id="adminMain">'), "The 
 assert.ok(!sharedShell.includes('<main class="admin-main" id="adminMain">'), "Avoid nested <main> landmarks.");
 assert.ok(sharedShell.includes('sidebar.addEventListener("keydown"') && sharedShell.includes('if(event.key==="Tab"&&sidebar.classList.contains("open")'), "Mobile navigation must retain its keyboard handling and focus trap.");
 
-const overview = read("admin/overview.html");
-assert.ok(overview.includes("চতুর্থ ডিপ্লয়মেন্ট"), "Overview must show the requested temporary fourth-deployment marker.");
-assert.ok(overview.includes('class="hf-deployment-marker"'), "Overview marker must use the dedicated accessible component.");
-assert.ok(overview.includes("overview.css?v=20261026-phase4-final-polish"), "Overview stylesheet must be cache-busted.");
+
 
 function relativeLuminance(hex) {
   const channels = hex.slice(1).match(/.{2}/g).map((part) => parseInt(part, 16) / 255);
@@ -159,10 +156,6 @@ assert.ok(contrastRatio("#FFFFFF", "#9F5726") >= 4.5, "Primary button foreground
 assert.ok(contrastRatio("#8B4A1F", "#FFFDF8") >= 4.5, "Light-theme eyebrow text must meet AA contrast.");
 assert.ok(contrastRatio("#E7B083", "#111C2E") >= 4.5, "Dark-theme eyebrow text must meet AA contrast.");
 assert.ok(contrastRatio("#8B4A1F", "#FFFDF8") >= 3, "Focus outline must remain visible against the light paper surface.");
-
-const facebookPage = read("admin/facebook-publishing.html");
-assert.ok(facebookPage.includes("facebook-publishing.js?v=20261026-phase3-automation-queue"), "Facebook publishing script cache key must include the queue UI update.");
-assert.ok(facebookPage.includes("facebook-publishing.css?v=20261026-phase3-automation-queue"), "Facebook publishing stylesheet cache key must include the queue UI update.");
 
 for (const file of unifiedPages) {
   const source = read(join("admin", file));
