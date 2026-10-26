@@ -437,19 +437,43 @@ Deno.serve(async (req: Request) => {
       const nextDay = new Date(new Date(dhakaDay + "T00:00:00+06:00").getTime() + 86400000);
       const dayEnd = nextDay.toISOString();
 
-      const [queuedCount, publishedCount, metaScheduledCount] = await Promise.all([
+      const [
+        queuedCount,
+        overduePendingCount,
+        processingCount,
+        uncertainCount,
+        publishedCount,
+        metaScheduledCount
+      ] = await Promise.all([
         db.from("post_queue").select("id", { count: "exact", head: true })
-          .eq("platform", "facebook").in("status", ["pending", "processing"])
+          .eq("platform", "facebook").eq("status", "pending")
           .gte("publish_at", dayStart).lt("publish_at", dayEnd),
+        // Overdue posts may still be dispatched today, so reserve their quota too.
+        db.from("post_queue").select("id", { count: "exact", head: true })
+          .eq("platform", "facebook").eq("status", "pending")
+          .lt("publish_at", dayStart),
+        db.from("post_queue").select("id", { count: "exact", head: true })
+          .eq("platform", "facebook").eq("status", "processing"),
+        db.from("post_queue").select("id", { count: "exact", head: true })
+          .eq("platform", "facebook").eq("status", "failed")
+          .like("error", "OUTCOME UNCERTAIN:%")
+          .gte("processing_started_at", dayStart).lt("processing_started_at", dayEnd),
         db.from("facebook_publish_history").select("id", { count: "exact", head: true })
           .eq("status", "published").gte("published_at", dayStart).lt("published_at", dayEnd),
         db.from("facebook_publish_history").select("id", { count: "exact", head: true })
           .eq("status", "scheduled").gte("scheduled_at", dayStart).lt("scheduled_at", dayEnd)
       ]);
-      if (queuedCount.error || publishedCount.error || metaScheduledCount.error) {
+      if ([queuedCount, overduePendingCount, processingCount, uncertainCount, publishedCount, metaScheduledCount].some((result) => result.error)) {
         throw new Error("Could not verify the daily publishing limit. Refresh and retry.");
       }
-      const usedSlots = (queuedCount.count || 0) + (publishedCount.count || 0) + (metaScheduledCount.count || 0);
+      const usedSlots = [
+        queuedCount.count,
+        overduePendingCount.count,
+        processingCount.count,
+        uncertainCount.count,
+        publishedCount.count,
+        metaScheduledCount.count
+      ].reduce((sum, count) => sum + (count || 0), 0);
       if (usedSlots >= dailyLimit) {
         throw new Error("The Facebook daily limit of " + dailyLimit + " posts is already reserved for " + dhakaDay + ". Choose another date or review the existing queue.");
       }
