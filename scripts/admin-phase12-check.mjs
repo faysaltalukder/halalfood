@@ -107,6 +107,8 @@ for (const action of ["queue_post", "queue_history", "cancel_queued"]) {
 assert.ok(facebookEdge.includes("claim") || facebookEdge.includes("post_queue"), "Facebook queue action must use the persistent server-side queue.");
 assert.ok(facebookEdge.includes('timeZone: "Asia/Dhaka"'), "Queue daily-limit calculation must use Bangladesh's local day.");
 assert.ok(facebookEdge.includes("createSignedUrl(mediaPath, 3600)"), "Queued private media must be verified without making the bucket public.");
+assert.ok(facebookEdge.includes('postType === "text" && !message'), "Text queue items must have a caption.");
+assert.ok(facebookEdge.includes('postType !== "link" && link'), "Only link posts may store a separate link.");
 
 const dispatcher = read("supabase/functions/post-dispatcher/index.ts");
 assert.ok(dispatcher.includes("check_dispatch_secret"), "Dispatcher must retain its independent secret check.");
@@ -118,6 +120,11 @@ assert.ok(dispatcher.includes('status: "published"'), "Successful queue publishi
 assert.ok(dispatcher.includes("rather than mark it retryable"), "Ambiguous Meta acceptance must not be automatically retried.");
 
 const quotaMigration = read("supabase/migrations/20261026152222_claim_due_posts_with_daily_limit.sql");
+const leaseMigration = read("supabase/migrations/20261026152954_add_post_queue_processing_lease.sql");
+assert.ok(leaseMigration.includes("processing_started_at"), "The queue needs a processing lease to recover timed-out workers.");
+assert.ok(leaseMigration.includes("OUTCOME UNCERTAIN:"), "Interrupted posts must be marked for verification instead of retried.");
+assert.ok(leaseMigration.includes("interval '20 minutes'"), "Worker leases need a bounded stale-recovery threshold.");
+assert.ok(leaseMigration.includes("REVOKE ALL ON FUNCTION public.claim_due_posts_with_daily_limit"), "The quota function must not be publicly executable.");
 assert.ok(quotaMigration.includes("pg_advisory_xact_lock"), "Daily quota claims must be serialized to reduce overlapping-worker overposting.");
 assert.ok(quotaMigration.includes("Asia/Dhaka"), "Daily quota SQL must calculate Bangladesh-local dates.");
 assert.ok(quotaMigration.includes("REVOKE ALL ON FUNCTION public.claim_due_posts_with_daily_limit"), "The definer quota function must not be executable by public roles.");
