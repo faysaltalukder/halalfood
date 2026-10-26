@@ -5,6 +5,8 @@
   const PUBLIC_KEY = "sb_publishable_X32Rb8W-axGIfgFuppdfZQ_jbc38pcL";
   const SITE_ROOT = "https://faysaltalukder.github.io/halalfood/";
   let currentCategories = [];
+  let lastSuccessfulLoadAt = 0;
+  let refreshInFlight = null;
   const CART_ICON = '<svg aria-hidden="true" class="btn-icon" viewBox="0 0 24 24"><path d="M6 6h15l-1.5 9h-12z"></path><circle cx="9" cy="20" r="1.4"></circle><circle cx="18" cy="20" r="1.4"></circle><path d="M2 3h2l1 3"></path></svg>';
   const $ = (selector, root) => (root || document).querySelector(selector);
   const $$ = (selector, root) => Array.from((root || document).querySelectorAll(selector));
@@ -174,7 +176,11 @@
     }
     if (!grid) return;
     if (info.generic) grid.replaceChildren();
-    const records = products.filter(item => item.category_slug === info.slug && item.is_active);
+    const records = products.filter(item => item.category_slug === info.slug && item.is_active).sort((a, b) =>
+      Number(a.sort_order || 0) - Number(b.sort_order || 0) ||
+      (Date.parse(a.created_at || "") || 0) - (Date.parse(b.created_at || "") || 0) ||
+      String(a.name || "").localeCompare(String(b.name || ""))
+    );
     const cardSlugs = new Set($$(".product-card", grid).map(card => $("[data-add-to-cart][data-slug]", card)?.dataset.slug).filter(Boolean));
     $$(".product-card", grid).forEach(card => {
       const slug = $("[data-add-to-cart][data-slug]", card)?.dataset.slug;
@@ -201,16 +207,14 @@
       if (!match) return;
       let categorySlug = match[1];
       try { categorySlug = decodeURIComponent(categorySlug); } catch (_) {}
-      const cardLimit = Math.max(1, track.querySelectorAll(".mrow-card").length);
       const rows = products
         .filter(item => item.is_active && item.category_slug === categorySlug)
         .sort((a, b) =>
           Number(Boolean(b.is_featured)) - Number(Boolean(a.is_featured)) ||
           Number(a.sort_order || 0) - Number(b.sort_order || 0) ||
-          (Date.parse(b.created_at || "") || 0) - (Date.parse(a.created_at || "") || 0) ||
+          (Date.parse(a.created_at || "") || 0) - (Date.parse(b.created_at || "") || 0) ||
           String(a.name || "").localeCompare(String(b.name || ""))
-        )
-        .slice(0, cardLimit);
+        );
       track.replaceChildren(...rows.map(item => makeProductCard(item, "mrow")));
       if (!rows.length) {
         const empty = document.createElement("p");
@@ -370,10 +374,12 @@
     const previous = window.PRODUCTS_DATA.slice();
     const active = products.filter(item => item.is_active).map(item => {
       const old = previous.find(entry => String(entry.slug || "") === String(item.slug || "")) || {};
+      const display = priceText(item);
       return Object.assign(old, {
         slug: item.slug, name: item.name, category: item.category || "",
         categorySlug: item.category_slug || "",
-        price: priceText(item), image: item.image_url || "",
+        price: display, displayPrice: display, rawPrice: Number(item.price) || 0,
+        image: item.image_url || "", imageUrl: item.image_url || "",
         shortDescription: item.short_description || "",
         fullDescription: item.full_description || item.description || "",
         cmsCreated: Boolean(item.cms_created), cmsManaged: Boolean(item.cms_managed)
@@ -391,25 +397,33 @@
       }
     } catch (_) {}
     window.HALAL_LIVE_CATALOG_READY = true;
-    window.dispatchEvent(new CustomEvent("halalcatalog:updated", { detail: { products: active, categories } }));
+    window.dispatchEvent(new CustomEvent("halalcatalog:updated", { detail: { products: active, rawProducts: products, categories } }));
     window.dispatchEvent(new CustomEvent("halalcart:updated", { detail: window.HALAL_CART_API?.read?.() || [] }));
   }
   async function start() {
-    const info = pathInfo();
-    const [products, categories] = await Promise.all([
-      readTable("products", { select: "id,name,slug,category,category_slug,price,unit_type,display_price,image_url,short_description,full_description,description,is_active,is_featured,cms_created,cms_managed,sort_order,seo_title,seo_description,stock_quantity,created_at", is_active: "eq.true", order: "sort_order.asc,name.asc", limit: "1000" }),
-      readTable("categories", { select: "id,name,slug,description,image_url,is_active,cms_created,cms_managed,sort_order", is_active: "eq.true", order: "sort_order.asc,name.asc", limit: "500" })
-    ]);
-    currentCategories = categories;
-    // Products assigned to a hidden category should not leak into home, search or cart.
-    const visibleProducts = products.filter(product =>
-      categories.some(category => category.slug === product.category_slug && category.is_active)
-    );
-    syncProductData(visibleProducts, categories);
-    syncCategoryMenus(categories);
-    if (info.kind === "home") renderHome(visibleProducts, categories);
-    else if (info.kind === "category") renderCategory(visibleProducts, categories, info);
-    else if (info.kind === "product") renderProductDetail(visibleProducts, info);
+    if (refreshInFlight) return refreshInFlight;
+    refreshInFlight = (async () => {
+      const info = pathInfo();
+      const [products, categories] = await Promise.all([
+        readTable("products", { select: "id,name,slug,category,category_slug,price,unit_type,display_price,image_url,short_description,full_description,description,is_active,is_featured,cms_created,cms_managed,sort_order,seo_title,seo_description,stock_quantity,created_at", is_active: "eq.true", order: "sort_order.asc,name.asc", limit: "1000" }),
+        readTable("categories", { select: "id,name,slug,description,image_url,is_active,cms_created,cms_managed,sort_order", is_active: "eq.true", order: "sort_order.asc,name.asc", limit: "500" })
+      ]);
+      currentCategories = categories;
+      const visibleProducts = products.filter(product =>
+        categories.some(category => category.slug === product.category_slug && category.is_active)
+      );
+      syncProductData(visibleProducts, categories);
+      syncCategoryMenus(categories);
+      if (info.kind === "home") renderHome(visibleProducts, categories);
+      else if (info.kind === "category") renderCategory(visibleProducts, categories, info);
+      else if (info.kind === "product") renderProductDetail(visibleProducts, info);
+      lastSuccessfulLoadAt = Date.now();
+    })();
+    try {
+      return await refreshInFlight;
+    } finally {
+      refreshInFlight = null;
+    }
   }
   window.addEventListener("halalnav:ready", () => { if (currentCategories.length) syncCategoryMenus(currentCategories); });
   const initLiveCatalog = () => start().catch(error => {
@@ -427,4 +441,14 @@
   });
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", initLiveCatalog, { once: true });
   else initLiveCatalog();
+
+  const refreshVisibleCatalog = () => {
+    if (document.visibilityState === "hidden" || Date.now() - lastSuccessfulLoadAt < 3000) return;
+    start().catch(error => console.warn("Live catalog refresh failed; retaining the last rendered catalog.", error));
+  };
+  window.addEventListener("focus", refreshVisibleCatalog);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") refreshVisibleCatalog();
+  });
+  window.setInterval(refreshVisibleCatalog, 60000);
 })();
