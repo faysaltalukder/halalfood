@@ -1,4 +1,4 @@
-name: Admin Phase 1–3 Integrity
+name: Admin Dashboard Quality Gate
 
 on:
   push:
@@ -27,7 +27,7 @@ permissions:
 
 jobs:
   admin-integrity:
-    name: Validate Phase 1–3 dashboard and automation integrity
+    name: Validate Phase 1–4 accessibility and integration integrity
     runs-on: ubuntu-latest
     steps:
       - name: Check out source
@@ -45,5 +45,5 @@ jobs:
         run: |
           deno check supabase/functions/facebook-publishing/index.ts
           deno check supabase/functions/post-dispatcher/index.ts
-      - name: Run admin regression checks
+      - name: Run final admin quality checks
         run: node scripts/admin-phase12-check.mjs
