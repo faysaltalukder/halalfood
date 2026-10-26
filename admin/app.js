@@ -638,7 +638,7 @@ window.HFAdminReady.then(async H=>{
     if(recipientAddress.length>250)throw new Error("The delivery address must be 250 characters or fewer.");
     // Accept addresses written in normal local language; punctuation/component-count is not a courier requirement.
     // The admin must still confirm the address is real and sufficiently specific before live booking.
-    const {data:freshOrder,error:orderReadError}=await client.from("orders").select("id,order_number,customer_name,customer_phone,customer_email,delivery_address,total,status,payment_method,notes,order_items").eq("id",orderId).maybeSingle();
+    const {data:freshOrder,error:orderReadError}=await client.from("orders").select("id,order_number,customer_name,customer_phone,customer_email,delivery_address,total,status,payment_method,notes,order_items(id,product_id,product_name,quantity,unit,unit_price,line_total,product_image_url)").eq("id",orderId).maybeSingle();
     if(orderReadError||!freshOrder)throw new Error("Could not verify the latest order record. Refresh and try again.");
     if(!["pending","processing"].includes(freshOrder.status))throw new Error("The order changed to "+freshOrder.status+" and can no longer be booked from this action.");
     if(String(freshOrder.payment_method||"cash_on_delivery").toLowerCase()!=="cash_on_delivery")throw new Error("The latest order is not marked Cash on Delivery.");
