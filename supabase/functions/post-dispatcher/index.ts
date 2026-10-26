@@ -56,15 +56,22 @@ async function graphPost(path: string, token: string, fields: Record<string, str
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 45000);
   try {
-    const response = await fetch(GRAPH + "/" + path, {
-      method: "POST",
-      headers: {
-        Authorization: "Bearer " + token,
-        "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
-      },
-      body: new URLSearchParams(fields).toString(),
-      signal: controller.signal,
-    });
+    let response: Response;
+    try {
+      response = await fetch(GRAPH + "/" + path, {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer " + token,
+          "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+        },
+        body: new URLSearchParams(fields).toString(),
+        signal: controller.signal,
+      });
+    } catch {
+      throw Object.assign(new Error("Meta did not return a definitive response. Verify the Facebook Page before manually recovering this queued post."), {
+        providerAmbiguous: true,
+      });
+    }
     const data = await response.json().catch(() => ({}));
     if (!response.ok || data?.error) {
       const providerError = data?.error || {};
@@ -74,6 +81,7 @@ async function graphPost(path: string, token: string, fields: Record<string, str
         providerCode: clean(providerError.code, 40),
         providerSubcode: clean(providerError.error_subcode, 40),
         httpStatus: response.status,
+        providerAmbiguous: response.status >= 500,
       });
     }
     return data as Row;
@@ -123,7 +131,9 @@ async function publishQueuedPost(post: Row, page: Row, token: string) {
 
   const objectId = clean(response?.post_id || response?.id, 180);
   if (!objectId) {
-    throw new Error("Meta returned no post ID. The result may be uncertain; verify the Facebook Page before attempting another post.");
+    throw Object.assign(new Error("Meta returned no post ID. The result may be uncertain; verify the Facebook Page before attempting another post."), {
+      providerAmbiguous: true,
+    });
   }
 
   let permalink = "";
@@ -140,10 +150,15 @@ async function publishQueuedPost(post: Row, page: Row, token: string) {
   return { postType, message, mediaPath: clean(post.media_path, 500) || null, objectId, permalink };
 }
 
-async function recordFailure(post: Row, page: Row, message: string, providerCode = "") {
+async function recordFailure(post: Row, page: Row, message: string, providerCode = "", uncertain = false) {
   const now = new Date().toISOString();
-  const safeMessage = clean(message, 500) || "The automated post failed.";
-  await db.from("post_queue").update({ status: "failed", error: safeMessage }).eq("id", post.id);
+  const details = clean(message, 420) || "The automated post failed.";
+  const safeMessage = uncertain
+    ? "OUTCOME UNCERTAIN: " + details + " Verify the Facebook Page before manual recovery; the queue will not retry automatically."
+    : details;
+  const queuePatch: Row = { status: "failed", error: safeMessage };
+  if (!uncertain) queuePatch.processing_started_at = null;
+  await db.from("post_queue").update(queuePatch).eq("id", post.id);
   const { error } = await db.from("facebook_publish_history").insert({
     page_id: String(page.page_id),
     page_name: clean(page.page_name, 160) || "Facebook Page",
@@ -210,9 +225,18 @@ Deno.serve(async (req: Request) => {
     let uncertainCount = 0;
     for (const post of due as Row[]) {
       let providerAccepted = false;
+      let providerResult: Row | null = null;
       try {
         const result = await publishQueuedPost(post, page, token);
+        providerResult = result;
         providerAccepted = true;
+        // Persist the provider ID while the row is still quota-reserving/processing.
+        // A later reconcile can repair status if the history write succeeds but the final update fails.
+        await db.from("post_queue").update({
+          external_id: result.objectId,
+          permalink: result.permalink || null,
+          error: null,
+        }).eq("id", post.id).eq("status", "processing");
         const now = new Date().toISOString();
         const { error: historyError } = await db.from("facebook_publish_history").insert({
           page_id: String(page.page_id),
@@ -245,8 +269,9 @@ Deno.serve(async (req: Request) => {
           status: "published",
           external_id: result.objectId,
           permalink: result.permalink || null,
+          processing_started_at: null,
           error: null,
-        }).eq("id", post.id);
+        }).eq("id", post.id).eq("status", "processing");
         if (queueSaveError) {
           // The successful history row still reserves quota if the queue status update fails.
           uncertainCount++;
@@ -254,17 +279,23 @@ Deno.serve(async (req: Request) => {
         }
         publishedCount++;
       } catch (err) {
-        const e = err as Error & { providerCode?: string };
-        const safeMessage = clean(e?.message, 500) || "Automated publishing failed.";
-        if (providerAccepted) {
-          await db.from("post_queue").update({
-            error: "Meta accepted this post, but the dashboard could not finish recording it. Verify the Page before manually recovering this row.",
-          }).eq("id", post.id);
-          uncertainCount++;
+        const e = err as Error & { providerCode?: string; providerAmbiguous?: boolean; httpStatus?: number };
+        const safeMessage = clean(e?.message, 420) || "Automated publishing failed.";
+        if (providerAccepted && providerResult) {
+          // Provider accepted the post: never make this row eligible for a second send.
+          const { error: reconcileError } = await db.from("post_queue").update({
+            external_id: providerResult.objectId,
+            permalink: providerResult.permalink || null,
+            error: "Meta accepted this post, but the dashboard could not finish recording it. Verify the Page before manual recovery.",
+          }).eq("id", post.id).eq("status", "processing");
+          if (reconcileError) uncertainCount++;
+          else uncertainCount++;
         } else {
-          const historySaved = await recordFailure(post, page, safeMessage, e?.providerCode || "");
-          if (historySaved) failedCount++;
-          else failedCount++;
+          const historySaved = await recordFailure(
+            post, page, safeMessage, e?.providerCode || "", Boolean(e?.providerAmbiguous),
+          );
+          failedCount++;
+          if (!historySaved) uncertainCount++;
         }
       }
     }
