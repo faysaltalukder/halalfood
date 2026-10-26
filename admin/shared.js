@@ -446,7 +446,7 @@ function makeShell(){
   }
   syncChartsForTheme();
  };
- let savedTheme="dark";try{savedTheme=localStorage.getItem(themeKey)||"dark";}catch(_themeReadError){}
+ let savedTheme="light";try{savedTheme=localStorage.getItem(themeKey)||"light";}catch(_themeReadError){}
  applyTheme(savedTheme);
  themeBtn?.addEventListener("click",()=>{const next=document.documentElement.dataset.adminTheme==="light"?"dark":"light";try{localStorage.setItem(themeKey,next);}catch(_themeWriteError){}applyTheme(next);});
  const modeBtn=document.getElementById("modeToggle");
