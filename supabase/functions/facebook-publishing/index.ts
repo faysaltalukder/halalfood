@@ -375,6 +375,109 @@ Deno.serve(async (req: Request) => {
       await db.from("facebook_page_accounts").update({ page_name: clean(checked.name, 160), last_verified_at: new Date().toISOString() }).eq("page_id", String(page.page_id));
       return json({ success: true, pageId: String(checked.id), pageName: clean(checked.name, 160), verifiedAt: new Date().toISOString() });
     }
+
+    if (action === "queue_history") {
+      const { data, error } = await db.from("post_queue")
+        .select("id,platform,post_type,message,link,media_path,publish_at,status,external_id,permalink,error,created_by,created_at")
+        .eq("platform", "facebook")
+        .order("publish_at", { ascending: false })
+        .limit(50);
+      if (error) throw new Error("Could not load the automated publishing queue.");
+      return json({ success: true, rows: data || [] });
+    }
+    if (action === "cancel_queued") {
+      const queueId = clean(body?.queueId, 80);
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(queueId)) {
+        return json({ success: false, error: "Choose a valid queued post." }, 400);
+      }
+      const { data, error } = await db.from("post_queue")
+        .update({ status: "cancelled", error: null })
+        .eq("id", queueId).eq("platform", "facebook").eq("status", "pending")
+        .select("id,status").maybeSingle();
+      if (error) throw new Error("Could not cancel this queued post.");
+      if (!data) return json({ success: false, error: "Only a pending post can be cancelled. Refresh the queue to check its latest status." }, 409);
+      return json({ success: true, queueId: data.id, status: data.status });
+    }
+    if (action === "queue_post") {
+      const page = await selectedPage(db);
+      if (!canPublish(page)) return json({ success: false, error: "This Page no longer has the publishing permissions required. Reconnect Facebook and select the Page again." }, 403);
+
+      const postType = clean(body?.postType, 20).toLowerCase();
+      const message = clean(body?.message, 60000);
+      const link = clean(body?.link, 2000);
+      const mediaPath = clean(body?.mediaPath, 500);
+      const scheduledAtRaw = clean(body?.scheduledAt, 80);
+      const scheduledAt = scheduledAtRaw ? new Date(scheduledAtRaw) : null;
+      if (!["text", "link", "photo", "video"].includes(postType)) throw new Error("Choose text, link, photo, or video for this post.");
+      if (!scheduledAtRaw || !scheduledAt || Number.isNaN(scheduledAt.getTime())) throw new Error("Choose a valid schedule date and time for the automated queue.");
+      const delay = scheduledAt.getTime() - Date.now();
+      if (delay < 10 * 60 * 1000) throw new Error("Automated publishing requires a time at least 10 minutes in the future.");
+      if (delay > 75 * 24 * 60 * 60 * 1000) throw new Error("Choose a scheduled time within the next 75 days.");
+      if (!message && !link && !mediaPath) throw new Error("Write a caption or attach a link/photo/video before queueing.");
+      if (postType === "link" && !/^https?:\/\/\S+$/i.test(link)) throw new Error("Enter a valid public http or https link.");
+      if ((postType === "photo" || postType === "video") && !mediaPath) throw new Error("Choose and upload the media file first.");
+      if ((postType === "text" || postType === "link") && mediaPath) throw new Error("Media is not expected for a text or link post.");
+      if (mediaPath && (!mediaPath.startsWith("posts/") || mediaPath.includes("..") || mediaPath.startsWith("/"))) {
+        throw new Error("Invalid media upload path.");
+      }
+
+      const { data: platform, error: platformError } = await db.from("platform_settings")
+        .select("enabled,daily_limit").eq("platform", "facebook").maybeSingle();
+      if (platformError || !platform) throw new Error("Could not verify Facebook automation settings.");
+      if (!platform.enabled) throw new Error("Facebook automated publishing is disabled in platform settings.");
+      const dailyLimit = Math.max(0, Math.min(100, Number(platform.daily_limit) || 0));
+      if (dailyLimit < 1) throw new Error("Facebook's daily automated publishing limit is set to zero.");
+
+      const dhakaDay = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Dhaka", year: "numeric", month: "2-digit", day: "2-digit"
+      }).format(scheduledAt);
+      const dayStart = new Date(dhakaDay + "T00:00:00+06:00").toISOString();
+      const nextDay = new Date(new Date(dhakaDay + "T00:00:00+06:00").getTime() + 86400000);
+      const dayEnd = nextDay.toISOString();
+
+      const [queuedCount, publishedCount, metaScheduledCount] = await Promise.all([
+        db.from("post_queue").select("id", { count: "exact", head: true })
+          .eq("platform", "facebook").in("status", ["pending", "processing", "published"])
+          .gte("publish_at", dayStart).lt("publish_at", dayEnd),
+        db.from("facebook_publish_history").select("id", { count: "exact", head: true })
+          .eq("status", "published").gte("published_at", dayStart).lt("published_at", dayEnd),
+        db.from("facebook_publish_history").select("id", { count: "exact", head: true })
+          .eq("status", "scheduled").gte("scheduled_at", dayStart).lt("scheduled_at", dayEnd)
+      ]);
+      if (queuedCount.error || publishedCount.error || metaScheduledCount.error) {
+        throw new Error("Could not verify the daily publishing limit. Refresh and retry.");
+      }
+      const usedSlots = (queuedCount.count || 0) + (publishedCount.count || 0) + (metaScheduledCount.count || 0);
+      if (usedSlots >= dailyLimit) {
+        throw new Error("The Facebook daily limit of " + dailyLimit + " posts is already reserved for " + dhakaDay + ". Choose another date or review the existing queue.");
+      }
+
+      if (mediaPath) {
+        const { data: signed, error: mediaError } = await db.storage.from(MEDIA_BUCKET).createSignedUrl(mediaPath, 3600);
+        if (mediaError || !signed?.signedUrl) throw new Error("The uploaded media could not be verified in private storage. Upload it again and retry.");
+      }
+
+      const { data: row, error: insertError } = await db.from("post_queue").insert({
+        platform: "facebook",
+        post_type: postType,
+        message,
+        link: link || null,
+        media_path: mediaPath || null,
+        publish_at: scheduledAt.toISOString(),
+        status: "pending",
+        created_by: ADMIN_EMAIL
+      }).select("id,status,publish_at").single();
+      if (insertError || !row) throw new Error("Could not save the automated post. Refresh the queue before retrying.");
+      return json({
+        success: true,
+        queueId: row.id,
+        status: row.status,
+        postType,
+        scheduledAt: row.publish_at,
+        dailyLimit,
+        remainingSlots: Math.max(0, dailyLimit - usedSlots - 1)
+      });
+    }
     if (action === "history") {
       const { data, error } = await db.from("facebook_publish_history").select("id,page_id,page_name,post_type,status,message,media_object_path,facebook_post_id,permalink_url,scheduled_at,published_at,error_code,error_message,created_by,created_at,updated_at").order("created_at", { ascending: false }).limit(50);
       if (error) throw new Error("Could not load Facebook publishing history.");
