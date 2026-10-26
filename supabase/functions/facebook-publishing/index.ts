@@ -391,7 +391,7 @@ Deno.serve(async (req: Request) => {
         return json({ success: false, error: "Choose a valid queued post." }, 400);
       }
       const { data, error } = await db.from("post_queue")
-        .update({ status: "cancelled", error: null })
+        .update({ status: "cancelled", error: null, processing_started_at: null })
         .eq("id", queueId).eq("platform", "facebook").eq("status", "pending")
         .select("id,status").maybeSingle();
       if (error) throw new Error("Could not cancel this queued post.");
