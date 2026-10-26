@@ -376,11 +376,11 @@
       if (!trackButton) {
         trackButton = document.createElement("a");
         trackButton.className = "header-track-order";
-        trackButton.href = "track-order.html";
         trackButton.setAttribute("aria-label", "Track Order");
         trackButton.innerHTML = '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 7.5h11v9H3z"></path><path d="M14 10h3.5l3.5 3.5V16h-7z"></path><circle cx="7" cy="18" r="1.5"></circle><circle cx="18" cy="18" r="1.5"></circle><path d="M14 13h6"></path></svg><span>Track Order</span>';
         actions.appendChild(trackButton);
       }
+      trackButton.href = new URL("track-order.html", siteBase).href;
 
       if (actions.querySelector("[data-cart-open]")) return;
       const link = document.createElement("a");
