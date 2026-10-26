@@ -6,8 +6,8 @@ import vm from "node:vm";
 
 const root = process.cwd();
 const adminDir = join(root, "admin");
-const sharedCssVersion = "20261026-full-dashboard-v2";
-const sharedJsVersion = "20261026-phase1-light-default";
+const sharedCssVersion = "20261026-phase4-a11y-performance";
+const sharedJsVersion = "20261026-phase4-a11y-performance";
 const appJsVersion = "20261026-phase12-audit-hardening";
 const read = (path) => readFileSync(join(root, path), "utf8");
 
@@ -23,6 +23,11 @@ for (const file of unifiedPages) {
   if (source.includes("./app.js")) {
     assert.ok(source.includes(`app.js?v=${appJsVersion}`), `${file}: stale or missing app.js cache key.`);
   }
+
+  const mainTag = (source.match(/<main\b[^>]*\bid=["']pageContent["'][^>]*>/i) || [])[0];
+  assert.ok(mainTag, `${file}: missing main#pageContent landmark.`);
+  assert.ok(/\btabindex=["']-1["']/.test(mainTag), `${file}: main content must be programmatically focusable for the skip link.`);
+  assert.equal((source.match(/<main\b/gi) || []).length, 1, `${file}: expected one main landmark in the source page.`);
 
   const ids = [...source.matchAll(/\bid\s*=\s*["']([^"']+)["']/g)].map((match) => match[1]);
   const seen = new Set();
@@ -130,6 +135,58 @@ assert.ok(quotaMigration.includes("Asia/Dhaka"), "Daily quota SQL must calculate
 assert.ok(quotaMigration.includes("REVOKE ALL ON FUNCTION public.claim_due_posts_with_daily_limit"), "The definer quota function must not be executable by public roles.");
 assert.ok(quotaMigration.includes("TO service_role"), "Only service_role should execute the queue claim helper.");
 
+const sharedShell = read("admin/shared.js");
+assert.ok(sharedShell.includes('class="admin-skip-link" href="#pageContent"'), "The shared shell must expose a skip-to-main link.");
+assert.ok(sharedShell.includes('<div class="admin-main" id="adminMain">'), "The shared shell wrapper must not create a nested main landmark.");
+assert.ok(!sharedShell.includes('<main class="admin-main" id="adminMain">'), "Avoid nested <main> landmarks.");
+assert.ok(sharedShell.includes('sidebar.addEventListener("keydown"') && sharedShell.includes('if(event.key==="Tab"&&sidebar.classList.contains("open")'), "Mobile navigation must retain its keyboard handling and focus trap.");
+
+const overview = read("admin/overview.html");
+assert.ok(overview.includes("চতুর্থ ডিপ্লয়মেন্ট"), "Overview must show the requested temporary fourth-deployment marker.");
+assert.ok(overview.includes('class="hf-deployment-marker"'), "Overview marker must use the dedicated accessible component.");
+assert.ok(overview.includes("overview.css?v=20261026-phase4-final-polish"), "Overview stylesheet must be cache-busted.");
+
+function relativeLuminance(hex) {
+  const channels = hex.slice(1).match(/.{2}/g).map((part) => parseInt(part, 16) / 255);
+  const linear = channels.map((value) => value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4);
+  return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2];
+}
+function contrastRatio(foreground, background) {
+  const a = relativeLuminance(foreground), b = relativeLuminance(background);
+  return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+}
+assert.ok(contrastRatio("#FFFFFF", "#9F5726") >= 4.5, "Primary button foreground/background must meet AA contrast for normal text.");
+assert.ok(contrastRatio("#8B4A1F", "#FFFDF8") >= 4.5, "Light-theme eyebrow text must meet AA contrast.");
+assert.ok(contrastRatio("#E7B083", "#111C2E") >= 4.5, "Dark-theme eyebrow text must meet AA contrast.");
+assert.ok(contrastRatio("#8B4A1F", "#FFFDF8") >= 3, "Focus outline must remain visible against the light paper surface.");
+
+const facebookPage = read("admin/facebook-publishing.html");
+assert.ok(facebookPage.includes("facebook-publishing.js?v=20261026-phase3-automation-queue"), "Facebook publishing script cache key must include the queue UI update.");
+assert.ok(facebookPage.includes("facebook-publishing.css?v=20261026-phase3-automation-queue"), "Facebook publishing stylesheet cache key must include the queue UI update.");
+
+for (const file of unifiedPages) {
+  const source = read(join("admin", file));
+  const labelPairs = [...source.matchAll(/<label\b([^>]*)>[\s\S]*?<\/label>/gi)].map((match) => ({
+    start: match.index,
+    end: match.index + match[0].length,
+    html: match[0],
+    attrs: match[1],
+  }));
+  const explicitFor = new Set(labelPairs.map((label) => (label.attrs.match(/\bfor=["']([^"']+)["']/i) || [])[1]).filter(Boolean));
+  const unnamedControls = [];
+  for (const match of source.matchAll(/<(input|select|textarea)\b([^>]*)>/gi)) {
+    const attrs = match[2];
+    const type = (attrs.match(/\btype=["']([^"']+)["']/i) || [])[1]?.toLowerCase() || "";
+    if (["hidden", "submit", "button", "reset", "image"].includes(type)) continue;
+    if (/\baria-label=["'][^"']+["']/i.test(attrs) || /\baria-labelledby=["'][^"']+["']/i.test(attrs)) continue;
+    const id = (attrs.match(/\bid=["']([^"']+)["']/i) || [])[1];
+    const wrapped = labelPairs.some((label) => match.index >= label.start && match.index < label.end);
+    if (wrapped || (id && explicitFor.has(id))) continue;
+    unnamedControls.push(id || type || match[1]);
+  }
+  assert.equal(unnamedControls.length, 0, `${file}: form controls without an accessible name: ${unnamedControls.join(", ")}`);
+}
+
 const css = read("admin/shared.css")
   .replace(/\/\*[\s\S]*?\*\//g, "")
   .replace(/"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'/g, '""');
@@ -141,4 +198,4 @@ for (const char of css) {
 }
 assert.equal(braceDepth, 0, "admin/shared.css contains unbalanced braces.");
 
-console.log(`Admin Phase 1–3 integrity passed: ${unifiedPages.length} pages, JavaScript syntax, cache keys, IDs, assets, theme defaults, courier checks, finance guards, Facebook queue wiring, quota safeguards, deployment marker, and CSS structure.`);
+console.log(`Admin Phase 1–4 quality gate passed: ${unifiedPages.length} pages, semantic main landmarks, skip navigation, named form controls, focus behavior, contrast, JS syntax, cache keys, IDs, assets, courier checks, finance guards, Facebook queue safety, quota safeguards, deployment marker, and CSS structure.`);
