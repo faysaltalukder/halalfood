@@ -467,4 +467,59 @@
     if (document.visibilityState === "visible") refreshVisibleCatalog();
   });
   window.setInterval(refreshVisibleCatalog, 60000);
+
+  // Supabase Realtime makes admin catalog edits visible without waiting for the poll.
+  // The public client uses only the publishable key; RLS still governs which rows are visible.
+  let realtimeClientPromise = null;
+  function connectRealtimeCatalog() {
+    if (realtimeClientPromise) return realtimeClientPromise;
+    realtimeClientPromise = new Promise((resolve, reject) => {
+      const createConnection = () => {
+        try {
+          if (!window.supabase?.createClient) throw new Error("Supabase client library is unavailable.");
+          const client = window.supabase.createClient(API_ROOT, PUBLIC_KEY, {
+            auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
+          });
+          client.channel("halal-live-catalog")
+            .on("postgres_changes", { event: "*", schema: "public", table: "products" }, () => {
+              start().catch(error => console.warn("Live product refresh failed.", error));
+            })
+            .on("postgres_changes", { event: "*", schema: "public", table: "categories" }, () => {
+              start().catch(error => console.warn("Live category refresh failed.", error));
+            })
+            .subscribe(status => {
+              if (status === "SUBSCRIBED") resolve(client);
+              else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+                console.warn("Realtime catalog subscription is unavailable; periodic refresh remains enabled.");
+              }
+            });
+        } catch (error) {
+          reject(error);
+        }
+      };
+      if (window.supabase?.createClient) {
+        createConnection();
+        return;
+      }
+      const existing = Array.from(document.scripts).find(script => /supabase-js@2\.45\.4/.test(script.src));
+      if (existing) {
+        existing.addEventListener("load", createConnection, { once: true });
+        existing.addEventListener("error", () => reject(new Error("Could not load Supabase client library.")), { once: true });
+        if (window.supabase?.createClient) createConnection();
+        return;
+      }
+      const script = document.createElement("script");
+      script.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4";
+      script.async = true;
+      script.onload = createConnection;
+      script.onerror = () => reject(new Error("Could not load Supabase client library."));
+      document.head.appendChild(script);
+    });
+    realtimeClientPromise.catch(error => {
+      console.warn("Realtime catalog subscription could not start; periodic refresh remains enabled.", error);
+      realtimeClientPromise = null;
+    });
+    return realtimeClientPromise;
+  }
+  connectRealtimeCatalog().catch(() => {});
 })();
