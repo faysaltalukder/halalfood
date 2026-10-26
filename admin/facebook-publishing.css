@@ -55,3 +55,14 @@ html[data-admin-theme="dark"] body[data-page="facebook-publishing"] .fb-publish-
 html[data-admin-theme="dark"] body[data-page="facebook-publishing"] .fb-mini-link{color:#97c4ff}
 @media(max-width:900px){.fb-connection-grid{grid-template-columns:minmax(0,1fr)}.fb-schedule-row{grid-template-columns:minmax(0,1fr)}.fb-compose-buttons{justify-content:flex-start}}
 @media(max-width:560px){.fb-connection-panel{padding:13px}.fb-copy-row{align-items:stretch;flex-direction:column}.fb-copy-row .hf-button{width:100%}.fb-page-actions{display:grid;grid-template-columns:minmax(0,1fr)}.fb-page-actions .hf-button{width:100%}.fb-compose-buttons{display:grid;grid-template-columns:minmax(0,1fr);width:100%}.fb-compose-buttons .hf-button{width:100%}.fb-history-table{min-width:760px}.fb-publish-hero .page-actions{display:flex}.fb-connection-grid{gap:12px}}
+
+
+/* Automated queue: separate operational scheduling from Meta-native scheduling. */
+.fb-queue-head-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+.fb-queue-table{min-width:1040px}
+.fb-queue-copy{max-width:320px;white-space:normal;overflow-wrap:anywhere}
+.fb-queue-copy strong{display:block}
+.fb-queue-copy small,.fb-queue-detail{display:block;margin-top:4px;font-size:10px;line-height:1.45;color:var(--hf-muted);overflow-wrap:anywhere}
+.fb-queue-error{display:block;margin-top:5px;max-width:300px;font-size:10px;color:var(--hf-red);white-space:normal;overflow-wrap:anywhere}
+.fb-queue-action{white-space:nowrap}
+@media(max-width:740px){.fb-queue-head-actions{width:100%;justify-content:flex-start}.fb-queue-table{min-width:940px}}
