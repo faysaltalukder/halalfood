@@ -1,5 +1,12 @@
 (() => {
 "use strict";
+function normalizeCourierMobile(value){
+ let digits=String(value??"").replace(/\D/g,"");
+ if(digits.startsWith("00880"))digits="0"+digits.slice(5);
+ else if(digits.startsWith("880"))digits="0"+digits.slice(3);
+ if(digits.length!==11||!digits.startsWith("01"))return "";
+ return digits;
+}
 window.HFAdminReady.then(async H=>{
  if(!H)return;
  const {client,ADMIN_EMAIL,esc,money,shortNum,dateTime,dateOnly,toast,audit,signedQuery,downloadFile,csvText,slugify,rangeQuery,fetchOrders,fetchEvents,fetchProducts,fetchCategories,fetchPosts,fetchFinance,palette,colorSet,chartTheme,drawChart,groupBy,lastDateKeys,makeStatus,makeEmpty,showTableMessage,statusClass,charts}=H;
@@ -635,15 +642,17 @@ window.HFAdminReady.then(async H=>{
     if(provider==="redx"&&redxLoadedDistrict.toLowerCase()!==String($("confirmBookRedxDistrict").value||"").trim().toLowerCase())throw new Error("The destination district changed. Reload the delivery areas before booking.");
     const recipientAddress=String($("confirmBookAddress").value||"").trim();
     if(recipientAddress.length<10)throw new Error("The saved address is too short. Enter the full house/road or village, area/upazila and district address (at least 10 characters).");
-    if(recipientAddress.length>250)throw new Error("The delivery address must be 250 characters or fewer.");
+    const providerAddressLimit=provider==="pathao"?220:250;
+    if(recipientAddress.length>providerAddressLimit)throw new Error(provider==="pathao"?"Pathao delivery addresses must be 220 characters or fewer. Shorten the address without removing essential location details.":"The delivery address must be 250 characters or fewer.");
     // Accept addresses written in normal local language; punctuation/component-count is not a courier requirement.
     // The admin must still confirm the address is real and sufficiently specific before live booking.
     const {data:freshOrder,error:orderReadError}=await client.from("orders").select("id,order_number,customer_name,customer_phone,customer_email,delivery_address,total,status,payment_method,notes,order_items(id,product_id,product_name,quantity,unit,unit_price,line_total,product_image_url)").eq("id",orderId).maybeSingle();
     if(orderReadError||!freshOrder)throw new Error("Could not verify the latest order record. Refresh and try again.");
     if(!["pending","processing"].includes(freshOrder.status))throw new Error("The order changed to "+freshOrder.status+" and can no longer be booked from this action.");
     if(String(freshOrder.payment_method||"cash_on_delivery").toLowerCase()!=="cash_on_delivery")throw new Error("The latest order is not marked Cash on Delivery.");
-    if(!String(freshOrder.customer_name||"").trim())throw new Error("The saved order has no customer name. Verify the customer details before booking.");
-    if(String(freshOrder.customer_phone||"").replace(/\D/g,"").length<8)throw new Error("The saved order has no usable customer phone number. Verify the customer contact before booking.");
+    const freshCustomerName=String(freshOrder.customer_name||"").trim();
+    if(freshCustomerName.length<3||freshCustomerName.length>100)throw new Error("The saved customer name must be between 3 and 100 characters. Correct the order details before booking.");
+    if(!normalizeCourierMobile(freshOrder.customer_phone))throw new Error("The saved phone number must be a valid Bangladeshi mobile number (11 digits beginning with 01; +880/00880 formats are accepted). Correct the order details before booking.");
     const freshTotal=Number(freshOrder.total);
     if(!Number.isFinite(freshTotal)||freshTotal<=0)throw new Error("The saved COD amount is invalid. Verify the order total before booking.");
     const freshItems=Array.isArray(freshOrder.order_items)?freshOrder.order_items:[];
