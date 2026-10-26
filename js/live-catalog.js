@@ -347,6 +347,37 @@
         if (match && !categories.some(cat => cat.slug === decodeURIComponent(match[1]) && cat.is_active)) link.remove();
       });
     }
+    const footerCategorySection = $(".footer-grid > div").find(section =>
+      ($("h4", section)?.textContent || "").trim().toLowerCase() === "categories"
+    );
+    const footerCategoryList = footerCategorySection ? $("ul", footerCategorySection) : null;
+    if (footerCategoryList) {
+      const slugFromHref = href => {
+        const match = String(href || "").match(/categories\/([^/?#]+)\.html/i) || String(href || "").match(/[?&]slug=([^&]+)/);
+        if (!match) return "";
+        try { return decodeURIComponent(match[1]); } catch (_) { return match[1]; }
+      };
+      const activeSlugs = new Set(categories.filter(cat => cat.is_active).map(cat => cat.slug));
+      Array.from(footerCategoryList.querySelectorAll("li")).forEach(li => {
+        const slug = slugFromHref($("a", li)?.getAttribute("href"));
+        if (slug && !activeSlugs.has(slug)) li.remove();
+      });
+      categories.filter(cat => cat.is_active).forEach(cat => {
+        let li = Array.from(footerCategoryList.querySelectorAll("li")).find(item =>
+          slugFromHref($("a", item)?.getAttribute("href")) === cat.slug
+        );
+        if (!li) {
+          li = document.createElement("li");
+          li.appendChild(document.createElement("a"));
+          footerCategoryList.appendChild(li);
+        }
+        const link = $("a", li);
+        link.textContent = cat.name;
+        link.href = cat.cms_created
+          ? rootURL("category.html?slug=" + encodeURIComponent(cat.slug))
+          : rootURL("categories/" + encodeURIComponent(cat.slug) + ".html");
+      });
+    }
   }
   function renderProductDetail(products, info) {
     const product = products.find(item => item.slug === info.slug && item.is_active);
@@ -430,6 +461,7 @@
       );
       syncProductData(visibleProducts, categories);
       syncCategoryMenus(categories);
+      patchExistingCards(visibleProducts);
       if (info.kind === "home") renderHome(visibleProducts, categories);
       else if (info.kind === "category") renderCategory(visibleProducts, categories, info);
       else if (info.kind === "product") renderProductDetail(visibleProducts, info);
@@ -466,7 +498,7 @@
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") refreshVisibleCatalog();
   });
-  window.setInterval(refreshVisibleCatalog, 60000);
+  window.setInterval(refreshVisibleCatalog, 15000);
 
   // Supabase Realtime makes admin catalog edits visible without waiting for the poll.
   // The public client uses only the publishable key; RLS still governs which rows are visible.

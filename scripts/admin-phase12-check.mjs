@@ -8,7 +8,7 @@ const root = process.cwd();
 const adminDir = join(root, "admin");
 const sharedCssVersion = "20261026-phase4-a11y-performance";
 const sharedJsVersion = "20261026-phase4-a11y-performance";
-const appJsVersion = "20261026-phase12-audit-hardening";
+const appJsVersion = "20261027-live-catalog-v1";
 const read = (path) => readFileSync(join(root, path), "utf8");
 
 const htmlFiles = readdirSync(adminDir).filter((file) => file.endsWith(".html"));
@@ -180,6 +180,31 @@ for (const file of unifiedPages) {
   assert.equal(unnamedControls.length, 0, `${file}: form controls without an accessible name: ${unnamedControls.join(", ")}`);
 }
 
+const liveCatalog = read("js/live-catalog.js");
+assert.ok(liveCatalog.includes("rawProducts: products"), "Catalog events must include current raw product rows.");
+assert.ok(liveCatalog.includes('window.addEventListener("focus", refreshVisibleCatalog)'), "Returning to a tab must refresh catalog.");
+assert.ok(liveCatalog.includes('document.addEventListener("visibilitychange"'), "Visible pages must refresh catalog.");
+assert.ok(liveCatalog.includes("window.setInterval(refreshVisibleCatalog, 15000)"), "Public pages need a 15-second fallback refresh.");
+assert.ok(!liveCatalog.includes(".slice(0, cardLimit)"), "Category rails must not be capped by static card count.");
+assert.ok(liveCatalog.includes("patchExistingCards(visibleProducts)"), "Existing product cards must sync on all page types.");
+assert.ok(liveCatalog.includes("footerCategoryList"), "Footer category links must sync from the live database.");
+const publicMain = read("js/main.js");
+assert.ok(publicMain.includes("new MutationObserver"), "Homepage carousel controls must refresh after card replacement.");
+assert.ok(publicMain.includes("const getCards = () => Array.from(track.children)"), "Carousel controls must use current card nodes.");
+assert.ok(publicMain.includes('live-catalog.js?v=20261027-live-catalog-v1'), "Fallback catalog loader must use current cache key.");
+const cartSync = read("js/cart.js");
+assert.ok(cartSync.includes('window.addEventListener("halalcatalog:updated", event => {'), "Saved cart must listen for catalog updates.");
+assert.ok(cartSync.includes("product.rawPrice"), "Saved cart prices must use numeric database values.");
+const cmsProduct = read("js/cms-product.js");
+assert.ok(cmsProduct.includes('window.addEventListener("halalcatalog:updated"'), "CMS product details must refresh from live events.");
+assert.ok(cmsProduct.includes("event.detail?.rawProducts"), "CMS product details must use raw database rows.");
+const productEditor = read("admin/app.js");
+assert.ok(productEditor.includes("function nextProductSortOrder(categorySlug)"), "New products should append after existing category products.");
+assert.ok(productEditor.includes("sort_order:sortOrder"), "Category display order must be saved.");
+for (const file of ["js/live-catalog.js", "js/main.js", "js/cart.js", "js/cms-product.js"]) {
+  execFileSync(process.execPath, ["--check", join(root, file)], { cwd: root, stdio: "pipe" });
+}
+
 const css = read("admin/shared.css")
   .replace(/\/\*[\s\S]*?\*\//g, "")
   .replace(/"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'/g, '""');
@@ -191,4 +216,4 @@ for (const char of css) {
 }
 assert.equal(braceDepth, 0, "admin/shared.css contains unbalanced braces.");
 
-console.log(`Admin Phase 1–4 quality gate passed: ${unifiedPages.length} pages, semantic main landmarks, skip navigation, named form controls, focus behavior, contrast, JS syntax, cache keys, IDs, assets, courier checks, finance guards, Facebook queue safety, quota safeguards, deployment marker, and CSS structure.`);
+console.log(`Admin + storefront quality gate passed: ${unifiedPages.length} admin pages, live catalog refresh, category/footer sync, category rails, homepage carousel/load-more, cart price reconciliation, CMS product sync, accessibility and integrations.`);

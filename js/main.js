@@ -12,7 +12,7 @@
   try {
     const siteRoot = new URL("../", mainScript.src);
     const script = document.createElement("script");
-    script.src = new URL("js/live-catalog.js?v=20261026-catalog-sync-v1", siteRoot).href;
+    script.src = new URL("js/live-catalog.js?v=20261027-live-catalog-v1", siteRoot).href;
     script.async = true;
     document.head.appendChild(script);
   } catch (error) {

@@ -5,6 +5,8 @@ on:
     branches: ["main"]
     paths:
       - "admin/**"
+      - "js/**"
+      - "**/*.html"
       - "supabase/functions/courier-integration/**"
       - "supabase/functions/facebook-publishing/**"
       - "supabase/functions/post-dispatcher/**"
@@ -14,6 +16,8 @@ on:
   pull_request:
     paths:
       - "admin/**"
+      - "js/**"
+      - "**/*.html"
       - "supabase/functions/courier-integration/**"
       - "supabase/functions/facebook-publishing/**"
       - "supabase/functions/post-dispatcher/**"
