@@ -15,6 +15,9 @@ on:
     paths:
       - "admin/**"
       - "supabase/functions/courier-integration/**"
+      - "supabase/functions/facebook-publishing/**"
+      - "supabase/functions/post-dispatcher/**"
+      - "supabase/migrations/**"
       - "scripts/admin-phase12-check.mjs"
       - ".github/workflows/admin-phase12-integrity.yml"
   workflow_dispatch:
