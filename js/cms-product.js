@@ -4,6 +4,7 @@
   const API_ROOT = "https://qfwvrcfkrsydycbfjsxf.supabase.co";
   const PUBLIC_KEY = "sb_publishable_X32Rb8W-axGIfgFuppdfZQ_jbc38pcL";
   const SITE_ROOT = "https://faysaltalukder.github.io/halalfood/";
+  let requestedSlug = "";
   const $ = (s, root) => (root || document).querySelector(s);
   const esc = value => String(value ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
   const money = value => "৳ " + Number(value || 0).toLocaleString("en-BD", { maximumFractionDigits: 2 });
@@ -31,7 +32,8 @@
       category_slug: "eq." + categorySlug, is_active: "eq.true", order: "sort_order.asc,name.asc", limit: "5"
     });
     const response = await fetch(API_ROOT + "/rest/v1/products?" + query.toString(), {
-      headers: { apikey: PUBLIC_KEY, Authorization: "Bearer " + PUBLIC_KEY, Accept: "application/json" }
+      headers: { apikey: PUBLIC_KEY, Authorization: "Bearer " + PUBLIC_KEY, Accept: "application/json" },
+      cache: "no-store"
     });
     if (!response.ok) return [];
     return (await response.json()).filter(item => item.slug !== currentSlug).slice(0, 4);
@@ -117,8 +119,18 @@
     });
     getRelated(item.category_slug, item.slug).then(renderRelated).catch(() => {});
   }
+  window.addEventListener("halalcatalog:updated", event => {
+    if (!requestedSlug) return;
+    const records = Array.isArray(event.detail?.rawProducts) ? event.detail.rawProducts : [];
+    if (!records.length) return;
+    const fresh = records.find(item => item.slug === requestedSlug && item.is_active);
+    if (fresh) render(fresh);
+    else notFound("This product is no longer listed in the active catalog.");
+  });
+
   document.addEventListener("DOMContentLoaded", async () => {
     const slug = new URLSearchParams(location.search).get("slug");
+    requestedSlug = slug || "";
     if (!slug) { notFound("Choose a product from the store catalog."); return; }
     try {
       const rows = await getProducts(slug);

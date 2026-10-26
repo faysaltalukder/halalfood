@@ -666,7 +666,35 @@
       }
     }
   });
-  window.addEventListener("halalcatalog:updated", () => { renderAll(); scheduleCloudCartSave(); });
+  window.addEventListener("halalcatalog:updated", event => {
+    const catalog = Array.isArray(event.detail?.products) ? event.detail.products : [];
+    if (!catalog.length) { renderAll(); scheduleCloudCartSave(); return; }
+    const bySlug = new Map(catalog.map(product => [String(product.slug || ""), product]));
+    let changed = false;
+    const current = read();
+    const updated = current.map(item => {
+      const product = bySlug.get(String(item.slug || ""));
+      if (!product) return item;
+      const displayPrice = String(product.displayPrice || product.price || item.displayPrice || "");
+      const numeric = Number(product.rawPrice);
+      const price = Number.isFinite(numeric) ? Math.max(0, numeric) : priceNumber(displayPrice);
+      const nextItem = {
+        ...item,
+        name: String(product.name || item.name || ""),
+        price,
+        displayPrice,
+        image: String(product.image || item.image || ""),
+        category: String(product.category || item.category || "")
+      };
+      if (nextItem.name !== item.name || nextItem.price !== Number(item.price) ||
+          nextItem.displayPrice !== String(item.displayPrice || "") ||
+          nextItem.image !== String(item.image || "") ||
+          nextItem.category !== String(item.category || "")) changed = true;
+      return nextItem;
+    });
+    if (changed) write(updated);
+    else { renderAll(); scheduleCloudCartSave(); }
+  });
 
   window.HALAL_CART_API = { read, add, setQty, remove, clear, total, totalQty };
   window.HALAL_CART_KEY = CART_KEY;
