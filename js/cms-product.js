@@ -25,23 +25,43 @@
     if (!response.ok) throw new Error("Product details could not be loaded (" + response.status + ").");
     return response.json();
   }
+  async function getActiveCategory(slug) {
+    const query = new URLSearchParams({
+      select: "id,name,slug,cms_created,is_active",
+      slug: "eq." + slug,
+      is_active: "eq.true",
+      limit: "1"
+    });
+    const response = await fetch(API_ROOT + "/rest/v1/categories?" + query.toString(), {
+      headers: { apikey: PUBLIC_KEY, Authorization: "Bearer " + PUBLIC_KEY, Accept: "application/json" },
+      cache: "no-store"
+    });
+    if (!response.ok) throw new Error("The product category could not be verified (" + response.status + ").");
+    const rows = await response.json();
+    if (!Array.isArray(rows)) throw new Error("Supabase returned an unexpected category response.");
+    return rows[0] || null;
+  }
+
   async function getRelated(categorySlug, currentSlug) {
     const query = new URLSearchParams({
       select: "name,slug,category,category_slug,price,unit_type,display_price,image_url,short_description,cms_created,is_active,sort_order",
       category_slug: "eq." + categorySlug, is_active: "eq.true", order: "sort_order.asc,name.asc", limit: "5"
     });
     const response = await fetch(API_ROOT + "/rest/v1/products?" + query.toString(), {
-      headers: { apikey: PUBLIC_KEY, Authorization: "Bearer " + PUBLIC_KEY, Accept: "application/json" }
+      headers: { apikey: PUBLIC_KEY, Authorization: "Bearer " + PUBLIC_KEY, Accept: "application/json" },
+      cache: "no-store"
     });
     if (!response.ok) return [];
-    return (await response.json()).filter(item => item.slug !== currentSlug).slice(0, 4);
+    const rows = await response.json();
+    return (Array.isArray(rows) ? rows : []).filter(item => item.slug !== currentSlug).slice(0, 4);
   }
   function itemHref(item) {
     return item.cms_created ? rootURL("cms-product.html?slug=" + encodeURIComponent(item.slug)) : rootURL("products/" + encodeURIComponent(item.slug) + ".html");
   }
   function renderRelated(items) {
     const section = $("#related-section"), grid = $("#related-grid");
-    if (!section || !grid || !items.length) return;
+    if (!section || !grid) return;
+    if (!items.length) { section.style.display = "none"; return; }
     grid.innerHTML = items.map(item => {
       const href = itemHref(item);
       const price = displayPrice(item);
@@ -55,6 +75,7 @@
   function notFound(message) {
     const box = $("#product-detail");
     if (!box) return;
+    document.title = "Product unavailable | Halal Food";
     box.innerHTML = '<div class="product-not-found"><h1>Product unavailable</h1><p>' + esc(message || "This product is not currently listed.") + '</p><a class="btn-secondary" href="' + rootURL("index.html") + '">Back to store</a></div>';
     const related = $("#related-section"); if (related) related.style.display = "none";
   }
@@ -65,7 +86,7 @@
     const image = item.image_url || "";
     const articleTitle = item.seo_title || item.name + " | Halal Food";
     const articleDescription = item.seo_description || item.short_description || item.name;
-    const orderLink = rootURL("order.html?product=" + encodeURIComponent(item.name));
+    const orderLink = rootURL("order.html?product=" + encodeURIComponent(item.slug));
     const whatsLink = "https://wa.me/8801842031164?text=" + encodeURIComponent("আমি " + item.name + " অর্ডার করতে চাই");
     const paragraphs = String(item.full_description || item.description || item.short_description || "Product details will be updated soon.")
       .split(/\n{2,}/).map(part => part.trim()).filter(Boolean)
@@ -98,7 +119,12 @@
     if (twitterDescription) twitterDescription.content = articleDescription;
     if (twitterUrl && canonical) twitterUrl.content = canonical.href;
     const breadcrumb = $("#product-breadcrumb");
-    if (breadcrumb) breadcrumb.innerHTML = '<a href="' + rootURL("index.html") + '">Home</a> &gt; <a href="' + rootURL("category.html?slug=" + encodeURIComponent(item.category_slug || "")) + '">' + esc(item.category || "Category") + '</a> &gt; ' + esc(item.name);
+    if (breadcrumb) {
+      const categoryHref = item.categoryCmsCreated
+        ? rootURL("category.html?slug=" + encodeURIComponent(item.category_slug || ""))
+        : rootURL("categories/" + encodeURIComponent(item.category_slug || "") + ".html");
+      breadcrumb.innerHTML = '<a href="' + rootURL("index.html") + '">Home</a> &gt; <a href="' + categoryHref + '">' + esc(item.category || "Category") + '</a> &gt; ' + esc(item.name);
+    }
     const imgButton = $(".product-detail-image", box);
     if (imgButton) imgButton.addEventListener("click", () => {
       const modal = document.createElement("div");
@@ -123,7 +149,14 @@
     try {
       const rows = await getProducts(slug);
       if (!rows.length) { notFound("This product is no longer listed in the active catalog."); return; }
-      render(rows[0]);
+      const item = rows[0];
+      if (!item.category_slug) { notFound("This product has no valid category and is unavailable."); return; }
+      const category = await getActiveCategory(item.category_slug);
+      if (!category) { notFound("This product's category is no longer available."); return; }
+      item.category = category.name;
+      item.category_slug = category.slug;
+      item.categoryCmsCreated = Boolean(category.cms_created);
+      render(item);
     } catch (error) {
       notFound(error?.message || "Product details could not be loaded. Please refresh.");
       console.error("Dynamic product load failed", error);

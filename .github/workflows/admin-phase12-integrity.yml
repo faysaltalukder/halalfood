@@ -6,6 +6,7 @@ on:
     paths:
       - "admin/**"
       - "js/live-catalog.js"
+      - "js/cms-product.js"
       - "js/main.js"
       - "js/products-index.js"
       - "index.html"
@@ -26,6 +27,7 @@ on:
     paths:
       - "admin/**"
       - "js/live-catalog.js"
+      - "js/cms-product.js"
       - "js/main.js"
       - "js/products-index.js"
       - "index.html"
