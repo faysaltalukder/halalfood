@@ -20,6 +20,7 @@ const BLOCKED_PATHS = new Set([
   "admin/shared.js",
   "admin/index.html",
   "admin/settings.html",
+  "admin/website-publisher.js",
 ]);
 
 const CORS_HEADERS = {
