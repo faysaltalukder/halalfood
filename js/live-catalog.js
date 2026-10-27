@@ -10,7 +10,7 @@
   const $$ = (selector, root) => Array.from((root || document).querySelectorAll(selector));
   const esc = value => String(value ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
   const money = value => "৳ " + Number(value || 0).toLocaleString("en-BD", { maximumFractionDigits: 2 });
-  const priceText = product => product.display_price || (money(product.price) + " / " + (product.unit_type || "piece"));
+  const priceText = product => { const raw = Number(product?.price); const display = String(product?.display_price || ""); const shown = numericPrice(display); const unit = product?.unit_type || "piece"; if (product?.price !== null && product?.price !== "" && Number.isFinite(raw)) { if (display && shown === raw) return display; return money(raw) + " / " + unit; } return display || (money(product?.price) + " / " + unit); };
   const numericPrice = value => {
     const match = String(value ?? "").match(/[0-9][0-9,]*(?:\.[0-9]+)?/);
     return match ? Number(match[0].replace(/,/g, "")) : 0;
@@ -85,7 +85,7 @@
     if (image) setPictureImage(image, product.image_url, product.name);
     if (categoryTag) categoryTag.textContent = product.category || "";
     if (price) price.textContent = priceText(product);
-    if (description && product.cms_managed) description.textContent = product.short_description || "";
+    if (description && product.short_description != null) description.textContent = String(product.short_description);
     if (button) setProductControls(button, product);
     const orderLink = $(".category-order-btn, .product-body .order-btn", card);
     if (orderLink) {
@@ -188,10 +188,9 @@
     });
     if (!records.length) grid.innerHTML = '<p class="muted">No active products are currently listed in this category.</p>';
   }
-  // Render the homepage's category product rails from the same live catalog as category pages.
-  // Keep each rail's card count stable so existing carousel controls remain compatible.
+  // Render every active homepage category rail from the same current catalog as category pages.
   function renderMerchandisingRails(products) {
-    $("[data-mrow]").forEach(wrap => {
+    $$("[data-mrow]").forEach(wrap => {
       const track = $("[data-mrow-track]", wrap);
       const section = wrap.closest("section") || wrap.parentElement;
       const viewAll = $(".merch-view-all", section);
@@ -201,7 +200,6 @@
       if (!match) return;
       let categorySlug = match[1];
       try { categorySlug = decodeURIComponent(categorySlug); } catch (_) {}
-      const cardLimit = Math.max(1, track.querySelectorAll(".mrow-card").length);
       const rows = products
         .filter(item => item.is_active && item.category_slug === categorySlug)
         .sort((a, b) =>
@@ -209,8 +207,7 @@
           Number(a.sort_order || 0) - Number(b.sort_order || 0) ||
           (Date.parse(b.created_at || "") || 0) - (Date.parse(a.created_at || "") || 0) ||
           String(a.name || "").localeCompare(String(b.name || ""))
-        )
-        .slice(0, cardLimit);
+        );
       track.replaceChildren(...rows.map(item => makeProductCard(item, "mrow")));
       if (!rows.length) {
         const empty = document.createElement("p");
@@ -236,13 +233,27 @@
       featuredGrid.classList.add("featured-grid-4");
     }
     const jfy = $("#just-for-you .jfy-grid");
-    if (jfy) {
-      const rows = products.filter(item => item.is_active).sort((a,b) =>
-        Number(a.sort_order || 0) - Number(b.sort_order || 0) ||
-        (Date.parse(b.created_at || "") || 0) - (Date.parse(a.created_at || "") || 0) ||
-        String(a.name || "").localeCompare(String(b.name || ""))
-      ).slice(0,10);
-      jfy.replaceChildren(...rows.map(item => makeProductCard(item, "jfy")));
+    const jfyOrdered = products.filter(item => item.is_active).sort((a, b) =>
+      (Date.parse(b.created_at || "") || 0) - (Date.parse(a.created_at || "") || 0) ||
+      Number(a.sort_order || 0) - Number(b.sort_order || 0) ||
+      String(a.name || "").localeCompare(String(b.name || ""))
+    );
+    const jfyVisible = jfyOrdered.slice(0, 10);
+    if (jfy) jfy.replaceChildren(...jfyVisible.map(item => makeProductCard(item, "jfy")));
+
+    // Populate Load More with live catalog records instead of the stale static HTML template.
+    const jfyRemainder = jfyOrdered.slice(10);
+    const hiddenTemplate = $("[data-jfy-hidden]");
+    if (hiddenTemplate && hiddenTemplate.tagName === "TEMPLATE") {
+      hiddenTemplate.content.replaceChildren(...jfyRemainder.map(item => makeProductCard(item, "jfy")));
+    } else {
+      const expandedGrid = $("#just-for-you .jfy-shown");
+      if (expandedGrid) expandedGrid.replaceChildren(...jfyRemainder.map(item => makeProductCard(item, "jfy")));
+    }
+    const loadMoreButton = $("[data-jfy-load-more]");
+    if (loadMoreButton) {
+      loadMoreButton.hidden = jfyRemainder.length === 0;
+      loadMoreButton.disabled = jfyRemainder.length === 0;
     }
     // Rebuild category product rails from the current database so new products and edits appear here too.
     renderMerchandisingRails(products);
@@ -280,10 +291,11 @@
         if (cat.cms_created) card.href = rootURL("category.html?slug=" + encodeURIComponent(cat.slug));
       });
     }
+    window.dispatchEvent(new CustomEvent("halalcatalog:rendered", { detail: { products, categories } }));
   }
   function syncCategoryMenus(categories) {
     // Keep desktop mega menus and the mobile drawer in sync with active categories.
-    $(".mega-menu").forEach(menu => {
+    $$(".mega-menu").forEach(menu => {
       categories.filter(cat => cat.is_active).forEach(cat => {
         let link = Array.from(menu.querySelectorAll("a")).find(a => {
           const href = a.getAttribute("href") || "";
@@ -342,9 +354,9 @@
     const article = $("main .product-detail") || $("main .product-detail-grid")?.closest("article");
     if (!article) return;
     const title = $(".product-detail-info h1", article);
-    if (title && product.cms_managed) title.textContent = product.name;
+    if (title) title.textContent = product.name;
     const tag = $(".product-detail-info .tag", article);
-    if (tag && product.cms_managed) tag.textContent = product.category || "";
+    if (tag) tag.textContent = product.category || "";
     const price = $(".product-detail-price", article);
     if (price) price.textContent = priceText(product);
     const image = $(".product-detail-image img, .product-detail-image-wrap img", article);
@@ -357,10 +369,10 @@
     const whats = $('.product-detail-actions a[href*="wa.me"]', article);
     if (whats) whats.href = "https://wa.me/8801842031164?text=" + message;
     const detail = $(".product-description-section .product-description-inner p", article);
-    if (detail && product.cms_managed) detail.textContent = product.full_description || product.description || "";
+    if (detail && (product.full_description != null || product.description != null)) detail.textContent = product.full_description || product.description || "";
     const seo = document.querySelector('meta[name="description"]');
-    if (seo && product.cms_managed && product.seo_description) seo.content = product.seo_description;
-    document.title = product.cms_managed ? (product.seo_title || product.name + " | Halal Food") : document.title;
+    if (seo && product.seo_description) seo.content = product.seo_description;
+    document.title = product.seo_title || product.name + " | Halal Food";
   }
   function handleProductResult(product, info) {
     if (info.kind === "product") renderProductDetail([product], info);
@@ -406,10 +418,16 @@
       categories.some(category => category.slug === product.category_slug && category.is_active)
     );
     syncProductData(visibleProducts, categories);
-    syncCategoryMenus(categories);
+    // Render catalog data before optional navigation synchronization. A navigation
+    // problem must never prevent current prices/descriptions from reaching the page.
     if (info.kind === "home") renderHome(visibleProducts, categories);
     else if (info.kind === "category") renderCategory(visibleProducts, categories, info);
     else if (info.kind === "product") renderProductDetail(visibleProducts, info);
+    try {
+      syncCategoryMenus(categories);
+    } catch (error) {
+      console.warn("Live catalog rendered, but category navigation could not sync.", error);
+    }
   }
   window.addEventListener("halalnav:ready", () => { if (currentCategories.length) syncCategoryMenus(currentCategories); });
   const initLiveCatalog = () => start().catch(error => {

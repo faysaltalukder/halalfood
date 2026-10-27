@@ -10,9 +10,15 @@
   );
   if (!mainScript) return;
   try {
-    const siteRoot = new URL("../", mainScript.src);
+    const mainUrl = new URL(mainScript.src);
+    const siteRoot = new URL("../", mainUrl);
+    // Publisher cache-busts main.js on each release. Reuse that release token for
+    // live-catalog.js so the browser cannot keep running an older catalog bridge.
+    const releaseVersion = mainUrl.searchParams.get("v") || "live-catalog";
+    const catalogUrl = new URL("js/live-catalog.js", siteRoot);
+    catalogUrl.searchParams.set("v", releaseVersion);
     const script = document.createElement("script");
-    script.src = new URL("js/live-catalog.js?v=20261021-catalog-v2", siteRoot).href;
+    script.src = catalogUrl.href;
     script.async = true;
     document.head.appendChild(script);
   } catch (error) {
@@ -1131,78 +1137,106 @@ function initLocationCombobox(id, initialOptions, onSelect) {
 // ---------------------------------------------------------------------------
 document.addEventListener("DOMContentLoaded", () => {
   const initMrow = () => {
-  document.querySelectorAll("[data-mrow]").forEach((wrap) => {
-    const track = wrap.querySelector("[data-mrow-track]");
-    const dotsBox = wrap.parentElement.querySelector("[data-mrow-dots]");
-    const cards = Array.from(track.children);
-    if (!cards.length) return;
+    document.querySelectorAll("[data-mrow]").forEach((wrap) => {
+      const track = wrap.querySelector("[data-mrow-track]");
+      const dotsBox = wrap.parentElement?.querySelector("[data-mrow-dots]");
+      if (!track || !dotsBox) return;
+      const cards = () => Array.from(track.children).filter(card => card.classList.contains("mrow-card"));
+      const visibleCount = () => (window.innerWidth <= 600 ? 2 : window.innerWidth <= 900 ? 3 : 5);
+      const pageCount = () => Math.ceil(cards().length / visibleCount());
 
-    const visibleCount = () => (window.innerWidth <= 600 ? 2 : window.innerWidth <= 900 ? 3 : 5);
-    const pageCount = () => Math.max(1, Math.ceil(cards.length / visibleCount()));
+      const buildDots = () => {
+        const currentCards = cards();
+        dotsBox.replaceChildren();
+        const pages = Math.ceil(currentCards.length / visibleCount());
+        dotsBox.style.display = pages > 1 ? "" : "none";
+        if (!pages) return;
+        const cardWidth = currentCards[0].getBoundingClientRect().width + 18;
+        const activePage = cardWidth > 0
+          ? Math.min(pages - 1, Math.max(0, Math.round(track.scrollLeft / (visibleCount() * cardWidth))))
+          : 0;
+        for (let i = 0; i < pages; i++) {
+          const dot = document.createElement("button");
+          dot.type = "button";
+          dot.setAttribute("aria-label", "Go to slide group " + (i + 1));
+          dot.setAttribute("aria-pressed", String(i === activePage));
+          if (i === activePage) dot.classList.add("active");
+          dot.addEventListener("click", () => {
+            const current = cards();
+            if (!current.length) return;
+            const width = current[0].getBoundingClientRect().width + 18;
+            track.scrollTo({ left: i * visibleCount() * width, behavior: "smooth" });
+          });
+          dotsBox.appendChild(dot);
+        }
+      };
 
-    const buildDots = () => {
-      dotsBox.innerHTML = "";
-      const pages = pageCount();
-      for (let i = 0; i < pages; i++) {
-        const dot = document.createElement("button");
-        dot.type = "button";
-        dot.setAttribute("aria-label", `Go to slide group ${i + 1}`);
-        if (i === 0) dot.classList.add("active");
-        dot.addEventListener("click", () => {
-          const cardWidth = cards[0].getBoundingClientRect().width + 18;
-          track.scrollTo({ left: i * visibleCount() * cardWidth, behavior: "smooth" });
+      if (wrap.dataset.mrowInitialized === "1") {
+        buildDots();
+        return;
+      }
+      wrap.dataset.mrowInitialized = "1";
+      buildDots();
+      window.addEventListener("resize", buildDots);
+
+      const updateActiveDot = () => {
+        const currentCards = cards();
+        const dots = Array.from(dotsBox.children);
+        if (!currentCards.length || !dots.length) return;
+        const cardWidth = currentCards[0].getBoundingClientRect().width + 18;
+        const page = cardWidth > 0
+          ? Math.min(dots.length - 1, Math.max(0, Math.round(track.scrollLeft / (visibleCount() * cardWidth))))
+          : 0;
+        dots.forEach((dot, index) => {
+          const active = index === page;
+          dot.classList.toggle("active", active);
+          dot.setAttribute("aria-pressed", String(active));
         });
-        dotsBox.appendChild(dot);
+      };
+      track.addEventListener("scroll", () => {
+        window.requestAnimationFrame(updateActiveDot);
+      }, { passive: true });
+
+      let dragging = false, dragMoved = false, dragStartX = 0, dragStartScroll = 0;
+      const DRAG_THRESHOLD = 6;
+      track.addEventListener("pointerdown", (event) => {
+        if (event.pointerType !== "mouse") return;
+        dragging = true; dragMoved = false;
+        dragStartX = event.clientX; dragStartScroll = track.scrollLeft;
+      });
+      track.addEventListener("pointermove", (event) => {
+        if (!dragging) return;
+        const delta = event.clientX - dragStartX;
+        if (!dragMoved && Math.abs(delta) > DRAG_THRESHOLD) {
+          dragMoved = true;
+          track.classList.add("dragging");
+          track.setPointerCapture?.(event.pointerId);
+        }
+        if (dragMoved) track.scrollLeft = dragStartScroll - delta;
+      });
+      ["pointerup", "pointercancel", "lostpointercapture"].forEach((type) => {
+        track.addEventListener(type, () => { dragging = false; track.classList.remove("dragging"); });
+      });
+      track.addEventListener("click", (event) => {
+        if (dragMoved) { event.preventDefault(); dragMoved = false; }
+      }, true);
+
+      let auto = setInterval(advance, 5500);
+      function advance() {
+        const currentCards = cards();
+        if (!currentCards.length) return;
+        const cardWidth = currentCards[0].getBoundingClientRect().width + 18;
+        const maxScroll = Math.max(0, track.scrollWidth - track.clientWidth);
+        const next = track.scrollLeft + visibleCount() * cardWidth;
+        track.scrollTo({ left: next > maxScroll - 4 ? 0 : next, behavior: "smooth" });
       }
-    };
-    buildDots();
-    window.addEventListener("resize", () => { buildDots(); });
-
-    const updateActiveDot = () => {
-      const cardWidth = cards[0].getBoundingClientRect().width + 18;
-      const page = Math.round(track.scrollLeft / (visibleCount() * cardWidth));
-      Array.from(dotsBox.children).forEach((d, i) => d.classList.toggle("active", i === page));
-    };
-    track.addEventListener("scroll", () => {
-      window.requestAnimationFrame(updateActiveDot);
-    }, { passive: true });
-
-    let dragging = false, dragMoved = false, dragStartX = 0, dragStartScroll = 0;
-    const DRAG_THRESHOLD = 6;
-    track.addEventListener("pointerdown", (event) => {
-      if (event.pointerType !== "mouse") return;
-      dragging = true; dragMoved = false;
-      dragStartX = event.clientX; dragStartScroll = track.scrollLeft;
+      wrap.addEventListener("mouseenter", () => clearInterval(auto));
+      wrap.addEventListener("mouseleave", () => { clearInterval(auto); auto = setInterval(advance, 5500); });
     });
-    track.addEventListener("pointermove", (event) => {
-      if (!dragging) return;
-      const delta = event.clientX - dragStartX;
-      if (!dragMoved && Math.abs(delta) > DRAG_THRESHOLD) {
-        dragMoved = true;
-        track.classList.add("dragging");
-        track.setPointerCapture?.(event.pointerId);
-      }
-      if (dragMoved) track.scrollLeft = dragStartScroll - delta;
-    });
-    ["pointerup", "pointercancel", "lostpointercapture"].forEach((type) => {
-      track.addEventListener(type, () => { dragging = false; track.classList.remove("dragging"); });
-    });
-    track.addEventListener("click", (event) => {
-      if (dragMoved) { event.preventDefault(); dragMoved = false; }
-    }, true);
-
-    let auto = setInterval(advance, 5500);
-    function advance() {
-      const cardWidth = cards[0].getBoundingClientRect().width + 18;
-      const maxScroll = track.scrollWidth - track.clientWidth;
-      const next = track.scrollLeft + visibleCount() * cardWidth;
-      track.scrollTo({ left: next > maxScroll - 4 ? 0 : next, behavior: "smooth" });
-    }
-    wrap.addEventListener("mouseenter", () => clearInterval(auto));
-    wrap.addEventListener("mouseleave", () => { clearInterval(auto); auto = setInterval(advance, 5500); });
-  });
-
   };
+
+  // The live catalog replaces scaffold cards asynchronously; rebuild dots without re-binding controls.
+  window.addEventListener("halalcatalog:rendered", initMrow);
   (window.requestIdleCallback ? window.requestIdleCallback(initMrow, { timeout: 1500 }) : setTimeout(initMrow, 200));
 
   const loadMoreBtn = document.querySelector("[data-jfy-load-more]");

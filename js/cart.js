@@ -575,6 +575,13 @@
 
   function renderAll() { renderCounts(); renderProductCartControls(); renderDrawer(); renderPage(); renderOrderSummary(); }
 
+  // When the server-managed catalog arrives, refresh persisted cart snapshots too.
+  // This keeps cart rows, checkout totals and account-synced carts aligned with live prices.
+  window.addEventListener("halalcatalog:updated", () => {
+    write(read());
+    renderAll();
+  });
+
   document.addEventListener("click", event => {
     const addBtn = event.target.closest("[data-add-to-cart]");
     if (addBtn) {
