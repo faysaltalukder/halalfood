@@ -76,8 +76,8 @@ assert.ok(liveCatalog.includes("Promise.allSettled"), "Product and Category fetc
 assert.ok(liveCatalog.includes("Retry catalog"), "Catalog failure state must provide a retry action.");
 assert.ok(liveCatalog.includes("preloaded and outdated"), "Catalog failures must not present preloaded HTML as verified live data.");
 assert.ok(storefrontMain.includes("js/live-catalog.js?v=20261027-catalog-render-v1"), "Fallback catalog loader must use the current cache-busted asset.");
-assert.ok(liveCatalog.includes('$(".mega-menu").forEach(syncLinks)'), "Desktop category navigation must update all menu containers.");
-assert.ok(liveCatalog.includes('$("[data-mrow]").forEach(wrap =>'), "Every homepage merchandising rail must be rendered from live products.");
+assert.ok(liveCatalog.includes('$$(".mega-menu").forEach(syncLinks)'), "Desktop category navigation must update all menu containers.");
+assert.ok(liveCatalog.includes('$$("[data-mrow]").forEach(wrap =>'), "Every homepage merchandising rail must be rendered from live products.");
 assert.equal(liveCatalog.split(/\r?\n/).filter((line) => /^\s*\$\("[^"]+"\)\.forEach/.test(line)).length, 0, "Single-element querySelector helper must never be used as a multi-element collection.");
 assert.ok(liveCatalog.includes("products.filter(item => item.is_active && item.is_featured)"), "Featured Products must contain only explicitly featured active items.");
 assert.ok(!liveCatalog.includes("[...featured, ...remaining]"), "Non-featured Products must not be forced into the Featured section.");
