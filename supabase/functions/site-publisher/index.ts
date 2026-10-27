@@ -734,9 +734,23 @@ Deno.serve(async (req: Request) => {
     const actor = auth.email;
 
     if (action === "config_status") {
+      let githubTokenValid = false;
+      let branchHeadSha: string | null = null;
+      let githubAccessError: string | null = null;
+      if (githubToken()) {
+        try {
+          branchHeadSha = await getHeadSha();
+          githubTokenValid = true;
+        } catch (error) {
+          githubAccessError = clean((error as any)?.message, 240) || "GitHub repository access could not be verified.";
+        }
+      } else {
+        githubAccessError = "GITHUB_TOKEN is not configured.";
+      }
       return json({
         success: true, repository: repoName(), branch: branchName(), siteUrl: siteUrl(),
-        githubTokenConfigured: Boolean(githubToken()), approvalKeyConfigured: (Deno.env.get("SITE_PUBLISH_APPROVAL_HMAC_KEY") || "").length >= 32,
+        githubTokenConfigured: Boolean(githubToken()), githubTokenValid, branchHeadSha, githubAccessError,
+        approvalKeyConfigured: (Deno.env.get("SITE_PUBLISH_APPROVAL_HMAC_KEY") || "").length >= 32,
         serviceRoleConfigured: Boolean(SERVICE_ROLE_KEY), missingConfiguration: missingConfiguration(),
         allowedFileExtensions: Array.from(ALLOWED_EXTENSIONS), binaryUploadsEnabled: false,
       });
