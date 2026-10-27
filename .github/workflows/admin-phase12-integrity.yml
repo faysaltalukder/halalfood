@@ -5,6 +5,15 @@ on:
     branches: ["main"]
     paths:
       - "admin/**"
+      - "js/live-catalog.js"
+      - "js/main.js"
+      - "js/products-index.js"
+      - "index.html"
+      - "category.html"
+      - "product.html"
+      - "order.html"
+      - "categories/**"
+      - "products/**"
       - "supabase/functions/courier-integration/**"
       - "supabase/functions/facebook-publishing/**"
       - "supabase/functions/post-dispatcher/**"
@@ -14,6 +23,15 @@ on:
   pull_request:
     paths:
       - "admin/**"
+      - "js/live-catalog.js"
+      - "js/main.js"
+      - "js/products-index.js"
+      - "index.html"
+      - "category.html"
+      - "product.html"
+      - "order.html"
+      - "categories/**"
+      - "products/**"
       - "supabase/functions/courier-integration/**"
       - "supabase/functions/facebook-publishing/**"
       - "supabase/functions/post-dispatcher/**"

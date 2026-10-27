@@ -18,13 +18,43 @@
   const rootURL = path => new URL(path, SITE_ROOT).href;
   async function readTable(table, params) {
     const query = new URLSearchParams(params || {});
-    const response = await fetch(API_ROOT + "/rest/v1/" + table + "?" + query.toString(), {
-      headers: { apikey: PUBLIC_KEY, Authorization: "Bearer " + PUBLIC_KEY, Accept: "application/json" },
-      cache: "no-store"
-    });
-    if (!response.ok) throw new Error("Catalog request failed (" + response.status + ")");
-    const data = await response.json();
-    if (!Array.isArray(data)) throw new Error("Unexpected catalog response");
+    let response;
+    try {
+      response = await fetch(API_ROOT + "/rest/v1/" + table + "?" + query.toString(), {
+        headers: { apikey: PUBLIC_KEY, Authorization: "Bearer " + PUBLIC_KEY, Accept: "application/json" },
+        cache: "no-store"
+      });
+    } catch (cause) {
+      const error = new Error("Could not reach the Supabase " + table + " endpoint. Check the connection and retry.");
+      error.catalogTable = table;
+      error.catalogKind = "network";
+      error.cause = cause;
+      throw error;
+    }
+    if (!response.ok) {
+      let detail = "";
+      try { detail = (await response.text()).slice(0, 240); } catch (_) {}
+      const error = new Error("Supabase " + table + " request failed with HTTP " + response.status + (detail ? ": " + detail : ""));
+      error.catalogTable = table;
+      error.status = response.status;
+      throw error;
+    }
+    let data;
+    try {
+      data = await response.json();
+    } catch (cause) {
+      const error = new Error("Supabase returned an invalid response for the " + table + " catalog.");
+      error.catalogTable = table;
+      error.catalogKind = "invalid-response";
+      error.cause = cause;
+      throw error;
+    }
+    if (!Array.isArray(data)) {
+      const error = new Error("Supabase returned an unexpected " + table + " catalog format.");
+      error.catalogTable = table;
+      error.catalogKind = "invalid-response";
+      throw error;
+    }
     return data;
   }
   function pathInfo() {
@@ -396,35 +426,78 @@
   }
   async function start() {
     const info = pathInfo();
-    const [products, categories] = await Promise.all([
+    const [productsResult, categoriesResult] = await Promise.allSettled([
       readTable("products", { select: "id,name,slug,category,category_slug,price,unit_type,display_price,image_url,short_description,full_description,description,is_active,is_featured,cms_created,cms_managed,sort_order,seo_title,seo_description,stock_quantity,created_at", is_active: "eq.true", order: "sort_order.asc,name.asc", limit: "1000" }),
       readTable("categories", { select: "id,name,slug,description,image_url,is_active,cms_created,cms_managed,sort_order", is_active: "eq.true", order: "sort_order.asc,name.asc", limit: "500" })
     ]);
+    const failures = [];
+    if (productsResult.status === "rejected") failures.push("Products: " + (productsResult.reason?.message || "request failed"));
+    if (categoriesResult.status === "rejected") failures.push("Categories: " + (categoriesResult.reason?.message || "request failed"));
+    if (failures.length) {
+      const error = new Error("Live catalog fetch failed. " + failures.join(" | "));
+      error.catalogStage = "fetch";
+      error.catalogFailures = failures;
+      throw error;
+    }
+    const products = productsResult.value;
+    const categories = categoriesResult.value;
     currentCategories = categories;
     // Products assigned to a hidden category should not leak into home, search or cart.
     const visibleProducts = products.filter(product =>
       categories.some(category => category.slug === product.category_slug && category.is_active)
     );
-    syncProductData(visibleProducts, categories);
-    syncCategoryMenus(categories);
-    if (info.kind === "home") renderHome(visibleProducts, categories);
-    else if (info.kind === "category") renderCategory(visibleProducts, categories, info);
-    else if (info.kind === "product") renderProductDetail(visibleProducts, info);
-  }
-  window.addEventListener("halalnav:ready", () => { if (currentCategories.length) syncCategoryMenus(currentCategories); });
-  const initLiveCatalog = () => start().catch(error => {
-    console.warn("Live catalog could not connect; leaving the static catalog in place.", error);
-    const status = $("#live-catalog-status");
-    if (status) status.textContent = "Catalog is temporarily showing saved static content.";
-    if (/\/category\.html$/i.test(location.pathname)) {
-      const heading = $("#live-category-title");
-      const grid = $(".category-page-products .product-grid");
-      if (heading && /loading category/i.test(heading.textContent)) heading.textContent = "Category temporarily unavailable";
-      if (grid && /loading products/i.test(grid.textContent)) {
-        grid.innerHTML = '<p class="muted">We could not load this category right now. Please refresh the page to try again.</p>';
-      }
+    try {
+      syncProductData(visibleProducts, categories);
+      syncCategoryMenus(categories);
+      if (info.kind === "home") renderHome(visibleProducts, categories);
+      else if (info.kind === "category") renderCategory(visibleProducts, categories, info);
+      else if (info.kind === "product") renderProductDetail(visibleProducts, info);
+    } catch (cause) {
+      const error = new Error("Live catalog data was fetched, but page synchronization did not complete.");
+      error.catalogStage = "synchronization";
+      error.cause = cause;
+      throw error;
     }
+    const status = $("#live-catalog-status");
+    if (status) status.remove();
+  }
+  function showCatalogError(error) {
+    console.error("Live catalog synchronization failed.", error);
+    let status = $("#live-catalog-status");
+    if (!status) {
+      status = document.createElement("div");
+      status.id = "live-catalog-status";
+      const container = document.querySelector("main") || document.body;
+      container.prepend(status);
+    }
+    status.className = "catalog-sync-status catalog-sync-status-error";
+    status.setAttribute("role", "alert");
+    status.setAttribute("aria-live", "assertive");
+    status.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:12px auto;padding:12px 16px;max-width:1200px;border:1px solid #D8D4C9;border-left:4px solid #C97B3D;border-radius:10px;background:#FFFDF8;color:#2B2A3D;font:500 14px/1.5 system-ui,sans-serif";
+    status.replaceChildren();
+    const message = document.createElement("span");
+    message.textContent = "We couldn’t refresh the live catalog. The products or categories currently shown may be preloaded and outdated. Please retry.";
+    const retry = document.createElement("button");
+    retry.type = "button";
+    retry.textContent = "Retry catalog";
+    retry.style.cssText = "border:0;border-radius:7px;padding:8px 12px;background:#C97B3D;color:#FFFDF8;font:600 14px/1.3 system-ui,sans-serif;cursor:pointer";
+    retry.addEventListener("click", async () => {
+      retry.disabled = true;
+      retry.textContent = "Retrying…";
+      try {
+        await start();
+      } catch (retryError) {
+        showCatalogError(retryError);
+      }
+    });
+    status.append(message, retry);
+  }
+  window.addEventListener("halalnav:ready", () => {
+    if (!currentCategories.length) return;
+    try { syncCategoryMenus(currentCategories); }
+    catch (error) { showCatalogError(error); }
   });
+  const initLiveCatalog = () => start().catch(showCatalogError);
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", initLiveCatalog, { once: true });
   else initLiveCatalog();
 })();

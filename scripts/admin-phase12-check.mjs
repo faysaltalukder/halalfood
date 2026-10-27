@@ -8,7 +8,7 @@ const root = process.cwd();
 const adminDir = join(root, "admin");
 const sharedCssVersion = "20261026-phase4-a11y-performance";
 const sharedJsVersion = "20261026-phase4-a11y-performance";
-const appJsVersion = "20261026-phase12-audit-hardening";
+const appJsVersion = "20261027-save-integrity-v1";
 const read = (path) => readFileSync(join(root, path), "utf8");
 
 const htmlFiles = readdirSync(adminDir).filter((file) => file.endsWith(".html"));
@@ -57,6 +57,32 @@ assert.ok(shared.includes('document.documentElement.dataset.adminTheme=savedThem
 assert.ok(shared.includes('let savedTheme="light";try{savedTheme=localStorage.getItem(themeKey)||"light";}'));
 
 const app = read("admin/app.js");
+const liveCatalog = read("js/live-catalog.js");
+const storefrontMain = read("js/main.js");
+execFileSync(process.execPath, ["--check", join(root, "js/live-catalog.js")], { cwd: root, stdio: "pipe" });
+execFileSync(process.execPath, ["--check", join(root, "js/main.js")], { cwd: root, stdio: "pipe" });
+assert.ok(app.includes("verifyAdminCatalogRecord(\"products\",savedId,PRODUCT_READBACK_COLUMNS,payload,\"Product\")"), "Product save must read the persisted product record back and verify submitted fields.");
+assert.ok(app.includes("verifyAdminCatalogRecord(\"categories\",savedCategoryId,CATEGORY_READBACK_COLUMNS,payload,\"Category\")"), "Category save must read the persisted category record back.");
+assert.ok(app.includes('update(payload).eq("id",id).select("id").single()'), "Product edits must update and confirm the existing record by ID.");
+assert.ok(app.includes('insert(payload).select("id").single()'), "New Product inserts must return the created record ID before follow-up writes.");
+assert.ok(app.includes("costMismatches") && app.includes("low_stock_threshold"), "Private cost and stock-alert settings must be verified after save.");
+assert.ok(app.includes("linked Product labels could not be synchronized"), "Partial Category rename failures must be reported as such.");
+assert.ok(liveCatalog.includes('cache: "no-store"'), "Public catalog fetches must not reuse the browser HTTP cache.");
+assert.ok(liveCatalog.includes("Promise.allSettled"), "Product and Category fetch failures must be collected and reported separately.");
+assert.ok(liveCatalog.includes("Retry catalog"), "Catalog failure state must provide a retry action.");
+assert.ok(liveCatalog.includes("preloaded and outdated"), "Catalog failures must not present preloaded HTML as verified live data.");
+assert.ok(storefrontMain.includes("js/live-catalog.js?v=20261027-catalog-sync-v1"), "Fallback catalog loader must use the current cache-busted asset.");
+const publicHtmlPaths = execFileSync("git", ["ls-files", "*.html"], { cwd: root, encoding: "utf8" })
+  .split(/\r?\n/).filter((path) => path && !path.startsWith("admin/"));
+for (const path of publicHtmlPaths) {
+  const source = read(path);
+  if (/<script\b[^>]*\bsrc=["'][^"']*(?:\.\.\/)*js\/main\.js(?:\?[^"']*)?["'][^>]*>/i.test(source)) {
+    assert.ok(source.includes("js/main.js?v=20261027-catalog-sync-v1"), `${path}: main.js cache key must be current.`);
+  }
+  if (/live-catalog\.js(?:\?[^"'\s>]*)?/i.test(source)) {
+    assert.ok(source.includes("live-catalog.js?v=20261027-catalog-sync-v1"), `${path}: live catalog asset cache key must be current.`);
+  }
+}
 assert.ok(app.includes('order_items(id,product_id,product_name,quantity,unit,unit_price,line_total,product_image_url)'), "Courier booking must load relational order_items.");
 assert.ok(app.includes("normalizeCourierMobile(freshOrder.customer_phone)"), "Courier booking must match backend phone validation.");
 assert.ok(app.includes("freshCustomerName.length<3||freshCustomerName.length>100"), "Courier booking must validate provider-compatible customer names.");
