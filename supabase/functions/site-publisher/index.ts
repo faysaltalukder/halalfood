@@ -37,7 +37,8 @@ type ChangeFile = { id?: string; path: string; action: "add" | "modify" | "delet
 type TreeItem = { path: string; mode?: string; type?: string; sha?: string | null; size?: number };
 type ChangeSet = {
   id: string; title: string; description: string; status: string; base_commit_sha: string | null;
-  manifest_sha256: string | null; approval_signature: string | null; approved_manifest_sha256: string | null;
+  manifest_sha256: string | null; validation_signature: string | null; validated_at: string | null;
+  approval_signature: string | null; approved_manifest_sha256: string | null;
   release_id: string | null; created_by: string; approved_by: string | null; approved_at: string | null;
   published_commit_sha: string | null; deployment_status: string; deployment_url: string | null;
   last_error: string | null; created_at: string; updated_at: string;
@@ -329,7 +330,8 @@ async function manifestFor(set: ChangeSet, files: ChangeFile[]): Promise<{ manif
   if (sorted.length > MAX_FILES) throw new Error("The change set exceeds the file-count limit.");
   if (totalBytes > MAX_TOTAL_BYTES) throw new Error("The change set exceeds the 5 MiB total text limit.");
   const manifestInput = JSON.stringify({
-    changeSetId: set.id, baseCommitSha: set.base_commit_sha, releaseId: set.release_id,
+    changeSetId: set.id, title: set.title, description: set.description,
+    baseCommitSha: set.base_commit_sha, releaseId: set.release_id,
     files: sorted.map((f) => ({ path: f.path, action: f.action, sha256: f.sha256 })),
   });
   return { manifest: await sha256(manifestInput), files: sorted, totalBytes };
@@ -435,9 +437,16 @@ async function validateChangeSet(id: string, actor: string) {
   if (cleanError) {
     // No delete is required for safety; stale rows are caught by the manifest check on publish.
   }
+  const validatedAt = new Date().toISOString();
+  const validationSignature = await signApproval(validationPayload(
+    { ...set, base_commit_sha: headSha, release_id: releaseId },
+    validatedAt,
+    manifestResult.manifest,
+  ));
   const { error: setError } = await db.from("site_change_sets").update({
     status: "validated", base_commit_sha: headSha, release_id: releaseId,
-    manifest_sha256: manifestResult.manifest, approved_manifest_sha256: null,
+    manifest_sha256: manifestResult.manifest, validation_signature: validationSignature,
+    validated_at: validatedAt, approved_manifest_sha256: null,
     approval_signature: null, approved_by: null, approved_at: null,
     last_error: null, updated_at: new Date().toISOString(),
   }).eq("id", id);
@@ -452,12 +461,17 @@ async function getCurrentManifest(set: ChangeSet, files: ChangeFile[]): Promise<
   const result = await manifestFor(set, files);
   return result.manifest;
 }
+function validationPayload(set: ChangeSet, validatedAt: string, manifest: string): string {
+  return [set.id, set.base_commit_sha || "", set.release_id || "", manifest, validatedAt].join("|");
+}
 function approvalPayload(set: ChangeSet, approvedBy: string, approvedAt: string, manifest: string): string {
   return [set.id, set.base_commit_sha || "", set.release_id || "", manifest, approvedBy, approvedAt].join("|");
 }
 async function approveChangeSet(id: string, actor: string) {
   const { set, files } = await loadChangeSet(id);
-  if (set.status !== "validated" || !set.manifest_sha256 || !set.release_id) throw new Error("Only a validated change set can be approved.");
+  if (set.status !== "validated" || !set.manifest_sha256 || !set.release_id || !set.validation_signature || !set.validated_at) {
+    throw new Error("Only a server-validated change set with an intact validation signature can be approved.");
+  }
   const currentHead = await getHeadSha();
   if (currentHead !== set.base_commit_sha) {
     await updateSet(id, { status: "conflict", last_error: "Branch changed after validation. Validate a fresh draft before approval." });
@@ -466,6 +480,10 @@ async function approveChangeSet(id: string, actor: string) {
   }
   const currentManifest = await getCurrentManifest(set, files);
   if (currentManifest !== set.manifest_sha256) throw new Error("The draft changed after validation. Validate again before approval.");
+  const expectedValidationSignature = await signApproval(validationPayload(set, set.validated_at, currentManifest));
+  if (!await constantTimeEqual(expectedValidationSignature, set.validation_signature)) {
+    throw new Error("The validation signature is invalid. The draft or validation metadata may have been changed after validation; validate again.");
+  }
   const approvedAt = new Date().toISOString();
   const signature = await signApproval(approvalPayload(set, actor, approvedAt, currentManifest));
   const { data: approvedRows, error } = await service().from("site_change_sets").update({
