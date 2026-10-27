@@ -18,13 +18,43 @@
   const rootURL = path => new URL(path, SITE_ROOT).href;
   async function readTable(table, params) {
     const query = new URLSearchParams(params || {});
-    const response = await fetch(API_ROOT + "/rest/v1/" + table + "?" + query.toString(), {
-      headers: { apikey: PUBLIC_KEY, Authorization: "Bearer " + PUBLIC_KEY, Accept: "application/json" },
-      cache: "no-store"
-    });
-    if (!response.ok) throw new Error("Catalog request failed (" + response.status + ")");
-    const data = await response.json();
-    if (!Array.isArray(data)) throw new Error("Unexpected catalog response");
+    let response;
+    try {
+      response = await fetch(API_ROOT + "/rest/v1/" + table + "?" + query.toString(), {
+        headers: { apikey: PUBLIC_KEY, Authorization: "Bearer " + PUBLIC_KEY, Accept: "application/json" },
+        cache: "no-store"
+      });
+    } catch (cause) {
+      const error = new Error("Could not reach the Supabase " + table + " endpoint. Check the connection and retry.");
+      error.catalogTable = table;
+      error.catalogKind = "network";
+      error.cause = cause;
+      throw error;
+    }
+    if (!response.ok) {
+      let detail = "";
+      try { detail = (await response.text()).slice(0, 240); } catch (_) {}
+      const error = new Error("Supabase " + table + " request failed with HTTP " + response.status + (detail ? ": " + detail : ""));
+      error.catalogTable = table;
+      error.status = response.status;
+      throw error;
+    }
+    let data;
+    try {
+      data = await response.json();
+    } catch (cause) {
+      const error = new Error("Supabase returned an invalid response for the " + table + " catalog.");
+      error.catalogTable = table;
+      error.catalogKind = "invalid-response";
+      error.cause = cause;
+      throw error;
+    }
+    if (!Array.isArray(data)) {
+      const error = new Error("Supabase returned an unexpected " + table + " catalog format.");
+      error.catalogTable = table;
+      error.catalogKind = "invalid-response";
+      throw error;
+    }
     return data;
   }
   function pathInfo() {
@@ -60,11 +90,41 @@
     if (product.cms_created) return rootURL("cms-product.html?slug=" + encodeURIComponent(product.slug));
     return existingHref || rootURL("products/" + encodeURIComponent(product.slug) + ".html");
   }
+  function categoryHref(category) {
+    return category?.cms_created
+      ? rootURL("category.html?slug=" + encodeURIComponent(category.slug))
+      : rootURL("categories/" + encodeURIComponent(category?.slug || "") + ".html");
+  }
+  function categorySlugFromHref(href) {
+    try {
+      const url = new URL(href || "", SITE_ROOT);
+      const querySlug = new URLSearchParams(url.search).get("slug");
+      if (querySlug) return querySlug;
+      const match = url.pathname.match(/\/categories\/([^/]+)\.html$/i);
+      return match ? decodeURIComponent(match[1]) : "";
+    } catch (_) { return ""; }
+  }
+  function compareCatalogProducts(a, b) {
+    return Number(a.sort_order || 0) - Number(b.sort_order || 0) ||
+      String(a.name || "").localeCompare(String(b.name || ""), "en", { sensitivity: "base" }) ||
+      String(a.slug || "").localeCompare(String(b.slug || ""));
+  }
+  function sortCatalogProducts(items) {
+    return [...items].sort(compareCatalogProducts);
+  }
+  function emptyState(message) {
+    const item = document.createElement("p");
+    item.className = "muted catalog-empty-state";
+    item.setAttribute("role", "status");
+    item.textContent = message;
+    item.style.gridColumn = "1 / -1";
+    return item;
+  }
   function setProductControls(button, product) {
     if (!button) return;
     button.dataset.slug = product.slug;
     button.dataset.name = product.name;
-    button.dataset.price = String(Number(product.price) || numericPrice(priceText(product)));
+    button.dataset.price = String(Number.isFinite(Number(product.price)) ? Number(product.price) : numericPrice(priceText(product)));
     button.dataset.displayPrice = priceText(product);
     button.dataset.image = product.image_url || "";
     button.dataset.category = product.category || "";
@@ -134,7 +194,7 @@
     const description = document.createElement("p"); description.textContent = product.short_description || "Product details can be confirmed before ordering.";
     const foot = document.createElement("div"); foot.className = "product-foot"; foot.appendChild(price);
     const add = document.createElement("button"); add.type = "button"; add.className = "cart-add-btn"; add.innerHTML = CART_ICON + "<span>Add to Cart</span>"; setProductControls(add, product);
-    const order = document.createElement("a"); order.className = "order-btn category-order-btn"; order.href = rootURL("order.html?product=" + encodeURIComponent(product.name)); order.innerHTML = CART_ICON + "<span>Order Now</span>";
+    const order = document.createElement("a"); order.className = "order-btn category-order-btn"; order.href = rootURL("order.html?product=" + encodeURIComponent(product.slug)); order.innerHTML = CART_ICON + "<span>Order Now</span>";
     foot.append(add, order);
     body.append(tag, nameLink, description, foot);
     card.append(imageLink, body);
@@ -155,11 +215,21 @@
     const category = categories.find(item => item.slug === info.slug && item.is_active);
     const grid = $(".category-page-products .product-grid");
     const heading = $(".category-page-heading h1, #live-category-title");
-    if (heading && (info.generic || category?.cms_created || category?.cms_managed)) heading.textContent = category?.name || "Category unavailable";
+    if (!category) {
+      if (heading) heading.textContent = "Category unavailable";
+      document.title = "Category unavailable | Halal Food";
+      const meta = document.querySelector('meta[name="description"]');
+      if (meta) meta.content = "This category is unavailable or has been hidden.";
+      if (grid) grid.replaceChildren(emptyState("This category is unavailable or has been hidden."));
+      return;
+    }
+    if (heading && (info.generic || category.cms_created || category.cms_managed)) heading.textContent = category.name;
     const meta = document.querySelector('meta[name="description"]');
-    if (category && meta && (info.generic || category.cms_created || category.cms_managed)) meta.content = category.description || "Browse " + category.name + " products from Halal Food.";
-    if (info.generic || category?.cms_created || category?.cms_managed) {
-      const pageTitle = category ? category.name + " | Halal Food" : "Category | Halal Food";
+    if (meta && (info.generic || category.cms_created || category.cms_managed)) {
+      meta.content = category.description || "Browse " + category.name + " products from Halal Food.";
+    }
+    if (info.generic || category.cms_created || category.cms_managed) {
+      const pageTitle = category.name + " | Halal Food";
       document.title = pageTitle;
       const canonical = document.querySelector('link[rel="canonical"]');
       if (canonical) canonical.href = info.generic ?
@@ -173,197 +243,225 @@
       if (ogUrl && canonical) ogUrl.content = canonical.href;
     }
     if (!grid) return;
-    if (info.generic) grid.replaceChildren();
-    const records = products.filter(item => item.category_slug === info.slug && item.is_active);
-    const cardSlugs = new Set($$(".product-card", grid).map(card => $("[data-add-to-cart][data-slug]", card)?.dataset.slug).filter(Boolean));
-    $$(".product-card", grid).forEach(card => {
-      const slug = $("[data-add-to-cart][data-slug]", card)?.dataset.slug;
-      if (!slug || !records.some(item => item.slug === slug)) card.remove();
-    });
-    const stillThere = new Set($$(".product-card", grid).map(card => $("[data-add-to-cart][data-slug]", card)?.dataset.slug).filter(Boolean));
-    records.forEach(item => {
-      const existing = stillThere.has(item.slug) ? $$(".product-card", grid).find(card => $("[data-add-to-cart][data-slug]", card)?.dataset.slug === item.slug) : null;
-      if (existing) updateProductCard(existing, item);
-      else grid.appendChild(makeProductCard(item, "standard"));
-    });
-    if (!records.length) grid.innerHTML = '<p class="muted">No active products are currently listed in this category.</p>';
+    const records = sortCatalogProducts(products.filter(item =>
+      item.is_active && item.category_slug === category.slug
+    ));
+    // Replace the static scaffold deterministically. This prevents duplicate cards and stale empty states.
+    grid.replaceChildren(...records.map(item => makeProductCard(item, "standard")));
+    if (!records.length) grid.appendChild(emptyState("No active products are currently listed in this category."));
   }
-  // Render the homepage's category product rails from the same live catalog as category pages.
-  // Keep each rail's card count stable so existing carousel controls remain compatible.
+  // Render every active product assigned to each existing homepage merchandising rail.
+  // The carousel controls are refreshed after the DOM replacement; the old scaffold card count is not a limit.
   function renderMerchandisingRails(products) {
-    $("[data-mrow]").forEach(wrap => {
+    $$("[data-mrow]").forEach(wrap => {
       const track = $("[data-mrow-track]", wrap);
       const section = wrap.closest("section") || wrap.parentElement;
       const viewAll = $(".merch-view-all", section);
       if (!track || !viewAll) return;
-      const href = viewAll.getAttribute("href") || "";
-      const match = href.match(/categories\/([^/?#]+)\.html/i) || href.match(/[?&]slug=([^&]+)/i);
-      if (!match) return;
-      let categorySlug = match[1];
-      try { categorySlug = decodeURIComponent(categorySlug); } catch (_) {}
-      const cardLimit = Math.max(1, track.querySelectorAll(".mrow-card").length);
-      const rows = products
-        .filter(item => item.is_active && item.category_slug === categorySlug)
-        .sort((a, b) =>
-          Number(Boolean(b.is_featured)) - Number(Boolean(a.is_featured)) ||
-          Number(a.sort_order || 0) - Number(b.sort_order || 0) ||
-          (Date.parse(b.created_at || "") || 0) - (Date.parse(a.created_at || "") || 0) ||
-          String(a.name || "").localeCompare(String(b.name || ""))
-        )
-        .slice(0, cardLimit);
+      const categorySlug = categorySlugFromHref(viewAll.getAttribute("href") || "");
+      if (!categorySlug) return;
+      const rows = products.filter(item =>
+        item.is_active && item.category_slug === categorySlug
+      ).sort((a, b) =>
+        Number(Boolean(b.is_featured)) - Number(Boolean(a.is_featured)) ||
+        compareCatalogProducts(a, b)
+      );
       track.replaceChildren(...rows.map(item => makeProductCard(item, "mrow")));
-      if (!rows.length) {
-        const empty = document.createElement("p");
-        empty.className = "muted";
-        empty.textContent = "No active products are currently listed in this category.";
-        track.appendChild(empty);
-      }
+      if (!rows.length) track.appendChild(emptyState("No active products are currently listed in this category."));
     });
   }
-
   function renderHome(products, categories) {
     const featuredGrid = $("#products .product-grid");
     if (featuredGrid) {
-      const catalogOrder = (a, b) =>
-        Number(a.sort_order || 0) - Number(b.sort_order || 0) ||
-        (Date.parse(b.created_at || "") || 0) - (Date.parse(a.created_at || "") || 0) ||
-        String(a.name || "").localeCompare(String(b.name || ""));
-      const featured = products.filter(item => item.is_featured && item.is_active).sort(catalogOrder);
-      const featuredSlugs = new Set(featured.map(item => item.slug));
-      const remaining = products.filter(item => item.is_active && !featuredSlugs.has(item.slug)).sort(catalogOrder);
-      const rows = [...featured, ...remaining].slice(0,4);
-      featuredGrid.replaceChildren(...rows.map(item => makeProductCard(item, "standard")));
+      const featured = sortCatalogProducts(products.filter(item => item.is_active && item.is_featured));
+      featuredGrid.replaceChildren(...featured.map(item => makeProductCard(item, "standard")));
+      if (!featured.length) featuredGrid.appendChild(emptyState("No products are currently marked as Featured."));
       featuredGrid.classList.add("featured-grid-4");
     }
+
     const jfy = $("#just-for-you .jfy-grid");
-    if (jfy) {
-      const rows = products.filter(item => item.is_active).sort((a,b) =>
-        Number(a.sort_order || 0) - Number(b.sort_order || 0) ||
-        (Date.parse(b.created_at || "") || 0) - (Date.parse(a.created_at || "") || 0) ||
-        String(a.name || "").localeCompare(String(b.name || ""))
-      ).slice(0,10);
-      jfy.replaceChildren(...rows.map(item => makeProductCard(item, "jfy")));
+    const jfyOrdered = [...products].filter(item => item.is_active).sort((a, b) =>
+      (Date.parse(b.created_at || "") || 0) - (Date.parse(a.created_at || "") || 0) ||
+      compareCatalogProducts(a, b)
+    );
+    const jfyRows = jfyOrdered.slice(0, 10);
+    if (jfy) jfy.replaceChildren(...jfyRows.map(item => makeProductCard(item, "jfy")));
+
+    // Keep Load More dynamic too: never re-insert the old hardcoded <template> after live data loads.
+    const remainder = jfyOrdered.slice(10);
+    const hiddenTemplate = $("[data-jfy-hidden]");
+    if (hiddenTemplate && hiddenTemplate.tagName === "TEMPLATE") {
+      hiddenTemplate.content.replaceChildren(...remainder.map(item => makeProductCard(item, "jfy")));
+    } else {
+      const expandedGrid = $("#just-for-you .jfy-shown");
+      if (expandedGrid) expandedGrid.replaceChildren(...remainder.map(item => makeProductCard(item, "jfy")));
     }
-    // Rebuild category product rails from the current database so new products and edits appear here too.
+    const loadMoreButton = $("[data-jfy-load-more]");
+    if (loadMoreButton) loadMoreButton.hidden = remainder.length === 0;
+
     renderMerchandisingRails(products);
     patchExistingCards(products);
     const rail = $("[data-category-rail]");
     if (rail) {
-      const present = new Map($$(".cat-card", rail).map(card => {
-        const url = card.getAttribute("href") || "";
-        const match = url.match(/categories\/([^/?#]+)\.html/i) || url.match(/[?&]slug=([^&]+)/);
-        return [match ? decodeURIComponent(match[1]) : "", card];
-      }).filter(pair => pair[0]));
-      rail.querySelectorAll(".cat-card").forEach(card => {
-        const href = card.getAttribute("href") || "";
-        const match = href.match(/categories\/([^/?#]+)\.html/i) || href.match(/[?&]slug=([^&]+)/);
-        if (match && !categories.some(cat => cat.slug === decodeURIComponent(match[1]) && cat.is_active)) card.remove();
+      const activeCategories = categories.filter(cat => cat.is_active);
+      $$(".cat-card", rail).forEach(card => {
+        const slug = categorySlugFromHref(card.getAttribute("href") || "");
+        if (slug && !activeCategories.some(cat => cat.slug === slug)) card.remove();
       });
-      const liveSlugs = new Set($$(".cat-card", rail).map(card => {
-        const href = card.getAttribute("href") || ""; const m = href.match(/categories\/([^/?#]+)\.html/i) || href.match(/[?&]slug=([^&]+)/);
-        return m ? decodeURIComponent(m[1]) : "";
-      }));
-      categories.filter(cat => cat.is_active).forEach(cat => {
-        let card = $$(".cat-card", rail).find(node => {
-          const href = node.getAttribute("href") || ""; const m = href.match(/categories\/([^/?#]+)\.html/i) || href.match(/[?&]slug=([^&]+)/);
-          return m && decodeURIComponent(m[1]) === cat.slug;
-        });
+      activeCategories.forEach(cat => {
+        let card = $$(".cat-card", rail).find(node =>
+          categorySlugFromHref(node.getAttribute("href") || "") === cat.slug
+        );
         if (!card) {
-          card = document.createElement("a"); card.className = "cat-card";
-          card.href = cat.cms_created ? rootURL("category.html?slug=" + encodeURIComponent(cat.slug)) : rootURL("categories/" + encodeURIComponent(cat.slug) + ".html");
+          card = document.createElement("a");
+          card.className = "cat-card";
           const imageBox = document.createElement("span"); imageBox.className = "cat-card-img";
-          const img = document.createElement("img"); img.alt = ""; img.loading = "lazy"; if (cat.image_url) img.src = cat.image_url;
-          imageBox.appendChild(img); const heading = document.createElement("h3"); heading.textContent = cat.name; card.append(imageBox, heading); rail.appendChild(card);
+          const img = document.createElement("img"); img.alt = ""; img.loading = "lazy"; img.decoding = "async";
+          if (cat.image_url) img.src = cat.image_url;
+          imageBox.appendChild(img);
+          const heading = document.createElement("h3"); heading.textContent = cat.name;
+          card.append(imageBox, heading);
+          rail.appendChild(card);
         }
+        card.href = categoryHref(cat);
         const label = $("h3", card); if (label) label.textContent = cat.name;
-        const img = $("img", card); if (img) { img.alt = ""; if (cat.image_url) setPictureImage(img, cat.image_url, ""); }
-        if (cat.cms_created) card.href = rootURL("category.html?slug=" + encodeURIComponent(cat.slug));
+        const img = $("img", card);
+        if (img) {
+          img.alt = "";
+          if (cat.image_url) setPictureImage(img, cat.image_url, "");
+        }
       });
     }
+    window.dispatchEvent(new CustomEvent("halalcatalog:rendered", {
+      detail: { products, categories }
+    }));
   }
   function syncCategoryMenus(categories) {
-    // Keep desktop mega menus and the mobile drawer in sync with active categories.
-    $(".mega-menu").forEach(menu => {
-      categories.filter(cat => cat.is_active).forEach(cat => {
-        let link = Array.from(menu.querySelectorAll("a")).find(a => {
-          const href = a.getAttribute("href") || "";
-          const match = href.match(/categories\/([^/?#]+)\.html/i) || href.match(/[?&]slug=([^&]+)/);
-          return match && decodeURIComponent(match[1]) === cat.slug;
-        });
+    const activeCategories = categories.filter(cat => cat.is_active);
+    const syncLinks = container => {
+      if (!container) return;
+      activeCategories.forEach(cat => {
+        let link = Array.from(container.querySelectorAll("a")).find(a =>
+          categorySlugFromHref(a.getAttribute("href") || "") === cat.slug
+        );
         if (!link) {
           link = document.createElement("a");
-          link.href = cat.cms_created ? rootURL("category.html?slug=" + encodeURIComponent(cat.slug)) :
-            rootURL("categories/" + encodeURIComponent(cat.slug) + ".html");
-          menu.appendChild(link);
+          container.appendChild(link);
         }
+        link.href = categoryHref(cat);
         link.textContent = cat.name;
-        if (cat.cms_created) link.href = rootURL("category.html?slug=" + encodeURIComponent(cat.slug));
       });
-      Array.from(menu.querySelectorAll("a")).forEach(link => {
-        const href = link.getAttribute("href") || "";
-        const match = href.match(/categories\/([^/?#]+)\.html/i) || href.match(/[?&]slug=([^&]+)/);
-        if (match && !categories.some(cat => cat.slug === decodeURIComponent(match[1]) && cat.is_active)) link.remove();
+      Array.from(container.querySelectorAll("a")).forEach(link => {
+        const slug = categorySlugFromHref(link.getAttribute("href") || "");
+        if (slug && !activeCategories.some(cat => cat.slug === slug)) link.remove();
       });
+    };
+
+    $$(".mega-menu").forEach(syncLinks);
+    $$(".mobile-category-links").forEach(syncLinks);
+
+    // Keep the footer category list consistent with the header and mobile navigation.
+    $$("footer .footer-grid > div").forEach(column => {
+      const heading = $("h4", column);
+      const list = $("ul", column);
+      if (!heading || !list || heading.textContent.trim().toLowerCase() !== "categories") return;
+      list.replaceChildren(...activeCategories.map(cat => {
+        const item = document.createElement("li");
+        const link = document.createElement("a");
+        link.href = categoryHref(cat);
+        link.textContent = cat.name;
+        item.appendChild(link);
+        return item;
+      }));
     });
-    const mobileLinks = $(".mobile-category-links");
-    if (mobileLinks) {
-      categories.filter(cat => cat.is_active).forEach(cat => {
-        let link = Array.from(mobileLinks.querySelectorAll("a")).find(a => {
-          const href = a.getAttribute("href") || "";
-          const match = href.match(/categories\/([^/?#]+)\.html/i) || href.match(/[?&]slug=([^&]+)/);
-          return match && decodeURIComponent(match[1]) === cat.slug;
-        });
-        if (!link) {
-          link = document.createElement("a");
-          mobileLinks.appendChild(link);
-        }
-        link.textContent = cat.name;
-        link.href = cat.cms_created ? rootURL("category.html?slug=" + encodeURIComponent(cat.slug)) :
-          rootURL("categories/" + encodeURIComponent(cat.slug) + ".html");
-      });
-      Array.from(mobileLinks.querySelectorAll("a")).forEach(link => {
-        const href = link.getAttribute("href") || "";
-        const match = href.match(/categories\/([^/?#]+)\.html/i) || href.match(/[?&]slug=([^&]+)/);
-        if (match && !categories.some(cat => cat.slug === decodeURIComponent(match[1]) && cat.is_active)) link.remove();
-      });
-    }
   }
-  function renderProductDetail(products, info) {
+  function renderRelatedProducts(products, currentProduct) {
+    const section = $("#related-section");
+    const grid = $("#related-grid");
+    if (!section || !grid) return;
+    const related = sortCatalogProducts(products.filter(item =>
+      item.is_active &&
+      item.slug !== currentProduct.slug &&
+      item.category_slug === currentProduct.category_slug
+    )).slice(0, 4);
+    grid.replaceChildren(...related.map(item => makeProductCard(item, "standard")));
+    section.style.display = related.length ? "" : "none";
+  }
+
+  function renderProductDetail(products, info, categories = currentCategories) {
     const product = products.find(item => item.slug === info.slug && item.is_active);
+    const article = $("main .product-detail") || $("main .product-detail-grid")?.closest("article");
     if (!product) {
-      // Only hide a static product page when the API returned successfully but the product is inactive/deleted.
-      const article = $("main .product-detail") || $("main .product-detail-grid")?.closest("article");
+      // Only hide a static product page when the catalog fetch succeeded but the product or its category is unavailable.
       if (article && !article.dataset.cmsUnavailable) {
         article.dataset.cmsUnavailable = "1";
         article.innerHTML = '<div class="product-not-found"><h1>Product unavailable</h1><p>This product is no longer listed in the active catalog.</p><a class="btn-secondary" href="' + rootURL("index.html") + '">Back to store</a></div>';
       }
+      const relatedSection = $("#related-section");
+      if (relatedSection) relatedSection.style.display = "none";
+      document.title = "Product unavailable | Halal Food";
       return;
     }
-    const article = $("main .product-detail") || $("main .product-detail-grid")?.closest("article");
     if (!article) return;
     const title = $(".product-detail-info h1", article);
     if (title && product.cms_managed) title.textContent = product.name;
     const tag = $(".product-detail-info .tag", article);
-    if (tag && product.cms_managed) tag.textContent = product.category || "";
+    if (tag) tag.textContent = product.category || "";
     const price = $(".product-detail-price", article);
     if (price) price.textContent = priceText(product);
     const image = $(".product-detail-image img, .product-detail-image-wrap img", article);
     if (image) setPictureImage(image, product.image_url, product.name);
     const add = $("[data-add-to-cart][data-slug]", article);
     if (add) setProductControls(add, product);
-    const order = $(".product-detail-actions .btn-primary", article);
-    if (order) order.href = rootURL("order.html?product=" + encodeURIComponent(product.name));
+    const order = $(".product-detail-actions .btn-primary, .product-detail-actions .order-btn", article);
+    if (order) {
+      order.href = rootURL("order.html?product=" + encodeURIComponent(product.slug));
+      order.setAttribute("aria-label", "Order Now: " + product.name);
+    }
     const message = encodeURIComponent("আমি " + product.name + " অর্ডার করতে চাই");
     const whats = $('.product-detail-actions a[href*="wa.me"]', article);
     if (whats) whats.href = "https://wa.me/8801842031164?text=" + message;
-    const detail = $(".product-description-section .product-description-inner p", article);
-    if (detail && product.cms_managed) detail.textContent = product.full_description || product.description || "";
+
+    const descriptionInner = $(".product-description-section .product-description-inner", article);
+    if (descriptionInner && product.cms_managed) {
+      descriptionInner.querySelectorAll("p").forEach(paragraph => paragraph.remove());
+      const text = String(product.full_description || product.description || product.short_description || "Product details will be updated soon.");
+      const parts = text.split(/\n{2,}/).map(part => part.trim()).filter(Boolean);
+      (parts.length ? parts : ["Product details will be updated soon."]).forEach(part => {
+        const paragraph = document.createElement("p");
+        part.split(/\n/).forEach((line, index) => {
+          if (index) paragraph.appendChild(document.createElement("br"));
+          paragraph.appendChild(document.createTextNode(line));
+        });
+        descriptionInner.appendChild(paragraph);
+      });
+    }
     const seo = document.querySelector('meta[name="description"]');
-    if (seo && product.cms_managed && product.seo_description) seo.content = product.seo_description;
-    document.title = product.cms_managed ? (product.seo_title || product.name + " | Halal Food") : document.title;
+    if (seo && product.cms_managed) seo.content = product.seo_description || product.short_description || product.name;
+    if (product.cms_managed) document.title = product.seo_title || product.name + " | Halal Food";
+
+    const category = categories.find(item => item.slug === product.category_slug && item.is_active);
+    const breadcrumb = $("#product-breadcrumb");
+    if (breadcrumb) {
+      breadcrumb.replaceChildren();
+      const homeLink = document.createElement("a");
+      homeLink.href = rootURL("index.html");
+      homeLink.textContent = "Home";
+      breadcrumb.append(homeLink, document.createTextNode(" › "));
+      if (category) {
+        const categoryLink = document.createElement("a");
+        categoryLink.href = categoryHref(category);
+        categoryLink.textContent = category.name;
+        breadcrumb.append(categoryLink, document.createTextNode(" › "));
+      } else {
+        breadcrumb.append(document.createTextNode(product.category || "Category"), document.createTextNode(" › "));
+      }
+      breadcrumb.append(document.createTextNode(product.name));
+    }
+    renderRelatedProducts(products, product);
   }
   function handleProductResult(product, info) {
-    if (info.kind === "product") renderProductDetail([product], info);
+    if (info.kind === "product") renderProductDetail([product], info, currentCategories);
   }
   function syncProductData(products, categories) {
     if (!Array.isArray(window.PRODUCTS_DATA)) window.PRODUCTS_DATA = [];
@@ -396,35 +494,78 @@
   }
   async function start() {
     const info = pathInfo();
-    const [products, categories] = await Promise.all([
+    const [productsResult, categoriesResult] = await Promise.allSettled([
       readTable("products", { select: "id,name,slug,category,category_slug,price,unit_type,display_price,image_url,short_description,full_description,description,is_active,is_featured,cms_created,cms_managed,sort_order,seo_title,seo_description,stock_quantity,created_at", is_active: "eq.true", order: "sort_order.asc,name.asc", limit: "1000" }),
       readTable("categories", { select: "id,name,slug,description,image_url,is_active,cms_created,cms_managed,sort_order", is_active: "eq.true", order: "sort_order.asc,name.asc", limit: "500" })
     ]);
+    const failures = [];
+    if (productsResult.status === "rejected") failures.push("Products: " + (productsResult.reason?.message || "request failed"));
+    if (categoriesResult.status === "rejected") failures.push("Categories: " + (categoriesResult.reason?.message || "request failed"));
+    if (failures.length) {
+      const error = new Error("Live catalog fetch failed. " + failures.join(" | "));
+      error.catalogStage = "fetch";
+      error.catalogFailures = failures;
+      throw error;
+    }
+    const products = productsResult.value;
+    const categories = categoriesResult.value;
     currentCategories = categories;
     // Products assigned to a hidden category should not leak into home, search or cart.
     const visibleProducts = products.filter(product =>
       categories.some(category => category.slug === product.category_slug && category.is_active)
     );
-    syncProductData(visibleProducts, categories);
-    syncCategoryMenus(categories);
-    if (info.kind === "home") renderHome(visibleProducts, categories);
-    else if (info.kind === "category") renderCategory(visibleProducts, categories, info);
-    else if (info.kind === "product") renderProductDetail(visibleProducts, info);
-  }
-  window.addEventListener("halalnav:ready", () => { if (currentCategories.length) syncCategoryMenus(currentCategories); });
-  const initLiveCatalog = () => start().catch(error => {
-    console.warn("Live catalog could not connect; leaving the static catalog in place.", error);
-    const status = $("#live-catalog-status");
-    if (status) status.textContent = "Catalog is temporarily showing saved static content.";
-    if (/\/category\.html$/i.test(location.pathname)) {
-      const heading = $("#live-category-title");
-      const grid = $(".category-page-products .product-grid");
-      if (heading && /loading category/i.test(heading.textContent)) heading.textContent = "Category temporarily unavailable";
-      if (grid && /loading products/i.test(grid.textContent)) {
-        grid.innerHTML = '<p class="muted">We could not load this category right now. Please refresh the page to try again.</p>';
-      }
+    try {
+      syncProductData(visibleProducts, categories);
+      syncCategoryMenus(categories);
+      if (info.kind === "home") renderHome(visibleProducts, categories);
+      else if (info.kind === "category") renderCategory(visibleProducts, categories, info);
+      else if (info.kind === "product") renderProductDetail(visibleProducts, info, categories);
+    } catch (cause) {
+      const error = new Error("Live catalog data was fetched, but page synchronization did not complete.");
+      error.catalogStage = "synchronization";
+      error.cause = cause;
+      throw error;
     }
+    const status = $("#live-catalog-status");
+    if (status) status.remove();
+  }
+  function showCatalogError(error) {
+    console.error("Live catalog synchronization failed.", error);
+    let status = $("#live-catalog-status");
+    if (!status) {
+      status = document.createElement("div");
+      status.id = "live-catalog-status";
+      const container = document.querySelector("main") || document.body;
+      container.prepend(status);
+    }
+    status.className = "catalog-sync-status catalog-sync-status-error";
+    status.setAttribute("role", "alert");
+    status.setAttribute("aria-live", "assertive");
+    status.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:12px auto;padding:12px 16px;max-width:1200px;border:1px solid #D8D4C9;border-left:4px solid #C97B3D;border-radius:10px;background:#FFFDF8;color:#2B2A3D;font:500 14px/1.5 system-ui,sans-serif";
+    status.replaceChildren();
+    const message = document.createElement("span");
+    message.textContent = "We couldn’t refresh the live catalog. The products or categories currently shown may be preloaded and outdated. Please retry.";
+    const retry = document.createElement("button");
+    retry.type = "button";
+    retry.textContent = "Retry catalog";
+    retry.style.cssText = "border:0;border-radius:7px;padding:8px 12px;background:#C97B3D;color:#FFFDF8;font:600 14px/1.3 system-ui,sans-serif;cursor:pointer";
+    retry.addEventListener("click", async () => {
+      retry.disabled = true;
+      retry.textContent = "Retrying…";
+      try {
+        await start();
+      } catch (retryError) {
+        showCatalogError(retryError);
+      }
+    });
+    status.append(message, retry);
+  }
+  window.addEventListener("halalnav:ready", () => {
+    if (!currentCategories.length) return;
+    try { syncCategoryMenus(currentCategories); }
+    catch (error) { showCatalogError(error); }
   });
+  const initLiveCatalog = () => start().catch(showCatalogError);
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", initLiveCatalog, { once: true });
   else initLiveCatalog();
 })();

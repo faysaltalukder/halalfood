@@ -789,6 +789,34 @@ async function refresh(){[products,categories]=await Promise.all([fetchProducts(
   $("productImageFile")?.addEventListener("change",()=>{const f=$("productImageFile").files?.[0];if(f){$("productImagePreview").src=URL.createObjectURL(f);$("productImagePreview").hidden=false;}});
   $("productName")?.addEventListener("input",()=>{if(!$("productId").value&&!$("productSlug").dataset.edited)$("productSlug").value=slugify($("productName").value);});
   $("productSlug")?.addEventListener("input",()=>{$("productSlug").dataset.edited="1";});
+
+  const PRODUCT_READBACK_COLUMNS="id,name,slug,category,category_slug,price,unit_type,display_price,image_url,short_description,full_description,stock_quantity,is_active,is_featured,sort_order,seo_title,seo_description,cms_managed,cms_created";
+  const CATEGORY_READBACK_COLUMNS="id,name,slug,description,image_url,sort_order,is_active,cms_managed,cms_created";
+  function sameSavedValue(actual,expected){
+   if(actual===null||actual===undefined||expected===null||expected===undefined)return (actual===null||actual===undefined)&&(expected===null||expected===undefined);
+   if(typeof expected==="number")return Number.isFinite(Number(actual))&&Number(actual)===expected;
+   if(typeof expected==="boolean")return actual===expected;
+   return String(actual)===String(expected);
+  }
+  async function verifyAdminCatalogRecord(table,id,columns,expected,label){
+   const {data,error}=await client.from(table).select(columns).eq("id",id).maybeSingle();
+   if(error)throw new Error(label+" was written, but database read-back verification failed: "+error.message);
+   if(!data)throw new Error(label+" was written, but the saved record could not be found during database read-back verification.");
+   const selected=new Set(columns.split(","));
+   const mismatches=Object.entries(expected).filter(([key,value])=>selected.has(key)&&!sameSavedValue(data[key],value)).map(([key])=>key);
+   if(mismatches.length)throw new Error(label+" was written, but these saved fields did not match the submitted values: "+mismatches.join(", ")+". No success confirmation was shown; refresh and inspect the record before retrying.");
+   return data;
+  }
+  async function refreshCatalogAfterSave(successMessage,entityLabel){
+   try{
+    await refresh();
+    toast(successMessage);
+   }catch(refreshError){
+    console.error(entityLabel+" was saved and verified, but the Admin list could not refresh.",refreshError);
+    toast(entityLabel+" was saved and verified, but this dashboard could not refresh. Reload the Products page.", "error");
+   }
+  }
+
   $("productForm")?.addEventListener("submit",async e=>{
    e.preventDefault();const id=$("productId").value,button=$("saveProductBtn");button.disabled=true;$("productFormError").textContent="";
    try{
@@ -802,22 +830,35 @@ async function refresh(){[products,categories]=await Promise.all([fetchProducts(
     const displayPriceAmount=displayPriceMatch?Number(displayPriceMatch[0].replace(/,/g,"")):NaN;
     const displayPrice=displayPriceInput&&displayPriceAmount===price?displayPriceInput:("৳"+price.toLocaleString("en-BD")+" / "+unit);
     const payload={name,slug,category:category.name,category_slug:category.slug,price,unit_type:unit,display_price:displayPrice,image_url:imageUrl||null,short_description:$("productShortDescription").value.trim(),full_description:$("productFullDescription").value.trim(),stock_quantity:$("productStock").value===""?null:Number($("productStock").value),is_active:$("productActive").checked,is_featured:$("productFeatured").checked,sort_order:parseInt($("productSortOrder").value||"0",10)||0,seo_title:$("productSeoTitle").value.trim()||null,seo_description:$("productSeoDescription").value.trim()||null,cms_managed:true};
-     const rawCost=$("productCostPrice").value,rawPackaging=$("productPackagingCost").value,rawThreshold=$("productLowStockThreshold").value;
-     const costPrice=rawCost===""?null:Number(rawCost),packagingCost=rawPackaging===""?0:Number(rawPackaging),lowStockThreshold=rawThreshold===""?5:Number(rawThreshold);
-     if(costPrice!==null&&(!Number.isFinite(costPrice)||costPrice<0))throw new Error("Enter a valid non-negative purchase cost, or leave it blank.");
-     if(!Number.isFinite(packagingCost)||packagingCost<0)throw new Error("Enter a valid non-negative packaging cost.");
-     if(!Number.isFinite(lowStockThreshold)||lowStockThreshold<0)throw new Error("Enter a valid non-negative low-stock threshold.");
+    const rawCost=$("productCostPrice").value,rawPackaging=$("productPackagingCost").value,rawThreshold=$("productLowStockThreshold").value;
+    const costPrice=rawCost===""?null:Number(rawCost),packagingCost=rawPackaging===""?0:Number(rawPackaging),lowStockThreshold=rawThreshold===""?5:Number(rawThreshold);
+    if(costPrice!==null&&(!Number.isFinite(costPrice)||costPrice<0))throw new Error("Enter a valid non-negative purchase cost, or leave it blank.");
+    if(!Number.isFinite(packagingCost)||packagingCost<0)throw new Error("Enter a valid non-negative packaging cost.");
+    if(!Number.isFinite(lowStockThreshold)||lowStockThreshold<0)throw new Error("Enter a valid non-negative low-stock threshold.");
     if(!name)throw new Error("Product name is required.");
     let savedId=id;
-     if(id){const {error}=await client.from("products").update(payload).eq("id",id);if(error)throw error;savedId=id;}
-     else{payload.cms_created=true;const {data,error}=await client.from("products").insert(payload).select("id").single();if(error)throw error;savedId=data.id;$("productId").value=savedId;$("productSlug").readOnly=true;}
-     const {error:costError}=await client.from("admin_product_costs").upsert({product_id:savedId,cost_price:costPrice,packaging_cost:packagingCost,low_stock_threshold:lowStockThreshold,updated_by:ADMIN_EMAIL,updated_at:new Date().toISOString()},{onConflict:"product_id"});
-     if(costError)throw new Error("Product details were saved, but private cost and stock-alert settings were not saved. Edit this product and retry. "+costError.message);
-     await audit(id?"product_updated":"product_created","product",savedId,id?"Product details and private cost settings updated":"New product and private cost settings created",{slug,cost_recorded:costPrice!==null,low_stock_threshold:lowStockThreshold});
-     $("productDialog").close();toast(id?"Product updated.":"Product added.");await refresh();
-   }catch(err){$("productFormError").textContent=err.message||"Product could not be saved.";}
+    if(!id)payload.cms_created=true;
+    const writeResult=id
+      ? await client.from("products").update(payload).eq("id",id).select("id").single()
+      : await client.from("products").insert(payload).select("id").single();
+    if(writeResult.error)throw writeResult.error;
+    if(!writeResult.data?.id)throw new Error("The database did not return a saved Product record. Refresh and inspect the catalog before retrying.");
+    savedId=writeResult.data.id;
+    $("productId").value=savedId;$("productSlug").readOnly=true;
+    const {error:costError}=await client.from("admin_product_costs").upsert({product_id:savedId,cost_price:costPrice,packaging_cost:packagingCost,low_stock_threshold:lowStockThreshold,updated_by:ADMIN_EMAIL,updated_at:new Date().toISOString()},{onConflict:"product_id"});
+    if(costError)throw new Error("Product details were saved, but private cost and stock-alert settings were not saved. Edit this product and retry. "+costError.message);
+    await verifyAdminCatalogRecord("products",savedId,PRODUCT_READBACK_COLUMNS,payload,"Product");
+    const {data:verifiedCost,error:costVerifyError}=await client.from("admin_product_costs").select("product_id,cost_price,packaging_cost,low_stock_threshold").eq("product_id",savedId).maybeSingle();
+    if(costVerifyError||!verifiedCost)throw new Error("Product details were saved, but private cost and stock-alert settings could not be verified from the database. "+(costVerifyError?.message||"No matching cost record was returned.")+" Reopen this product and inspect its private settings before retrying.");
+    const costMismatches=[["cost_price",costPrice],["packaging_cost",packagingCost],["low_stock_threshold",lowStockThreshold]].filter(([field,value])=>!sameSavedValue(verifiedCost[field],value)).map(([field])=>field);
+    if(costMismatches.length)throw new Error("Product details were saved, but saved private settings did not match: "+costMismatches.join(", ")+". Reopen this product and inspect its settings before retrying.");
+    await audit(id?"product_updated":"product_created","product",savedId,id?"Product details and private cost settings updated":"New product and private cost settings created",{slug,cost_recorded:costPrice!==null,low_stock_threshold:lowStockThreshold});
+    $("productDialog").close();
+    await refreshCatalogAfterSave(id?"Product updated and database-verified.":"Product added and database-verified.","Product");
+   }catch(err){$("productFormError").textContent=err.message||"Product could not be saved or verified.";}
    finally{button.disabled=false;}
   });
+
   function openCategory(c=null){
    $("categoryForm").reset();$("categoryId").value=c?.id||"";$("categoryName").value=c?.name||"";$("categorySlug").value=c?.slug||"";$("categorySlug").readOnly=!!c;$("categorySlug").dataset.edited=c?"1":"";$("categoryDescription").value=c?.description||"";$("categoryImageUrl").value=c?.image_url||"";$("categorySortOrder").value=c?.sort_order??0;$("categoryActive").checked=c?.is_active??true;$("categoryFormError").textContent="";$("categoryDialogTitle").textContent=c?"Edit category":"Add category";$("categoryDialog").showModal();
   }
@@ -825,19 +866,42 @@ async function refresh(){[products,categories]=await Promise.all([fetchProducts(
   $("categorySlug")?.addEventListener("input",()=>{$("categorySlug").dataset.edited="1";});
   $("categoryForm")?.addEventListener("submit",async e=>{
    e.preventDefault();const id=$("categoryId").value,button=$("saveCategoryBtn");button.disabled=true;$("categoryFormError").textContent="";
+   let categoryWasWritten=false;
    try{
     const name=$("categoryName").value.trim(),slug=$("categorySlug").value.trim();if(!name)throw new Error("Category name is required.");if(!(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).test(slug))throw new Error("Use an English category slug, e.g. nuts-seeds.");
     const payload={name,slug,description:$("categoryDescription").value.trim(),image_url:$("categoryImageUrl").value.trim()||null,sort_order:parseInt($("categorySortOrder").value||"0",10)||0,is_active:$("categoryActive").checked,cms_managed:true};
+    let savedCategoryId=id;
     if(id){
      const old=categories.find(c=>c.id===id);
-     const {error}=await client.from("categories").update(payload).eq("id",id);if(error)throw error;
-     if(old&&old.name!==name){const upd=await client.from("products").update({category:name}).eq("category_slug",old.slug);if(upd.error)throw upd.error;}
-     await audit("category_updated","category",id,"Category updated",{slug});
-    }else{payload.cms_created=true;const {data,error}=await client.from("categories").insert(payload).select("id").single();if(error)throw error;await audit("category_created","category",data.id,"New category created",{slug});}
-    $("categoryDialog").close();toast(id?"Category updated.":"Category added.");await refresh();
-   }catch(err){$("categoryFormError").textContent=err.message||"Category could not be saved.";}
-   finally{button.disabled=false;}
+     const {data:savedCategory,error}=await client.from("categories").update(payload).eq("id",id).select("id").single();
+     if(error)throw error;
+     if(!savedCategory?.id)throw new Error("The database did not return the updated Category record.");
+     savedCategoryId=savedCategory.id;categoryWasWritten=true;
+     if(old&&old.name!==name){
+      const {data:linkedProducts,error:linkedProductsError}=await client.from("products").update({category:name}).eq("category_slug",old.slug).select("id,category,category_slug");
+      if(linkedProductsError)throw new Error("The Category name was saved, but linked Product labels could not be synchronized. "+linkedProductsError.message);
+      const mismatch=(linkedProducts||[]).filter(product=>product.category!==name||product.category_slug!==old.slug);
+      if(mismatch.length)throw new Error("The Category name was saved, but "+mismatch.length+" linked Product label(s) failed read-back verification.");
+     }
+     await audit("category_updated","category",savedCategoryId,"Category updated",{slug,linked_product_labels_updated:!!(old&&old.name!==name)});
+    }else{
+     payload.cms_created=true;
+     const {data:savedCategory,error}=await client.from("categories").insert(payload).select("id").single();
+     if(error)throw error;
+     if(!savedCategory?.id)throw new Error("The database did not return the created Category record.");
+     savedCategoryId=savedCategory.id;categoryWasWritten=true;
+     $("categoryId").value=savedCategoryId;$("categorySlug").readOnly=true;
+     await audit("category_created","category",savedCategoryId,"New category created",{slug});
+    }
+    await verifyAdminCatalogRecord("categories",savedCategoryId,CATEGORY_READBACK_COLUMNS,payload,"Category");
+    $("categoryDialog").close();
+    await refreshCatalogAfterSave(id?"Category updated and database-verified.":"Category added and database-verified.","Category");
+   }catch(err){
+    const message=err.message||"Category could not be saved or verified.";
+    $("categoryFormError").textContent=categoryWasWritten?"The Category was saved, but a linked-Product synchronization or read-back step failed. "+message:message;
+   }finally{button.disabled=false;}
   });
+
   $("productTableBody")?.addEventListener("click",async e=>{
    const edit=e.target.closest("[data-edit-product]"),toggle=e.target.closest("[data-toggle-product]");
    if(edit){openProduct(products.find(p=>p.id===edit.dataset.editProduct));return;}

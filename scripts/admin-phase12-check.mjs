@@ -8,7 +8,7 @@ const root = process.cwd();
 const adminDir = join(root, "admin");
 const sharedCssVersion = "20261026-phase4-a11y-performance";
 const sharedJsVersion = "20261026-phase4-a11y-performance";
-const appJsVersion = "20261026-phase12-audit-hardening";
+const appJsVersion = "20261027-save-integrity-v1";
 const read = (path) => readFileSync(join(root, path), "utf8");
 
 const htmlFiles = readdirSync(adminDir).filter((file) => file.endsWith(".html"));
@@ -57,6 +57,56 @@ assert.ok(shared.includes('document.documentElement.dataset.adminTheme=savedThem
 assert.ok(shared.includes('let savedTheme="light";try{savedTheme=localStorage.getItem(themeKey)||"light";}'));
 
 const app = read("admin/app.js");
+const liveCatalog = read("js/live-catalog.js");
+const storefrontMain = read("js/main.js");
+const cmsProduct = read("js/cms-product.js");
+const productsIndex = read("js/products-index.js");
+execFileSync(process.execPath, ["--check", join(root, "js/live-catalog.js")], { cwd: root, stdio: "pipe" });
+execFileSync(process.execPath, ["--check", join(root, "js/main.js")], { cwd: root, stdio: "pipe" });
+execFileSync(process.execPath, ["--check", join(root, "js/cms-product.js")], { cwd: root, stdio: "pipe" });
+execFileSync(process.execPath, ["--check", join(root, "js/products-index.js")], { cwd: root, stdio: "pipe" });
+assert.ok(app.includes("verifyAdminCatalogRecord(\"products\",savedId,PRODUCT_READBACK_COLUMNS,payload,\"Product\")"), "Product save must read the persisted product record back and verify submitted fields.");
+assert.ok(app.includes("verifyAdminCatalogRecord(\"categories\",savedCategoryId,CATEGORY_READBACK_COLUMNS,payload,\"Category\")"), "Category save must read the persisted category record back.");
+assert.ok(app.includes('update(payload).eq("id",id).select("id").single()'), "Product edits must update and confirm the existing record by ID.");
+assert.ok(app.includes('insert(payload).select("id").single()'), "New Product inserts must return the created record ID before follow-up writes.");
+assert.ok(app.includes("costMismatches") && app.includes("low_stock_threshold"), "Private cost and stock-alert settings must be verified after save.");
+assert.ok(app.includes("linked Product labels could not be synchronized"), "Partial Category rename failures must be reported as such.");
+assert.ok(liveCatalog.includes('cache: "no-store"'), "Public catalog fetches must not reuse the browser HTTP cache.");
+assert.ok(liveCatalog.includes("Promise.allSettled"), "Product and Category fetch failures must be collected and reported separately.");
+assert.ok(liveCatalog.includes("Retry catalog"), "Catalog failure state must provide a retry action.");
+assert.ok(liveCatalog.includes("preloaded and outdated"), "Catalog failures must not present preloaded HTML as verified live data.");
+assert.ok(storefrontMain.includes("js/live-catalog.js?v=20261027-catalog-render-v1"), "Fallback catalog loader must use the current cache-busted asset.");
+assert.ok(liveCatalog.includes('$$(".mega-menu").forEach(syncLinks)'), "Desktop category navigation must update all menu containers.");
+assert.ok(liveCatalog.includes('$$("[data-mrow]").forEach(wrap =>'), "Every homepage merchandising rail must be rendered from live products.");
+assert.equal(liveCatalog.split(/\r?\n/).filter((line) => /^\s*\$\("[^"]+"\)\.forEach/.test(line)).length, 0, "Single-element querySelector helper must never be used as a multi-element collection.");
+assert.ok(liveCatalog.includes("products.filter(item => item.is_active && item.is_featured)"), "Featured Products must contain only explicitly featured active items.");
+assert.ok(!liveCatalog.includes("[...featured, ...remaining]"), "Non-featured Products must not be forced into the Featured section.");
+assert.ok(!liveCatalog.includes("slice(0, cardLimit)"), "Homepage category rails must not inherit the old static scaffold card limit.");
+assert.ok(liveCatalog.includes('window.dispatchEvent(new CustomEvent("halalcatalog:rendered"'), "The completed live render must refresh carousel controls.");
+assert.ok(liveCatalog.includes('const remainder = jfyOrdered.slice(10)'), "Load More must receive its data from the current catalog, not static template cards.");
+assert.ok(storefrontMain.includes('window.addEventListener("halalcatalog:rendered", initMrow)'), "Merchandising carousel controls must reinitialize after live rendering.");
+assert.ok(storefrontMain.includes("const cards = () => Array.from(track.children)"), "Carousel logic must read the current DOM card collection.");
+assert.ok(cmsProduct.includes("getActiveCategory(item.category_slug)"), "CMS product details must verify that their category is active.");
+assert.ok(productsIndex.includes("window.PRODUCTS_DATA"), "Search suggestions must use the current catalog after it has loaded.");
+assert.ok(productsIndex.includes("item.category") && productsIndex.includes("item.slug"), "Search suggestions must match the current Category and Product slug as well as the name.");
+assert.ok(productsIndex.includes('window.addEventListener("halalcatalog:updated"'), "Open search suggestions must refresh when the live catalog arrives.");
+assert.ok(cmsProduct.includes('encodeURIComponent(item.slug)'), "CMS product Order Now must use the stable product slug.");
+const publicHtmlPaths = execFileSync("git", ["ls-files", "*.html"], { cwd: root, encoding: "utf8" })
+  .split(/\r?\n/).filter((path) => path && !path.startsWith("admin/"));
+for (const path of publicHtmlPaths) {
+  const source = read(path);
+  if (/<script\b[^>]*\bsrc=["'][^"']*(?:\.\.\/)*js\/main\.js(?:\?[^"']*)?["'][^>]*>/i.test(source)) {
+    assert.ok(source.includes("js/main.js?v=20261027-catalog-render-v1"), `${path}: main.js cache key must be current.`);
+  }
+  const liveCatalogTags = [...source.matchAll(/<script\b[^>]*\bsrc=["']([^"']*live-catalog\.js(?:\?[^"']*)?)["'][^>]*>/gi)];
+  for (const match of liveCatalogTags) {
+    assert.ok(match[1].includes("live-catalog.js?v=20261027-catalog-render-v1"), `${path}: live catalog script cache key must be current.`);
+  }
+  const productIndexTags = [...source.matchAll(/<script\b[^>]*\bsrc=["']([^"']*products-index\.js(?:\?[^"']*)?)["'][^>]*>/gi)];
+  for (const match of productIndexTags) {
+    assert.ok(match[1].includes("products-index.js?v=20261027-catalog-search-v1"), `${path}: product search index cache key must be current.`);
+  }
+}
 assert.ok(app.includes('order_items(id,product_id,product_name,quantity,unit,unit_price,line_total,product_image_url)'), "Courier booking must load relational order_items.");
 assert.ok(app.includes("normalizeCourierMobile(freshOrder.customer_phone)"), "Courier booking must match backend phone validation.");
 assert.ok(app.includes("freshCustomerName.length<3||freshCustomerName.length>100"), "Courier booking must validate provider-compatible customer names.");

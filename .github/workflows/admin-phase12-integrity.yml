@@ -5,20 +5,46 @@ on:
     branches: ["main"]
     paths:
       - "admin/**"
+      - "js/live-catalog.js"
+      - "js/cms-product.js"
+      - "js/main.js"
+      - "js/products-index.js"
+      - "index.html"
+      - "category.html"
+      - "product.html"
+      - "order.html"
+      - "*.html"
+      - "blog/**"
+      - "categories/**"
+      - "products/**"
       - "supabase/functions/courier-integration/**"
       - "supabase/functions/facebook-publishing/**"
       - "supabase/functions/post-dispatcher/**"
       - "supabase/migrations/**"
       - "scripts/admin-phase12-check.mjs"
+      - "scripts/catalog-dom-check.mjs"
       - ".github/workflows/admin-phase12-integrity.yml"
   pull_request:
     paths:
       - "admin/**"
+      - "js/live-catalog.js"
+      - "js/cms-product.js"
+      - "js/main.js"
+      - "js/products-index.js"
+      - "index.html"
+      - "category.html"
+      - "product.html"
+      - "order.html"
+      - "*.html"
+      - "blog/**"
+      - "categories/**"
+      - "products/**"
       - "supabase/functions/courier-integration/**"
       - "supabase/functions/facebook-publishing/**"
       - "supabase/functions/post-dispatcher/**"
       - "supabase/migrations/**"
       - "scripts/admin-phase12-check.mjs"
+      - "scripts/catalog-dom-check.mjs"
       - ".github/workflows/admin-phase12-integrity.yml"
   workflow_dispatch:
 
@@ -36,6 +62,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
+      - name: Install lightweight DOM test dependency
+        run: npm install --no-save --no-package-lock linkedom@0.18.12
+      - name: Run storefront catalog DOM behavior checks
+        run: node scripts/catalog-dom-check.mjs
       - name: Set up Deno
         uses: denoland/setup-deno@v2
         with:

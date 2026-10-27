@@ -66,20 +66,62 @@ document.addEventListener("DOMContentLoaded", () => {
   const results = document.querySelector("#search-results");
   if (!input || !results) return;
 
-  input.addEventListener("input", () => {
-    const q = input.value.trim().toLowerCase();
-    results.innerHTML = "";
-    if (!q) return;
+  const siteRoot = "https://faysaltalukder.github.io/halalfood/";
+  const recordsForSearch = () => {
+    if (window.HALAL_LIVE_CATALOG_READY === true && Array.isArray(window.PRODUCTS_DATA)) {
+      return window.PRODUCTS_DATA.filter(item => item && item.slug).map(item => ({
+        name: String(item.name || item.slug),
+        slug: String(item.slug),
+        category: String(item.category || ""),
+        price: String(item.price || ""),
+        href: item.cmsCreated
+          ? new URL("cms-product.html?slug=" + encodeURIComponent(item.slug), siteRoot).href
+          : new URL("products/" + encodeURIComponent(item.slug) + ".html", siteRoot).href
+      }));
+    }
+    // A lightweight fallback is retained until Supabase returns the live catalog.
+    return PRODUCTS_INDEX.map(([name, href, category = "", slug = ""]) => ({
+      name: String(name || slug || "Product"),
+      slug: String(slug || ""),
+      category: String(category || ""),
+      price: "",
+      href: String(href || "")
+    }));
+  };
 
-    PRODUCTS_INDEX.filter(([name]) => name.toLowerCase().includes(q))
-      .slice(0, 8)
-      .forEach(([name, url]) => {
-        const li = document.createElement("li");
-        const a = document.createElement("a");
-        a.href = url;
-        a.textContent = name;
-        li.appendChild(a);
-        results.appendChild(li);
-      });
+  const renderResults = () => {
+    const query = input.value.trim().toLocaleLowerCase();
+    results.replaceChildren();
+    if (!query) return;
+
+    const matches = recordsForSearch().filter(item =>
+      [item.name, item.category, item.slug].some(value =>
+        String(value || "").toLocaleLowerCase().includes(query)
+      )
+    ).slice(0, 8);
+
+    matches.forEach(item => {
+      const li = document.createElement("li");
+      const link = document.createElement("a");
+      link.href = item.href;
+      link.textContent = item.category ? item.name + " · " + item.category : item.name;
+      if (item.price) link.setAttribute("aria-label", item.name + ", " + item.category + ", " + item.price);
+      li.appendChild(link);
+      results.appendChild(li);
+    });
+
+    if (!matches.length) {
+      const li = document.createElement("li");
+      li.className = "search-empty";
+      li.textContent = "No matching products found";
+      results.appendChild(li);
+    }
+  };
+
+  input.addEventListener("input", renderResults);
+  // If the customer started searching before the asynchronous catalog finished,
+  // refresh suggestions automatically without synthesizing an extra input event.
+  window.addEventListener("halalcatalog:updated", () => {
+    if (input.value.trim()) renderResults();
   });
 });
