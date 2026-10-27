@@ -1222,7 +1222,8 @@ async function refresh(){[products,categories]=await Promise.all([fetchProducts(
    customers:initCustomers,
    finance:initFinance,
    reports:initReports,
-   settings:initSettings
+   settings:initSettings,
+   "website-publisher":()=>{if(typeof window.HFWebsitePublisherInit==="function")return window.HFWebsitePublisherInit();throw new Error("Website Publisher module did not load.");}
   };
   if(!actions[page]){toast("This section is not available yet.","error");return;}
   actions[page]().catch(err=>{console.error("Admin page failed",page,err);toast("The page could not load its data. "+(err?.message||"Please refresh and try again."),"error");});

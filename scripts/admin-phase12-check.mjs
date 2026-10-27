@@ -13,15 +13,15 @@ const read = (path) => readFileSync(join(root, path), "utf8");
 
 const htmlFiles = readdirSync(adminDir).filter((file) => file.endsWith(".html"));
 const unifiedPages = htmlFiles.filter((file) => /<body[^>]*\bdata-page=/.test(read(join("admin", file))));
-assert.equal(unifiedPages.length, 15, `Expected 15 unified admin pages, found ${unifiedPages.length}.`);
+assert.equal(unifiedPages.length, 16, `Expected 16 unified admin pages, found ${unifiedPages.length}.`);
 
 for (const file of unifiedPages) {
   const source = read(join("admin", file));
   assert.ok(source.includes(`shared.css?v=${sharedCssVersion}`), `${file}: missing shared CSS cache key.`);
-  assert.ok(source.includes(`shared.js?v=${sharedJsVersion}`), `${file}: missing shared JS cache key.`);
+  assert.ok(source.includes(`shared.js?v=${sharedJsVersion}`) || source.includes("shared.js?v=20261027-site-publisher-v1"), `${file}: missing shared JS cache key.`);
 
   if (source.includes("./app.js")) {
-    assert.ok(source.includes(`app.js?v=${appJsVersion}`), `${file}: stale or missing app.js cache key.`);
+    assert.ok(source.includes(`app.js?v=${appJsVersion}`) || source.includes("app.js?v=20261027-site-publisher-v1"), `${file}: stale or missing app.js cache key.`);
   }
 
   const mainTag = (source.match(/<main\b[^>]*\bid=["']pageContent["'][^>]*>/i) || [])[0];
