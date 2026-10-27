@@ -8,6 +8,7 @@ on:
       - "supabase/functions/courier-integration/**"
       - "supabase/functions/facebook-publishing/**"
       - "supabase/functions/post-dispatcher/**"
+      - "supabase/functions/site-publisher/**"
       - "supabase/migrations/**"
       - "scripts/admin-phase12-check.mjs"
       - ".github/workflows/admin-phase12-integrity.yml"
@@ -17,6 +18,7 @@ on:
       - "supabase/functions/courier-integration/**"
       - "supabase/functions/facebook-publishing/**"
       - "supabase/functions/post-dispatcher/**"
+      - "supabase/functions/site-publisher/**"
       - "supabase/migrations/**"
       - "scripts/admin-phase12-check.mjs"
       - ".github/workflows/admin-phase12-integrity.yml"
@@ -45,5 +47,6 @@ jobs:
         run: |
           deno check supabase/functions/facebook-publishing/index.ts
           deno check supabase/functions/post-dispatcher/index.ts
+          deno check supabase/functions/site-publisher/index.ts
       - name: Run final admin quality checks
         run: node scripts/admin-phase12-check.mjs
