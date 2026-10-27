@@ -79,8 +79,9 @@ for (const path of publicHtmlPaths) {
   if (/<script\b[^>]*\bsrc=["'][^"']*(?:\.\.\/)*js\/main\.js(?:\?[^"']*)?["'][^>]*>/i.test(source)) {
     assert.ok(source.includes("js/main.js?v=20261027-catalog-sync-v1"), `${path}: main.js cache key must be current.`);
   }
-  if (/live-catalog\.js(?:\?[^"'\s>]*)?/i.test(source)) {
-    assert.ok(source.includes("live-catalog.js?v=20261027-catalog-sync-v1"), `${path}: live catalog asset cache key must be current.`);
+  const liveCatalogTags = [...source.matchAll(/<script\\b[^>]*\\bsrc=["']([^"']*live-catalog\\.js(?:\\?[^"']*)?)["'][^>]*>/gi)];
+  for (const match of liveCatalogTags) {
+    assert.ok(match[1].includes("live-catalog.js?v=20261027-catalog-sync-v1"), `${path}: live catalog script cache key must be current.`);
   }
 }
 assert.ok(app.includes('order_items(id,product_id,product_name,quantity,unit,unit_price,line_total,product_image_url)'), "Courier booking must load relational order_items.");
