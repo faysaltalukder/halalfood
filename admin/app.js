@@ -890,6 +890,7 @@ async function refresh(){[products,categories]=await Promise.all([fetchProducts(
      if(error)throw error;
      if(!savedCategory?.id)throw new Error("The database did not return the created Category record.");
      savedCategoryId=savedCategory.id;categoryWasWritten=true;
+     $("categoryId").value=savedCategoryId;$("categorySlug").readOnly=true;
      await audit("category_created","category",savedCategoryId,"New category created",{slug});
     }
     await verifyAdminCatalogRecord("categories",savedCategoryId,CATEGORY_READBACK_COLUMNS,payload,"Category");
