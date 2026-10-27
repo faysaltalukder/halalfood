@@ -105,8 +105,8 @@ async function sha256(value: string): Promise<string> {
   return Array.from(new Uint8Array(digest)).map((n) => n.toString(16).padStart(2, "0")).join("");
 }
 function approvalKey(): string {
-  const value = Deno.env.get("SITE_PUBLISH_APPROVAL_HMAC_KEY") || SERVICE_ROLE_KEY;
-  if (!value || value.length < 32) throw new Error("Server-side approval signing key is not configured.");
+  const value = Deno.env.get("SITE_PUBLISH_APPROVAL_HMAC_KEY") || "";
+  if (value.length < 32) throw new Error("A dedicated SITE_PUBLISH_APPROVAL_HMAC_KEY of at least 32 characters is required.");
   return value;
 }
 async function signApproval(value: string): Promise<string> {
@@ -715,7 +715,7 @@ function missingConfiguration() {
   const missing: string[] = [];
   if (!SERVICE_ROLE_KEY) missing.push("SUPABASE_SERVICE_ROLE_KEY");
   if (!githubToken()) missing.push("GITHUB_TOKEN");
-  if (!(Deno.env.get("SITE_PUBLISH_APPROVAL_HMAC_KEY") || SERVICE_ROLE_KEY)) missing.push("SITE_PUBLISH_APPROVAL_HMAC_KEY");
+  if ((Deno.env.get("SITE_PUBLISH_APPROVAL_HMAC_KEY") || "").length < 32) missing.push("SITE_PUBLISH_APPROVAL_HMAC_KEY");
   return missing;
 }
 
@@ -735,7 +735,7 @@ Deno.serve(async (req: Request) => {
     if (action === "config_status") {
       return json({
         success: true, repository: repoName(), branch: branchName(), siteUrl: siteUrl(),
-        githubTokenConfigured: Boolean(githubToken()), approvalKeyConfigured: Boolean(Deno.env.get("SITE_PUBLISH_APPROVAL_HMAC_KEY") || SERVICE_ROLE_KEY),
+        githubTokenConfigured: Boolean(githubToken()), approvalKeyConfigured: (Deno.env.get("SITE_PUBLISH_APPROVAL_HMAC_KEY") || "").length >= 32,
         serviceRoleConfigured: Boolean(SERVICE_ROLE_KEY), missingConfiguration: missingConfiguration(),
         allowedFileExtensions: Array.from(ALLOWED_EXTENSIONS), binaryUploadsEnabled: false,
       });
