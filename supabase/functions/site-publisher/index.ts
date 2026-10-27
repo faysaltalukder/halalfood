@@ -40,6 +40,7 @@ type ChangeSet = {
   manifest_sha256: string | null; approval_signature: string | null; approved_manifest_sha256: string | null;
   release_id: string | null; created_by: string; approved_by: string | null; approved_at: string | null;
   published_commit_sha: string | null; deployment_status: string; deployment_url: string | null;
+  last_error: string | null; created_at: string; updated_at: string;
   rollback_of_change_set_id: string | null;
 };
 
