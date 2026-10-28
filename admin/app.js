@@ -121,7 +121,7 @@ window.HFAdminReady.then(async H=>{
  async function initOverview(){
   const overviewDateLabel=$("overviewDateLabel");
   if(overviewDateLabel){
-   try{overviewDateLabel.textContent=new Intl.DateTimeFormat("en-BD",{timeZone:"Asia/Dhaka",weekday:"long",day:"numeric",month:"long",year:"numeric"}).format(new Date());}
+   try{overviewDateLabel.textContent=new Intl.DateTimeFormat("en-BD",{timeZone:"Asia/Dhaka",day:"numeric",month:"short",year:"numeric"}).format(new Date());}
    catch(_dateError){overviewDateLabel.textContent=new Date().toDateString();}
   }
   const financeStrip=$("overviewFinanceStrip");
@@ -181,7 +181,7 @@ window.HFAdminReady.then(async H=>{
    }else{
     list.innerHTML=actions.map(a=>'<div class="hf-action-row '+(a.kind==="urgent"?"is-urgent":"is-warning")+'"><span class="hf-action-count '+(a.kind==="urgent"?"is-urgent":"is-warning")+'">'+esc(a.count)+'</span><div class="hf-action-copy"><strong>'+esc(a.title)+'</strong><p>'+esc(a.detail)+'</p></div><a class="hf-button hf-button-secondary hf-button-small hf-action-link" href="'+esc(a.href)+'">'+esc(a.button)+' <span aria-hidden="true">→</span></a></div>').join("");
    }
-   $("overviewActionNote").textContent="Checks use saved catalog and order records. This testing project does not process real payments or deliveries.";
+   $("overviewActionNote").textContent="Based on saved orders and stock.";
   }
   async function refresh(){
    const now=new Date();
@@ -222,8 +222,8 @@ window.HFAdminReady.then(async H=>{
    $("financeSummaryExpenses").textContent=financeAvailable?money(expenses):"Unavailable";
    $("financeSummaryNet").textContent=financeAvailable?money(income-expenses):"Unavailable";
    $("financeSummaryNote").textContent=financeAvailable
-    ?"All-time totals use confirmed manual ledger entries only. Net recorded ledger is not cash on hand. Courier COD entries remain manual placeholders in Operations and are not yet reconciled into this finance ledger."
-    :"Finance summary could not be loaded. Refresh after signing in to the authorized admin account and completing MFA. Courier entries are manual placeholders and are not verified cash receipts.";
+    ?"Confirmed manual entries only. COD settlement is not reconciled here."
+    :"Finance unavailable. Refresh after signing in and completing MFA.";
    const labels=dateKeys(14);
    drawChart("overviewOperationsChart",{type:"line",data:{labels:labels.map(dateOnly),datasets:[
     {label:"Order item lines",data:labels.map(day=>chartOrders.filter(o=>localDateKey(o.ordered_at)===day&&o.status!=="cancelled").reduce((sum,o)=>sum+(o.order_items||[]).length,0)),borderColor:palette.orange,backgroundColor:"#F59E0B22",fill:true,tension:.32,pointRadius:2,borderWidth:2},
@@ -232,14 +232,14 @@ window.HFAdminReady.then(async H=>{
    const financeCanvas=$("overviewFinanceChart");
    if(financeAvailable){
     if(financeCanvas)financeCanvas.hidden=false;
-    $("overviewFinanceChartNote").textContent="Confirmed manual entries only. This chart is not a bank balance or COD settlement report.";
+    $("overviewFinanceChartNote").textContent="Manual ledger entries only · not a bank/COD balance.";
     drawChart("overviewFinanceChart",{type:"bar",data:{labels:labels.map(dateOnly),datasets:[
      {label:"Recorded income",data:labels.map(day=>confirmedFinance.filter(e=>e.entry_type==="income"&&String(e.entry_date||"").slice(0,10)===day).reduce((sum,e)=>sum+Number(e.amount||0),0)),backgroundColor:palette.green,borderRadius:5,maxBarThickness:24},
      {label:"Recorded expenses",data:labels.map(day=>confirmedFinance.filter(e=>e.entry_type==="expense"&&String(e.entry_date||"").slice(0,10)===day).reduce((sum,e)=>sum+Number(e.amount||0),0)),backgroundColor:palette.orange,borderRadius:5,maxBarThickness:24}
     ]},options:{...chartAxisOptions(),plugins:{legend:{position:"bottom"}},onClick:()=>{location.href="./finance.html";}}});
    }else{
     if(financeCanvas)financeCanvas.hidden=true;
-    $("overviewFinanceChartNote").textContent="Finance data is unavailable for this session. Complete admin MFA to view confirmed ledger entries.";
+    $("overviewFinanceChartNote").textContent="Finance unavailable for this session.";
    }
    drawChart("overviewTrafficChart",{type:"line",data:{labels:labels.map(dateOnly),datasets:[
     {label:"Page views",data:labels.map(day=>events.filter(e=>e.event_name==="page_view"&&localDateKey(e.occurred_at)===day).length),borderColor:palette.blue,backgroundColor:"#4F7CFF20",fill:true,tension:.35,pointRadius:2,borderWidth:2},
@@ -250,10 +250,10 @@ window.HFAdminReady.then(async H=>{
    renderRecentOrders(recentOrders);
    $("overviewUpdated").textContent="Updated "+new Date().toLocaleTimeString("en-BD",{hour:"2-digit",minute:"2-digit"});
    const limits=[];
-   if(summaryOrders.length>=5000)limits.push("The order summary reached its 5,000-record limit, so totals/status counts may be incomplete.");
-   if(chartOrders.length>=1000)limits.push("The daily order-item chart reached its 1,000-order limit.");
-   if(events.length>=5000)limits.push("Website events reached the 5,000-event limit.");
-   $("overviewDataNote").textContent=events.length+" website events were returned for the last 14 days; "+ordersLast30.length+" order records were loaded for the last 30 days"+(pendingVerified?"; the pending-order KPI uses an exact database count.":"; pending-order count could not be verified, so the KPI uses loaded recent records.")+". Order item lines count saved product rows, not quantities. Cart additions are event counts, not current cart contents. Records do not prove payment or delivery."+(limits.length?" "+limits.join(" "):"");
+   if(summaryOrders.length>=5000)limits.push("Order totals may be incomplete (5,000-row limit).");
+   if(chartOrders.length>=1000)limits.push("Daily chart reached its 1,000-order limit.");
+   if(events.length>=5000)limits.push("Events reached the 5,000-row limit.");
+   $("overviewDataNote").textContent=events.length+" events/14d · "+ordersLast30.length+" orders/30d. Order lines are product rows, not quantities; cart additions are events, not current cart. "+(pendingVerified?"Pending count verified.":"Pending count is an estimate.")+" Records do not confirm payment or delivery."+(limits.length?" "+limits.join(" "):"");
   }
   await refresh();attachRefresh(refresh);
  }
