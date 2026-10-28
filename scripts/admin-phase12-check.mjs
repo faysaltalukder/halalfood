@@ -87,9 +87,10 @@ assert.ok(courier.includes('provider === "pathao" ? 220 : 250'), "Frontend addre
 
 
 const overview = read("admin/overview.html");
-assert.ok(overview.includes("চতুর্থ ডিপ্লয়মেন্ট"), "Overview must show the requested temporary fourth-deployment marker.");
-assert.ok(overview.includes('class="hf-deployment-marker"'), "Overview deployment marker must use the dedicated accessible component.");
-assert.ok(overview.includes("overview.css?v=20261026-phase4-final-polish"), "Overview marker stylesheet must be cache-busted.");
+assert.ok(!overview.includes("চতুর্থ ডিপ্লয়মেন্ট"), "Overview should not show the obsolete deployment marker.");
+assert.ok(!overview.includes('class="hf-deployment-marker"'), "Obsolete deployment marker component should be removed.");
+assert.ok(!overview.includes("Test project") && !overview.includes("Testing project"), "Overview should not show the removed testing notice.");
+assert.ok(overview.includes("overview.css?v=20261028-colorful-cleanup-v1"), "Overview polish stylesheet must be cache-busted.");
 
 const facebookPage = read("admin/facebook-publishing.html");
 assert.ok(facebookPage.includes("facebook-publishing.js?v=20261026-phase3-automation-queue"), "Facebook publishing script cache key must include the queue UI update.");
@@ -191,4 +192,4 @@ for (const char of css) {
 }
 assert.equal(braceDepth, 0, "admin/shared.css contains unbalanced braces.");
 
-console.log(`Admin Phase 1–4 quality gate passed: ${unifiedPages.length} pages, semantic main landmarks, skip navigation, named form controls, focus behavior, contrast, JS syntax, cache keys, IDs, assets, courier checks, finance guards, Facebook queue safety, quota safeguards, deployment marker, and CSS structure.`);
+console.log(`Admin Phase 1–4 quality gate passed: ${unifiedPages.length} pages, semantic main landmarks, skip navigation, named form controls, focus behavior, contrast, JS syntax, cache keys, IDs, assets, courier checks, finance guards, Facebook queue safety, quota safeguards, concise overview copy, visual polish, and CSS structure.`);
