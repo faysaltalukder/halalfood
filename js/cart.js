@@ -498,14 +498,32 @@
           current.replaceWith(button);
           return;
         }
-        const count = current.querySelector("[data-product-qty-input]");
-        if (count && document.activeElement !== count && count.value !== String(qty)) count.value = String(qty);
+        const count = current.querySelector("[data-cart-qty-value]");
+        if (count && document.activeElement !== count) {
+          if (count instanceof HTMLInputElement) {
+            if (count.value !== String(qty)) count.value = String(qty);
+          } else if (count.textContent !== String(qty)) {
+            count.textContent = String(qty);
+          }
+        }
         const dec = current.querySelector("[data-product-qty-dec]");
         if (dec) dec.setAttribute("aria-label", "Remove one " + (current.dataset.name || "item"));
         const inc = current.querySelector("[data-product-qty-inc]");
         if (inc) inc.setAttribute("aria-label", "Add one " + (current.dataset.name || "item"));
       }
     });
+  }
+
+  function isHomePage() {
+    try {
+      const basePath = new URL(siteBase || location.href, location.href).pathname
+        .replace(/index\.html$/i, "").replace(/\/+$/, "") || "/";
+      const currentPath = location.pathname
+        .replace(/index\.html$/i, "").replace(/\/+$/, "") || "/";
+      return currentPath === basePath;
+    } catch (_) {
+      return /\/(?:index\.html)?$/i.test(location.pathname);
+    }
   }
 
   function renderQuantityStepper(wrapper, slug, name, qty) {
@@ -517,17 +535,29 @@
     minus.setAttribute("aria-label", "Remove one " + name);
     minus.textContent = "−";
 
-    const count = document.createElement("input");
-    count.type = "number";
-    count.className = "cart-qty-input";
-    count.dataset.productQtyInput = slug;
-    count.setAttribute("aria-label", "Quantity for " + name);
-    count.setAttribute("inputmode", "numeric");
-    count.autocomplete = "off";
-    count.min = "1";
-    count.max = String(MAX_QTY);
-    count.step = "1";
-    count.value = String(qty);
+    let count;
+    if (isHomePage()) {
+      // Home cards keep a compact, non-editable count; +/- remains available.
+      count = document.createElement("span");
+      count.className = "cart-qty-value";
+      count.dataset.cartQtyValue = slug;
+      count.setAttribute("aria-live", "polite");
+      count.textContent = String(qty);
+    } else {
+      // On product/category/recommended cards, quantity can also be typed directly.
+      count = document.createElement("input");
+      count.type = "number";
+      count.className = "cart-qty-input";
+      count.dataset.productQtyInput = slug;
+      count.dataset.cartQtyValue = slug;
+      count.setAttribute("aria-label", "Quantity for " + name);
+      count.setAttribute("inputmode", "numeric");
+      count.autocomplete = "off";
+      count.min = "1";
+      count.max = String(MAX_QTY);
+      count.step = "1";
+      count.value = String(qty);
+    }
 
     const plus = document.createElement("button");
     plus.type = "button";
@@ -538,6 +568,7 @@
 
     wrapper.append(minus, count, plus);
   }
+
   function renderDrawer() {
     const box = document.querySelector("[data-cart-drawer-items]");
     if (!box) return;
