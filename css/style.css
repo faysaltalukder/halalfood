@@ -3083,3 +3083,39 @@ input.cart-qty-input:focus-visible {
 @media (max-width: 480px) {
   input.cart-qty-input { font-size: .96rem; }
 }
+
+/* HALAL FOOD — neutral quantity stepper shell.
+   In-cart controls keep a white outer box on hover; only +/- buttons highlight. */
+html body div.cart-qty-control,
+html body div.cart-qty-control:hover,
+html body div.cart-qty-control:focus,
+html body div.cart-qty-control:focus-within,
+html body.category-products-page .product-card .product-foot > div.cart-qty-control,
+html body.category-products-page .product-card .product-foot > div.cart-qty-control:hover,
+html body .product-grid .product-card .product-foot > div.cart-qty-control,
+html body .product-grid .product-card .product-foot > div.cart-qty-control:hover,
+html body .featured-grid-4 .product-card .product-foot > div.cart-qty-control,
+html body .featured-grid-4 .product-card .product-foot > div.cart-qty-control:hover,
+html body .jfy-card > div.cart-qty-control,
+html body .jfy-card > div.cart-qty-control:hover,
+html body .mrow-card > div.cart-qty-control,
+html body .mrow-card > div.cart-qty-control:hover,
+html body .product-detail-actions > div.cart-qty-control,
+html body .product-detail-actions > div.cart-qty-control:hover,
+html body .product-detail-actions > div.cart-qty-control:focus-within {
+  background: var(--white, #fffdf8) !important;
+  color: var(--navy, #2b2a3d) !important;
+  border-color: var(--orange, #c97b3d) !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+html body #related-grid .product-card .product-foot > div.cart-qty-control,
+html body #related-grid .product-card .product-foot > div.cart-qty-control:hover,
+html body #related-grid .product-card .product-foot > div.cart-qty-control:focus,
+html body #related-grid .product-card .product-foot > div.cart-qty-control:focus-within {
+  background: var(--white, #fffdf8) !important;
+  color: var(--navy, #2b2a3d) !important;
+  border-color: var(--orange, #c97b3d) !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
