@@ -498,8 +498,8 @@
           current.replaceWith(button);
           return;
         }
-        const count = current.querySelector(".cart-qty-value");
-        if (count && count.textContent !== String(qty)) count.textContent = String(qty);
+        const count = current.querySelector("[data-product-qty-input]");
+        if (count && document.activeElement !== count && count.value !== String(qty)) count.value = String(qty);
         const dec = current.querySelector("[data-product-qty-dec]");
         if (dec) dec.setAttribute("aria-label", "Remove one " + (current.dataset.name || "item"));
         const inc = current.querySelector("[data-product-qty-inc]");
@@ -517,11 +517,17 @@
     minus.setAttribute("aria-label", "Remove one " + name);
     minus.textContent = "−";
 
-    const count = document.createElement("span");
-    count.className = "cart-qty-value";
-    count.dataset.cartQtyValue = slug;
-    count.setAttribute("aria-live", "polite");
-    count.textContent = String(qty);
+    const count = document.createElement("input");
+    count.type = "number";
+    count.className = "cart-qty-input";
+    count.dataset.productQtyInput = slug;
+    count.setAttribute("aria-label", "Quantity for " + name);
+    count.setAttribute("inputmode", "numeric");
+    count.autocomplete = "off";
+    count.min = "1";
+    count.max = String(MAX_QTY);
+    count.step = "1";
+    count.value = String(qty);
 
     const plus = document.createElement("button");
     plus.type = "button";
@@ -643,8 +649,25 @@
     observer.observe(document.body, { childList: true, subtree: true });
   }
 
+  // Commit manually edited product quantities on change, blur, or Enter.
+  function commitProductQtyInput(input) {
+    const slug = String(input.dataset.productQtyInput || "");
+    const item = read().find(entry => String(entry.slug) === slug);
+    if (!item) return;
+    const raw = String(input.value ?? "").trim();
+    const entered = raw === "" ? (Number(item.qty) || 1) : Number(raw);
+    const quantity = Math.max(1, Math.min(MAX_QTY, Math.floor(Number.isFinite(entered) ? entered : (Number(item.qty) || 1))));
+    if (Number(item.qty) !== quantity) setQty(slug, quantity);
+    input.value = String(quantity);
+  }
+
   // Commit manually entered checkout quantities when the field loses focus or Enter is pressed.
   document.addEventListener("change", event => {
+    const productQtyInput = event.target.closest("[data-product-qty-input]");
+    if (productQtyInput) {
+      commitProductQtyInput(productQtyInput);
+      return;
+    }
     const input = event.target.closest("[data-checkout-qty]");
     if (!input) return;
     const slug = String(input.dataset.checkoutQty || "");
@@ -655,7 +678,16 @@
     setQty(slug, quantity);
   }, true);
 
-  document.addEventListener("keydown", e => { if (e.key === "Escape") setDrawer(false); });
+  document.addEventListener("keydown", e => {
+    const quantityInput = e.target?.closest?.("[data-product-qty-input]");
+    if (quantityInput && e.key === "Enter") {
+      e.preventDefault();
+      commitProductQtyInput(quantityInput);
+      quantityInput.blur();
+      return;
+    }
+    if (e.key === "Escape") setDrawer(false);
+  });
   window.addEventListener("halalcart:updated", renderAll);
   window.addEventListener("storage", e => { if (e.key === CART_KEY) { renderAll(); scheduleCloudCartSave(); } });
   window.addEventListener("halal-auth-state-change", event => {
