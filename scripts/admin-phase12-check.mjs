@@ -8,7 +8,7 @@ const root = process.cwd();
 const adminDir = join(root, "admin");
 const sharedCssVersion = "20261026-phase4-a11y-performance";
 const sharedJsVersion = "20261026-phase4-a11y-performance";
-const appJsVersion = "20261026-phase12-audit-hardening";
+const appJsVersion = "20261028-colorful-cleanup-v1";
 const read = (path) => readFileSync(join(root, path), "utf8");
 
 const htmlFiles = readdirSync(adminDir).filter((file) => file.endsWith(".html"));
