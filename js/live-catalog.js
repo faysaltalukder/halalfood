@@ -62,6 +62,8 @@
   }
   function setProductControls(button, product) {
     if (!button) return;
+    // Dynamic product cards must carry the delegated cart hook, not just product metadata.
+    button.setAttribute("data-add-to-cart", "");
     button.dataset.slug = product.slug;
     button.dataset.name = product.name;
     button.dataset.price = String(Number(product.price) || numericPrice(priceText(product)));
