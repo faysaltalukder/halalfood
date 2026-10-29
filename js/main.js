@@ -1440,13 +1440,38 @@ document.addEventListener("DOMContentLoaded", () => {
     if(!item)return;
     var name=item.eventName;
     var params=item.params||{};
-    // Meta Purchase is browser-routed only when the server has returned the stable
-    // ID for a saved order. Never allow a generic/custom client event to create Purchase.
+    // Purchase is routed only with the server-verified ID for a saved order.
+    // Never allow a generic/custom client event to create a conversion.
     if(name==="purchase"){
       if(item.confirmedPurchase!==true||!/^hf_purchase_[a-f0-9]{32}$/i.test(String(item.eventId||"")))return;
       if(routeEnabled("meta_pixel","purchase")){
         initPixelIfEnabled();
         window.fbq("track","Purchase",item.metaParams||params,{eventID:item.eventId});
+      }
+      // GA4 receives its recommended ecommerce payload from this same verified order.
+      // transaction_id is required so repeat sends of the same order can be deduplicated in GA4 reporting.
+      if(routeEnabled("ga4","purchase")&&typeof window.gtag==="function"){
+        var transactionId=String(params.transaction_id||"").trim();
+        if(transactionId){
+          var purchaseItems=(Array.isArray(params.items)?params.items:[]).slice(0,30).map(function(rawItem){
+            var safe=safeItem(rawItem);
+            var gaItem={
+              item_id:safe.item_id,
+              item_name:safe.item_name,
+              price:safe.price,
+              quantity:safe.quantity
+            };
+            if(safe.item_category)gaItem.item_category=safe.item_category;
+            return gaItem;
+          }).filter(function(gaItem){return gaItem.item_id||gaItem.item_name;});
+          window.gtag("event","purchase",{
+            transaction_id:transactionId,
+            value:Number.isFinite(Number(params.value))?Number(params.value):0,
+            currency:String(params.currency||"BDT").toUpperCase(),
+            items:purchaseItems,
+            event_id:item.eventId
+          });
+        }
       }
       return;
     }
@@ -1502,7 +1527,7 @@ document.addEventListener("DOMContentLoaded", () => {
   window.halalFireConfirmedMetaPurchase=function(params,metaParams,eventId){
     var id=String(eventId||"");
     if(!/^hf_purchase_[a-f0-9]{32}$/i.test(id))return false;
-    if(configReady&&(!trackingConfig||trackingConfig.livePurchaseTracking!==true||!routeEnabled("meta_pixel","purchase")))return false;
+    if(configReady&&(!trackingConfig||trackingConfig.livePurchaseTracking!==true||(!routeEnabled("meta_pixel","purchase")&&!routeEnabled("ga4","purchase"))))return false;
     var externalItem={
       eventName:"purchase",
       params:params||{},
