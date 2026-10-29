@@ -31,6 +31,16 @@ const META_EVENT_MAP: Record<string, string> = {
   phone_click: "Contact"
 };
 
+const META_CUSTOM_EVENT_MAP: Record<string, string> = {
+  view_item_list: "ViewItemList",
+  select_item: "SelectItem",
+  remove_from_cart: "RemoveFromCart",
+  view_cart: "ViewCart",
+  add_shipping_info: "AddShippingInfo",
+  track_order: "TrackOrder",
+  login: "Login"
+};
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
@@ -384,7 +394,7 @@ Deno.serve(async (req: Request) => {
 
   const delivery: Array<{ eventId: string | null; status: string; reason?: string; httpStatus?: number }> = [];
   for (const event of validEvents) {
-    const metaEventName = META_EVENT_MAP[event.eventName];
+    const metaEventName = META_EVENT_MAP[event.eventName] || META_CUSTOM_EVENT_MAP[event.eventName];
     const allowed = Boolean(metaEventName && routes["meta_capi:" + event.eventName]);
     if (!allowed || (event.eventName === "purchase" && !LIVE_PURCHASE_TRACKING)) continue;
     const result = await deliverMetaEvent(supabase, event, req, metaEventName!);
