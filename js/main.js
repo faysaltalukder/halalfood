@@ -1124,7 +1124,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // Give the browser Pixel a brief window to dispatch while server CAPI runs independently.
         // The same event ID and session dedupe key prevent a second Pixel conversion on refresh.
         await new Promise(resolve => setTimeout(resolve, 800));
-        window.location.replace("thank-you.html?v=20261029-purchase-confirm-v1");
+        window.location.replace("thank-you.html?v=20261029-purchase-confirm-v2");
       } catch (err) {
 
         console.error("Order submission failed:", err);
