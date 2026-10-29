@@ -78,6 +78,26 @@ function safeCookie(v: unknown): string | null {
   if (!value || !/^fb\.1\.\d{10,13}\.[A-Za-z0-9._-]{1,150}$/.test(value)) return null;
   return value;
 }
+function validClientIp(v: unknown): string | null {
+  const ip = textValue(v, 64);
+  if (!ip) return null;
+  const parts = ip.split(".");
+  if (parts.length === 4 && parts.every((part) => /^\d{1,3}$/.test(part) && Number(part) <= 255)) return ip;
+  if (ip.includes(":") && /^[0-9A-Fa-f:]{2,45}$/.test(ip)) return ip;
+  return null;
+}
+function requestClientIp(req: Request): string | null {
+  const candidates = [
+    req.headers.get("cf-connecting-ip"),
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim(),
+    req.headers.get("x-real-ip")
+  ];
+  for (const candidate of candidates) {
+    const ip = validClientIp(candidate);
+    if (ip) return ip;
+  }
+  return null;
+}
 function safeItems(v: unknown) {
   if (!Array.isArray(v)) return [];
   return v.slice(0, 30).filter((item) => item && typeof item === "object" && !Array.isArray(item)).map((item: any) => {
@@ -202,8 +222,10 @@ async function deliverMetaEvent(supabase: any, event: ReturnType<typeof safeEven
   if (event.eventName === "purchase" && !LIVE_PURCHASE_TRACKING) return { status: "skipped", reason: "purchase_protected_for_testing_project" };
 
   const userAgent = textValue(req.headers.get("user-agent"), 500);
+  const clientIpAddress = requestClientIp(req);
   const userData: Record<string, unknown> = {};
   if (userAgent) userData.client_user_agent = userAgent;
+  if (clientIpAddress) userData.client_ip_address = clientIpAddress;
   if (event.fbp) userData.fbp = event.fbp;
   if (event.fbc) userData.fbc = event.fbc;
 
@@ -221,6 +243,15 @@ async function deliverMetaEvent(supabase: any, event: ReturnType<typeof safeEven
     partner_agent: "HalalFood_Server_Side_Tracking"
   };
   if (mode === "test" && TEST_EVENT_CODE) payload.test_event_code = TEST_EVENT_CODE;
+
+  // Send the client IP to Meta for matching, but do not retain raw IP addresses in the delivery log.
+  const payloadForLog: Record<string, unknown> = {
+    ...payload,
+    data: [{
+      ...serverEvent,
+      user_data: Object.fromEntries(Object.entries(userData).filter(([key]) => key !== "client_ip_address"))
+    }]
+  };
 
   const now = new Date().toISOString();
   let attempt = 1;
@@ -251,7 +282,7 @@ async function deliverMetaEvent(supabase: any, event: ReturnType<typeof safeEven
         meta_event_name: metaEventName,
         occurred_at: event.occurredAt,
         event_source_url: event.eventSourceUrl,
-        payload,
+        payload: payloadForLog,
         status: "pending",
         attempts: attempt,
         last_error: null,
@@ -272,7 +303,7 @@ async function deliverMetaEvent(supabase: any, event: ReturnType<typeof safeEven
       meta_event_name: metaEventName,
       occurred_at: event.occurredAt,
       event_source_url: event.eventSourceUrl,
-      payload,
+      payload: payloadForLog,
       status: "pending",
       attempts: attempt,
       updated_at: now
