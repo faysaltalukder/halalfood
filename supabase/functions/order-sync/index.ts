@@ -129,28 +129,42 @@ Deno.serve(async (req: Request) => {
     }
     if (!data || data.success !== true) return json({ success: false, error: "Order could not be placed. Please try again." }, 500);
 
-    // Dispatch after successful persistence, including idempotent duplicate submissions.
-    // A stable DB-derived event ID prevents duplicate Purchase conversions; a repeated call
-    // can recover a failed delivery from the same order. Runtime mode is server-protected.
-    if (
-      typeof data.orderId === "string" &&
-      /^HF-[0-9]{4,6}$/.test(data.orderId)
-    ) {
-      const clientIp = clean(
-        req.headers.get("cf-connecting-ip") || req.headers.get("x-real-ip"),
-        64
-      );
-      EdgeRuntime.waitUntil(dispatchVerifiedPurchase({
-        url,
-        key,
-        orderId: data.orderId,
-        fbp: clean(d.fbp, 180),
-        fbc: clean(d.fbc, 180),
-        userAgent: clean(req.headers.get("user-agent"), 500),
-        clientIp
-      }));
+    // Resolve the same stable, database-derived event ID used by analytics-ingest.
+    // The browser may send its Pixel copy only when this saved-order lookup succeeds.
+    let purchaseEventId: string | null = null;
+    if (typeof data.orderId === "string" && /^HF-[0-9]{4,6}$/.test(data.orderId)) {
+      const { data: savedOrder, error: savedOrderError } = await admin
+        .from("orders")
+        .select("id,order_number")
+        .eq("order_number", data.orderId)
+        .eq("source", "website_parallel")
+        .maybeSingle();
+
+      if (savedOrderError) {
+        console.warn("Verified order ID lookup failed; browser Pixel Purchase will be skipped.", String(savedOrderError.code || "unknown"));
+      } else if (savedOrder?.id) {
+        purchaseEventId = "hf_purchase_" + String(savedOrder.id).replace(/-/g, "");
+
+        // Dispatch after persistence, including idempotent duplicate submissions.
+        // Stable event_id deduplicates browser Pixel against server CAPI and makes retries safe.
+        const clientIp = clean(
+          req.headers.get("cf-connecting-ip") || req.headers.get("x-real-ip"),
+          64
+        );
+        EdgeRuntime.waitUntil(dispatchVerifiedPurchase({
+          url,
+          key,
+          orderId: data.orderId,
+          fbp: clean(d.fbp, 180),
+          fbc: clean(d.fbc, 180),
+          userAgent: clean(req.headers.get("user-agent"), 500),
+          clientIp
+        }));
+      } else {
+        console.warn("Saved order was not found for Purchase dispatch.");
+      }
     }
-    return json(data);
+    return json(purchaseEventId ? { ...data, purchaseEventId } : data);
   } catch (error) {
     console.error("order-sync unexpected error:", error);
     return json({ success: false, error: "Order could not be placed. Please try again or contact us by phone." }, 500);
