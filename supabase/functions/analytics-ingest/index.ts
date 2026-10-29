@@ -8,6 +8,9 @@ const GRAPH_API_VERSION = "v26.0";
 const CAPI_MODE = (Deno.env.get("META_CAPI_MODE") || "disabled").toLowerCase();
 const TEST_EVENT_CODE = Deno.env.get("META_CAPI_TEST_EVENT_CODE") || "";
 const LIVE_PURCHASE_TRACKING = Deno.env.get("HF_LIVE_PURCHASE_TRACKING") === "true";
+// In test mode, verified orders may emit Purchase only to the configured Meta Test Events code.
+const TEST_PURCHASE_TRACKING = CAPI_MODE === "test" && Boolean(TEST_EVENT_CODE);
+const PURCHASE_TRACKING_ENABLED = LIVE_PURCHASE_TRACKING || TEST_PURCHASE_TRACKING;
 
 const ALLOWED_EVENTS = new Set([
   "page_view", "page_engagement", "view_item", "view_item_list", "select_item",
@@ -279,7 +282,7 @@ async function deliverMetaEvent(supabase: any, event: ReturnType<typeof safeEven
   const mode = CAPI_MODE;
   if (mode !== "test" && mode !== "production") return { status: "skipped", reason: "capi_mode_disabled" };
   if (mode === "test" && !TEST_EVENT_CODE) return { status: "skipped", reason: "missing_test_event_code" };
-  if (event.eventName === "purchase" && !LIVE_PURCHASE_TRACKING) return { status: "skipped", reason: "purchase_protected_for_testing_project" };
+  if (event.eventName === "purchase" && !PURCHASE_TRACKING_ENABLED) return { status: "skipped", reason: "purchase_tracking_disabled" };
 
   const trustedInternal = req.headers.get("authorization") === `Bearer ${SERVICE_ROLE_KEY}`;
   const userAgent = textValue(
@@ -459,8 +462,8 @@ Deno.serve(async (req: Request) => {
 
   let preparedItems = items as Record<string, unknown>[];
   if (hasPurchaseEvent) {
-    if (!LIVE_PURCHASE_TRACKING) {
-      return response({ error: "Live Purchase tracking is locked for this testing project." }, 403);
+    if (!PURCHASE_TRACKING_ENABLED) {
+      return response({ error: "Purchase tracking is locked unless test mode with a Test Events code or explicit live tracking is enabled." }, 403);
     }
     try {
       const verifiedPurchase = await hydrateVerifiedPurchase(supabase, preparedItems[0]);
@@ -518,7 +521,7 @@ Deno.serve(async (req: Request) => {
   for (const event of validEvents) {
     const metaEventName = META_EVENT_MAP[event.eventName] || META_CUSTOM_EVENT_MAP[event.eventName];
     const allowed = Boolean(metaEventName && routes["meta_capi:" + event.eventName]);
-    if (!allowed || (event.eventName === "purchase" && !LIVE_PURCHASE_TRACKING)) continue;
+    if (!allowed || (event.eventName === "purchase" && !PURCHASE_TRACKING_ENABLED)) continue;
     const result = await deliverMetaEvent(supabase, event, req, metaEventName!);
     delivery.push({ eventId: event.eventId, ...result });
   }
