@@ -46,9 +46,15 @@ window.HFAdminReady?.then(async H => {
     const purchaseLocked = eventKey === "purchase" && config.livePurchaseTracking !== true;
     const capiReady = config.metaCapiMode === "production" || (config.metaCapiMode === "test" && config.testEventCodeConfigured === true);
     const capiLocked = destination === "meta_capi" && !capiReady;
-    const disabled = purchaseLocked || capiLocked;
+    const firstPartyOnly = eventKey === "page_engagement";
+    const unsupportedMetaEvent = (destination === "meta_pixel" || destination === "meta_capi") && ["order_submit","order_success","refund"].includes(eventKey);
+    const disabled = purchaseLocked || capiLocked || firstPartyOnly || unsupportedMetaEvent;
+    const disabledReason = purchaseLocked ? "Purchase is locked until live commerce is enabled." :
+      capiLocked ? "Set META_CAPI_MODE and a Meta Test Events code before enabling CAPI routes." :
+      firstPartyOnly ? "Page engagement is first-party timing data only; it is not routed to Meta or GA4." :
+      unsupportedMetaEvent ? "This event is not mapped to Meta while the storefront is a testing project." : "";
     const label = destinations.find(d => d[0] === destination)?.[1] || destination;
-    return '<label class="hf-tracking-toggle" title="'+H.esc(disabled ? (purchaseLocked ? "Purchase is locked until live commerce is enabled." : "Set META_CAPI_MODE and a Meta Test Events code before enabling CAPI routes.") : ((checked ? "Disable " : "Enable ")+label+" for "+eventKey))+'">' +
+    return '<label class="hf-tracking-toggle" title="'+H.esc(disabled ? disabledReason : ((checked ? "Disable " : "Enable ")+label+" for "+eventKey))+'">' +
       '<input type="checkbox" data-route-destination="'+H.esc(destination)+'" data-route-event="'+H.esc(eventKey)+'" '+(checked?"checked ":"")+(disabled?"disabled ":"")+'aria-label="'+H.esc(label+" "+eventKey)+'"><span aria-hidden="true"></span></label>';
   }
   function render() {
