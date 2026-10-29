@@ -1027,37 +1027,7 @@ document.addEventListener("DOMContentLoaded", () => {
           ? result.purchaseEventId
           : "";
 
-        // Send the browser Pixel copy only with the server-derived ID for an already-saved order.
-        // CAPI uses this exact same ID, allowing Meta to deduplicate the browser/server pair.
-        if (purchaseEventId) {
-          const pixelDedupKey = "HALAL_META_PIXEL_PURCHASE_" + purchaseEventId;
-          let pixelAlreadySent = false;
-          try { pixelAlreadySent = sessionStorage.getItem(pixelDedupKey) === "1"; } catch (_) {}
-          if (!pixelAlreadySent) {
-            const pixelItems = trackItems(confirmedItems);
-            const contents = pixelItems.map(item => ({
-              id: String(item.item_id || ""),
-              quantity: Math.max(1, Number(item.quantity) || 1),
-              item_price: Math.max(0, Number(item.price) || 0)
-            })).filter(item => item.id);
-            const metaParams = {
-              value: confirmedTotal,
-              currency: "BDT",
-              content_ids: contents.map(item => item.id),
-              contents,
-              content_type: "product"
-            };
-            const fired = window.halalFireConfirmedMetaPurchase?.({
-              transaction_id: confirmedOrderId,
-              value: confirmedTotal,
-              currency: "BDT",
-              items: pixelItems
-            }, metaParams, purchaseEventId);
-            if (fired) {
-              try { sessionStorage.setItem(pixelDedupKey, "1"); } catch (_) {}
-            }
-          }
-        } else {
+        if (!purchaseEventId) {
           console.warn("Order saved, but the server did not return a verified Meta Purchase event ID.");
         }
 
