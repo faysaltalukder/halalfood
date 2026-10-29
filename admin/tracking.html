@@ -8,9 +8,17 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <title>Tracking Controls · Halal Food Admin</title>
-<link rel="stylesheet" href="./shared.css?v=20261029-tracking-controls-v1">
+<link rel="stylesheet" href="./shared.css?v=20261029-live-tracking-v1">
 <link rel="stylesheet" href="./phase4-pages.css?v=20261023-admin-ultimate-v1">
 <style>
+.hf-tracking-runtime-grid{display:grid;grid-template-columns:minmax(220px,1fr) minmax(260px,1.3fr);gap:16px;align-items:start}
+.hf-tracking-runtime-field{display:flex;flex-direction:column;gap:7px;font-size:12px;font-weight:750}
+.hf-tracking-runtime-field select{width:100%;padding:10px;border:1px solid var(--hf-border,#e6dfd3);border-radius:9px;background:var(--hf-card-bg,#fff);color:inherit}
+.hf-tracking-runtime-field small,.hf-tracking-runtime-check small{display:block;font-size:11px;font-weight:450;line-height:1.5;color:var(--hf-muted,#697586)}
+.hf-tracking-runtime-check{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--hf-border,#e6dfd3);border-radius:10px;padding:12px}
+.hf-tracking-runtime-check input{width:18px;height:18px;accent-color:#277a58;margin-top:1px;flex-shrink:0}
+.hf-tracking-runtime-check strong{display:block;font-size:12px}
+.hf-tracking-runtime-warning{margin:14px 0 0;padding:10px 12px;border-radius:9px;background:var(--hf-soft-bg,#f2f0ea);font-size:11px;line-height:1.6;color:var(--hf-muted,#596273)}
 .hf-tracking-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:18px 0}
 .hf-tracking-summary-card{background:var(--hf-card-bg,#fff);border:1px solid var(--hf-border,#e6dfd3);border-radius:14px;padding:15px;min-width:0}
 .hf-tracking-summary-card small{display:block;color:var(--hf-muted,#697586);font-size:11px;font-weight:750;letter-spacing:.07em;text-transform:uppercase}
@@ -38,7 +46,7 @@
 .hf-tracking-legend span{display:inline-flex;gap:6px;align-items:center}
 .hf-tracking-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#277a58}
 .hf-tracking-dot.off{background:#a7acb6}
-@media(max-width:700px){.hf-tracking-summary{grid-template-columns:1fr}.hf-tracking-summary-card{padding:12px}.hf-tracking-actions{align-items:stretch}.hf-tracking-actions button{width:100%}}
+@media(max-width:700px){.hf-tracking-runtime-grid{grid-template-columns:1fr}.hf-tracking-summary{grid-template-columns:1fr}.hf-tracking-summary-card{padding:12px}.hf-tracking-actions{align-items:stretch}.hf-tracking-actions button{width:100%}}
 </style>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
 </head>
@@ -52,6 +60,24 @@
 </div>
 <div class="hf-banner hf-banner-info"><span>ⓘ</span><div><strong>Testing-project protection</strong>Halal Food is currently a demo project. A submitted demo order is not a real sale. Purchase tracking stays locked until live purchase tracking is explicitly enabled on the server.</div></div>
 <div id="trackingConfigNote" class="hf-banner hf-banner-warning hf-tracking-mode-note" role="status"><span>!</span><div>Checking the server-side tracking configuration…</div></div>
+<section class="hf-card hf-card-pad hf-tracking-runtime-controls" style="margin:14px 0 18px">
+  <div class="hf-section-head"><div><p class="page-eyebrow">LIVE DELIVERY CONTROLS</p><h2>Meta CAPI and Purchase mode</h2><p>These controls are stored in the MFA-protected server settings. No API token is shown here.</p></div></div>
+  <div class="hf-tracking-runtime-grid">
+    <label class="hf-tracking-runtime-field" for="metaCapiModeControl"><span>Meta CAPI mode</span>
+      <select id="metaCapiModeControl" class="hf-input" aria-describedby="metaCapiModeHelp">
+        <option value="disabled">Disabled</option>
+        <option value="test">Test Events</option>
+        <option value="production">Production — normal Meta reporting</option>
+      </select>
+      <small id="metaCapiModeHelp">Production events will be visible in normal Events Manager and may be used for ad optimization.</small>
+    </label>
+    <label class="hf-tracking-runtime-check" for="livePurchaseTrackingControl">
+      <input id="livePurchaseTrackingControl" type="checkbox">
+      <span><strong>Enable live Purchase tracking</strong><small id="livePurchaseHelp">Off. Enable this only when actual customer orders are being accepted.</small></span>
+    </label>
+  </div>
+  <p class="hf-tracking-runtime-warning">Purchase is dispatched by the server only after an order is saved and verified. Meta Pixel Purchase stays server-only; do not enable another browser Purchase tag in GTM.</p>
+</section>
 <div class="hf-tracking-summary" aria-label="Tracking setup status">
   <div class="hf-tracking-summary-card"><small>Meta CAPI access token</small><strong id="capiTokenStatus">Checking…</strong></div>
   <div class="hf-tracking-summary-card"><small>Server event mode</small><strong id="capiModeStatus">Checking…</strong></div>
@@ -79,7 +105,7 @@
 </section>
 </main>
 </div>
-<script defer src="./shared.js?v=20261029-tracking-controls-v1"></script>
-<script defer src="./tracking.js?v=20261029-tracking-controls-v1"></script>
+<script defer src="./shared.js?v=20261029-live-tracking-v1"></script>
+<script defer src="./tracking.js?v=20261029-live-tracking-v1"></script>
 </body>
 </html>
