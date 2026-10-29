@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex,nofollow">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<title>Tracking Controls · Halal Food Admin</title>
+<link rel="stylesheet" href="./shared.css?v=20261029-tracking-controls-v1">
+<link rel="stylesheet" href="./phase4-pages.css?v=20261023-admin-ultimate-v1">
+<style>
+.hf-tracking-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:18px 0}
+.hf-tracking-summary-card{background:var(--hf-card-bg,#fff);border:1px solid var(--hf-border,#e6dfd3);border-radius:14px;padding:15px;min-width:0}
+.hf-tracking-summary-card small{display:block;color:var(--hf-muted,#697586);font-size:11px;font-weight:750;letter-spacing:.07em;text-transform:uppercase}
+.hf-tracking-summary-card strong{display:block;margin-top:7px;font-size:16px;overflow-wrap:anywhere}
+.hf-tracking-table-wrap{overflow:auto;border:1px solid var(--hf-border,#e6dfd3);border-radius:12px}
+.hf-tracking-table{width:100%;border-collapse:separate;border-spacing:0;min-width:730px}
+.hf-tracking-table th,.hf-tracking-table td{padding:12px 14px;border-bottom:1px solid var(--hf-border,#e6dfd3);text-align:left;vertical-align:middle}
+.hf-tracking-table th{position:sticky;top:0;background:var(--hf-card-bg,#fff);z-index:1;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--hf-muted,#697586)}
+.hf-tracking-table tr:last-child td{border-bottom:0}
+.hf-tracking-event strong{display:block;font-size:13px}
+.hf-tracking-event small{display:block;color:var(--hf-muted,#697586);font-size:11px;line-height:1.45;margin-top:3px;max-width:380px}
+.hf-tracking-toggle-cell{text-align:center!important;width:115px}
+.hf-tracking-toggle{display:inline-flex;align-items:center;justify-content:center;min-height:34px;min-width:42px;position:relative;cursor:pointer}
+.hf-tracking-toggle input{position:absolute;opacity:0;width:1px;height:1px}
+.hf-tracking-toggle span{display:block;width:39px;height:23px;border-radius:999px;background:#d3d6dd;position:relative;transition:background .15s ease}
+.hf-tracking-toggle span:after{content:"";position:absolute;top:3px;left:3px;width:17px;height:17px;border-radius:50%;background:white;box-shadow:0 1px 3px #15223825;transition:transform .15s ease}
+.hf-tracking-toggle input:checked+span{background:#277a58}
+.hf-tracking-toggle input:checked+span:after{transform:translateX(16px)}
+.hf-tracking-toggle input:focus-visible+span{outline:3px solid #c97b3d;outline-offset:3px}
+.hf-tracking-toggle input:disabled+span{opacity:.42;cursor:not-allowed}
+.hf-tracking-mode-note{margin:14px 0 18px}
+.hf-tracking-actions{display:flex;align-items:center;gap:10px;justify-content:space-between;flex-wrap:wrap;margin-top:16px}
+.hf-tracking-save-status{font-size:12px;color:var(--hf-muted,#697586)}
+.hf-tracking-legend{display:flex;gap:12px;flex-wrap:wrap;color:var(--hf-muted,#697586);font-size:11px;margin-top:12px}
+.hf-tracking-legend span{display:inline-flex;gap:6px;align-items:center}
+.hf-tracking-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#277a58}
+.hf-tracking-dot.off{background:#a7acb6}
+@media(max-width:700px){.hf-tracking-summary{grid-template-columns:1fr}.hf-tracking-summary-card{padding:12px}.hf-tracking-actions{align-items:stretch}.hf-tracking-actions button{width:100%}}
+</style>
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
+</head>
+<body data-page="tracking">
+<div id="authGate" class="auth-gate"><div class="auth-gate-card"><strong>Checking secure admin access…</strong><p>Tracking controls are available only to the authorized admin account with two-step verification.</p></div></div>
+<div id="adminApp" hidden>
+<main id="pageContent" tabindex="-1">
+<div class="page-heading hf-phase4-hero">
+  <div><p class="page-eyebrow">EVENT COLLECTION & ROUTING</p><h1>Tracking Controls</h1><p>Choose which website events may be sent to Meta Pixel, Meta Conversions API and Google Analytics 4.</p></div>
+  <div class="page-actions"><button class="hf-button hf-button-secondary" id="refreshTracking" type="button">↻ Refresh status</button><button class="hf-button hf-button-primary" id="saveTracking" type="button">Save tracking settings</button></div>
+</div>
+<div class="hf-banner hf-banner-info"><span>ⓘ</span><div><strong>Testing-project protection</strong>Halal Food is currently a demo project. A submitted demo order is not a real sale. Purchase tracking stays locked until live purchase tracking is explicitly enabled on the server.</div></div>
+<div id="trackingConfigNote" class="hf-banner hf-banner-warning hf-tracking-mode-note" role="status"><span>!</span><div>Checking the server-side tracking configuration…</div></div>
+<div class="hf-tracking-summary" aria-label="Tracking setup status">
+  <div class="hf-tracking-summary-card"><small>Meta CAPI access token</small><strong id="capiTokenStatus">Checking…</strong></div>
+  <div class="hf-tracking-summary-card"><small>Server event mode</small><strong id="capiModeStatus">Checking…</strong></div>
+  <div class="hf-tracking-summary-card"><small>Purchase event protection</small><strong id="purchaseLockStatus">Checking…</strong></div>
+</div>
+<section class="hf-card hf-card-pad">
+  <div class="hf-section-head"><div><p class="page-eyebrow">ROUTING MATRIX</p><h2>Enable or disable individual events</h2><p>Each event has independent switches. Meta CAPI routes remain unavailable until test mode and a Test Events code are configured.</p></div></div>
+  <div class="hf-tracking-table-wrap" tabindex="0" role="region" aria-label="Tracking event route settings. On narrow screens, scroll horizontally to see all destinations.">
+    <table class="hf-tracking-table">
+      <thead><tr><th scope="col">Website event</th><th scope="col" class="hf-tracking-toggle-cell">Meta Pixel</th><th scope="col" class="hf-tracking-toggle-cell">Meta CAPI</th><th scope="col" class="hf-tracking-toggle-cell">GA4</th></tr></thead>
+      <tbody id="trackingSettingsBody"><tr><td colspan="4">Loading event settings…</td></tr></tbody>
+    </table>
+  </div>
+  <div class="hf-tracking-legend"><span><i class="hf-tracking-dot"></i> Enabled</span><span><i class="hf-tracking-dot off"></i> Disabled</span><span>Changes apply to server routing immediately after saving; browser settings apply when the visitor page loads or refreshes.</span></div>
+  <div class="hf-tracking-actions"><span id="trackingSaveStatus" class="hf-tracking-save-status" role="status">No unsaved changes.</span><div class="page-actions"><button class="hf-button hf-button-secondary" id="discardTracking" type="button">Discard changes</button><button class="hf-button hf-button-primary" id="saveTrackingBottom" type="button">Save tracking settings</button></div></div>
+</section>
+<section class="hf-card hf-card-pad" style="margin-top:18px">
+  <div class="hf-section-head"><div><h2>How the controls work</h2><p>Server controls are checked per event, and the same event ID is shared by the browser Pixel and server integration when CAPI is enabled.</p></div></div>
+  <ul style="line-height:1.8;padding-left:20px;margin-bottom:0">
+    <li><strong>Meta Pixel:</strong> controls browser-side event collection.</li>
+    <li><strong>Meta CAPI:</strong> controls server-side delivery. Event names and event IDs are checked before dispatch, and delivery outcomes are logged privately.</li>
+    <li><strong>GA4:</strong> controls event commands sent to the existing Google/GTM setup.</li>
+    <li><strong>Purchase:</strong> remains blocked by a server-side guard until live commerce is explicitly enabled.</li>
+  </ul>
+</section>
+</main>
+</div>
+<script defer src="./shared.js?v=20261029-tracking-controls-v1"></script>
+<script defer src="./tracking.js?v=20261029-tracking-controls-v1"></script>
+</body>
+</html>
