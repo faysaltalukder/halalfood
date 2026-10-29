@@ -382,7 +382,12 @@ async function validateChangeSet(id: string, actor: string) {
   const releaseId = crypto.randomUUID();
   let cacheBumps = 0;
   if (assetPaths.size) {
-    const htmlItems = tree.filter((item) => item.type === "blob" && item.path.toLowerCase().endsWith(".html"));
+    // Only cache-bust HTML pages that the Publisher is allowed to change. Protected login/settings pages stay untouched.
+    const htmlItems = tree.filter((item) =>
+      item.type === "blob" &&
+      item.path.toLowerCase().endsWith(".html") &&
+      !BLOCKED_PATHS.has(item.path.toLowerCase())
+    );
     if (htmlItems.length > MAX_HTML_FILES_FOR_CACHE_BUST) throw new Error("Too many HTML files for automatic cache-busting. Include the dependent HTML files manually or use a reviewed release.");
     const htmlPaths = new Set(htmlItems.map((item) => item.path));
     for (const file of byPath.values()) if (file.action !== "delete" && file.path.toLowerCase().endsWith(".html")) htmlPaths.add(file.path);
@@ -720,6 +725,24 @@ function missingConfiguration() {
   return missing;
 }
 
+async function validatePublishChangeSet(id: string, actor: string) {
+  // Single authenticated release action: keep server validation, MFA admin identity,
+  // exact-manifest approval signing, branch-head checks, and publish audit logging.
+  let loaded = await loadChangeSet(id);
+  if (["draft", "failed"].includes(loaded.set.status)) {
+    await validateChangeSet(id, actor);
+    loaded = await loadChangeSet(id);
+  }
+  if (loaded.set.status === "validated") {
+    await approveChangeSet(id, actor);
+    loaded = await loadChangeSet(id);
+  }
+  if (loaded.set.status !== "approved") {
+    throw new Error("One-click publish requires a draft, failed, validated, or approved change set. Current status: " + loaded.set.status);
+  }
+  return await publishChangeSet(id, actor);
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS_HEADERS });
   if (req.method !== "POST") return json({ success: false, error: "Use POST for this endpoint." }, 405);
@@ -757,6 +780,7 @@ Deno.serve(async (req: Request) => {
     }
     if (action === "list") return json(await listChangeSets());
     if (action === "details") return json(await getChangeSetDetails(clean(body.change_set_id, 60)));
+    if (action === "validate_publish") return json(await validatePublishChangeSet(clean(body.change_set_id, 60), actor));
     if (action === "validate") return json(await validateChangeSet(clean(body.change_set_id, 60), actor));
     if (action === "approve") return json(await approveChangeSet(clean(body.change_set_id, 60), actor));
     if (action === "publish") return json(await publishChangeSet(clean(body.change_set_id, 60), actor));
