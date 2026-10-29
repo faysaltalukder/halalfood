@@ -40,33 +40,47 @@ async function dispatchVerifiedPurchase(args: {
     fbc: args.fbc
   };
 
-  // Background task: order persistence has already succeeded; tracking must never undo the order.
-  for (let attempt = 1; attempt <= 2; attempt++) {
+  // Background task starts only after the RPC confirms the order was saved.
+  // Retrying uses the same server-derived order ID, so the delivery log and Meta event_id
+  // prevent duplicate conversions while allowing a previously failed delivery to recover.
+  for (let attempt = 1; attempt <= 3; attempt++) {
     try {
       const response = await fetch(endpoint, {
         method: "POST",
         headers,
         body: JSON.stringify(payload),
-        signal: AbortSignal.timeout(4500)
+        signal: AbortSignal.timeout(10000)
       });
       const result = await response.json().catch(() => null);
       if (!response.ok || result?.error) {
         throw new Error("Internal tracking endpoint returned HTTP " + response.status);
       }
       const delivery = Array.isArray(result?.metaDelivery) ? result.metaDelivery : [];
-      const failed = delivery.some((item: any) => item?.status === "failed");
-      if (failed && attempt < 2) {
-        await new Promise((resolve) => setTimeout(resolve, 350));
+      const confirmed = delivery.some((item: any) =>
+        item?.status === "sent" ||
+        (item?.status === "duplicate" && [
+          "already_sent",
+          "delivery_in_progress",
+          "another_delivery_attempt_claimed"
+        ].includes(String(item?.reason || "")))
+      );
+      if (!confirmed && attempt < 3) {
+        await new Promise((resolve) => setTimeout(resolve, 500 * attempt));
         continue;
       }
-      if (failed) console.warn("Verified-order Meta delivery failed after retry.");
+      if (!confirmed) {
+        console.warn(
+          "Verified-order Meta Purchase was not confirmed after retries.",
+          delivery.map((item: any) => ({ status: item?.status, reason: item?.reason }))
+        );
+      }
       return;
     } catch (error) {
-      if (attempt < 2) {
-        await new Promise((resolve) => setTimeout(resolve, 350));
+      if (attempt < 3) {
+        await new Promise((resolve) => setTimeout(resolve, 500 * attempt));
         continue;
       }
-      console.warn("Verified-order tracking failed; saved order remains intact.", error instanceof Error ? error.name : "unknown");
+      console.warn("Verified-order Meta delivery failed after retries; saved order remains intact.", error instanceof Error ? error.name : "unknown");
     }
   }
 }
@@ -115,10 +129,10 @@ Deno.serve(async (req: Request) => {
     }
     if (!data || data.success !== true) return json({ success: false, error: "Order could not be placed. Please try again." }, 500);
 
-    // Only dispatch after the order has been persisted successfully.
-    // analytics-ingest checks the server-protected runtime mode before any Meta delivery.
+    // Dispatch after successful persistence, including idempotent duplicate submissions.
+    // A stable DB-derived event ID prevents duplicate Purchase conversions; a repeated call
+    // can recover a failed delivery from the same order. Runtime mode is server-protected.
     if (
-      data.duplicate !== true &&
       typeof data.orderId === "string" &&
       /^HF-[0-9]{4,6}$/.test(data.orderId)
     ) {
