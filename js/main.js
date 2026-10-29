@@ -1346,8 +1346,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   function routeEnabled(destination,eventName){
     if(!configReady||!trackingConfig||!trackingConfig.routes)return false;
-    /* Purchase must be server-only: never fire it directly from Meta Pixel. */
-    if(eventName==="purchase"&&destination==="meta_pixel")return false;
     if(eventName==="purchase"&&trackingConfig.livePurchaseTracking!==true)return false;
     return trackingConfig.routes[destination+":"+eventName]===true;
   }
@@ -1355,7 +1353,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if(!configReady||!trackingConfig||!trackingConfig.routes)return false;
     return Object.keys(trackingConfig.routes).some(function(key){
       return key.indexOf(destination+":")===0&&trackingConfig.routes[key]===true&&
-        key!=="meta_pixel:purchase"&&
         !(key===destination+":purchase"&&trackingConfig.livePurchaseTracking!==true);
     });
   }
@@ -1414,6 +1411,16 @@ document.addEventListener("DOMContentLoaded", () => {
     if(!item)return;
     var name=item.eventName;
     var params=item.params||{};
+    // Meta Purchase is browser-routed only when the server has returned the stable
+    // ID for a saved order. Never allow a generic/custom client event to create Purchase.
+    if(name==="purchase"){
+      if(item.confirmedPurchase!==true||!/^hf_purchase_[a-f0-9]{32}$/i.test(String(item.eventId||"")))return;
+      if(routeEnabled("meta_pixel","purchase")){
+        initPixelIfEnabled();
+        window.fbq("track","Purchase",item.metaParams||params,{eventID:item.eventId});
+      }
+      return;
+    }
     var isStandardMeta=Boolean(item.metaEvent||META_EVENT_MAP[name]);
     var metaEvent=item.metaEvent||META_EVENT_MAP[name]||META_CUSTOM_EVENT_MAP[name]||null;
     if(metaEvent&&routeEnabled("meta_pixel",name)){
@@ -1462,6 +1469,21 @@ document.addEventListener("DOMContentLoaded", () => {
     sendFirstPartyEvent(eventName,safeParams,metaParams,id);
     var externalItem={eventName:eventName,params:safeParams,metaEvent:metaEvent||null,metaParams:metaParams||safeParams,eventId:id};
     if(configReady)dispatchExternal(externalItem);else queuedExternal.push(externalItem);
+  };
+  window.halalFireConfirmedMetaPurchase=function(params,metaParams,eventId){
+    var id=String(eventId||"");
+    if(!/^hf_purchase_[a-f0-9]{32}$/i.test(id))return false;
+    if(configReady&&(!trackingConfig||trackingConfig.livePurchaseTracking!==true||!routeEnabled("meta_pixel","purchase")))return false;
+    var externalItem={
+      eventName:"purchase",
+      params:params||{},
+      metaEvent:"Purchase",
+      metaParams:metaParams||params||{},
+      eventId:id,
+      confirmedPurchase:true
+    };
+    if(configReady)dispatchExternal(externalItem);else queuedExternal.push(externalItem);
+    return true;
   };
   window.halalTrackItems=function(items){
     return (Array.isArray(items)?items:[]).map(function(item){
