@@ -1329,6 +1329,8 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   function routeEnabled(destination,eventName){
     if(!configReady||!trackingConfig||!trackingConfig.routes)return false;
+    /* Purchase must be server-only: never fire it directly from Meta Pixel. */
+    if(eventName==="purchase"&&destination==="meta_pixel")return false;
     if(eventName==="purchase"&&trackingConfig.livePurchaseTracking!==true)return false;
     return trackingConfig.routes[destination+":"+eventName]===true;
   }
@@ -1336,6 +1338,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if(!configReady||!trackingConfig||!trackingConfig.routes)return false;
     return Object.keys(trackingConfig.routes).some(function(key){
       return key.indexOf(destination+":")===0&&trackingConfig.routes[key]===true&&
+        key!=="meta_pixel:purchase"&&
         !(key===destination+":purchase"&&trackingConfig.livePurchaseTracking!==true);
     });
   }
