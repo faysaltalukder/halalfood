@@ -1019,49 +1019,71 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!response.ok || result?.success === false) {
           throw new Error(result?.error || `Order backend HTTP ${response.status}`);
         }
+
+        const confirmedOrderId = String(result?.orderId || data.orderId || "");
+        const confirmedTotal = Number.isFinite(Number(result?.orderTotal)) ? Number(result.orderTotal) : localOrderTotal;
+        const purchaseEventId = typeof result?.purchaseEventId === "string" &&
+          /^hf_purchase_[a-f0-9]{32}$/i.test(result.purchaseEventId)
+          ? result.purchaseEventId
+          : "";
+
+        // Send the browser Pixel copy only with the server-derived ID for an already-saved order.
+        // CAPI uses this exact same ID, allowing Meta to deduplicate the browser/server pair.
+        if (purchaseEventId) {
+          const pixelDedupKey = "HALAL_META_PIXEL_PURCHASE_" + purchaseEventId;
+          let pixelAlreadySent = false;
+          try { pixelAlreadySent = sessionStorage.getItem(pixelDedupKey) === "1"; } catch (_) {}
+          if (!pixelAlreadySent) {
+            const pixelItems = trackItems(confirmedItems);
+            const contents = pixelItems.map(item => ({
+              id: String(item.item_id || ""),
+              quantity: Math.max(1, Number(item.quantity) || 1),
+              item_price: Math.max(0, Number(item.price) || 0)
+            })).filter(item => item.id);
+            const metaParams = {
+              value: confirmedTotal,
+              currency: "BDT",
+              content_ids: contents.map(item => item.id),
+              contents,
+              content_type: "product"
+            };
+            const fired = window.halalFireConfirmedMetaPurchase?.({
+              transaction_id: confirmedOrderId,
+              value: confirmedTotal,
+              currency: "BDT",
+              items: pixelItems
+            }, metaParams, purchaseEventId);
+            if (fired) {
+              try { sessionStorage.setItem(pixelDedupKey, "1"); } catch (_) {}
+            }
+          }
+        } else {
+          console.warn("Order saved, but the server did not return a verified Meta Purchase event ID.");
+        }
+
         return {
           source: "supabase",
           success: true,
-          orderId: result?.orderId || data.orderId,
-          orderTotal: Number.isFinite(Number(result?.orderTotal)) ? Number(result.orderTotal) : localOrderTotal
+          orderId: confirmedOrderId,
+          orderTotal: confirmedTotal,
+          purchaseEventId
         };
       });
 
       try {
-        // Whichever backend confirms first is enough to take the customer to
-        // Thank You. This keeps checkout fast while both persistence paths run.
-        const timeoutPromise = new Promise((resolve) => {
-          setTimeout(() => resolve({ timeout: true }), 1800);
-        });
+        // Supabase is the authoritative order store and the only source that can return
+        // the verified Purchase event ID. Do not navigate away on a Google Sheet response
+        // or a short timeout before the browser Pixel copy has been queued.
+        const winner = await supabaseSubmitPromise;
 
-        let winner;
-        try {
-          // Promise.any ignores a single backend failure and waits for the
-          // first successful backend. This prevents one slow/broken path from
-          // blocking a successful order saved by the other path.
-          winner = await Promise.race([
-            Promise.any([googleSubmitPromise, supabaseSubmitPromise]),
-            timeoutPromise
-          ]);
-        } catch (backendError) {
-          // Both backends explicitly failed before the timeout.
-          throw backendError;
-        }
-
-        // A timeout is deliberately treated as pending/accepted rather than
-        // showing a scary failure message: Google Apps Script may already have
-        // written the Sheet row and simply be busy sending email/admin work.
-        const confirmedOrderId = winner?.orderId
-          ? String(winner.orderId)
-          : String(data.orderId || "");
-        const confirmedTotal = winner?.orderTotal != null
-          ? Number(winner.orderTotal)
-          : localOrderTotal;
+        // The Supabase response confirms this order was saved in the primary database.
+        const confirmedOrderId = String(winner.orderId || data.orderId || "");
+        const confirmedTotal = Number(winner.orderTotal ?? localOrderTotal);
 
         const orderSuccessKey="HALAL_ORDER_SUCCESS_RECORDED_"+confirmedOrderId;
         let alreadyTracked=false;
         try { alreadyTracked=sessionStorage.getItem(orderSuccessKey)==="1"; } catch (_) {}
-        if(!winner?.timeout && !alreadyTracked){
+        if(!alreadyTracked){
           // This storefront is still a testing project. Record order acceptance as a
           // non-revenue event; never send a Purchase conversion until live sales are enabled.
           track("order_success",{
@@ -1083,18 +1105,19 @@ document.addEventListener("DOMContentLoaded", () => {
             paymentMethod: "cash_on_delivery",
             items: confirmedItems,
             customerName: data.name || "",
-            confirmationStatus: winner?.timeout ? "pending" : "confirmed",
-            confirmedAt: winner?.timeout ? null : new Date().toISOString()
+            confirmationStatus: "confirmed",
+            confirmedAt: new Date().toISOString(),
+            purchaseEventId: winner.purchaseEventId || null
           }));
         } catch (storageError) {
           console.warn("Could not save local order confirmation state:", storageError);
         }
 
-        if (isCartOrder && !winner?.timeout) {
+        if (isCartOrder) {
           window.HALAL_CART_API?.clear();
         }
 
-        // Success is now the normal path: land on Thank You within ~2–3s.
+        // Navigate only after primary order persistence and the browser Purchase queue step.
         window.location.replace("thank-you.html");
       } catch (err) {
 
