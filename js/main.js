@@ -1265,164 +1265,245 @@ document.addEventListener("DOMContentLoaded", () => {
   if(window.__HALAL_TRACKING_BOOTSTRAPPED__) return;
   window.__HALAL_TRACKING_BOOTSTRAPPED__=true;
 
-  /* PERFORMANCE: the heavy tracking files (Google Tag Manager, Meta Pixel) are NOT downloaded
-     while the page is first painting. They load on the visitor's first interaction, or after
-     HALAL_TRACKING_DELAY_MS once the page has finished loading - whichever comes first.
-     Nothing is lost: every event is queued in dataLayer / the fbq queue and sent as soon as the
-     tracking files arrive. Order, cart, thank-you and track-order pages load tracking at once
-     so that purchase events are never delayed.
-     To change the wait time, edit the number below (milliseconds). */
   var HALAL_TRACKING_DELAY_MS=5000;
+  var TRACKING_ENDPOINT="https://qfwvrcfkrsydycbfjsxf.supabase.co/functions/v1/analytics-ingest";
+  var META_PIXEL_ID="28564665756499119";
+  var trackingConfig=null;
+  var configReady=false;
+  var trackersLoaded=false;
+  var loadRequested=false;
+  var pixelInitialized=false;
+  var queuedExternal=[];
+  var triggerEvents=["pointerdown","touchstart","keydown","scroll","mousemove"];
+  var META_EVENT_MAP={
+    page_view:"PageView",view_item:"ViewContent",search:"Search",add_to_cart:"AddToCart",
+    begin_checkout:"InitiateCheckout",add_payment_info:"AddPaymentInfo",purchase:"Purchase",
+    sign_up:"CompleteRegistration",generate_lead:"Lead",whatsapp_click:"Contact",phone_click:"Contact"
+  };
+  var firstPartyEvents=new Set([
+    "page_view","page_engagement","view_item","view_item_list","select_item","search",
+    "add_to_cart","remove_from_cart","view_cart","begin_checkout","add_shipping_info",
+    "add_payment_info","order_submit","order_success","purchase","track_order",
+    "whatsapp_click","phone_click","sign_up","login","generate_lead","refund"
+  ]);
 
   window.dataLayer=window.dataLayer||[];
-
-  /* Meta Pixel: only the tiny queue stub now; fbevents.js itself is loaded later. */
+  /* Keep commands queued until the server-controlled tracking routes have loaded. */
   !function(f,n){
     if(f.fbq)return;
     n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};
     if(!f._fbq)f._fbq=n;
-    n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];
+    n.push=n;n.loaded=!0;n.version="2.0";n.queue=[];
   }(window);
-  window.fbq('init','28564665756499119');
-  window.fbq('track','PageView');
-  /* Keep gtag event commands queued even if the GTM Google tag is still loading. */
   window.gtag=window.gtag||function(){window.dataLayer.push(arguments);};
 
-  var trackersLoaded=false;
-  var triggerEvents=['pointerdown','touchstart','keydown','scroll','mousemove'];
+  var firstPartySessionId="";
+  try{
+    firstPartySessionId=sessionStorage.getItem("hf_analytics_session")||"";
+    if(!firstPartySessionId){
+      firstPartySessionId=(crypto.randomUUID?crypto.randomUUID():String(Date.now())+"-"+Math.random().toString(36).slice(2));
+      sessionStorage.setItem("hf_analytics_session",firstPartySessionId);
+    }
+  }catch(_sessionError){}
+
+  function createEventId(){
+    try{if(crypto.randomUUID)return crypto.randomUUID();}catch(_uuidError){}
+    return "hf-"+String(Date.now())+"-"+Math.random().toString(36).slice(2)+"-"+Math.random().toString(36).slice(2);
+  }
+  function cookieValue(name){
+    try{
+      var escaped=name.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+      var match=document.cookie.match(new RegExp("(?:^|; )"+escaped+"=([^;]*)"));
+      return match?decodeURIComponent(match[1]):"";
+    }catch(_cookieError){return "";}
+  }
+  function routeEnabled(destination,eventName){
+    if(!configReady||!trackingConfig||!trackingConfig.routes)return false;
+    if(eventName==="purchase"&&trackingConfig.livePurchaseTracking!==true)return false;
+    return trackingConfig.routes[destination+":"+eventName]===true;
+  }
+  function hasEnabledRoutes(destination){
+    if(!configReady||!trackingConfig||!trackingConfig.routes)return false;
+    return Object.keys(trackingConfig.routes).some(function(key){
+      return key.indexOf(destination+":")===0&&trackingConfig.routes[key]===true&&
+        !(key===destination+":purchase"&&trackingConfig.livePurchaseTracking!==true);
+    });
+  }
+  function initPixelIfEnabled(){
+    if(pixelInitialized||!hasEnabledRoutes("meta_pixel"))return;
+    window.fbq("init",META_PIXEL_ID);
+    pixelInitialized=true;
+  }
+  function safeItem(item){
+    var source=item&&typeof item==="object"?item:{};
+    var price=Number(source.price);
+    var quantity=Number(source.quantity!=null?source.quantity:source.qty);
+    return {
+      item_id:String(source.item_id||source.slug||source.id||source.name||"").slice(0,100),
+      item_name:String(source.item_name||source.name||source.product||"").slice(0,180),
+      item_category:String(source.item_category||source.category||source.catLabel||"").slice(0,100),
+      price:Number.isFinite(price)&&price>=0?Math.min(price,100000000):0,
+      quantity:Number.isInteger(quantity)&&quantity>0?Math.min(quantity,100000):1
+    };
+  }
+  function sendFirstPartyEvent(eventName,params,metaParams,eventId){
+    if(!firstPartyEvents.has(eventName))return;
+    var p=params||{};
+    var items=(Array.isArray(p.items)?p.items:[]).slice(0,30).map(safeItem);
+    var first=items[0]||{};
+    var row={
+      event_id:eventId||createEventId(),
+      event_name:eventName,
+      occurred_at:new Date().toISOString(),
+      page_path:location.pathname,
+      page_title:document.title,
+      session_id:firstPartySessionId||null,
+      item_id:first.item_id||null,
+      item_name:first.item_name||null,
+      item_category:first.item_category||null,
+      value:typeof p.value==="number"&&Number.isFinite(p.value)?p.value:null,
+      quantity:typeof first.quantity==="number"?first.quantity:null,
+      search_term:typeof p.search_term==="string"?p.search_term.slice(0,120):null,
+      items:items,
+      meta_params:metaParams&&typeof metaParams==="object"?metaParams:{},
+      fbp:cookieValue("_fbp"),
+      fbc:cookieValue("_fbc")
+    };
+    try{
+      fetch(TRACKING_ENDPOINT,{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify(row),
+        keepalive:true,
+        credentials:"omit",
+        referrerPolicy:"no-referrer"
+      }).catch(function(){});
+    }catch(_sendError){}
+  }
+  function dispatchExternal(item){
+    if(!item)return;
+    var name=item.eventName;
+    var params=item.params||{};
+    var metaEvent=item.metaEvent||META_EVENT_MAP[name]||null;
+    if(metaEvent&&routeEnabled("meta_pixel",name)){
+      initPixelIfEnabled();
+      window.fbq("track",metaEvent,item.metaParams||params,{eventID:item.eventId});
+    }
+    if(routeEnabled("ga4",name)){
+      var gaParams=Object.assign({},params,{event_id:item.eventId});
+      window.dataLayer.push(Object.assign({event:name},gaParams));
+      if(typeof window.gtag==="function")window.gtag("event",name,gaParams);
+    }
+  }
+  function flushExternalQueue(){
+    if(!configReady)return;
+    var queued=queuedExternal.slice();
+    queuedExternal.length=0;
+    queued.forEach(dispatchExternal);
+  }
+
+  var trackersToLoad=false;
   function loadTrackers(){
-    if(trackersLoaded) return;
+    if(!configReady){loadRequested=true;return;}
+    if(trackersLoaded)return;
     trackersLoaded=true;
     triggerEvents.forEach(function(ev){window.removeEventListener(ev,loadTrackers,{passive:true});});
-    window.dataLayer.push({'gtm.start':new Date().getTime(),event:'gtm.js'});
-    var g=document.createElement('script');
-    g.async=true;
-    g.src='https://www.googletagmanager.com/gtm.js?id=GTM-5TW678CX';
-    document.head.appendChild(g);
-    var t=document.createElement('script');
-    t.async=true;
-    t.src='https://connect.facebook.net/en_US/fbevents.js';
-    document.head.appendChild(t);
+    if(hasEnabledRoutes("ga4")){
+      window.dataLayer.push({"gtm.start":new Date().getTime(),event:"gtm.js"});
+      var g=document.createElement("script");
+      g.async=true;
+      g.src="https://www.googletagmanager.com/gtm.js?id=GTM-5TW678CX";
+      document.head.appendChild(g);
+    }
+    if(hasEnabledRoutes("meta_pixel")){
+      initPixelIfEnabled();
+      var t=document.createElement("script");
+      t.async=true;
+      t.src="https://connect.facebook.net/en_US/fbevents.js";
+      document.head.appendChild(t);
+    }
   }
   window.halalLoadTrackers=loadTrackers;
-
-  var loadNow=/\/(order|cart|thank-you|track-order)(\.html)?\/?$/.test(location.pathname);
-  if(loadNow){
-    loadTrackers();
-  }else{
-    triggerEvents.forEach(function(ev){window.addEventListener(ev,loadTrackers,{passive:true});});
-    var armTimer=function(){setTimeout(loadTrackers,HALAL_TRACKING_DELAY_MS);};
-    if(document.readyState==='complete') armTimer(); else window.addEventListener('load',armTimer);
-  }
-
-  var firstPartySessionId = '';
-  try {
-    firstPartySessionId = sessionStorage.getItem('hf_analytics_session') || '';
-    if (!firstPartySessionId) {
-      firstPartySessionId = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + '-' + Math.random().toString(36).slice(2));
-      sessionStorage.setItem('hf_analytics_session', firstPartySessionId);
-    }
-  } catch (_) {}
-  var firstPartyEndpoint = 'https://qfwvrcfkrsydycbfjsxf.supabase.co/functions/v1/analytics-ingest';
-  var firstPartyEvents = new Set(['page_view','page_engagement','view_item','view_item_list','select_item','search','add_to_cart','view_cart','begin_checkout','order_submit','order_success','track_order','whatsapp_click','phone_click']);
-  function sendFirstPartyEvent(eventName, params) {
-    if (!firstPartyEvents.has(eventName)) return;
-    var p = params || {};
-    var items = Array.isArray(p.items) ? p.items : [];
-    var first = items.length && items[0] && typeof items[0] === 'object' ? items[0] : {};
-    var row = {
-      event_name: eventName,
-      occurred_at: new Date().toISOString(),
-      page_path: location.pathname,
-      page_title: document.title,
-      session_id: firstPartySessionId || null,
-      item_id: first.item_id || first.itemId || first.slug || null,
-      item_name: first.item_name || first.name || null,
-      item_category: first.item_category || first.category || null,
-      value: typeof p.value === 'number' && Number.isFinite(p.value) ? p.value : null,
-      quantity: typeof first.quantity === 'number' ? first.quantity : null,
-      search_term: typeof p.search_term === 'string' ? p.search_term.slice(0,120) : null
-    };
-    try {
-      fetch(firstPartyEndpoint, {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify(row),
-        keepalive: true,
-        credentials: 'omit',
-        referrerPolicy: 'no-referrer'
-      }).catch(function(){});
-    } catch (_) {}
-  }
-
-  window.halalTrack=function(eventName,params,metaEvent,metaParams){
+  window.halalTrack=function(eventName,params,metaEvent,metaParams,eventId){
     var safeParams=params||{};
-    sendFirstPartyEvent(eventName, safeParams);
-    window.dataLayer.push(Object.assign({event:eventName},safeParams));
-    if(typeof window.gtag==='function') window.gtag('event',eventName,safeParams);
-    if(typeof window.fbq==='function' && metaEvent){
-      window.fbq('track',metaEvent,metaParams||safeParams);
-    }
+    var id=eventId||createEventId();
+    sendFirstPartyEvent(eventName,safeParams,metaParams,id);
+    var externalItem={eventName:eventName,params:safeParams,metaEvent:metaEvent||null,metaParams:metaParams||safeParams,eventId:id};
+    if(configReady)dispatchExternal(externalItem);else queuedExternal.push(externalItem);
   };
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function() {
-      window.halalTrack('page_view', {page_title: document.title});
-    }, {once:true});
-  } else {
-    window.halalTrack('page_view', {page_title: document.title});
-  }
-
-  // First-party on-site page timing only. Deliberately does not forward this custom event to GA4/GTM/Meta.
-  var pageVisibleMs = 0;
-  var visibleSince = document.visibilityState === 'visible' ? performance.now() : null;
-  var pageEngagementSent = false;
-  function pausePageVisibleClock() {
-    if (visibleSince !== null) {
-      pageVisibleMs += Math.max(0, performance.now() - visibleSince);
-      visibleSince = null;
-    }
-  }
-  document.addEventListener('visibilitychange', function() {
-    if (document.hidden) {
-      pausePageVisibleClock();
-    } else if (!pageEngagementSent && visibleSince === null) {
-      visibleSince = performance.now();
-    }
-  });
-  window.addEventListener('pagehide', function() {
-    if (pageEngagementSent) return;
-    pageEngagementSent = true;
-    pausePageVisibleClock();
-    // analytics_events.value stores seconds for page_engagement events.
-    sendFirstPartyEvent('page_engagement', {value: Math.min(86400, Math.round(pageVisibleMs / 1000))});
-  });
-  // A page restored from the browser's back/forward cache is a new visible visit.
-  // Reset the clock so its next pagehide records only the restored visit's visible time.
-  window.addEventListener('pageshow', function(event) {
-    if (!event.persisted) return;
-    pageVisibleMs = 0;
-    pageEngagementSent = false;
-    visibleSince = document.visibilityState === 'visible' ? performance.now() : null;
-    sendFirstPartyEvent('page_view', {page_title: document.title});
-  });
-
   window.halalTrackItems=function(items){
     return (Array.isArray(items)?items:[]).map(function(item){
       var displayMatch=String(item.displayPrice||"").match(/(?:৳|BDT)?\s*([0-9][0-9,]*(?:\.[0-9]+)?)/i);
       var rawMatch=String(item.price??"").replace(/,/g,"").match(/[0-9]+(?:\.[0-9]+)?/);
       var price=displayMatch?Number(displayMatch[1].replace(/,/g,"")):(rawMatch?Number(rawMatch[0]):0);
-      if(!Number.isFinite(price)) price=0;
+      if(!Number.isFinite(price))price=0;
       var quantity=Math.max(1,Number(item.quantity!=null?item.quantity:item.qty)||1);
       return {
-        item_id:String(item.slug||item.id||item.product_id||item.name||''),
-        item_name:String(item.name||item.product||''),
-        item_category:String(item.category||item.catLabel||''),
+        item_id:String(item.slug||item.id||item.product_id||item.name||""),
+        item_name:String(item.name||item.product||""),
+        item_category:String(item.category||item.catLabel||""),
         price:price,
         quantity:quantity
       };
     });
   };
+
+  var loadNow=/\/(order|cart|thank-you|track-order)(\.html)?\/?$/.test(location.pathname);
+  if(loadNow){loadRequested=true;}
+  triggerEvents.forEach(function(ev){window.addEventListener(ev,loadTrackers,{passive:true});});
+
+  fetch(TRACKING_ENDPOINT+"?config=1",{method:"GET",credentials:"omit",cache:"no-store",referrerPolicy:"no-referrer"})
+    .then(function(response){if(!response.ok)throw new Error("tracking config unavailable");return response.json();})
+    .then(function(value){
+      trackingConfig=value&&typeof value==="object"?value:{routes:{},livePurchaseTracking:false};
+      configReady=true;
+      initPixelIfEnabled();
+      flushExternalQueue();
+      if(loadRequested){
+        loadTrackers();
+      }else{
+        var armTimer=function(){setTimeout(loadTrackers,HALAL_TRACKING_DELAY_MS);};
+        if(document.readyState==="complete")armTimer();else window.addEventListener("load",armTimer,{once:true});
+      }
+    })
+    .catch(function(){
+      /* Fail closed: if server-side controls are unavailable, do not send to Meta or GA4. */
+      trackingConfig={routes:{},livePurchaseTracking:false};
+      configReady=true;
+      queuedExternal.length=0;
+      triggerEvents.forEach(function(ev){window.removeEventListener(ev,loadTrackers,{passive:true});});
+    });
+
+  if(document.readyState==="loading"){
+    document.addEventListener("DOMContentLoaded",function(){window.halalTrack("page_view",{page_title:document.title},"PageView",{});},{once:true});
+  }else{
+    window.halalTrack("page_view",{page_title:document.title},"PageView",{});
+  }
+
+  /* First-party on-site page timing only. This deliberately does not route to Meta or GA4. */
+  var pageVisibleMs=0;
+  var visibleSince=document.visibilityState==="visible"?performance.now():null;
+  var pageEngagementSent=false;
+  function pausePageVisibleClock(){
+    if(visibleSince!==null){pageVisibleMs+=Math.max(0,performance.now()-visibleSince);visibleSince=null;}
+  }
+  document.addEventListener("visibilitychange",function(){
+    if(document.hidden)pausePageVisibleClock();
+    else if(!pageEngagementSent&&visibleSince===null)visibleSince=performance.now();
+  });
+  window.addEventListener("pagehide",function(){
+    if(pageEngagementSent)return;
+    pageEngagementSent=true;
+    pausePageVisibleClock();
+    sendFirstPartyEvent("page_engagement",{value:Math.min(86400,Math.round(pageVisibleMs/1000))},{},createEventId());
+  });
+  window.addEventListener("pageshow",function(event){
+    if(!event.persisted)return;
+    pageVisibleMs=0;
+    pageEngagementSent=false;
+    visibleSince=document.visibilityState==="visible"?performance.now():null;
+    window.halalTrack("page_view",{page_title:document.title},"PageView",{});
+  });
 })();
 /* END HALAL TRACKING */
 
