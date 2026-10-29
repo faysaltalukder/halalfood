@@ -1386,7 +1386,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     if(routeEnabled("ga4",name)){
       var gaParams=Object.assign({},params,{event_id:item.eventId});
-      window.dataLayer.push(Object.assign({event:name},gaParams));
+      /* Send one GA4 event command only; do not also publish a GTM Custom Event for the same interaction. */
       if(typeof window.gtag==="function")window.gtag("event",name,gaParams);
     }
   }
