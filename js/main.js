@@ -1030,24 +1030,19 @@ document.addEventListener("DOMContentLoaded", () => {
           ? Number(winner.orderTotal)
           : localOrderTotal;
 
-        const purchaseKey="HALAL_PURCHASE_RECORDED_"+confirmedOrderId;
+        const orderSuccessKey="HALAL_ORDER_SUCCESS_RECORDED_"+confirmedOrderId;
         let alreadyTracked=false;
-        try { alreadyTracked=sessionStorage.getItem(purchaseKey)==="1"; } catch (_) {}
+        try { alreadyTracked=sessionStorage.getItem(orderSuccessKey)==="1"; } catch (_) {}
         if(!winner?.timeout && !alreadyTracked){
-          track("purchase",{
+          // This storefront is still a testing project. Record order acceptance as a
+          // non-revenue event; never send a Purchase conversion until live sales are enabled.
+          track("order_success",{
             transaction_id:confirmedOrderId,
             value:confirmedTotal,
             currency:"BDT",
             items:trackItems(confirmedItems)
-          },"Purchase",{
-            value:confirmedTotal,
-            currency:"BDT",
-            content_ids:trackItems(confirmedItems).map(i=>i.item_id),
-            contents:trackItems(confirmedItems).map(i=>({id:i.item_id,quantity:i.quantity,item_price:i.price})),
-            content_type:"product",
-            order_id:confirmedOrderId
           });
-          try { sessionStorage.setItem(purchaseKey,"1"); } catch (_) {}
+          try { sessionStorage.setItem(orderSuccessKey,"1"); } catch (_) {}
         }
 
         try {
