@@ -13,11 +13,68 @@ const json = (body: unknown, status = 200) =>
 const clean = (value: unknown, max: number) =>
   String(value ?? "").replace(/[\u0000-\u001F\u007F]/g, " ").trim().slice(0, max);
 
+async function dispatchVerifiedPurchase(args: {
+  url: string;
+  key: string;
+  orderId: string;
+  fbp: string;
+  fbc: string;
+  userAgent: string;
+  clientIp: string;
+}) {
+  const endpoint = args.url.replace(/\/+$/, "") + "/functions/v1/analytics-ingest";
+  const headers = new Headers({
+    "Content-Type": "application/json",
+    "Origin": allowedOrigin,
+    "Authorization": `Bearer ${args.key}`
+  });
+  if (args.userAgent) headers.set("x-hf-original-user-agent", args.userAgent);
+  if (args.clientIp) headers.set("x-hf-original-client-ip", args.clientIp);
+  const payload = {
+    event_name: "purchase",
+    order_number: args.orderId,
+    page_path: "/order.html",
+    fbp: args.fbp,
+    fbc: args.fbc
+  };
+
+  // Background task: order persistence has already succeeded; tracking must never undo the order.
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(4500)
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok || result?.error) {
+        throw new Error("Internal tracking endpoint returned HTTP " + response.status);
+      }
+      const delivery = Array.isArray(result?.metaDelivery) ? result.metaDelivery : [];
+      const failed = delivery.some((item: any) => item?.status === "failed");
+      if (failed && attempt < 2) {
+        await new Promise((resolve) => setTimeout(resolve, 350));
+        continue;
+      }
+      if (failed) console.warn("Verified-order Meta delivery failed after retry.");
+      return;
+    } catch (error) {
+      if (attempt < 2) {
+        await new Promise((resolve) => setTimeout(resolve, 350));
+        continue;
+      }
+      console.warn("Verified-order tracking failed; saved order remains intact.", error instanceof Error ? error.name : "unknown");
+    }
+  }
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json({ success: false, error: "Method not allowed" }, 405);
   const origin = req.headers.get("origin") || "";
   if (origin && origin !== allowedOrigin) return json({ success: false, error: "Origin not allowed" }, 403);
+
   try {
     let d: Record<string, any>;
     try { d = await req.json(); } catch { return json({ success: false, error: "Invalid JSON" }, 400); }
@@ -26,17 +83,23 @@ Deno.serve(async (req: Request) => {
       : [{ product: d.product, quantity: d.quantity || 1, image: d.image }];
     if (items.length > 30) return json({ success: false, error: "Too many items in one order." }, 400);
     const payload = {
-      name: clean(d.name, 80), phone: clean(d.mobile ?? d.phone, 32),
-      email: clean(d.email, 120), address: clean(d.address, 300), notes: clean(d.notes, 500),
+      name: clean(d.name, 80),
+      phone: clean(d.mobile ?? d.phone, 32),
+      email: clean(d.email, 120),
+      address: clean(d.address, 300),
+      notes: clean(d.notes, 500),
       deliveryZone: clean(d.deliveryZone ?? d.delivery_zone, 40),
       paymentMethod: clean(d.paymentMethod ?? d.payment_method ?? "cash_on_delivery", 40).toLowerCase(),
       orderId: clean(d.orderId, 20),
       items: items.map((item: any) => ({
         product: clean(item.product ?? item.name ?? item.slug, 120),
-        quantity: item.quantity ?? item.qty ?? 1, image: clean(item.image ?? item.imageUrl, 240)
+        quantity: item.quantity ?? item.qty ?? 1,
+        image: clean(item.image ?? item.imageUrl, 240)
       }))
     };
-    const url = Deno.env.get("SUPABASE_URL"), key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
+    const url = Deno.env.get("SUPABASE_URL");
+    const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     if (!url || !key) {
       console.error("Missing Supabase server environment configuration.");
       return json({ success: false, error: "Order service is temporarily unavailable. Please try again." }, 503);
@@ -49,6 +112,29 @@ Deno.serve(async (req: Request) => {
       return json({ success: false, error: clientError ? message : "Order could not be placed. Please try again or contact us by phone." }, clientError ? 400 : 500);
     }
     if (!data || data.success !== true) return json({ success: false, error: "Order could not be placed. Please try again." }, 500);
+
+    // Purchase tracking is emitted only from a verified, persisted database order.
+    // It remains off for the demo project until the server-side live-purchase flag is explicitly enabled.
+    if (
+      data.duplicate !== true &&
+      typeof data.orderId === "string" &&
+      /^HF-[0-9]{4,6}$/.test(data.orderId) &&
+      Deno.env.get("HF_LIVE_PURCHASE_TRACKING") === "true"
+    ) {
+      const clientIp = clean(
+        req.headers.get("cf-connecting-ip") || req.headers.get("x-real-ip"),
+        64
+      );
+      EdgeRuntime.waitUntil(dispatchVerifiedPurchase({
+        url,
+        key,
+        orderId: data.orderId,
+        fbp: clean(d.fbp, 180),
+        fbc: clean(d.fbc, 180),
+        userAgent: clean(req.headers.get("user-agent"), 500),
+        clientIp
+      }));
+    }
     return json(data);
   } catch (error) {
     console.error("order-sync unexpected error:", error);
