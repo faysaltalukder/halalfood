@@ -86,8 +86,9 @@ function validClientIp(v: unknown): string | null {
   if (ip.includes(":") && /^[0-9A-Fa-f:]{2,45}$/.test(ip)) return ip;
   return null;
 }
-function requestClientIp(req: Request): string | null {
+function requestClientIp(req: Request, trustedInternal = false): string | null {
   const candidates = [
+    trustedInternal ? req.headers.get("x-hf-original-client-ip") : null,
     req.headers.get("cf-connecting-ip"),
     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim(),
     req.headers.get("x-real-ip")
@@ -214,6 +215,65 @@ function publicConfig(routes: Record<string, boolean>) {
   };
 }
 
+async function hydrateVerifiedPurchase(supabase: any, input: Record<string, unknown>) {
+  const orderNumber = textValue(input.order_number ?? input.orderNumber, 20);
+  if (!orderNumber || !/^HF-[0-9]{4,6}$/.test(orderNumber)) return null;
+
+  const { data: order, error: orderError } = await supabase
+    .from("orders")
+    .select("id,order_number,total,currency,ordered_at,status,source")
+    .eq("order_number", orderNumber)
+    .eq("source", "website_parallel")
+    .maybeSingle();
+  if (orderError) throw orderError;
+  if (!order || String(order.status) === "cancelled") return null;
+
+  const { data: orderItems, error: itemsError } = await supabase
+    .from("order_items")
+    .select("product_id,product_name,quantity,unit_price")
+    .eq("order_id", order.id)
+    .order("created_at", { ascending: true });
+  if (itemsError) throw itemsError;
+  if (!Array.isArray(orderItems) || orderItems.length === 0) return null;
+
+  const items = orderItems.map((item: any) => ({
+    item_id: String(item.product_id || item.product_name || ""),
+    item_name: String(item.product_name || ""),
+    price: Number(item.unit_price),
+    quantity: Number(item.quantity)
+  }));
+  const amount = Number(order.total);
+  if (!Number.isFinite(amount) || amount < 0) return null;
+  const contentIds = orderItems.map((item: any) => String(item.product_id || item.product_name || "")).filter(Boolean);
+  const contents = orderItems.map((item: any) => ({
+    id: String(item.product_id || item.product_name || ""),
+    quantity: Number(item.quantity),
+    item_price: Number(item.unit_price)
+  })).filter((item: any) => item.id && Number.isFinite(item.item_price) && item.item_price >= 0 &&
+    Number.isInteger(item.quantity) && item.quantity >= 1);
+
+  return {
+    event_name: "purchase",
+    // Stable server-generated event ID makes retries idempotent in both our log and Meta.
+    event_id: "hf_purchase_" + String(order.id).replace(/-/g, ""),
+    occurred_at: String(order.ordered_at),
+    page_path: "/order.html",
+    order_number: String(order.order_number),
+    value: amount,
+    currency: "BDT",
+    items,
+    meta_params: {
+      value: amount,
+      currency: "BDT",
+      content_ids: contentIds,
+      contents,
+      content_type: "product"
+    },
+    fbp: input.fbp,
+    fbc: input.fbc
+  };
+}
+
 async function deliverMetaEvent(supabase: any, event: ReturnType<typeof safeEvent>, req: Request, metaEventName: string) {
   if (!event?.eventId) return { status: "skipped", reason: "missing_event_id" };
   const mode = CAPI_MODE;
@@ -221,8 +281,12 @@ async function deliverMetaEvent(supabase: any, event: ReturnType<typeof safeEven
   if (mode === "test" && !TEST_EVENT_CODE) return { status: "skipped", reason: "missing_test_event_code" };
   if (event.eventName === "purchase" && !LIVE_PURCHASE_TRACKING) return { status: "skipped", reason: "purchase_protected_for_testing_project" };
 
-  const userAgent = textValue(req.headers.get("user-agent"), 500);
-  const clientIpAddress = requestClientIp(req);
+  const trustedInternal = req.headers.get("authorization") === `Bearer ${SERVICE_ROLE_KEY}`;
+  const userAgent = textValue(
+    trustedInternal ? (req.headers.get("x-hf-original-user-agent") || req.headers.get("user-agent")) : req.headers.get("user-agent"),
+    500
+  );
+  const clientIpAddress = requestClientIp(req, trustedInternal);
   const userData: Record<string, unknown> = {};
   if (userAgent) userData.client_user_agent = userAgent;
   if (clientIpAddress) userData.client_ip_address = clientIpAddress;
@@ -383,7 +447,34 @@ Deno.serve(async (req: Request) => {
       items.some((item) => !item || typeof item !== "object" || Array.isArray(item))) {
     return response({ error: "Invalid event batch" }, 400);
   }
-  const events = items.map((item) => safeEvent(item as Record<string, unknown>));
+
+  const hasPurchaseEvent = items.some((item: any) => String(item?.event_name || "") === "purchase");
+  const trustedOrderServer = req.headers.get("authorization") === `Bearer ${SERVICE_ROLE_KEY}`;
+  if (hasPurchaseEvent && !trustedOrderServer) {
+    return response({ error: "Purchase events are accepted only from server-verified saved orders." }, 403);
+  }
+  if (hasPurchaseEvent && (items.length !== 1 || items.some((item: any) => String(item?.event_name || "") !== "purchase"))) {
+    return response({ error: "A verified purchase must be submitted as a single server event." }, 400);
+  }
+
+  let preparedItems = items as Record<string, unknown>[];
+  if (hasPurchaseEvent) {
+    if (!LIVE_PURCHASE_TRACKING) {
+      return response({ error: "Live Purchase tracking is locked for this testing project." }, 403);
+    }
+    try {
+      const verifiedPurchase = await hydrateVerifiedPurchase(supabase, preparedItems[0]);
+      if (!verifiedPurchase) {
+        return response({ error: "A saved website order with order items is required before Purchase tracking." }, 409);
+      }
+      preparedItems = [verifiedPurchase];
+    } catch (error) {
+      console.error("Saved order verification failed", error instanceof Error ? error.name : "unknown");
+      return response({ error: "Could not verify the saved order." }, 503);
+    }
+  }
+
+  const events = preparedItems.map((item) => safeEvent(item));
   if (events.some((event) => event === null)) return response({ error: "Unsupported event" }, 400);
   const validEvents = events as NonNullable<typeof events[number]>[];
   const eventIds = validEvents.map((event) => event.eventId).filter(Boolean);
