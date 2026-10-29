@@ -44,14 +44,17 @@ window.HFAdminReady?.then(async H => {
   function routeControl(destination,eventKey) {
     const checked = routeValue(destination,eventKey);
     const purchasePixelLocked = eventKey === "purchase" && destination === "meta_pixel";
-    const purchaseLocked = eventKey === "purchase" && (purchasePixelLocked || config.livePurchaseTracking !== true);
+    const testPurchaseReady = eventKey === "purchase" && destination === "meta_capi" &&
+      config.metaCapiMode === "test" && config.testEventCodeConfigured === true;
+    const purchaseLocked = eventKey === "purchase" &&
+      (purchasePixelLocked || (config.livePurchaseTracking !== true && !testPurchaseReady));
     const capiReady = config.metaCapiMode === "production" || (config.metaCapiMode === "test" && config.testEventCodeConfigured === true);
     const capiLocked = destination === "meta_capi" && !capiReady;
     const firstPartyOnly = eventKey === "page_engagement";
     const unsupportedMetaEvent = (destination === "meta_pixel" || destination === "meta_capi") && ["order_submit","order_success","refund"].includes(eventKey);
     const disabled = purchaseLocked || capiLocked || firstPartyOnly || unsupportedMetaEvent;
     const disabledReason = purchasePixelLocked ? "Purchase is server-only: use Meta CAPI after a saved website order is verified." :
-      purchaseLocked ? "Purchase is locked until live commerce is enabled." :
+      purchaseLocked ? "Purchase is locked here; Meta CAPI may be enabled only in test mode with a Test Events code or after live commerce is explicitly enabled." :
       capiLocked ? "Set META_CAPI_MODE and a Meta Test Events code before enabling CAPI routes." :
       firstPartyOnly ? "Page engagement is first-party timing data only; it is not routed to Meta or GA4." :
       unsupportedMetaEvent ? "This event is not mapped to Meta while the storefront is a testing project." : "";
@@ -68,7 +71,10 @@ window.HFAdminReady?.then(async H => {
     ).join("");
     $("capiTokenStatus").textContent = config.metaCapiTokenConfigured ? "Saved in Supabase Secrets" : "Not detected";
     $("capiModeStatus").textContent = config.metaCapiMode === "test" ? (config.testEventCodeConfigured ? "Test mode ready" : "Test code missing") : (config.metaCapiMode === "production" ? "Production mode" : "Disabled — safe default");
-    $("purchaseLockStatus").textContent = config.livePurchaseTracking ? "Live purchase tracking enabled" : "Locked — test project";
+    $("purchaseLockStatus").textContent = config.livePurchaseTracking ? "Live purchase tracking enabled" :
+      (config.metaCapiMode === "test" && config.testEventCodeConfigured
+        ? "Test-only Purchase allowed; live Purchase remains locked"
+        : "Locked — test project");
     const note = $("trackingConfigNote");
     if (config.metaCapiMode === "disabled") {
       note.className = "hf-banner hf-banner-warning hf-tracking-mode-note";
