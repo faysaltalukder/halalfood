@@ -1275,6 +1275,10 @@ document.addEventListener("DOMContentLoaded", () => {
     begin_checkout:"InitiateCheckout",add_payment_info:"AddPaymentInfo",purchase:"Purchase",
     sign_up:"CompleteRegistration",generate_lead:"Lead",whatsapp_click:"Contact",phone_click:"Contact"
   };
+  var META_CUSTOM_EVENT_MAP={
+    view_item_list:"ViewItemList",select_item:"SelectItem",remove_from_cart:"RemoveFromCart",
+    view_cart:"ViewCart",add_shipping_info:"AddShippingInfo",track_order:"TrackOrder",login:"Login"
+  };
   var firstPartyEvents=new Set([
     "page_view","page_engagement","view_item","view_item_list","select_item","search",
     "add_to_cart","remove_from_cart","view_cart","begin_checkout","add_shipping_info",
@@ -1379,10 +1383,12 @@ document.addEventListener("DOMContentLoaded", () => {
     if(!item)return;
     var name=item.eventName;
     var params=item.params||{};
-    var metaEvent=item.metaEvent||META_EVENT_MAP[name]||null;
+    var isStandardMeta=Boolean(item.metaEvent||META_EVENT_MAP[name]);
+    var metaEvent=item.metaEvent||META_EVENT_MAP[name]||META_CUSTOM_EVENT_MAP[name]||null;
     if(metaEvent&&routeEnabled("meta_pixel",name)){
       initPixelIfEnabled();
-      window.fbq("track",metaEvent,item.metaParams||params,{eventID:item.eventId});
+      if(isStandardMeta)window.fbq("track",metaEvent,item.metaParams||params,{eventID:item.eventId});
+      else window.fbq("trackCustom",metaEvent,item.metaParams||params,{eventID:item.eventId});
     }
     if(routeEnabled("ga4",name)){
       var gaParams=Object.assign({},params,{event_id:item.eventId});
