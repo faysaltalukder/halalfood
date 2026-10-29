@@ -13,11 +13,7 @@ const json = (body: unknown, status = 200) =>
 const clean = (value: unknown, max: number) =>
   String(value ?? "").replace(/[\u0000-\u001F\u007F]/g, " ").trim().slice(0, max);
 
-const META_CAPI_MODE = (Deno.env.get("META_CAPI_MODE") || "disabled").toLowerCase();
-const META_CAPI_TEST_EVENT_CODE = Deno.env.get("META_CAPI_TEST_EVENT_CODE") || "";
-const LIVE_PURCHASE_TRACKING = Deno.env.get("HF_LIVE_PURCHASE_TRACKING") === "true";
-const TEST_PURCHASE_TRACKING = META_CAPI_MODE === "test" && Boolean(META_CAPI_TEST_EVENT_CODE);
-const PURCHASE_TRACKING_ENABLED = LIVE_PURCHASE_TRACKING || TEST_PURCHASE_TRACKING;
+// Purchase enablement is decided by the MFA-protected runtime settings in analytics-ingest.
 
 async function dispatchVerifiedPurchase(args: {
   url: string;
@@ -120,13 +116,11 @@ Deno.serve(async (req: Request) => {
     if (!data || data.success !== true) return json({ success: false, error: "Order could not be placed. Please try again." }, 500);
 
     // Only dispatch after the order has been persisted successfully.
-    // In test mode, Meta receives this only under the configured Test Events code;
-    // live Purchase requires the separate HF_LIVE_PURCHASE_TRACKING flag.
+    // analytics-ingest checks the server-protected runtime mode before any Meta delivery.
     if (
       data.duplicate !== true &&
       typeof data.orderId === "string" &&
-      /^HF-[0-9]{4,6}$/.test(data.orderId) &&
-      PURCHASE_TRACKING_ENABLED
+      /^HF-[0-9]{4,6}$/.test(data.orderId)
     ) {
       const clientIp = clean(
         req.headers.get("cf-connecting-ip") || req.headers.get("x-real-ip"),
