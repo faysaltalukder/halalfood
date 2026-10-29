@@ -1027,7 +1027,41 @@ document.addEventListener("DOMContentLoaded", () => {
           ? result.purchaseEventId
           : "";
 
-        if (!purchaseEventId) {
+        // Fire the browser Pixel copy before leaving checkout; CAPI uses the same
+        // server-generated event ID. The thank-you page also has a guarded fallback.
+        if (purchaseEventId) {
+          const pixelDedupKey = "HALAL_META_PIXEL_PURCHASE_" + purchaseEventId;
+          let pixelAlreadySent = false;
+          try { pixelAlreadySent = sessionStorage.getItem(pixelDedupKey) === "1"; } catch (_) {}
+          if (!pixelAlreadySent) {
+            const pixelItems = trackItems(confirmedItems.map(item => ({
+              ...item,
+              name: item.name || item.product || "",
+              slug: item.slug || item.product || ""
+            })));
+            const contents = pixelItems.map(item => ({
+              id: String(item.item_id || item.slug || item.name || ""),
+              quantity: Math.max(1, Number(item.quantity) || 1),
+              item_price: Math.max(0, Number(item.price) || 0)
+            })).filter(item => item.id);
+            const metaParams = {
+              value: confirmedTotal,
+              currency: "BDT",
+              content_ids: contents.map(item => item.id),
+              contents,
+              content_type: "product"
+            };
+            const fired = window.halalFireConfirmedMetaPurchase?.({
+              transaction_id: confirmedOrderId,
+              value: confirmedTotal,
+              currency: "BDT",
+              items: pixelItems
+            }, metaParams, purchaseEventId);
+            if (fired) {
+              try { sessionStorage.setItem(pixelDedupKey, "1"); } catch (_) {}
+            }
+          }
+        } else {
           console.warn("Order saved, but the server did not return a verified Meta Purchase event ID.");
         }
 
@@ -1087,8 +1121,10 @@ document.addEventListener("DOMContentLoaded", () => {
           window.HALAL_CART_API?.clear();
         }
 
-        // Navigate only after primary order persistence and the browser Purchase queue step.
-        window.location.replace("thank-you.html");
+        // Give the browser Pixel a brief window to dispatch while server CAPI runs independently.
+        // The same event ID and session dedupe key prevent a second Pixel conversion on refresh.
+        await new Promise(resolve => setTimeout(resolve, 800));
+        window.location.replace("thank-you.html?v=20261029-purchase-confirm-v1");
       } catch (err) {
 
         console.error("Order submission failed:", err);
