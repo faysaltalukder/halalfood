@@ -18,7 +18,7 @@ window.HFAdminReady?.then(async H => {
     ["add_payment_info","Add payment info","Payment information step was reached."],
     ["order_submit","Order submitted","A demo order submission was attempted."],
     ["order_success","Order accepted","The demo order backend accepted the form; not a sale."],
-    ["purchase","Purchase","Real completed sale only; locked for the testing project."],
+    ["purchase","Purchase","Server-verified saved website order through Meta CAPI only; locked for this testing project."],
     ["track_order","Track order","The order tracking page was used."],
     ["whatsapp_click","WhatsApp click","The WhatsApp contact link was used."],
     ["phone_click","Phone click","The phone link was used."],
@@ -43,13 +43,15 @@ window.HFAdminReady?.then(async H => {
   }
   function routeControl(destination,eventKey) {
     const checked = routeValue(destination,eventKey);
-    const purchaseLocked = eventKey === "purchase" && config.livePurchaseTracking !== true;
+    const purchasePixelLocked = eventKey === "purchase" && destination === "meta_pixel";
+    const purchaseLocked = eventKey === "purchase" && (purchasePixelLocked || config.livePurchaseTracking !== true);
     const capiReady = config.metaCapiMode === "production" || (config.metaCapiMode === "test" && config.testEventCodeConfigured === true);
     const capiLocked = destination === "meta_capi" && !capiReady;
     const firstPartyOnly = eventKey === "page_engagement";
     const unsupportedMetaEvent = (destination === "meta_pixel" || destination === "meta_capi") && ["order_submit","order_success","refund"].includes(eventKey);
     const disabled = purchaseLocked || capiLocked || firstPartyOnly || unsupportedMetaEvent;
-    const disabledReason = purchaseLocked ? "Purchase is locked until live commerce is enabled." :
+    const disabledReason = purchasePixelLocked ? "Purchase is server-only: use Meta CAPI after a saved website order is verified." :
+      purchaseLocked ? "Purchase is locked until live commerce is enabled." :
       capiLocked ? "Set META_CAPI_MODE and a Meta Test Events code before enabling CAPI routes." :
       firstPartyOnly ? "Page engagement is first-party timing data only; it is not routed to Meta or GA4." :
       unsupportedMetaEvent ? "This event is not mapped to Meta while the storefront is a testing project." : "";
