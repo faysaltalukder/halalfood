@@ -981,10 +981,21 @@ document.addEventListener("DOMContentLoaded", () => {
         };
       })();
 
+      const readOrderAttributionCookie = (name) => {
+        try {
+          const match = document.cookie.match(new RegExp("(?:^|; )" + name + "=([^;]*)"));
+          return match ? decodeURIComponent(match[1]).slice(0, 180) : "";
+        } catch (_) { return ""; }
+      };
+
       const supabaseSubmitPromise = fetch("https://qfwvrcfkrsydycbfjsxf.supabase.co/functions/v1/order-sync", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          ...data,
+          fbp: readOrderAttributionCookie("_fbp"),
+          fbc: readOrderAttributionCookie("_fbc")
+        }),
         keepalive: true
       }).then(async (response) => {
         const result = await response.json().catch(() => null);
