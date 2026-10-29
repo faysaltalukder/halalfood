@@ -18,7 +18,7 @@ window.HFAdminReady?.then(async H => {
     ["add_payment_info","Add payment info","Payment information step was reached."],
     ["order_submit","Order submitted","A demo order submission was attempted."],
     ["order_success","Order accepted","The demo order backend accepted the form; not a sale."],
-    ["purchase","Purchase","Server-verified saved website order through Meta CAPI only; locked for this testing project."],
+    ["purchase","Purchase","Server-verified saved order; browser Pixel and Meta CAPI share an event ID to deduplicate."],
     ["track_order","Track order","The order tracking page was used."],
     ["whatsapp_click","WhatsApp click","The WhatsApp contact link was used."],
     ["phone_click","Phone click","The phone link was used."],
@@ -43,9 +43,9 @@ window.HFAdminReady?.then(async H => {
   }
   function routeControl(destination,eventKey) {
     const checked = routeValue(destination,eventKey);
-    const purchasePixelLocked = eventKey === "purchase" && destination === "meta_pixel";
     const selectedMode = $("metaCapiModeControl")?.value || config.metaCapiMode;
     const selectedLivePurchase = $("livePurchaseTrackingControl")?.checked === true;
+    const purchasePixelLocked = eventKey === "purchase" && destination === "meta_pixel" && !selectedLivePurchase;
     const testPurchaseReady = eventKey === "purchase" && destination === "meta_capi" &&
       selectedMode === "test" && config.testEventCodeConfigured === true;
     const purchaseLocked = eventKey === "purchase" &&
@@ -56,7 +56,7 @@ window.HFAdminReady?.then(async H => {
     const firstPartyOnly = eventKey === "page_engagement";
     const unsupportedMetaEvent = (destination === "meta_pixel" || destination === "meta_capi") && ["order_submit","order_success","refund"].includes(eventKey);
     const disabled = purchaseLocked || capiLocked || firstPartyOnly || unsupportedMetaEvent;
-    const disabledReason = purchasePixelLocked ? "Purchase is server-only: use Meta CAPI after a saved website order is verified." :
+    const disabledReason = purchasePixelLocked ? "Browser Purchase Pixel is enabled only after live Purchase is enabled; it uses the same server-verified event ID as CAPI for deduplication." :
       purchaseLocked ? "Purchase is locked here; Meta CAPI may be enabled only in test mode with a Test Events code or after live commerce is explicitly enabled." :
       capiLocked ? "Set META_CAPI_MODE and a Meta Test Events code before enabling CAPI routes." :
       firstPartyOnly ? "Page engagement is first-party timing data only; it is not routed to Meta or GA4." :
