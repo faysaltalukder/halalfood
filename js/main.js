@@ -1003,7 +1003,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // Whichever backend confirms first is enough to take the customer to
         // Thank You. This keeps checkout fast while both persistence paths run.
         const timeoutPromise = new Promise((resolve) => {
-          setTimeout(() => resolve({ timeout: true }), 100);
+          setTimeout(() => resolve({ timeout: true }), 1800);
         });
 
         let winner;
@@ -1033,7 +1033,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const purchaseKey="HALAL_PURCHASE_RECORDED_"+confirmedOrderId;
         let alreadyTracked=false;
         try { alreadyTracked=sessionStorage.getItem(purchaseKey)==="1"; } catch (_) {}
-        if(!alreadyTracked){
+        if(!winner?.timeout && !alreadyTracked){
           track("purchase",{
             transaction_id:confirmedOrderId,
             value:confirmedTotal,
@@ -1060,13 +1060,14 @@ document.addEventListener("DOMContentLoaded", () => {
             paymentMethod: "cash_on_delivery",
             items: confirmedItems,
             customerName: data.name || "",
-            confirmedAt: new Date().toISOString()
+            confirmationStatus: winner?.timeout ? "pending" : "confirmed",
+            confirmedAt: winner?.timeout ? null : new Date().toISOString()
           }));
         } catch (storageError) {
           console.warn("Could not save local order confirmation state:", storageError);
         }
 
-        if (isCartOrder) {
+        if (isCartOrder && !winner?.timeout) {
           window.HALAL_CART_API?.clear();
         }
 
