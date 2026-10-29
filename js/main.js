@@ -1326,6 +1326,7 @@ document.addEventListener("DOMContentLoaded", () => {
   var loadRequested=false;
   var pixelInitialized=false;
   var queuedExternal=[];
+  var queuedGa4Events=[];
   var triggerEvents=["pointerdown","touchstart","keydown","scroll","mousemove"];
   var META_EVENT_MAP={
     page_view:"PageView",view_item:"ViewContent",search:"Search",add_to_cart:"AddToCart",
@@ -1449,8 +1450,8 @@ document.addEventListener("DOMContentLoaded", () => {
         window.fbq("track","Purchase",item.metaParams||params,{eventID:item.eventId});
       }
       // GA4 receives its recommended ecommerce payload from this same verified order.
-      // transaction_id is required so repeat sends of the same order can be deduplicated in GA4 reporting.
-      if(routeEnabled("ga4","purchase")&&typeof window.gtag==="function"){
+      // transaction_id is required for GA4 transaction reporting and duplicate control.
+      if(routeEnabled("ga4","purchase")){
         var transactionId=String(params.transaction_id||"").trim();
         if(transactionId){
           var purchaseItems=(Array.isArray(params.items)?params.items:[]).slice(0,30).map(function(rawItem){
@@ -1464,7 +1465,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if(safe.item_category)gaItem.item_category=safe.item_category;
             return gaItem;
           }).filter(function(gaItem){return gaItem.item_id||gaItem.item_name;});
-          window.gtag("event","purchase",{
+          sendGa4Event("purchase",{
             transaction_id:transactionId,
             value:Number.isFinite(Number(params.value))?Number(params.value):0,
             currency:String(params.currency||"BDT").toUpperCase(),
@@ -1484,9 +1485,28 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     if(routeEnabled("ga4",name)){
       var gaParams=Object.assign({},params,{event_id:item.eventId});
-      /* Send one GA4 event command only; do not also publish a GTM Custom Event for the same interaction. */
-      if(typeof window.gtag==="function")window.gtag("event",name,gaParams);
+      /* Send after GTM's container-start marker so the Google tag is initialized first. */
+      sendGa4Event(name,gaParams);
     }
+  }
+  function sendGa4Event(eventName,params){
+    if(!routeEnabled("ga4",eventName)||typeof window.gtag!=="function")return;
+    var eventParams=params&&typeof params==="object"?params:{};
+    // GTM is injected dynamically. Preserve event order: start the container before
+    // passing Google-tag commands, otherwise the first custom events may be lost.
+    if(!trackersLoaded){
+      queuedGa4Events.push({eventName:eventName,params:eventParams});
+      return;
+    }
+    window.gtag("event",eventName,eventParams);
+  }
+  function flushGa4Queue(){
+    if(!trackersLoaded||typeof window.gtag!=="function")return;
+    var queued=queuedGa4Events.slice();
+    queuedGa4Events.length=0;
+    queued.forEach(function(item){
+      window.gtag("event",item.eventName,item.params);
+    });
   }
   function flushExternalQueue(){
     if(!configReady)return;
@@ -1515,6 +1535,8 @@ document.addEventListener("DOMContentLoaded", () => {
       t.src="https://connect.facebook.net/en_US/fbevents.js";
       document.head.appendChild(t);
     }
+    // The dataLayer now has the GTM container-start marker. Send queued GA4 events after it.
+    flushGa4Queue();
   }
   window.halalLoadTrackers=loadTrackers;
   window.halalTrack=function(eventName,params,metaEvent,metaParams,eventId){
