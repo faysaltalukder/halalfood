@@ -5,12 +5,18 @@ const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ALLOWED_ORIGIN = "https://faysaltalukder.github.io";
 const DATASET_ID = "28564665756499119";
 const GRAPH_API_VERSION = "v26.0";
-const CAPI_MODE = (Deno.env.get("META_CAPI_MODE") || "disabled").toLowerCase();
 const TEST_EVENT_CODE = Deno.env.get("META_CAPI_TEST_EVENT_CODE") || "";
-const LIVE_PURCHASE_TRACKING = Deno.env.get("HF_LIVE_PURCHASE_TRACKING") === "true";
-// In test mode, verified orders may emit Purchase only to the configured Meta Test Events code.
-const TEST_PURCHASE_TRACKING = CAPI_MODE === "test" && Boolean(TEST_EVENT_CODE);
-const PURCHASE_TRACKING_ENABLED = LIVE_PURCHASE_TRACKING || TEST_PURCHASE_TRACKING;
+
+type MetaCapiMode = "disabled" | "test" | "production";
+type RuntimeTrackingConfig = {
+  metaCapiMode: MetaCapiMode;
+  livePurchaseTracking: boolean;
+};
+function purchaseTrackingAllowed(runtime: RuntimeTrackingConfig) {
+  // Test Purchase goes only to the configured Test Events code. Production Purchase
+  // requires the separately enabled live-purchase control in the MFA-protected DB row.
+  return runtime.livePurchaseTracking || (runtime.metaCapiMode === "test" && Boolean(TEST_EVENT_CODE));
+}
 
 const ALLOWED_EVENTS = new Set([
   "page_view", "page_engagement", "view_item", "view_item_list", "select_item",
@@ -206,15 +212,29 @@ async function readSettings(supabase: any) {
   for (const row of data || []) routes[String(row.destination) + ":" + String(row.event_key)] = row.enabled === true;
   return routes;
 }
-function publicConfig(routes: Record<string, boolean>) {
+async function readRuntimeSettings(supabase: any): Promise<RuntimeTrackingConfig> {
+  const { data, error } = await supabase
+    .from("tracking_runtime_settings")
+    .select("meta_capi_mode,live_purchase_tracking")
+    .eq("id", 1)
+    .maybeSingle();
+  if (error) throw error;
+  const rawMode = String(data?.meta_capi_mode || "disabled").toLowerCase();
+  const mode: MetaCapiMode = rawMode === "test" || rawMode === "production" ? rawMode : "disabled";
   return {
-    version: 1,
+    metaCapiMode: mode,
+    livePurchaseTracking: data?.live_purchase_tracking === true
+  };
+}
+function publicConfig(routes: Record<string, boolean>, runtime: RuntimeTrackingConfig) {
+  return {
+    version: 2,
     datasetId: DATASET_ID,
     routes,
-    metaCapiMode: CAPI_MODE === "test" || CAPI_MODE === "production" ? CAPI_MODE : "disabled",
+    metaCapiMode: runtime.metaCapiMode,
     testEventCodeConfigured: Boolean(TEST_EVENT_CODE),
     metaCapiTokenConfigured: Boolean(Deno.env.get("META_CAPI_ACCESS_TOKEN")),
-    livePurchaseTracking: LIVE_PURCHASE_TRACKING
+    livePurchaseTracking: runtime.livePurchaseTracking
   };
 }
 
@@ -277,12 +297,12 @@ async function hydrateVerifiedPurchase(supabase: any, input: Record<string, unkn
   };
 }
 
-async function deliverMetaEvent(supabase: any, event: ReturnType<typeof safeEvent>, req: Request, metaEventName: string) {
+async function deliverMetaEvent(supabase: any, event: ReturnType<typeof safeEvent>, req: Request, metaEventName: string, runtime: RuntimeTrackingConfig) {
   if (!event?.eventId) return { status: "skipped", reason: "missing_event_id" };
-  const mode = CAPI_MODE;
+  const mode = runtime.metaCapiMode;
   if (mode !== "test" && mode !== "production") return { status: "skipped", reason: "capi_mode_disabled" };
   if (mode === "test" && !TEST_EVENT_CODE) return { status: "skipped", reason: "missing_test_event_code" };
-  if (event.eventName === "purchase" && !PURCHASE_TRACKING_ENABLED) return { status: "skipped", reason: "purchase_tracking_disabled" };
+  if (event.eventName === "purchase" && !purchaseTrackingAllowed(runtime)) return { status: "skipped", reason: "purchase_tracking_disabled" };
 
   const trustedInternal = req.headers.get("authorization") === `Bearer ${SERVICE_ROLE_KEY}`;
   const userAgent = textValue(
@@ -431,8 +451,8 @@ Deno.serve(async (req: Request) => {
   if (req.method === "GET") {
     if (new URL(req.url).searchParams.get("config") !== "1") return response({ error: "Not found" }, 404);
     try {
-      const routes = await readSettings(supabase);
-      return response(publicConfig(routes), 200);
+      const [routes, runtime] = await Promise.all([readSettings(supabase), readRuntimeSettings(supabase)]);
+      return response(publicConfig(routes, runtime), 200);
     } catch (error) {
       console.error("Tracking config could not be loaded", error instanceof Error ? error.name : "unknown");
       return response({ error: "Tracking configuration is temporarily unavailable" }, 503);
@@ -452,6 +472,13 @@ Deno.serve(async (req: Request) => {
   }
 
   const hasPurchaseEvent = items.some((item: any) => String(item?.event_name || "") === "purchase");
+  let runtime: RuntimeTrackingConfig;
+  try {
+    runtime = await readRuntimeSettings(supabase);
+  } catch (error) {
+    console.error("Tracking runtime settings could not be loaded", error instanceof Error ? error.name : "unknown");
+    return response({ error: "Tracking runtime settings are temporarily unavailable" }, 503);
+  }
   const trustedOrderServer = req.headers.get("authorization") === `Bearer ${SERVICE_ROLE_KEY}`;
   if (hasPurchaseEvent && !trustedOrderServer) {
     return response({ error: "Purchase events are accepted only from server-verified saved orders." }, 403);
@@ -462,8 +489,8 @@ Deno.serve(async (req: Request) => {
 
   let preparedItems = items as Record<string, unknown>[];
   if (hasPurchaseEvent) {
-    if (!PURCHASE_TRACKING_ENABLED) {
-      return response({ error: "Purchase tracking is locked unless test mode with a Test Events code or explicit live tracking is enabled." }, 403);
+    if (!purchaseTrackingAllowed(runtime)) {
+      return response({ error: "Purchase tracking is disabled in Tracking Controls." }, 403);
     }
     try {
       const verifiedPurchase = await hydrateVerifiedPurchase(supabase, preparedItems[0]);
@@ -521,8 +548,8 @@ Deno.serve(async (req: Request) => {
   for (const event of validEvents) {
     const metaEventName = META_EVENT_MAP[event.eventName] || META_CUSTOM_EVENT_MAP[event.eventName];
     const allowed = Boolean(metaEventName && routes["meta_capi:" + event.eventName]);
-    if (!allowed || (event.eventName === "purchase" && !PURCHASE_TRACKING_ENABLED)) continue;
-    const result = await deliverMetaEvent(supabase, event, req, metaEventName!);
+    if (!allowed || (event.eventName === "purchase" && !purchaseTrackingAllowed(runtime))) continue;
+    const result = await deliverMetaEvent(supabase, event, req, metaEventName!, runtime);
     delivery.push({ eventId: event.eventId, ...result });
   }
 
