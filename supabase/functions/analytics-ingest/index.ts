@@ -257,7 +257,7 @@ async function hydrateVerifiedPurchase(supabase: any, input: Record<string, unkn
     // Stable server-generated event ID makes retries idempotent in both our log and Meta.
     event_id: "hf_purchase_" + String(order.id).replace(/-/g, ""),
     occurred_at: String(order.ordered_at),
-    page_path: "/order.html",
+    page_path: "/halalfood/order.html",
     order_number: String(order.order_number),
     value: amount,
     currency: "BDT",
