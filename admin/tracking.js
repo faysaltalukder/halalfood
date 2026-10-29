@@ -44,11 +44,14 @@ window.HFAdminReady?.then(async H => {
   function routeControl(destination,eventKey) {
     const checked = routeValue(destination,eventKey);
     const purchasePixelLocked = eventKey === "purchase" && destination === "meta_pixel";
+    const selectedMode = $("metaCapiModeControl")?.value || config.metaCapiMode;
+    const selectedLivePurchase = $("livePurchaseTrackingControl")?.checked === true;
     const testPurchaseReady = eventKey === "purchase" && destination === "meta_capi" &&
-      config.metaCapiMode === "test" && config.testEventCodeConfigured === true;
+      selectedMode === "test" && config.testEventCodeConfigured === true;
     const purchaseLocked = eventKey === "purchase" &&
-      (purchasePixelLocked || (config.livePurchaseTracking !== true && !testPurchaseReady));
-    const capiReady = config.metaCapiMode === "production" || (config.metaCapiMode === "test" && config.testEventCodeConfigured === true);
+      (purchasePixelLocked || (!selectedLivePurchase && !testPurchaseReady));
+    const capiReady = config.metaCapiTokenConfigured === true &&
+      (selectedMode === "production" || (selectedMode === "test" && config.testEventCodeConfigured === true));
     const capiLocked = destination === "meta_capi" && !capiReady;
     const firstPartyOnly = eventKey === "page_engagement";
     const unsupportedMetaEvent = (destination === "meta_pixel" || destination === "meta_capi") && ["order_submit","order_success","refund"].includes(eventKey);
@@ -76,18 +79,23 @@ window.HFAdminReady?.then(async H => {
         ? "Test-only Purchase allowed; live Purchase remains locked"
         : "Locked — test project");
     const note = $("trackingConfigNote");
-    if (config.metaCapiMode === "disabled") {
+    const selectedMode = $("metaCapiModeControl")?.value || config.metaCapiMode;
+    const selectedLivePurchase = $("livePurchaseTrackingControl")?.checked === true;
+    $("capiModeStatus").textContent = selectedMode === "test" ? (config.testEventCodeConfigured ? "Test mode ready" : "Test code missing") : (selectedMode === "production" ? "Production mode" : "Disabled — safe default");
+    $("purchaseLockStatus").textContent = selectedLivePurchase ? "Live Purchase tracking enabled" :
+      (selectedMode === "test" && config.testEventCodeConfigured ? "Test-only Purchase; live Purchase off" : "Off — Purchase is not being sent live");
+    if (selectedMode === "disabled") {
       note.className = "hf-banner hf-banner-warning hf-tracking-mode-note";
-      note.innerHTML = '<span>!</span><div><strong>Meta CAPI is safely disabled</strong>The access token is kept server-side. Before CAPI routes can be enabled, add the Meta Test Events code and set the server mode to test. No server-side events will be sent while the mode is disabled.</div>';
-    } else if (config.metaCapiMode === "test" && !config.testEventCodeConfigured) {
+      note.innerHTML = '<span>!</span><div><strong>Meta CAPI is safely disabled</strong>The access token is kept server-side. Choose Test mode only with a configured Test Events code; choose Production to send enabled events to normal Meta reporting.</div>';
+    } else if (selectedMode === "test" && !config.testEventCodeConfigured) {
       note.className = "hf-banner hf-banner-warning hf-tracking-mode-note";
       note.innerHTML = '<span>!</span><div><strong>Test mode needs a Test Events code</strong>Add the Test Events code as the Supabase secret META_CAPI_TEST_EVENT_CODE before enabling server routes.</div>';
-    } else if (config.metaCapiMode === "test") {
+    } else if (selectedMode === "test") {
       note.className = "hf-banner hf-banner-info hf-tracking-mode-note";
       note.innerHTML = '<span>i</span><div><strong>Meta CAPI is in test mode</strong>Events are marked as test events and are intended for validation in Events Manager, not production reporting.</div>';
     } else {
       note.className = "hf-banner hf-banner-info hf-tracking-mode-note";
-      note.innerHTML = '<span>i</span><div><strong>Meta CAPI is in production mode</strong>Only explicitly enabled, mapped events will be sent server-side. Purchase remains server-locked until live tracking is separately enabled.</div>';
+      note.innerHTML = '<span>i</span><div><strong>Meta CAPI is in production mode</strong>Only explicitly enabled, mapped events will be sent server-side. Purchase is sent only for a server-verified saved order and only while Live Purchase is enabled.</div>';
     }
     updateSaveStatus();
   }
@@ -100,8 +108,15 @@ window.HFAdminReady?.then(async H => {
     });
     return [...map.values()].map(row => ({destination:row.destination,event_key:row.event_key,enabled:row.enabled===true,updated_by:H.ADMIN_EMAIL}));
   }
+  function stateSnapshot() {
+    return JSON.stringify({
+      routes: serialiseControls().map(r=>[r.destination,r.event_key,r.enabled]).sort(),
+      mode: $("metaCapiModeControl")?.value || "disabled",
+      livePurchase: $("livePurchaseTrackingControl")?.checked === true
+    });
+  }
   function updateSaveStatus() {
-    const dirty = JSON.stringify(serialiseControls().map(r=>[r.destination,r.event_key,r.enabled]).sort()) !== savedSnapshot;
+    const dirty = stateSnapshot() !== savedSnapshot;
     $("trackingSaveStatus").textContent = dirty ? "Unsaved changes — save to apply." : "No unsaved changes.";
     $("saveTracking").disabled = !dirty;
     $("saveTrackingBottom").disabled = !dirty;
@@ -114,8 +129,13 @@ window.HFAdminReady?.then(async H => {
     ]);
     currentRows = Array.isArray(settingsResponse) ? settingsResponse : [];
     config = configResponse || config;
+    $("metaCapiModeControl").value = config.metaCapiMode || "disabled";
+    $("livePurchaseTrackingControl").checked = config.livePurchaseTracking === true;
+    $("livePurchaseHelp").textContent = config.livePurchaseTracking
+      ? "Live Purchase is enabled. Only server-verified saved orders are eligible."
+      : "Off. Enable this only when actual customer orders are being accepted.";
     render();
-    savedSnapshot = JSON.stringify(serialiseControls().map(r=>[r.destination,r.event_key,r.enabled]).sort());
+    savedSnapshot = stateSnapshot();
     updateSaveStatus();
   }
   async function save() {
@@ -124,10 +144,28 @@ window.HFAdminReady?.then(async H => {
     $("saveTrackingBottom").disabled = true;
     $("trackingSaveStatus").textContent = "Saving secure tracking settings…";
     try {
+      const selectedMode = $("metaCapiModeControl").value;
+      const livePurchase = $("livePurchaseTrackingControl").checked === true;
+      if (selectedMode === "production" && config.metaCapiTokenConfigured !== true) {
+        throw new Error("Meta CAPI access token is missing in Supabase Secrets; Production mode cannot be enabled.");
+      }
+      if (livePurchase && selectedMode !== "production") {
+        throw new Error("Live Purchase can be enabled only in Production mode.");
+      }
+      if (selectedMode === "test" && !config.testEventCodeConfigured) {
+        throw new Error("Add META_CAPI_TEST_EVENT_CODE in Supabase Secrets before selecting Test mode.");
+      }
       const payload = serialiseControls();
       const {error} = await H.client.from("tracking_event_settings").upsert(payload,{onConflict:"destination,event_key"});
       if (error) throw error;
-      await H.audit("tracking_routes_updated","tracking_event_settings",null,"Updated platform and event routing controls",{routesUpdated:payload.length});
+      const {error:runtimeError} = await H.client.from("tracking_runtime_settings").upsert({
+        id: 1,
+        meta_capi_mode: selectedMode,
+        live_purchase_tracking: livePurchase,
+        updated_by: H.ADMIN_EMAIL
+      },{onConflict:"id"});
+      if (runtimeError) throw runtimeError;
+      await H.audit("tracking_routes_updated","tracking_event_settings",null,"Updated platform, event routing and runtime mode controls",{routesUpdated:payload.length,metaCapiMode:selectedMode,livePurchaseTracking:livePurchase});
       H.toast("Tracking settings saved.");
       await load();
     } catch (error) {
@@ -138,13 +176,28 @@ window.HFAdminReady?.then(async H => {
       $("saveTrackingBottom").disabled = false;
     }
   }
+  $("metaCapiModeControl")?.addEventListener("change",()=>{
+    if ($("metaCapiModeControl").value !== "production") $("livePurchaseTrackingControl").checked = false;
+    currentRows = serialiseControls();
+    render();
+  });
+  $("livePurchaseTrackingControl")?.addEventListener("change",()=>{
+    currentRows = serialiseControls();
+    $("livePurchaseHelp").textContent = $("livePurchaseTrackingControl").checked
+      ? "Live Purchase is enabled. Only server-verified saved orders are eligible."
+      : "Off. Enable this only when actual customer orders are being accepted.";
+    render();
+  });
   document.querySelectorAll("[data-refresh-page]").forEach(button=>button.addEventListener("click",()=>load().catch(e=>H.toast(e.message||"Refresh failed","error"))));
   $("refreshTracking")?.addEventListener("click",()=>load().then(()=>H.toast("Tracking status refreshed.")).catch(e=>H.toast(e.message||"Refresh failed","error")));
   $("saveTracking")?.addEventListener("click",save);
   $("saveTrackingBottom")?.addEventListener("click",save);
   $("discardTracking")?.addEventListener("click",()=>load().then(()=>H.toast("Unsaved changes discarded.")).catch(e=>H.toast(e.message||"Could not reload settings.","error")));
   $("trackingSettingsBody")?.addEventListener("change",event=>{
-    if(event.target?.matches?.("[data-route-destination][data-route-event]")) updateSaveStatus();
+    if(event.target?.matches?.("[data-route-destination][data-route-event]")) {
+      currentRows = serialiseControls();
+      updateSaveStatus();
+    }
   });
   try { await load(); }
   catch (error) {
