@@ -112,16 +112,25 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   },true);
 
-  // Contact / checkout intent.
-  if(document.querySelector("#order-form")){
-    const isCart=new URLSearchParams(location.search).get("cart")==="1";
-    const cartItems=isCart && window.HALAL_CART_API ? window.HALAL_CART_API.read() : [];
-    const items=isCart ? cartItems : (pageProduct.name ? [{...pageProduct,quantity:1}] : []);
-    const value=items.reduce((s,x)=>s+(Number(x.price)||0)*Math.max(1,Number(x.quantity||x.qty)||1),0);
-    if(items.length){
-      track("begin_checkout",{currency:"BDT",value:value,items:trackItems(items)}, "InitiateCheckout",{currency:"BDT",value:value,contents:trackItems(items).map(x=>({id:x.item_id,quantity:x.quantity})),content_type:"product"});
-    }
-  }
+  // Checkout intent is initialized after the actual single-product/cart context is resolved
+  // below. A submit-time fallback covers cases where product data is loaded late.
+  let checkoutIntentTracked=false;
+  const trackCheckoutIntent=(rawItems)=>{
+    const sourceItems=Array.isArray(rawItems)?rawItems:[];
+    if(checkoutIntentTracked || !sourceItems.length) return;
+    const items=trackItems(sourceItems);
+    if(!items.length) return;
+    const value=sourceItems.reduce((sum,item)=>sum+parseProductPrice(item.price,item.displayPrice)*Math.max(1,Number(item.quantity??item.qty)||1),0);
+    const contents=items.map(item=>({
+      id:String(item.item_id||item.slug||item.id||item.name||""),
+      quantity:Math.max(1,Number(item.quantity)||1),
+      item_price:Math.max(0,Number(item.price)||0)
+    })).filter(item=>item.id);
+    track("begin_checkout",{currency:"BDT",value:value,items:items},"InitiateCheckout",{
+      currency:"BDT",value:value,content_ids:contents.map(item=>item.id),contents:contents,content_type:"product"
+    });
+    checkoutIntentTracked=true;
+  };
 
 
   // Existing WhatsApp pattern — same number and deep-link format.
@@ -720,6 +729,12 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   const checkoutIsCart = new URLSearchParams(window.location.search).get("cart") === "1";
+  if (document.querySelector("#order-form")) {
+    const checkoutItemsForTracking = checkoutIsCart && window.HALAL_CART_API
+      ? window.HALAL_CART_API.read()
+      : (singleProduct ? [{...singleProduct, quantity:Math.max(1,Number(params.get("quantity"))||1)}] : []);
+    trackCheckoutIntent(checkoutItemsForTracking);
+  }
   const getCheckoutSubtotal = () => {
     if (checkoutIsCart && window.HALAL_CART_API) {
       return window.HALAL_CART_API.read().reduce((sum, item) => sum + (Number(item.price) || 0) * Math.max(1, Number(item.qty) || 1), 0);
@@ -942,6 +957,8 @@ document.addEventListener("DOMContentLoaded", () => {
       // order amount there. Item unit prices remain intact in data.items.
       data.price = String(grandTotal);
       updateCheckoutTotals();
+      // Fallback: if checkout items were unavailable on page entry, emit InitiateCheckout now.
+      trackCheckoutIntent(checkoutItems);
       track("add_shipping_info",{currency:"BDT",value:grandTotal,shipping_tier:"Cash on Delivery",items:trackItems(checkoutItems)});
       track("order_submit",{currency:"BDT",value:grandTotal,items:trackItems(checkoutItems)});
 
