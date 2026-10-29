@@ -212,27 +212,73 @@ async function deliverMetaEvent(supabase: any, event: ReturnType<typeof safeEven
   };
   if (mode === "test" && TEST_EVENT_CODE) payload.test_event_code = TEST_EVENT_CODE;
 
-  const { error: insertError } = await supabase.from("meta_event_delivery_log").insert({
-    event_id: event.eventId,
-    event_key: event.eventName,
-    meta_event_name: metaEventName,
-    occurred_at: event.occurredAt,
-    event_source_url: event.eventSourceUrl,
-    payload,
-    status: "pending",
-    attempts: 0
-  });
-  if (insertError) {
-    if (String(insertError.code) === "23505") return { status: "duplicate", reason: "event_id_already_processed" };
-    console.error("Meta delivery log insert failed", String(insertError.code || "unknown"));
-    return { status: "failed", reason: "delivery_log_insert_failed" };
+  const now = new Date().toISOString();
+  let attempt = 1;
+  const { data: existing, error: lookupError } = await supabase
+    .from("meta_event_delivery_log")
+    .select("status,attempts,updated_at,created_at")
+    .eq("event_id", event.eventId)
+    .maybeSingle();
+  if (lookupError) {
+    console.error("Meta delivery log lookup failed", String(lookupError.code || "unknown"));
+    return { status: "failed", reason: "delivery_log_lookup_failed" };
+  }
+
+  if (existing) {
+    const priorStatus = String(existing.status || "");
+    const priorAttempts = Number(existing.attempts || 0);
+    const lastTouched = Date.parse(String(existing.updated_at || existing.created_at || ""));
+    if (priorStatus === "sent") return { status: "duplicate", reason: "already_sent" };
+    if (priorStatus === "pending" && Number.isFinite(lastTouched) && Date.now() - lastTouched < 120000) {
+      return { status: "duplicate", reason: "delivery_in_progress" };
+    }
+    if (priorAttempts >= 5) return { status: "failed", reason: "maximum_attempts_reached" };
+    attempt = priorAttempts + 1;
+    const { data: claim, error: claimError } = await supabase
+      .from("meta_event_delivery_log")
+      .update({
+        event_key: event.eventName,
+        meta_event_name: metaEventName,
+        occurred_at: event.occurredAt,
+        event_source_url: event.eventSourceUrl,
+        payload,
+        status: "pending",
+        attempts: attempt,
+        last_error: null,
+        meta_http_status: null,
+        meta_response: {},
+        updated_at: now
+      })
+      .eq("event_id", event.eventId)
+      .eq("status", priorStatus)
+      .eq("attempts", priorAttempts)
+      .select("event_id")
+      .maybeSingle();
+    if (claimError || !claim) return { status: "duplicate", reason: "another_delivery_attempt_claimed" };
+  } else {
+    const { error: insertError } = await supabase.from("meta_event_delivery_log").insert({
+      event_id: event.eventId,
+      event_key: event.eventName,
+      meta_event_name: metaEventName,
+      occurred_at: event.occurredAt,
+      event_source_url: event.eventSourceUrl,
+      payload,
+      status: "pending",
+      attempts: attempt,
+      updated_at: now
+    });
+    if (insertError) {
+      if (String(insertError.code) === "23505") return { status: "duplicate", reason: "another_delivery_attempt_claimed" };
+      console.error("Meta delivery log insert failed", String(insertError.code || "unknown"));
+      return { status: "failed", reason: "delivery_log_insert_failed" };
+    }
   }
 
   const token = Deno.env.get("META_CAPI_ACCESS_TOKEN");
   if (!token) {
     await supabase.from("meta_event_delivery_log").update({
-      status: "failed", attempts: 1, last_error: "Missing META_CAPI_ACCESS_TOKEN", updated_at: new Date().toISOString()
-    }).eq("event_id", event.eventId);
+      status: "failed", last_error: "Missing META_CAPI_ACCESS_TOKEN", updated_at: new Date().toISOString()
+    }).eq("event_id", event.eventId).eq("status", "pending").eq("attempts", attempt);
     return { status: "failed", reason: "missing_token" };
   }
 
@@ -242,28 +288,27 @@ async function deliverMetaEvent(supabase: any, event: ReturnType<typeof safeEven
       method: "POST",
       headers: { "Content-Type": "application/json", "Accept": "application/json" },
       body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(5000)
+      signal: AbortSignal.timeout(8000)
     });
     const result = await responseMeta.json().catch(() => ({}));
     const received = Number((result as any)?.events_received || 0);
     const success = responseMeta.ok && received > 0 && !(result as any)?.error;
     await supabase.from("meta_event_delivery_log").update({
       status: success ? "sent" : "failed",
-      attempts: 1,
       meta_http_status: responseMeta.status,
       meta_response: result,
       last_error: success ? null : textValue((result as any)?.error?.message, 500) || "Meta did not confirm receipt of this event",
       sent_at: success ? new Date().toISOString() : null,
       updated_at: new Date().toISOString()
-    }).eq("event_id", event.eventId);
+    }).eq("event_id", event.eventId).eq("status", "pending").eq("attempts", attempt);
     if (!success) console.warn("Meta CAPI delivery failed", responseMeta.status, (result as any)?.error?.code || "unconfirmed");
-    return { status: success ? "sent" : "failed", httpStatus: responseMeta.status };
+    return { status: success ? "sent" : "failed", httpStatus: responseMeta.status, attempt };
   } catch (error) {
     await supabase.from("meta_event_delivery_log").update({
-      status: "failed", attempts: 1, last_error: "Meta API request failed or timed out", updated_at: new Date().toISOString()
-    }).eq("event_id", event.eventId);
+      status: "failed", last_error: "Meta API request failed or timed out", updated_at: new Date().toISOString()
+    }).eq("event_id", event.eventId).eq("status", "pending").eq("attempts", attempt);
     console.warn("Meta CAPI request failed", error instanceof Error ? error.name : "unknown");
-    return { status: "failed", reason: "request_failed" };
+    return { status: "failed", reason: "request_failed", attempt };
   }
 }
 
@@ -304,18 +349,37 @@ Deno.serve(async (req: Request) => {
   if (eventIds.length !== new Set(eventIds).size) return response({ error: "Duplicate event IDs within the request" }, 400);
 
   const rows = validEvents.map((event) => event.row);
-  const { error } = await supabase.from("analytics_events").insert(rows);
-  if (error) {
-    if (String(error.code) === "23505" && eventIds.length) return response({ accepted: 0, duplicate: true }, 202);
-    console.error("analytics insert failed", String(error.code || "unknown"));
-    return response({ error: "Event could not be saved" }, 500);
+  let acceptedCount = rows.length;
+  const { error: insertError } = await supabase.from("analytics_events").insert(rows);
+  if (insertError) {
+    if (String(insertError.code) === "23505" && eventIds.length) {
+      const { data: existingRows, error: existingRowsError } = await supabase
+        .from("analytics_events").select("event_id").in("event_id", eventIds);
+      if (existingRowsError) {
+        console.error("Duplicate event lookup failed", String(existingRowsError.code || "unknown"));
+        return response({ error: "Event could not be saved" }, 500);
+      }
+      const storedIds = new Set((existingRows || []).map((row: any) => String(row.event_id)));
+      const fresh = validEvents.filter((event) => !event.eventId || !storedIds.has(event.eventId));
+      acceptedCount = fresh.length;
+      if (fresh.length) {
+        const { error: freshInsertError } = await supabase.from("analytics_events").insert(fresh.map((event) => event.row));
+        if (freshInsertError) {
+          console.error("New analytics event insert failed", String(freshInsertError.code || "unknown"));
+          return response({ error: "Event could not be saved" }, 500);
+        }
+      }
+    } else {
+      console.error("analytics insert failed", String(insertError.code || "unknown"));
+      return response({ error: "Event could not be saved" }, 500);
+    }
   }
 
   let routes: Record<string, boolean> = {};
   try { routes = await readSettings(supabase); }
   catch (error) {
     console.error("Tracking route settings could not be loaded", error instanceof Error ? error.name : "unknown");
-    return response({ accepted: rows.length, delivery: "settings_unavailable" }, 202);
+    return response({ accepted: acceptedCount, delivery: "settings_unavailable" }, 202);
   }
 
   const delivery: Array<{ eventId: string | null; status: string; reason?: string; httpStatus?: number }> = [];
@@ -327,5 +391,5 @@ Deno.serve(async (req: Request) => {
     delivery.push({ eventId: event.eventId, ...result });
   }
 
-  return response({ accepted: rows.length, metaDelivery: delivery }, 202);
+  return response({ accepted: acceptedCount, metaDelivery: delivery }, 202);
 });
