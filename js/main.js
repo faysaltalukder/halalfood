@@ -1327,6 +1327,9 @@ document.addEventListener("DOMContentLoaded", () => {
   var pixelInitialized=false;
   var queuedExternal=[];
   var queuedGa4Events=[];
+  var queuedConfirmedGa4Purchases=[];
+  var directGa4Initialized=false;
+  var GA4_MEASUREMENT_ID="G-LTPSV8B6E3";
   var triggerEvents=["pointerdown","touchstart","keydown","scroll","mousemove"];
   var META_EVENT_MAP={
     page_view:"PageView",view_item:"ViewContent",search:"Search",add_to_cart:"AddToCart",
@@ -1465,13 +1468,13 @@ document.addEventListener("DOMContentLoaded", () => {
             if(safe.item_category)gaItem.item_category=safe.item_category;
             return gaItem;
           }).filter(function(gaItem){return gaItem.item_id||gaItem.item_name;});
-          sendGa4Event("purchase",{
+          fireConfirmedGa4Purchase({
             transaction_id:transactionId,
             value:Number.isFinite(Number(params.value))?Number(params.value):0,
             currency:String(params.currency||"BDT").toUpperCase(),
             items:purchaseItems,
             event_id:item.eventId
-          });
+          },item.eventId,false);
         }
       }
       return;
@@ -1489,24 +1492,75 @@ document.addEventListener("DOMContentLoaded", () => {
       sendGa4Event(name,gaParams);
     }
   }
-  function sendGa4Event(eventName,params){
-    if(!routeEnabled("ga4",eventName)||typeof window.gtag!=="function")return;
-    var eventParams=params&&typeof params==="object"?params:{};
-    // GTM is injected dynamically. Preserve event order: start the container before
-    // passing Google-tag commands, otherwise the first custom events may be lost.
-    if(!trackersLoaded){
-      queuedGa4Events.push({eventName:eventName,params:eventParams});
-      return;
+  function ensureDirectGa4Tag(){
+    // GTM only fires GA4 Event tags for configured triggers. Use an isolated,
+    // documented gtag.js data layer for the site's server-enabled GA4 event routes.
+    // This keeps the existing GTM container (and its page_view) intact.
+    window.hfGa4DataLayer=window.hfGa4DataLayer||[];
+    if(typeof window.hfGa4gtag!=="function"){
+      window.hfGa4gtag=function(){window.hfGa4DataLayer.push(arguments);};
     }
-    window.gtag("event",eventName,eventParams);
+    if(!directGa4Initialized){
+      directGa4Initialized=true;
+      window.hfGa4gtag("js",new Date());
+      window.hfGa4gtag("config",GA4_MEASUREMENT_ID,{send_page_view:false});
+      var script=document.querySelector('script[data-hf-ga4-direct="true"]');
+      if(!script){
+        script=document.createElement("script");
+        script.async=true;
+        script.src="https://www.googletagmanager.com/gtag/js?id="+GA4_MEASUREMENT_ID+"&l=hfGa4DataLayer";
+        script.dataset.hfGa4Direct="true";
+        script.onerror=function(){
+          directGa4Initialized=false;
+          script.remove();
+          console.warn("Direct GA4 event tag could not load.");
+        };
+        document.head.appendChild(script);
+      }
+    }
+    return window.hfGa4gtag;
+  }
+  function sendGa4Event(eventName,params){
+    if(!routeEnabled("ga4",eventName))return false;
+    // The existing published GTM Google Tag handles page_view. Avoid duplicating it.
+    if(eventName==="page_view")return true;
+    var eventParams=params&&typeof params==="object"?params:{};
+    var directGtag=ensureDirectGa4Tag();
+    directGtag("event",eventName,eventParams);
+    return true;
   }
   function flushGa4Queue(){
-    if(!trackersLoaded||typeof window.gtag!=="function")return;
+    if(!trackersLoaded)return;
     var queued=queuedGa4Events.slice();
     queuedGa4Events.length=0;
-    queued.forEach(function(item){
-      window.gtag("event",item.eventName,item.params);
-    });
+    queued.forEach(function(item){sendGa4Event(item.eventName,item.params);});
+  }
+  function fireConfirmedGa4Purchase(params,eventId,fromQueue){
+    var id=String(eventId||"");
+    if(!/^hf_purchase_[a-f0-9]{32}$/i.test(id))return false;
+    var key="HALAL_GA4_PURCHASE_"+id;
+    var stored="";
+    try{stored=sessionStorage.getItem(key)||"";}catch(_){}
+    if(stored==="1")return true;
+    if(!configReady){
+      if(stored!=="queued"){
+        queuedConfirmedGa4Purchases.push({params:params||{},eventId:id});
+        try{sessionStorage.setItem(key,"queued");}catch(_){}
+      }
+      return true;
+    }
+    if(!routeEnabled("ga4","purchase"))return false;
+    var purchaseParams=params&&typeof params==="object"?params:{};
+    if(!String(purchaseParams.transaction_id||"").trim())return false;
+    var sent=sendGa4Event("purchase",Object.assign({},purchaseParams,{event_id:id}));
+    if(sent){try{sessionStorage.setItem(key,"1");}catch(_){}}
+    return sent;
+  }
+  function flushConfirmedGa4Purchases(){
+    if(!configReady||!queuedConfirmedGa4Purchases.length)return;
+    var queued=queuedConfirmedGa4Purchases.slice();
+    queuedConfirmedGa4Purchases.length=0;
+    queued.forEach(function(item){fireConfirmedGa4Purchase(item.params,item.eventId,true);});
   }
   function flushExternalQueue(){
     if(!configReady)return;
@@ -1561,6 +1615,10 @@ document.addEventListener("DOMContentLoaded", () => {
     if(configReady)dispatchExternal(externalItem);else queuedExternal.push(externalItem);
     return true;
   };
+  // The thank-you page can recover GA4 Purchase independently of Meta Pixel deduplication.
+  window.halalFireConfirmedGa4Purchase=function(params,eventId){
+    return fireConfirmedGa4Purchase(params,eventId,false);
+  };
   window.halalTrackItems=function(items){
     return (Array.isArray(items)?items:[]).map(function(item){
       var displayMatch=String(item.displayPrice||"").match(/(?:৳|BDT)?\s*([0-9][0-9,]*(?:\.[0-9]+)?)/i);
@@ -1589,6 +1647,7 @@ document.addEventListener("DOMContentLoaded", () => {
       configReady=true;
       initPixelIfEnabled();
       flushExternalQueue();
+      flushConfirmedGa4Purchases();
       if(loadRequested){
         loadTrackers();
       }else{
