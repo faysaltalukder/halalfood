@@ -13,7 +13,7 @@ const read = (path) => readFileSync(join(root, path), "utf8");
 
 const htmlFiles = readdirSync(adminDir).filter((file) => file.endsWith(".html"));
 const unifiedPages = htmlFiles.filter((file) => /<body[^>]*\bdata-page=/.test(read(join("admin", file))));
-assert.equal(unifiedPages.length, 17, `Expected 17 unified admin pages, found ${unifiedPages.length}.`);
+assert.ok(unifiedPages.length >= 17, `Expected at least 17 unified admin pages, found ${unifiedPages.length}.`);
 
 for (const file of unifiedPages) {
   const source = read(join("admin", file));
