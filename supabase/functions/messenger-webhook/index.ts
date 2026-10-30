@@ -20,7 +20,10 @@ async function verifySignature(raw: Uint8Array, header: string, appSecret: strin
     const hex = match[1], provided = new Uint8Array(32);
     for (let i = 0; i < 32; i++) provided[i] = Number.parseInt(hex.slice(i * 2, i * 2 + 2), 16);
     const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(appSecret), { name: "HMAC", hash: "SHA-256" }, false, ["verify"]);
-    const valid = await crypto.subtle.verify({ name: "HMAC" }, key, provided, raw);
+    // Copy into a dedicated ArrayBuffer for Web Crypto's BufferSource typing.
+    const rawBuffer = new ArrayBuffer(raw.byteLength);
+    new Uint8Array(rawBuffer).set(raw);
+    const valid = await crypto.subtle.verify({ name: "HMAC" }, key, provided, rawBuffer);
     return valid ? { valid: true, reason: "valid" } : { valid: false, reason: "signature_mismatch" };
   } catch { return { valid: false, reason: "signature_verification_error" }; }
 }

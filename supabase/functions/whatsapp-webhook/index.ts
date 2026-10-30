@@ -54,7 +54,9 @@ async function verifySignature(raw: Uint8Array, signatureHeader: string, appSecr
       false,
       ["verify"],
     );
-    const valid = await crypto.subtle.verify({ name: "HMAC" }, key, providedSignature, raw);
+    const rawBuffer = new ArrayBuffer(raw.byteLength);
+    new Uint8Array(rawBuffer).set(raw);
+    const valid = await crypto.subtle.verify({ name: "HMAC" }, key, providedSignature, rawBuffer);
     return valid
       ? { valid: true, reason: "valid" }
       : { valid: false, reason: "signature_mismatch" };
@@ -63,7 +65,7 @@ async function verifySignature(raw: Uint8Array, signatureHeader: string, appSecr
   }
 }
 
-async function processWebhookPayload(db: ReturnType<typeof createClient>, payload: any) {
+async function processWebhookPayload(db: ReturnType<typeof createClient<any>>, payload: any) {
   const entries = Array.isArray(payload?.entry) ? payload.entry : [];
   for (const entry of entries) {
     const changes = Array.isArray(entry?.changes) ? entry.changes : [];
@@ -216,7 +218,7 @@ Deno.serve(async (req: Request) => {
     return json({ success: false, error: "Invalid JSON payload" }, 400);
   }
 
-  const db = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
+  const db = createClient<any>(supabaseUrl, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
   try {
     await processWebhookPayload(db, payload);
     return json({ received: true });

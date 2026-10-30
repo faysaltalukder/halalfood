@@ -22,7 +22,7 @@ const un64=(x:string)=>Uint8Array.from(atob(x),c=>c.charCodeAt(0));
 function db(){if(!SERVICE_KEY)throw Error("Supabase server configuration is missing.");return createClient(URL_BASE,SERVICE_KEY,{auth:{persistSession:false,autoRefreshToken:false}});}
 function missing(){return [...(!CLIENT_ID?["YOUTUBE_CLIENT_ID"]:[]),...(!CLIENT_SECRET?["YOUTUBE_CLIENT_SECRET"]:[]),...(ENC_KEY.length<32?["YOUTUBE_TOKEN_ENCRYPTION_KEY"]:[]),...(!SERVICE_KEY?["SUPABASE_SERVICE_ROLE_KEY"]:[])];}
 function jwt(t:string){const p=t.split(".")[1];if(!p)throw Error("Invalid session token.");const x=p.replace(/-/g,"+").replace(/_/g,"/");return JSON.parse(atob(x+"=".repeat((4-x.length%4)%4))) as R;}
-async function admin(req:Request){
+async function admin(req:Request):Promise<{email:string}|{error:Response}>{
  const t=(req.headers.get("authorization")||"").replace(/^Bearer\s+/i,"").trim();if(!t)return {error:out({success:false,error:"Sign in to the Halal Food admin dashboard first."},401)};
  let c:R;try{c=jwt(t)}catch{return {error:out({success:false,error:"Invalid admin session."},401)}}
  if(String(c.email||"").toLowerCase()!==ADMIN||c.role!=="authenticated"||c.aal!=="aal2")return {error:out({success:false,error:"Only the authorized Halal Food admin with completed MFA can use YouTube publishing."},403)};
@@ -96,7 +96,7 @@ function validate(b:R){
  if(raw){const date=new Date(raw);if(Number.isNaN(date.getTime())||date.getTime()<Date.now()+120000)throw Error("Scheduled publish time must be at least 2 minutes in the future.");scheduled=date;privacy="private";}
  return {title,description,tags,size,mime,privacy,category,kids,synthetic,uploadMode,videoWidth,videoHeight,videoDurationSeconds,scheduled};
 }
-Deno.serve(async(req:Request)=>{
+Deno.serve(async(req:Request):Promise<Response>=>{
  if(req.method==="OPTIONS")return new Response("ok",{headers:H});
  const url=new URL(req.url);
  if(req.method==="GET"&&(url.searchParams.has("code")||url.searchParams.has("error")||url.searchParams.has("state"))){try{return await oauth(url)}catch(e){console.error("YouTube callback error",s((e as Error).message,200));return callback(false,"YouTube connection failed. Start again from the dashboard.");}}
@@ -166,11 +166,14 @@ Deno.serve(async(req:Request)=>{
    let recentVideos:R[]=[];
    if(uploadsId){
     const playlist=await yt("playlistItems",t.token,{part:"snippet,contentDetails",playlistId:uploadsId,maxResults:10});
-    const ids=[...new Set((Array.isArray(playlist.items)?playlist.items:[]).map((x:R)=>s(x.contentDetails?.videoId||x.snippet?.resourceId?.videoId,80)).filter((x:string)=>/^[A-Za-z0-9_-]{6,40}$/.test(x)))];
+    const ids: string[] = Array.from(new Set<string>((Array.isArray(playlist.items)?playlist.items:[])
+      .map((x:R)=>s(x.contentDetails?.videoId||x.snippet?.resourceId?.videoId,80))
+      .filter((x:string)=>/^[A-Za-z0-9_-]{6,40}$/.test(x))));
     if(ids.length){
      const vr=await yt("videos",t.token,{part:"snippet,status,statistics,contentDetails",id:ids.join(",")});
      const map=new Map<string,R>((Array.isArray(vr.items)?vr.items:[]).map((x:R)=>[String(x.id),x]));
-     recentVideos=ids.map((id:string)=>map.get(id)).filter(Boolean).map((v:R)=>({
+     const matchedVideos: R[] = ids.map((id:string)=>map.get(id)).filter((v):v is R=>v!==undefined);
+     recentVideos=matchedVideos.map((v:R)=>({
       videoId:String(v.id),title:s(v.snippet?.title,200),description:s(v.snippet?.description,2000),
       publishedAt:v.snippet?.publishedAt||null,privacyStatus:s(v.status?.privacyStatus,20),
       uploadStatus:s(v.status?.uploadStatus,30),viewCount:Number(v.statistics?.viewCount||0),
