@@ -1,13 +1,13 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="robots" content="noindex,nofollow"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"><title>Orders · Halal Food Admin</title><link rel="stylesheet" href="./shared.css?v=20261030-admin-theme-v2"><link rel="stylesheet" href="./orders.css?v=20261030-orders-refined-v3"><script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script></head><body data-page="orders"><div id="authGate" class="auth-gate"><div class="auth-gate-card"><strong>Checking secure admin access…</strong><p>Your dashboard data will load only after the authorized account and two-step verification are confirmed.</p></div></div><div id="adminApp" hidden><main id="pageContent" tabindex="-1">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="robots" content="noindex,nofollow"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"><title>Orders · Halal Food Admin</title><link rel="stylesheet" href="./shared.css?v=20261030-admin-theme-v2"><link rel="stylesheet" href="./orders.css?v=20261030-orders-refined-v4"><script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script></head><body data-page="orders"><div id="authGate" class="auth-gate"><div class="auth-gate-card"><strong>Checking secure admin access…</strong><p>Your dashboard data will load only after the authorized account and two-step verification are confirmed.</p></div></div><div id="adminApp" hidden><main id="pageContent" tabindex="-1">
 <div class="page-heading hf-orders-hero">
-<div class="hf-orders-hero-copy"><p class="page-eyebrow">ORDER OPERATIONS</p><h1>Orders</h1><p>Review incoming orders, check fulfilment status and open the correct action without working through long lists.</p><div class="hf-orders-meta"><span class="hf-orders-date-label">Bangladesh business date</span><time id="ordersDateLabel">Loading local date…</time><span class="hf-status hf-status-review">Courier booking requires confirmation</span></div></div>
+<div class="hf-orders-hero-copy"><p class="page-eyebrow">ORDER OPERATIONS</p><h1>Orders</h1><p>Review and process customer orders.</p><div class="hf-orders-meta"><span class="hf-orders-date-label">Bangladesh business date</span><time id="ordersDateLabel">Loading local date…</time></div></div>
 <div class="page-actions hf-orders-hero-actions">
 <button id="toggleBulkOrdersBtn" class="hf-button hf-button-primary" type="button" aria-expanded="true" aria-controls="ordersBulkBar">Hide bulk tools <span aria-hidden="true">⌃</span></button>
 <a href="./reports.html" class="hf-button hf-button-secondary">Order report</a>
 <button class="hf-button hf-button-secondary" data-refresh-page type="button">↻ Refresh</button>
 </div>
 </div>
-<div class="hf-banner hf-banner-info"><span>ⓘ</span><div><strong>Before booking a courier</strong>Call or message the customer, confirm the order, check the full address and packed weight, and choose the matching delivery area. Select <strong>Confirm &amp; Book</strong> only when all details are correct. This creates a real courier booking; cancellation is not available from this page.</div></div>
+<div class="hf-banner hf-banner-info hf-orders-courier-note"><span>ⓘ</span><div><strong>Before booking:</strong> Verify the customer, full address, COD amount and parcel details. <strong>Confirm &amp; Book</strong> creates a real courier booking.</div></div>
 <details class="hf-orders-security-fold">
 <summary><span>Checkout security &amp; manual review</span><small>IP/risk signals and held orders</small></summary>
 <div class="hf-orders-security-content">
@@ -36,7 +36,7 @@
 </div>
 </details>
 <section class="hf-orders-at-a-glance" aria-labelledby="ordersOverviewHeading">
-<div class="hf-orders-stats-heading"><div><h2 id="ordersOverviewHeading">Order status overview</h2><p>Select a status card to filter the order list below. Counts reflect the saved order records loaded by this page (up to 5,000).</p></div><span class="hf-status hf-status-active">Live page data</span></div>
+<div class="hf-orders-stats-heading"><div><h2 id="ordersOverviewHeading">Order status overview</h2><p>Select a status to filter the order list.</p></div><span class="hf-status hf-status-active">Live page data</span></div>
 <div class="hf-orders-stats-grid" id="ordersStatusOverview">
 <button type="button" class="hf-card hf-orders-stat is-active" data-order-quick-filter="" aria-pressed="true" aria-label="Show all orders"><span class="hf-orders-stat-top"><span class="hf-orders-stat-label">All orders</span><span class="hf-orders-stat-icon is-all" aria-hidden="true">▦</span></span><strong class="hf-orders-stat-value" data-order-filter-count>—</strong><span class="hf-orders-stat-note">All loaded records</span></button>
 <button type="button" class="hf-card hf-orders-stat" data-order-quick-filter="pending" aria-pressed="false" aria-label="Filter pending orders"><span class="hf-orders-stat-top"><span class="hf-orders-stat-label">Needs review</span><span class="hf-orders-stat-icon is-pending" aria-hidden="true">◷</span></span><strong class="hf-orders-stat-value" data-order-filter-count>—</strong><span class="hf-orders-stat-note">Pending confirmation</span></button>
@@ -59,7 +59,7 @@
 </div>
 </section>
 <section class="hf-card hf-card-pad hf-orders-workspace">
-<div class="hf-section-head"><div><p class="page-eyebrow">ORDER WORKSPACE</p><h2>All recorded orders</h2><p>Customer, delivery, products, item value, delivery charge and fulfilment status in one place.</p></div><span class="hf-status" id="ordersFoundCount">Loading…</span></div>
+<div class="hf-section-head"><div><p class="page-eyebrow">ORDER WORKSPACE</p><h2>All recorded orders</h2><p>Customer, products, delivery and order totals.</p></div><span class="hf-status" id="ordersFoundCount">Loading…</span></div>
 <div class="hf-orders-toolbar">
 <input id="orderSearch" class="hf-input" type="search" placeholder="Search order number, customer, phone, address or product…" aria-label="Search orders by number, customer, phone, address or product">
 <select id="orderStatusFilter" class="hf-select" aria-label="Filter by order status"><option value="">All statuses</option><option value="pending">Pending</option><option value="processing">Processing</option><option value="shipped">Shipped</option><option value="delivered">Delivered</option><option value="cancelled">Cancelled</option></select>
