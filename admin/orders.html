@@ -4,6 +4,17 @@
 <div class="page-actions hf-orders-hero-actions"><a href="./orders.html?status=pending" class="hf-button hf-button-primary">Review pending <span aria-hidden="true">→</span></a><a href="./reports.html" class="hf-button hf-button-secondary">⇩ Order report</a><button class="hf-button hf-button-secondary" data-refresh-page type="button">↻ Refresh</button></div>
 </div>
 <div class="hf-banner hf-banner-info"><span>ⓘ</span><div><strong>Before booking a courier</strong>Call or message the customer, confirm the order, check the full address and packed weight, and choose the matching delivery area. Select <strong>Confirm &amp; Book</strong> only when all details are correct. This creates a real courier booking; cancellation is not available from this page.</div></div>
+<section class="hf-card hf-card-pad hf-security-review-section" id="securityReviewSection" aria-labelledby="securityReviewHeading">
+  <div class="hf-section-head">
+    <div><p class="page-eyebrow">FRAUD PREVENTION</p><h2 id="securityReviewHeading">Security review queue</h2><p>Orders with several combined risk signals are held here. Call or verify the customer before approving; held orders do not reserve stock or trigger Purchase events.</p></div>
+    <span class="hf-status hf-status-review" id="securityReviewCount">Loading…</span>
+  </div>
+  <div class="hf-table-wrap" tabindex="0" role="region" aria-label="Suspicious orders awaiting security review">
+    <table class="hf-table"><thead><tr><th>Order</th><th>Customer</th><th>Phone</th><th>Risk</th><th>Signals</th><th>Placed</th><th>Decision</th></tr></thead>
+    <tbody id="securityReviewBody"><tr><td colspan="7" class="hf-loading">Checking review queue…</td></tr></tbody></table>
+  </div>
+  <p class="hf-data-note" id="securityReviewMessage">The review queue is restricted to the MFA-verified admin account.</p>
+</section>
 <section class="hf-orders-at-a-glance" aria-labelledby="ordersOverviewHeading">
 <div class="hf-orders-stats-heading"><div><h2 id="ordersOverviewHeading">Order status overview</h2><p>Select a status card to filter the order list below. Counts reflect the saved order records loaded by this page (up to 5,000).</p></div><span class="hf-status hf-status-active">Live page data</span></div>
 <div class="hf-orders-stats-grid" id="ordersStatusOverview">
@@ -63,4 +74,4 @@
 <div class="hf-dialog-actions"><button id="confirmBookCancel" class="hf-button hf-button-secondary" type="button">Go back</button><button id="confirmBookSubmit" class="hf-button hf-button-primary" type="submit">Confirm order &amp; book courier</button></div>
 </form></dialog>
 
-</main></div><script defer src="./i18n.js?v=20261023-admin-ultimate-v1"></script><script defer src="./shared.js?v=20261027-site-publisher-v1"></script><script defer src="./app.js?v=20261027-site-publisher-v1"></script></body></html>
+</main></div><script defer src="./i18n.js?v=20261023-admin-ultimate-v1"></script><script defer src="./shared.js?v=20261027-site-publisher-v1"></script><script defer src="./app.js?v=20261030-order-security-v1"></script></body></html>
