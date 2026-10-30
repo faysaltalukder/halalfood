@@ -128,6 +128,7 @@ if (recoveryBox) {
   } else {
    window.clearTimeout(saveTimer);
    try { sessionStorage.removeItem(consentKey); sessionStorage.removeItem(marketingKey); } catch (_) {}
+   if (marketingBox) marketingBox.checked = false;
    void post({action:"withdraw",checkoutSessionId:getSessionId()});
   }
  });
@@ -164,7 +165,7 @@ window.addEventListener("pagehide",() => {
  flush();
 });
 window.HFIncompleteCheckout = {
- getSessionId,
+ getSessionId: () => recoveryBox?.checked ? getSessionId() : "",
  complete: async (sessionId,orderNumber) => {
   if (!sessionId || !orderNumber) return;
   window.clearTimeout(saveTimer);
