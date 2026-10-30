@@ -24,7 +24,7 @@ window.HFAdminReady.then(async (H) => {
  function render() {
   const rows = filteredRecords();
   if (!rows.length) {
-   table.innerHTML = '<tr><td colspan="8">' + makeEmpty("No checkout records found", "A record appears only after a shopper chooses checkout recovery consent and enters contact information.") + "</td></tr>";
+   table.innerHTML = '<tr><td colspan="8">' + makeEmpty("No checkout records found", "A record appears after a shopper enters a valid mobile number following the checkout privacy notice.") + "</td></tr>";
    return;
   }
   table.innerHTML = rows.map((row) => {
@@ -33,9 +33,12 @@ window.HFAdminReady.then(async (H) => {
    const phone = row.customer_phone || "No mobile entered";
    const email = row.customer_email || "No email entered";
    const items = itemLabel(row.item_summary);
-   const permission = row.marketing_consent
-    ? '<span class="hf-status hf-status-confirmed">Offers allowed</span>'
-    : '<span class="hf-status">No marketing opt-in</span>';
+   const method = row.consent_method === "checkout_form_entry_after_notice"
+    ? '<span class="hf-status hf-status-confirmed">After privacy notice</span>'
+    : '<span class="hf-status">Legacy checkbox</span>';
+   const marketing = row.marketing_consent === true
+    ? '<small>Marketing consent recorded</small>'
+    : '<small>No promotional permission</small>';
    return '<tr>' +
     '<td><strong>' + esc(dateOnly(row.first_seen_at || row.created_at)) + '</strong><small>' + esc(dateTime(row.first_seen_at || row.created_at)) + '</small></td>' +
     '<td class="hf-incomplete-customer"><strong>' + esc(customer) + '</strong><small>' + esc(row.order_context === "cart" ? "Cart checkout" : "Single product") + '</small></td>' +
@@ -43,7 +46,7 @@ window.HFAdminReady.then(async (H) => {
     '<td class="hf-incomplete-items">' + esc(items) + '<small>' + esc(money(row.total)) + ' estimated checkout total</small></td>' +
     '<td><div class="hf-incomplete-progress"><span>' + progress + '%</span><span class="hf-incomplete-progress-track"><span class="hf-incomplete-progress-fill" style="display:block;width:' + progress + '%"></span></span></div><small>' + esc(row.last_step || "Checkout started") + '</small></td>' +
     '<td><strong>' + esc(dateTime(row.last_seen_at)) + '</strong><small>' + esc(row.last_field ? "Last field: " + row.last_field : "Progress saved") + '</small></td>' +
-    '<td>' + permission + '<small>Recovery consent recorded</small></td>' +
+    '<td>' + method + marketing + '</td>' +
     '<td><div class="hf-incomplete-actions"><button type="button" class="hf-button hf-button-secondary hf-button-small" data-incomplete-view="' + esc(row.id) + '">View</button>' +
     (row.customer_phone ? '<button type="button" class="hf-button hf-button-success hf-button-small" data-incomplete-contact="' + esc(row.id) + '">WhatsApp</button>' : '') + '<button type="button" class="hf-button hf-button-danger hf-button-small" data-incomplete-delete="' + esc(row.id) + '">Delete</button></div></td>' +
    '</tr>';
@@ -66,8 +69,13 @@ window.HFAdminReady.then(async (H) => {
   const itemTable = items.length
    ? '<table class="hf-incomplete-detail-table"><thead><tr><th>Product</th><th>Quantity</th><th>Unit price</th></tr></thead><tbody>' + items.map((item) => '<tr><td>' + esc(item.name) + '</td><td>' + esc(item.quantity) + '</td><td>' + esc(money(item.unit_price)) + '</td></tr>').join("") + '</tbody></table>'
    : '<p class="hf-data-note">No product details were captured.</p>';
+  const methodLabel = row.consent_method === "checkout_form_entry_after_notice"
+   ? "Valid mobile number entered after checkout privacy notice"
+   : "Legacy explicit checkbox";
   const consent = '<div class="hf-incomplete-consent">' +
-   (row.recovery_consent ? '<span class="hf-status hf-status-confirmed">Checkout recovery consent recorded</span>' : '<span class="hf-status">No recovery consent</span>') +
+   (row.recovery_consent ? '<span class="hf-status hf-status-confirmed">Legacy recovery checkbox recorded</span>' : '<span class="hf-status hf-status-review">No separate recovery checkbox</span>') +
+   '<span class="hf-status">Collection method: ' + esc(methodLabel) + '</span>' +
+   (row.consent_version ? '<span class="hf-status">Notice / consent version: ' + esc(row.consent_version) + '</span>' : '') +
    (row.marketing_consent ? '<span class="hf-status hf-status-confirmed">Marketing consent recorded · ' + esc(dateTime(row.marketing_consent_at)) + '</span>' : '<span class="hf-status hf-status-review">Marketing not permitted</span>') +
    '</div>';
   $("incompleteDetailsBody").innerHTML =
@@ -83,7 +91,7 @@ window.HFAdminReady.then(async (H) => {
    '</div>' +
    '<section><h3>Selected products</h3>' + itemTable + '</section>' +
    '<section><h3>Address and notes</h3>' + detailCard("Delivery address",row.delivery_address) + detailCard("Order notes",row.order_notes) + '</section>' +
-   '<section><h3>Consent</h3>' + consent + '<p class="hf-data-note">Recovery consent is for contacting the shopper about this unfinished checkout. Promotional messages require the separate marketing permission above.</p></section>';
+   '<section><h3>Data collection and permissions</h3>' + consent + '<p class="hf-data-note">New records are saved after the shopper enters a valid mobile number following the checkout privacy notice. Use is limited to helping with that specific unfinished checkout. Promotional messages are not permitted unless a separate marketing opt-in exists.</p></section>';
   if (!dialog.open) dialog.showModal();
  }
  async function refresh() {
@@ -91,7 +99,7 @@ window.HFAdminReady.then(async (H) => {
   const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
   const [checkoutRows, approvedReviews] = await Promise.all([
    signedQuery(client.from("incomplete_checkouts")
-    .select("id,checkout_session_id,customer_name,customer_phone,customer_email,delivery_address,order_notes,order_context,delivery_zone,item_summary,total,last_step,last_field,progress_percent,recovery_consent,recovery_consent_at,marketing_consent,marketing_consent_at,status,converted_order_number,first_seen_at,last_seen_at,expires_at,created_at")
+    .select("id,checkout_session_id,customer_name,customer_phone,customer_email,delivery_address,order_notes,order_context,delivery_zone,item_summary,total,last_step,last_field,progress_percent,recovery_consent,recovery_consent_at,consent_method,consent_version,marketing_consent,marketing_consent_at,status,converted_order_number,first_seen_at,last_seen_at,expires_at,created_at")
     .gt("expires_at",new Date().toISOString())
     .order("last_seen_at",{ascending:false})
     .limit(1000)),
@@ -156,9 +164,9 @@ window.HFAdminReady.then(async (H) => {
     return;
    }
    const name = row.customer_name || "there";
-   const message = "Assalamu Alaikum " + name + ", you recently chose to save an unfinished checkout on Halal Food. Would you like any help completing that specific order? Please reply here if you need assistance. This is not a promotional offer.";
+   const message = "Assalamu Alaikum " + name + ", you recently started a checkout on Halal Food. Would you like any help completing that specific order? Please reply here if you need assistance. This is not a promotional offer.";
    window.open("https://wa.me/" + phone + "?text=" + encodeURIComponent(message),"_blank","noopener,noreferrer");
-   void audit("incomplete_checkout_recovery_opened","incomplete_checkout",row.id,"Admin opened a checkout-recovery WhatsApp draft",{marketingConsent:row.marketing_consent===true});
+   void audit("incomplete_checkout_recovery_opened","incomplete_checkout",row.id,"Admin opened a checkout-recovery WhatsApp draft",{consentMethod:row.consent_method,marketingConsent:row.marketing_consent===true});
    return;
   }
   const deleteButton = event.target.closest("[data-incomplete-delete]");
