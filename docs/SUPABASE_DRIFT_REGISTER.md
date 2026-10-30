@@ -53,3 +53,13 @@ No Production DDL, policy rewrite, function replacement, secret rotation or Auth
 - All 16 Edge Function entrypoints pass the repository-wide Deno type-check after the source/type corrections in the engineering pass.
 - Leaked-password protection remains disabled because the available project connector does not expose the Auth security-setting mutation. This remains an explicit manual security-setting item, not silently ignored.
 - The `pg_net` extension and the 9 server-only RLS/no-policy tables were not changed. Moving an extension or adding policies without validating every dependency/access path would risk breaking scheduled jobs and private integrations.
+
+
+## Production schema fingerprint (read-only snapshot)
+
+Captured: 2026-10-31  
+- Public tables: 48
+- Public columns: 600
+- Ordered column/type/nullability fingerprint (MD5): `52687234fa62f6d6d4adfe1ac046a525`
+
+The fingerprint is not a backup or a migration baseline. It is a compact change detector: recalculate it after a reviewed schema change and compare it with this recorded snapshot. Keep full schema-only exports and database backups in secure storage, not in this public repository.
