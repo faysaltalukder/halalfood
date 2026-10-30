@@ -368,7 +368,7 @@ window.HFAdminReady.then(async H=>{
   }
 
   let all=[],activeOrderId=null,shipmentRows=[],shipmentRowsReady=false,shipmentLoadMessage="",redxAreaLookupError="",redxLoadedAreas=[],redxLoadedDistrict="",redxPreferredAreaId="",redxPreferredAreaName="";
-  let customerProfilesById=new Map(),visibleOrders=[],selectedOrderIds=new Set();
+  let customerProfilesById=new Map(),visibleOrders=[],selectedOrderIds=new Set(),teamMembers=[],orderWeightDataReady=false;
 
   async function refreshSecurityReviewQueue(){
    const body=$("securityReviewBody");
@@ -442,6 +442,19 @@ window.HFAdminReady.then(async H=>{
   const courierLabel=value=>value==="steadfast"?"Steadfast":value==="pathao"?"Pathao":"REDX";
   const shipmentFor=orderId=>shipmentRows.find(row=>row.order_id===orderId)||null;
   const courierBookingLocked=record=>!!record&&(record.integration_mode==="live_api"||["in_progress","succeeded","unknown"].includes(record.booking_state)||["booked","picked_up","in_transit","delivered","returned"].includes(record.shipment_status)||!!record.provider_order_id||!!String(record.tracking_id||"").trim());
+  function orderPackedWeightKg(order){
+   const items=Array.isArray(order?.order_items)?order.order_items:[];
+   if(!items.length)return {weight:null,missing:["No saved product lines"]};
+   let total=0;const missing=[];
+   for(const item of items){
+    const perUnit=Number(item.shipping_weight_kg),quantity=Number(item.quantity);
+    if(!Number.isFinite(perUnit)||perUnit<=0){missing.push(String(item.product_name||"Product"));continue;}
+    if(!Number.isFinite(quantity)||quantity<=0){missing.push(String(item.product_name||"Product")+" (invalid quantity)");continue;}
+    total+=perUnit*quantity;
+   }
+   return missing.length?{weight:null,missing}:{weight:Number(total.toFixed(3)),missing:[]};
+  }
+
   function updateConfirmBookProviderFields(){
    const provider=$("confirmBookProvider").value;
    $("confirmBookSteadfastFields").style.display=provider==="steadfast"?"grid":"none";
@@ -612,8 +625,13 @@ window.HFAdminReady.then(async H=>{
    void refreshConfirmBookItems(order.id,orderItems);
    $("confirmBookAddress").value=order.delivery_address||"";
    $("confirmBookProvider").value=courierCode(existing?.courier_name)||"";
-   $("confirmBookPathaoWeight").value=existing?.parcel_weight_kg||"";
-   $("confirmBookRedxWeight").value=existing?.parcel_weight_kg||"";
+   const calculatedWeight=orderPackedWeightKg(order);
+   $("confirmBookPathaoWeight").value=existing?.parcel_weight_kg??(calculatedWeight.weight??"");
+   $("confirmBookRedxWeight").value=existing?.parcel_weight_kg??(calculatedWeight.weight??"");
+   const weightHint=$("confirmBookWeightHint");
+   if(weightHint)weightHint.textContent=calculatedWeight.weight!==null
+    ?"Auto-calculated from saved product weights: "+calculatedWeight.weight.toFixed(3)+" kg per parcel. Review the packed parcel and adjust if packaging adds weight."
+    :"A product shipping weight is missing for: "+calculatedWeight.missing.join(", ")+". Set it in Products or enter the packed parcel weight manually before booking.";
    $("confirmBookSteadfastNotes").value=existing?.parcel_notes||"";
    $("confirmBookPathaoInstruction").value=existing?.parcel_notes||"";
    $("confirmBookRedxInstruction").value=existing?.parcel_notes||"";
@@ -859,16 +877,32 @@ window.HFAdminReady.then(async H=>{
    updateBulkSelectionUi(rows);
   }
   async function refresh(){
-   const [ordersResult,customersResult,profilesResult]=await Promise.all([
+   const [ordersResult,customersResult,profilesResult,itemWeightResult,assignmentResult,teamResult]=await Promise.all([
     fetchOrders(null,5000),
     signedQuery(client.from("customers").select("id,auth_user_id").not("auth_user_id","is",null).order("id",{ascending:true}).limit(1000)).catch(error=>{
      console.warn("Customer identity links could not be loaded; initials will be shown.",error);return [];
     }),
     signedQuery(client.from("customer_profiles").select("user_id,avatar_url").not("avatar_url","is",null).order("user_id",{ascending:true}).limit(1000)).catch(error=>{
      console.warn("Customer profile avatars could not be loaded; initials will be shown.",error);return [];
+    }),
+    signedQuery(client.from("order_items").select("id,order_id,shipping_weight_kg").order("created_at",{ascending:true}).limit(5000)).catch(error=>{
+     console.warn("Order-line weight snapshots could not be loaded.",error);return null;
+    }),
+    signedQuery(client.from("orders").select("id,assigned_to_team_member_id").order("ordered_at",{ascending:false}).limit(5000)).catch(error=>{
+     console.warn("Bulk order assignments could not be loaded.",error);return [];
+    }),
+    signedQuery(client.from("admin_team_members").select("id,full_name,role_title,department,is_active").eq("is_active",true).order("full_name").limit(200)).catch(error=>{
+     console.warn("Team directory could not be loaded for order assignment.",error);return [];
     })
    ]);
-   all=ordersResult;
+   const weightsByItemId=new Map((itemWeightResult||[]).map(row=>[row.id,row.shipping_weight_kg]));
+   const assigneeByOrderId=new Map((assignmentResult||[]).map(row=>[row.id,row.assigned_to_team_member_id]));
+   orderWeightDataReady=Array.isArray(itemWeightResult);
+   teamMembers=Array.isArray(teamResult)?teamResult:[];
+   all=ordersResult.map(order=>({...order,
+    assigned_to_team_member_id:assigneeByOrderId.get(order.id)||null,
+    order_items:(order.order_items||[]).map(item=>({...item,shipping_weight_kg:weightsByItemId.get(item.id)??item.shipping_weight_kg??null}))
+   }));
    const profilesByUserId=new Map((profilesResult||[]).filter(profile=>profile.avatar_url).map(profile=>[profile.user_id,profile]));
    customerProfilesById=new Map((customersResult||[]).flatMap(customer=>{
     const profile=profilesByUserId.get(customer.auth_user_id);
@@ -1012,7 +1046,7 @@ window.HFAdminReady.then(async H=>{
     if(recipientAddress.length>providerAddressLimit)throw new Error(provider==="pathao"?"Pathao delivery addresses must be 220 characters or fewer. Shorten the address without removing essential location details.":"The delivery address must be 250 characters or fewer.");
     // Accept addresses written in normal local language; punctuation/component-count is not a courier requirement.
     // The admin must still confirm the address is real and sufficiently specific before live booking.
-    const {data:freshOrder,error:orderReadError}=await client.from("orders").select("id,order_number,customer_name,customer_phone,customer_email,delivery_address,total,status,payment_method,notes,order_items(id,product_id,product_name,quantity,unit,unit_price,line_total,product_image_url)").eq("id",orderId).maybeSingle();
+    const {data:freshOrder,error:orderReadError}=await client.from("orders").select("id,order_number,customer_name,customer_phone,customer_email,delivery_address,total,status,payment_method,notes,order_items(id,product_id,product_name,quantity,unit,unit_price,line_total,product_image_url,shipping_weight_kg)").eq("id",orderId).maybeSingle();
     if(orderReadError||!freshOrder)throw new Error("Could not verify the latest order record. Refresh and try again.");
     if(!["pending","processing"].includes(freshOrder.status))throw new Error("The order changed to "+freshOrder.status+" and can no longer be booked from this action.");
     if(String(freshOrder.payment_method||"cash_on_delivery").toLowerCase()!=="cash_on_delivery")throw new Error("The latest order is not marked Cash on Delivery.");
@@ -1044,7 +1078,7 @@ window.HFAdminReady.then(async H=>{
     const shipmentPayload={
      order_id:orderId,courier_name:providerName,tracking_id:null,shipment_status:"draft",integration_mode:"manual_placeholder",
      cod_amount:Number(freshOrder.total),courier_fee:0,settlement_status:"pending",settled_amount:0,
-     parcel_weight_kg:["pathao","redx"].includes(provider)?weight:null,parcel_notes:(provider==="steadfast"?$("confirmBookSteadfastNotes").value:provider==="pathao"?$("confirmBookPathaoInstruction").value:$("confirmBookRedxInstruction").value).trim(),
+     parcel_weight_kg:["pathao","redx"].includes(provider)?weight:(orderPackedWeightKg(freshOrder).weight??null),parcel_notes:(provider==="steadfast"?$("confirmBookSteadfastNotes").value:provider==="pathao"?$("confirmBookPathaoInstruction").value:$("confirmBookRedxInstruction").value).trim(),
      created_by:existing?.created_by||H.ADMIN_EMAIL,updated_by:H.ADMIN_EMAIL,
      booking_state:existing?.booking_state==="failed"?"failed":"not_started",booking_error:"",booking_requested_at:null,
      provider_order_id:null,provider_response:provider==="redx"?{redx_delivery_area_id:redxAreaId,redx_delivery_area:redxAreaName,redx_delivery_district:$("confirmBookRedxDistrict").value.trim(),redx_sandbox_test_area:false}:{}
@@ -1137,17 +1171,42 @@ window.HFAdminReady.then(async H=>{
      const margin=costKnown&&Number(p.price)>0?((Number(p.price)-totalUnitCost)/Number(p.price))*100:null;
      const marginClass=margin===null?"":margin<0?"hf-status-failed":margin<15?"hf-status-pending":"hf-status-confirmed";
      const marginText=margin===null?"Add purchase cost to calculate margin":'Margin <span class="hf-status '+marginClass+'">'+margin.toLocaleString("en-BD",{maximumFractionDigits:1})+'%</span> · includes packaging';
+     const shippingWeightCell=p.shipping_weight_kg!=null?'<strong>'+Number(p.shipping_weight_kg).toLocaleString("en-BD",{minimumFractionDigits:3,maximumFractionDigits:3})+' kg</strong><small>Per sale unit</small>':'<span class="hf-status hf-status-review">Set weight</span><small>Needed for courier auto-calc</small>';
      const stockLabel=!tracked?'<span class="hf-status">Not tracked</span>':outOfStock?'<span class="hf-status hf-status-out-of-stock">Out of stock</span>':low?'<span class="hf-status hf-status-low-stock">'+esc(p.stock_quantity)+' left</span>':'<span class="hf-status hf-status-confirmed">'+esc(p.stock_quantity)+' in stock</span>';
-     return '<tr><td><div style="display:flex;align-items:center;gap:10px">'+(p.image_url?'<img class="hf-thumb" src="'+esc(p.image_url)+'" alt="" loading="lazy">':'<span class="hf-thumb hf-thumb-empty">◇</span>')+'<span><strong>'+esc(p.name)+'</strong><small>/'+esc(p.slug)+'</small></span></div></td><td>'+esc(p.category||"—")+'</td><td><strong>'+esc(p.display_price||money(p.price))+'</strong><small>'+esc(p.unit_type||"piece")+'</small></td><td><strong>'+(costKnown?money(totalUnitCost):"Cost not set")+'</strong><small>'+marginText+'</small></td><td>'+stockLabel+'<small>'+(tracked?"Alert at "+esc(threshold)+" "+esc(p.unit_type||"unit"):"Set stock quantity to enable alerts")+'</small></td><td>'+makeStatus(p.is_active?"visible":"hidden")+(p.is_featured?' <span class="hf-status hf-status-review">Featured</span>':"")+'</td><td><div class="hf-table-actions"><button class="hf-button hf-button-secondary hf-button-small" data-edit-product="'+esc(p.id)+'">Edit</button><button class="hf-button '+(p.is_active?"hf-button-danger":"hf-button-success")+' hf-button-small" data-toggle-product="'+esc(p.id)+'">'+(p.is_active?"Hide":"Restore")+'</button></div></td></tr>';
-    }).join(""):'<tr><td colspan="7">'+makeEmpty("No products found","Try a different search or add a product.")+'</td></tr>';
+     return '<tr><td><div style="display:flex;align-items:center;gap:10px">'+(p.image_url?'<img class="hf-thumb" src="'+esc(p.image_url)+'" alt="" loading="lazy">':'<span class="hf-thumb hf-thumb-empty">◇</span>')+'<span><strong>'+esc(p.name)+'</strong><small>/'+esc(p.slug)+'</small></span></div></td><td>'+esc(p.category||"—")+'</td><td><strong>'+esc(p.display_price||money(p.price))+'</strong><small>'+esc(p.unit_type||"piece")+'</small></td><td>'+shippingWeightCell+'</td><td><strong>'+(costKnown?money(totalUnitCost):"Cost not set")+'</strong><small>'+marginText+'</small></td><td>'+stockLabel+'<small>'+(tracked?"Alert at "+esc(threshold)+" "+esc(p.unit_type||"unit"):"Set stock quantity to enable alerts")+'</small></td><td>'+makeStatus(p.is_active?"visible":"hidden")+(p.is_featured?' <span class="hf-status hf-status-review">Featured</span>':"")+'</td><td><div class="hf-table-actions"><button class="hf-button hf-button-secondary hf-button-small" data-edit-product="'+esc(p.id)+'">Edit</button><button class="hf-button '+(p.is_active?"hf-button-danger":"hf-button-success")+' hf-button-small" data-toggle-product="'+esc(p.id)+'">'+(p.is_active?"Hide":"Restore")+'</button></div></td></tr>';
+    }).join(""):'<tr><td colspan="8">'+makeEmpty("No products found","Try a different search or add a product.")+'</td></tr>';
     const lowCount=products.filter(p=>p.is_active&&stockState(p)==="low").length;
     const outCount=products.filter(p=>p.is_active&&stockState(p)==="out").length;
     $("productsCount").textContent=products.length.toLocaleString("en-BD");$("productsVisibleCount").textContent=products.filter(p=>p.is_active).length.toLocaleString("en-BD");$("productsHiddenCount").textContent=products.filter(p=>!p.is_active).length.toLocaleString("en-BD");$("categoriesCount").textContent=categories.length.toLocaleString("en-BD");$("productsLowStockCount").textContent=lowCount.toLocaleString("en-BD");$("productsOutOfStockCount").textContent=outCount.toLocaleString("en-BD");
     $("categoryTableBody").innerHTML=categories.length?categories.map(c=>'<tr><td><strong>'+esc(c.name)+'</strong><small>'+esc(c.slug)+'</small></td><td>'+products.filter(p=>p.category_slug===c.slug&&p.is_active).length+'</td><td>'+makeStatus(c.is_active?"visible":"hidden")+'</td><td>'+esc(c.sort_order??0)+'</td><td><div class="hf-table-actions"><button class="hf-button hf-button-secondary hf-button-small" data-edit-category="'+esc(c.id)+'">Edit</button><button class="hf-button '+(c.is_active?"hf-button-danger":"hf-button-success")+' hf-button-small" data-toggle-category="'+esc(c.id)+'">'+(c.is_active?"Hide":"Restore")+'</button></div></td></tr>').join(""):'<tr><td colspan="5">'+makeEmpty("No categories","Add a category before creating products.")+'</td></tr>';
    }
-async function refresh(){[products,categories]=await Promise.all([fetchProducts(),fetchCategories()]);fillCategories();render();}
+async function refresh(){
+   const [baseProducts,categoryRows,weightRows]=await Promise.all([
+    fetchProducts(),fetchCategories(),
+    signedQuery(client.from("products").select("id,shipping_weight_kg").order("id",{ascending:true}).limit(2000))
+   ]);
+   const weightById=new Map((weightRows||[]).map(row=>[row.id,row.shipping_weight_kg]));
+   products=baseProducts.map(product=>({...product,shipping_weight_kg:weightById.get(product.id)??null}));
+   categories=categoryRows;fillCategories();render();
+  }
+  function inferShippingWeightFromUnit(value){
+   const raw=String(value||"").trim().toLowerCase();
+   if(raw==="kg")return "1.000";
+   const match=raw.match(/^([0-9]+(?:\\.[0-9]+)?)\\s*(kg|g|gram|grams)$/);
+   if(!match)return "";
+   const amount=Number(match[1]),kg=match[2]==="kg"?amount:amount/1000;
+   return Number.isFinite(kg)&&kg>0&&kg<=100?kg.toFixed(3):"";
+  }
+  $("productUnit")?.addEventListener("input",()=>{
+   const field=$("productShippingWeight");if(!field||field.dataset.manual==="true")return;
+   const suggested=inferShippingWeightFromUnit($("productUnit").value);
+   if(suggested)field.value=suggested;
+  });
+  $("productShippingWeight")?.addEventListener("input",event=>{
+   event.currentTarget.dataset.manual=event.currentTarget.value.trim()?"true":"";
+  });
   function openProduct(p=null){
-   $("productForm").reset();$("productId").value=p?.id||"";$("productName").value=p?.name||"";$("productSlug").value=p?.slug||"";$("productSlug").readOnly=!!p;$("productSlug").dataset.edited=p?"1":"";$("productCategorySelect").value=p?.category_slug||"";$("productPrice").value=p?.price??"";$("productUnit").value=p?.unit_type||"piece";$("productDisplayPrice").value=p?.display_price||"";$("productImageUrl").value=p?.image_url||"";$("productShortDescription").value=p?.short_description||"";$("productFullDescription").value=p?.full_description||p?.description||"";$("productStock").value=p?.stock_quantity??"";$("productCostPrice").value=p?.cost_price??"";$("productPackagingCost").value=p?.packaging_cost??0;$("productLowStockThreshold").value=p?.low_stock_threshold??5;$("productSortOrder").value=p?.sort_order??0;$("productSeoTitle").value=p?.seo_title||"";$("productSeoDescription").value=p?.seo_description||"";$("productActive").checked=p?.is_active??true;$("productFeatured").checked=p?.is_featured??false;$("productFormError").textContent="";$("productDialogTitle").textContent=p?"Edit product":"Add a new product";
+   $("productForm").reset();$("productId").value=p?.id||"";$("productName").value=p?.name||"";$("productSlug").value=p?.slug||"";$("productSlug").readOnly=!!p;$("productSlug").dataset.edited=p?"1":"";$("productCategorySelect").value=p?.category_slug||"";$("productPrice").value=p?.price??"";$("productUnit").value=p?.unit_type||"piece";$("productShippingWeight").value=p?.shipping_weight_kg??inferShippingWeightFromUnit(p?.unit_type||"");$("productShippingWeight").dataset.manual=p?.shipping_weight_kg!=null?"true":"";$("productDisplayPrice").value=p?.display_price||"";$("productImageUrl").value=p?.image_url||"";$("productShortDescription").value=p?.short_description||"";$("productFullDescription").value=p?.full_description||p?.description||"";$("productStock").value=p?.stock_quantity??"";$("productCostPrice").value=p?.cost_price??"";$("productPackagingCost").value=p?.packaging_cost??0;$("productLowStockThreshold").value=p?.low_stock_threshold??5;$("productSortOrder").value=p?.sort_order??0;$("productSeoTitle").value=p?.seo_title||"";$("productSeoDescription").value=p?.seo_description||"";$("productActive").checked=p?.is_active??true;$("productFeatured").checked=p?.is_featured??false;$("productFormError").textContent="";$("productDialogTitle").textContent=p?"Edit product":"Add a new product";
    const preview=$("productImagePreview");if(p?.image_url){preview.src=p.image_url;preview.hidden=false;}else{preview.removeAttribute("src");preview.hidden=true;}
    $("productDialog").showModal();
   }
@@ -1166,11 +1225,14 @@ async function refresh(){[products,categories]=await Promise.all([fetchProducts(
     const price=Number($("productPrice").value);if(!Number.isFinite(price)||price<0)throw new Error("Enter a valid non-negative price.");
     let imageUrl=$("productImageUrl").value.trim();const file=$("productImageFile").files?.[0];if(file)imageUrl=await uploadImage(file,"products",slug);
     const unit=$("productUnit").value.trim()||"piece";
+    const rawShippingWeight=$("productShippingWeight").value.trim();
+    const shippingWeight=rawShippingWeight===""?null:Number(rawShippingWeight);
+    if(shippingWeight!==null&&(!Number.isFinite(shippingWeight)||shippingWeight<=0||shippingWeight>100))throw new Error("Packed shipping weight must be greater than 0 and no more than 100 kg per sale unit.");
     const displayPriceInput=$("productDisplayPrice").value.trim();
     const displayPriceMatch=displayPriceInput.match(/[0-9][0-9,]*(?:\.[0-9]+)?/);
     const displayPriceAmount=displayPriceMatch?Number(displayPriceMatch[0].replace(/,/g,"")):NaN;
     const displayPrice=displayPriceInput&&displayPriceAmount===price?displayPriceInput:("৳"+price.toLocaleString("en-BD")+" / "+unit);
-    const payload={name,slug,category:category.name,category_slug:category.slug,price,unit_type:unit,display_price:displayPrice,image_url:imageUrl||null,short_description:$("productShortDescription").value.trim(),full_description:$("productFullDescription").value.trim(),stock_quantity:$("productStock").value===""?null:Number($("productStock").value),is_active:$("productActive").checked,is_featured:$("productFeatured").checked,sort_order:parseInt($("productSortOrder").value||"0",10)||0,seo_title:$("productSeoTitle").value.trim()||null,seo_description:$("productSeoDescription").value.trim()||null,cms_managed:true};
+    const payload={name,slug,category:category.name,category_slug:category.slug,price,unit_type:unit,shipping_weight_kg:shippingWeight,display_price:displayPrice,image_url:imageUrl||null,short_description:$("productShortDescription").value.trim(),full_description:$("productFullDescription").value.trim(),stock_quantity:$("productStock").value===""?null:Number($("productStock").value),is_active:$("productActive").checked,is_featured:$("productFeatured").checked,sort_order:parseInt($("productSortOrder").value||"0",10)||0,seo_title:$("productSeoTitle").value.trim()||null,seo_description:$("productSeoDescription").value.trim()||null,cms_managed:true};
      const rawCost=$("productCostPrice").value,rawPackaging=$("productPackagingCost").value,rawThreshold=$("productLowStockThreshold").value;
      const costPrice=rawCost===""?null:Number(rawCost),packagingCost=rawPackaging===""?0:Number(rawPackaging),lowStockThreshold=rawThreshold===""?5:Number(rawThreshold);
      if(costPrice!==null&&(!Number.isFinite(costPrice)||costPrice<0))throw new Error("Enter a valid non-negative purchase cost, or leave it blank.");
