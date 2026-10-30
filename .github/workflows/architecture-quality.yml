@@ -27,7 +27,7 @@ jobs:
         run: node scripts/admin-phase12-check.mjs
 
   edge-function-types:
-    name: Type-check all Supabase Edge Functions
+    name: Type-check changed Supabase Edge Functions
     runs-on: ubuntu-latest
     steps:
       - name: Check out source
