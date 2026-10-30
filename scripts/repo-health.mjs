@@ -58,13 +58,19 @@ const migrationFiles = relativePaths
   .sort();
 
 const publicCode = files.filter((file) => {
-  const path = relative(root, file).replaceAll("\\", "/");
-  return /^(admin|js|css|categories|products|blog)\\//.test(path)
-    || /^(index|product|category|cart|order|account|thank-you|track-order|about|contact|faq|privacy|terms|delivery-returns|how-to-order)\\.html$/.test(path);
+  const path = relative(root, file).replaceAll("\\\\", "/");
+  const publicPrefixes = ["admin/", "js/", "css/", "categories/", "products/", "blog/"];
+  const publicPages = [
+    "index.html", "product.html", "category.html", "cart.html", "order.html",
+    "account.html", "thank-you.html", "track-order.html", "about.html",
+    "contact.html", "faq.html", "privacy.html", "terms.html",
+    "delivery-returns.html", "how-to-order.html",
+  ];
+  return publicPrefixes.some((prefix) => path.startsWith(prefix)) || publicPages.includes(path);
 });
 const secretPatterns = [
-  { label: "Supabase service-role JWT", pattern: /eyJ[A-Za-z0-9_-]{20,}\\.[A-Za-z0-9_-]{20,}\\.[A-Za-z0-9_-]{10,}/ },
-  { label: "Provider access token literal", pattern: /(?:EA[A-Za-z0-9]{35,}|ya29\\.[A-Za-z0-9_-]{30,})/ },
+  { label: "Supabase service-role JWT", pattern: /eyJ[A-Za-z0-9_-]{20,}[.][A-Za-z0-9_-]{20,}[.][A-Za-z0-9_-]{10,}/ },
+  { label: "Provider access token literal", pattern: /(?:EA[A-Za-z0-9]{35,}|ya29[.][A-Za-z0-9_-]{30,})/ },
   { label: "GitHub personal access token", pattern: /gh[pousr]_[A-Za-z0-9]{30,}/ },
   { label: "Supabase secret API key", pattern: /sb_secret_[A-Za-z0-9_-]{20,}/ },
 ];
