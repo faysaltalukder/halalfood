@@ -3,7 +3,7 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const ALLOWED_ORIGIN = "https://faysaltalukder.github.io";
 const ADMIN_EMAIL = "halalfoodbd.official@gmail.com";
-const SOURCE = "first_party_courier_apis_v2";
+const SOURCE = "first_party_courier_apis_v3";
 const CACHE_HOURS = 6;
 
 const cors = {
@@ -109,7 +109,7 @@ function firstText(rows: any[], keys: string[]): string | null {
 }
 
 function rateValue(rows: any[]): number | null {
-  const raw = firstText(rows, ["success_rate", "successRate", "delivery_rate", "deliveryRate", "success_rate_percentage", "delivery_success_rate"]);
+  const raw = firstText(rows, ["success_rate", "successRate", "delivery_rate", "deliveryRate", "success_rate_percentage", "delivery_success_rate", "success_percentage", "successPercentage", "rate", "delivery_ratio", "success_ratio"]);
   if (raw === null) return null;
   const parsed = numberValue(raw);
   if (parsed === null || parsed < 0) return null;
@@ -119,30 +119,115 @@ function rateValue(rows: any[]): number | null {
 
 function noHistorySignal(rows: any[]): string | null {
   const message = firstText(rows, ["message", "description", "detail", "status_message"]) || "";
-  const rating = (firstText(rows, ["customer_rating", "customerRating", "rating", "customer_status"]) || "").toLowerCase();
-  const haystack = (message + " " + rating).toLowerCase();
+  const status = (firstText(rows, ["customer_status", "lookup_status", "history_status"]) || "").toLowerCase();
+  const haystack = message.toLowerCase() + " " + status;
+
+  // "new_customer" is a valid Pathao rating category, not proof of a failed lookup.
+  // Only explicit no-history wording/statuses should be treated as no history.
   if (
-    /no (delivery|order|parcel|customer|history|record|data)|not found|new customer|no previous|no record|not available in (our|the) system/.test(haystack) ||
-    ["new_customer", "new customer", "not_found", "no_history"].includes(rating)
+    /no (delivery|order|parcel|customer|history|record|data)|not found|no previous|no record|not available in (our|the) system/.test(haystack) ||
+    ["not_found", "no_history", "no_record"].includes(status)
   ) {
-    return message || "এই ফোন নম্বরের জন্য এই কুরিয়ারে আগের ডেলিভারি তথ্য পাওয়া যায়নি।";
+    return message && !/^user success rate$/i.test(message)
+      ? message
+      : "এই ফোন নম্বরের জন্য এই কুরিয়ারে আগের ডেলিভারি তথ্য পাওয়া যায়নি।";
   }
+
   for (const row of rows) {
-    if (row && typeof row === "object" && (row.customer_found === false || row.has_history === false || row.found === false)) {
-      return message || "এই ফোন নম্বরের জন্য আগের ডেলিভারি তথ্য পাওয়া যায়নি।";
+    if (row && typeof row === "object" && (
+      row.customer_found === false ||
+      row.has_history === false ||
+      row.found === false ||
+      row.no_history === true
+    )) {
+      return message && !/^user success rate$/i.test(message)
+        ? message
+        : "এই ফোন নম্বরের জন্য আগের ডেলিভারি তথ্য পাওয়া যায়নি।";
     }
   }
   return null;
 }
 
+function ratingMessage(provider: string, rating: string | null, risk: string | null, rate: number | null) {
+  const key = String(rating || "").toLowerCase().replace(/[ -]+/g, "_");
+  const labels: Record<string, string> = {
+    excellent_customer: "excellent customer",
+    good_customer: "good customer",
+    moderate_customer: "moderate customer",
+    risky_customer: "risky customer",
+    new_customer: "new customer",
+    flagged_customer: "flagged customer",
+    fraud_customer: "fraud-risk customer",
+  };
+  const ratingLabel = labels[key] || (rating ? rating.replace(/_/g, " ") : "");
+  if (ratingLabel) {
+    return provider + " customer rating: " + ratingLabel + ". " +
+      (rate !== null ? "Reported success rate: " + rate + "%. " : "") +
+      "Exact parcel counts are not provided in this response.";
+  }
+  if (risk) {
+    return provider + " returned a customer risk indicator (" + risk.replace(/_/g, " ") + "). Exact parcel counts are not provided in this response.";
+  }
+  return provider + " returned customer success-rate information. Exact parcel counts are not provided in this response.";
+}
+
 function normalizeProvider(provider: string, payload: any) {
   const rows = [
+    payload?.data?.data?.customer,
+    payload?.data?.data?.summary,
     payload?.data?.data,
+    payload?.data?.customer,
+    payload?.data?.summary,
+    payload?.data?.result,
     payload?.data,
     payload?.result,
+    payload?.summary,
     payload?.customer,
     payload,
   ].filter((value) => value && typeof value === "object" && !Array.isArray(value));
+
+  const total = firstNumber(rows, ["total", "total_orders", "total_parcels", "total_count", "total_delivery", "orders", "parcels"]);
+  const success = firstNumber(rows, ["success", "successful", "delivered", "delivered_count", "success_count", "success_parcels", "delivered_parcels", "successful_deliveries", "total_delivered", "total_success"]);
+  const cancel = firstNumber(rows, ["cancel", "cancelled", "canceled", "returned", "returned_count", "cancelled_count", "canceled_count", "cancel_count", "cancelled_parcels", "returned_parcels", "total_returned", "total_cancel"]);
+  let successRate = rateValue(rows);
+  if (successRate === null && total !== null && total > 0 && success !== null) {
+    successRate = Math.round((success / total) * 10000) / 100;
+  }
+  const customerRating = firstText(rows, ["customer_rating", "customerRating", "rating", "customer_status"]);
+  const riskLevel = firstText(rows, ["risk_level", "riskLevel", "risk", "fraud_level"]);
+  const declaredDataType = (firstText(rows, ["data_type", "dataType"]) || "").toLowerCase();
+  const showCountValue = rows.find((row) => typeof row?.show_count === "boolean")?.show_count;
+  const hasRating = !!customerRating || !!riskLevel;
+  const hasRate = successRate !== null;
+  const hasCounts = total !== null || success !== null || cancel !== null;
+  const explicitlyEmptyCounts = total === 0 &&
+    (success === null || success === 0) &&
+    (cancel === null || cancel === 0);
+
+  // Rating-only responses are valid results. Pathao may return customer_rating
+  // and a rate while zero count fields are placeholders and show_count=false.
+  // Check this BEFORE noHistorySignal so "new_customer" is never mislabeled.
+  const ratingOnly = declaredDataType === "rating" ||
+    (showCountValue === false && (hasRating || hasRate)) ||
+    (hasRating && (!hasCounts || explicitlyEmptyCounts));
+  if (ratingOnly) {
+    const rawMessage = firstText(rows, ["message", "description", "detail"]);
+    const message = rawMessage && !/^user success rate$/i.test(rawMessage)
+      ? rawMessage
+      : ratingMessage(provider, customerRating, riskLevel, successRate);
+    return {
+      courierName: provider,
+      status: "available",
+      dataType: "rating",
+      message,
+      total: null,
+      success: null,
+      cancel: null,
+      successRate,
+      customerRating,
+      riskLevel: riskLevel ? riskLevel.toLowerCase() : null,
+    };
+  }
 
   const noHistory = noHistorySignal(rows);
   if (noHistory) {
@@ -155,50 +240,12 @@ function normalizeProvider(provider: string, payload: any) {
       success: null,
       cancel: null,
       successRate: null,
-      customerRating: firstText(rows, ["customer_rating", "customerRating", "rating", "customer_status"]),
-      riskLevel: firstText(rows, ["risk_level", "riskLevel"]),
-    };
-  }
-
-  const total = firstNumber(rows, ["total", "total_orders", "total_parcels", "total_count", "orders", "parcels"]);
-  const success = firstNumber(rows, ["success", "successful", "delivered", "delivered_count", "success_count", "success_parcels", "delivered_parcels", "successful_deliveries", "total_delivered"]);
-  const cancel = firstNumber(rows, ["cancel", "cancelled", "canceled", "returned", "returned_count", "cancelled_count", "canceled_count", "cancel_count", "cancelled_parcels", "returned_parcels", "total_returned"]);
-  let successRate = rateValue(rows);
-  if (successRate === null && total !== null && total > 0 && success !== null) {
-    successRate = Math.round((success / total) * 10000) / 100;
-  }
-  const customerRating = firstText(rows, ["customer_rating", "customerRating", "rating", "customer_status"]);
-  const riskLevel = firstText(rows, ["risk_level", "riskLevel", "risk", "fraud_level"]);
-  const declaredDataType = (firstText(rows, ["data_type", "dataType"]) || "").toLowerCase();
-  const showCountValue = rows.find((row) => typeof row?.show_count === "boolean")?.show_count;
-  const hasRating = !!customerRating || !!riskLevel;
-  const hasRate = successRate !== null;
-
-  // Pathao's newer response is rating-only and may include total/success/cancel=0
-  // with show_count=false. Those are placeholders, not actual parcel counts.
-  const ratingOnly = declaredDataType === "rating" ||
-    (showCountValue === false && (hasRating || hasRate));
-  if (ratingOnly) {
-    return {
-      courierName: provider,
-      status: "available",
-      dataType: "rating",
-      message: firstText(rows, ["message", "description", "detail"]) ||
-        "কুরিয়ারের API থেকে customer rating পাওয়া গেছে; parcel count এই response-এ প্রকাশ করা হয়নি।",
-      total: null,
-      success: null,
-      cancel: null,
-      successRate,
       customerRating,
       riskLevel: riskLevel ? riskLevel.toLowerCase() : null,
     };
   }
 
-  const hasCounts = total !== null || success !== null || cancel !== null;
-  const explicitlyEmpty = total === 0 &&
-    (success === null || success === 0) &&
-    (cancel === null || cancel === 0) &&
-    !hasRating;
+  const explicitlyEmpty = explicitlyEmptyCounts && !hasRating && !hasRate;
   if (explicitlyEmpty) {
     return {
       courierName: provider,
