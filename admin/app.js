@@ -952,7 +952,7 @@ window.HFAdminReady.then(async H=>{
     const areas=(Array.isArray(data.areas)?data.areas:[]).map(a=>({id:String(a?.id??"").trim(),name:String(a?.name??"").trim(),sandbox:a?.sandbox_test_only===true})).filter(a=>a.id&&a.name&&!a.sandbox);
     if(!areas.length)throw new Error("No active Production areas were returned for "+district+".");
     select.innerHTML='<option value="">Select exact delivery area</option>'+areas.map(a=>'<option value="'+esc(a.id)+'">'+esc(a.name)+'</option>').join("");
-    select.disabled=false;select.dataset.verified="true";select.dataset.loadedDistrict=String(data.resolved_district_name||district).trim();
+    select.disabled=false;select.dataset.verified="true";select.dataset.loadedDistrict=district;
     const order=all.find(item=>item.id===row.dataset.bulkOrder),address=String(order?.delivery_address||"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
     const match=areas.find(a=>{const name=a.name.toLowerCase().replace(/[^a-z0-9]+/g," ").trim();return name.length>=4&&(" "+address+" ").includes(" "+name+" ");});
     if(match)select.value=match.id;
