@@ -8,7 +8,7 @@ const root = process.cwd();
 const adminDir = join(root, "admin");
 const sharedCssVersion = "20261030-admin-theme-v2";
 const sharedJsVersion = "20261030-illustrated-nav-v1";
-const appJsVersion = "20261030-order-cards-v1";
+const appJsVersion = "20261030-orders-refined-v3";
 const read = (path) => readFileSync(join(root, path), "utf8");
 
 const htmlFiles = readdirSync(adminDir).filter((file) => file.endsWith(".html"));
@@ -106,8 +106,8 @@ for (const id of [
 ]) {
   assert.ok(ordersPage.includes(`id="${id}"`), `Orders workspace is missing #${id}.`);
 }
-assert.ok(ordersPage.includes("orders.css?v=20261030-order-workspace-v1"), "Orders workspace stylesheet must be cache-busted.");
-assert.ok(ordersPage.includes("app.js?v=20261030-order-cards-v1"), "Orders workspace must load the order-card application script.");
+assert.ok(ordersPage.includes("orders.css?v=20261030-orders-refined-v3"), "Orders workspace stylesheet must be cache-busted.");
+assert.ok(ordersPage.includes("app.js?v=20261030-orders-refined-v3"), "Orders workspace must load the order-card application script.");
 for (const status of ["pending", "processing", "shipped", "delivered", "cancelled"]) {
   assert.ok(ordersCss.includes(`.hf-order-card[data-status="${status}"]`), `Order cards need a distinct ${status} color.`);
 }
@@ -235,3 +235,12 @@ for (const char of css) {
 assert.equal(braceDepth, 0, "admin/shared.css contains unbalanced braces.");
 
 console.log(`Admin Phase 1–4 quality gate passed: ${unifiedPages.length} pages, semantic main landmarks, skip navigation, named form controls, focus behavior, contrast, JS syntax, cache keys, IDs, assets, courier checks, finance guards, Facebook queue safety, quota safeguards, concise overview copy, visual polish, and CSS structure.`);
+
+assert.ok(ordersApp.includes('class="hf-order-customer-panel"'), "Refined cards need a customer column.");
+assert.ok(ordersApp.includes('class="hf-order-items-panel"'), "Refined cards need a product column.");
+assert.ok(ordersApp.includes('class="hf-order-totals-panel"'), "Refined cards need an amount column.");
+assert.ok(ordersApp.includes('data-order-details="'+esc(o.id)+'"') || ordersApp.includes('data-order-details="'+esc(o.id) + '"'), "Card actions should keep a Details route.");
+assert.ok(ordersCss.includes("Refined Orders v3"), "Refined Orders styling and separators must be present.");
+for (const tone of ["pending","processing","shipped","delivered","cancelled"]) {
+  assert.ok(ordersCss.includes('.hf-order-card[data-status="' + tone + '"] .order-status-select'), "Status control needs a distinct " + tone + " color.");
+}
