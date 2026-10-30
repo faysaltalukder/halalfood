@@ -644,6 +644,83 @@ window.HFAdminReady.then(async H=>{
    const message="Assalamu Alaikum "+customer+", this is an update for your Halal Food order "+orderNo+". Current recorded status: "+String(order.status||"pending").toUpperCase()+". Recorded order value: "+money(order.total)+"."+cancellation+" This is a learning/testing project and does not take online payments. A courier booking is created only when an admin explicitly confirms and books it; this message is not proof of payment or delivery.";
    return "https://wa.me/"+phone+"?text="+encodeURIComponent(message);
   }
+  function courierLookupPhone(value){
+   let digits=String(value||"").replace(/\D/g,"");
+   if(digits.startsWith("00880"))digits="0"+digits.slice(5);
+   else if(digits.startsWith("880"))digits="0"+digits.slice(3);
+   return /^01\d{9}$/.test(digits)?digits:"";
+  }
+  function courierHistoryPercent(value){
+   const number=Number(value);
+   return Number.isFinite(number)?number.toFixed(1).replace(/\.0$/,"")+"%":"Not available";
+  }
+  function courierHistoryHumanize(value){
+   return String(value||"").replace(/_/g," ").replace(/\b\w/g,char=>char.toUpperCase());
+  }
+  async function showCourierHistory(order){
+   const phone=courierLookupPhone(order?.customer_phone);
+   if(!phone){toast("This order does not contain a valid Bangladeshi mobile number.","error");return;}
+   const dialog=$("courierHistoryDialog"),message=$("courierHistoryMessage"),summary=$("courierHistorySummary"),results=$("courierHistoryResults"),title=$("courierHistoryTitle"),phoneLabel=$("courierHistoryPhone"),footnote=$("courierHistoryFootnote");
+   if(!dialog||!message||!summary||!results)return;
+   if(title)title.textContent="Courier history · "+(order.order_number||"Order");
+   if(phoneLabel)phoneLabel.textContent="Customer mobile: "+phone;
+   message.className="hf-banner hf-banner-info";
+   message.textContent="Checking courier delivery history. This is a separate third-party lookup and does not automatically approve or reject this order.";
+   summary.innerHTML="";
+   results.innerHTML='<p class="hf-loading">Checking Pathao, Steadfast and REDX history…</p>';
+   if(footnote)footnote.textContent="This provider's summary is separate from this store's records. An unknown/new-customer result is not proof of fraud.";
+   if(!dialog.open)dialog.showModal();
+   try{
+    const {data,error}=await client.functions.invoke("courier-fraud-check",{body:{phone}});
+    if(error||data?.success!==true){
+     const missing=data?.code==="FRAUDBD_API_KEY_MISSING";
+     message.className="hf-banner "+(missing?"hf-banner-info":"hf-banner-warning");
+     message.textContent=missing
+      ?"Courier-history API is not connected yet. Add FRAUDBD_API_KEY in Supabase Edge Function Secrets after creating an active API account/plan. Keep the key out of GitHub and customer-side code."
+      :(data?.error||error?.message||"Courier history could not be checked.");
+     results.innerHTML=missing
+      ?'<div class="hf-card hf-card-pad"><strong>One-time connection required</strong><p class="hf-data-note">The dashboard and secure server endpoint are ready. The provider API key is still required before real courier histories can be retrieved.</p><a href="https://fraudbd.com/api-documentation" target="_blank" rel="noopener noreferrer" class="hf-button hf-button-secondary">View API documentation</a></div>'
+      :'<p class="hf-data-note">No courier-history result was returned. This is not a low-risk or high-risk verdict.</p>';
+     return;
+    }
+    message.className="hf-banner hf-banner-info";
+    message.textContent=(data.cached?"Cached lookup":"Fresh lookup")+" · checked "+dateTime(data.checkedAt)+(data.expiresAt?" · refresh available after "+dateTime(data.expiresAt):"");
+    const total=data.totalSummary||{};
+    if(Number(total.total)>0){
+     const items=[
+      ["Total parcels",Number(total.total).toLocaleString("en-BD")],
+      ["Delivered",Number(total.success||0).toLocaleString("en-BD")],
+      ["Cancelled / returned",Number(total.cancel||0).toLocaleString("en-BD")],
+      ["Overall success",courierHistoryPercent(total.successRate)]
+     ];
+     summary.innerHTML=items.map(item=>'<div class="hf-card hf-kpi"><span class="hf-kpi-label">'+esc(item[0])+'</span><strong class="hf-kpi-value">'+esc(item[1])+'</strong></div>').join("");
+    }else{
+     summary.innerHTML='<div class="hf-card hf-card-pad" style="grid-column:1/-1"><strong>No combined delivery-count total</strong><p class="hf-data-note">Some courier sources use a rating rather than exact delivered/returned counts. Read each courier result below.</p></div>';
+    }
+    const rows=Array.isArray(data.summaries)?data.summaries:[];
+    if(!rows.length){
+     results.innerHTML='<p class="hf-data-note">The provider did not return any courier summaries for this number.</p>';
+     return;
+    }
+    results.innerHTML='<div class="hf-courier-history-list">'+rows.map(item=>{
+     const type=String(item.dataType||"delivery").toLowerCase();
+     const level=String(item.riskLevel||"unknown").toLowerCase();
+     const tone=["high","very_high"].includes(level)?"hf-status-review":level==="medium"?"hf-status-pending":level==="low"?"hf-status-active":"hf-status";
+     const rate=item.successRate===null||item.successRate===undefined?"":courierHistoryPercent(item.successRate);
+     const detail=type==="rating"
+      ? '<div class="hf-courier-history-metrics"><span>Customer rating <strong>'+esc(courierHistoryHumanize(item.customerRating||"not rated"))+'</strong></span>'+(rate?'<span>Estimated success <strong>'+esc(rate)+'</strong></span>':'<span>Exact parcel counts <strong>Not provided</strong></span>')+'</div>'
+      : '<div class="hf-courier-history-metrics"><span>Parcels <strong>'+esc(item.total??"—")+'</strong></span><span>Delivered <strong>'+esc(item.success??"—")+'</strong></span><span>Cancelled / returned <strong>'+esc(item.cancel??"—")+'</strong></span><span>Success rate <strong>'+esc(rate||"Not available")+'</strong></span></div>';
+     return '<article class="hf-card hf-card-pad hf-courier-history-card"><div class="hf-section-head"><strong>'+esc(item.courierName||"Courier")+'</strong><span class="hf-status '+tone+'">'+esc(courierHistoryHumanize(level))+'</span></div><p>'+esc(item.message||"No additional provider message.")+'</p>'+detail+'<small class="hf-data-note">'+(type==="rating"?"Provider rating · counts are not available":"Provider delivery statistics")+'</small></article>';
+    }).join("")+'</div>';
+    if(footnote)footnote.textContent="Pathao may return rating bands rather than exact shipment counts. Delivery success rates are courier-reported/aggregated indicators, not guarantees of future delivery.";
+   }catch(error){
+    console.error("Courier history lookup failed.",error);
+    message.className="hf-banner hf-banner-warning";
+    message.textContent=error?.message||"Courier history lookup failed. Please try again.";
+    results.innerHTML='<p class="hf-data-note">No verified external courier result was received.</p>';
+   }
+  }
+
   function printPackingSlip(order){
    const win=window.open("","_blank");
    if(!win){toast("Printing window was blocked. Allow pop-ups for this admin page and try again.","error");return;}
@@ -681,7 +758,9 @@ window.HFAdminReady.then(async H=>{
     }
     const stateText=shipment?(legacyTest?"Legacy record — verify in REDX dashboard":shipment.booking_error||(shipment.booking_state==="failed"?"Booking failed":shipment.booking_state==="succeeded"?"Booking succeeded":shipment.booking_state==="unknown"?"Verify with courier":shipment.booking_state==="in_progress"?"Booking in progress":"Not booked")):"";
     const shipmentInfo=shipment?'<small style="display:block;white-space:normal;min-width:150px">'+esc(shipment.courier_name||"Courier")+': '+esc(stateText)+'</small>':"";
-    return '<tr><td><strong>'+esc(o.order_number||String(o.id).slice(0,8))+'</strong><small>'+esc(String(o.id).slice(0,8))+'</small></td><td><strong>'+esc(o.customer_name||"Guest")+'</strong><small>'+esc(o.customer_phone||"No phone")+'</small></td><td>'+esc((o.order_items||[]).slice(0,2).map(x=>x.product_name+" × "+x.quantity+" "+(x.unit||"")).join(", ")||"No item detail")+'</td><td>'+money(o.subtotal)+'</td><td>'+money(o.delivery_charge)+'</td><td><strong>'+money(o.total)+'</strong></td><td><select class="hf-select order-status-select" data-order-id="'+esc(o.id)+'" style="min-width:120px;padding:7px;font-size:11px">'+statusOptions.map(s=>'<option value="'+s+'" '+(s===o.status?"selected ":"")+(o.status==="cancelled"&&s!=="cancelled"?"disabled ":"")+'>'+s.charAt(0).toUpperCase()+s.slice(1)+'</option>').join("")+'</select>'+(o.status==="cancelled"&&o.cancellation_reason?'<small>'+esc(o.cancellation_reason)+'</small>':"")+'</td><td>'+dateTime(o.ordered_at)+'</td><td><div class="hf-table-actions" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">'+courierAction+'<button class="hf-button hf-button-secondary hf-button-small" data-order-details="'+esc(o.id)+'">Details</button>'+shipmentInfo+'</div></td></tr>';
+    const lookupPhone=courierLookupPhone(o.customer_phone);
+    const historyAction=lookupPhone?'<button class="hf-button hf-button-secondary hf-button-small" type="button" data-courier-history-check="'+esc(o.id)+'">Courier history</button>':'';
+    return '<tr><td><strong>'+esc(o.order_number||String(o.id).slice(0,8))+'</strong><small>'+esc(String(o.id).slice(0,8))+'</small></td><td><strong>'+esc(o.customer_name||"Guest")+'</strong><small>'+esc(o.customer_phone||"No phone")+'</small></td><td>'+esc((o.order_items||[]).slice(0,2).map(x=>x.product_name+" × "+x.quantity+" "+(x.unit||"")).join(", ")||"No item detail")+'</td><td>'+money(o.subtotal)+'</td><td>'+money(o.delivery_charge)+'</td><td><strong>'+money(o.total)+'</strong></td><td><select class="hf-select order-status-select" data-order-id="'+esc(o.id)+'" style="min-width:120px;padding:7px;font-size:11px">'+statusOptions.map(s=>'<option value="'+s+'" '+(s===o.status?"selected ":"")+(o.status==="cancelled"&&s!=="cancelled"?"disabled ":"")+'>'+s.charAt(0).toUpperCase()+s.slice(1)+'</option>').join("")+'</select>'+(o.status==="cancelled"&&o.cancellation_reason?'<small>'+esc(o.cancellation_reason)+'</small>':"")+'</td><td>'+dateTime(o.ordered_at)+'</td><td><div class="hf-table-actions" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">'+historyAction+courierAction+'<button class="hf-button hf-button-secondary hf-button-small" data-order-details="'+esc(o.id)+'">Details</button>'+shipmentInfo+'</div></td></tr>';
    }).join(""):'<tr><td colspan="9">'+makeEmpty("No matching orders","Try another status or a shorter search term.")+'</td></tr>';
   }
   async function refresh(){
@@ -763,6 +842,12 @@ window.HFAdminReady.then(async H=>{
    finally{select.disabled=false;}
   });
   $("ordersDataBody")?.addEventListener("click",async e=>{
+   const historyButton=e.target.closest("[data-courier-history-check]");
+   if(historyButton){
+    const order=all.find(row=>row.id===historyButton.dataset.courierHistoryCheck);
+    if(order)void showCourierHistory(order);
+    return;
+   }
    const confirmButton=e.target.closest("[data-confirm-book]");
    if(confirmButton){openConfirmBook(confirmButton.dataset.confirmBook);return;}
    const button=e.target.closest("[data-order-details]");if(!button)return;
@@ -872,6 +957,8 @@ window.HFAdminReady.then(async H=>{
   });
   $("orderPrintBtn")?.addEventListener("click",()=>{const order=all.find(x=>x.id===activeOrderId);if(order)printPackingSlip(order);});
   $("closeOrderDialog")?.addEventListener("click",()=>$("orderDialog")?.close());
+  $("courierHistoryClose")?.addEventListener("click",()=>$("courierHistoryDialog")?.close());
+  $("courierHistoryDone")?.addEventListener("click",()=>$("courierHistoryDialog")?.close());
   await refresh();attachRefresh(refresh);
  }
  async function uploadImage(file,folder,slug){
