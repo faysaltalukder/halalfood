@@ -3,7 +3,7 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const ALLOWED_ORIGIN = "https://faysaltalukder.github.io";
 const ADMIN_EMAIL = "halalfoodbd.official@gmail.com";
-const SOURCE = "first_party_courier_apis_v3";
+const SOURCE = "first_party_courier_apis_v4";
 const CACHE_HOURS = 6;
 
 const cors = {
@@ -530,7 +530,7 @@ async function steadfastHistory(phone: string) {
     if (!result.response.ok) {
       return {
         courierName: "Steadfast",
-        status: result.response.status === 404 ? "not_supported" : "error",
+        status: result.response.status === 404 ? "not_supported" : (/account\s+is\s+inactive|account\s+inactive/i.test(String(result.data?.message || result.data?.error || "")) ? "account_inactive" : "error"),
         dataType: "none",
         message: resultMessage("Steadfast", result.response.status, result.data),
         total: null, success: null, cancel: null, successRate: null, customerRating: null, riskLevel: null,
@@ -553,9 +553,9 @@ async function steadfastHistory(phone: string) {
 function unsupportedRedx() {
   return {
     courierName: "REDX",
-    status: "not_supported",
+    status: "not_checked",
     dataType: "none",
-    message: "REDX-এর প্রকাশ্য Merchant OpenAPI-তে অন্য merchant-এর customer delivery-history lookup route পাওয়া যায়নি। তাই কোনো private dashboard endpoint বা scraping ব্যবহার করা হয়নি।",
+    message: "REDX customer-history lookup চালানো হয়নি: আমাদের কাছে এই কাজের জন্য যাচাইকৃত public Merchant API endpoint নেই। REDX-এর Smart Return Pro merchant-panel feature সব merchant-এর জন্য নয়; account manager-এর কাছে feature access এবং official API route/documentation নিশ্চিত করতে হবে।",
     total: null, success: null, cancel: null, successRate: null, customerRating: null, riskLevel: null,
   };
 }
