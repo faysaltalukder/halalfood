@@ -68,6 +68,7 @@ Schema changes are additive and versioned. Production migration history and repo
 
 - The public storefront uses static HTML, CSS, and browser JavaScript.
 - The public website includes `js/main.js`, `js/cart.js`, `js/live-catalog.js`, and product support scripts.
+- `supabase/database.types.ts` is generated from the current production schema and is the read-only reference for table/column contracts; regenerate it after reviewed schema changes.
 - Catalog data currently has a live Supabase path plus legacy/static compatibility sources. Do not delete the compatibility sources until all consumers are identified and tested.
 - The admin has a large central `admin/app.js` plus `admin/shared.js`, feature pages, and feature-specific scripts.
 - The Supabase project currently has 48 public tables, 16 active Edge Functions, and PostgreSQL 17.
