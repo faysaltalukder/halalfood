@@ -409,7 +409,7 @@ Deno.serve(async (req: Request) => {
           req.headers.get("cf-connecting-ip") || req.headers.get("x-real-ip"),
           64
         );
-        EdgeRuntime.waitUntil(dispatchVerifiedPurchase({
+        const purchaseDispatch = dispatchVerifiedPurchase({
           url,
           key,
           orderId: data.orderId,
@@ -417,7 +417,12 @@ Deno.serve(async (req: Request) => {
           fbc: clean(d.fbc, 180),
           userAgent: clean(req.headers.get("user-agent"), 500),
           clientIp
-        }));
+        });
+        const edgeRuntime = (globalThis as typeof globalThis & {
+          EdgeRuntime?: { waitUntil: (promise: Promise<unknown>) => void };
+        }).EdgeRuntime;
+        if (edgeRuntime?.waitUntil) edgeRuntime.waitUntil(purchaseDispatch);
+        else void purchaseDispatch;
       } else {
         console.warn("Saved order was not found for Purchase dispatch.");
       }
