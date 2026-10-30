@@ -1087,7 +1087,11 @@ document.addEventListener("DOMContentLoaded", () => {
           success: true,
           orderId: confirmedOrderId,
           orderTotal: confirmedTotal,
-          purchaseEventId
+          purchaseEventId,
+          heldForReview: result?.heldForReview === true,
+          reviewId: typeof result?.reviewId === "string" ? result.reviewId : null,
+          riskScore: Number.isFinite(Number(result?.riskScore)) ? Number(result.riskScore) : null,
+          riskFlags: Array.isArray(result?.riskFlags) ? result.riskFlags : []
         };
       });
 
