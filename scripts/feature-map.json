@@ -1,0 +1,267 @@
+{
+  "catalog": {
+    "summary": "Live products, categories, product detail pages and search/merchandising.",
+    "start_here": [
+      "js/live-catalog.js",
+      "js/products-data.js",
+      "js/products-index.js"
+    ],
+    "dependencies": [
+      "js/cart.js",
+      "admin/app.js",
+      "admin/shared.js"
+    ],
+    "tables": [
+      "products",
+      "categories"
+    ],
+    "edge_functions": [],
+    "checks": [
+      "node scripts/architecture-check.mjs",
+      "node scripts/admin-phase12-check.mjs"
+    ]
+  },
+  "cart": {
+    "summary": "Guest cart, quantity controls, drawer, account-linked cloud cart synchronization.",
+    "start_here": [
+      "js/cart.js"
+    ],
+    "dependencies": [
+      "js/live-catalog.js",
+      "js/main.js"
+    ],
+    "tables": [
+      "customer_carts",
+      "customer_profiles",
+      "products"
+    ],
+    "edge_functions": [],
+    "checks": [
+      "node scripts/architecture-check.mjs"
+    ]
+  },
+  "checkout": {
+    "summary": "Customer checkout, authoritative order creation, incomplete checkout and purchase dispatch.",
+    "start_here": [
+      "js/main.js",
+      "js/cart.js",
+      "supabase/functions/order-sync/index.ts"
+    ],
+    "dependencies": [
+      "supabase/functions/incomplete-checkout/index.ts",
+      "supabase/functions/analytics-ingest/index.ts"
+    ],
+    "tables": [
+      "orders",
+      "order_items",
+      "products",
+      "incomplete_checkouts",
+      "analytics_events"
+    ],
+    "edge_functions": [
+      "order-sync",
+      "incomplete-checkout",
+      "analytics-ingest"
+    ],
+    "checks": [
+      "node scripts/architecture-check.mjs",
+      "deno check supabase/functions/order-sync/index.ts",
+      "deno check supabase/functions/incomplete-checkout/index.ts"
+    ]
+  },
+  "admin-orders": {
+    "summary": "Admin order list/detail, status, assignment, security review, print/export and bulk actions.",
+    "start_here": [
+      "admin/app.js",
+      "admin/shared.js",
+      "admin/orders.html",
+      "admin/orders.css"
+    ],
+    "dependencies": [
+      "supabase/functions/order-security-admin/index.ts",
+      "supabase/functions/order-sync/index.ts"
+    ],
+    "tables": [
+      "orders",
+      "order_items",
+      "order_security_signals",
+      "order_security_reviews",
+      "admin_team_members",
+      "admin_shipments"
+    ],
+    "edge_functions": [
+      "order-security-admin",
+      "order-sync"
+    ],
+    "checks": [
+      "node scripts/admin-phase12-check.mjs",
+      "node scripts/architecture-check.mjs"
+    ]
+  },
+  "admin-catalog": {
+    "summary": "Admin product/category CRUD, inventory, shipping weights and public live catalog updates.",
+    "start_here": [
+      "admin/app.js",
+      "admin/shared.js",
+      "js/admin-cms.js",
+      "js/live-catalog.js"
+    ],
+    "dependencies": [
+      "js/products-data.js",
+      "js/products-index.js"
+    ],
+    "tables": [
+      "products",
+      "categories",
+      "admin_product_costs",
+      "inventory_ledger"
+    ],
+    "edge_functions": [],
+    "checks": [
+      "node scripts/admin-phase12-check.mjs",
+      "node scripts/architecture-check.mjs"
+    ]
+  },
+  "courier": {
+    "summary": "Courier preflight, booking, tracking, history and fraud review.",
+    "start_here": [
+      "admin/app.js",
+      "admin/shared.js",
+      "supabase/functions/courier-integration/index.ts"
+    ],
+    "dependencies": [
+      "supabase/functions/courier-fraud-check/index.ts",
+      "supabase/functions/order-security-admin/index.ts"
+    ],
+    "tables": [
+      "admin_shipments",
+      "orders",
+      "order_items",
+      "products",
+      "courier_customer_history_cache"
+    ],
+    "edge_functions": [
+      "courier-integration",
+      "courier-fraud-check"
+    ],
+    "checks": [
+      "node scripts/admin-phase12-check.mjs",
+      "deno check supabase/functions/courier-integration/index.ts",
+      "deno check supabase/functions/courier-fraud-check/index.ts"
+    ]
+  },
+  "messaging": {
+    "summary": "WhatsApp and Messenger send/webhook handling and conversation inbox persistence.",
+    "start_here": [
+      "supabase/functions/whatsapp-send/index.ts",
+      "supabase/functions/whatsapp-webhook/index.ts",
+      "supabase/functions/messenger-send/index.ts",
+      "supabase/functions/messenger-webhook/index.ts"
+    ],
+    "dependencies": [
+      "admin/app.js",
+      "admin/shared.js"
+    ],
+    "tables": [
+      "messaging_contacts",
+      "messaging_conversations",
+      "messaging_messages",
+      "platform_settings"
+    ],
+    "edge_functions": [
+      "whatsapp-send",
+      "whatsapp-webhook",
+      "messenger-send",
+      "messenger-webhook"
+    ],
+    "checks": [
+      "node scripts/architecture-check.mjs"
+    ]
+  },
+  "tracking": {
+    "summary": "First-party event ingestion, GA4/Meta event routing and purchase deduplication.",
+    "start_here": [
+      "js/main.js",
+      "supabase/functions/analytics-ingest/index.ts"
+    ],
+    "dependencies": [
+      "supabase/functions/order-sync/index.ts",
+      "admin/app.js",
+      "admin/shared.js"
+    ],
+    "tables": [
+      "analytics_events",
+      "tracking_event_settings",
+      "tracking_runtime_settings",
+      "meta_event_delivery_log"
+    ],
+    "edge_functions": [
+      "analytics-ingest",
+      "order-sync"
+    ],
+    "checks": [
+      "node scripts/architecture-check.mjs",
+      "deno check supabase/functions/analytics-ingest/index.ts"
+    ]
+  },
+  "publishing": {
+    "summary": "Facebook and YouTube publishing, scheduled queue and website publishing.",
+    "start_here": [
+      "supabase/functions/facebook-publishing/index.ts",
+      "supabase/functions/youtube-publishing/index.ts",
+      "supabase/functions/post-dispatcher/index.ts",
+      "supabase/functions/site-publisher/index.ts"
+    ],
+    "dependencies": [
+      "admin/app.js",
+      "admin/shared.js"
+    ],
+    "tables": [
+      "youtube_connected_accounts",
+      "youtube_publish_history",
+      "youtube_oauth_states",
+      "post_queue",
+      "platform_settings",
+      "site_change_sets",
+      "site_change_files"
+    ],
+    "edge_functions": [
+      "facebook-publishing",
+      "youtube-publishing",
+      "post-dispatcher",
+      "site-publisher"
+    ],
+    "checks": [
+      "node scripts/architecture-check.mjs"
+    ]
+  },
+  "security": {
+    "summary": "Admin MFA, order-security review, courier risk checks and sensitive server-only operations.",
+    "start_here": [
+      "admin/shared.js",
+      "supabase/functions/order-security-admin/index.ts",
+      "supabase/functions/order-sync/index.ts"
+    ],
+    "dependencies": [
+      "supabase/functions/courier-fraud-check/index.ts",
+      "supabase/functions/courier-integration/index.ts"
+    ],
+    "tables": [
+      "order_security_signals",
+      "order_security_reviews",
+      "orders",
+      "admin_shipments",
+      "courier_customer_history_cache"
+    ],
+    "edge_functions": [
+      "order-security-admin",
+      "order-sync",
+      "courier-fraud-check",
+      "courier-integration"
+    ],
+    "checks": [
+      "node scripts/architecture-check.mjs",
+      "deno check supabase/functions/order-security-admin/index.ts"
+    ]
+  }
+}
