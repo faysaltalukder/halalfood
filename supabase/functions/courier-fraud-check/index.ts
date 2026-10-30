@@ -4,7 +4,7 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 const ALLOWED_ORIGIN = "https://faysaltalukder.github.io";
 const ADMIN_EMAIL = "halalfoodbd.official@gmail.com";
 const SOURCE = "first_party_courier_apis_v1";
-const CACHE_HOURS = 12;
+const CACHE_HOURS = 6;
 
 const cors = {
   "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
@@ -161,8 +161,8 @@ function normalizeProvider(provider: string, payload: any) {
   }
 
   const total = firstNumber(rows, ["total", "total_orders", "total_parcels", "total_count", "orders", "parcels"]);
-  const success = firstNumber(rows, ["success", "successful", "delivered", "delivered_count", "success_count"]);
-  const cancel = firstNumber(rows, ["cancel", "cancelled", "canceled", "returned", "returned_count", "cancelled_count", "canceled_count"]);
+  const success = firstNumber(rows, ["success", "successful", "delivered", "delivered_count", "success_count", "success_parcels", "delivered_parcels", "successful_deliveries", "total_delivered"]);
+  const cancel = firstNumber(rows, ["cancel", "cancelled", "canceled", "returned", "returned_count", "cancelled_count", "canceled_count", "cancel_count", "cancelled_parcels", "returned_parcels", "total_returned"]);
   let successRate = rateValue(rows);
   if (successRate === null && total !== null && total > 0 && success !== null) {
     successRate = Math.round((success / total) * 10000) / 100;
@@ -492,22 +492,27 @@ Deno.serve(async (req: Request) => {
       totalSummary: buildSummary(summaries),
     };
 
-    const { error: saveError } = await admin
-      .from("courier_customer_history_cache")
-      .upsert({
-        phone_hash: phoneHash,
-        result,
-        checked_at: checkedAt,
-        expires_at: expiresAt,
-      }, { onConflict: "phone_hash" });
-    if (saveError) console.warn("Direct courier-history cache write failed:", String(saveError.code || "unknown"));
+    const cacheable = summaries.some((item) => ["available", "no_history"].includes(item.status)) &&
+      summaries.every((item) => !["error", "not_connected"].includes(item.status));
+    if (cacheable) {
+      const { error: saveError } = await admin
+        .from("courier_customer_history_cache")
+        .upsert({
+          phone_hash: phoneHash,
+          result,
+          checked_at: checkedAt,
+          expires_at: expiresAt,
+        }, { onConflict: "phone_hash" });
+      if (saveError) console.warn("Direct courier-history cache write failed:", String(saveError.code || "unknown"));
+    }
 
     return reply({
       success: true,
       source: SOURCE,
       cached: false,
+      cacheStored: cacheable,
       checkedAt,
-      expiresAt,
+      expiresAt: cacheable ? expiresAt : null,
       ...result,
     });
   } catch (error) {
