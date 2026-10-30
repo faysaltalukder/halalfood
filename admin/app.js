@@ -694,16 +694,16 @@ window.HFAdminReady.then(async H=>{
     if(total.pooledSuccessRate!==null&&total.pooledSuccessRate!==undefined&&Number(total.rateSources)>1){
      kpis.push(["Weighted success rate",courierHistoryPercent(total.pooledSuccessRate)]);
     }
-    if(available.length)kpis.push(["Sources with data",available.length+" / "+rows.length]);
+    if(available.length)kpis.push(["Courier sources with data",available.length+" / "+rows.length]);
     summary.innerHTML=kpis.length
      ?kpis.map(item=>'<div class="hf-card hf-kpi"><span class="hf-kpi-label">'+esc(item[0])+'</span><strong class="hf-kpi-value">'+esc(item[1])+'</strong></div>').join("")
-     :'<div class="hf-card hf-card-pad" style="grid-column:1/-1"><strong>No combined delivery statistics available</strong><p class="hf-data-note">No courier returned countable parcel totals. Rating-only results, when available, are shown in the courier cards below.</p></div>';
+     :'<div class="hf-card hf-card-pad" style="grid-column:1/-1"><strong>সমন্বিত ডেলিভারি পরিসংখ্যান পাওয়া যায়নি</strong><p class="hf-data-note">এটি গ্রাহকের success rate নয়। Pathao শুধু customer category দিয়েছে; parcel count বা success rate দেয়নি। Steadfast account inactive এবং REDX-এর history API এখনো পরীক্ষা করা যায়নি।</p></div>';
 
     const allNoHistory=rows.length>0&&rows.every(item=>item.status==="no_history"||item.status==="not_supported");
     const anyFailure=rows.some(item=>["error","not_connected"].includes(item.status));
     if(available.length){
      message.className="hf-banner hf-banner-info";
-     message.textContent=(data.cached?"Cached direct-courier lookup":"Fresh direct-courier lookup")+" · "+available.length+" provider(s) returned data · checked "+dateTime(data.checkedAt)+(data.expiresAt?" · refresh after "+dateTime(data.expiresAt):"");
+     message.textContent=(data.cached?"Cached courier lookup":"Fresh courier lookup")+" · "+available.length+" of "+rows.length+" courier sources returned information (this is not the customer success rate) · checked "+dateTime(data.checkedAt)+(data.expiresAt?" · refresh after "+dateTime(data.expiresAt):"");
     }else if(allNoHistory){
      message.className="hf-banner hf-banner-info";
      message.textContent="The connected courier lookup sources did not find a previous customer-history record. REDX does not currently expose this lookup in its public Merchant API.";
@@ -716,7 +716,9 @@ window.HFAdminReady.then(async H=>{
      available:{label:"Data received",tone:"hf-status-active"},
      no_history:{label:"No history found",tone:"hf-status"},
      not_connected:{label:"Credentials not connected",tone:"hf-status-review"},
-     not_supported:{label:"History API unavailable",tone:"hf-status"},
+     account_inactive:{label:"Account inactive",tone:"hf-status-review"},
+     not_supported:{label:"API support not confirmed",tone:"hf-status"},
+     not_checked:{label:"Not checked — API route unconfirmed",tone:"hf-status"},
      error:{label:"Lookup failed",tone:"hf-status-review"}
     };
     results.innerHTML=rows.length
@@ -724,6 +726,15 @@ window.HFAdminReady.then(async H=>{
       const status=statusInfo[item.status]||{label:"Status unknown",tone:"hf-status"};
       const type=String(item.dataType||"none").toLowerCase();
       const rate=item.successRate===null||item.successRate===undefined?"":courierHistoryPercent(item.successRate);
+      let providerExplanation=item.message||"No courier data was returned.";
+      const ratingKey=String(item.customerRating||"").toLowerCase().replace(/[ -]+/g,"_");
+      if(item.courierName==="Pathao"&&type==="rating"&&ratingKey==="new_customer"){
+       providerExplanation="Pathao এই ফোন নম্বরটিকে “New Customer” category-তে রেখেছে। এটি fraud verdict নয়। এই response-এ parcel count বা delivery success rate দেওয়া হয়নি।";
+      }else if(item.courierName==="Steadfast"&&item.status==="account_inactive"){
+       providerExplanation="Steadfast-এর server জানিয়েছে merchant account inactive। Account approval/activation এবং Fraud Check API permission চালু করতে Support-এর সাহায্য প্রয়োজন।";
+      }else if(item.courierName==="REDX"&&item.status==="not_checked"){
+       providerExplanation="এখানে REDX API-তে কোনো customer-history request পাঠানো হয়নি। Official lookup endpoint ও আপনার merchant account-এর Smart Return Pro/API access REDX Support বা account manager-এর কাছ থেকে নিশ্চিত করতে হবে।";
+      }
       const metric=[];
       if(type==="delivery"){
        if(item.total!==null&&item.total!==undefined)metric.push(["Parcels",countValue(item.total)]);
@@ -731,7 +742,7 @@ window.HFAdminReady.then(async H=>{
        if(item.cancel!==null&&item.cancel!==undefined)metric.push(["Cancelled / returned",countValue(item.cancel)]);
        if(rate)metric.push(["Success rate",rate]);
       }else if(type==="rating"){
-       metric.push(["Customer rating",courierHistoryHumanize(item.customerRating||"Not provided")]);
+       metric.push([ratingKey==="new_customer"?"গ্রাহক শ্রেণি":"Customer rating",ratingKey==="new_customer"?"নতুন গ্রাহক (New Customer)":courierHistoryHumanize(item.customerRating||"Not provided")]);
        if(rate)metric.push(["Success rate",rate]);
        else metric.push(["Exact parcel counts","Not provided"]);
       }
@@ -740,10 +751,10 @@ window.HFAdminReady.then(async H=>{
        :"";
       const risk=item.riskLevel?'<small class="hf-data-note">Courier rating / risk indicator: '+esc(courierHistoryHumanize(item.riskLevel))+'</small>':"";
       const typeLabel=type==="rating"?"Rating-only response":type==="delivery"?"Delivery statistics":"";
-      return '<article class="hf-card hf-card-pad hf-courier-history-card"><div class="hf-section-head"><div><strong>'+esc(item.courierName||"Courier")+'</strong>'+(typeLabel?'<small class="hf-data-note" style="display:block">'+esc(typeLabel)+'</small>':"")+'</div><span class="hf-status '+status.tone+'">'+esc(status.label)+'</span></div><p>'+esc(item.message||"No additional provider message.")+'</p>'+metrics+risk+'</article>';
+      return '<article class="hf-card hf-card-pad hf-courier-history-card"><div class="hf-section-head"><div><strong>'+esc(item.courierName||"Courier")+'</strong>'+(typeLabel?'<small class="hf-data-note" style="display:block">'+esc(typeLabel)+'</small>':"")+'</div><span class="hf-status '+status.tone+'">'+esc(status.label)+'</span></div><p>'+esc(providerExplanation)+'</p>'+metrics+risk+'</article>';
      }).join("")+'</div>'
      :'<p class="hf-data-note">No courier source returned a result.</p>';
-    if(footnote)footnote.textContent="Direct first-party sources only. Average success rate includes only couriers that returned a valid rate; a missing history or unavailable API is never counted as 0%. "+(total.pooledSuccessRate!==null&&total.pooledSuccessRate!==undefined?"Weighted rate, when available, is calculated from reported parcel counts.":"");
+    if(footnote)footnote.textContent="1 / 3 means one courier source returned information; it is not a customer success rate. Pathao returned a rating only. Steadfast is inactive, and REDX was not queried because an official customer-history API route has not been confirmed. Missing data is never counted as 0%.";
    }catch(error){
     console.error("Direct courier history lookup failed.",error);
     message.className="hf-banner hf-banner-warning";
