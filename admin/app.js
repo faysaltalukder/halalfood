@@ -954,9 +954,10 @@ window.HFAdminReady.then(async H=>{
    if(next==="cancelled"){reason=window.prompt("Why is this order being cancelled? This reason will be saved in the order and status history.","");if(reason===null){select.value=old;return;}reason=reason.trim();if(reason.length<3||reason.length>500){toast("Enter a cancellation reason between 3 and 500 characters.","error");select.value=old;return;}}
    if((next==="cancelled"||next==="delivered")&&!confirm("Change order "+(order.order_number||String(order.id).slice(0,8))+" to "+next+"?")){select.value=old;return;}
    select.dataset.status=next;
+   const orderCard=select.closest("[data-order-card]");if(orderCard)orderCard.dataset.status=next;
    select.disabled=true;
    try{const {data,error}=await client.rpc("admin_update_order_status",{p_order_id:order.id,p_next_status:next,p_cancellation_reason:reason});if(error)throw error;await audit("order_status_changed","order",order.id,"Order status changed from "+old+" to "+next,{status:next,cancellation_reason:reason||null});toast("Order status and history updated.");await refresh();}
-   catch(err){select.value=old;select.dataset.status=old;toast("Status could not be saved: "+(err.message||"check admin access and database permissions"),"error");}
+   catch(err){select.value=old;select.dataset.status=old;const orderCard=select.closest("[data-order-card]");if(orderCard)orderCard.dataset.status=old;toast("Status could not be saved: "+(err.message||"check admin access and database permissions"),"error");}
    finally{select.disabled=false;}
   });
   $("ordersDataBody")?.addEventListener("click",async e=>{
