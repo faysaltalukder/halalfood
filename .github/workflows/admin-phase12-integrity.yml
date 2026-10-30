@@ -24,6 +24,10 @@ on:
       - ".github/workflows/admin-phase12-integrity.yml"
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 

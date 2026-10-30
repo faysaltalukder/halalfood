@@ -10,12 +10,28 @@ const required = [
   "docs/ARCHITECTURE.md",
   "docs/AI_WORKFLOW.md",
   "docs/FEATURE_OWNERSHIP.md",
+  "scripts/feature-map.json",
+  "scripts/feature-context.mjs",
+  "scripts/backend-contract-check.mjs",
   "docs/EDGE_FUNCTIONS.md",
   "docs/SUPABASE_DRIFT_REGISTER.md",
   "CONTRIBUTING.md",
-  "supabase/functions/order-track/index.ts",
-  "supabase/functions/youtube-publishing/index.ts",
+  "supabase/functions/analytics-ingest/index.ts",
+  "supabase/functions/courier-fraud-check/index.ts",
+  "supabase/functions/courier-integration/index.ts",
+  "supabase/functions/facebook-publishing/index.ts",
+  "supabase/functions/incomplete-checkout/index.ts",
+  "supabase/functions/messenger-send/index.ts",
+  "supabase/functions/messenger-webhook/index.ts",
   "supabase/functions/meta-ads-review/index.ts",
+  "supabase/functions/order-security-admin/index.ts",
+  "supabase/functions/order-sync/index.ts",
+  "supabase/functions/order-track/index.ts",
+  "supabase/functions/post-dispatcher/index.ts",
+  "supabase/functions/site-publisher/index.ts",
+  "supabase/functions/whatsapp-send/index.ts",
+  "supabase/functions/whatsapp-webhook/index.ts",
+  "supabase/functions/youtube-publishing/index.ts",
 ];
 
 for (const path of required) {
@@ -67,4 +83,8 @@ if (failures.length) {
   process.exitCode = 1;
 } else {
   console.log("Architecture guard passed.");
+  const contextCheck = spawnSync(process.execPath, ["scripts/feature-context.mjs", "--check"], { encoding: "utf8" });
+  if (contextCheck.status !== 0) { console.error(contextCheck.stderr || contextCheck.stdout); process.exitCode = 1; }
+  const backendCheck = spawnSync(process.execPath, ["scripts/backend-contract-check.mjs"], { encoding: "utf8" });
+  if (backendCheck.status !== 0) { console.error(backendCheck.stderr || backendCheck.stdout); process.exitCode = 1; }
 }

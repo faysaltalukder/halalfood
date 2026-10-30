@@ -4,6 +4,18 @@ This guide is for developers and AI coding assistants working on Halal Food.
 
 ## Start from the task, not the entire repository
 
+Use the machine-readable feature map first:
+
+```bash
+node scripts/feature-context.mjs
+node scripts/feature-context.mjs catalog
+node scripts/feature-context.mjs courier
+node scripts/feature-context.mjs --check
+```
+
+The command lists the owning entrypoints, direct dependencies, related database tables, Edge Functions and focused checks. It does not replace code review; inspect the current implementation and runtime contract before editing.
+
+
 For each request, identify:
 1. User-visible behavior or server operation being changed.
 2. Owning page/feature module.
