@@ -1867,6 +1867,7 @@ async function refresh(){
    overview:initOverview,
    analytics:initAnalytics,
    orders:initOrders,
+   "incomplete-orders":async()=>{},
    operations:()=>{if(typeof window.HFOpsInit==="function")return window.HFOpsInit();throw new Error("Operations module did not load.");},
    products:initProducts,
    content:initContent,

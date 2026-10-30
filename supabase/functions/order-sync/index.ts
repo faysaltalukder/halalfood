@@ -197,6 +197,7 @@ Deno.serve(async (req: Request) => {
       deliveryZone: clean(d.deliveryZone ?? d.delivery_zone, 40),
       paymentMethod: clean(d.paymentMethod ?? d.payment_method ?? "cash_on_delivery", 40).toLowerCase(),
       orderId: clean(d.orderId, 20),
+      checkoutSessionId: clean(d.checkoutSessionId, 64),
       items: items.map((item: any) => ({
         product: clean(item.product ?? item.name ?? item.slug, 120),
         quantity: item.quantity ?? item.qty ?? 1,
@@ -381,6 +382,25 @@ Deno.serve(async (req: Request) => {
       if (savedOrderError) {
         console.warn("Verified order ID lookup failed; browser Pixel Purchase will be skipped.", String(savedOrderError.code || "unknown"));
       } else if (savedOrder?.id) {
+        const checkoutSessionId = payload.checkoutSessionId;
+        if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(checkoutSessionId)) {
+          const convertedAt = new Date().toISOString();
+          const { error: incompleteCheckoutError } = await admin
+            .from("incomplete_checkouts")
+            .update({
+              status: "converted",
+              converted_order_id: savedOrder.id,
+              converted_order_number: data.orderId,
+              converted_at: convertedAt,
+              last_seen_at: convertedAt,
+              updated_at: convertedAt
+            })
+            .eq("checkout_session_id", checkoutSessionId)
+            .eq("status", "incomplete");
+          if (incompleteCheckoutError) {
+            console.warn("Saved order could not mark its incomplete checkout as converted:", String(incompleteCheckoutError.code || "unknown"));
+          }
+        }
         purchaseEventId = "hf_purchase_" + String(savedOrder.id).replace(/-/g, "");
 
         // Dispatch after persistence, including idempotent duplicate submissions.
