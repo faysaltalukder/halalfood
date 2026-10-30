@@ -1,6 +1,8 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
+declare const EdgeRuntime: { waitUntil(promise: Promise<unknown>): void };
+
 const ALLOWED_ORIGIN = "https://faysaltalukder.github.io";
 const ADMIN_EMAIL = "halalfoodbd.official@gmail.com";
 const cors = {
@@ -110,6 +112,11 @@ Deno.serve(async (req: Request) => {
     const claims = decodeJwtClaims(token);
     if (claims?.aal !== "aal2") return reply({ success: false, error: "Admin MFA verification is required." }, 403);
 
+    // Create the privileged client only after the identity and MFA checks pass.
+    const admin = createClient(url, serviceKey, {
+      auth: { persistSession: false, autoRefreshToken: false }
+    });
+
     let body: Record<string, any>;
     try { body = await req.json(); } catch { return reply({ success: false, error: "Invalid request body." }, 400); }
     const action = clean(body.action, 24).toLowerCase();
@@ -174,9 +181,6 @@ Deno.serve(async (req: Request) => {
       return reply({ success: false, error: "A valid review and decision are required." }, 400);
     }
 
-    const admin = createClient(url, serviceKey, {
-      auth: { persistSession: false, autoRefreshToken: false }
-    });
     const { data: review, error: reviewError } = await admin
       .from("order_security_reviews")
       .select("id,order_number,status,order_payload,fbp,fbc,user_agent")
