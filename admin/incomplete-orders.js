@@ -88,12 +88,46 @@ window.HFAdminReady.then(async (H) => {
  }
  async function refresh() {
   table.innerHTML = '<tr><td colspan="8" class="hf-loading">Loading incomplete checkout records…</td></tr>';
-  records = await signedQuery(client.from("incomplete_checkouts")
-   .select("id,customer_name,customer_phone,customer_email,delivery_address,order_notes,order_context,delivery_zone,item_summary,total,last_step,last_field,progress_percent,recovery_consent,recovery_consent_at,marketing_consent,marketing_consent_at,status,converted_order_number,first_seen_at,last_seen_at,expires_at,created_at")
-   .gt("expires_at",new Date().toISOString())
-   .order("last_seen_at",{ascending:false})
-   .limit(1000));
-  records = Array.isArray(records) ? records : [];
+  const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const [checkoutRows, approvedReviews] = await Promise.all([
+   signedQuery(client.from("incomplete_checkouts")
+    .select("id,checkout_session_id,customer_name,customer_phone,customer_email,delivery_address,order_notes,order_context,delivery_zone,item_summary,total,last_step,last_field,progress_percent,recovery_consent,recovery_consent_at,marketing_consent,marketing_consent_at,status,converted_order_number,first_seen_at,last_seen_at,expires_at,created_at")
+    .gt("expires_at",new Date().toISOString())
+    .order("last_seen_at",{ascending:false})
+    .limit(1000)),
+   signedQuery(client.from("order_security_reviews")
+    .select("order_number,status,order_id,order_payload,reviewed_at")
+    .eq("status","approved")
+    .gte("reviewed_at",cutoff)
+    .order("reviewed_at",{ascending:false})
+    .limit(1000))
+  ]);
+  records = Array.isArray(checkoutRows) ? checkoutRows : [];
+  const approvedBySession = new Map();
+  (Array.isArray(approvedReviews) ? approvedReviews : []).forEach((review) => {
+   const payload = review.order_payload && typeof review.order_payload === "object" ? review.order_payload : {};
+   const sessionId = String(payload.checkoutSessionId || "");
+   if (sessionId && review.order_id) approvedBySession.set(sessionId,review);
+  });
+  for (const row of records) {
+   const approved = approvedBySession.get(row.checkout_session_id);
+   if (row.status !== "incomplete" || !approved) continue;
+   const convertedAt = approved.reviewed_at || new Date().toISOString();
+   const {error} = await client.from("incomplete_checkouts").update({
+    status:"converted",
+    converted_order_id:approved.order_id,
+    converted_order_number:approved.order_number,
+    converted_at:convertedAt,
+    last_seen_at:convertedAt,
+    updated_at:convertedAt
+   }).eq("id",row.id).eq("status","incomplete");
+   if (!error) {
+    row.status = "converted";
+    row.converted_order_number = approved.order_number;
+    row.converted_at = convertedAt;
+    row.converted_order_id = approved.order_id;
+   }
+  }
   updateKpis();
   render();
   $("incompleteUpdatedAt").textContent = "Updated " + dateTime(new Date().toISOString());
