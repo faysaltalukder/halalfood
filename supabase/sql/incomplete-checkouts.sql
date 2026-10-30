@@ -37,6 +37,7 @@ create table public.incomplete_checkouts (
 create index incomplete_checkouts_status_last_seen_idx on public.incomplete_checkouts (status, last_seen_at desc);
 create index incomplete_checkouts_phone_idx on public.incomplete_checkouts (customer_phone) where customer_phone is not null;
 create index incomplete_checkouts_expires_at_idx on public.incomplete_checkouts (expires_at);
+create index incomplete_checkouts_converted_order_id_idx on public.incomplete_checkouts (converted_order_id) where converted_order_id is not null;
 alter table public.incomplete_checkouts enable row level security;
 revoke all on table public.incomplete_checkouts from anon, authenticated;
 grant select, update, delete on public.incomplete_checkouts to authenticated;
