@@ -697,7 +697,7 @@ window.HFAdminReady.then(async H=>{
     if(available.length)kpis.push(["Sources with data",available.length+" / "+rows.length]);
     summary.innerHTML=kpis.length
      ?kpis.map(item=>'<div class="hf-card hf-kpi"><span class="hf-kpi-label">'+esc(item[0])+'</span><strong class="hf-kpi-value">'+esc(item[1])+'</strong></div>').join("")
-     :'<div class="hf-card hf-card-pad" style="grid-column:1/-1"><strong>No combined delivery statistics available</strong><p class="hf-data-note">No connected courier returned countable delivery statistics for this phone number. Check each courier status below.</p></div>';
+     :'<div class="hf-card hf-card-pad" style="grid-column:1/-1"><strong>No combined delivery statistics available</strong><p class="hf-data-note">No courier returned countable parcel totals. Rating-only results, when available, are shown in the courier cards below.</p></div>';
 
     const allNoHistory=rows.length>0&&rows.every(item=>item.status==="no_history"||item.status==="not_supported");
     const anyFailure=rows.some(item=>["error","not_connected"].includes(item.status));
@@ -737,7 +737,7 @@ window.HFAdminReady.then(async H=>{
       }
       const metrics=metric.length
        ?'<div class="hf-courier-history-metrics">'+metric.map(pair=>'<span>'+esc(pair[0])+'<strong>'+esc(pair[1])+'</strong></span>').join("")+'</div>'
-       :'<p class="hf-data-note" style="margin-top:8px">'+esc(item.message||"No courier data was returned.")+'</p>';
+       :"";
       const risk=item.riskLevel?'<small class="hf-data-note">Courier rating / risk indicator: '+esc(courierHistoryHumanize(item.riskLevel))+'</small>':"";
       const typeLabel=type==="rating"?"Rating-only response":type==="delivery"?"Delivery statistics":"";
       return '<article class="hf-card hf-card-pad hf-courier-history-card"><div class="hf-section-head"><div><strong>'+esc(item.courierName||"Courier")+'</strong>'+(typeLabel?'<small class="hf-data-note" style="display:block">'+esc(typeLabel)+'</small>':"")+'</div><span class="hf-status '+status.tone+'">'+esc(status.label)+'</span></div><p>'+esc(item.message||"No additional provider message.")+'</p>'+metrics+risk+'</article>';
