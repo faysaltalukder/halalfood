@@ -125,7 +125,7 @@ Deno.serve(async (request: Request) => {
     }
 
     const { data: existing, error: existingError } = await admin.from("incomplete_checkouts")
-      .select("id,status,recovery_consent_at,marketing_consent,marketing_consent_at,consent_version,consent_method,first_seen_at,delivery_address,order_notes")
+      .select("id,status,recovery_consent,recovery_consent_at,marketing_consent,marketing_consent_at,consent_version,consent_method,first_seen_at,delivery_address,order_notes")
       .eq("checkout_session_id", checkoutSessionId)
       .maybeSingle();
     if (existingError) throw existingError;
