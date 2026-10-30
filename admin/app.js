@@ -856,14 +856,21 @@ window.HFAdminReady.then(async H=>{
    updateBulkSelectionUi(rows);
   }
   async function refresh(){
-   const [ordersResult,profilesResult]=await Promise.all([
+   const [ordersResult,customersResult,profilesResult]=await Promise.all([
     fetchOrders(null,5000),
-    signedQuery(client.from("customer_profiles").select("user_id,avatar_url").order("user_id",{ascending:true}).limit(1000)).catch(error=>{
-     console.warn("Customer profile avatar records could not be loaded; initials will be shown.",error);return [];
+    signedQuery(client.from("customers").select("id,auth_user_id").not("auth_user_id","is",null).order("id",{ascending:true}).limit(1000)).catch(error=>{
+     console.warn("Customer identity links could not be loaded; initials will be shown.",error);return [];
+    }),
+    signedQuery(client.from("customer_profiles").select("user_id,avatar_url").not("avatar_url","is",null).order("user_id",{ascending:true}).limit(1000)).catch(error=>{
+     console.warn("Customer profile avatars could not be loaded; initials will be shown.",error);return [];
     })
    ]);
    all=ordersResult;
-   customerProfilesById=new Map((profilesResult||[]).map(profile=>[profile.user_id,profile]));
+   const profilesByUserId=new Map((profilesResult||[]).filter(profile=>profile.avatar_url).map(profile=>[profile.user_id,profile]));
+   customerProfilesById=new Map((customersResult||[]).flatMap(customer=>{
+    const profile=profilesByUserId.get(customer.auth_user_id);
+    return customer.auth_user_id&&profile?[[customer.id,profile]]:[];
+   }));
    for(const id of [...selectedOrderIds])if(!all.some(order=>order.id===id))selectedOrderIds.delete(id);
    try{
     const {data,error}=await client.from("admin_shipments").select("id,order_id,courier_name,tracking_id,shipment_status,integration_mode,booking_state,booking_error,provider_order_id,parcel_weight_kg,parcel_notes,created_by,provider_response").order("updated_at",{ascending:false}).limit(5000);
