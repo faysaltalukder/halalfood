@@ -7,22 +7,22 @@ All 16 active Production functions now have a corresponding repository folder af
 
 | Function | Production version | Repository path |
 |---|---:|---|
-| order-sync | 68 | `supabase/functions/order-sync/index.ts` |
+| order-sync | 69 | `supabase/functions/order-sync/index.ts` |
 | order-track | 54 | `supabase/functions/order-track/index.ts` |
 | analytics-ingest | 66 | `supabase/functions/analytics-ingest/index.ts` |
 | courier-integration | 76 | `supabase/functions/courier-integration/index.ts` |
-| whatsapp-webhook | 36 | `supabase/functions/whatsapp-webhook/index.ts` |
+| whatsapp-webhook | 37 | `supabase/functions/whatsapp-webhook/index.ts` |
 | whatsapp-send | 38 | `supabase/functions/whatsapp-send/index.ts` |
-| messenger-webhook | 28 | `supabase/functions/messenger-webhook/index.ts` |
+| messenger-webhook | 29 | `supabase/functions/messenger-webhook/index.ts` |
 | messenger-send | 28 | `supabase/functions/messenger-send/index.ts` |
 | facebook-publishing | 22 | `supabase/functions/facebook-publishing/index.ts` |
-| youtube-publishing | 19 | `supabase/functions/youtube-publishing/index.ts` |
+| youtube-publishing | 20 | `supabase/functions/youtube-publishing/index.ts` |
 | meta-ads-review | 12 | `supabase/functions/meta-ads-review/index.ts` |
 | post-dispatcher | 11 | `supabase/functions/post-dispatcher/index.ts` |
 | site-publisher | 19 | `supabase/functions/site-publisher/index.ts` |
-| order-security-admin | 2 | `supabase/functions/order-security-admin/index.ts` |
-| courier-fraud-check | 10 | `supabase/functions/courier-fraud-check/index.ts` |
-| incomplete-checkout | 2 | `supabase/functions/incomplete-checkout/index.ts` |
+| order-security-admin | 3 | `supabase/functions/order-security-admin/index.ts` |
+| courier-fraud-check | 11 | `supabase/functions/courier-fraud-check/index.ts` |
+| incomplete-checkout | 3 | `supabase/functions/incomplete-checkout/index.ts` |
 
 ## Recovery provenance
 
