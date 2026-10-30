@@ -869,6 +869,21 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       const data = Object.fromEntries(new FormData(form).entries());
+      const turnstileToken = String(data["cf-turnstile-response"] || "").trim();
+      if (!turnstileToken) {
+        if (error) {
+          error.textContent = "অর্ডার পাঠানোর আগে নিরাপত্তা যাচাই সম্পন্ন হতে দিন।";
+          error.style.display = "block";
+        }
+        if (submit) {
+          submit.disabled = false;
+          submit.classList.remove("is-loading");
+          if (submitLabel) submitLabel.textContent = "Submit Order";
+        }
+        return;
+      }
+      // The one-time challenge token is sent only to our server, never to the Sheet backup.
+      delete data["cf-turnstile-response"];
       data.quantity = String(Math.max(1, Number(data.quantity) || 1));
       const isCartOrder = Boolean(window.HALAL_CART_MODE);
       const cartItems = isCartOrder && window.HALAL_CART_API ? window.HALAL_CART_API.read() : [];
@@ -962,11 +977,7 @@ document.addEventListener("DOMContentLoaded", () => {
       track("add_shipping_info",{currency:"BDT",value:grandTotal,shipping_tier:"Cash on Delivery",items:trackItems(checkoutItems)});
       track("order_submit",{currency:"BDT",value:grandTotal,items:trackItems(checkoutItems)});
 
-      // Fast confirmation flow: Google Sheet is backup only; its response never blocks checkout.
-      // Supabase and Google Sheets are both written in parallel. We no longer
-      // make the customer wait for the slower Google Apps Script response
-      // (email/card/admin work can take several seconds or trigger a browser
-      // CORS/network error even after the Sheet row has already been saved).
+      // Google Sheets is only a backup. Start it after Supabase confirms the saved order.
       const confirmedItems = Array.isArray(data.items) && data.items.length
         ? data.items
         : [{
@@ -975,28 +986,6 @@ document.addEventListener("DOMContentLoaded", () => {
             price: data.price || (singleProduct ? String(priceNumber(singleProduct.price)) : "0")
           }];
       const localOrderTotal = grandTotal;
-
-      const googleSubmitPromise = (async () => {
-        if (!GOOGLE_APPS_SCRIPT_URL || GOOGLE_APPS_SCRIPT_URL.includes("PASTE_YOUR")) {
-          throw new Error("Google Apps Script URL is not configured.");
-        }
-        const response = await fetch(GOOGLE_APPS_SCRIPT_URL, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify(data),
-          keepalive: true
-        });
-        if (!response.ok) throw new Error(`Google Apps Script HTTP ${response.status}`);
-        let result = null;
-        try { result = await response.json(); } catch (_) {}
-        if (result && result.success === false) throw new Error("Google Apps Script rejected the order.");
-        return {
-          source: "google",
-          success: true,
-          orderId: result?.orderId || data.orderId,
-          orderTotal: localOrderTotal
-        };
-      })();
 
       const readOrderAttributionCookie = (name) => {
         try {
@@ -1010,6 +999,7 @@ document.addEventListener("DOMContentLoaded", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...data,
+          turnstileToken: turnstileToken,
           fbp: readOrderAttributionCookie("_fbp"),
           fbc: readOrderAttributionCookie("_fbc")
         }),
@@ -1080,6 +1070,28 @@ document.addEventListener("DOMContentLoaded", () => {
         // or a short timeout before the browser Pixel copy has been queued.
         const winner = await supabaseSubmitPromise;
 
+        // Only now mirror the accepted order to Google Sheets. A rejected challenge or
+        // failed Supabase save can no longer create a false backup order row.
+        const googleBackupData = { ...data };
+        const googleBackupPromise = (async () => {
+          if (!GOOGLE_APPS_SCRIPT_URL || GOOGLE_APPS_SCRIPT_URL.includes("PASTE_YOUR")) {
+            throw new Error("Google Apps Script URL is not configured.");
+          }
+          const response = await fetch(GOOGLE_APPS_SCRIPT_URL, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify(googleBackupData),
+            keepalive: true
+          });
+          if (!response.ok) throw new Error(`Google Apps Script HTTP ${response.status}`);
+          const result = await response.json().catch(() => null);
+          if (result && result.success === false) throw new Error("Google Apps Script rejected the order.");
+          return result;
+        })();
+        googleBackupPromise.catch((backupError) => {
+          console.warn("Supabase order is saved, but Google Sheets backup did not complete.", backupError);
+        });
+
         // The Supabase response confirms this order was saved in the primary database.
         const confirmedOrderId = String(winner.orderId || data.orderId || "");
         const confirmedTotal = Number(winner.orderTotal ?? localOrderTotal);
@@ -1126,7 +1138,8 @@ document.addEventListener("DOMContentLoaded", () => {
         await new Promise(resolve => setTimeout(resolve, 800));
         window.location.replace("thank-you.html?v=20261029-purchase-confirm-v2");
       } catch (err) {
-
+        // Siteverify tokens are single-use; refresh the widget before any retry.
+        try { window.turnstile?.reset?.(); } catch (_) {}
         console.error("Order submission failed:", err);
         if (error) {
           error.textContent = "অর্ডার নিশ্চিত করতে সাময়িক সমস্যা হয়েছে। অনুগ্রহ করে কিছুক্ষণ পর আবার চেষ্টা করুন।";
