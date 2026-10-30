@@ -1,0 +1,47 @@
+name: Architecture Quality Gate
+
+on:
+  push:
+    branches: ["main", "refactor/**"]
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  repository-quality:
+    name: Repository syntax and architecture checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Check JavaScript syntax and architecture guard
+        run: node scripts/architecture-check.mjs
+      - name: Run existing admin integrity checks
+        run: node scripts/admin-phase12-check.mjs
+
+  edge-function-types:
+    name: Type-check all Supabase Edge Functions
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+          cache: true
+      - name: Type-check every function entrypoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r file; do
+            echo "Checking $file"
+            deno check "$file"
+          done < <(find supabase/functions -mindepth 2 -maxdepth 2 -name index.ts -type f | sort)
