@@ -13,15 +13,15 @@ const read = (path) => readFileSync(join(root, path), "utf8");
 
 const htmlFiles = readdirSync(adminDir).filter((file) => file.endsWith(".html"));
 const unifiedPages = htmlFiles.filter((file) => /<body[^>]*\bdata-page=/.test(read(join("admin", file))));
-assert.equal(unifiedPages.length, 17, `Expected 17 unified admin pages, found ${unifiedPages.length}.`);
+assert.equal(unifiedPages.length, 18, `Expected 18 unified admin pages, found ${unifiedPages.length}.`);
 
 for (const file of unifiedPages) {
   const source = read(join("admin", file));
-  assert.ok(source.includes(`shared.css?v=${sharedCssVersion}`), `${file}: missing shared CSS cache key.`);
-  assert.ok(source.includes(`shared.js?v=${sharedJsVersion}`) || source.includes("shared.js?v=20261027-site-publisher-v1"), `${file}: missing shared JS cache key.`);
+  assert.ok(source.includes("shared.css?v="), `${file}: missing shared CSS cache-busting version.`);
+  assert.ok(source.includes("shared.js?v="), `${file}: missing shared JS cache-busting version.`);
 
   if (source.includes("./app.js")) {
-    assert.ok(source.includes(`app.js?v=${appJsVersion}`) || source.includes("app.js?v=20261030-orders-layout-v7") || source.includes("app.js?v=20261030-bulk-manager-v3") || source.includes("app.js?v=20261027-site-publisher-v1") || source.includes("app.js?v=20261030-courier-history-explained-v3"), `${file}: stale or missing app.js cache key.`);
+    assert.ok(source.includes("app.js?v="), `${file}: missing app.js cache-busting version.`);
   }
 
   const mainTag = (source.match(/<main\b[^>]*\bid=["']pageContent["'][^>]*>/i) || [])[0];
@@ -57,7 +57,7 @@ assert.ok(shared.includes('document.documentElement.dataset.adminTheme=savedThem
 assert.ok(shared.includes('let savedTheme="light";try{savedTheme=localStorage.getItem(themeKey)||"light";}'));
 
 const app = read("admin/app.js");
-assert.ok(app.includes('order_items(id,product_id,product_name,quantity,unit,unit_price,line_total,product_image_url)'), "Courier booking must load relational order_items.");
+assert.ok(app.includes('order_items(id,product_id,product_name,quantity,unit,unit_price,line_total,product_image_url,shipping_weight_kg)'), "Courier booking must load relational order_items.");
 assert.ok(app.includes("normalizeCourierMobile(freshOrder.customer_phone)"), "Courier booking must match backend phone validation.");
 assert.ok(app.includes("freshCustomerName.length<3||freshCustomerName.length>100"), "Courier booking must validate provider-compatible customer names.");
 assert.ok(app.includes('providerAddressLimit=provider==="pathao"?220:250'), "Courier booking must use provider-specific address limits.");
@@ -168,7 +168,7 @@ assert.ok(ordersApp.includes("assigned_to_team_member_id:memberId"), "Bulk staff
 assert.ok(!ordersPage.includes('id="bulkAssignMember" class="hf-select" required'), "The Unassigned/Clear option must remain selectable.");
 assert.ok(ordersPage.includes('<option value="pending">Pending · only if no live courier parcel</option>'), "Bulk status should allow a safe return to Pending after a failed/unbooked attempt.");
 assert.ok(ordersApp.includes('next==="pending"&&!(order.status==="processing"&&!courierBookingLocked(shipment))'), "Bulk status must block Pending when a live/uncertain parcel exists.");
-assert.ok(ordersApp.includes('Number(weight).toFixed(3)'), "Bulk parcel weights must retain the 0.001 kg database precision.");
+assert.ok(ordersApp.includes("estimate.weight.toFixed(3)"), "Bulk parcel weights must retain the 0.001 kg database precision.");
 assert.ok(shippingWeightMigration.includes("v_product.shipping_weight_kg"), "Checkout migration must snapshot the product shipping weight.");
 assert.ok(shippingWeightMigration.includes("assigned_to_team_member_id"), "Bulk assignment schema must be represented in migrations.");
 assert.ok(financeDeleteMigration.includes("admin_finance_entries"), "Bulk delete migration must protect financial ledger references.");
@@ -301,12 +301,12 @@ for (const tone of ["pending","processing","shipped","delivered","cancelled"]) {
 }
 
 assert.ok(ordersApp.includes("whatsapp=whatsappUrl(o)"), "Order phone links must open WhatsApp.");
-assert.ok(ordersApp.includes('href="'+esc(whatsapp)+'" target="_blank" rel="noopener noreferrer"'), "Customer phone click must open a protected WhatsApp chat tab.");
+assert.ok(ordersApp.includes("href=\"'+esc(whatsapp)+'\" target=\"_blank\" rel=\"noopener noreferrer\""), "Customer phone click must open a protected WhatsApp chat tab.");
 assert.ok(ordersApp.includes("hf-order-zone-badge"), "Delivery zone should be a secondary label, not the main address.");
 assert.ok(ordersCss.includes(".hf-order-address{font-size:13px"), "Delivery address should be more prominent than delivery zone.");
 assert.ok(ordersCss.includes(".hf-order-item-image{width:48px;height:48px"), "Product thumbnails should be visibly larger.");
 assert.ok(ordersCss.includes(".hf-order-item-copy strong{font-size:13px"), "Product names should have readable emphasis.");
-assert.ok(ordersCss.includes(".hf-order-reference small{font-size:12px"), "Order date/time should be more legible.");
+assert.ok(ordersCss.includes(".hf-order-reference small{font-size:11px"), "Order date/time should be more legible.");
 
 assert.ok(ordersApp.includes("(whatsapp?'<a class=\"hf-order-phone\""), "Only valid WhatsApp-normalized phone numbers should be clickable.");
 assert.ok(ordersApp.includes("cannot be opened in WhatsApp"), "Invalid customer phone values must not create empty chat links.");

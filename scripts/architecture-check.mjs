@@ -1,0 +1,69 @@
+import { readdirSync, readFileSync, statSync } from "node:fs";
+import { join, extname } from "node:path";
+import { spawnSync } from "node:child_process";
+
+const root = process.cwd();
+const failures = [];
+const checked = [];
+const ignoredDirs = new Set([".git", "node_modules", ".vercel"]);
+const required = [
+  "docs/ARCHITECTURE.md",
+  "docs/AI_WORKFLOW.md",
+  "docs/EDGE_FUNCTIONS.md",
+  "docs/SUPABASE_DRIFT_REGISTER.md",
+  "CONTRIBUTING.md",
+  "supabase/functions/order-track/index.ts",
+  "supabase/functions/youtube-publishing/index.ts",
+  "supabase/functions/meta-ads-review/index.ts",
+];
+
+for (const path of required) {
+  try { statSync(join(root, path)); }
+  catch { failures.push(`Missing required architecture/source file: ${path}`); }
+}
+
+function walk(dir) {
+  for (const name of readdirSync(dir)) {
+    if (ignoredDirs.has(name)) continue;
+    const path = join(dir, name);
+    const rel = path.slice(root.length + 1).replaceAll("\\", "/");
+    const st = statSync(path);
+    if (st.isDirectory()) { walk(path); continue; }
+    if (extname(name) !== ".js" || rel.startsWith("vendor/")) continue;
+    const result = spawnSync(process.execPath, ["--check", path], { encoding: "utf8" });
+    checked.push(rel);
+    if (result.status !== 0) failures.push(`JavaScript syntax error in ${rel}: ${result.stderr || result.stdout}`);
+  }
+}
+walk(root);
+
+const secretPatterns = [
+  /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/,
+  /(?:service_role|secret_access_key)\s*[:=]\s*["'][^"']{12,}["']/i,
+];
+for (const rel of ["supabase/functions", "js", "admin"]) {
+  const base = join(root, rel);
+  try {
+    const scan = (dir) => {
+      for (const name of readdirSync(dir)) {
+        if (ignoredDirs.has(name)) continue;
+        const path = join(dir, name), st = statSync(path);
+        if (st.isDirectory()) { scan(path); continue; }
+        if (!/\.(?:js|ts|html)$/.test(name)) continue;
+        const content = readFileSync(path, "utf8");
+        for (const pattern of secretPatterns) {
+          if (pattern.test(content)) failures.push(`Potential private credential pattern in ${path.slice(root.length + 1)}`);
+        }
+      }
+    };
+    scan(base);
+  } catch {}
+}
+
+console.log(`Architecture guard: checked ${checked.length} JavaScript files.`);
+if (failures.length) {
+  for (const failure of failures) console.error(`FAIL: ${failure}`);
+  process.exitCode = 1;
+} else {
+  console.log("Architecture guard passed.");
+}

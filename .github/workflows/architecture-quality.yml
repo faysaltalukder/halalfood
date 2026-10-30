@@ -1,0 +1,53 @@
+name: Architecture Quality Gate
+
+on:
+  push:
+    branches: ["main", "refactor/**"]
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  repository-quality:
+    name: Repository syntax and architecture checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Check JavaScript syntax and architecture guard
+        run: node scripts/architecture-check.mjs
+      - name: Run existing admin integrity checks
+        run: node scripts/admin-phase12-check.mjs
+
+  edge-function-types:
+    name: Type-check changed Supabase Edge Functions
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+          cache: true
+      - name: Type-check changed Edge Function entrypoints
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main --depth=1
+          mapfile -t files < <(git diff --name-only origin/main...HEAD | awk '$0 ~ /^supabase\/functions\/[^/]+\/index[.]ts$/')
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "No Edge Function entrypoints changed."
+            exit 0
+          fi
+          for file in "${files[@]}"; do
+            echo "Checking $file"
+            deno check "$file"
+          done

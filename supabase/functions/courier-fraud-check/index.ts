@@ -703,7 +703,6 @@ Deno.serve(async (req: Request) => {
 
     return reply({
       success: true,
-      source: SOURCE,
       cached: false,
       cacheStored: cacheable,
       checkedAt,
