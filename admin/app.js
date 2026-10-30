@@ -803,7 +803,8 @@ window.HFAdminReady.then(async H=>{
    const allBox=$("ordersSelectAll");
    if(allBox){allBox.checked=rows.length>0&&visible===rows.length;allBox.indeterminate=visible>0&&visible<rows.length;allBox.disabled=rows.length===0;}
    if($("ordersSelectedCount"))$("ordersSelectedCount").textContent=selected.toLocaleString("en-BD")+" selected";
-   ["ordersPackagingBtn","ordersInvoiceBtn","ordersBulkExportBtn"].forEach(id=>{const button=$(id);if(button)button.disabled=selected===0;});
+   ["ordersPackagingBtn","ordersInvoiceBtn","ordersBulkExportBtn","ordersBulkDeleteBtn","ordersBulkStatusBtn","ordersBulkAssignBtn"].forEach(id=>{const button=$(id);if(button)button.disabled=selected===0;});
+   const courierButton=$("ordersBulkCourierBtn");if(courierButton)courierButton.disabled=selected===0||!shipmentRowsReady;
    const clear=$("ordersBulkClearBtn");if(clear)clear.disabled=selected===0;
   }
   function printSelectedOrders(kind){
@@ -825,6 +826,87 @@ window.HFAdminReady.then(async H=>{
    if(!chosen.length){toast("Select at least one order first.","error");return;}
    const rows=chosen.map(order=>({order_number:order.order_number||String(order.id).slice(0,8),customer:order.customer_name||"",phone:order.customer_phone||"",delivery_address:order.delivery_address||"",delivery_zone:order.delivery_zone||"",products:(order.order_items||[]).map(item=>(item.product_name||"Product")+" × "+item.quantity+" "+(item.unit||"")).join(" | "),products_subtotal:Number(order.subtotal||0),delivery_charge:Number(order.delivery_charge||0),recorded_total:Number(order.total||0),status:order.status||"",ordered_at:order.ordered_at||""}));
    downloadFile("halal-food-selected-orders.csv",csvText(rows),"text/csv;charset=utf-8");toast(chosen.length+" selected order(s) exported.");
+  }
+
+  const bulkSelectedOrders=()=>all.filter(order=>selectedOrderIds.has(order.id));
+  function openBulkStatusDialog(){
+   const rows=bulkSelectedOrders();if(!rows.length){toast("Select at least one order first.","error");return;}
+   $("bulkStatusCount").textContent=rows.length+" selected order(s)";
+   $("bulkCancellationReason").value="";$("bulkCancellationReasonWrap").hidden=true;$("bulkStatusError").textContent="";
+   $("bulkStatusDialog").showModal();
+  }
+  $("bulkNextStatus")?.addEventListener("change",()=>{
+   const next=$("bulkNextStatus").value;$("bulkCancellationReasonWrap").hidden=next!=="cancelled";
+   $("bulkStatusHint").textContent=next==="processing"?"Requires a successful existing courier booking. Use Send Courier for new bookings.":next==="shipped"?"Requires verified courier pickup/in-transit status.":next==="delivered"?"Requires a courier-confirmed Delivered status.":next==="cancelled"?"Live or uncertain courier parcels are protected; cancel with the courier first.":"Orders already in this status will be skipped.";
+  });
+  $("bulkStatusForm")?.addEventListener("submit",async event=>{
+   event.preventDefault();
+   const button=$("bulkStatusSubmit"),next=$("bulkNextStatus").value,rows=bulkSelectedOrders(),reason=$("bulkCancellationReason").value.trim();
+   if(!rows.length||!["processing","shipped","delivered","cancelled"].includes(next)){$("bulkStatusError").textContent="Choose a supported status and select orders. Bulk status cannot rewind an order to Pending.";return;}
+   if(next==="cancelled"&&(reason.length<3||reason.length>500)){$("bulkStatusError").textContent="Enter a cancellation reason between 3 and 500 characters.";return;}
+   if(next==="delivered"&&!confirm("Only orders with a courier-confirmed Delivered status will be updated. Continue?"))return;
+   button.disabled=true;button.textContent="Updating…";$("bulkStatusError").textContent="";
+   let updated=0;const skipped=[];
+   try{
+    for(const order of rows){
+     const shipment=shipmentFor(order.id);
+     if(order.status===next){skipped.push((order.order_number||"Order")+" is already "+next);continue;}
+     if(next==="processing"&&!(shipment&&shipment.integration_mode==="live_api"&&shipment.booking_state==="succeeded")){skipped.push((order.order_number||"Order")+" requires a successful courier booking");continue;}
+     if(next==="shipped"&&!(shipment&&shipment.integration_mode==="live_api"&&shipment.booking_state==="succeeded"&&["picked_up","in_transit","delivered"].includes(shipment.shipment_status))){skipped.push((order.order_number||"Order")+" pickup is not verified");continue;}
+     if(next==="delivered"&&!(shipment&&shipment.integration_mode==="live_api"&&shipment.booking_state==="succeeded"&&shipment.shipment_status==="delivered")){skipped.push((order.order_number||"Order")+" delivery is not verified");continue;}
+     if(next==="cancelled"&&courierBookingLocked(shipment)){skipped.push((order.order_number||"Order")+" has a live/uncertain courier parcel");continue;}
+     try{
+      const result=await client.rpc("admin_update_order_status",{p_order_id:order.id,p_next_status:next,p_cancellation_reason:next==="cancelled"?reason:null});
+      if(result.error)throw result.error;
+      await audit("order_status_changed","order",order.id,"Bulk status changed to "+next,{bulk:true,status:next,cancellation_reason:next==="cancelled"?reason:null});
+      updated++;
+     }catch(err){skipped.push((order.order_number||"Order")+": "+(err.message||"status update failed"));}
+    }
+    $("bulkStatusDialog").close();toast(updated+" order(s) updated; "+skipped.length+" skipped.",skipped.length?"warning":"success");
+    if(skipped.length)console.warn("Bulk status update skipped rows:",skipped);
+    await refresh();
+   }catch(err){$("bulkStatusError").textContent=err.message||"Bulk status update failed.";}
+   finally{button.disabled=false;button.textContent="Update eligible orders";}
+  });
+  function openBulkAssignDialog(){
+   const rows=bulkSelectedOrders();if(!rows.length){toast("Select at least one order first.","error");return;}
+   $("bulkAssignCount").textContent=rows.length+" selected order(s)";
+   $("bulkAssignMember").innerHTML='<option value="">Clear assignment / Unassigned</option>'+teamMembers.map(member=>'<option value="'+esc(member.id)+'">'+esc(member.full_name)+(member.role_title?" · "+esc(member.role_title):"")+'</option>').join("");
+   $("bulkAssignTeamHint").textContent=teamMembers.length?teamMembers.length+" active team member(s) available.":"No active team member is registered yet. Add staff under Operations Center → Team directory. You can still clear an assignment.";
+   $("bulkAssignError").textContent="";$("bulkAssignDialog").showModal();
+  }
+  $("bulkAssignForm")?.addEventListener("submit",async event=>{
+   event.preventDefault();
+   const button=$("bulkAssignSubmit"),rows=bulkSelectedOrders(),memberId=$("bulkAssignMember").value||null,member=memberId?teamMembers.find(item=>item.id===memberId&&item.is_active):null;
+   if(!rows.length){$("bulkAssignError").textContent="Select orders first.";return;}
+   if(memberId&&!member){$("bulkAssignError").textContent="The chosen team member is inactive or unavailable. Refresh and select again.";return;}
+   if(!memberId&&!confirm("Clear assignment for "+rows.length+" selected order(s)?"))return;
+   button.disabled=true;button.textContent="Saving…";
+   try{
+    const now=new Date().toISOString(),payload={assigned_to_team_member_id:memberId,assigned_at:memberId?now:null,assigned_by:memberId?H.ADMIN_EMAIL:""};
+    const result=await client.from("orders").update(payload).in("id",rows.map(order=>order.id)).select("id");
+    if(result.error)throw result.error;
+    if((result.data||[]).length!==rows.length)throw new Error("The database returned "+(result.data||[]).length+" updated orders; expected "+rows.length+". Refresh and verify.");
+    for(const order of rows)await audit(memberId?"order_assigned":"order_assignment_cleared","order",order.id,memberId?"Assigned to "+member.full_name:"Assignment cleared",{team_member_id:memberId});
+    $("bulkAssignDialog").close();toast(memberId?"Assigned "+rows.length+" orders to "+member.full_name+".":"Cleared "+rows.length+" order assignments.");
+    await refresh();
+   }catch(err){$("bulkAssignError").textContent=err.message||"Could not save the assignments.";}
+   finally{button.disabled=false;button.textContent="Save assignment";}
+  });
+  async function deleteSelectedOrders(){
+   const rows=bulkSelectedOrders();if(!rows.length){toast("Select orders first.","error");return;}
+   const refs=rows.slice(0,5).map(order=>order.order_number||String(order.id).slice(0,8)).join(", ")+(rows.length>5?" and "+(rows.length-5)+" more":"");
+   const message=["Permanently delete "+rows.length+" selected pending/cancelled order(s)?",refs,"Orders with courier parcels, stock movements or return/refund records are protected.","Order items and status history are removed by the database cascade. This cannot be undone."].join("\n\n");
+   if(!confirm(message))return;
+   const button=$("ordersBulkDeleteBtn");button.disabled=true;button.textContent="Deleting…";
+   try{
+    const result=await client.rpc("admin_bulk_delete_orders",{p_order_ids:rows.map(order=>order.id)});
+    if(result.error)throw result.error;
+    if(result.data?.success!==true||Number(result.data.deleted_count)!==rows.length)throw new Error(result.data?.error||"The database did not confirm all deletions.");
+    for(const order of rows)await audit("order_deleted","order",order.id,"Order deleted via protected bulk action",{bulk:true});
+    selectedOrderIds.clear();toast(rows.length+" order(s) deleted.");await refresh();
+   }catch(err){toast(err.message||"Bulk deletion was blocked. No order was deleted.","error");}
+   finally{button.disabled=false;button.textContent="⌫ Delete";}
   }
   function render(){
    const search=String($("orderSearch")?.value||$("globalSearch")?.value||"").toLowerCase().trim(),status=$("orderStatusFilter")?.value||"";
@@ -966,6 +1048,13 @@ window.HFAdminReady.then(async H=>{
    render();
   });
   $("ordersBulkClearBtn")?.addEventListener("click",()=>{selectedOrderIds.clear();render();});
+  $("ordersBulkDeleteBtn")?.addEventListener("click",deleteSelectedOrders);
+  $("ordersBulkStatusBtn")?.addEventListener("click",openBulkStatusDialog);
+  $("ordersBulkAssignBtn")?.addEventListener("click",openBulkAssignDialog);
+  document.querySelectorAll("[data-bulk-close]").forEach(button=>button.addEventListener("click",()=>{
+   const dialog=$(button.dataset.bulkClose);if(dialog)dialog.close();
+  }));
+
   $("ordersBulkExportBtn")?.addEventListener("click",exportSelectedOrders);
   document.querySelectorAll("[data-bulk-print]").forEach(button=>button.addEventListener("click",()=>printSelectedOrders(button.dataset.bulkPrint)));
   $("ordersDataBody")?.addEventListener("change",e=>{
