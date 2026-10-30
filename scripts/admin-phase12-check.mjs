@@ -21,7 +21,7 @@ for (const file of unifiedPages) {
   assert.ok(source.includes(`shared.js?v=${sharedJsVersion}`) || source.includes("shared.js?v=20261027-site-publisher-v1"), `${file}: missing shared JS cache key.`);
 
   if (source.includes("./app.js")) {
-    assert.ok(source.includes(`app.js?v=${appJsVersion}`) || source.includes("app.js?v=20261027-site-publisher-v1") || source.includes("app.js?v=20261030-courier-history-explained-v3"), `${file}: stale or missing app.js cache key.`);
+    assert.ok(source.includes(`app.js?v=${appJsVersion}`) || source.includes("app.js?v=20261030-orders-layout-v6") || source.includes("app.js?v=20261027-site-publisher-v1") || source.includes("app.js?v=20261030-courier-history-explained-v3"), `${file}: stale or missing app.js cache key.`);
   }
 
   const mainTag = (source.match(/<main\b[^>]*\bid=["']pageContent["'][^>]*>/i) || [])[0];
@@ -106,8 +106,8 @@ for (const id of [
 ]) {
   assert.ok(ordersPage.includes(`id="${id}"`), `Orders workspace is missing #${id}.`);
 }
-assert.ok(ordersPage.includes("orders.css?v=20261030-orders-polish-v5"), "Orders workspace stylesheet must be cache-busted.");
-assert.ok(ordersPage.includes("app.js?v=20261030-orders-refined-v3"), "Orders workspace must load the order-card application script.");
+assert.ok(ordersPage.includes("orders.css?v=20261030-orders-layout-v6"), "Orders workspace stylesheet must be cache-busted.");
+assert.ok(ordersPage.includes("app.js?v=20261030-orders-layout-v6"), "Orders workspace must load the order-card application script.");
 for (const status of ["pending", "processing", "shipped", "delivered", "cancelled"]) {
   assert.ok(ordersCss.includes(`.hf-order-card[data-status="${status}"]`), `Order cards need a distinct ${status} color.`);
 }
@@ -255,3 +255,12 @@ assert.ok(ordersCss.includes(".hf-order-reference small{font-size:12px"), "Order
 
 assert.ok(ordersApp.includes("(whatsapp?'<a class=\"hf-order-phone\""), "Only valid WhatsApp-normalized phone numbers should be clickable.");
 assert.ok(ordersApp.includes("cannot be opened in WhatsApp"), "Invalid customer phone values must not create empty chat links.");
+const customerColumn = ordersApp.indexOf('class="hf-order-customer-panel"');
+const productsColumn = ordersApp.indexOf('class="hf-order-items-panel"');
+const deliveryColumn = ordersApp.indexOf('class="hf-order-location-panel"');
+const totalsColumn = ordersApp.indexOf('class="hf-order-totals-panel"');
+assert.ok(customerColumn >= 0 && customerColumn < productsColumn && productsColumn < deliveryColumn && deliveryColumn < totalsColumn, "Order cards must scan in customer, products, delivery, totals order.");
+assert.ok(ordersApp.includes('class="hf-order-whatsapp-button"'), "Customer contact must show a compact WhatsApp-style action beside the phone number.");
+assert.ok(ordersApp.includes('class="hf-order-actions"><button'), "Order actions must sit inside the final totals row.");
+assert.ok(ordersCss.includes("Orders layout v6"), "Compact four-column Orders layout must be present.");
+
