@@ -1411,7 +1411,7 @@ async function refresh(){
   function inferShippingWeightFromUnit(value){
    const raw=String(value||"").trim().toLowerCase();
    if(raw==="kg")return "1.000";
-   const match=raw.match(/^([0-9]+(?:\\.[0-9]+)?)\\s*(kg|g|gram|grams)$/);
+   const match=raw.match(/^([0-9]+(?:\.[0-9]+)?)\s*(kg|g|gram|grams)$/);
    if(!match)return "";
    const amount=Number(match[1]),kg=match[2]==="kg"?amount:amount/1000;
    return Number.isFinite(kg)&&kg>0&&kg<=100?kg.toFixed(3):"";
