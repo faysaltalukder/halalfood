@@ -21,7 +21,7 @@ for (const file of unifiedPages) {
   assert.ok(source.includes(`shared.js?v=${sharedJsVersion}`) || source.includes("shared.js?v=20261027-site-publisher-v1"), `${file}: missing shared JS cache key.`);
 
   if (source.includes("./app.js")) {
-    assert.ok(source.includes(`app.js?v=${appJsVersion}`) || source.includes("app.js?v=20261030-orders-layout-v7") || source.includes("app.js?v=20261027-site-publisher-v1") || source.includes("app.js?v=20261030-courier-history-explained-v3"), `${file}: stale or missing app.js cache key.`);
+    assert.ok(source.includes(`app.js?v=${appJsVersion}`) || source.includes("app.js?v=20261030-orders-layout-v7") || source.includes("app.js?v=20261030-bulk-manager-v1") || source.includes("app.js?v=20261030-bulk-manager-v1") || source.includes("app.js?v=20261027-site-publisher-v1") || source.includes("app.js?v=20261030-courier-history-explained-v3"), `${file}: stale or missing app.js cache key.`);
   }
 
   const mainTag = (source.match(/<main\b[^>]*\bid=["']pageContent["'][^>]*>/i) || [])[0];
@@ -101,13 +101,18 @@ for (const id of [
   "ordersSelectAll",
   "ordersSelectedCount",
   "ordersBulkExportBtn",
+  "ordersBulkDeleteBtn",
+  "ordersBulkStatusBtn",
+  "ordersBulkCourierBtn",
+  "ordersBulkAssignBtn",
   "ordersBulkClearBtn",
   "ordersDataBody",
 ]) {
   assert.ok(ordersPage.includes(`id="${id}"`), `Orders workspace is missing #${id}.`);
 }
-assert.ok(ordersPage.includes("orders.css?v=20261030-orders-layout-v7"), "Orders workspace stylesheet must be cache-busted.");
-assert.ok(ordersPage.includes("app.js?v=20261030-orders-layout-v7"), "Orders workspace must load the order-card application script.");
+assert.ok(ordersPage.includes("orders.css?v=20261030-bulk-manager-v1"), "Orders workspace bulk-manager stylesheet must be cache-busted.");
+assert.ok(ordersPage.includes("app.js?v=20261030-bulk-manager-v1"), "Orders workspace must load the bulk-manager application script.");
+assert.ok(ordersPage.includes("bulkStatusDialog") && ordersPage.includes("bulkAssignDialog") && ordersPage.includes("bulkCourierDialog"), "All bulk workflow dialogs must be present.");
 for (const status of ["pending", "processing", "shipped", "delivered", "cancelled"]) {
   assert.ok(ordersCss.includes(`.hf-order-card[data-status="${status}"]`), `Order cards need a distinct ${status} color.`);
 }
@@ -117,6 +122,19 @@ assert.ok(ordersApp.includes("profilesByUserId.get(customer.auth_user_id)"), "Av
 assert.ok(ordersApp.includes("function updateBulkSelectionUi(rows)"), "Bulk selection count and controls need a single UI updater.");
 assert.ok(ordersApp.includes("function printSelectedOrders(kind)"), "Selected orders need packaging/invoice print support.");
 assert.ok(ordersApp.includes("function exportSelectedOrders()"), "Selected orders need CSV export support.");
+assert.ok(ordersApp.includes("function orderPackedWeightKg(order)"), "Courier weight must be calculated from saved product-unit weights and order quantities.");
+assert.ok(ordersApp.includes('client.from("order_items").select("id,order_id,shipping_weight_kg")'), "Order page must load immutable order-item weight snapshots.");
+assert.ok(ordersApp.includes("function inferShippingWeightFromUnit(value)"), "Product editor must prefill gram/kg shipping weights from an explicit unit label.");
+assert.ok(ordersApp.includes("function sendSelectedOrdersToCourier"), "Bulk courier send action must be implemented.");
+assert.ok(ordersApp.includes("for(let index=0;index<prepared.length;index++)"), "Bulk courier calls must be sequential, not parallel.");
+assert.ok(ordersApp.includes('body:{action:"book",provider,shipment_id:shipmentId}'), "Bulk courier action must call the existing protected courier Edge Function.");
+assert.ok(ordersApp.includes("async function deleteSelectedOrders"), "Bulk delete must use the protected database RPC.");
+assert.ok(ordersApp.includes('client.rpc("admin_bulk_delete_orders"'), "Bulk delete must use the restricted server RPC.");
+assert.ok(ordersApp.includes("function openBulkAssignDialog"), "Bulk assignment action must be implemented.");
+assert.ok(ordersApp.includes("assigned_to_team_member_id:memberId"), "Bulk assignment must persist the team member on each order.");
+assert.ok(ordersApp.includes("function openBulkStatusDialog"), "Bulk status update action must be implemented.");
+assert.ok(ordersApp.includes("function orderPackedWeightKg(order)"), "Order parcel weights must have a tested calculation helper.");
+assert.ok(ordersCss.includes(".hf-bulk-packaging") && ordersCss.includes(".hf-bulk-courier") && ordersCss.includes(".hf-bulk-assign"), "Distinct colors must exist for the seven bulk actions.");
 assert.ok(ordersApp.includes('client.rpc("admin_update_order_status"'), "Status updates must continue to use the audited server RPC.");
 assert.ok(ordersApp.includes('courierBookingLocked(shipment)'), "Order status changes must preserve courier booking safety checks.");
 assert.ok(ordersApp.includes('["picked_up","in_transit","delivered"]'), "Shipped status must require a verified courier shipment state.");
