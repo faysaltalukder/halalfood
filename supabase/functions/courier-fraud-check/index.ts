@@ -172,6 +172,24 @@ function normalizeProvider(provider: string, payload: any) {
   const hasCounts = total !== null || success !== null || cancel !== null;
   const hasRating = !!customerRating || !!riskLevel;
   const hasRate = successRate !== null;
+  const explicitlyEmpty = total === 0 &&
+    (success === null || success === 0) &&
+    (cancel === null || cancel === 0) &&
+    !hasRating;
+  if (explicitlyEmpty) {
+    return {
+      courierName: provider,
+      status: "no_history",
+      dataType: "none",
+      message: "এই ফোন নম্বরের জন্য এই কুরিয়ারে আগের ডেলিভারি তথ্য পাওয়া যায়নি।",
+      total: null,
+      success: null,
+      cancel: null,
+      successRate: null,
+      customerRating,
+      riskLevel: riskLevel ? riskLevel.toLowerCase() : null,
+    };
+  }
 
   if (!hasCounts && !hasRating && !hasRate) {
     throw new Error(provider + " returned an unrecognized customer-history response.");
