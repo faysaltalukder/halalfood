@@ -828,7 +828,7 @@ window.HFAdminReady.then(async H=>{
     else if(locked){const label=legacyTest?"Legacy courier record — verify with REDX":shipment.booking_state==="unknown"?"Booking outcome uncertain — verify with courier":shipment.booking_state==="in_progress"?"Booking in progress":shipment.booking_state==="succeeded"?"Booking succeeded":shipment.booking_state==="failed"?"Booking failed":"Courier record locked";courierAction='<span class="hf-status hf-status-review">'+esc(label)+'</span>';}
     const stateText=shipment?(legacyTest?"Legacy record — verify in REDX dashboard":shipment.booking_error||(shipment.booking_state==="failed"?"Booking failed":shipment.booking_state==="succeeded"?"Booking succeeded":shipment.booking_state==="unknown"?"Verify with courier":shipment.booking_state==="in_progress"?"Booking in progress":"Not booked")):"";
     const shipmentInfo=shipment?'<span class="hf-order-shipment-note">'+esc(shipment.courier_name||"Courier")+': '+esc(stateText)+'</span>':"";
-    const phone=String(o.customer_phone||"").trim(),tel=phone.replace(/[^+\d]/g,"");
+    const phone=String(o.customer_phone||"").trim(),whatsapp=whatsappUrl(o);
     const items=Array.isArray(o.order_items)?o.order_items:[];
     const itemHtml=items.slice(0,2).map(item=>{
      const image=String(item.product_image_url||"").trim(),ok=/^https:\/\/[^"'<>\s]+$/i.test(image)&&image.length<=2048;
@@ -846,8 +846,8 @@ window.HFAdminReady.then(async H=>{
       '<div class="hf-order-status-control"><small>ORDER STATUS</small>'+select+'</div></header>'+
      '<div class="hf-order-card-main">'+
       '<section class="hf-order-customer-panel"><div class="hf-order-customer-head">'+orderCustomerAvatar(o)+'<div class="hf-order-customer-copy"><strong>'+esc(o.customer_name||"Guest customer")+'</strong><small>'+(o.customer_id?"Registered customer":"Guest checkout")+'</small></div></div>'+
-       (phone?'<a class="hf-order-phone" href="tel:'+esc(tel)+'">☎ '+esc(phone)+'</a>':'<span class="hf-order-phone is-missing">No phone recorded</span>')+
-       '<div class="hf-order-location"><span class="hf-order-location-icon" aria-hidden="true">⌖</span><div><small>DELIVERY LOCATION</small><strong>'+esc(o.delivery_zone||"Delivery address")+'</strong><p>'+esc(o.delivery_address||"No delivery address recorded")+'</p></div></div></section>'+
+       (phone?'<a class="hf-order-phone" href="'+esc(whatsapp)+'" target="_blank" rel="noopener noreferrer" aria-label="Open WhatsApp chat with '+esc(phone)+'"><span class="hf-order-whatsapp-mark" aria-hidden="true">◉</span><span>'+esc(phone)+'</span></a>':'<span class="hf-order-phone is-missing">No phone recorded</span>')+
+       '<div class="hf-order-location"><span class="hf-order-location-icon" aria-hidden="true">⌖</span><div><small>DELIVERY LOCATION</small><span class="hf-order-zone-badge">'+esc(String(o.delivery_zone||"").replace(/_/g," ").replace(/\b\w/g,char=>char.toUpperCase())||"Delivery area")+'</span><p class="hf-order-address">'+esc(o.delivery_address||"No delivery address recorded")+'</p></div></div></section>'+
       '<section class="hf-order-items-panel"><div class="hf-order-panel-heading"><strong>Products ordered</strong><span>'+items.length+' item line(s)</span></div>'+(itemHtml||'<div class="hf-order-no-items">No product details recorded.</div>')+more+'</section>'+
       '<section class="hf-order-totals-panel"><div><small>Products subtotal</small><strong>'+money(o.subtotal)+'</strong></div><div><small>Delivery charge</small><strong>'+money(o.delivery_charge)+'</strong></div><div class="hf-order-grand-total"><small>Order total · COD</small><strong>'+money(o.total)+'</strong></div></section>'+
      '</div>'+
