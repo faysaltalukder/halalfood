@@ -168,7 +168,7 @@ assert.ok(ordersApp.includes("assigned_to_team_member_id:memberId"), "Bulk staff
 assert.ok(!ordersPage.includes('id="bulkAssignMember" class="hf-select" required'), "The Unassigned/Clear option must remain selectable.");
 assert.ok(ordersPage.includes('<option value="pending">Pending · only if no live courier parcel</option>'), "Bulk status should allow a safe return to Pending after a failed/unbooked attempt.");
 assert.ok(ordersApp.includes('next==="pending"&&!(order.status==="processing"&&!courierBookingLocked(shipment))'), "Bulk status must block Pending when a live/uncertain parcel exists.");
-assert.ok(ordersApp.includes('Number(weight).toFixed(3)'), "Bulk parcel weights must retain the 0.001 kg database precision.");
+assert.ok(ordersApp.includes("estimate.weight.toFixed(3)"), "Bulk parcel weights must retain the 0.001 kg database precision.");
 assert.ok(shippingWeightMigration.includes("v_product.shipping_weight_kg"), "Checkout migration must snapshot the product shipping weight.");
 assert.ok(shippingWeightMigration.includes("assigned_to_team_member_id"), "Bulk assignment schema must be represented in migrations.");
 assert.ok(financeDeleteMigration.includes("admin_finance_entries"), "Bulk delete migration must protect financial ledger references.");
