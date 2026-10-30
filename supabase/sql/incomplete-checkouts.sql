@@ -45,17 +45,18 @@ grant all on public.incomplete_checkouts to service_role;
 
 create policy "Incomplete checkout admin MFA read"
   on public.incomplete_checkouts for select to authenticated
-  using (lower(coalesce((select auth.jwt() ->> 'email'), '')) = 'halalfoodbd.official@gmail.com'
-    and coalesce((select auth.jwt() ->> 'aal'), 'aal1') = 'aal2');
+  using (lower(coalesce(((select auth.jwt()) ->> 'email'), '')) = 'halalfoodbd.official@gmail.com'
+    and coalesce(((select auth.jwt()) ->> 'aal'), 'aal1') = 'aal2');
 create policy "Incomplete checkout admin MFA update"
   on public.incomplete_checkouts for update to authenticated
-  using (lower(coalesce((select auth.jwt() ->> 'email'), '')) = 'halalfoodbd.official@gmail.com'
-    and coalesce((select auth.jwt() ->> 'aal'), 'aal1') = 'aal2')
-  with check (lower(coalesce((select auth.jwt() ->> 'email'), '')) = 'halalfoodbd.official@gmail.com'
-    and coalesce((select auth.jwt() ->> 'aal'), 'aal1') = 'aal2');
+  using (lower(coalesce(((select auth.jwt()) ->> 'email'), '')) = 'halalfoodbd.official@gmail.com'
+    and coalesce(((select auth.jwt()) ->> 'aal'), 'aal1') = 'aal2')
+  with check (lower(coalesce(((select auth.jwt()) ->> 'email'), '')) = 'halalfoodbd.official@gmail.com'
+    and coalesce(((select auth.jwt()) ->> 'aal'), 'aal1') = 'aal2');
 create policy "Incomplete checkout admin MFA delete"
   on public.incomplete_checkouts for delete to authenticated
-  using (lower(coalesce((select auth.jwt() ->> 'email'), '')) = 'halalfoodbd.official@gmail.com'
-    and coalesce((select auth.jwt() ->> 'aal'), 'aal1') = 'aal2');
+  using (lower(coalesce(((select auth.jwt()) ->> 'email'), '')) = 'halalfoodbd.official@gmail.com'
+    and coalesce(((select auth.jwt()) ->> 'aal'), 'aal1') = 'aal2');
 
+-- Follow-up migration optimize_incomplete_checkout_access adds the converted-order index and uses init-plan-friendly JWT policy expressions.
 -- The matching scheduled pg_cron job is also configured on the live database.
