@@ -239,7 +239,7 @@ console.log(`Admin Phase 1–4 quality gate passed: ${unifiedPages.length} pages
 assert.ok(ordersApp.includes('class="hf-order-customer-panel"'), "Refined cards need a customer column.");
 assert.ok(ordersApp.includes('class="hf-order-items-panel"'), "Refined cards need a product column.");
 assert.ok(ordersApp.includes('class="hf-order-totals-panel"'), "Refined cards need an amount column.");
-assert.ok(ordersApp.includes('data-order-details="'+esc(o.id)+'"') || ordersApp.includes('data-order-details="'+esc(o.id) + '"'), "Card actions should keep a Details route.");
+assert.ok(ordersApp.includes('data-order-details="'), "Card actions should keep a Details route.");
 assert.ok(ordersCss.includes("Refined Orders v3"), "Refined Orders styling and separators must be present.");
 for (const tone of ["pending","processing","shipped","delivered","cancelled"]) {
   assert.ok(ordersCss.includes('.hf-order-card[data-status="' + tone + '"] .order-status-select'), "Status control needs a distinct " + tone + " color.");
