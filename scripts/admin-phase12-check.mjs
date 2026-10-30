@@ -106,7 +106,7 @@ for (const id of [
 ]) {
   assert.ok(ordersPage.includes(`id="${id}"`), `Orders workspace is missing #${id}.`);
 }
-assert.ok(ordersPage.includes("orders.css?v=20261030-orders-refined-v3"), "Orders workspace stylesheet must be cache-busted.");
+assert.ok(ordersPage.includes("orders.css?v=20261030-orders-refined-v4"), "Orders workspace stylesheet must be cache-busted.");
 assert.ok(ordersPage.includes("app.js?v=20261030-orders-refined-v3"), "Orders workspace must load the order-card application script.");
 for (const status of ["pending", "processing", "shipped", "delivered", "cancelled"]) {
   assert.ok(ordersCss.includes(`.hf-order-card[data-status="${status}"]`), `Order cards need a distinct ${status} color.`);
