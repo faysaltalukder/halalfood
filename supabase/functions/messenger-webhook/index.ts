@@ -25,7 +25,7 @@ async function verifySignature(raw: Uint8Array, header: string, appSecret: strin
   } catch { return { valid: false, reason: "signature_verification_error" }; }
 }
 
-async function processPayload(db: ReturnType<typeof createClient>, payload: any, pageId: string) {
+async function processPayload(db: ReturnType<typeof createClient<any>>, payload: any, pageId: string) {
   if (payload?.object !== "page") return;
   const entries = Array.isArray(payload?.entry) ? payload.entry : [];
   for (const entry of entries) {
@@ -109,7 +109,7 @@ Deno.serve(async (req: Request) => {
   catch { return json({ success: false, error: "Invalid JSON payload" }, 400); }
   if (payload?.object !== "page") return json({ received: true, ignored: true });
 
-  const db = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
+  const db = createClient<any>(supabaseUrl, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
   try {
     await processPayload(db, payload, pageId);
     return json({ received: true });
