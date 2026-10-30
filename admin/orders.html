@@ -1,17 +1,28 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="robots" content="noindex,nofollow"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"><title>Orders · Halal Food Admin</title><link rel="stylesheet" href="./shared.css?v=20261026-phase4-a11y-performance"><link rel="stylesheet" href="./orders.css?v=20261030-order-security-v1"><script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script></head><body data-page="orders"><div id="authGate" class="auth-gate"><div class="auth-gate-card"><strong>Checking secure admin access…</strong><p>Your dashboard data will load only after the authorized account and two-step verification are confirmed.</p></div></div><div id="adminApp" hidden><main id="pageContent" tabindex="-1">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="robots" content="noindex,nofollow"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"><title>Orders · Halal Food Admin</title><link rel="stylesheet" href="./shared.css?v=20261026-phase4-a11y-performance"><link rel="stylesheet" href="./orders.css?v=20261030-order-security-monitor-v2"><script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script></head><body data-page="orders"><div id="authGate" class="auth-gate"><div class="auth-gate-card"><strong>Checking secure admin access…</strong><p>Your dashboard data will load only after the authorized account and two-step verification are confirmed.</p></div></div><div id="adminApp" hidden><main id="pageContent" tabindex="-1">
 <div class="page-heading hf-orders-hero">
 <div class="hf-orders-hero-copy"><p class="page-eyebrow">ORDER OPERATIONS</p><h1>Orders</h1><p>Review incoming orders, check fulfilment status and open the correct action without working through long lists.</p><div class="hf-orders-meta"><span class="hf-orders-date-label">Bangladesh business date</span><time id="ordersDateLabel">Loading local date…</time><span class="hf-status hf-status-review">Courier booking requires confirmation</span></div></div>
 <div class="page-actions hf-orders-hero-actions"><a href="./orders.html?status=pending" class="hf-button hf-button-primary">Review pending <span aria-hidden="true">→</span></a><a href="./reports.html" class="hf-button hf-button-secondary">⇩ Order report</a><button class="hf-button hf-button-secondary" data-refresh-page type="button">↻ Refresh</button></div>
 </div>
 <div class="hf-banner hf-banner-info"><span>ⓘ</span><div><strong>Before booking a courier</strong>Call or message the customer, confirm the order, check the full address and packed weight, and choose the matching delivery area. Select <strong>Confirm &amp; Book</strong> only when all details are correct. This creates a real courier booking; cancellation is not available from this page.</div></div>
+<section class="hf-card hf-card-pad hf-security-review-section" id="securitySignalsSection" aria-labelledby="securitySignalsHeading">
+  <div class="hf-section-head">
+    <div><p class="page-eyebrow">CHECKOUT SECURITY</p><h2 id="securitySignalsHeading">IP &amp; Risk Monitor</h2><p>Server-checked activity for new checkout requests: combined risk score, masked network address, country, repeat-device reference and detected signals. This is a risk estimate, not proof that a customer is fraudulent.</p></div>
+    <span class="hf-status hf-status-review" id="securitySignalCount">Loading…</span>
+  </div>
+  <div class="hf-table-wrap" tabindex="0" role="region" aria-label="Checkout IP and risk activity">
+    <table class="hf-table"><thead><tr><th>Order</th><th>Customer</th><th>Risk</th><th>IP / Country</th><th>Device ref</th><th>Signals</th><th>Time / State</th></tr></thead>
+    <tbody id="securitySignalBody"><tr><td colspan="7" class="hf-loading">Loading checkout security activity…</td></tr></tbody></table>
+  </div>
+  <p class="hf-data-note" id="securitySignalMessage">IP display masks the final IPv4 section. Raw IP and device identifiers are not stored.</p>
+</section>
 <section class="hf-card hf-card-pad hf-security-review-section" id="securityReviewSection" aria-labelledby="securityReviewHeading">
   <div class="hf-section-head">
-    <div><p class="page-eyebrow">FRAUD PREVENTION</p><h2 id="securityReviewHeading">Security review queue</h2><p>Orders with several combined risk signals are held here. Call or verify the customer before approving; held orders do not reserve stock or trigger Purchase events.</p></div>
+    <div><p class="page-eyebrow">MANUAL FRAUD REVIEW</p><h2 id="securityReviewHeading">Suspicious orders awaiting review</h2><p>This is not a customer security question. It is an admin-only list for orders whose combined risk score reached the hold threshold. Verify the phone before approving.</p></div>
     <span class="hf-status hf-status-review" id="securityReviewCount">Loading…</span>
   </div>
   <div class="hf-table-wrap" tabindex="0" role="region" aria-label="Suspicious orders awaiting security review">
-    <table class="hf-table"><thead><tr><th>Order</th><th>Customer</th><th>Phone</th><th>Risk</th><th>Signals</th><th>Placed</th><th>Decision</th></tr></thead>
-    <tbody id="securityReviewBody"><tr><td colspan="7" class="hf-loading">Checking review queue…</td></tr></tbody></table>
+    <table class="hf-table"><thead><tr><th>Order</th><th>Customer</th><th>Phone</th><th>Risk</th><th>IP / Country</th><th>Signals</th><th>Placed</th><th>Decision</th></tr></thead>
+    <tbody id="securityReviewBody"><tr><td colspan="8" class="hf-loading">Checking review queue…</td></tr></tbody></table>
   </div>
   <p class="hf-data-note" id="securityReviewMessage">The review queue is restricted to the MFA-verified admin account.</p>
 </section>
@@ -74,4 +85,4 @@
 <div class="hf-dialog-actions"><button id="confirmBookCancel" class="hf-button hf-button-secondary" type="button">Go back</button><button id="confirmBookSubmit" class="hf-button hf-button-primary" type="submit">Confirm order &amp; book courier</button></div>
 </form></dialog>
 
-</main></div><script defer src="./i18n.js?v=20261023-admin-ultimate-v1"></script><script defer src="./shared.js?v=20261027-site-publisher-v1"></script><script defer src="./app.js?v=20261030-order-security-v1"></script></body></html>
+</main></div><script defer src="./i18n.js?v=20261023-admin-ultimate-v1"></script><script defer src="./shared.js?v=20261027-site-publisher-v1"></script><script defer src="./app.js?v=20261030-order-security-monitor-v2"></script></body></html>
