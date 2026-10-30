@@ -36,6 +36,8 @@ Do not change a user-visible behavior or an API/data contract as part of a code-
 - Admin behavior is spread across a large app module and shared services. Refactor by feature boundaries, not by rewriting the entire dashboard.
 - Each Edge Function is an independent deployable unit. Shared utilities may be introduced only after tests establish unchanged request/response behavior.
 
+For the current function-level ownership map, see [FEATURE_OWNERSHIP.md](./FEATURE_OWNERSHIP.md). For task-scoped AI/developer instructions, see [AI_WORKFLOW.md](./AI_WORKFLOW.md).
+
 ## Safe change protocol
 
 1. Identify the feature owner and read only its entry point, service/repository, shared dependency and relevant tests.
