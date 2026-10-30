@@ -837,12 +837,12 @@ window.HFAdminReady.then(async H=>{
   }
   $("bulkNextStatus")?.addEventListener("change",()=>{
    const next=$("bulkNextStatus").value;$("bulkCancellationReasonWrap").hidden=next!=="cancelled";
-   $("bulkStatusHint").textContent=next==="processing"?"Requires a successful existing courier booking. Use Send Courier for new bookings.":next==="shipped"?"Requires verified courier pickup/in-transit status.":next==="delivered"?"Requires a courier-confirmed Delivered status.":next==="cancelled"?"Live or uncertain courier parcels are protected; cancel with the courier first.":"Orders already in this status will be skipped.";
+   $("bulkStatusHint").textContent=next==="pending"?"Only a Processing order without a live or uncertain courier parcel can return to Pending.":next==="processing"?"Requires a successful existing courier booking. Use Send Courier for new bookings.":next==="shipped"?"Requires verified courier pickup/in-transit status.":next==="delivered"?"Requires a courier-confirmed Delivered status.":next==="cancelled"?"Live or uncertain courier parcels are protected; cancel with the courier first.":"Orders already in this status will be skipped. Rewinding to Pending is allowed only for a Processing order without a live/uncertain parcel.";
   });
   $("bulkStatusForm")?.addEventListener("submit",async event=>{
    event.preventDefault();
    const button=$("bulkStatusSubmit"),next=$("bulkNextStatus").value,rows=bulkSelectedOrders(),reason=$("bulkCancellationReason").value.trim();
-   if(!rows.length||!["processing","shipped","delivered","cancelled"].includes(next)){$("bulkStatusError").textContent="Choose a supported status and select orders. Bulk status cannot rewind an order to Pending.";return;}
+   if(!rows.length||!["pending","processing","shipped","delivered","cancelled"].includes(next)){$("bulkStatusError").textContent="Choose a supported status and select orders. Bulk status cannot rewind an order to Pending.";return;}
    if(next==="cancelled"&&(reason.length<3||reason.length>500)){$("bulkStatusError").textContent="Enter a cancellation reason between 3 and 500 characters.";return;}
    if(next==="cancelled"&&!confirm("Cancel "+rows.length+" eligible order(s)? Orders with active or uncertain courier parcels will be skipped."))return;
    if(next==="delivered"&&!confirm("Only orders with a courier-confirmed Delivered status will be updated. Continue?"))return;
@@ -852,6 +852,7 @@ window.HFAdminReady.then(async H=>{
     for(const order of rows){
      const shipment=shipmentFor(order.id);
      if(order.status===next){skipped.push((order.order_number||"Order")+" is already "+next);continue;}
+     if(next==="pending"&&!(order.status==="processing"&&!courierBookingLocked(shipment))){skipped.push((order.order_number||"Order")+" cannot return to Pending while a live/uncertain courier parcel exists");continue;}
      if(next==="processing"&&!(shipment&&shipment.integration_mode==="live_api"&&shipment.booking_state==="succeeded")){skipped.push((order.order_number||"Order")+" requires a successful courier booking");continue;}
      if(next==="shipped"&&!(shipment&&shipment.integration_mode==="live_api"&&shipment.booking_state==="succeeded"&&["picked_up","in_transit","delivered"].includes(shipment.shipment_status))){skipped.push((order.order_number||"Order")+" pickup is not verified");continue;}
      if(next==="delivered"&&!(shipment&&shipment.integration_mode==="live_api"&&shipment.booking_state==="succeeded"&&shipment.shipment_status==="delivered")){skipped.push((order.order_number||"Order")+" delivery is not verified");continue;}
