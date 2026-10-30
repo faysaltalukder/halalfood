@@ -1134,7 +1134,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // The Supabase response confirms this order was saved in the primary database.
         const confirmedOrderId = String(winner.orderId || data.orderId || "");
         const confirmedTotal = Number(winner.orderTotal ?? localOrderTotal);
-        void window.HFIncompleteCheckout?.complete(checkoutSessionId, confirmedOrderId);
+        if (!winner.heldForReview) void window.HFIncompleteCheckout?.complete(checkoutSessionId, confirmedOrderId);
 
         const orderSuccessKey="HALAL_ORDER_SUCCESS_RECORDED_"+confirmedOrderId;
         let alreadyTracked=false;
