@@ -55,6 +55,8 @@ Use this file as the first navigation step for a task. It is a map of current ow
 
 ## Database table families
 
+Generated schema reference: `supabase/database.types.ts`. This file is generated from the current production database and should be refreshed after a reviewed schema change. Do not hand-edit generated types.
+
 The public schema contains 48 tables. The most relevant families are:
 
 - Store/catalog: `products`, `categories`, `blog_posts`, `site_content_blocks`
