@@ -43,3 +43,13 @@ These counts are a reconciliation signal, not proof that 71 unique schema change
 ## Deployment rule
 
 No Production DDL, policy rewrite, function replacement, secret rotation or Auth setting change is authorized by this register alone. Each requires source review, a tested migration, backup evidence, a rollback plan and post-change verification.
+
+
+## Remediation completed in the 2026-10-31 engineering pass
+
+- `public.admin_update_order_delivery_address(uuid,text)` was reviewed: it is intended for the authenticated admin flow and validates the admin identity/MFA in its function body. It was not revoked because the application calls it as part of the protected admin workflow.
+- `public.sync_my_customer_identity()` was reviewed: it is a self-service identity synchronization function tied to the caller's authenticated identity. It was not revoked because it is required by the customer account flow.
+- `order-security-admin` Production v2 had a runtime initialization bug: the `list_signals` action referenced the service-role client before its declaration. The client is now initialized after JWT/email/AAL2 validation and before action dispatch. Production v3 is active; JWT verification remains enabled.
+- All 16 Edge Function entrypoints pass the repository-wide Deno type-check after the source/type corrections in the engineering pass.
+- Leaked-password protection remains disabled because the available project connector does not expose the Auth security-setting mutation. This remains an explicit manual security-setting item, not silently ignored.
+- The `pg_net` extension and the 9 server-only RLS/no-policy tables were not changed. Moving an extension or adding policies without validating every dependency/access path would risk breaking scheduled jobs and private integrations.
