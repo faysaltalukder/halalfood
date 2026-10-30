@@ -168,6 +168,12 @@ window.HFIncompleteCheckout = {
  complete: async (sessionId,orderNumber) => {
   if (!sessionId || !orderNumber) return;
   window.clearTimeout(saveTimer);
+  if (recoveryBox?.checked) {
+   const snapshot = buildPayload();
+   if (snapshot.customerName || snapshot.customerPhone || snapshot.customerEmail) {
+    await post(snapshot);
+   }
+  }
   const result = await post({action:"complete",checkoutSessionId:sessionId,orderNumber:String(orderNumber).slice(0,40)});
   try { sessionStorage.removeItem(sessionKey); sessionStorage.removeItem(consentKey); sessionStorage.removeItem(marketingKey); } catch (_) {}
   return result;
