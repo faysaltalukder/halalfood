@@ -37,6 +37,9 @@ jobs:
       - name: Check repository structure and public secret exposure
         run: node scripts/repo-health.mjs
 
+      - name: Test admin analytics model
+        run: node --test tests/admin-analytics-model.test.mjs
+
       - name: Check JavaScript syntax
         shell: bash
         run: |
