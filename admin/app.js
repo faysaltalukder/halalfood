@@ -824,7 +824,7 @@ window.HFAdminReady.then(async H=>{
   function exportSelectedOrders(){
    const chosen=all.filter(order=>selectedOrderIds.has(order.id));
    if(!chosen.length){toast("Select at least one order first.","error");return;}
-   const rows=chosen.map(order=>({order_number:order.order_number||String(order.id).slice(0,8),customer:order.customer_name||"",phone:order.customer_phone||"",delivery_address:order.delivery_address||"",delivery_zone:order.delivery_zone||"",products:(order.order_items||[]).map(item=>(item.product_name||"Product")+" × "+item.quantity+" "+(item.unit||"")).join(" | "),products_subtotal:Number(order.subtotal||0),delivery_charge:Number(order.delivery_charge||0),recorded_total:Number(order.total||0),status:order.status||"",ordered_at:order.ordered_at||""}));
+   const rows=chosen.map(order=>({order_number:order.order_number||String(order.id).slice(0,8),customer:order.customer_name||"",phone:order.customer_phone||"",delivery_address:order.delivery_address||"",delivery_zone:order.delivery_zone||"",products:(order.order_items||[]).map(item=>(item.product_name||"Product")+" × "+item.quantity+" "+(item.unit||"")+" @ "+(item.shipping_weight_kg??"weight not set")+" kg/unit").join(" | "),estimated_item_weight_kg:orderPackedWeightKg(order).weight??"incomplete",assigned_to:teamMembers.find(member=>member.id===order.assigned_to_team_member_id)?.full_name||"Unassigned",products_subtotal:Number(order.subtotal||0),delivery_charge:Number(order.delivery_charge||0),recorded_total:Number(order.total||0),status:order.status||"",ordered_at:order.ordered_at||""}));
    downloadFile("halal-food-selected-orders.csv",csvText(rows),"text/csv;charset=utf-8");toast(chosen.length+" selected order(s) exported.");
   }
 
@@ -844,6 +844,7 @@ window.HFAdminReady.then(async H=>{
    const button=$("bulkStatusSubmit"),next=$("bulkNextStatus").value,rows=bulkSelectedOrders(),reason=$("bulkCancellationReason").value.trim();
    if(!rows.length||!["processing","shipped","delivered","cancelled"].includes(next)){$("bulkStatusError").textContent="Choose a supported status and select orders. Bulk status cannot rewind an order to Pending.";return;}
    if(next==="cancelled"&&(reason.length<3||reason.length>500)){$("bulkStatusError").textContent="Enter a cancellation reason between 3 and 500 characters.";return;}
+   if(next==="cancelled"&&!confirm("Cancel "+rows.length+" eligible order(s)? Orders with active or uncertain courier parcels will be skipped."))return;
    if(next==="delivered"&&!confirm("Only orders with a courier-confirmed Delivered status will be updated. Continue?"))return;
    button.disabled=true;button.textContent="Updating…";$("bulkStatusError").textContent="";
    let updated=0;const skipped=[];
