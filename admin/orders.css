@@ -42,3 +42,16 @@ html[data-admin-theme="light"] .hf-orders-hero-copy>p:not(.page-eyebrow){color:#
 @media(max-width:620px){.hf-orders-hero{padding:16px}.hf-orders-hero-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.hf-orders-hero-actions .hf-button:last-child{grid-column:1/-1}.hf-orders-stats-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.hf-orders-at-a-glance{margin:15px 0}.hf-orders-stats-heading{align-items:flex-start}.hf-orders-stats-heading .hf-status{white-space:nowrap}.hf-orders-stat{min-height:116px!important;padding:12px!important}.hf-orders-stat-value{font-size:25px}.hf-orders-stat-label{font-size:10.5px}.hf-orders-meta{gap:7px}.hf-orders-meta .hf-status{white-space:normal}.hf-orders-hero-actions .hf-button{white-space:normal}}
 @media(max-width:380px){.hf-orders-stats-grid{gap:7px}.hf-orders-stat{padding:10px!important}.hf-orders-stat-icon{width:26px;height:26px;flex-basis:26px}.hf-orders-stat-value{font-size:23px}}
 @media(prefers-reduced-motion:reduce){button.hf-orders-stat,.hf-orders-hero-actions .hf-button{transition:none}}
+
+
+/* Suspicious-order review queue */
+.hf-security-review-section{margin:0 0 18px;scroll-margin-top:90px}
+.hf-security-review-section .hf-table{min-width:980px}
+.hf-security-review-section .hf-table td{vertical-align:top}
+.hf-security-review-section .hf-table td small{display:block;margin-top:4px;line-height:1.45}
+.hf-security-review-section .hf-table-actions{align-items:center}
+.hf-security-review-section [data-security-decision][disabled]{opacity:.55;cursor:wait}
+@media(max-width:700px){
+ .hf-security-review-section .hf-section-head{align-items:flex-start;flex-direction:column}
+ .hf-security-review-section .hf-table{min-width:920px}
+}
