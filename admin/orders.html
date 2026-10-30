@@ -42,6 +42,20 @@
 <div class="hf-table-wrap" tabindex="0" role="region" aria-label="Scrollable table results. On small screens, scroll horizontally to see all columns."><table class="hf-table"><thead><tr><th>Order</th><th>Customer</th><th>Items</th><th>Subtotal</th><th>Delivery</th><th>Total</th><th>Status</th><th>Placed</th><th>Actions</th></tr></thead><tbody id="ordersDataBody"><tr><td colspan="9" class="hf-loading">Loading orders…</td></tr></tbody></table></div><p class="hf-data-note" id="ordersUpdated"></p></section>
 <dialog id="orderDialog" class="hf-dialog"><div class="hf-dialog-inner"><div class="hf-dialog-head"><div><p class="hf-dialog-title-tag">ORDER DETAILS</p><h2 id="orderDetailTitle">Order</h2><p>Customer, delivery and product details.</p></div><button id="closeOrderDialog" class="hf-button hf-button-secondary hf-dialog-close" type="button">×</button></div><div id="orderDetailContent"></div><div id="orderDetailActions" class="hf-dialog-actions" style="justify-content:flex-start"><a id="orderWhatsAppBtn" class="hf-button hf-button-success" target="_blank" rel="noopener noreferrer" hidden>Open WhatsApp draft</a><button id="orderPrintBtn" class="hf-button hf-button-secondary" type="button">Print packing slip</button></div><section class="hf-card hf-card-pad" id="orderHistorySection" style="margin-top:14px;box-shadow:none"><div class="hf-section-head"><div><h3 style="margin:0;font-size:15px">Status history</h3><p>History is recorded from the date this feature was enabled; earlier transitions are not available.</p></div></div><div id="orderHistoryContent"><p class="hf-data-note">Select an order to view its history.</p></div></section><div class="hf-dialog-actions"><button id="closeOrderDialogBottom" class="hf-button hf-button-primary" type="button" onclick="document.getElementById('orderDialog').close()">Done</button></div></div></dialog>
 
+<dialog id="courierHistoryDialog" class="hf-dialog">
+<div class="hf-dialog-inner">
+  <div class="hf-dialog-head">
+    <div><p class="hf-dialog-title-tag">CUSTOMER DELIVERY HISTORY</p><h2 id="courierHistoryTitle">Courier history</h2><p id="courierHistoryPhone" class="hf-data-note">Checking the customer number across connected courier-history sources.</p></div>
+    <button id="courierHistoryClose" class="hf-button hf-button-secondary hf-dialog-close" type="button" aria-label="Close">×</button>
+  </div>
+  <div id="courierHistoryMessage" class="hf-banner hf-banner-info">The lookup is requested by an MFA-verified admin. It does not automatically approve or reject an order.</div>
+  <div id="courierHistorySummary" class="hf-kpi-grid" style="margin:14px 0"></div>
+  <div id="courierHistoryResults"></div>
+  <p id="courierHistoryFootnote" class="hf-data-note">Results come from a separate courier-history aggregator, not from this store's own order history. Pathao may return rating bands rather than exact parcel counts.</p>
+  <div class="hf-dialog-actions"><button id="courierHistoryDone" class="hf-button hf-button-primary" type="button">Done</button></div>
+</div>
+</dialog>
+
 <dialog id="confirmBookDialog" class="hf-dialog"><form id="confirmBookForm" class="hf-dialog-inner">
 <div class="hf-dialog-head"><div><p class="hf-dialog-title-tag">CONFIRM ORDER · BOOK COURIER</p><h2>Confirm order and book delivery</h2><p>Follow the steps below. The courier receives the order only after you confirm.</p></div><button id="confirmBookClose" class="hf-button hf-button-secondary hf-dialog-close" type="button" aria-label="Close">×</button></div>
 <input id="confirmBookOrderId" type="hidden">
@@ -85,4 +99,4 @@
 <div class="hf-dialog-actions"><button id="confirmBookCancel" class="hf-button hf-button-secondary" type="button">Go back</button><button id="confirmBookSubmit" class="hf-button hf-button-primary" type="submit">Confirm order &amp; book courier</button></div>
 </form></dialog>
 
-</main></div><script defer src="./i18n.js?v=20261023-admin-ultimate-v1"></script><script defer src="./shared.js?v=20261027-site-publisher-v1"></script><script defer src="./app.js?v=20261030-order-security-monitor-v2"></script></body></html>
+</main></div><script defer src="./i18n.js?v=20261023-admin-ultimate-v1"></script><script defer src="./shared.js?v=20261027-site-publisher-v1"></script><script defer src="./app.js?v=20261030-order-security-courier-v3"></script></body></html>
