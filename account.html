@@ -180,16 +180,31 @@ $("resetForm").addEventListener("submit",async e=>{
  }catch(err){message(err.message||"Could not update the password. Request a new reset link and try again.","error")}
  finally{setBusy(f,false)}
 });
+function customerAvatarUrl(user){
+ const metadata=user?.user_metadata||{};
+ const candidate=[metadata.avatar_url,metadata.picture,metadata.photo_url,metadata.profile_image].find(value=>typeof value==="string"&&/^https:\/\/[^"'<>\s]+$/i.test(value.trim()));
+ const url=String(candidate||"").trim();
+ return url.length<=2048?url:"";
+}
+async function syncCustomerAvatar(user){
+ if(!user?.id)return;
+ const avatarUrl=customerAvatarUrl(user);
+ if(!avatarUrl)return;
+ const {error}=await client.from("customer_profiles").upsert({user_id:user.id,avatar_url:avatarUrl},{onConflict:"user_id"});
+ if(error)console.warn("Customer avatar sync skipped",error.message);
+}
 async function ensureProfile(user,name){
  if(!user?.id)return;
- const {error}=await client.from("customer_profiles").upsert({user_id:user.id,full_name:name||user.user_metadata?.full_name||""},{onConflict:"user_id"});
+ const payload={user_id:user.id,full_name:name||user.user_metadata?.full_name||""};
+ const avatarUrl=customerAvatarUrl(user);if(avatarUrl)payload.avatar_url=avatarUrl;
+ const {error}=await client.from("customer_profiles").upsert(payload,{onConflict:"user_id"});
  if(error)console.warn("Profile setup skipped",error.message)
 }
 function escapeHtml(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
 function money(v){return "৳"+Number(v||0).toLocaleString("en-BD",{maximumFractionDigits:2})}
 function updateCartCount(){const countEl=$("accountCartCount");if(!countEl)return;const items=window.HALAL_CART_API?.read?.()||[];countEl.textContent=String(items.length);const unitsEl=$("accountCartUnits");if(unitsEl)unitsEl.textContent=String(items.reduce((sum,item)=>sum+Math.max(0,Number(item.qty)||0),0))+" total units in your saved cart"}
 window.addEventListener("halalcart:updated",updateCartCount);window.addEventListener("halalcloudcart:ready",updateCartCount);
-function renderProfileAvatar(user){const el=$("accountProfileAvatar");if(!el)return;const metadata=user?.user_metadata||{};const identity=String(metadata.full_name||metadata.name||metadata.given_name||user?.email||"Account").trim();const initial=Array.from(identity)[0]?.toLocaleUpperCase("en-US")||"A";el.replaceChildren();const photo=[metadata.avatar_url,metadata.picture,metadata.photo_url,metadata.profile_image].find(value=>typeof value==="string"&&value.startsWith("https://"));if(photo){const img=document.createElement("img");img.alt="";img.referrerPolicy="no-referrer";img.src=photo;img.addEventListener("error",()=>{el.textContent=initial},{once:true});el.appendChild(img)}else{el.textContent=initial}}
+function renderProfileAvatar(user){const el=$("accountProfileAvatar");if(!el)return;const metadata=user?.user_metadata||{};const identity=String(metadata.full_name||metadata.name||metadata.given_name||user?.email||"Account").trim();const initial=Array.from(identity)[0]?.toLocaleUpperCase("en-US")||"A";el.replaceChildren();const photo=customerAvatarUrl(user);if(photo){const img=document.createElement("img");img.alt="";img.referrerPolicy="no-referrer";img.src=photo;img.addEventListener("error",()=>{el.textContent=initial},{once:true});el.appendChild(img)}else{el.textContent=initial}}
 async function loadMyOrders(user){
  const msg=$("myOrdersMsg"),list=$("myOrdersList");msg.textContent="Loading your orders…";msg.className="msg";list.innerHTML="";
  const email=String(user?.email||"").trim().toLowerCase();
@@ -204,14 +219,15 @@ async function loadMyOrders(user){
 }
 async function showAccount(user){
  show("accountPanel");$("accountEmail").textContent=user.email||"";renderProfileAvatar(user);announceAuthState(user);updateCartCount();
- const {data,error}=await client.from("customer_profiles").select("full_name,phone").eq("user_id",user.id).maybeSingle();
- if(!error&&data){$("profileName").value=data.full_name||"";$("profilePhone").value=data.phone||""}
- else{$("profileName").value=user.user_metadata?.full_name||"";$("profilePhone").value=""}
+ const {data,error}=await client.from("customer_profiles").select("full_name,phone,avatar_url").eq("user_id",user.id).maybeSingle();
+ if(!error&&data){$("profileName").value=data.full_name||user.user_metadata?.full_name||user.user_metadata?.name||"";$("profilePhone").value=data.phone||""}
+ else{$("profileName").value=user.user_metadata?.full_name||user.user_metadata?.name||"";$("profilePhone").value=""}
+ await syncCustomerAvatar(user);
  await loadMyOrders(user);
 }
 $("saveProfileBtn").addEventListener("click",async()=>{
  const {data:{user}}=await client.auth.getUser();if(!user)return showMode("login");
- const {error}=await client.from("customer_profiles").upsert({user_id:user.id,full_name:$("profileName").value.trim(),phone:$("profilePhone").value.trim()||null},{onConflict:"user_id"});
+ const {error}=await client.from("customer_profiles").upsert({user_id:user.id,full_name:$("profileName").value.trim(),phone:$("profilePhone").value.trim()||null,avatar_url:customerAvatarUrl(user)||null},{onConflict:"user_id"});
  if(error)message("Profile could not be saved. Check profile permissions.","error");else{const fullName=$("profileName").value.trim();const {error:metaError}=await client.auth.updateUser({data:{full_name:fullName}});if(metaError)console.warn("Profile name saved to profile table but auth metadata could not be updated",metaError.message);const {data:{user:updatedUser}}=await client.auth.getUser();renderProfileAvatar(updatedUser);announceAuthState(updatedUser);message("Profile saved.","success")}
 });
 $("logoutBtn").addEventListener("click",async()=>{await client.auth.signOut();announceAuthState(null,"signout");showMode("login");message("You have been logged out.","success")});
