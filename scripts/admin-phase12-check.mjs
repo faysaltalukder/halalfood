@@ -8,7 +8,7 @@ const root = process.cwd();
 const adminDir = join(root, "admin");
 const sharedCssVersion = "20261030-admin-theme-v2";
 const sharedJsVersion = "20261030-illustrated-nav-v1";
-const appJsVersion = "20261030-orders-refined-v4";
+const appJsVersion = "20261030-orders-polish-v5";
 const read = (path) => readFileSync(join(root, path), "utf8");
 
 const htmlFiles = readdirSync(adminDir).filter((file) => file.endsWith(".html"));
@@ -106,7 +106,7 @@ for (const id of [
 ]) {
   assert.ok(ordersPage.includes(`id="${id}"`), `Orders workspace is missing #${id}.`);
 }
-assert.ok(ordersPage.includes("orders.css?v=20261030-orders-refined-v4"), "Orders workspace stylesheet must be cache-busted.");
+assert.ok(ordersPage.includes("orders.css?v=20261030-orders-polish-v5"), "Orders workspace stylesheet must be cache-busted.");
 assert.ok(ordersPage.includes("app.js?v=20261030-orders-refined-v3"), "Orders workspace must load the order-card application script.");
 for (const status of ["pending", "processing", "shipped", "delivered", "cancelled"]) {
   assert.ok(ordersCss.includes(`.hf-order-card[data-status="${status}"]`), `Order cards need a distinct ${status} color.`);
@@ -244,3 +244,11 @@ assert.ok(ordersCss.includes("Refined Orders v3"), "Refined Orders styling and s
 for (const tone of ["pending","processing","shipped","delivered","cancelled"]) {
   assert.ok(ordersCss.includes('.hf-order-card[data-status="' + tone + '"] .order-status-select'), "Status control needs a distinct " + tone + " color.");
 }
+
+assert.ok(ordersApp.includes("whatsapp=whatsappUrl(o)"), "Order phone links must open WhatsApp.");
+assert.ok(ordersApp.includes('href="'+esc(whatsapp)+'" target="_blank" rel="noopener noreferrer"'), "Customer phone click must open a protected WhatsApp chat tab.");
+assert.ok(ordersApp.includes("hf-order-zone-badge"), "Delivery zone should be a secondary label, not the main address.");
+assert.ok(ordersCss.includes(".hf-order-address{font-size:13px"), "Delivery address should be more prominent than delivery zone.");
+assert.ok(ordersCss.includes(".hf-order-item-image{width:48px;height:48px"), "Product thumbnails should be visibly larger.");
+assert.ok(ordersCss.includes(".hf-order-item-copy strong{font-size:13px"), "Product names should have readable emphasis.");
+assert.ok(ordersCss.includes(".hf-order-reference small{font-size:12px"), "Order date/time should be more legible.");
