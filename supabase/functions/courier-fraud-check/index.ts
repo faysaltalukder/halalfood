@@ -233,8 +233,13 @@ async function pathaoHistory(phone: string) {
     };
   }
 
+  // Match the exact host used by courier-integration for booking and tracking.
+  const base = (Deno.env.get("PATHAO_BASE_URL") || "https://api-hermes.pathao.com").trim().replace(/\/+$/, "");
+  let token: string;
+  let tokenResult: { response: Response; data: any };
+
   try {
-    const tokenResult = await fetchJson("https://api-hermes.pathao.com/aladdin/api/v1/issue-token", {
+    tokenResult = await fetchJson(base + "/aladdin/api/v1/issue-token", {
       method: "POST",
       headers: { "Accept": "application/json", "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -245,60 +250,180 @@ async function pathaoHistory(phone: string) {
         grant_type: "password",
       }),
     });
-    const token = tokenResult.data?.access_token ?? tokenResult.data?.data?.access_token;
-    if (!tokenResult.response.ok || !token) {
-      return {
-        courierName: "Pathao",
-        status: "error",
-        dataType: "none",
-        message: "Pathao Merchant API authentication ব্যর্থ হয়েছে। credentials ও API activation যাচাই করো।",
-        total: null, success: null, cancel: null, successRate: null, customerRating: null, riskLevel: null,
-      };
-    }
-
-    const headers = {
-      "Authorization": "Bearer " + String(token),
-      "Accept": "application/json",
-      "Content-Type": "application/json",
-    };
-    let result = await fetchJson("https://api-hermes.pathao.com/aladdin/api/v1/user/success-rate", {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ phone }),
-    });
-
-    // Older Pathao Merchant API integrations expose the same user-success lookup
-    // on merchant.pathao.com. Only try this compatibility route when the primary
-    // route is absent; never retry on authorization or account errors.
-    if (result.response.status === 404 || result.response.status === 405) {
-      result = await fetchJson("https://merchant.pathao.com/api/v1/user/success", {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ phone }),
-      });
-    }
-
-    if (!result.response.ok) {
-      return {
-        courierName: "Pathao",
-        status: "error",
-        dataType: "none",
-        message: resultMessage("Pathao", result.response.status, result.data),
-        total: null, success: null, cancel: null, successRate: null, customerRating: null, riskLevel: null,
-      };
-    }
-    return normalizeProvider("Pathao", result.data);
   } catch (error) {
+    const errorName = error instanceof Error ? error.name : "UnknownError";
+    const errorMessage = clean(error instanceof Error ? error.message : error, 180);
+    console.error("Pathao customer-history token request failed:", JSON.stringify({
+      stage: "token_request",
+      host: new URL(base).host,
+      error_name: errorName,
+      error_message: errorMessage,
+    }));
     return {
       courierName: "Pathao",
       status: "error",
       dataType: "none",
-      message: error instanceof Error && error.name === "TimeoutError"
-        ? "Pathao API response timeout হয়েছে। পরে আবার চেষ্টা করো।"
-        : "Pathao customer-history API-তে সংযোগ করা যায়নি।",
+      message: "Pathao token endpoint-এ server থেকে সংযোগ করা যায়নি (" + errorName + ")।",
+      diagnostic: { stage: "token_request", errorName },
       total: null, success: null, cancel: null, successRate: null, customerRating: null, riskLevel: null,
     };
   }
+
+  const rawToken = tokenResult.data?.access_token ?? tokenResult.data?.data?.access_token;
+  if (!tokenResult.response.ok || !rawToken) {
+    const status = tokenResult.response.status;
+    const providerMessage = clean(tokenResult.data?.message || tokenResult.data?.error || tokenResult.data?.detail, 180);
+    console.warn("Pathao customer-history token rejected:", JSON.stringify({
+      stage: "token_request",
+      host: new URL(base).host,
+      http_status: status,
+      provider_message: providerMessage,
+    }));
+    return {
+      courierName: "Pathao",
+      status: "error",
+      dataType: "none",
+      message: "Pathao Merchant API token request প্রত্যাখ্যান করেছে (HTTP " + status + "). " +
+        (providerMessage || "Existing booking credentials ও configured API host যাচাই প্রয়োজন।"),
+      diagnostic: { stage: "token_request", httpStatus: status },
+      total: null, success: null, cancel: null, successRate: null, customerRating: null, riskLevel: null,
+    };
+  }
+  token = String(rawToken);
+
+  const headers = {
+    "Authorization": "Bearer " + token,
+    "Accept": "application/json",
+    "Content-Type": "application/json",
+  };
+
+  // Pathao integrations in the field use both the newer Aladdin route and
+  // the compatibility Merchant route. Try the second route after transport,
+  // endpoint, authorization, or response-shape failures; never expose secrets.
+  const endpoints = [
+    {
+      variant: "aladdin_user_success_rate",
+      url: base + "/aladdin/api/v1/user/success-rate",
+    },
+    {
+      variant: "merchant_user_success",
+      url: base.toLowerCase().includes("courier-api-sandbox.pathao.com")
+        ? base + "/api/v1/user/success"
+        : "https://merchant.pathao.com/api/v1/user/success",
+    },
+  ];
+
+  const failures: Array<Record<string, unknown>> = [];
+  for (const endpoint of endpoints) {
+    let result: { response: Response; data: any };
+    try {
+      result = await fetchJson(endpoint.url, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ phone }),
+      });
+    } catch (error) {
+      const errorName = error instanceof Error ? error.name : "UnknownError";
+      const errorMessage = clean(error instanceof Error ? error.message : error, 180);
+      failures.push({ variant: endpoint.variant, kind: "network", errorName });
+      console.error("Pathao customer-history endpoint transport failed:", JSON.stringify({
+        stage: "history_lookup",
+        variant: endpoint.variant,
+        host: new URL(endpoint.url).host,
+        error_name: errorName,
+        error_message: errorMessage,
+      }));
+      continue;
+    }
+
+    if (!result.response.ok) {
+      const status = result.response.status;
+      const providerMessage = clean(result.data?.message || result.data?.error || result.data?.detail, 180);
+      failures.push({ variant: endpoint.variant, kind: "http", httpStatus: status });
+      console.warn("Pathao customer-history endpoint returned HTTP error:", JSON.stringify({
+        stage: "history_lookup",
+        variant: endpoint.variant,
+        host: new URL(endpoint.url).host,
+        http_status: status,
+        provider_message: providerMessage,
+      }));
+      // Do not turn a rate-limit response into extra requests.
+      if (status === 429) break;
+      continue;
+    }
+
+    try {
+      const normalized = normalizeProvider("Pathao", result.data);
+      if (normalized.status === "available" || normalized.status === "no_history") {
+        return {
+          ...normalized,
+          diagnostic: {
+            stage: "completed",
+            endpointVariant: endpoint.variant,
+            httpStatus: result.response.status,
+          },
+        };
+      }
+      failures.push({
+        variant: endpoint.variant,
+        kind: "unexpected_status",
+        httpStatus: result.response.status,
+      });
+    } catch (error) {
+      const errorName = error instanceof Error ? error.name : "UnknownError";
+      const responseKeys = result.data && typeof result.data === "object" && !Array.isArray(result.data)
+        ? Object.keys(result.data).slice(0, 20)
+        : [];
+      failures.push({
+        variant: endpoint.variant,
+        kind: "response_shape",
+        httpStatus: result.response.status,
+        errorName,
+      });
+      console.warn("Pathao customer-history response could not be normalized:", JSON.stringify({
+        stage: "response_normalization",
+        variant: endpoint.variant,
+        http_status: result.response.status,
+        response_keys: responseKeys,
+        error_name: errorName,
+      }));
+    }
+  }
+
+  const httpFailures = failures.filter((item) => item.kind === "http");
+  const responseFailures = failures.filter((item) => item.kind === "response_shape");
+  const networkFailures = failures.filter((item) => item.kind === "network");
+  let message = "Pathao customer-history lookup সম্পন্ন হয়নি।";
+  let diagnostic: Record<string, unknown> = { stage: "history_lookup", failures };
+
+  if (httpFailures.length) {
+    const last = httpFailures[httpFailures.length - 1];
+    const status = Number(last.httpStatus);
+    message = status === 401 || status === 403
+      ? "Pathao customer-history endpoint access প্রত্যাখ্যান করেছে (HTTP " + status + ")। Booking API কাজ করলেও এই lookup route-এর permission আলাদা হতে পারে।"
+      : status === 404 || status === 405
+        ? "Pathao customer-history endpoint এই host-এ পাওয়া যায়নি বা চালু নেই (HTTP " + status + ")।"
+        : status === 429
+          ? "Pathao customer-history API request limit (HTTP 429) জানিয়েছে। কিছুক্ষণ পরে আবার চেষ্টা করো।"
+          : "Pathao customer-history endpoint HTTP " + status + " error দিয়েছে।";
+    diagnostic = { stage: "history_lookup", httpFailures };
+  } else if (responseFailures.length) {
+    message = "Pathao API HTTP response দিয়েছে, কিন্তু response format আমাদের customer-history parser বুঝতে পারেনি।";
+    diagnostic = { stage: "response_normalization", responseFailures };
+  } else if (networkFailures.length) {
+    message = "Pathao booking token পাওয়া গেছে, কিন্তু customer-history endpoint-এ server থেকে network connection সম্পন্ন হয়নি।";
+    diagnostic = { stage: "history_lookup", networkFailures };
+  }
+
+  console.error("Pathao customer-history lookup exhausted all compatible endpoints:", JSON.stringify(diagnostic));
+  return {
+    courierName: "Pathao",
+    status: "error",
+    dataType: "none",
+    message,
+    diagnostic,
+    total: null, success: null, cancel: null, successRate: null, customerRating: null, riskLevel: null,
+  };
 }
 
 async function steadfastHistory(phone: string) {
