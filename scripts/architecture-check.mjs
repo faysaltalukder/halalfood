@@ -10,6 +10,8 @@ const required = [
   "docs/ARCHITECTURE.md",
   "docs/AI_WORKFLOW.md",
   "docs/FEATURE_OWNERSHIP.md",
+  "scripts/feature-map.json",
+  "scripts/feature-context.mjs",
   "docs/EDGE_FUNCTIONS.md",
   "docs/SUPABASE_DRIFT_REGISTER.md",
   "CONTRIBUTING.md",
@@ -67,4 +69,6 @@ if (failures.length) {
   process.exitCode = 1;
 } else {
   console.log("Architecture guard passed.");
+  const contextCheck = spawnSync(process.execPath, ["scripts/feature-context.mjs", "--check"], { encoding: "utf8" });
+  if (contextCheck.status !== 0) { console.error(contextCheck.stderr || contextCheck.stdout); process.exitCode = 1; }
 }
