@@ -150,8 +150,10 @@ Deno.serve(async (request: Request) => {
       last_step: clean(payload.lastStep, 80) || null,
       last_field: clean(payload.lastField, 80) || null,
       progress_percent: Math.max(0, Math.min(95, Math.floor(Number(payload.progressPercent) || 0))),
-      recovery_consent: true,
-      recovery_consent_at: existing?.recovery_consent_at || now,
+      // New records are not mislabeled as explicit checkbox consents.
+      // The notice path is recorded separately in consent_method.
+      recovery_consent: existing?.recovery_consent === true,
+      recovery_consent_at: existing?.recovery_consent === true ? (existing?.recovery_consent_at || now) : null,
       marketing_consent: existing?.marketing_consent === true,
       marketing_consent_at: existing?.marketing_consent === true ? (existing?.marketing_consent_at || now) : null,
       consent_version: existing?.consent_version || PRIVACY_NOTICE_VERSION,
