@@ -110,6 +110,10 @@ Deno.serve(async (req: Request) => {
     const claims = decodeJwtClaims(token);
     if (claims?.aal !== "aal2") return reply({ success: false, error: "Admin MFA verification is required." }, 403);
 
+    const admin = createClient(url, serviceKey, {
+      auth: { persistSession: false, autoRefreshToken: false }
+    });
+
     let body: Record<string, any>;
     try { body = await req.json(); } catch { return reply({ success: false, error: "Invalid request body." }, 400); }
     const action = clean(body.action, 24).toLowerCase();
@@ -174,9 +178,6 @@ Deno.serve(async (req: Request) => {
       return reply({ success: false, error: "A valid review and decision are required." }, 400);
     }
 
-    const admin = createClient(url, serviceKey, {
-      auth: { persistSession: false, autoRefreshToken: false }
-    });
     const { data: review, error: reviewError } = await admin
       .from("order_security_reviews")
       .select("id,order_number,status,order_payload,fbp,fbc,user_agent")
@@ -232,14 +233,19 @@ Deno.serve(async (req: Request) => {
     }
 
     if (decision === "approve" && savedOrderId && Deno.env.get("SUPABASE_URL") && serviceKey) {
-      EdgeRuntime.waitUntil(dispatchApprovedPurchase({
+      const purchaseDispatch = dispatchApprovedPurchase({
         url,
         serviceKey,
         orderNumber: review.order_number,
         fbp: clean(review.fbp, 180),
         fbc: clean(review.fbc, 180),
         userAgent: clean(review.user_agent, 500)
-      }));
+      });
+      const edgeRuntime = (globalThis as typeof globalThis & {
+        EdgeRuntime?: { waitUntil: (promise: Promise<unknown>) => void };
+      }).EdgeRuntime;
+      if (edgeRuntime?.waitUntil) edgeRuntime.waitUntil(purchaseDispatch);
+      else void purchaseDispatch;
     }
 
     return reply({
