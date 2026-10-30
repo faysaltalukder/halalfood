@@ -311,6 +311,67 @@ window.HFAdminReady.then(async H=>{
    catch(_dateError){ordersDateLabel.textContent=new Date().toDateString();}
   }
   let all=[],activeOrderId=null,shipmentRows=[],shipmentRowsReady=false,shipmentLoadMessage="",redxAreaLookupError="",redxLoadedAreas=[],redxLoadedDistrict="",redxPreferredAreaId="",redxPreferredAreaName="";
+
+  async function refreshSecurityReviewQueue(){
+   const body=$("securityReviewBody");
+   if(!body)return;
+   const count=$("securityReviewCount");
+   const message=$("securityReviewMessage");
+   try{
+    const reviews=await signedQuery(client.from("order_security_reviews")
+     .select("id,order_number,risk_score,risk_flags,form_elapsed_ms,order_payload,created_at")
+     .eq("status","pending_review")
+     .order("created_at",{ascending:false})
+     .limit(100));
+    if(count)count.textContent=reviews.length.toLocaleString("en-BD")+" awaiting review";
+    if(!reviews.length){
+     body.innerHTML='<tr><td colspan="7">'+makeEmpty("No orders awaiting security review","Orders with multiple risk signals will appear here. Normal customers are not delayed.")+'</td></tr>';
+     if(message)message.textContent="Queue clear. Only orders meeting the combined risk threshold are held here.";
+     return;
+    }
+    const flagLabels={
+     form_submitted_under_1_second:"Form submitted under 1 second",
+     form_submitted_under_2_5_seconds:"Form submitted under 2.5 seconds",
+     many_orders_from_same_ip_in_10_minutes:"Many orders from same network",
+     repeated_orders_from_same_ip_in_10_minutes:"Repeated orders from same network",
+     many_orders_from_same_device_in_1_hour:"Many orders from same device",
+     repeated_orders_from_same_device_in_1_hour:"Repeated orders from same device",
+     many_orders_from_same_phone_in_24_hours:"Many orders from same phone",
+     repeated_orders_from_same_phone_in_24_hours:"Repeated orders from same phone"
+    };
+    body.innerHTML=reviews.map(review=>{
+     const payload=review.order_payload&&typeof review.order_payload==="object"?review.order_payload:{};
+     const phone=payload.phone||payload.mobile||"—";
+     const address=payload.address||"";
+     const items=Array.isArray(payload.items)?payload.items:[];
+     const itemSummary=items.map(item=>String(item.product||item.name||"Product")+" × "+String(item.quantity||1)).join(", ");
+     const flags=(Array.isArray(review.risk_flags)?review.risk_flags:[])
+      .map(flag=>flagLabels[flag]||String(flag).replace(/_/g," "))
+      .join(" · ");
+     const elapsed=Number.isFinite(Number(review.form_elapsed_ms))&&review.form_elapsed_ms!==null
+      ? (Number(review.form_elapsed_ms)/1000).toFixed(1)+"s":"Not recorded";
+     const details=[itemSummary,address,"Form time: "+elapsed].filter(Boolean).join(" · ");
+     return '<tr>'+
+      '<td><strong>'+esc(review.order_number||"—")+'</strong><small style="display:block;color:var(--hf-muted)">'+esc(dateTime(review.created_at))+'</small></td>'+
+      '<td><strong>'+esc(payload.name||"Customer")+'</strong><small style="display:block;white-space:normal;max-width:260px;color:var(--hf-muted)">'+esc(details)+'</small></td>'+
+      '<td>'+esc(phone)+'</td>'+
+      '<td><strong>'+esc(review.risk_score)+'/100</strong></td>'+
+      '<td style="white-space:normal;min-width:220px">'+esc(flags||"Combined risk signals")+'</td>'+
+      '<td>'+esc(dateTime(review.created_at))+'</td>'+
+      '<td><div class="hf-table-actions" style="display:flex;gap:6px;flex-wrap:wrap">'+
+       '<button class="hf-button hf-button-primary hf-button-small" type="button" data-security-decision="approve" data-review-id="'+esc(review.id)+'">Approve</button>'+
+       '<button class="hf-button hf-button-secondary hf-button-small" type="button" data-security-decision="reject" data-review-id="'+esc(review.id)+'">Reject</button>'+
+      '</div></td></tr>';
+    }).join("");
+    if(message)message.textContent="Held orders are not in the normal Orders list, have not reserved inventory and have not triggered Purchase tracking. Verify by phone before approving.";
+   }catch(error){
+    console.error("Security review queue could not be loaded.",error);
+    if(count)count.textContent="Unavailable";
+    body.innerHTML='<tr><td colspan="7">Security review queue could not be loaded. Verify admin MFA access and refresh.</td></tr>';
+    if(message)message.textContent="The queue remains server-side; no held order is automatically approved.";
+   }
+  }
+
   function inferRedxDistrict(address){
    // Division names must not be mistaken for the destination district.
    const withoutDivision=String(address||"").replace(/\b[a-z]+\s+division\b/gi," ");
@@ -575,8 +636,46 @@ window.HFAdminReady.then(async H=>{
     shipmentRows=[];shipmentRowsReady=false;shipmentLoadMessage="Could not read courier records. Refresh and verify Admin/MFA access before booking.";
     console.error("Courier records could not be loaded.",err);
    }
-   render();$("ordersUpdated").textContent="Updated "+dateTime(new Date().toISOString());
+   render();
+   await refreshSecurityReviewQueue();
+   $("ordersUpdated").textContent="Updated "+dateTime(new Date().toISOString());
   }
+  $("securityReviewBody")?.addEventListener("click",async event=>{
+   const button=event.target.closest("[data-security-decision]");
+   if(!button||button.disabled)return;
+   const reviewId=String(button.dataset.reviewId||"");
+   const decision=String(button.dataset.securityDecision||"");
+   if(!reviewId||!["approve","reject"].includes(decision))return;
+   let notes="";
+   if(decision==="approve"){
+    const entered=window.prompt("Confirm that you have contacted the customer and verified this order. Enter a short note:","Customer confirmed by phone.");
+    if(entered===null)return;
+    notes=entered.trim();
+    if(notes.length<3){toast("Enter a short customer-verification note before approval.","error");return;}
+    if(!window.confirm("Approve this order? It will enter the normal Orders list, reserve stock and trigger the configured Purchase tracking."))return;
+   }else{
+    const entered=window.prompt("Why is this suspicious order being rejected?","Unable to verify customer / suspicious automated submission.");
+    if(entered===null)return;
+    notes=entered.trim();
+    if(notes.length<3){toast("Enter a short rejection reason.","error");return;}
+    if(!window.confirm("Reject this held order? No normal order or inventory reservation will be created."))return;
+   }
+   button.disabled=true;
+   const row=button.closest("tr");
+   row?.querySelectorAll("button[data-security-decision]").forEach(control=>control.disabled=true);
+   try{
+    const {data,error}=await client.functions.invoke("order-security-admin",{
+     body:{reviewId,decision,notes}
+    });
+    if(error||data?.success!==true)throw new Error(data?.error||error?.message||"Security review action failed.");
+    toast(decision==="approve"?"Order approved and added to Orders.":"Suspicious order rejected; no stock was reserved.","success");
+    await refresh();
+   }catch(error){
+    console.error("Security review decision failed.",error);
+    toast(error?.message||"Could not save the review decision. Refresh and check the queue.","error");
+    row?.querySelectorAll("button[data-security-decision]").forEach(control=>control.disabled=false);
+   }
+  });
   $("orderSearch")?.addEventListener("input",render);$("orderStatusFilter")?.addEventListener("change",render);
   const qStatus=new URLSearchParams(location.search).get("status");if(qStatus&&statusOptions.includes(qStatus))$("orderStatusFilter").value=qStatus;
   $("ordersStatusOverview")?.addEventListener("click",e=>{
