@@ -188,7 +188,6 @@ Deno.serve(async (req: Request) => {
       ? d.items
       : [{ product: d.product, quantity: d.quantity || 1, image: d.image }];
     if (items.length > 30) return json({ success: false, error: "Too many items in one order." }, 400);
-    const checkoutSessionId = clean(d.checkoutSessionId, 64);
     const payload = {
       name: clean(d.name, 80),
       phone: clean(d.mobile ?? d.phone, 32),
@@ -198,6 +197,7 @@ Deno.serve(async (req: Request) => {
       deliveryZone: clean(d.deliveryZone ?? d.delivery_zone, 40),
       paymentMethod: clean(d.paymentMethod ?? d.payment_method ?? "cash_on_delivery", 40).toLowerCase(),
       orderId: clean(d.orderId, 20),
+      checkoutSessionId: clean(d.checkoutSessionId, 64),
       items: items.map((item: any) => ({
         product: clean(item.product ?? item.name ?? item.slug, 120),
         quantity: item.quantity ?? item.qty ?? 1,
@@ -382,6 +382,7 @@ Deno.serve(async (req: Request) => {
       if (savedOrderError) {
         console.warn("Verified order ID lookup failed; browser Pixel Purchase will be skipped.", String(savedOrderError.code || "unknown"));
       } else if (savedOrder?.id) {
+        const checkoutSessionId = payload.checkoutSessionId;
         if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(checkoutSessionId)) {
           const convertedAt = new Date().toISOString();
           const { error: incompleteCheckoutError } = await admin
