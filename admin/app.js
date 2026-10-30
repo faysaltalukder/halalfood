@@ -11,6 +11,7 @@ window.HFAdminReady.then(async H=>{
  if(!H)return;
  const {client,ADMIN_EMAIL,esc,money,shortNum,dateTime,dateOnly,toast,audit,signedQuery,downloadFile,csvText,slugify,rangeQuery,fetchOrders,fetchEvents,fetchProducts,fetchCategories,fetchPosts,fetchFinance,palette,colorSet,chartTheme,drawChart,groupBy,lastDateKeys,makeStatus,makeEmpty,showTableMessage,statusClass,charts}=H;
  const $=id=>document.getElementById(id);
+ const analyticsModel=window.HFAnalyticsModel||{};
  const page=document.body.dataset.page||"overview";
  const todayISO=()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
  const fileBase=s=>String(s||"halal-food-report").toLowerCase().replace(/[^a-z0-9-]+/g,"-").replace(/^-|-$/g,"")||"halal-food-report";
@@ -50,55 +51,6 @@ window.HFAdminReady.then(async H=>{
   const labels=["pending","processing","shipped","delivered","cancelled"];
   return {labels,datasets:[{data:labels.map(s=>orders.filter(o=>o.status===s).length),backgroundColor:[palette.yellow,palette.blue,palette.purple,palette.green,palette.red],borderColor:chartTheme().surface,borderWidth:3,hoverOffset:7}]};
  }
- function stageActors(events,name){
-  const rows=events.filter(e=>e.event_name===name);
-  return new Set(rows.map(e=>e.session_id||e.anonymous_id||("event-"+e.id))).size;
- }
- function topProducts(events,products,field="item_name",eventName="view_item"){
-  const rows=events.filter(e=>e.event_name===eventName&&String(e[field]||"").trim());
-  const by=new Map();rows.forEach(e=>{const name=String(e[field]).trim();by.set(name,(by.get(name)||0)+1);});
-  return [...by.entries()].map(([name,count])=>({name,count,product:products.find(p=>p.name===name||p.slug===name)})).sort((a,b)=>b.count-a.count).slice(0,8);
- }
-
- function visitorSessionKey(event){return String(event.session_id||event.anonymous_id||"");}
- function formatSeconds(seconds){const value=Math.max(0,Math.round(Number(seconds)||0));if(value<60)return value+" sec";const minutes=Math.floor(value/60),remaining=value%60;return remaining?minutes+"m "+remaining+"s":minutes+"m";}
- function buildPageExperience(events){
-  const pages=new Map();const getPage=path=>{const key=String(path||"/");if(!pages.has(key))pages.set(key,{path:key,views:0,visibleSeconds:0,timingCount:0,lastSeenSessions:0});return pages.get(key);};
-  events.forEach(event=>{const row=getPage(event.page_path);if(event.event_name==="page_view")row.views++;if(event.event_name==="page_engagement"){const seconds=Number(event.value);if(Number.isFinite(seconds)&&seconds>=0){row.visibleSeconds+=seconds;row.timingCount++;}}});
-  const latestBySession=new Map();events.forEach(event=>{const key=visitorSessionKey(event),stamp=Date.parse(event.occurred_at||"");if(!key||!Number.isFinite(stamp))return;const previous=latestBySession.get(key);if(!previous||stamp>Date.parse(previous.occurred_at||""))latestBySession.set(key,event);});
-  latestBySession.forEach(event=>getPage(event.page_path).lastSeenSessions++);return [...pages.values()].sort((a,b)=>b.views-a.views||b.visibleSeconds-a.visibleSeconds);
- }
- function buildSessionJourneys(events){
-  const groups=new Map();events.forEach(event=>{const key=visitorSessionKey(event);if(!key)return;if(!groups.has(key))groups.set(key,[]);groups.get(key).push(event);});
-  return [...groups.entries()].map(([sessionId,rows])=>{rows.sort((a,b)=>Date.parse(a.occurred_at||0)-Date.parse(b.occurred_at||0));const pageViews=rows.filter(e=>e.event_name==="page_view"),pathSteps=[];pageViews.forEach(e=>{const path=String(e.page_path||"/");if(pathSteps[pathSteps.length-1]!==path)pathSteps.push(path);});
-   const last=rows[rows.length-1]||{},visibleSeconds=rows.filter(e=>e.event_name==="page_engagement").reduce((sum,e)=>sum+Math.max(0,Number(e.value)||0),0),count=name=>rows.filter(e=>e.event_name===name).length;
-   return {sessionId,rows,pathSteps,steps:pageViews.length,lastSeen:last.occurred_at||"",lastPage:last.page_path||"/",visibleSeconds,cartAdds:count("add_to_cart"),checkouts:count("begin_checkout"),orderSubmits:count("order_submit")};
-  }).sort((a,b)=>Date.parse(b.lastSeen||0)-Date.parse(a.lastSeen||0));
- }
- function buildProductPerformance(events,orders,products){
-  const rows=products.map(product=>({product,views:0,cartAdds:0,viewSessions:new Set(),viewTimeBySession:new Map(),cartAfterViewSessions:new Set(),orderIds:new Set(),orderLines:0,units:0,orderValue:0}));
-  const eventProduct=event=>{const id=String(event.item_id||"").toLowerCase(),name=String(event.item_name||"").trim().toLowerCase();return rows.find(row=>(id&&(String(row.product.slug||"").toLowerCase()===id||String(row.product.id||"").toLowerCase()===id))||(name&&String(row.product.name||"").trim().toLowerCase()===name));};
-  events.filter(event=>event.event_name==="view_item"||event.event_name==="add_to_cart").slice().sort((a,b)=>Date.parse(a.occurred_at||0)-Date.parse(b.occurred_at||0)).forEach(event=>{
-   const row=eventProduct(event);if(!row)return;
-   const actor=visitorSessionKey(event),stamp=Date.parse(event.occurred_at||"");
-   if(event.event_name==="view_item"){
-    row.views++;
-    if(actor){row.viewSessions.add(actor);if(!row.viewTimeBySession.has(actor))row.viewTimeBySession.set(actor,stamp);}
-   }else{
-    row.cartAdds++;
-    if(actor&&row.viewTimeBySession.has(actor)&&stamp>row.viewTimeBySession.get(actor))row.cartAfterViewSessions.add(actor);
-   }
-  });
-  orders.filter(order=>order.status!=="cancelled").forEach(order=>(order.order_items||[]).forEach(item=>{
-   const id=String(item.product_id||"").toLowerCase(),name=String(item.product_name||"").trim().toLowerCase();
-   const row=rows.find(candidate=>(id&&String(candidate.product.id||"").toLowerCase()===id)||(name&&String(candidate.product.name||"").trim().toLowerCase()===name));
-   if(!row)return;
-   row.orderIds.add(String(order.id));row.orderLines++;row.units+=Math.max(0,Number(item.quantity)||0);
-   const value=item.line_total!=null?Number(item.line_total):Number(item.unit_price||0)*Number(item.quantity||0);
-   row.orderValue+=Number.isFinite(value)?Math.max(0,value):0;
-  }));
-  return rows.map(row=>({...row,orderCount:row.orderIds.size,viewToCartRate:row.viewSessions.size?row.cartAfterViewSessions.size/row.viewSessions.size*100:null})).sort((a,b)=>b.orderCount-a.orderCount||b.units-a.units||b.views-a.views||b.cartAdds-a.cartAdds);
- }
  function renderTopProducts(list,rows){
   if(!list)return;
   if(!rows.length){list.innerHTML=makeEmpty("No product views yet","Once visitors browse products, their activity will appear here.");return;}
@@ -106,9 +58,9 @@ window.HFAdminReady.then(async H=>{
  }
  function renderFunnel(events){
   const body=$("funnelStages");if(!body)return;
-  const view=Math.max(stageActors(events,"page_view"),stageActors(events,"view_item"),1);
-  const product=stageActors(events,"view_item"),cart=stageActors(events,"add_to_cart"),checkout=stageActors(events,"begin_checkout");
-  const completed=stageActors(events,"order_success"),submits=stageActors(events,"order_submit");
+  const view=Math.max(analyticsModel.stageActors(events,"page_view"),analyticsModel.stageActors(events,"view_item"),1);
+  const product=analyticsModel.stageActors(events,"view_item"),cart=analyticsModel.stageActors(events,"add_to_cart"),checkout=analyticsModel.stageActors(events,"begin_checkout");
+  const completed=analyticsModel.stageActors(events,"order_success"),submits=analyticsModel.stageActors(events,"order_submit");
   const finalCount=completed||submits;
   const stages=[["Page activity",view,"People/sessions with page activity"],["Product viewed",product,"Viewed at least one product"],["Added to cart",cart,"Added a product to cart"],["Checkout started",checkout,"Started checkout"],[completed?"Order success event":"Order submitted event",finalCount,completed?"Recorded order-success events":"Submission is not proof of payment"]];
   const max=Math.max(...stages.map(s=>s[1]),1);
@@ -246,7 +198,7 @@ window.HFAdminReady.then(async H=>{
     {label:"Product views",data:labels.map(day=>events.filter(e=>e.event_name==="view_item"&&localDateKey(e.occurred_at)===day).length),borderColor:palette.orange,backgroundColor:"#C97B3D18",fill:true,tension:.35,pointRadius:2,borderWidth:2}
    ]},options:{...chartAxisOptions(),plugins:{legend:{position:"bottom"}}}});
    drawChart("overviewStatusChart",{type:"doughnut",data:orderStatusCounts(summaryOrders),options:{cutout:"67%",plugins:{legend:{position:"bottom"}},onClick:(ev,items)=>{if(items.length)location.href="./orders.html?status="+encodeURIComponent(["pending","processing","shipped","delivered","cancelled"][items[0].index]);}}});
-   renderTopProducts($("overviewTopProducts"),topProducts(events,products).slice(0,5));
+   renderTopProducts($("overviewTopProducts"),analyticsModel.topProducts(events,products).slice(0,5));
    renderRecentOrders(recentOrders);
    $("overviewUpdated").textContent="Updated "+new Date().toLocaleTimeString("en-BD",{hour:"2-digit",minute:"2-digit"});
    const limits=[];
@@ -266,9 +218,9 @@ window.HFAdminReady.then(async H=>{
     {label:"Product views",data:keys.map(k=>events.filter(e=>e.event_name==="view_item"&&String(e.occurred_at).slice(0,10)===k).length),borderColor:palette.orange,backgroundColor:"#C97B3D15",fill:true,tension:.32,pointRadius:1.5,borderWidth:2},
     {label:"Cart additions",data:keys.map(k=>events.filter(e=>e.event_name==="add_to_cart"&&String(e.occurred_at).slice(0,10)===k).length),borderColor:palette.green,backgroundColor:"#10B9811A",fill:false,tension:.32,pointRadius:1.5,borderWidth:2}
    ]},options:{...chartAxisOptions(),plugins:{legend:{position:"bottom"}}}});
-   const top=topProducts(events,products);
+   const top=analyticsModel.topProducts(events,products);
    drawChart("analyticsProductChart",{type:"doughnut",data:{labels:top.slice(0,7).map(x=>x.name),datasets:[{data:top.slice(0,7).map(x=>x.count),backgroundColor:colorSet,borderColor:chartTheme().surface,borderWidth:3,hoverOffset:8}]},options:{cutout:"57%",plugins:{legend:{position:"bottom"}}}});
-   const pageStats=buildPageExperience(events);
+   const pageStats=analyticsModel.buildPageExperience(events);
    const timedPages=pageStats.filter(p=>p.timingCount>0).sort((a,b)=>b.visibleSeconds-a.visibleSeconds).slice(0,8);
    drawChart("analyticsSourceChart",{type:"bar",data:{labels:timedPages.map(p=>p.path.length>24?p.path.slice(0,21)+"…":p.path),datasets:[{label:"Visible time",data:timedPages.map(p=>p.visibleSeconds),backgroundColor:colorSet,borderRadius:7,maxBarThickness:34}]},options:{indexAxis:"y",plugins:{legend:{display:false},tooltip:{callbacks:{label:context=>formatSeconds(context.raw)}}},scales:{x:{beginAtZero:true,ticks:{color:chartTheme().muted,callback:value=>value+"s"},grid:{color:chartTheme().grid}},y:{ticks:{color:palette.navy},grid:{display:false}}}}});
    const funnelEvents=events.map(e=>e);renderFunnel(funnelEvents);
@@ -279,13 +231,13 @@ window.HFAdminReady.then(async H=>{
    const totalVisibleSeconds=engagementEvents.reduce((sum,e)=>sum+Math.max(0,Number(e.value)||0),0);
    const measuredPages=pageStats.filter(p=>p.timingCount>0);
    $("analyticsPagesMeasured").textContent=shortNum(measuredPages.length);
-   $("analyticsAvgVisibleTime").textContent=engagementEvents.length?formatSeconds(totalVisibleSeconds/engagementEvents.length):"—";
-   $("analyticsTimedSessions").textContent=shortNum(new Set(engagementEvents.map(visitorSessionKey).filter(Boolean)).size);
+   $("analyticsAvgVisibleTime").textContent=engagementEvents.length?analyticsModel.formatSeconds(totalVisibleSeconds/engagementEvents.length):"—";
+   $("analyticsTimedSessions").textContent=shortNum(new Set(engagementEvents.map(analyticsModel.visitorSessionKey).filter(Boolean)).size);
    $("analyticsPageExperienceBody").innerHTML=pageStats.length?pageStats.slice(0,20).map(p=>'<tr><td><strong title="'+esc(p.path)+'">'+esc(p.path.length>52?p.path.slice(0,49)+"…":p.path)+'</strong></td><td>'+shortNum(p.views)+'</td><td>'+(p.timingCount?formatSeconds(p.visibleSeconds/p.timingCount):"—")+'</td><td>'+(p.timingCount?formatSeconds(p.visibleSeconds):"—")+'</td><td>'+shortNum(p.lastSeenSessions)+'</td></tr>').join(""):'<tr><td colspan="5">'+makeEmpty("No page activity","Recorded page paths will appear when visitors browse the site.")+'</td></tr>';
    $("analyticsPageTimingNote").textContent=engagementEvents.length?"Timing data is available for "+engagementEvents.length.toLocaleString("en-BD")+" page-leave events. Visible seconds pause while the browser tab is hidden; this is an estimate of visible time, not proof of attention.":"No page-timing events in this range yet. New timing starts after the website tracking update goes live; older page views cannot be backfilled.";
-   const journeys=buildSessionJourneys(events).slice(0,15);
+   const journeys=analyticsModel.buildSessionJourneys(events).slice(0,15);
    $("analyticsSessionJourneyBody").innerHTML=journeys.length?journeys.map(s=>'<tr><td><strong>'+esc(s.sessionId.slice(0,8))+'…</strong><small>Anonymous session ID</small></td><td title="'+esc(s.pathSteps.join(" → "))+'">'+esc(s.pathSteps.length?s.pathSteps.slice(-6).join(" → "):s.lastPage)+'</td><td>'+shortNum(s.steps)+'</td><td>'+(s.rows.some(e=>e.event_name==="page_engagement")?formatSeconds(s.visibleSeconds):"Not measured")+'</td><td>'+esc(dateTime(s.lastSeen))+'<small>'+esc(s.lastPage)+'</small></td><td>Cart '+s.cartAdds+' · Checkout '+s.checkouts+' · Submit '+s.orderSubmits+'</td></tr>').join(""):'<tr><td colspan="6">'+makeEmpty("No session journeys yet","Journeys require a recorded session ID. This table never displays customer names or contact details.")+'</td></tr>';
-   const productRows=buildProductPerformance(events,orders,products);
+   const productRows=analyticsModel.buildProductPerformance(events,orders,products);
    const listedProducts=productRows.filter(p=>p.views||p.cartAdds||p.orderCount).slice(0,20);
    $("analyticsProductPerformanceBody").innerHTML=listedProducts.length?listedProducts.map(p=>'<tr><td><strong>'+esc(p.product.name)+'</strong><small>'+esc(p.product.category||"Uncategorised")+'</small></td><td>'+shortNum(p.views)+'</td><td>'+shortNum(p.cartAdds)+'</td><td>'+(p.viewToCartRate==null?"—":Math.round(p.viewToCartRate)+"%")+'</td><td>'+shortNum(p.orderCount)+'<small>'+shortNum(p.orderLines)+' item lines</small></td><td>'+money(p.orderValue)+'</td><td>'+(p.product.stock_quantity==null?"Not set":esc(p.product.stock_quantity))+'</td></tr>').join(""):'<tr><td colspan="7">'+makeEmpty("No matched product activity","Product events or recorded test-order items will appear when matching product data is available.")+'</td></tr>';
    const insights=[];
