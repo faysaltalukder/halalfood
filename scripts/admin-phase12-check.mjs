@@ -8,7 +8,7 @@ const root = process.cwd();
 const adminDir = join(root, "admin");
 const sharedCssVersion = "20261030-admin-theme-v2";
 const sharedJsVersion = "20261030-illustrated-nav-v1";
-const appJsVersion = "20261028-colorful-cleanup-v1";
+const appJsVersion = "20261030-order-cards-v1";
 const read = (path) => readFileSync(join(root, path), "utf8");
 
 const htmlFiles = readdirSync(adminDir).filter((file) => file.endsWith(".html"));
@@ -85,6 +85,48 @@ const courier = read("supabase/functions/courier-integration/index.ts");
 assert.ok(courier.includes('digits.length !== 11 || !digits.startsWith("01")'), "Frontend and courier function phone rules must stay aligned.");
 assert.ok(courier.includes('provider === "pathao" ? 220 : 250'), "Frontend address limits must align with courier provider limits.");
 
+
+// Order workspace, bulk actions, verified customer identity links and status safety.
+const ordersPage = read("admin/orders.html");
+const ordersCss = read("admin/orders.css");
+const ordersApp = read("admin/app.js");
+const accountPage = read("account.html");
+const customerIdentityMigration = read("supabase/migrations/20261030150000_link_verified_auth_users_to_unique_customer_records.sql");
+
+for (const id of [
+  "ordersPackagingBtn",
+  "ordersInvoiceBtn",
+  "toggleBulkOrdersBtn",
+  "ordersBulkBar",
+  "ordersSelectAll",
+  "ordersSelectedCount",
+  "ordersBulkExportBtn",
+  "ordersBulkClearBtn",
+  "ordersDataBody",
+]) {
+  assert.ok(ordersPage.includes(`id="${id}"`), `Orders workspace is missing #${id}.`);
+}
+assert.ok(ordersPage.includes("orders.css?v=20261030-order-workspace-v1"), "Orders workspace stylesheet must be cache-busted.");
+assert.ok(ordersPage.includes("app.js?v=20261030-order-cards-v1"), "Orders workspace must load the order-card application script.");
+for (const status of ["pending", "processing", "shipped", "delivered", "cancelled"]) {
+  assert.ok(ordersCss.includes(`.hf-order-card[data-status="${status}"]`), `Order cards need a distinct ${status} color.`);
+}
+assert.ok(ordersApp.includes("function orderCustomerAvatar(order)"), "Orders need a customer avatar/initial renderer.");
+assert.ok(ordersApp.includes('client.from("customers").select("id,auth_user_id")'), "Admin must load the customer-to-auth identity mapping.");
+assert.ok(ordersApp.includes("profilesByUserId.get(customer.auth_user_id)"), "Avatar lookup must map customers.id through auth_user_id to customer_profiles.user_id.");
+assert.ok(ordersApp.includes("function updateBulkSelectionUi(rows)"), "Bulk selection count and controls need a single UI updater.");
+assert.ok(ordersApp.includes("function printSelectedOrders(kind)"), "Selected orders need packaging/invoice print support.");
+assert.ok(ordersApp.includes("function exportSelectedOrders()"), "Selected orders need CSV export support.");
+assert.ok(ordersApp.includes('client.rpc("admin_update_order_status"'), "Status updates must continue to use the audited server RPC.");
+assert.ok(ordersApp.includes('courierBookingLocked(shipment)'), "Order status changes must preserve courier booking safety checks.");
+assert.ok(ordersApp.includes('["picked_up","in_transit","delivered"]'), "Shipped status must require a verified courier shipment state.");
+assert.equal((ordersApp.match(/\$\("ordersDataBody"\)\?\.addEventListener\("change"/g) || []).length, 2, "Orders must have exactly one selection handler and one status handler.");
+assert.ok(accountPage.includes('client.rpc("sync_my_customer_identity")'), "Signed-in accounts must request safe customer identity mapping.");
+assert.ok(accountPage.includes("await syncCustomerAvatar(user)"), "Signed-in accounts must sync their optional provider avatar.");
+assert.ok(customerIdentityMigration.includes("email_confirmed_at IS NOT NULL"), "Customer identity backfill must require a verified Auth email.");
+assert.ok(customerIdentityMigration.includes("HAVING count(*) = 1"), "Customer identity backfill must refuse ambiguous email matches.");
+assert.ok(customerIdentityMigration.includes("customers_auth_user_id_unique_idx"), "Customer identity mapping must be unique per Auth user.");
+assert.ok(customerIdentityMigration.includes("sync_my_customer_identity"), "Customer identity migration must include the safe login sync function.");
 
 const overview = read("admin/overview.html");
 assert.ok(!overview.includes("চতুর্থ ডিপ্লয়মেন্ট"), "Overview should not show the obsolete deployment marker.");
