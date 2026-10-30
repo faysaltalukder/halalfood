@@ -2,6 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const SITE_ORIGIN = "https://faysaltalukder.github.io";
+const PRIVACY_NOTICE_VERSION = "2026-10-31-checkout-entry-v2";
 const corsHeaders = {
   "Access-Control-Allow-Origin": SITE_ORIGIN,
   "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -46,13 +47,6 @@ function sanitizeItems(value: unknown) {
       unit_price: amount(item.price ?? item.unit_price)
     };
   }).filter((item) => item.name);
-}
-function hasContact(payload: Record<string, unknown>) {
-  return Boolean(
-    clean(payload.customerName, 2) ||
-    phoneDigits(payload.customerPhone) ||
-    clean(payload.customerEmail, 3)
-  );
 }
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
@@ -121,16 +115,32 @@ Deno.serve(async (request: Request) => {
     }
 
     if (action !== "save") return json({ success: false, error: "Unsupported action." }, 400);
-    if (payload.recoveryConsent !== true) {
-      return json({ success: false, error: "Recovery consent is required." }, 400);
+    if (clean(payload.privacyNoticeVersion, 80) !== PRIVACY_NOTICE_VERSION) {
+      return json({ success: false, error: "Checkout privacy notice version is missing or outdated." }, 400);
     }
 
+    const customerPhone = clean(payload.customerPhone, 32);
+    if (!/^01[0-9]{9}$/.test(phoneDigits(customerPhone))) {
+      return json({ success: true, saved: false, reason: "A valid mobile number is required before saving." });
+    }
+
+    const { data: existing, error: existingError } = await admin.from("incomplete_checkouts")
+      .select("id,status,recovery_consent_at,marketing_consent,marketing_consent_at,consent_version,consent_method,first_seen_at,delivery_address,order_notes")
+      .eq("checkout_session_id", checkoutSessionId)
+      .maybeSingle();
+    if (existingError) throw existingError;
+    if (existing?.status === "converted") return json({ success: true, saved: false, converted: true });
+
+    const now = new Date().toISOString();
     const record = {
+      checkout_session_id: checkoutSessionId,
       customer_name: clean(payload.customerName, 100) || null,
-      customer_phone: clean(payload.customerPhone, 32) || null,
+      customer_phone: customerPhone,
       customer_email: clean(payload.customerEmail, 254).toLowerCase() || null,
-      delivery_address: clean(payload.deliveryAddress, 400) || null,
-      order_notes: clean(payload.orderNotes, 300) || null,
+      // Address and order notes are not needed to offer help with this unfinished checkout.
+      // They are collected only when the shopper actually submits the order.
+      delivery_address: existing?.delivery_address || null,
+      order_notes: existing?.order_notes || null,
       order_context: payload.orderContext === "cart" ? "cart" : "single",
       delivery_zone: ["inside_dhaka", "outside_dhaka"].includes(String(payload.deliveryZone)) ? String(payload.deliveryZone) : null,
       item_summary: sanitizeItems(payload.items),
@@ -141,38 +151,24 @@ Deno.serve(async (request: Request) => {
       last_field: clean(payload.lastField, 80) || null,
       progress_percent: Math.max(0, Math.min(95, Math.floor(Number(payload.progressPercent) || 0))),
       recovery_consent: true,
-      marketing_consent: payload.marketingConsent === true,
-      consent_version: "2026-10-31-v1",
-      last_seen_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      recovery_consent_at: existing?.recovery_consent_at || now,
+      marketing_consent: existing?.marketing_consent === true,
+      marketing_consent_at: existing?.marketing_consent === true ? (existing?.marketing_consent_at || now) : null,
+      consent_version: existing?.consent_version || PRIVACY_NOTICE_VERSION,
+      consent_method: existing?.consent_method || "checkout_form_entry_after_notice",
+      last_seen_at: now,
+      updated_at: now,
       expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
     };
-    if (!record.customer_name && !record.customer_phone && !record.customer_email) {
-      return json({ success: true, saved: false, reason: "No contact information entered yet." });
-    }
 
-    const { data: existing, error: existingError } = await admin.from("incomplete_checkouts")
-      .select("id,status,recovery_consent_at,marketing_consent,marketing_consent_at,first_seen_at")
-      .eq("checkout_session_id", checkoutSessionId)
-      .maybeSingle();
-    if (existingError) throw existingError;
-    if (existing?.status === "converted") return json({ success: true, saved: false, converted: true });
-
-    const now = new Date().toISOString();
-    const upsertRecord = {
-      ...record,
-      checkout_session_id: checkoutSessionId,
-      recovery_consent_at: existing?.recovery_consent_at || now,
-      marketing_consent_at: record.marketing_consent
-        ? (existing?.marketing_consent ? (existing.marketing_consent_at || now) : now)
-        : null,
-      first_seen_at: existing?.first_seen_at || now,
-      created_at: existing?.first_seen_at || now
-    };
     const { error } = await admin.from("incomplete_checkouts")
-      .upsert(upsertRecord, { onConflict: "checkout_session_id" });
+      .upsert({
+        ...record,
+        first_seen_at: existing?.first_seen_at || now,
+        created_at: existing?.first_seen_at || now
+      }, { onConflict: "checkout_session_id" });
     if (error) throw error;
-    return json({ success: true, saved: true });
+    return json({ success: true, saved: true, consentMethod: record.consent_method });
   } catch (error) {
     console.error("Incomplete checkout request failed:", error);
     return json({ success: false, error: "Could not save checkout progress." }, 500);
