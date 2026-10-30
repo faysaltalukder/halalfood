@@ -6,14 +6,14 @@ import vm from "node:vm";
 
 const root = process.cwd();
 const adminDir = join(root, "admin");
-const sharedCssVersion = "20261026-phase4-a11y-performance";
-const sharedJsVersion = "20261026-phase4-a11y-performance";
+const sharedCssVersion = "20261030-admin-theme-v2";
+const sharedJsVersion = "20261030-illustrated-nav-v1";
 const appJsVersion = "20261028-colorful-cleanup-v1";
 const read = (path) => readFileSync(join(root, path), "utf8");
 
 const htmlFiles = readdirSync(adminDir).filter((file) => file.endsWith(".html"));
 const unifiedPages = htmlFiles.filter((file) => /<body[^>]*\bdata-page=/.test(read(join("admin", file))));
-assert.equal(unifiedPages.length, 16, `Expected 16 unified admin pages, found ${unifiedPages.length}.`);
+assert.equal(unifiedPages.length, 17, `Expected 17 unified admin pages, found ${unifiedPages.length}.`);
 
 for (const file of unifiedPages) {
   const source = read(join("admin", file));
@@ -90,7 +90,7 @@ const overview = read("admin/overview.html");
 assert.ok(!overview.includes("চতুর্থ ডিপ্লয়মেন্ট"), "Overview should not show the obsolete deployment marker.");
 assert.ok(!overview.includes('class="hf-deployment-marker"'), "Obsolete deployment marker component should be removed.");
 assert.ok(!overview.includes("Test project") && !overview.includes("Testing project"), "Overview should not show the removed testing notice.");
-assert.ok(overview.includes("overview.css?v=20261028-colorful-cleanup-v1"), "Overview polish stylesheet must be cache-busted.");
+assert.ok(overview.includes("overview.css?v=20261030-admin-theme-v3"), "Overview polish stylesheet must be cache-busted.");
 
 const facebookPage = read("admin/facebook-publishing.html");
 assert.ok(facebookPage.includes("facebook-publishing.js?v=20261026-phase3-automation-queue"), "Facebook publishing script cache key must include the queue UI update.");
