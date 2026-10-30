@@ -7,6 +7,7 @@ const recoveryBox = document.getElementById("hf-recovery-consent");
 const marketingBox = document.getElementById("hf-marketing-consent");
 const sessionKey = "hf_incomplete_checkout_session_v1";
 const consentKey = "hf_incomplete_checkout_consent_v1";
+const marketingKey = "hf_incomplete_checkout_marketing_v1";
 let saveTimer = 0;
 let lastField = "";
 let sending = Promise.resolve();
@@ -118,6 +119,7 @@ function schedule(field) {
 if (recoveryBox) {
  try {
   if (sessionStorage.getItem(consentKey) === "yes") recoveryBox.checked = true;
+  if (sessionStorage.getItem(marketingKey) === "yes" && marketingBox) marketingBox.checked = true;
  } catch (_) {}
  recoveryBox.addEventListener("change",() => {
   if (recoveryBox.checked) {
@@ -125,12 +127,16 @@ if (recoveryBox) {
    schedule("consent");
   } else {
    window.clearTimeout(saveTimer);
-   try { sessionStorage.removeItem(consentKey); } catch (_) {}
+   try { sessionStorage.removeItem(consentKey); sessionStorage.removeItem(marketingKey); } catch (_) {}
    void post({action:"withdraw",checkoutSessionId:getSessionId()});
   }
  });
 }
 marketingBox?.addEventListener("change",() => {
+ try {
+  if (marketingBox.checked) sessionStorage.setItem(marketingKey,"yes");
+  else sessionStorage.removeItem(marketingKey);
+ } catch (_) {}
  if (recoveryBox?.checked) schedule("marketing-consent");
 });
 form.addEventListener("input",(event) => {
@@ -163,7 +169,7 @@ window.HFIncompleteCheckout = {
   if (!sessionId || !orderNumber) return;
   window.clearTimeout(saveTimer);
   const result = await post({action:"complete",checkoutSessionId:sessionId,orderNumber:String(orderNumber).slice(0,40)});
-  try { sessionStorage.removeItem(sessionKey); sessionStorage.removeItem(consentKey); } catch (_) {}
+  try { sessionStorage.removeItem(sessionKey); sessionStorage.removeItem(consentKey); sessionStorage.removeItem(marketingKey); } catch (_) {}
   return result;
  }
 };
