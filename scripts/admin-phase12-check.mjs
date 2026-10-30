@@ -17,11 +17,11 @@ assert.equal(unifiedPages.length, 18, `Expected 18 unified admin pages, found ${
 
 for (const file of unifiedPages) {
   const source = read(join("admin", file));
-  assert.match(source, /shared\\.css\\?v=[^"'&\\s]+/, `${file}: missing shared CSS cache-busting version.`);
-  assert.match(source, /shared\\.js\\?v=[^"'&\\s]+/, `${file}: missing shared JS cache-busting version.`);
+  assert.ok(source.includes("shared.css?v="), `${file}: missing shared CSS cache-busting version.`);
+  assert.ok(source.includes("shared.js?v="), `${file}: missing shared JS cache-busting version.`);
 
   if (source.includes("./app.js")) {
-    assert.match(source, /app\\.js\\?v=[^"'&\\s]+/, `${file}: missing app.js cache-busting version.`);
+    assert.ok(source.includes("app.js?v="), `${file}: missing app.js cache-busting version.`);
   }
 
   const mainTag = (source.match(/<main\b[^>]*\bid=["']pageContent["'][^>]*>/i) || [])[0];
