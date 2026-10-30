@@ -45,7 +45,7 @@ window.HFAdminReady.then(async (H) => {
     '<td><strong>' + esc(dateTime(row.last_seen_at)) + '</strong><small>' + esc(row.last_field ? "Last field: " + row.last_field : "Progress saved") + '</small></td>' +
     '<td>' + permission + '<small>Recovery consent recorded</small></td>' +
     '<td><div class="hf-incomplete-actions"><button type="button" class="hf-button hf-button-secondary hf-button-small" data-incomplete-view="' + esc(row.id) + '">View</button>' +
-    (row.customer_phone ? '<button type="button" class="hf-button hf-button-success hf-button-small" data-incomplete-contact="' + esc(row.id) + '">WhatsApp</button>' : '') + '<button type="button" class="hf-button hf-button-danger hf-button-small" data-incomplete-delete="' + esc(row.id) + '">Delete</button><button type="button" class="hf-button hf-button-danger hf-button-small" data-incomplete-delete="' + esc(row.id) + '">Delete</button></div></td>' +
+    (row.customer_phone ? '<button type="button" class="hf-button hf-button-success hf-button-small" data-incomplete-contact="' + esc(row.id) + '">WhatsApp</button>' : '') + '<button type="button" class="hf-button hf-button-danger hf-button-small" data-incomplete-delete="' + esc(row.id) + '">Delete</button></div></td>' +
    '</tr>';
   }).join("");
  }
@@ -114,10 +114,10 @@ window.HFAdminReady.then(async (H) => {
   if (contactButton) {
    const row = records.find((item) => item.id === contactButton.dataset.incompleteContact);
    if (!row?.customer_phone) return;
-   let phone = String(row.customer_phone).replace(/\\D/g,"");
+   let phone = String(row.customer_phone).replace(/\D/g,"");
    if (phone.startsWith("00880")) phone = phone.slice(2);
    else if (phone.startsWith("0")) phone = "88" + phone;
-   if (!/^8801[3-9]\\d{8}$/.test(phone)) {
+   if (!/^8801[3-9]\d{8}$/.test(phone)) {
     toast("This record does not contain a valid Bangladeshi mobile number.","error");
     return;
    }
