@@ -528,3 +528,9 @@ html[data-admin-theme="dark"] .hf-orders-bulkbar{background:#1e3048;border-color
  .hf-order-totals-panel .hf-order-grand-total strong{font-size:16px}
  .hf-order-actions .hf-button{min-height:28px}
 }
+
+@media(max-width:720px){
+ .hf-order-customer-panel{display:block;grid-column:auto}
+ .hf-order-customer-head,.hf-order-phone,.hf-order-location{grid-column:auto;grid-row:auto}
+ .hf-order-location{margin-top:5px}
+}
