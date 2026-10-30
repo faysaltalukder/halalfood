@@ -12,6 +12,7 @@ const required = [
   "docs/FEATURE_OWNERSHIP.md",
   "scripts/feature-map.json",
   "scripts/feature-context.mjs",
+  "scripts/backend-contract-check.mjs",
   "docs/EDGE_FUNCTIONS.md",
   "docs/SUPABASE_DRIFT_REGISTER.md",
   "CONTRIBUTING.md",
@@ -84,4 +85,6 @@ if (failures.length) {
   console.log("Architecture guard passed.");
   const contextCheck = spawnSync(process.execPath, ["scripts/feature-context.mjs", "--check"], { encoding: "utf8" });
   if (contextCheck.status !== 0) { console.error(contextCheck.stderr || contextCheck.stdout); process.exitCode = 1; }
+  const backendCheck = spawnSync(process.execPath, ["scripts/backend-contract-check.mjs"], { encoding: "utf8" });
+  if (backendCheck.status !== 0) { console.error(backendCheck.stderr || backendCheck.stdout); process.exitCode = 1; }
 }
