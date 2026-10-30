@@ -49,3 +49,6 @@
  .hf-products-stock-note{font-size:9px}
 }
 @media(prefers-reduced-motion:reduce){.hf-products-stock-card{transition:none}}
+
+/* Product shipping weight is operational data, not a marketing unit label. */
+#productShippingWeight{font-variant-numeric:tabular-nums}
