@@ -212,25 +212,6 @@ Deno.serve(async (req: Request) => {
         return reply({ success: false, error: "Order save could not be confirmed. Refresh the review list before retrying." }, 500);
       }
       savedOrderId = savedOrder.id;
-      const checkoutSessionId = clean(review.order_payload?.checkoutSessionId, 64);
-      if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(checkoutSessionId)) {
-        const convertedAt = new Date().toISOString();
-        const { error: incompleteCheckoutError } = await admin
-          .from("incomplete_checkouts")
-          .update({
-            status: "converted",
-            converted_order_id: savedOrder.id,
-            converted_order_number: review.order_number,
-            converted_at: convertedAt,
-            last_seen_at: convertedAt,
-            updated_at: convertedAt
-          })
-          .eq("checkout_session_id", checkoutSessionId)
-          .eq("status", "incomplete");
-        if (incompleteCheckoutError) {
-          console.warn("Approved order could not mark its incomplete checkout as converted:", String(incompleteCheckoutError.code || "unknown"));
-        }
-      }
     }
 
     const nextStatus = decision === "approve" ? "approved" : "rejected";
