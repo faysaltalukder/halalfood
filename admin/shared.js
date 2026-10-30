@@ -190,6 +190,30 @@ function shellIcon(name){
  };
  return '<svg class="hf-shell-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">'+(paths[name]||paths.overview)+'</svg>';
 }
+
+function navPictureIcon(name){
+ const art={
+  overview:'<rect x="3" y="4" width="13" height="12" rx="3" fill="#DCEAF9"/><rect x="19" y="4" width="10" height="12" rx="3" fill="#B9D4F0"/><rect x="3" y="19" width="10" height="10" rx="3" fill="#A8C7E7"/><rect x="16" y="19" width="13" height="10" rx="3" fill="#E9C77F"/><path d="M8 10h3M22 9h4M7 24h3M20 24h5" stroke="#416F9D" stroke-width="1.7" stroke-linecap="round"/>',
+  orders:'<path d="m16 3 12 6v15l-12 6-12-6V9l12-6Z" fill="#DCEAF9" stroke="#5C88BC" stroke-width="1.8"/><path d="m4.5 9.5 11.5 6 11.5-6M16 15.5V29" fill="none" stroke="#5C88BC" stroke-width="1.8"/><path d="m11 5.5 10 5" stroke="#D4A34E" stroke-width="3" stroke-linecap="round"/>',
+  operations:'<rect x="7" y="4" width="20" height="25" rx="4" fill="#E9E1F6" stroke="#8067A8" stroke-width="1.8"/><path d="M13 4V3h8v1" fill="none" stroke="#8067A8" stroke-width="2"/><path d="m12 14 3 3 6-7M12 23h10" fill="none" stroke="#8067A8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="27" cy="27" r="5" fill="#D7B8E8" stroke="#8067A8" stroke-width="1.4"/>',
+  products:'<path d="M7 13h18l-2 16H9L7 13Z" fill="#DDEFE4" stroke="#438460" stroke-width="1.8"/><path d="M12 14V10a4 4 0 0 1 8 0v4" fill="none" stroke="#438460" stroke-width="2"/><path d="M12 20h8" stroke="#78AC8D" stroke-width="2" stroke-linecap="round"/>',
+  content:'<path d="M9 3h12l7 7v18a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3Z" fill="#FBE9D9" stroke="#B97943" stroke-width="1.8"/><path d="M21 3v8h7M12 17h12M12 22h12M12 27h7" stroke="#B97943" stroke-width="1.8" stroke-linecap="round"/>',
+  messages:'<path d="M16 4C8.8 4 4 8.7 4 15c0 2.2.7 4.1 2 5.7L4.5 28l7-2a14 14 0 0 0 4.5.7c7.2 0 12-4.7 12-11.7C28 8.7 23.2 4 16 4Z" fill="#DDEFE4" stroke="#438460" stroke-width="1.8"/><path d="M12 11c1-1 2-1 3 0l2 3-2 2c1 2 3 4 5 5l2-2 3 2c1 1 1 2 0 3-4 2-15-8-13-13Z" fill="#438460"/>',
+  messenger:'<path d="M16 4C9 4 4 8.7 4 15c0 2.3.7 4.2 2.1 5.8L4 28l7-2a13 13 0 0 0 5 .8c7 0 12-4.8 12-11.8S23 4 16 4Z" fill="#E3EAFB" stroke="#647FC2" stroke-width="1.8"/><path d="m9 19 5-6 4 3 5-6" fill="none" stroke="#647FC2" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>',
+  "facebook-publishing":'<rect x="6" y="5" width="22" height="25" rx="5" fill="#E3EAFB" stroke="#647FC2" stroke-width="1.8"/><path d="M12 12h10M12 17h10M12 22h6" stroke="#647FC2" stroke-width="1.8" stroke-linecap="round"/><circle cx="26" cy="26" r="6" fill="#D5A5C7"/><path d="m24 26 2 2 3-4" fill="none" stroke="#8E527F" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>',
+  "meta-ads-review":'<path d="M5 14 23 7v18L5 18v-4Z" fill="#FBE6D3" stroke="#B9783E" stroke-width="1.8" stroke-linejoin="round"/><path d="m10 19 3 9h5l-3-7" fill="#D7A05B" stroke="#B9783E" stroke-width="1.6" stroke-linejoin="round"/><path d="M26 11c2 2 2 7 0 9" fill="none" stroke="#B9783E" stroke-width="2" stroke-linecap="round"/>',
+  "youtube-publishing":'<rect x="4" y="8" width="25" height="18" rx="6" fill="#F8DDE0" stroke="#B65B66" stroke-width="1.8"/><path d="m14 12 8 5-8 5V12Z" fill="#B65B66"/><path d="M8 4h17" stroke="#D59A9E" stroke-width="2" stroke-linecap="round"/>',
+  customers:'<circle cx="12" cy="12" r="6" fill="#DCEAF9"/><circle cx="24" cy="14" r="5" fill="#E9E1F6"/><path d="M3 29c.5-5 4-8 9-8s8.5 3 9 8" fill="#8FB5D9"/><path d="M20 23c4-2 9 1 10 6" fill="none" stroke="#8067A8" stroke-width="2.6" stroke-linecap="round"/>',
+  analytics:'<path d="M5 5v24h25" fill="none" stroke="#5C88BC" stroke-width="2" stroke-linecap="round"/><rect x="9" y="19" width="4" height="8" rx="1.2" fill="#A8C7E7"/><rect x="17" y="13" width="4" height="14" rx="1.2" fill="#76A3D2"/><rect x="25" y="7" width="4" height="20" rx="1.2" fill="#D5A34F"/><path d="m9 15 6-5 5 2 7-7" fill="none" stroke="#39845C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>',
+  finance:'<rect x="4" y="9" width="27" height="19" rx="4" fill="#F4E2BE" stroke="#C28B3E" stroke-width="1.8"/><path d="M4 14h27" stroke="#C28B3E" stroke-width="1.8"/><path d="M22 18h9v7h-9a3.5 3.5 0 0 1 0-7Z" fill="#D9A34F"/><circle cx="24" cy="21.5" r="1.2" fill="#FFF8E9"/>',
+  reports:'<path d="M9 3h12l7 7v18a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3Z" fill="#E9E1F6" stroke="#8067A8" stroke-width="1.8"/><path d="M21 3v8h7M11 24v-5M16 24v-9M21 24v-7" stroke="#8067A8" stroke-width="1.8" stroke-linecap="round"/>',
+  "website-publisher":'<rect x="4" y="6" width="28" height="23" rx="4" fill="#EAF0FA" stroke="#5C88BC" stroke-width="1.8"/><path d="M4 12h28" stroke="#5C88BC" stroke-width="1.8"/><circle cx="9" cy="9" r="1" fill="#D4A34E"/><circle cx="13" cy="9" r="1" fill="#79A98B"/><path d="m12 21 4 3 9-8" fill="none" stroke="#438460" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>',
+  tracking:'<circle cx="17" cy="17" r="12" fill="#DDEFEF" stroke="#438B91" stroke-width="1.8"/><circle cx="17" cy="17" r="6" fill="#A5D6D5"/><circle cx="17" cy="17" r="2" fill="#438B91"/><path d="M17 2v4M32 17h-4" stroke="#438B91" stroke-width="2" stroke-linecap="round"/>',
+  settings:'<path d="M17 4a4 4 0 0 1 4 3l2 1 3-.5 2 4-2 2v3l2 2-2 4-3-.5-2 1a4 4 0 0 1-8 0l-2-1-3 .5-2-4 2-2v-3l-2-2 2-4 3 .5 2-1a4 4 0 0 1 4-3Z" fill="#E9E5DC" stroke="#8B8377" stroke-width="1.7"/><circle cx="17" cy="15.5" r="4.5" fill="#FFFDF8" stroke="#8B8377" stroke-width="1.8"/>'
+ };
+ return '<svg class="hf-nav-art" viewBox="0 0 34 34" aria-hidden="true" focusable="false">'+(art[name]||art.overview)+'</svg>';
+}
+
 function makeShell(){
  adminApp.classList.add("admin-app");
  const activePage=pageName==="messenger"?"messenger":pageName;
@@ -222,7 +246,7 @@ function makeShell(){
   return '<button type="button" class="admin-nav-fav-toggle" data-nav-fav="'+esc(id)+'" aria-pressed="'+String(active)+'" aria-label="'+esc(verb)+'" title="'+esc(verb)+'">'+shellIcon("star")+'</button>';
  };
  const renderNavigation=()=>menuGroups.map(group=>{
-  const links=group.items.map(item=>'<div class="admin-nav-item" data-nav-item data-nav-keys="'+esc(item[3])+'"><a class="admin-nav-link '+(item[0]===activePage?"active":"")+'" href="./'+item[0]+'.html" '+(item[0]===activePage?'aria-current="page"':'')+'><span class="nav-icon">'+shellIcon(item[1])+'</span><span class="admin-nav-text">'+esc(item[2])+'</span></a>'+favoriteStar(item[0],item[2])+'</div>').join("");
+  const links=group.items.map(item=>'<div class="admin-nav-item" data-nav-item data-nav-keys="'+esc(item[3])+'"><a class="admin-nav-link '+(item[0]===activePage?"active":"")+'" href="./'+item[0]+'.html" '+(item[0]===activePage?'aria-current="page"':'')+'><span class="nav-icon nav-icon-'+esc(item[0])+'">'+navPictureIcon(item[0])+'</span><span class="admin-nav-text">'+esc(item[2])+'</span></a>'+favoriteStar(item[0],item[2])+'</div>').join("");
   return '<section class="admin-nav-group" data-nav-group aria-label="'+esc(group.label)+'"><div class="admin-nav-label">'+esc(group.label)+'</div><div class="admin-nav-links">'+links+'</div></section>';
  }).join("");
  const metadata=currentUser?.user_metadata||{};
