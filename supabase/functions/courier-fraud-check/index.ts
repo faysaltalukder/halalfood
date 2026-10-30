@@ -14,6 +14,7 @@ const reply = (body: unknown, status = 200) =>
 const clean = (value: unknown, max: number) =>
   String(value ?? "").replace(/[\u0000-\u001F\u007F]/g, " ").trim().slice(0, max);
 const toNumber = (value: unknown): number | null => {
+  if (value === null || value === undefined || value === "") return null;
   const n = Number(value);
   return Number.isFinite(n) ? n : null;
 };
@@ -91,14 +92,16 @@ function normalizeResult(payload: any) {
   const total = toNumber(rawTotal.total);
   const success = toNumber(rawTotal.success);
   const cancel = toNumber(rawTotal.cancel);
+  const successRate = toNumber(rawTotal.successRate);
+  const cancelRate = toNumber(rawTotal.cancelRate);
   return {
     summaries,
     totalSummary: {
       total: total !== null ? Math.max(0, total) : null,
       success: success !== null ? Math.max(0, success) : null,
       cancel: cancel !== null ? Math.max(0, cancel) : null,
-      successRate: toNumber(rawTotal.successRate),
-      cancelRate: toNumber(rawTotal.cancelRate)
+      successRate,
+      cancelRate
     }
   };
 }
