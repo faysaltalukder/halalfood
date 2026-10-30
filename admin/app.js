@@ -924,14 +924,13 @@ window.HFAdminReady.then(async H=>{
   $("ordersBulkClearBtn")?.addEventListener("click",()=>{selectedOrderIds.clear();render();});
   $("ordersBulkExportBtn")?.addEventListener("click",exportSelectedOrders);
   document.querySelectorAll("[data-bulk-print]").forEach(button=>button.addEventListener("click",()=>printSelectedOrders(button.dataset.bulkPrint)));
-  $("ordersDataBody")?.addEventListener("change",async e=>{
+  $("ordersDataBody")?.addEventListener("change",e=>{
    const rowCheck=e.target.closest("[data-order-select]");
-   if(rowCheck){
-    if(rowCheck.checked)selectedOrderIds.add(rowCheck.dataset.orderSelect);else selectedOrderIds.delete(rowCheck.dataset.orderSelect);
-    const bar=$("ordersBulkBar");if(selectedOrderIds.size&&bar&&bar.hidden){bar.hidden=false;$("toggleBulkOrdersBtn")?.setAttribute("aria-expanded","true");}
-    updateBulkSelectionUi(visibleOrders);return;
-   }
-   const select=e.target.closest(".order-status-select");if(!select)return;
+   if(!rowCheck)return;
+   if(rowCheck.checked)selectedOrderIds.add(rowCheck.dataset.orderSelect);else selectedOrderIds.delete(rowCheck.dataset.orderSelect);
+   const bar=$("ordersBulkBar");if(selectedOrderIds.size&&bar&&bar.hidden){bar.hidden=false;$("toggleBulkOrdersBtn")?.setAttribute("aria-expanded","true");}
+   updateBulkSelectionUi(visibleOrders);
+  });
   const qStatus=new URLSearchParams(location.search).get("status");if(qStatus&&statusOptions.includes(qStatus))$("orderStatusFilter").value=qStatus;
   $("ordersStatusOverview")?.addEventListener("click",e=>{
    const button=e.target.closest("[data-order-quick-filter]");
