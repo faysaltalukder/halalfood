@@ -22,7 +22,7 @@ const un64=(x:string)=>Uint8Array.from(atob(x),c=>c.charCodeAt(0));
 function db(){if(!SERVICE_KEY)throw Error("Supabase server configuration is missing.");return createClient(URL_BASE,SERVICE_KEY,{auth:{persistSession:false,autoRefreshToken:false}});}
 function missing(){return [...(!CLIENT_ID?["YOUTUBE_CLIENT_ID"]:[]),...(!CLIENT_SECRET?["YOUTUBE_CLIENT_SECRET"]:[]),...(ENC_KEY.length<32?["YOUTUBE_TOKEN_ENCRYPTION_KEY"]:[]),...(!SERVICE_KEY?["SUPABASE_SERVICE_ROLE_KEY"]:[])];}
 function jwt(t:string){const p=t.split(".")[1];if(!p)throw Error("Invalid session token.");const x=p.replace(/-/g,"+").replace(/_/g,"/");return JSON.parse(atob(x+"=".repeat((4-x.length%4)%4))) as R;}
-async function admin(req:Request){
+async function admin(req:Request):Promise<{email:string}|{error:Response}>{
  const t=(req.headers.get("authorization")||"").replace(/^Bearer\s+/i,"").trim();if(!t)return {error:out({success:false,error:"Sign in to the Halal Food admin dashboard first."},401)};
  let c:R;try{c=jwt(t)}catch{return {error:out({success:false,error:"Invalid admin session."},401)}}
  if(String(c.email||"").toLowerCase()!==ADMIN||c.role!=="authenticated"||c.aal!=="aal2")return {error:out({success:false,error:"Only the authorized Halal Food admin with completed MFA can use YouTube publishing."},403)};
