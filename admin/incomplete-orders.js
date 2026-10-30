@@ -123,14 +123,7 @@ window.HFAdminReady.then(async (H) => {
    }
    const name = row.customer_name || "there";
    const message = "Assalamu Alaikum " + name + ", you recently chose to save an unfinished checkout on Halal Food. Would you like any help completing that specific order? Please reply here if you need assistance. This is not a promotional offer.";
-   const link = document.createElement("a");
-   link.href = "https://wa.me/" + phone + "?text=" + encodeURIComponent(message);
-   link.target = "_blank";
-   link.rel = "noopener noreferrer";
-   link.hidden = true;
-   document.body.appendChild(link);
-   link.click();
-   link.remove();
+   window.open("https://wa.me/" + phone + "?text=" + encodeURIComponent(message),"_blank","noopener,noreferrer");
    void audit("incomplete_checkout_recovery_opened","incomplete_checkout",row.id,"Admin opened a checkout-recovery WhatsApp draft",{marketingConsent:row.marketing_consent===true});
    return;
   }
