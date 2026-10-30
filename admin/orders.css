@@ -72,3 +72,17 @@ html[data-admin-theme="light"] .hf-orders-hero-copy>p:not(.page-eyebrow){color:#
  #securitySignalsSection .hf-table,
  #securityReviewSection .hf-table{min-width:1020px}
 }
+
+
+/* Cross-courier history lookup */
+.hf-courier-history-list{display:grid;gap:12px;margin-top:14px}
+.hf-courier-history-card{box-shadow:none!important}
+.hf-courier-history-card p{font-size:12px;color:var(--hf-muted);margin:8px 0}
+.hf-courier-history-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:10px 0}
+.hf-courier-history-metrics span{display:grid;gap:4px;padding:10px 11px;border:1px solid var(--hf-border);border-radius:10px;background:var(--hf-panel-soft);font-size:11px;color:var(--hf-muted)}
+.hf-courier-history-metrics strong{font-size:15px;color:var(--hf-text)}
+#courierHistorySummary{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media(max-width:700px){
+ .hf-courier-history-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #courierHistorySummary{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
