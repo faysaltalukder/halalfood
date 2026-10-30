@@ -21,7 +21,7 @@ for (const file of unifiedPages) {
   assert.ok(source.includes(`shared.js?v=${sharedJsVersion}`) || source.includes("shared.js?v=20261027-site-publisher-v1"), `${file}: missing shared JS cache key.`);
 
   if (source.includes("./app.js")) {
-    assert.ok(source.includes(`app.js?v=${appJsVersion}`) || source.includes("app.js?v=20261030-orders-layout-v7") || source.includes("app.js?v=20261030-bulk-manager-v1") || source.includes("app.js?v=20261030-bulk-manager-v1") || source.includes("app.js?v=20261027-site-publisher-v1") || source.includes("app.js?v=20261030-courier-history-explained-v3"), `${file}: stale or missing app.js cache key.`);
+    assert.ok(source.includes(`app.js?v=${appJsVersion}`) || source.includes("app.js?v=20261030-orders-layout-v7") || source.includes("app.js?v=20261030-bulk-manager-v1") || source.includes("app.js?v=20261027-site-publisher-v1") || source.includes("app.js?v=20261030-courier-history-explained-v3"), `${file}: stale or missing app.js cache key.`);
   }
 
   const mainTag = (source.match(/<main\b[^>]*\bid=["']pageContent["'][^>]*>/i) || [])[0];
@@ -144,6 +144,40 @@ assert.ok(accountPage.includes("await syncCustomerAvatar(user)"), "Signed-in acc
 assert.ok(customerIdentityMigration.includes("email_confirmed_at IS NOT NULL"), "Customer identity backfill must require a verified Auth email.");
 assert.ok(customerIdentityMigration.includes("HAVING count(*) = 1"), "Customer identity backfill must refuse ambiguous email matches.");
 assert.ok(customerIdentityMigration.includes("customers_auth_user_id_unique_idx"), "Customer identity mapping must be unique per Auth user.");
+const productsPage = read("admin/products.html");
+const productsCss = read("admin/products.css");
+const shippingWeightMigration = read("supabase/migrations/20261030160000_add_shipping_weight_bulk_order_workflows.sql");
+const financeDeleteMigration = read("supabase/migrations/20261030161000_protect_financially_referenced_bulk_deletions.sql");
+assert.ok(productsPage.includes('products.css?v=20261030-shipping-weight-v1'), "Product shipping-weight editor CSS must be cache-busted.");
+assert.ok(productsPage.includes('app.js?v=20261030-bulk-manager-v1'), "Product shipping-weight editor must load the updated admin script.");
+assert.ok(productsPage.includes('id="productShippingWeight"'), "Product editor needs a numeric shipping weight field.");
+assert.ok(productsPage.includes("<th>Ship weight</th>"), "Product table must expose the shipping weight column.");
+assert.ok(ordersApp.includes("shipping_weight_kg:shippingWeight"), "Product saves must persist shipping_weight_kg.");
+assert.ok(ordersApp.includes("function inferShippingWeightFromUnit(value)"), "Product form needs explicit kg/gram unit auto-detection.");
+assert.ok(ordersApp.includes("function orderPackedWeightKg(order)"), "Parcel weight must sum order-line weight × quantity.");
+assert.ok(ordersApp.includes("shipping_weight_kg:weightsByItemId.get(item.id)"), "Orders must hydrate the saved order-line weight snapshot.");
+assert.ok(ordersApp.includes("function sendSelectedOrdersToCourier"), "Selected orders must support a bulk courier booking flow.");
+assert.ok(ordersApp.includes("for(let index=0;index<prepared.length;index++)"), "Courier bulk booking must be sequential.");
+assert.ok(ordersApp.includes('body:{action:"book",provider,shipment_id:shipmentId}'), "Courier bulk booking must reuse the current protected Edge Function.");
+assert.ok(ordersApp.includes('body:{action:"areas",provider:"redx",district_name:district}'), "REDX bulk booking must validate destination areas.");
+assert.ok(ordersApp.includes("function deleteSelectedOrders"), "Selected orders need a bulk delete action.");
+assert.ok(ordersApp.includes('client.rpc("admin_bulk_delete_orders"'), "Bulk delete must use the restricted MFA-protected RPC.");
+assert.ok(ordersApp.includes("function openBulkStatusDialog"), "Selected orders need a bulk status action.");
+assert.ok(ordersApp.includes("function openBulkAssignDialog"), "Selected orders need a bulk staff assignment action.");
+assert.ok(ordersApp.includes("assigned_to_team_member_id:memberId"), "Bulk staff assignment must be persisted on orders.");
+assert.ok(!ordersPage.includes('id="bulkAssignMember" class="hf-select" required'), "The Unassigned/Clear option must remain selectable.");
+assert.ok(shippingWeightMigration.includes("v_product.shipping_weight_kg"), "Checkout migration must snapshot the product shipping weight.");
+assert.ok(shippingWeightMigration.includes("assigned_to_team_member_id"), "Bulk assignment schema must be represented in migrations.");
+assert.ok(financeDeleteMigration.includes("admin_finance_entries"), "Bulk delete migration must protect financial ledger references.");
+
+const weightHelperMatch = ordersApp.match(/function inferShippingWeightFromUnit\(value\)\s*\{[\s\S]*?\n  \}/);
+assert.ok(weightHelperMatch, "Shipping weight unit conversion helper is missing.");
+const inferShippingWeightFromUnit = vm.runInNewContext('(' + weightHelperMatch[0] + ')');
+assert.equal(inferShippingWeightFromUnit("kg"), "1.000", "The kg product unit should prefill one kilogram.");
+assert.equal(inferShippingWeightFromUnit("500g"), "0.500", "The 500g product unit should prefill half a kilogram.");
+assert.equal(inferShippingWeightFromUnit("1kg"), "1.000", "The 1kg product unit should prefill one kilogram.");
+assert.equal(inferShippingWeightFromUnit("500ml"), "", "Volume must not be silently converted into mass.");
+
 assert.ok(customerIdentityMigration.includes("sync_my_customer_identity"), "Customer identity migration must include the safe login sync function.");
 
 const overview = read("admin/overview.html");
