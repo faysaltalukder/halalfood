@@ -826,7 +826,6 @@ html[data-admin-theme="dark"] .hf-order-totals-panel{
 .hf-order-totals-panel{
  display:grid;
  grid-template-columns:minmax(0,1fr) 92px;
- min-width:245px;
  align-items:center;
  align-content:center;
  gap:9px;
@@ -907,4 +906,93 @@ html[data-admin-theme="dark"] .hf-order-card-footer{background:#1e2e44;border-to
  .hf-order-avatar{width:34px;height:34px;flex-basis:34px}
  .hf-order-totals-panel{grid-template-columns:minmax(0,1fr) 98px;gap:7px}
  .hf-order-actions .hf-button{padding:5px 5px;font-size:10px}
+}
+
+
+/* Orders layout v7: WhatsApp mark, name-first contact stack, and clearer delivery/price dividers. */
+.hf-order-customer-panel{display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;gap:7px}
+.hf-order-customer-head{width:100%;flex-wrap:nowrap;align-items:center}
+.hf-order-customer-copy{flex:1 1 auto;min-width:0}
+.hf-order-customer-copy strong{display:block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hf-order-phone{
+ display:inline-flex;
+ align-items:center;
+ align-self:flex-start;
+ gap:7px;
+ width:max-content;
+ max-width:calc(100% - 41px);
+ margin:0 0 0 41px;
+ padding:0;
+ border:0;
+ border-radius:0;
+ background:transparent;
+ color:#344b67;
+ font-size:12px;
+ font-weight:800;
+ line-height:1.2;
+ text-decoration:none;
+ white-space:nowrap;
+}
+.hf-order-phone:hover{background:transparent;color:#176b46;text-decoration:none}
+.hf-order-phone-number{font-size:12px;font-weight:800;letter-spacing:.01em}
+.hf-order-whatsapp-icon{
+ display:inline-grid;
+ place-items:center;
+ width:21px;
+ height:21px;
+ flex:0 0 21px;
+ border-radius:50%;
+ background:#25d366;
+ color:#fff;
+}
+.hf-order-whatsapp-icon svg{display:block;width:15px;height:15px}
+.hf-order-phone:hover .hf-order-whatsapp-icon{background:#1dbb5b}
+.hf-order-phone.is-missing{
+ margin-left:41px;
+ padding:0;
+ border:0;
+ background:transparent;
+ color:#697a90;
+ font-size:12px;
+}
+.hf-order-location-panel{display:flex;flex-direction:column;justify-content:flex-start;align-items:stretch;gap:0}
+.hf-order-location-heading{
+ display:flex;
+ align-items:center;
+ gap:7px;
+ min-height:27px;
+ margin:0 0 7px;
+ padding:0 0 7px;
+ border-bottom:1px solid #d5dde7;
+}
+.hf-order-location-heading>strong{font-size:12px;font-weight:850;line-height:1.3;color:#3a4d65}
+.hf-order-location-icon{width:21px;height:21px;flex:0 0 21px}
+.hf-order-location-meta{display:flex;align-items:center;min-height:19px;margin:0 0 5px}
+.hf-order-location-meta .hf-order-zone-badge{margin:0;padding:2px 7px;font-size:9px;line-height:1.4}
+.hf-order-address{font-size:13px;font-weight:650;line-height:1.45;color:#344b67}
+.hf-order-totals-panel{min-width:0}
+.hf-order-totals-values>div:not(.hf-order-grand-total){
+ margin:0 0 2px;
+ padding:0 0 6px;
+ border-bottom:1px solid #cbd5e1!important;
+}
+.hf-order-totals-values>div:nth-child(2){padding-bottom:6px}
+.hf-order-totals-values .hf-order-grand-total{
+ margin-top:2px;
+ padding-top:7px;
+ border-top:1px solid #cbd5e1;
+}
+html[data-admin-theme="dark"] .hf-order-phone{color:#d7e3f1}
+html[data-admin-theme="dark"] .hf-order-whatsapp-icon{background:#168a4a;color:#fff}
+html[data-admin-theme="dark"] .hf-order-location-heading{border-bottom-color:#50657f}
+html[data-admin-theme="dark"] .hf-order-location-heading>strong{color:#d8e4f2}
+html[data-admin-theme="dark"] .hf-order-location-meta .hf-order-zone-badge{background:#2d4159;border-color:#435a75;color:#c1cddd}
+html[data-admin-theme="dark"] .hf-order-address{color:#d7e3f1}
+html[data-admin-theme="dark"] .hf-order-totals-values>div:not(.hf-order-grand-total),
+html[data-admin-theme="dark"] .hf-order-totals-values .hf-order-grand-total{border-color:#50657f!important}
+@media(max-width:720px){
+ .hf-order-customer-panel{gap:7px}
+ .hf-order-phone,.hf-order-phone.is-missing{margin-left:41px}
+ .hf-order-location-heading{margin-bottom:6px}
+ .hf-order-location-meta{margin-bottom:4px}
 }
