@@ -908,6 +908,135 @@ window.HFAdminReady.then(async H=>{
    }catch(err){toast(err.message||"Bulk deletion was blocked. No order was deleted.","error");}
    finally{button.disabled=false;button.textContent="⌫ Delete";}
   }
+
+  function bulkCourierEligibleOrders(){
+   return bulkSelectedOrders().filter(order=>["pending","processing"].includes(order.status)&&String(order.payment_method||"cash_on_delivery").toLowerCase()==="cash_on_delivery"&&!courierBookingLocked(shipmentFor(order.id)));
+  }
+  function renderBulkCourierRows(){
+   const provider=$("bulkCourierProvider").value,rows=bulkCourierEligibleOrders();
+   document.querySelectorAll(".hf-bulk-redx-column").forEach(cell=>{cell.hidden=provider!=="redx";});
+   $("bulkCourierRows").innerHTML=rows.length?rows.map(order=>{
+    const estimate=orderPackedWeightKg(order),shipment=shipmentFor(order.id),meta=shipment?.provider_response&&typeof shipment.provider_response==="object"?shipment.provider_response:{};
+    const weight=shipment?.parcel_weight_kg??estimate.weight??"",district=meta.redx_delivery_district||inferRedxDistrict(order.delivery_address)||"";
+    return '<tr data-bulk-order="'+esc(order.id)+'"><td><strong class="hf-bulk-order-ref">'+esc(order.order_number||String(order.id).slice(0,8))+'</strong><small>'+esc(order.customer_name||"Customer")+' · '+esc(order.customer_phone||"No phone")+'</small><small>'+esc(order.delivery_address||"No address")+'</small></td><td><strong>'+money(order.total)+'</strong></td><td class="hf-bulk-weight-cell"><input class="hf-input" data-bulk-weight="'+esc(order.id)+'" type="number" min="0.01" max="100" step="0.01" value="'+(weight===""?"":Number(weight).toFixed(2))+'" aria-label="Packed parcel weight in kilograms"><small class="hf-bulk-row-hint">'+(estimate.weight!==null?"Auto from item weights: "+estimate.weight.toFixed(3)+" kg":"Missing weight: "+esc(estimate.missing.join(", ")))+'</small></td><td class="hf-bulk-redx-column hf-bulk-area-cell" '+(provider==="redx"?"":"hidden")+'><div class="hf-bulk-area-stack"><input class="hf-input" data-bulk-redx-district="'+esc(order.id)+'" maxlength="80" value="'+esc(district)+'" placeholder="District in English"><button class="hf-button hf-button-secondary hf-button-small" data-bulk-redx-load="'+esc(order.id)+'" type="button">Load areas</button><select class="hf-select" data-bulk-redx-area="'+esc(order.id)+'" data-verified="false" disabled><option value="">Load Production areas first</option></select><small class="hf-bulk-row-hint" data-bulk-redx-hint="'+esc(order.id)+'">Choose the destination area matching the saved address.</small></div></td></tr>';
+   }).join(""):'<tr><td colspan="4">No selected pending/processing COD order is eligible. Existing live or uncertain parcels are excluded.</td></tr>';
+   $("bulkCourierWeightHint").textContent=provider==="steadfast"?"Steadfast's current API payload does not require weight; the estimate is saved to the parcel for operations.":"Weight is calculated from saved product weight × quantity. Review actual packing and adjust for packaging.";
+  }
+  function openBulkCourierDialog(){
+   if(!shipmentRowsReady){toast(shipmentLoadMessage||"Courier records are unavailable. Refresh before booking.","error");return;}
+   const selected=bulkSelectedOrders(),eligible=bulkCourierEligibleOrders();
+   if(!selected.length){toast("Select orders first.","error");return;}
+   if(!eligible.length){toast("None of the selected orders is eligible for live courier booking.","error");return;}
+   $("bulkCourierCount").textContent=eligible.length+" eligible parcel(s) · "+(selected.length-eligible.length)+" excluded";
+   $("bulkCourierProvider").value="";$("bulkCourierNotes").value="";$("bulkCourierConfirm").checked=false;
+   $("bulkCourierProgress").textContent="Review each customer, COD, weight and destination. No courier request has been sent.";
+   $("bulkCourierResults").innerHTML="";$("bulkCourierError").textContent="";renderBulkCourierRows();$("bulkCourierDialog").showModal();
+  }
+  $("bulkCourierProvider")?.addEventListener("change",renderBulkCourierRows);
+  $("bulkCourierRows")?.addEventListener("input",event=>{
+   const input=event.target.closest("[data-bulk-redx-district]");if(!input)return;
+   const row=input.closest("[data-bulk-order]"),select=row?.querySelector("[data-bulk-redx-area]");
+   if(select){select.dataset.verified="false";select.disabled=true;select.innerHTML='<option value="">District changed — reload areas</option>';}
+  });
+  $("bulkCourierRows")?.addEventListener("click",async event=>{
+   const button=event.target.closest("[data-bulk-redx-load]");if(!button)return;
+   const row=button.closest("[data-bulk-order]"),district=String(row?.querySelector("[data-bulk-redx-district]")?.value||"").trim(),select=row?.querySelector("[data-bulk-redx-area]"),hint=row?.querySelector("[data-bulk-redx-hint]");
+   if(district.length<2){if(hint)hint.textContent="Enter the destination district in English.";return;}
+   button.disabled=true;button.textContent="Loading…";
+   try{
+    const result=await client.functions.invoke("courier-integration",{body:{action:"areas",provider:"redx",district_name:district}});
+    if(result.error){let message=result.error.message||"Could not load REDX areas.";try{if(result.error.context&&typeof result.error.context.clone==="function"){const body=await result.error.context.clone().json();message=body?.error||body?.message||message;}}catch(_){}throw new Error(message);}
+    const data=result.data;if(!data?.success)throw new Error(data?.error||"REDX areas were not returned.");
+    if(String(data.api_environment||"").toLowerCase()==="sandbox"||data.sandbox_test_mode===true)throw new Error("REDX returned Sandbox data. Live bulk booking is blocked until Production areas are available.");
+    const areas=(Array.isArray(data.areas)?data.areas:[]).map(a=>({id:String(a?.id??"").trim(),name:String(a?.name??"").trim(),sandbox:a?.sandbox_test_only===true})).filter(a=>a.id&&a.name&&!a.sandbox);
+    if(!areas.length)throw new Error("No active Production areas were returned for "+district+".");
+    select.innerHTML='<option value="">Select exact delivery area</option>'+areas.map(a=>'<option value="'+esc(a.id)+'">'+esc(a.name)+'</option>').join("");
+    select.disabled=false;select.dataset.verified="true";select.dataset.loadedDistrict=String(data.resolved_district_name||district).trim();
+    const order=all.find(item=>item.id===row.dataset.bulkOrder),address=String(order?.delivery_address||"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
+    const match=areas.find(a=>{const name=a.name.toLowerCase().replace(/[^a-z0-9]+/g," ").trim();return name.length>=4&&(" "+address+" ").includes(" "+name+" ");});
+    if(match)select.value=match.id;
+    if(hint)hint.textContent=areas.length+" Production area(s) loaded. "+(match?"Address-name match suggested; confirm it.":"Choose the exact destination.");
+   }catch(err){select.disabled=true;select.dataset.verified="false";select.innerHTML='<option value="">Areas unavailable — retry</option>';if(hint)hint.textContent=err.message||"REDX area lookup failed.";}
+   finally{button.disabled=false;button.textContent="Load areas";}
+  });
+  async function sendSelectedOrdersToCourier(){
+   const form=$("bulkCourierForm"),button=$("bulkCourierSubmit");if(form.dataset.submitting==="true")return;
+   const provider=$("bulkCourierProvider").value,rowNodes=Array.from($("bulkCourierRows").querySelectorAll("[data-bulk-order]"));
+   if(!["steadfast","pathao","redx"].includes(provider)){$("bulkCourierError").textContent="Choose Steadfast, Pathao or REDX.";return;}
+   if(!rowNodes.length){$("bulkCourierError").textContent="No eligible parcels are available.";return;}
+   if(!$("bulkCourierConfirm").checked){$("bulkCourierError").textContent="Confirm that each customer, address, COD and parcel detail has been reviewed.";return;}
+   const prepared=[];
+   for(const row of rowNodes){
+    const order=all.find(item=>item.id===row.dataset.bulkOrder),raw=String(row.querySelector("[data-bulk-weight]")?.value||"").trim(),weight=raw===""?null:Number(raw);
+    if(!order){$("bulkCourierError").textContent="A selected order is no longer available. Refresh before booking.";return;}
+    if(provider==="pathao"&&(!Number.isFinite(weight)||weight<0.5||weight>10)){$("bulkCourierError").textContent=(order.order_number||"Order")+" needs 0.5–10 kg packed weight.";return;}
+    if(provider==="redx"&&(!Number.isFinite(weight)||weight<0.1||weight>10)){$("bulkCourierError").textContent=(order.order_number||"Order")+" needs 0.1–10 kg packed weight.";return;}
+    if(provider==="steadfast"&&weight!==null&&(!Number.isFinite(weight)||weight<=0||weight>100)){$("bulkCourierError").textContent=(order.order_number||"Order")+" has an invalid saved weight.";return;}
+    let area=null;
+    if(provider==="redx"){
+     const select=row.querySelector("[data-bulk-redx-area]"),district=String(row.querySelector("[data-bulk-redx-district]")?.value||"").trim();
+     if(!district||!select?.value||select.dataset.verified!=="true"||String(select.dataset.loadedDistrict||"").toLowerCase()!==district.toLowerCase()){$("bulkCourierError").textContent=(order.order_number||"Order")+" needs a freshly loaded Production area matching the district.";return;}
+     area={id:Number(select.value),name:select.options[select.selectedIndex]?.textContent||"",district};
+     if(!Number.isInteger(area.id)||area.id<=0){$("bulkCourierError").textContent="REDX area ID is invalid. Reload the area list.";return;}
+    }
+    prepared.push({order,weight,area});
+   }
+   const codTotal=prepared.reduce((sum,item)=>sum+Number(item.order.total||0),0);
+   const confirmation=["CREATE "+prepared.length+" REAL "+provider.toUpperCase()+" COURIER BOOKING(S)","COD total: "+money(codTotal),prepared.map(item=>(item.order.order_number||String(item.order.id).slice(0,8))+" · "+item.order.customer_name+" · "+(item.weight===null?"No weight":item.weight.toFixed(2)+" kg")+(item.area?" · "+item.area.name:"")).join("\n"),"Requests run sequentially. Failed/uncertain results will not be retried automatically; verify the courier Merchant Dashboard before retrying."].join("\n\n");
+   if(!confirm(confirmation))return;
+   form.dataset.submitting="true";button.disabled=true;$("bulkCourierError").textContent="";$("bulkCourierResults").innerHTML="";
+   const results=[];
+   try{
+    for(let index=0;index<prepared.length;index++){
+     const item=prepared[index],order=item.order;
+     $("bulkCourierProgress").textContent="Sending parcel "+(index+1)+" of "+prepared.length+" · "+(order.order_number||"Order");
+     button.textContent="Sending "+(index+1)+"/"+prepared.length+"…";
+     try{
+      const freshResult=await client.from("orders").select("id,order_number,customer_name,customer_phone,customer_email,delivery_address,total,status,payment_method,notes,order_items(id,product_id,product_name,quantity,unit,unit_price,line_total,shipping_weight_kg)").eq("id",order.id).maybeSingle();
+      const fresh=freshResult.data;if(freshResult.error||!fresh)throw new Error("Latest saved order could not be verified.");
+      if(!["pending","processing"].includes(fresh.status))throw new Error("Order status changed to "+fresh.status+".");
+      if(String(fresh.payment_method||"cash_on_delivery").toLowerCase()!=="cash_on_delivery")throw new Error("Only Cash on Delivery orders can be booked.");
+      if(String(fresh.customer_name||"").trim().length<3||String(fresh.customer_name||"").trim().length>100)throw new Error("Customer name is invalid.");
+      if(!normalizeCourierMobile(fresh.customer_phone))throw new Error("Customer phone is not a valid Bangladesh mobile number.");
+      const address=String(fresh.delivery_address||"").trim();if(address.length<10||address.length>(provider==="pathao"?220:250))throw new Error("Delivery address length is outside courier requirements.");
+      const cod=Number(fresh.total);if(!Number.isFinite(cod)||cod<=0)throw new Error("Saved COD amount is invalid.");
+      const items=Array.isArray(fresh.order_items)?fresh.order_items:[];if(!items.length||items.some(i=>!String(i.product_name||"").trim()||!Number.isFinite(Number(i.quantity))||Number(i.quantity)<=0))throw new Error("Saved product details or quantities are invalid.");
+      const existingResult=await client.from("admin_shipments").select("*").eq("order_id",order.id).maybeSingle();
+      if(existingResult.error)throw new Error("Could not verify existing courier records.");
+      const existing=existingResult.data;if(courierBookingLocked(existing))throw new Error("A live or uncertain courier parcel already exists. Duplicate booking is blocked.");
+      if(fresh.status==="pending"){
+       const statusResult=await client.rpc("admin_update_order_status",{p_order_id:order.id,p_next_status:"processing",p_cancellation_reason:null});
+       if(statusResult.error)throw new Error("Could not confirm order: "+statusResult.error.message);
+       await audit("order_status_changed","order",order.id,"Order confirmed before bulk courier booking",{bulk:true,status:"processing",provider:courierLabel(provider)});
+      }
+      const meta=provider==="redx"?{redx_delivery_area_id:item.area.id,redx_delivery_area:item.area.name,redx_delivery_district:item.area.district,redx_sandbox_test_area:false}:{};
+      const parcel={order_id:order.id,courier_name:courierLabel(provider),tracking_id:null,shipment_status:"draft",integration_mode:"manual_placeholder",cod_amount:cod,courier_fee:0,settlement_status:"pending",settled_amount:0,parcel_weight_kg:item.weight,parcel_notes:String($("bulkCourierNotes").value||"").trim(),created_by:existing?.created_by||H.ADMIN_EMAIL,updated_by:H.ADMIN_EMAIL,booking_state:existing?.booking_state==="failed"?"failed":"not_started",booking_error:"",booking_requested_at:null,provider_order_id:null,provider_response:meta};
+      let shipmentId="";
+      if(existing){
+       const saved=await client.from("admin_shipments").update(parcel).eq("id",existing.id).select("id").single();
+       if(saved.error||!saved.data)throw new Error("Could not prepare existing parcel: "+(saved.error?.message||"no record returned"));shipmentId=saved.data.id;
+      }else{
+       const saved=await client.from("admin_shipments").insert(parcel).select("id").single();
+       if(saved.error||!saved.data)throw new Error("Could not create parcel: "+(saved.error?.message||"no record returned"));shipmentId=saved.data.id;
+      }
+      await audit("courier_booking_requested","shipment",shipmentId,"Sequential bulk courier booking requested",{order_id:order.id,provider:courierLabel(provider),cod_amount:cod,parcel_weight_kg:item.weight});
+      const booking=await client.functions.invoke("courier-integration",{body:{action:"book",provider,shipment_id:shipmentId}});
+      if(booking.error){let message=booking.error.message||"Courier API request failed.";try{if(booking.error.context&&typeof booking.error.context.clone==="function"){const body=await booking.error.context.clone().json();message=body?.error||body?.message||message;}}catch(_){}throw new Error(message+" Verify the courier dashboard before retrying.");}
+      if(!booking.data?.success)throw new Error((booking.data?.error||"Courier did not confirm the booking.")+" Verify before retrying.");
+      await audit("courier_booking_succeeded","shipment",shipmentId,"Courier API accepted a bulk parcel",{order_id:order.id,provider:courierLabel(provider),tracking_id:booking.data.tracking_id||null,parcel_weight_kg:item.weight});
+      results.push({success:true,order:order.order_number||String(order.id).slice(0,8),detail:"Tracking: "+(booking.data.tracking_id||"check courier dashboard")});
+     }catch(err){results.push({success:false,order:order.order_number||String(order.id).slice(0,8),detail:err.message||"Booking result needs review. Verify with provider."});console.error("Bulk courier request failed or uncertain:",order.id,err);}
+     $("bulkCourierResults").innerHTML=results.map(result=>'<div class="hf-bulk-result-row '+(result.success?"is-success":"is-failed")+'"><span><strong>'+esc(result.order)+'</strong><small>'+esc(result.detail)+'</small></span><span class="hf-status '+(result.success?"hf-status-confirmed":"hf-status-failed")+'">'+(result.success?"Booked":"Review")+'</span></div>').join("");
+    }
+    const succeeded=results.filter(result=>result.success).length,failed=results.length-succeeded;
+    $("bulkCourierProgress").textContent="Finished "+results.length+" sequential attempt(s): "+succeeded+" booked, "+failed+" need review. No automatic retry was made.";
+    $("bulkCourierConfirm").checked=false;toast(succeeded+" courier parcel(s) booked; "+failed+" need review.",failed?"warning":"success");
+    await refresh();
+   }catch(err){$("bulkCourierError").textContent=err.message||"Bulk courier booking was interrupted. Verify provider status before restarting.";}
+   finally{form.dataset.submitting="false";button.disabled=false;button.textContent="Confirm & send courier bookings";}
+  }
+  $("ordersBulkCourierBtn")?.addEventListener("click",openBulkCourierDialog);
+  $("bulkCourierForm")?.addEventListener("submit",sendSelectedOrdersToCourier);
   function render(){
    const search=String($("orderSearch")?.value||$("globalSearch")?.value||"").toLowerCase().trim(),status=$("orderStatusFilter")?.value||"";
    const countByStatus={"":all.length,pending:0,processing:0,shipped:0,delivered:0,cancelled:0};
