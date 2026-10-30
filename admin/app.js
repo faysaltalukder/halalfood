@@ -310,6 +310,63 @@ window.HFAdminReady.then(async H=>{
    try{ordersDateLabel.textContent=new Intl.DateTimeFormat("en-BD",{timeZone:"Asia/Dhaka",weekday:"long",day:"numeric",month:"long",year:"numeric"}).format(new Date());}
    catch(_dateError){ordersDateLabel.textContent=new Date().toDateString();}
   }
+  async function refreshSecuritySignals(){
+   const body=$("securitySignalBody");
+   if(!body)return;
+   const count=$("securitySignalCount");
+   const message=$("securitySignalMessage");
+   try{
+    const {data,error}=await client.functions.invoke("order-security-admin",{
+     body:{action:"list_signals",limit:100}
+    });
+    if(error||data?.success!==true)throw new Error(data?.error||error?.message||"Security activity could not be loaded.");
+    const rows=Array.isArray(data.signals)?data.signals:[];
+    if(count)count.textContent=rows.length.toLocaleString("en-BD")+" recorded";
+    if(!rows.length){
+     body.innerHTML='<tr><td colspan="7">'+makeEmpty("No checkout security records yet","New orders placed after security monitoring was deployed will appear here. Existing orders are not backfilled.")+'</td></tr>';
+     if(message)message.textContent="No new orders have been submitted since the IP/risk monitor was deployed. The next checkout request will create a record.";
+     return;
+    }
+    const flagLabels={
+     form_submitted_under_1_second:"Form under 1 second",
+     form_submitted_under_2_5_seconds:"Form under 2.5 seconds",
+     many_orders_from_same_ip_in_10_minutes:"Many from same network",
+     repeated_orders_from_same_ip_in_10_minutes:"Repeated same network",
+     many_orders_from_same_device_in_1_hour:"Many from same device",
+     repeated_orders_from_same_device_in_1_hour:"Repeated same device",
+     many_orders_from_same_phone_in_24_hours:"Many from same phone",
+     repeated_orders_from_same_phone_in_24_hours:"Repeated same phone"
+    };
+    body.innerHTML=rows.map(row=>{
+     const score=Math.max(0,Math.min(100,Number(row.riskScore)||0));
+     const status=String(row.orderStatus||"recorded");
+     const isHeld=status==="review_pending";
+     const isReviewed=status==="approved"||status==="rejected";
+     const level=isHeld?"Held for review":isReviewed?(status==="approved"?"Approved after review":"Rejected after review"):score>=40?"Elevated":score>=20?"Watch":"Low";
+     const tone=isHeld||score>=40?"hf-status-review":score>=20?"hf-status-pending":"hf-status-active";
+     const flags=(Array.isArray(row.riskFlags)?row.riskFlags:[]).map(flag=>flagLabels[flag]||String(flag).replace(/_/g," ")).join(" · ");
+     const ip=[row.ipMasked||"IP unavailable",row.ipCountry||""].filter(Boolean).join(" · ");
+     const elapsed=Number.isFinite(Number(row.formElapsedMs))&&row.formElapsedMs!==null?(Number(row.formElapsedMs)/1000).toFixed(1)+"s":"—";
+     const device=row.deviceRef?"#"+row.deviceRef:"—";
+     return '<tr>'+
+      '<td><strong>'+esc(row.orderNumber||"—")+'</strong></td>'+
+      '<td><strong>'+esc(row.customerName||"Customer")+'</strong><small style="display:block;color:var(--hf-muted)">'+esc(row.phone||"No phone")+'</small></td>'+
+      '<td><strong>'+esc(score)+'/100</strong><small style="display:block;margin-top:4px"><span class="hf-status '+tone+'">'+esc(level)+'</span></small></td>'+
+      '<td>'+esc(ip)+'</td>'+
+      '<td><code>'+esc(device)+'</code></td>'+
+      '<td style="white-space:normal;min-width:190px">'+esc(flags||"No elevated signal")+'<small style="display:block;color:var(--hf-muted)">Form time: '+esc(elapsed)+'</small></td>'+
+      '<td>'+esc(dateTime(row.orderedAt))+'</td>'+
+     '</tr>';
+    }).join("");
+    if(message)message.textContent="Risk score is a screening estimate, not proof of fraud. IPs are masked; repeat-device references are one-way hashes.";
+   }catch(error){
+    console.error("Checkout security activity could not be loaded.",error);
+    if(count)count.textContent="Unavailable";
+    body.innerHTML='<tr><td colspan="7">IP and risk activity could not be loaded. Verify MFA admin access and refresh.</td></tr>';
+    if(message)message.textContent="Security signal records remain private on the server; raw IP and device identifiers are not exposed.";
+   }
+  }
+
   let all=[],activeOrderId=null,shipmentRows=[],shipmentRowsReady=false,shipmentLoadMessage="",redxAreaLookupError="",redxLoadedAreas=[],redxLoadedDistrict="",redxPreferredAreaId="",redxPreferredAreaName="";
 
   async function refreshSecurityReviewQueue(){
@@ -319,13 +376,13 @@ window.HFAdminReady.then(async H=>{
    const message=$("securityReviewMessage");
    try{
     const reviews=await signedQuery(client.from("order_security_reviews")
-     .select("id,order_number,risk_score,risk_flags,form_elapsed_ms,order_payload,created_at")
+     .select("id,order_number,risk_score,risk_flags,form_elapsed_ms,ip_masked,ip_country,order_payload,created_at")
      .eq("status","pending_review")
      .order("created_at",{ascending:false})
      .limit(100));
     if(count)count.textContent=reviews.length.toLocaleString("en-BD")+" awaiting review";
     if(!reviews.length){
-     body.innerHTML='<tr><td colspan="7">'+makeEmpty("No orders awaiting security review","Orders with multiple risk signals will appear here. Normal customers are not delayed.")+'</td></tr>';
+     body.innerHTML='<tr><td colspan="8">'+makeEmpty("No orders awaiting security review","Orders with multiple risk signals will appear here. Normal customers are not delayed.")+'</td></tr>';
      if(message)message.textContent="Queue clear. Only orders meeting the combined risk threshold are held here.";
      return;
     }
@@ -355,6 +412,7 @@ window.HFAdminReady.then(async H=>{
       '<td><strong>'+esc(review.order_number||"—")+'</strong><small style="display:block;color:var(--hf-muted)">'+esc(dateTime(review.created_at))+'</small></td>'+
       '<td><strong>'+esc(payload.name||"Customer")+'</strong><small style="display:block;white-space:normal;max-width:260px;color:var(--hf-muted)">'+esc(details)+'</small></td>'+
       '<td>'+esc(phone)+'</td>'+
+      '<td>'+esc(review.ip_masked||"IP unavailable")+'<small style="display:block;color:var(--hf-muted)">'+esc(review.ip_country||"")+'</small></td>'+
       '<td><strong>'+esc(review.risk_score)+'/100</strong></td>'+
       '<td style="white-space:normal;min-width:220px">'+esc(flags||"Combined risk signals")+'</td>'+
       '<td>'+esc(dateTime(review.created_at))+'</td>'+
@@ -367,7 +425,7 @@ window.HFAdminReady.then(async H=>{
    }catch(error){
     console.error("Security review queue could not be loaded.",error);
     if(count)count.textContent="Unavailable";
-    body.innerHTML='<tr><td colspan="7">Security review queue could not be loaded. Verify admin MFA access and refresh.</td></tr>';
+    body.innerHTML='<tr><td colspan="8">Security review queue could not be loaded. Verify admin MFA access and refresh.</td></tr>';
     if(message)message.textContent="The queue remains server-side; no held order is automatically approved.";
    }
   }
@@ -637,7 +695,7 @@ window.HFAdminReady.then(async H=>{
     console.error("Courier records could not be loaded.",err);
    }
    render();
-   await refreshSecurityReviewQueue();
+   await Promise.all([refreshSecuritySignals(),refreshSecurityReviewQueue()]);
    $("ordersUpdated").textContent="Updated "+dateTime(new Date().toISOString());
   }
   $("securityReviewBody")?.addEventListener("click",async event=>{
