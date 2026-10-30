@@ -8,7 +8,7 @@ const root = process.cwd();
 const adminDir = join(root, "admin");
 const sharedCssVersion = "20261030-admin-theme-v2";
 const sharedJsVersion = "20261030-illustrated-nav-v1";
-const appJsVersion = "20261030-orders-refined-v3";
+const appJsVersion = "20261030-orders-refined-v4";
 const read = (path) => readFileSync(join(root, path), "utf8");
 
 const htmlFiles = readdirSync(adminDir).filter((file) => file.endsWith(".html"));
