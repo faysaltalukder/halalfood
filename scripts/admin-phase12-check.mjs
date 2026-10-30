@@ -21,7 +21,7 @@ for (const file of unifiedPages) {
   assert.ok(source.includes(`shared.js?v=${sharedJsVersion}`) || source.includes("shared.js?v=20261027-site-publisher-v1"), `${file}: missing shared JS cache key.`);
 
   if (source.includes("./app.js")) {
-    assert.ok(source.includes(`app.js?v=${appJsVersion}`) || source.includes("app.js?v=20261030-orders-layout-v6") || source.includes("app.js?v=20261027-site-publisher-v1") || source.includes("app.js?v=20261030-courier-history-explained-v3"), `${file}: stale or missing app.js cache key.`);
+    assert.ok(source.includes(`app.js?v=${appJsVersion}`) || source.includes("app.js?v=20261030-orders-layout-v7") || source.includes("app.js?v=20261027-site-publisher-v1") || source.includes("app.js?v=20261030-courier-history-explained-v3"), `${file}: stale or missing app.js cache key.`);
   }
 
   const mainTag = (source.match(/<main\b[^>]*\bid=["']pageContent["'][^>]*>/i) || [])[0];
@@ -106,8 +106,8 @@ for (const id of [
 ]) {
   assert.ok(ordersPage.includes(`id="${id}"`), `Orders workspace is missing #${id}.`);
 }
-assert.ok(ordersPage.includes("orders.css?v=20261030-orders-layout-v6"), "Orders workspace stylesheet must be cache-busted.");
-assert.ok(ordersPage.includes("app.js?v=20261030-orders-layout-v6"), "Orders workspace must load the order-card application script.");
+assert.ok(ordersPage.includes("orders.css?v=20261030-orders-layout-v7"), "Orders workspace stylesheet must be cache-busted.");
+assert.ok(ordersPage.includes("app.js?v=20261030-orders-layout-v7"), "Orders workspace must load the order-card application script.");
 for (const status of ["pending", "processing", "shipped", "delivered", "cancelled"]) {
   assert.ok(ordersCss.includes(`.hf-order-card[data-status="${status}"]`), `Order cards need a distinct ${status} color.`);
 }
@@ -260,10 +260,15 @@ const productsColumn = ordersApp.indexOf('class="hf-order-items-panel"');
 const deliveryColumn = ordersApp.indexOf('class="hf-order-location-panel"');
 const totalsColumn = ordersApp.indexOf('class="hf-order-totals-panel"');
 assert.ok(customerColumn >= 0 && customerColumn < productsColumn && productsColumn < deliveryColumn && deliveryColumn < totalsColumn, "Order cards must scan in customer, products, delivery, totals order.");
-assert.ok(ordersApp.includes('class="hf-order-whatsapp-button"'), "Customer contact must show a compact WhatsApp-style action beside the phone number.");
+assert.ok(ordersApp.includes('class="hf-order-whatsapp-icon"') && ordersApp.includes('<svg viewBox="0 0 24 24"'), "Customer contact must include a visible WhatsApp SVG mark.");
+assert.ok(ordersApp.includes('</div></div>\'+\n       (whatsapp?'), "WhatsApp phone must render below the customer name, not beside it.");
+assert.ok(ordersCss.includes("margin:0 0 0 41px"), "WhatsApp phone line should align below the customer copy.");
 assert.ok(ordersApp.includes('class="hf-order-actions"><button'), "Order actions must sit inside the final totals row.");
-assert.ok(ordersCss.includes("Orders layout v6"), "Compact four-column Orders layout must be present.");
+assert.ok(ordersCss.includes("Orders layout v6") && ordersCss.includes("Orders layout v7"), "Compact Orders layout and final visual corrections must be present.");
 assert.ok(ordersCss.includes(".hf-order-totals-panel>.hf-order-totals-values"), "Totals content must not inherit the old card-row divider spacing.");
-assert.ok(ordersCss.includes("min-width:245px"), "Desktop totals/actions column must retain enough room for readable amounts and stacked buttons.");
+assert.ok(ordersCss.includes("minmax(220px,1.08fr)"), "Desktop totals/actions column must retain a readable minimum width.");
+assert.ok(ordersCss.includes("border-bottom:1px solid #cbd5e1!important"), "Subtotal and delivery charge must have a visible separator.");
+assert.ok(ordersCss.includes("border-top:1px solid #cbd5e1"), "Grand total must be separated from delivery charge.");
+assert.ok(ordersApp.includes('class="hf-order-location-heading"') && ordersApp.includes('class="hf-order-location-meta"'), "Delivery heading, zone label and address must be distinct visual levels.");
 
 
