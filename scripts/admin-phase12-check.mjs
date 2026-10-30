@@ -252,3 +252,6 @@ assert.ok(ordersCss.includes(".hf-order-address{font-size:13px"), "Delivery addr
 assert.ok(ordersCss.includes(".hf-order-item-image{width:48px;height:48px"), "Product thumbnails should be visibly larger.");
 assert.ok(ordersCss.includes(".hf-order-item-copy strong{font-size:13px"), "Product names should have readable emphasis.");
 assert.ok(ordersCss.includes(".hf-order-reference small{font-size:12px"), "Order date/time should be more legible.");
+
+assert.ok(ordersApp.includes("(whatsapp?'<a class=\"hf-order-phone\""), "Only valid WhatsApp-normalized phone numbers should be clickable.");
+assert.ok(ordersApp.includes("cannot be opened in WhatsApp"), "Invalid customer phone values must not create empty chat links.");
