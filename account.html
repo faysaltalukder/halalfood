@@ -222,6 +222,8 @@ async function showAccount(user){
  const {data,error}=await client.from("customer_profiles").select("full_name,phone,avatar_url").eq("user_id",user.id).maybeSingle();
  if(!error&&data){$("profileName").value=data.full_name||user.user_metadata?.full_name||user.user_metadata?.name||"";$("profilePhone").value=data.phone||""}
  else{$("profileName").value=user.user_metadata?.full_name||user.user_metadata?.name||"";$("profilePhone").value=""}
+ const {error:identityError}=await client.rpc("sync_my_customer_identity");
+ if(identityError)console.warn("Customer identity sync is unavailable; this account will remain unlinked until the verified email can be matched.",identityError.message);
  await syncCustomerAvatar(user);
  await loadMyOrders(user);
 }
