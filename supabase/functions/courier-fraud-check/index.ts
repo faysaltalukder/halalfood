@@ -3,7 +3,7 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const ALLOWED_ORIGIN = "https://faysaltalukder.github.io";
 const ADMIN_EMAIL = "halalfoodbd.official@gmail.com";
-const SOURCE = "first_party_courier_apis_v1";
+const SOURCE = "first_party_courier_apis_v2";
 const CACHE_HOURS = 6;
 
 const cors = {
