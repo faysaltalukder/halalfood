@@ -1,15 +1,15 @@
 (() => {
 "use strict";
+
 const form = document.getElementById("order-form");
 if (!form) return;
+
 const endpoint = "https://qfwvrcfkrsydycbfjsxf.supabase.co/functions/v1/incomplete-checkout";
-const recoveryBox = document.getElementById("hf-recovery-consent");
-const marketingBox = document.getElementById("hf-marketing-consent");
-const sessionKey = "hf_incomplete_checkout_session_v1";
-const consentKey = "hf_incomplete_checkout_consent_v1";
-const marketingKey = "hf_incomplete_checkout_marketing_v1";
+const NOTICE_VERSION = "2026-10-31-checkout-entry-v2";
+const sessionKey = "hf_incomplete_checkout_session_v2";
 let saveTimer = 0;
 let lastField = "";
+let lastQueuedSnapshot = "";
 let sending = Promise.resolve();
 
 function makeUuid() {
@@ -18,7 +18,7 @@ function makeUuid() {
  bytes[6] = (bytes[6] & 15) | 64;
  bytes[8] = (bytes[8] & 63) | 128;
  const hex = Array.from(bytes).map((value) => value.toString(16).padStart(2,"0")).join("");
- return hex.slice(0,8)+"-"+hex.slice(8,12)+"-"+hex.slice(12,16)+"-"+hex.slice(16,20)+"-"+hex.slice(20);
+ return hex.slice(0,8)+"-"+hex.slice(8,12)+"-"+hex.slice(12,16)+"-"+hex.slice(16,20)+"-"+hex.slice(20,32);
 }
 function getSessionId() {
  let value = "";
@@ -28,6 +28,12 @@ function getSessionId() {
   try { sessionStorage.setItem(sessionKey,value); } catch (_) {}
  }
  return value;
+}
+function fieldValue(id) {
+ return String(document.getElementById(id)?.value || "").trim();
+}
+function phoneIsValid(value) {
+ return /^01[0-9]{9}$/.test(String(value || "").replace(/\D/g,""));
 }
 function numberFromText(value) {
  const n = Number(String(value || "").replace(/[^0-9.]/g,""));
@@ -50,33 +56,25 @@ function checkoutItems() {
  const price = lineTotal > 0 ? lineTotal / quantity : displayedUnit;
  return [{name:name.slice(0,120),slug:"",quantity,price:Math.max(0,price)}];
 }
-function fieldValue(id) {
- return String(document.getElementById(id)?.value || "").trim();
-}
 function buildPayload() {
  const items = checkoutItems();
  const subtotal = items.reduce((sum,item) => sum + item.price * item.quantity,0);
  const deliveryZone = form.querySelector('input[name="deliveryZone"]:checked')?.value || "";
  const deliveryCharge = deliveryZone === "inside_dhaka" ? 70 : deliveryZone === "outside_dhaka" ? 120 : 0;
- const fields = ["name","mobile","email","address","notes"];
+ const fields = ["name","mobile","email"];
  const done = fields.filter((id) => fieldValue(id)).length + (items.length ? 1 : 0) + (deliveryZone ? 1 : 0);
- const progress = Math.min(95,Math.round(done / 7 * 95));
+ const progress = Math.min(95,Math.round(done / 5 * 95));
  const currentField = lastField || "checkout";
  const step = ["name","mobile","email"].includes(currentField) ? "Customer details"
-  : currentField === "address" ? "Delivery address"
-  : currentField === "notes" ? "Order notes"
   : currentField === "delivery-inside-dhaka" || currentField === "delivery-outside-dhaka" ? "Delivery area"
   : "Product and order summary";
  return {
   action:"save",
   checkoutSessionId:getSessionId(),
-  recoveryConsent:recoveryBox?.checked === true,
-  marketingConsent:marketingBox?.checked === true,
+  privacyNoticeVersion:NOTICE_VERSION,
   customerName:fieldValue("name"),
   customerPhone:fieldValue("mobile"),
   customerEmail:fieldValue("email"),
-  deliveryAddress:fieldValue("address"),
-  orderNotes:fieldValue("notes"),
   orderContext:window.HALAL_CART_MODE ? "cart" : "single",
   deliveryZone:deliveryZone,
   items:items,
@@ -96,53 +94,39 @@ function post(payload) {
   body:JSON.stringify(payload),
   keepalive:true,
   credentials:"omit"
- })).then((response) => {
-  if (!response.ok) throw new Error("Checkout progress request failed.");
-  return response.json().catch(() => null);
+ })).then(async (response) => {
+  const result = await response.json().catch(() => null);
+  if (!response.ok || result?.success === false) throw new Error(result?.error || "Checkout progress request failed.");
+  return result;
  }).catch((error) => {
   console.warn("Incomplete checkout progress was not saved.",error);
   return null;
  });
  return sending;
 }
-function flush() {
- if (!recoveryBox?.checked) return;
+async function flush() {
+ if (!phoneIsValid(fieldValue("mobile"))) return null;
  const payload = buildPayload();
- if (!payload.customerName && !payload.customerPhone && !payload.customerEmail) return;
- void post(payload);
+ const snapshot = JSON.stringify(payload);
+ if (snapshot === lastQueuedSnapshot) return null;
+ lastQueuedSnapshot = snapshot;
+ const result = await post(payload);
+ if (!result?.saved) lastQueuedSnapshot = "";
+ return result;
 }
 function schedule(field) {
  if (field) lastField = field;
  window.clearTimeout(saveTimer);
- saveTimer = window.setTimeout(flush,1100);
+ if (!phoneIsValid(fieldValue("mobile"))) return;
+ saveTimer = window.setTimeout(() => { void flush(); },1100);
 }
-if (recoveryBox) {
- try {
-  if (sessionStorage.getItem(consentKey) === "yes") recoveryBox.checked = true;
-  if (sessionStorage.getItem(marketingKey) === "yes" && marketingBox) marketingBox.checked = true;
- } catch (_) {}
- recoveryBox.addEventListener("change",() => {
-  if (recoveryBox.checked) {
-   try { sessionStorage.setItem(consentKey,"yes"); } catch (_) {}
-   schedule("consent");
-  } else {
-   window.clearTimeout(saveTimer);
-   try { sessionStorage.removeItem(consentKey); sessionStorage.removeItem(marketingKey); } catch (_) {}
-   if (marketingBox) marketingBox.checked = false;
-   void post({action:"withdraw",checkoutSessionId:getSessionId()});
-  }
- });
+function removeSessionData() {
+ try { sessionStorage.removeItem(sessionKey); } catch (_) {}
 }
-marketingBox?.addEventListener("change",() => {
- try {
-  if (marketingBox.checked) sessionStorage.setItem(marketingKey,"yes");
-  else sessionStorage.removeItem(marketingKey);
- } catch (_) {}
- if (recoveryBox?.checked) schedule("marketing-consent");
-});
+
 form.addEventListener("input",(event) => {
  const target = event.target;
- if (target && target.id && ["name","mobile","email","address","notes","quantity"].includes(target.id)) schedule(target.id);
+ if (target && target.id && ["name","mobile","email","quantity"].includes(target.id)) schedule(target.id);
 });
 form.addEventListener("change",(event) => {
  const target = event.target;
@@ -150,34 +134,29 @@ form.addEventListener("change",(event) => {
 });
 form.addEventListener("focusout",(event) => {
  const target = event.target;
- if (target && target.id && ["name","mobile","email","address","notes"].includes(target.id)) schedule(target.id);
+ if (target && target.id && ["name","mobile","email"].includes(target.id)) schedule(target.id);
 });
 window.addEventListener("halalcart:updated",() => schedule("cart"));
 window.addEventListener("halalcatalog:updated",() => schedule("product"));
 document.addEventListener("visibilitychange",() => {
  if (document.visibilityState === "hidden") {
   window.clearTimeout(saveTimer);
-  flush();
+  void flush();
  }
 });
 window.addEventListener("pagehide",() => {
  window.clearTimeout(saveTimer);
- flush();
+ void flush();
 });
+
 window.HFIncompleteCheckout = {
- getSessionId: () => recoveryBox?.checked ? getSessionId() : "",
+ getSessionId: () => phoneIsValid(fieldValue("mobile")) ? getSessionId() : "",
  complete: async (sessionId,orderNumber) => {
   if (!sessionId || !orderNumber) return;
   window.clearTimeout(saveTimer);
-  if (recoveryBox?.checked) {
-   const snapshot = buildPayload();
-   if (snapshot.customerName || snapshot.customerPhone || snapshot.customerEmail) {
-    await post(snapshot);
-   }
-  }
-  const result = await post({action:"complete",checkoutSessionId:sessionId,orderNumber:String(orderNumber).slice(0,40)});
-  try { sessionStorage.removeItem(sessionKey); sessionStorage.removeItem(consentKey); sessionStorage.removeItem(marketingKey); } catch (_) {}
-  return result;
+  if (phoneIsValid(fieldValue("mobile"))) await flush();
+  await post({action:"complete",checkoutSessionId:sessionId,orderNumber:String(orderNumber).slice(0,40)});
+  removeSessionData();
  }
 };
 })();
