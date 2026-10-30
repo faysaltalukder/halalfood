@@ -55,3 +55,20 @@ html[data-admin-theme="light"] .hf-orders-hero-copy>p:not(.page-eyebrow){color:#
  .hf-security-review-section .hf-section-head{align-items:flex-start;flex-direction:column}
  .hf-security-review-section .hf-table{min-width:920px}
 }
+
+
+/* IP & risk monitoring tables */
+#securitySignalsSection .hf-table,
+#securityReviewSection .hf-table{min-width:1120px}
+#securitySignalsSection .hf-table td,
+#securityReviewSection .hf-table td{vertical-align:top}
+#securitySignalsSection code{font-size:10px;color:var(--hf-muted);background:var(--hf-panel-soft);padding:3px 5px;border-radius:5px}
+#securitySignalsSection .hf-table td small,
+#securityReviewSection .hf-table td small{line-height:1.4}
+#securitySignalsSection .hf-table td:nth-child(6){min-width:190px;white-space:normal}
+@media(max-width:700px){
+ #securitySignalsSection .hf-section-head,
+ #securityReviewSection .hf-section-head{align-items:flex-start;flex-direction:column}
+ #securitySignalsSection .hf-table,
+ #securityReviewSection .hf-table{min-width:1020px}
+}
