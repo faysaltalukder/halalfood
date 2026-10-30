@@ -840,6 +840,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const form = document.querySelector("#order-form");
   if (form) {
+    const startedAtField = document.querySelector("#hf-form-started-at");
+    if (startedAtField) startedAtField.value = String(Date.now());
+    const deviceField = document.querySelector("#hf-device-id");
+    if (deviceField) {
+      let deviceId = "";
+      try { deviceId = localStorage.getItem("hf_checkout_device_id_v1") || ""; } catch (_) {}
+      if (!/^[a-f0-9-]{20,80}$/i.test(deviceId)) {
+        try {
+          deviceId = typeof crypto.randomUUID === "function"
+            ? crypto.randomUUID()
+            : Array.from(crypto.getRandomValues(new Uint8Array(16))).map(v => v.toString(16).padStart(2,"0")).join("");
+          localStorage.setItem("hf_checkout_device_id_v1", deviceId);
+        } catch (_) { deviceId = ""; }
+      }
+      deviceField.value = deviceId;
+    }
     const mobile = document.querySelector("#mobile");
     mobile?.setAttribute("pattern", "01[0-9]{9}");
     mobile?.setAttribute("maxlength", "11");
@@ -869,6 +885,14 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       const data = Object.fromEntries(new FormData(form).entries());
+      const antiAbuseSignals = {
+        honeypot: String(data.hf_website || "").trim(),
+        formStartedAt: String(data.hf_form_started_at || "").trim(),
+        deviceId: String(data.hf_device_id || "").trim()
+      };
+      delete data.hf_website;
+      delete data.hf_form_started_at;
+      delete data.hf_device_id;
       const turnstileToken = String(data["cf-turnstile-response"] || "").trim();
       if (!turnstileToken) {
         if (error) {
@@ -999,6 +1023,9 @@ document.addEventListener("DOMContentLoaded", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...data,
+          honeypot: antiAbuseSignals.honeypot,
+          formStartedAt: antiAbuseSignals.formStartedAt,
+          deviceId: antiAbuseSignals.deviceId,
           turnstileToken: turnstileToken,
           fbp: readOrderAttributionCookie("_fbp"),
           fbc: readOrderAttributionCookie("_fbc")
@@ -1073,6 +1100,12 @@ document.addEventListener("DOMContentLoaded", () => {
         // Only now mirror the accepted order to Google Sheets. A rejected challenge or
         // failed Supabase save can no longer create a false backup order row.
         const googleBackupData = { ...data };
+        if (winner.heldForReview === true) {
+          googleBackupData.notes = [
+            String(googleBackupData.notes || "").trim(),
+            "SECURITY REVIEW PENDING — please verify the customer before processing."
+          ].filter(Boolean).join(" | ").slice(0, 500);
+        }
         const googleBackupPromise = (async () => {
           if (!GOOGLE_APPS_SCRIPT_URL || GOOGLE_APPS_SCRIPT_URL.includes("PASTE_YOUR")) {
             throw new Error("Google Apps Script URL is not configured.");
@@ -1121,7 +1154,9 @@ document.addEventListener("DOMContentLoaded", () => {
             paymentMethod: "cash_on_delivery",
             items: confirmedItems,
             customerName: data.name || "",
-            confirmationStatus: "confirmed",
+            confirmationStatus: winner.heldForReview === true ? "pending" : "confirmed",
+            securityReviewPending: winner.heldForReview === true,
+            securityReviewId: winner.reviewId || null,
             confirmedAt: new Date().toISOString(),
             purchaseEventId: winner.purchaseEventId || null
           }));
