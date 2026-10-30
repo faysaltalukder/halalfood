@@ -263,4 +263,7 @@ assert.ok(customerColumn >= 0 && customerColumn < productsColumn && productsColu
 assert.ok(ordersApp.includes('class="hf-order-whatsapp-button"'), "Customer contact must show a compact WhatsApp-style action beside the phone number.");
 assert.ok(ordersApp.includes('class="hf-order-actions"><button'), "Order actions must sit inside the final totals row.");
 assert.ok(ordersCss.includes("Orders layout v6"), "Compact four-column Orders layout must be present.");
+assert.ok(ordersCss.includes(".hf-order-totals-panel>.hf-order-totals-values"), "Totals content must not inherit the old card-row divider spacing.");
+assert.ok(ordersCss.includes("min-width:245px"), "Desktop totals/actions column must retain enough room for readable amounts and stacked buttons.");
+
 
