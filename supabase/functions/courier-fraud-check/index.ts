@@ -169,9 +169,32 @@ function normalizeProvider(provider: string, payload: any) {
   }
   const customerRating = firstText(rows, ["customer_rating", "customerRating", "rating", "customer_status"]);
   const riskLevel = firstText(rows, ["risk_level", "riskLevel", "risk", "fraud_level"]);
-  const hasCounts = total !== null || success !== null || cancel !== null;
+  const declaredDataType = (firstText(rows, ["data_type", "dataType"]) || "").toLowerCase();
+  const showCountValue = rows.find((row) => typeof row?.show_count === "boolean")?.show_count;
   const hasRating = !!customerRating || !!riskLevel;
   const hasRate = successRate !== null;
+
+  // Pathao's newer response is rating-only and may include total/success/cancel=0
+  // with show_count=false. Those are placeholders, not actual parcel counts.
+  const ratingOnly = declaredDataType === "rating" ||
+    (showCountValue === false && (hasRating || hasRate));
+  if (ratingOnly) {
+    return {
+      courierName: provider,
+      status: "available",
+      dataType: "rating",
+      message: firstText(rows, ["message", "description", "detail"]) ||
+        "কুরিয়ারের API থেকে customer rating পাওয়া গেছে; parcel count এই response-এ প্রকাশ করা হয়নি।",
+      total: null,
+      success: null,
+      cancel: null,
+      successRate,
+      customerRating,
+      riskLevel: riskLevel ? riskLevel.toLowerCase() : null,
+    };
+  }
+
+  const hasCounts = total !== null || success !== null || cancel !== null;
   const explicitlyEmpty = total === 0 &&
     (success === null || success === 0) &&
     (cancel === null || cancel === 0) &&
