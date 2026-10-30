@@ -9,6 +9,7 @@ const ignoredDirs = new Set([".git", "node_modules", ".vercel"]);
 const required = [
   "docs/ARCHITECTURE.md",
   "docs/AI_WORKFLOW.md",
+  "docs/FEATURE_OWNERSHIP.md",
   "docs/EDGE_FUNCTIONS.md",
   "docs/SUPABASE_DRIFT_REGISTER.md",
   "CONTRIBUTING.md",
