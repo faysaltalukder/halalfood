@@ -21,7 +21,7 @@ for (const file of unifiedPages) {
   assert.ok(source.includes(`shared.js?v=${sharedJsVersion}`) || source.includes("shared.js?v=20261027-site-publisher-v1"), `${file}: missing shared JS cache key.`);
 
   if (source.includes("./app.js")) {
-    assert.ok(source.includes(`app.js?v=${appJsVersion}`) || source.includes("app.js?v=20261030-orders-layout-v7") || source.includes("app.js?v=20261030-bulk-manager-v2") || source.includes("app.js?v=20261027-site-publisher-v1") || source.includes("app.js?v=20261030-courier-history-explained-v3"), `${file}: stale or missing app.js cache key.`);
+    assert.ok(source.includes(`app.js?v=${appJsVersion}`) || source.includes("app.js?v=20261030-orders-layout-v7") || source.includes("app.js?v=20261030-bulk-manager-v3") || source.includes("app.js?v=20261027-site-publisher-v1") || source.includes("app.js?v=20261030-courier-history-explained-v3"), `${file}: stale or missing app.js cache key.`);
   }
 
   const mainTag = (source.match(/<main\b[^>]*\bid=["']pageContent["'][^>]*>/i) || [])[0];
@@ -111,7 +111,7 @@ for (const id of [
   assert.ok(ordersPage.includes(`id="${id}"`), `Orders workspace is missing #${id}.`);
 }
 assert.ok(ordersPage.includes("orders.css?v=20261030-bulk-manager-v1"), "Orders workspace bulk-manager stylesheet must be cache-busted.");
-assert.ok(ordersPage.includes("app.js?v=20261030-bulk-manager-v2"), "Orders workspace must load the bulk-manager application script.");
+assert.ok(ordersPage.includes("app.js?v=20261030-bulk-manager-v3"), "Orders workspace must load the bulk-manager application script.");
 assert.ok(ordersPage.includes("bulkStatusDialog") && ordersPage.includes("bulkAssignDialog") && ordersPage.includes("bulkCourierDialog"), "All bulk workflow dialogs must be present.");
 for (const status of ["pending", "processing", "shipped", "delivered", "cancelled"]) {
   assert.ok(ordersCss.includes(`.hf-order-card[data-status="${status}"]`), `Order cards need a distinct ${status} color.`);
@@ -149,7 +149,7 @@ const productsCss = read("admin/products.css");
 const shippingWeightMigration = read("supabase/migrations/20261030160000_add_shipping_weight_bulk_order_workflows.sql");
 const financeDeleteMigration = read("supabase/migrations/20261030161000_protect_financially_referenced_bulk_deletions.sql");
 assert.ok(productsPage.includes('products.css?v=20261030-shipping-weight-v1'), "Product shipping-weight editor CSS must be cache-busted.");
-assert.ok(productsPage.includes('app.js?v=20261030-bulk-manager-v2'), "Product shipping-weight editor must load the updated admin script.");
+assert.ok(productsPage.includes('app.js?v=20261030-bulk-manager-v3'), "Product shipping-weight editor must load the updated admin script.");
 assert.ok(productsPage.includes('id="productShippingWeight"'), "Product editor needs a numeric shipping weight field.");
 assert.ok(productsPage.includes("<th>Ship weight</th>"), "Product table must expose the shipping weight column.");
 assert.ok(ordersApp.includes("shipping_weight_kg:shippingWeight"), "Product saves must persist shipping_weight_kg.");
@@ -166,6 +166,9 @@ assert.ok(ordersApp.includes("function openBulkStatusDialog"), "Selected orders 
 assert.ok(ordersApp.includes("function openBulkAssignDialog"), "Selected orders need a bulk staff assignment action.");
 assert.ok(ordersApp.includes("assigned_to_team_member_id:memberId"), "Bulk staff assignment must be persisted on orders.");
 assert.ok(!ordersPage.includes('id="bulkAssignMember" class="hf-select" required'), "The Unassigned/Clear option must remain selectable.");
+assert.ok(ordersPage.includes('<option value="pending">Pending · only if no live courier parcel</option>'), "Bulk status should allow a safe return to Pending after a failed/unbooked attempt.");
+assert.ok(ordersApp.includes('next==="pending"&&!(order.status==="processing"&&!courierBookingLocked(shipment))'), "Bulk status must block Pending when a live/uncertain parcel exists.");
+assert.ok(ordersApp.includes('Number(weight).toFixed(3)'), "Bulk parcel weights must retain the 0.001 kg database precision.");
 assert.ok(shippingWeightMigration.includes("v_product.shipping_weight_kg"), "Checkout migration must snapshot the product shipping weight.");
 assert.ok(shippingWeightMigration.includes("assigned_to_team_member_id"), "Bulk assignment schema must be represented in migrations.");
 assert.ok(financeDeleteMigration.includes("admin_finance_entries"), "Bulk delete migration must protect financial ledger references.");
