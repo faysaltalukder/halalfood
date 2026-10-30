@@ -301,7 +301,7 @@ for (const tone of ["pending","processing","shipped","delivered","cancelled"]) {
 }
 
 assert.ok(ordersApp.includes("whatsapp=whatsappUrl(o)"), "Order phone links must open WhatsApp.");
-assert.ok(ordersApp.includes('href="'+esc(whatsapp)+'" target="_blank" rel="noopener noreferrer"'), "Customer phone click must open a protected WhatsApp chat tab.");
+assert.ok(ordersApp.includes("href=\"'+esc(whatsapp)+'\" target=\"_blank\" rel=\"noopener noreferrer\""), "Customer phone click must open a protected WhatsApp chat tab.");
 assert.ok(ordersApp.includes("hf-order-zone-badge"), "Delivery zone should be a secondary label, not the main address.");
 assert.ok(ordersCss.includes(".hf-order-address{font-size:13px"), "Delivery address should be more prominent than delivery zone.");
 assert.ok(ordersCss.includes(".hf-order-item-image{width:48px;height:48px"), "Product thumbnails should be visibly larger.");
