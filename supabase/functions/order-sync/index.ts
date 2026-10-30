@@ -25,6 +25,22 @@ async function hmacFingerprint(secret: string, namespace: string, value: string)
   return Array.from(new Uint8Array(signature)).map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
+function maskedIp(value: string): string | null {
+  const ip = String(value || "").trim();
+  if (!ip) return null;
+  const ipv4Mapped = ip.match(/::ffff:(\\d+\\.\\d+\\.\\d+\\.\\d+)$/i);
+  const ipv4 = ipv4Mapped?.[1] || ip;
+  const parts = ipv4.split(".");
+  if (parts.length === 4 && parts.every(part => /^\\d{1,3}$/.test(part) && Number(part) <= 255)) {
+    return parts[0] + "." + parts[1] + "." + parts[2] + ".x";
+  }
+  if (ip.includes(":")) {
+    const groups = ip.split("%")[0].split(":").filter(Boolean);
+    return groups.length ? groups.slice(0, 3).join(":") + ":x::/48" : "IPv6";
+  }
+  return "unavailable";
+}
+
 
 // Purchase enablement is decided by the MFA-protected runtime settings in analytics-ingest.
 
@@ -204,6 +220,9 @@ Deno.serve(async (req: Request) => {
       return json({ success: false, error: "Order service is temporarily unavailable. Please try again." }, 503);
     }
     const clientIp = clean(req.headers.get("cf-connecting-ip") || req.headers.get("x-real-ip"), 64);
+    const ipMasked = maskedIp(clientIp);
+    const ipCountry = clean(req.headers.get("cf-ipcountry"), 8).toUpperCase() || null;
+    const userAgent = clean(req.headers.get("user-agent"), 500) || null;
     const deviceId = clean(d.deviceId ?? d.hf_device_id, 100);
     const normalizedPhone = clean(payload.phone, 32).replace(/[\\s-]/g, "");
     const [ipHash, deviceHash, phoneHash] = await Promise.all([
@@ -282,7 +301,13 @@ Deno.serve(async (req: Request) => {
       order_number: payload.orderId,
       ip_hash: ipHash,
       device_hash: deviceHash,
-      phone_hash: phoneHash
+      phone_hash: phoneHash,
+      ip_masked: ipMasked,
+      ip_country: ipCountry,
+      form_elapsed_ms: elapsedMs,
+      user_agent: userAgent,
+      risk_score: riskScore,
+      risk_flags: riskFlags
     };
 
     // High-risk orders are held outside the normal orders table. They do not reserve stock,
@@ -298,8 +323,10 @@ Deno.serve(async (req: Request) => {
           ip_hash: ipHash,
           device_hash: deviceHash,
           phone_hash: phoneHash,
+          ip_masked: ipMasked,
+          ip_country: ipCountry,
           form_elapsed_ms: elapsedMs,
-          user_agent: clean(req.headers.get("user-agent"), 500),
+          user_agent: userAgent,
           order_payload: payload,
           fbp: clean(d.fbp, 180),
           fbc: clean(d.fbc, 180)
