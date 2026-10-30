@@ -13,7 +13,7 @@ const toIso = (value: unknown) => {
 };
 type MessengerClient = SupabaseClient<Database>;
 type SignatureCheck = { valid: boolean; reason: "valid" | "missing_signature_header" | "malformed_signature_header" | "signature_mismatch" | "signature_verification_error" };
-async function verifySignature(raw: Uint8Array, header: string, appSecret: string): Promise<SignatureCheck> {
+async function verifySignature(raw: ArrayBuffer, header: string, appSecret: string): Promise<SignatureCheck> {
   const value = header.trim();
   if (!value) return { valid: false, reason: "missing_signature_header" };
   const match = /^sha256=([a-f0-9]{64})$/i.exec(value);
@@ -96,7 +96,7 @@ Deno.serve(async (req: Request) => {
   const pageId = Deno.env.get("MESSENGER_PAGE_ID") || "";
   if (!appSecret || !supabaseUrl || !serviceKey || !pageId) return json({ success: false, error: "Messenger webhook configuration unavailable" }, 503);
 
-  const signature = req.headers.get("x-hub-signature-256") || "", raw = new Uint8Array(await req.arrayBuffer());
+  const signature = req.headers.get("x-hub-signature-256") || "", raw = await req.arrayBuffer();
   const check = await verifySignature(raw, signature, appSecret);
   if (!check.valid) {
     console.warn("Messenger webhook signature rejected", JSON.stringify({
