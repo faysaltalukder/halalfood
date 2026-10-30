@@ -651,6 +651,7 @@ window.HFAdminReady.then(async H=>{
    return /^01\d{9}$/.test(digits)?digits:"";
   }
   function courierHistoryPercent(value){
+   if(value===null||value===undefined||value==="")return "Not available";
    const number=Number(value);
    return Number.isFinite(number)?number.toFixed(1).replace(/\.0$/,"")+"%":"Not available";
   }
@@ -665,59 +666,89 @@ window.HFAdminReady.then(async H=>{
    if(title)title.textContent="Courier history · "+(order.order_number||"Order");
    if(phoneLabel)phoneLabel.textContent="Customer mobile: "+phone;
    message.className="hf-banner hf-banner-info";
-   message.textContent="Checking courier delivery history. This is a separate third-party lookup and does not automatically approve or reject this order.";
+   message.textContent="Checking directly with the connected courier providers. No third-party history service is used.";
    summary.innerHTML="";
-   results.innerHTML='<p class="hf-loading">Checking Pathao, Steadfast and REDX history…</p>';
-   if(footnote)footnote.textContent="This provider's summary is separate from this store's records. An unknown/new-customer result is not proof of fraud.";
+   results.innerHTML='<p class="hf-loading">Checking Pathao and Steadfast directly; REDX API availability is shown separately…</p>';
+   if(footnote)footnote.textContent="Only first-party courier API responses are used. Sources that do not provide history are excluded from the average, not counted as zero.";
    if(!dialog.open)dialog.showModal();
    try{
     const {data,error}=await client.functions.invoke("courier-fraud-check",{body:{phone}});
     if(error||data?.success!==true){
-     const missing=data?.code==="FRAUDBD_API_KEY_MISSING";
-     message.className="hf-banner "+(missing?"hf-banner-info":"hf-banner-warning");
-     message.textContent=missing
-      ?"Courier-history API is not connected yet. Add FRAUDBD_API_KEY in Supabase Edge Function Secrets after creating an active API account/plan. Keep the key out of GitHub and customer-side code."
-      :(data?.error||error?.message||"Courier history could not be checked.");
-     results.innerHTML=missing
-      ?'<div class="hf-card hf-card-pad"><strong>One-time connection required</strong><p class="hf-data-note">The dashboard and secure server endpoint are ready. The provider API key is still required before real courier histories can be retrieved.</p><a href="https://fraudbd.com/api-documentation" target="_blank" rel="noopener noreferrer" class="hf-button hf-button-secondary">View API documentation</a></div>'
-      :'<p class="hf-data-note">No courier-history result was returned. This is not a low-risk or high-risk verdict.</p>';
+     message.className="hf-banner hf-banner-warning";
+     message.textContent=data?.error||error?.message||"Courier history could not be checked.";
+     results.innerHTML='<p class="hf-data-note">No verified direct-courier result was received. This does not mean the customer has zero delivery history.</p>';
      return;
-    }
-    message.className="hf-banner hf-banner-info";
-    message.textContent=(data.cached?"Cached lookup":"Fresh lookup")+" · checked "+dateTime(data.checkedAt)+(data.expiresAt?" · refresh available after "+dateTime(data.expiresAt):"");
-    const total=data.totalSummary||{};
-    if(Number(total.total)>0){
-     const items=[
-      ["Total parcels",Number(total.total).toLocaleString("en-BD")],
-      ["Delivered",Number(total.success||0).toLocaleString("en-BD")],
-      ["Cancelled / returned",Number(total.cancel||0).toLocaleString("en-BD")],
-      ["Overall success",courierHistoryPercent(total.successRate)]
-     ];
-     summary.innerHTML=items.map(item=>'<div class="hf-card hf-kpi"><span class="hf-kpi-label">'+esc(item[0])+'</span><strong class="hf-kpi-value">'+esc(item[1])+'</strong></div>').join("");
-    }else{
-     summary.innerHTML='<div class="hf-card hf-card-pad" style="grid-column:1/-1"><strong>No combined delivery-count total</strong><p class="hf-data-note">Some courier sources use a rating rather than exact delivered/returned counts. Read each courier result below.</p></div>';
     }
     const rows=Array.isArray(data.summaries)?data.summaries:[];
-    if(!rows.length){
-     results.innerHTML='<p class="hf-data-note">The provider did not return any courier summaries for this number.</p>';
-     return;
+    const total=data.totalSummary||{};
+    const available=rows.filter(item=>item.status==="available");
+    const average=total.averageSuccessRate??total.successRate;
+    const countValue=value=>value===null||value===undefined?"Not available":Number(value).toLocaleString("en-BD");
+    const kpis=[];
+    if(total.total!==null&&total.total!==undefined){
+     kpis.push(["Reported parcels",countValue(total.total)]);
+     if(total.success!==null&&total.success!==undefined)kpis.push(["Delivered",countValue(total.success)]);
+     if(total.cancel!==null&&total.cancel!==undefined)kpis.push(["Cancelled / returned",countValue(total.cancel)]);
     }
-    results.innerHTML='<div class="hf-courier-history-list">'+rows.map(item=>{
-     const type=String(item.dataType||"delivery").toLowerCase();
-     const level=String(item.riskLevel||"unknown").toLowerCase();
-     const tone=["high","very_high"].includes(level)?"hf-status-review":level==="medium"?"hf-status-pending":level==="low"?"hf-status-active":"hf-status";
-     const rate=item.successRate===null||item.successRate===undefined?"":courierHistoryPercent(item.successRate);
-     const detail=type==="rating"
-      ? '<div class="hf-courier-history-metrics"><span>Customer rating <strong>'+esc(courierHistoryHumanize(item.customerRating||"not rated"))+'</strong></span>'+(rate?'<span>Estimated success <strong>'+esc(rate)+'</strong></span>':'<span>Exact parcel counts <strong>Not provided</strong></span>')+'</div>'
-      : '<div class="hf-courier-history-metrics"><span>Parcels <strong>'+esc(item.total??"—")+'</strong></span><span>Delivered <strong>'+esc(item.success??"—")+'</strong></span><span>Cancelled / returned <strong>'+esc(item.cancel??"—")+'</strong></span><span>Success rate <strong>'+esc(rate||"Not available")+'</strong></span></div>';
-     return '<article class="hf-card hf-card-pad hf-courier-history-card"><div class="hf-section-head"><strong>'+esc(item.courierName||"Courier")+'</strong><span class="hf-status '+tone+'">'+esc(courierHistoryHumanize(level))+'</span></div><p>'+esc(item.message||"No additional provider message.")+'</p>'+detail+'<small class="hf-data-note">'+(type==="rating"?"Provider rating · counts are not available":"Provider delivery statistics")+'</small></article>';
-    }).join("")+'</div>';
-    if(footnote)footnote.textContent="Pathao may return rating bands rather than exact shipment counts. Delivery success rates are courier-reported/aggregated indicators, not guarantees of future delivery.";
+    if(average!==null&&average!==undefined)kpis.push(["Average success rate",courierHistoryPercent(average)]);
+    if(total.pooledSuccessRate!==null&&total.pooledSuccessRate!==undefined&&Number(total.rateSources)>1){
+     kpis.push(["Weighted success rate",courierHistoryPercent(total.pooledSuccessRate)]);
+    }
+    if(available.length)kpis.push(["Sources with data",available.length+" / "+rows.length]);
+    summary.innerHTML=kpis.length
+     ?kpis.map(item=>'<div class="hf-card hf-kpi"><span class="hf-kpi-label">'+esc(item[0])+'</span><strong class="hf-kpi-value">'+esc(item[1])+'</strong></div>').join("")
+     :'<div class="hf-card hf-card-pad" style="grid-column:1/-1"><strong>No combined delivery statistics available</strong><p class="hf-data-note">No connected courier returned countable delivery statistics for this phone number. Check each courier status below.</p></div>';
+
+    const allNoHistory=rows.length>0&&rows.every(item=>item.status==="no_history"||item.status==="not_supported");
+    const anyFailure=rows.some(item=>["error","not_connected"].includes(item.status));
+    if(available.length){
+     message.className="hf-banner hf-banner-info";
+     message.textContent=(data.cached?"Cached direct-courier lookup":"Fresh direct-courier lookup")+" · "+available.length+" provider(s) returned data · checked "+dateTime(data.checkedAt)+(data.expiresAt?" · refresh after "+dateTime(data.expiresAt):"");
+    }else if(allNoHistory){
+     message.className="hf-banner hf-banner-info";
+     message.textContent="The connected courier lookup sources did not find a previous customer-history record. REDX does not currently expose this lookup in its public Merchant API.";
+    }else{
+     message.className="hf-banner "+(anyFailure?"hf-banner-warning":"hf-banner-info");
+     message.textContent="No usable courier-history data was returned. See each provider's status below; unavailable data is not treated as zero.";
+    }
+
+    const statusInfo={
+     available:{label:"Data received",tone:"hf-status-active"},
+     no_history:{label:"No history found",tone:"hf-status"},
+     not_connected:{label:"Credentials not connected",tone:"hf-status-review"},
+     not_supported:{label:"History API unavailable",tone:"hf-status"},
+     error:{label:"Lookup failed",tone:"hf-status-review"}
+    };
+    results.innerHTML=rows.length
+     ?'<div class="hf-courier-history-list">'+rows.map(item=>{
+      const status=statusInfo[item.status]||{label:"Status unknown",tone:"hf-status"};
+      const type=String(item.dataType||"none").toLowerCase();
+      const rate=item.successRate===null||item.successRate===undefined?"":courierHistoryPercent(item.successRate);
+      const metric=[];
+      if(type==="delivery"){
+       if(item.total!==null&&item.total!==undefined)metric.push(["Parcels",countValue(item.total)]);
+       if(item.success!==null&&item.success!==undefined)metric.push(["Delivered",countValue(item.success)]);
+       if(item.cancel!==null&&item.cancel!==undefined)metric.push(["Cancelled / returned",countValue(item.cancel)]);
+       if(rate)metric.push(["Success rate",rate]);
+      }else if(type==="rating"){
+       metric.push(["Customer rating",courierHistoryHumanize(item.customerRating||"Not provided")]);
+       if(rate)metric.push(["Success rate",rate]);
+       else metric.push(["Exact parcel counts","Not provided"]);
+      }
+      const metrics=metric.length
+       ?'<div class="hf-courier-history-metrics">'+metric.map(pair=>'<span>'+esc(pair[0])+'<strong>'+esc(pair[1])+'</strong></span>').join("")+'</div>'
+       :'<p class="hf-data-note" style="margin-top:8px">'+esc(item.message||"No courier data was returned.")+'</p>';
+      const risk=item.riskLevel?'<small class="hf-data-note">Courier rating / risk indicator: '+esc(courierHistoryHumanize(item.riskLevel))+'</small>':"";
+      const typeLabel=type==="rating"?"Rating-only response":type==="delivery"?"Delivery statistics":"";
+      return '<article class="hf-card hf-card-pad hf-courier-history-card"><div class="hf-section-head"><div><strong>'+esc(item.courierName||"Courier")+'</strong>'+(typeLabel?'<small class="hf-data-note" style="display:block">'+esc(typeLabel)+'</small>':"")+'</div><span class="hf-status '+status.tone+'">'+esc(status.label)+'</span></div><p>'+esc(item.message||"No additional provider message.")+'</p>'+metrics+risk+'</article>';
+     }).join("")+'</div>'
+     :'<p class="hf-data-note">No courier source returned a result.</p>';
+    if(footnote)footnote.textContent="Direct first-party sources only. Average success rate includes only couriers that returned a valid rate; a missing history or unavailable API is never counted as 0%. "+(total.pooledSuccessRate!==null&&total.pooledSuccessRate!==undefined?"Weighted rate, when available, is calculated from reported parcel counts.":"");
    }catch(error){
-    console.error("Courier history lookup failed.",error);
+    console.error("Direct courier history lookup failed.",error);
     message.className="hf-banner hf-banner-warning";
     message.textContent=error?.message||"Courier history lookup failed. Please try again.";
-    results.innerHTML='<p class="hf-data-note">No verified external courier result was received.</p>';
+    results.innerHTML='<p class="hf-data-note">No verified direct-courier result was received.</p>';
    }
   }
 
