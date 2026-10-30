@@ -1132,9 +1132,9 @@ document.addEventListener("DOMContentLoaded", () => {
         const orderSuccessKey="HALAL_ORDER_SUCCESS_RECORDED_"+confirmedOrderId;
         let alreadyTracked=false;
         try { alreadyTracked=sessionStorage.getItem(orderSuccessKey)==="1"; } catch (_) {}
-        if(!alreadyTracked){
-          // This storefront is still a testing project. Record order acceptance as a
-          // non-revenue event; never send a Purchase conversion until live sales are enabled.
+        if(!winner.heldForReview && !alreadyTracked){
+          // A held request is not yet a saved order. Record order_success only after
+          // the database has accepted it; Purchase is dispatched through its verified route.
           track("order_success",{
             transaction_id:confirmedOrderId,
             value:confirmedTotal,
