@@ -97,6 +97,8 @@ Deno.serve(async (req: Request) => {
       return reply({ success: false, error: "Admin review service is unavailable." }, 503);
     }
 
+    // verify_jwt is enabled at the Supabase gateway. Confirm the signed-in identity
+    // and independently require the MFA-backed aal2 claim before allowing a decision.
     const authClient = createClient(url, publicKey, {
       auth: { persistSession: false, autoRefreshToken: false }
     });
@@ -110,6 +112,61 @@ Deno.serve(async (req: Request) => {
 
     let body: Record<string, any>;
     try { body = await req.json(); } catch { return reply({ success: false, error: "Invalid request body." }, 400); }
+    const action = clean(body.action, 24).toLowerCase();
+    if (action === "list_signals") {
+      const requestedLimit = Number(body.limit || 60);
+      const limit = Number.isFinite(requestedLimit) ? Math.max(1, Math.min(100, Math.floor(requestedLimit))) : 60;
+      const { data: signals, error: signalError } = await admin
+        .from("order_security_signals")
+        .select("order_number,risk_score,risk_flags,form_elapsed_ms,ip_masked,ip_country,device_hash,user_agent,created_at")
+        .order("created_at", { ascending: false })
+        .limit(limit);
+      if (signalError) {
+        console.error("Could not load security signal records:", String(signalError.code || "unknown"));
+        return reply({ success: false, error: "Security activity could not be loaded." }, 500);
+      }
+
+      const orderNumbers = (signals || []).map((row: any) => clean(row.order_number, 20)).filter(Boolean);
+      const [ordersResult, reviewsResult] = orderNumbers.length
+        ? await Promise.all([
+            admin.from("orders")
+              .select("order_number,customer_name,customer_phone,status,total,ordered_at")
+              .in("order_number", orderNumbers),
+            admin.from("order_security_reviews")
+              .select("order_number,status,order_payload")
+              .in("order_number", orderNumbers)
+          ])
+        : [{ data: [], error: null }, { data: [], error: null }];
+
+      if (ordersResult.error || reviewsResult.error) {
+        console.error("Could not map order details to security signals.");
+        return reply({ success: false, error: "Security activity details could not be loaded." }, 500);
+      }
+      const orderMap = new Map((ordersResult.data || []).map((row: any) => [row.order_number, row]));
+      const reviewMap = new Map((reviewsResult.data || []).map((row: any) => [row.order_number, row]));
+      const rows = (signals || []).map((signal: any) => {
+        const order = orderMap.get(signal.order_number) as any;
+        const review = reviewMap.get(signal.order_number) as any;
+        const heldPayload = review?.order_payload && typeof review.order_payload === "object" ? review.order_payload : {};
+        return {
+          orderNumber: signal.order_number,
+          customerName: order?.customer_name || heldPayload.name || "Customer",
+          phone: order?.customer_phone || heldPayload.phone || heldPayload.mobile || "",
+          orderStatus: review?.status === "pending_review" ? "review_pending" : (order?.status || "recorded"),
+          total: order?.total ?? null,
+          orderedAt: order?.ordered_at || signal.created_at,
+          riskScore: Number(signal.risk_score || 0),
+          riskFlags: Array.isArray(signal.risk_flags) ? signal.risk_flags : [],
+          formElapsedMs: signal.form_elapsed_ms ?? null,
+          ipMasked: signal.ip_masked || null,
+          ipCountry: signal.ip_country || null,
+          deviceRef: signal.device_hash ? String(signal.device_hash).slice(0, 10) : null,
+          userAgent: clean(signal.user_agent, 240)
+        };
+      });
+      return reply({ success: true, signals: rows, count: rows.length });
+    }
+
     const reviewId = clean(body.reviewId, 50);
     const decision = clean(body.decision, 20).toLowerCase();
     const notes = clean(body.notes, 500);
@@ -143,6 +200,7 @@ Deno.serve(async (req: Request) => {
           error: "অর্ডারটি এখনো অনুমোদন করা যাচ্ছে না। পণ্যের স্টক, ফোন নম্বর ও অর্ডারের তথ্য যাচাই করুন।"
         }, 400);
       }
+
       const { data: savedOrder, error: savedOrderError } = await admin
         .from("orders")
         .select("id,order_number")
@@ -173,7 +231,7 @@ Deno.serve(async (req: Request) => {
       return reply({ success: false, error: "The review decision could not be saved. Refresh and check its status." }, 500);
     }
 
-    if (decision === "approve" && savedOrderId) {
+    if (decision === "approve" && savedOrderId && Deno.env.get("SUPABASE_URL") && serviceKey) {
       EdgeRuntime.waitUntil(dispatchApprovedPurchase({
         url,
         serviceKey,
