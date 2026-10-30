@@ -534,3 +534,8 @@ html[data-admin-theme="dark"] .hf-orders-bulkbar{background:#1e3048;border-color
  .hf-order-customer-head,.hf-order-phone,.hf-order-location{grid-column:auto;grid-row:auto}
  .hf-order-location{margin-top:5px}
 }
+
+/* Tighter supporting copy above the main order workspace. */
+.hf-orders-courier-note{margin:0 0 8px;padding:8px 12px;font-size:11px;line-height:1.4}
+.hf-orders-courier-note>div{min-width:0}
+.hf-orders-courier-note strong{font-weight:800}
