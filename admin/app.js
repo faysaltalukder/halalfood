@@ -368,6 +368,7 @@ window.HFAdminReady.then(async H=>{
   }
 
   let all=[],activeOrderId=null,shipmentRows=[],shipmentRowsReady=false,shipmentLoadMessage="",redxAreaLookupError="",redxLoadedAreas=[],redxLoadedDistrict="",redxPreferredAreaId="",redxPreferredAreaName="";
+  let customerProfilesById=new Map(),visibleOrders=[],selectedOrderIds=new Set();
 
   async function refreshSecurityReviewQueue(){
    const body=$("securityReviewBody");
@@ -771,42 +772,99 @@ window.HFAdminReady.then(async H=>{
    const documentHtml="<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>Halal Food · Test Order "+esc(orderNo)+"</title><style>*{box-sizing:border-box}body{font:14px/1.5 Arial,sans-serif;color:#2b2a3d;margin:0;padding:28px;max-width:860px;margin:auto}header{display:flex;justify-content:space-between;align-items:start;border-bottom:2px solid #c97b3d;padding-bottom:16px;margin-bottom:20px;gap:16px}h1{margin:0;font-size:24px}h2{font-size:16px;margin:22px 0 8px}small,.muted{color:#686778}.tag{display:inline-block;background:#fff0df;padding:5px 9px;border-radius:99px;font-weight:700;font-size:11px}.notice{margin:18px 0;padding:12px;background:#fff4e7;border:1px solid #edd5b8;border-radius:8px;font-size:12px}.meta{display:grid;grid-template-columns:1fr 1fr;gap:12px}.meta div{padding:12px;background:#faf8f3;border-radius:8px;overflow-wrap:anywhere}table{width:100%;border-collapse:collapse;margin-top:10px}th,td{text-align:left;border-bottom:1px solid #e8e4dc;padding:10px 8px;font-size:12px}th{background:#f5f1e9;text-transform:uppercase;font-size:10px;letter-spacing:.05em}.totals{margin:16px 0 0 auto;width:min(320px,100%)}.totals div{display:flex;justify-content:space-between;padding:5px 0}.totals .grand{border-top:1px solid #cfc8bc;margin-top:5px;padding-top:10px;font-size:17px;font-weight:800}@media print{body{padding:0}.notice{break-inside:avoid}}@media(max-width:600px){body{padding:14px}.meta{grid-template-columns:1fr}}</style></head><body><header><div><h1>Halal Food</h1><div class='muted'>Premium Products · Order packing summary</div></div><div style='text-align:right'><span class='tag'>TEST ORDER</span><p><strong>"+esc(orderNo)+"</strong><br><small>"+esc(dateTime(order.ordered_at))+"</small></p></div></header><div class='notice'><strong>Testing project:</strong> This document is not a receipt or proof of payment/delivery. Halal Food is currently a learning/testing storefront; real transactions and delivery are not enabled.</div><div class='meta'><div><strong>Customer</strong><br>"+esc(order.customer_name||"—")+"<br>"+esc(order.customer_phone||"—")+"<br>"+esc(order.customer_email||"")+"</div><div><strong>Delivery details</strong><br>"+esc(order.delivery_address||"—")+"<br><span class='muted'>Zone: "+esc(order.delivery_zone||"Not recorded")+" · Status: "+esc(order.status||"pending")+"</span></div></div><h2>Items</h2><table><thead><tr><th>Product</th><th>Quantity</th><th>Unit price</th><th>Line total</th></tr></thead><tbody>"+(itemRows||"<tr><td colspan='4'>No item details recorded</td></tr>")+"</tbody></table><div class='totals'><div><span>Subtotal</span><strong>"+money(order.subtotal)+"</strong></div><div><span>Delivery</span><strong>"+money(order.delivery_charge)+"</strong></div><div class='grand'><span>Recorded total</span><strong>"+money(order.total)+"</strong></div></div><p class='muted' style='margin-top:28px;font-size:11px'>Printed from the Halal Food admin panel. Recorded amounts do not confirm collected payment.</p><script>window.addEventListener('load',()=>setTimeout(()=>window.print(),250));<\/script></body></html>";
    try{win.document.open();win.document.write(documentHtml);win.document.close();win.opener=null;}catch(err){win.close();toast("The packing summary could not be opened.","error");}
   }
+  const orderStatusLabels={pending:"Pending",processing:"Processing",shipped:"Shipped",delivered:"Delivered",cancelled:"Cancelled"};
+  function orderCustomerAvatar(order){
+   const profile=order.customer_id?customerProfilesById.get(order.customer_id):null;
+   const photo=String(profile?.avatar_url||"").trim();
+   const valid=/^https:\/\/[^"'<>\s]+$/i.test(photo)&&photo.length<=2048;
+   const initial=Array.from(String(order.customer_name||"Customer").trim())[0]?.toLocaleUpperCase("en-US")||"C";
+   return '<div class="hf-order-avatar">'+(valid?'<img src="'+esc(photo)+'" alt="" loading="lazy" referrerpolicy="no-referrer"><span class="hf-order-avatar-fallback" hidden>'+esc(initial)+'</span>':'<span class="hf-order-avatar-fallback">'+esc(initial)+'</span>')+'</div>';
+  }
+  function updateBulkSelectionUi(rows){
+   const selected=selectedOrderIds.size,visible=rows.filter(order=>selectedOrderIds.has(order.id)).length;
+   const allBox=$("ordersSelectAll");
+   if(allBox){allBox.checked=rows.length>0&&visible===rows.length;allBox.indeterminate=visible>0&&visible<rows.length;allBox.disabled=rows.length===0;}
+   if($("ordersSelectedCount"))$("ordersSelectedCount").textContent=selected.toLocaleString("en-BD")+" selected";
+   ["ordersPackagingBtn","ordersInvoiceBtn","ordersBulkExportBtn"].forEach(id=>{const button=$(id);if(button)button.disabled=selected===0;});
+   const clear=$("ordersBulkClearBtn");if(clear)clear.disabled=selected===0;
+  }
+  function printSelectedOrders(kind){
+   const chosen=all.filter(order=>selectedOrderIds.has(order.id));
+   if(!chosen.length){toast("Select at least one order first.","error");return;}
+   const win=window.open("","_blank");
+   if(!win){toast("The print window was blocked. Allow pop-ups for this admin page and try again.","error");return;}
+   const invoice=kind==="invoice";
+   const pages=chosen.map(order=>{
+    const items=(order.order_items||[]).map(item=>'<tr><td>'+(invoice?"":'<span class="check"></span>')+esc(item.product_name||"Product")+'</td><td>'+esc(item.quantity)+' '+esc(item.unit||"")+'</td><td>'+money(item.unit_price)+'</td><td>'+money(item.line_total)+'</td></tr>').join("");
+    return '<section class="sheet"><header><div><b>Halal Food</b><small>Order operations · '+(invoice?"Order invoice":"Packing slip")+'</small></div><div class="ref"><span>'+(invoice?"ORDER INVOICE · TEST":"PACKING SLIP")+'</span><strong>'+esc(order.order_number||String(order.id).slice(0,8))+'</strong><small>'+esc(dateTime(order.ordered_at))+'</small></div></header><p class="notice"><b>Testing project:</b> This is not a receipt or proof of payment, dispatch or delivery.</p><div class="people"><div><small>CUSTOMER</small><b>'+esc(order.customer_name||"Guest")+'</b><span>'+esc(order.customer_phone||"No phone")+'</span><span>'+esc(order.customer_email||"")+'</span></div><div><small>DELIVERY LOCATION</small><b>'+esc(order.delivery_zone||"Customer provided address")+'</b><span>'+esc(order.delivery_address||"No address recorded")+'</span></div></div><h3>Products & quantities</h3><table><thead><tr><th>Product</th><th>Quantity</th><th>Unit price</th><th>Line total</th></tr></thead><tbody>'+(items||'<tr><td colspan="4">No items recorded</td></tr>')+'</tbody></table><div class="totals"><div><span>Products subtotal</span><b>'+money(order.subtotal)+'</b></div><div><span>Delivery charge</span><b>'+money(order.delivery_charge)+'</b></div><div class="grand"><span>Recorded total</span><b>'+money(order.total)+'</b></div></div>'+(invoice?'<p class="note">Cash on Delivery order · this document does not confirm receipt of payment.</p>':'<div class="packing"><b>Packing checklist</b><span>□ Products checked</span><span>□ Quantities checked</span><span>□ Address checked</span><span>□ Parcel packed</span></div>')+'<footer>Halal Food · '+esc(order.status||"pending")+'</footer></section>';
+   }).join("");
+   const css='*{box-sizing:border-box}body{margin:0;background:#e9eef5;color:#20334f;font:13px/1.5 Inter,Arial,sans-serif}.sheet{max-width:900px;margin:24px auto;padding:30px;background:#fff;box-shadow:0 8px 28px #1f314c1a;break-after:page;page-break-after:always}.sheet:last-child{break-after:auto;page-break-after:auto}header{display:flex;justify-content:space-between;gap:18px;border-bottom:2px solid #2869c7;padding-bottom:16px}header b{display:block;font-size:25px}.ref{text-align:right}.ref span{display:inline-block;padding:5px 10px;border-radius:99px;background:#e8f1ff;color:#245c9f;font-size:10px;font-weight:800}.ref strong,.ref small{display:block;margin-top:4px}.notice{margin:18px 0;padding:12px;border:1px solid #efcfac;background:#fff5e9;border-radius:10px;font-size:11px}.people{display:grid;grid-template-columns:1fr 1fr;gap:12px}.people>div{display:grid;gap:4px;padding:14px;border:1px solid #dbe4ee;background:#f6f9fd;border-radius:10px;overflow-wrap:anywhere}.people small{font-weight:800;letter-spacing:.1em}.people span,small,.note{color:#66778f}h3{margin:20px 0 8px}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:10px 8px;border-bottom:1px solid #e2e9f1;font-size:11px}th{background:#eff4fa;text-transform:uppercase;font-size:9px}.totals{width:min(340px,100%);margin:18px 0 0 auto}.totals div{display:flex;justify-content:space-between;padding:6px 0}.grand{border-top:2px solid #cdd9e7;margin-top:6px;padding-top:12px!important;font-size:16px}.check{display:inline-block;width:11px;height:11px;border:1px solid #8b9bb0;margin-right:7px}.packing{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-top:22px;padding:14px;border:1px solid #dbe4ee;background:#f7f9fc;border-radius:10px;font-size:10px}.packing b{grid-column:1/-1}.note{margin-top:20px;font-size:10px}footer{margin-top:28px;padding-top:10px;border-top:1px solid #dce4ee;color:#78889e;font-size:9px}@media print{body{background:#fff}.sheet{max-width:none;margin:0;padding:15mm;box-shadow:none;min-height:270mm}}@media(max-width:640px){.sheet{margin:0;padding:18px}.people{grid-template-columns:1fr}.packing{grid-template-columns:1fr 1fr}}';
+   const doc='<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Halal Food · '+(invoice?"Order invoices":"Packing slips")+'</title><style>'+css+'</style></head><body>'+pages+'<script>window.addEventListener("load",()=>setTimeout(()=>window.print(),250));<\/script></body></html>';
+   try{win.document.open();win.document.write(doc);win.document.close();win.opener=null;}catch(err){win.close();toast("Could not prepare selected orders for printing.","error");}
+  }
+  function exportSelectedOrders(){
+   const chosen=all.filter(order=>selectedOrderIds.has(order.id));
+   if(!chosen.length){toast("Select at least one order first.","error");return;}
+   const rows=chosen.map(order=>({order_number:order.order_number||String(order.id).slice(0,8),customer:order.customer_name||"",phone:order.customer_phone||"",delivery_address:order.delivery_address||"",delivery_zone:order.delivery_zone||"",products:(order.order_items||[]).map(item=>(item.product_name||"Product")+" × "+item.quantity+" "+(item.unit||"")).join(" | "),products_subtotal:Number(order.subtotal||0),delivery_charge:Number(order.delivery_charge||0),recorded_total:Number(order.total||0),status:order.status||"",ordered_at:order.ordered_at||""}));
+   downloadFile("halal-food-selected-orders.csv",csvText(rows),"text/csv;charset=utf-8");toast(chosen.length+" selected order(s) exported.");
+  }
   function render(){
    const search=String($("orderSearch")?.value||$("globalSearch")?.value||"").toLowerCase().trim(),status=$("orderStatusFilter")?.value||"";
    const countByStatus={"":all.length,pending:0,processing:0,shipped:0,delivered:0,cancelled:0};
    all.forEach(order=>{if(Object.prototype.hasOwnProperty.call(countByStatus,order.status))countByStatus[order.status]++;});
    document.querySelectorAll("[data-order-quick-filter]").forEach(button=>{
-    const filter=button.dataset.orderQuickFilter||"";
-    const count=button.querySelector("[data-order-filter-count]");
+    const filter=button.dataset.orderQuickFilter||"",count=button.querySelector("[data-order-filter-count]");
     if(count)count.textContent=shortNum(countByStatus[filter]??0);
-    const active=filter===status;
-    button.classList.toggle("is-active",active);
-    button.setAttribute("aria-pressed",String(active));
+    const active=filter===status;button.classList.toggle("is-active",active);button.setAttribute("aria-pressed",String(active));
    });
-   const rows=all.filter(o=>(!status||o.status===status)&&(!search||[o.order_number,o.customer_name,o.customer_phone,o.customer_email,o.id,...(o.order_items||[]).map(i=>i.product_name)].join(" ").toLowerCase().includes(search)));
-   $("ordersFoundCount").textContent=rows.length.toLocaleString("en-BD")+" orders";
+   const rows=all.filter(o=>(!status||o.status===status)&&(!search||[o.order_number,o.customer_name,o.customer_phone,o.customer_email,o.delivery_address,o.delivery_zone,o.id,...(o.order_items||[]).map(i=>i.product_name)].join(" ").toLowerCase().includes(search)));
+   visibleOrders=rows;$("ordersFoundCount").textContent=rows.length.toLocaleString("en-BD")+" orders";
    $("ordersDataBody").innerHTML=rows.length?rows.map(o=>{
     const shipment=shipmentFor(o.id),locked=courierBookingLocked(shipment),eligible=["pending","processing"].includes(o.status);
     const legacyTest=!!shipment&&(shipment.provider_response?.redx_sandbox_test_area===true||shipment.provider_response?.redx_sandbox_quick_test===true);
     let courierAction="";
-    if(eligible&&shipmentRowsReady&&!locked&&String(o.payment_method||"cash_on_delivery").toLowerCase()==="cash_on_delivery"){
-     const label=shipment?.booking_state==="failed"?"Resolve issue & retry":o.status==="pending"?"Confirm & Book":"Book Courier";
-     courierAction='<button class="hf-button hf-button-primary hf-button-small" data-confirm-book="'+esc(o.id)+'">'+label+'</button>';
-    }else if(eligible&&!shipmentRowsReady){
-     courierAction='<span class="hf-status hf-status-review">Courier state unavailable</span>';
-    }else if(locked){
-     const state=legacyTest?"Legacy courier record — verify with REDX":shipment.booking_state==="unknown"?"Booking outcome uncertain — verify with courier":shipment.booking_state==="in_progress"?"Booking in progress":shipment.booking_state==="succeeded"?"Booking succeeded":shipment.booking_state==="failed"?"Booking failed":"Courier record locked";
-     courierAction='<span class="hf-status hf-status-review">'+esc(state)+'</span>';
-    }
+    if(eligible&&shipmentRowsReady&&!locked&&String(o.payment_method||"cash_on_delivery").toLowerCase()==="cash_on_delivery"){const label=shipment?.booking_state==="failed"?"Resolve issue & retry":o.status==="pending"?"Confirm & Book":"Book Courier";courierAction='<button class="hf-button hf-button-primary hf-button-small" data-confirm-book="'+esc(o.id)+'">'+label+'</button>';}
+    else if(eligible&&!shipmentRowsReady)courierAction='<span class="hf-status hf-status-review">Courier state unavailable</span>';
+    else if(locked){const label=legacyTest?"Legacy courier record — verify with REDX":shipment.booking_state==="unknown"?"Booking outcome uncertain — verify with courier":shipment.booking_state==="in_progress"?"Booking in progress":shipment.booking_state==="succeeded"?"Booking succeeded":shipment.booking_state==="failed"?"Booking failed":"Courier record locked";courierAction='<span class="hf-status hf-status-review">'+esc(label)+'</span>';}
     const stateText=shipment?(legacyTest?"Legacy record — verify in REDX dashboard":shipment.booking_error||(shipment.booking_state==="failed"?"Booking failed":shipment.booking_state==="succeeded"?"Booking succeeded":shipment.booking_state==="unknown"?"Verify with courier":shipment.booking_state==="in_progress"?"Booking in progress":"Not booked")):"";
-    const shipmentInfo=shipment?'<small style="display:block;white-space:normal;min-width:150px">'+esc(shipment.courier_name||"Courier")+': '+esc(stateText)+'</small>':"";
-    const lookupPhone=courierLookupPhone(o.customer_phone);
-    const historyAction=lookupPhone?'<button class="hf-button hf-button-secondary hf-button-small" type="button" data-courier-history-check="'+esc(o.id)+'">Courier history</button>':'';
-    return '<tr><td><strong>'+esc(o.order_number||String(o.id).slice(0,8))+'</strong><small>'+esc(String(o.id).slice(0,8))+'</small></td><td><strong>'+esc(o.customer_name||"Guest")+'</strong><small>'+esc(o.customer_phone||"No phone")+'</small></td><td>'+esc((o.order_items||[]).slice(0,2).map(x=>x.product_name+" × "+x.quantity+" "+(x.unit||"")).join(", ")||"No item detail")+'</td><td>'+money(o.subtotal)+'</td><td>'+money(o.delivery_charge)+'</td><td><strong>'+money(o.total)+'</strong></td><td><select class="hf-select order-status-select" data-order-id="'+esc(o.id)+'" style="min-width:120px;padding:7px;font-size:11px">'+statusOptions.map(s=>'<option value="'+s+'" '+(s===o.status?"selected ":"")+(o.status==="cancelled"&&s!=="cancelled"?"disabled ":"")+'>'+s.charAt(0).toUpperCase()+s.slice(1)+'</option>').join("")+'</select>'+(o.status==="cancelled"&&o.cancellation_reason?'<small>'+esc(o.cancellation_reason)+'</small>':"")+'</td><td>'+dateTime(o.ordered_at)+'</td><td><div class="hf-table-actions" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">'+historyAction+courierAction+'<button class="hf-button hf-button-secondary hf-button-small" data-order-details="'+esc(o.id)+'">Details</button>'+shipmentInfo+'</div></td></tr>';
-   }).join(""):'<tr><td colspan="9">'+makeEmpty("No matching orders","Try another status or a shorter search term.")+'</td></tr>';
+    const shipmentInfo=shipment?'<span class="hf-order-shipment-note">'+esc(shipment.courier_name||"Courier")+': '+esc(stateText)+'</span>':"";
+    const phone=String(o.customer_phone||"").trim(),tel=phone.replace(/[^+\d]/g,""),wa=whatsappUrl(o);
+    const contact=wa?'<a class="hf-button hf-button-success hf-button-small" href="'+esc(wa)+'" target="_blank" rel="noopener noreferrer">Contact customer</a>':"";
+    const history=courierLookupPhone(phone)?'<button class="hf-button hf-button-secondary hf-button-small" type="button" data-courier-history-check="'+esc(o.id)+'">Courier history</button>':"";
+    const items=Array.isArray(o.order_items)?o.order_items:[];
+    const itemHtml=items.slice(0,3).map(item=>{
+     const image=String(item.product_image_url||"").trim(),ok=/^https:\/\/[^"'<>\s]+$/i.test(image)&&image.length<=2048;
+     const art=ok?'<img class="hf-order-item-image" src="'+esc(image)+'" alt="" loading="lazy" referrerpolicy="no-referrer">':'<span class="hf-order-item-image hf-order-item-placeholder" aria-hidden="true">▧</span>';
+     return '<div class="hf-order-item">'+art+'<div class="hf-order-item-copy"><strong>'+esc(item.product_name||"Product")+'</strong><small>Qty '+esc(item.quantity)+' '+esc(item.unit||"")+' · '+money(item.unit_price)+' each</small></div><b>'+money(item.line_total)+'</b></div>';
+    }).join("");
+    const more=items.length>3?'<span class="hf-order-more-items">+'+(items.length-3)+' more product line(s)</span>':"";
+    const select='<select class="hf-select order-status-select" data-order-id="'+esc(o.id)+'" data-status="'+esc(o.status||"pending")+'" aria-label="Change status for order '+esc(o.order_number||String(o.id).slice(0,8))+'">'+statusOptions.map(s=>'<option value="'+s+'" '+(s===o.status?"selected ":"")+(o.status==="cancelled"&&s!=="cancelled"?"disabled ":"")+'>'+esc(orderStatusLabels[s]||s)+'</option>').join("")+'</select>';
+    const cancel=o.status==="cancelled"&&o.cancellation_reason?'<div class="hf-order-cancellation-note">Cancellation reason: '+esc(o.cancellation_reason)+'</div>':"";
+    return '<article class="hf-order-card" data-status="'+esc(o.status||"pending")+'" data-order-card="'+esc(o.id)+'">'+
+     '<div class="hf-order-card-top"><label class="hf-order-select-label"><input type="checkbox" data-order-select="'+esc(o.id)+'" '+(selectedOrderIds.has(o.id)?"checked ":"")+'aria-label="Select order '+esc(o.order_number||String(o.id).slice(0,8))+'"><span></span></label>'+
+      '<div class="hf-order-reference"><strong>Order '+esc(o.order_number||String(o.id).slice(0,8))+'</strong><small>#'+esc(String(o.id).slice(0,8))+'</small></div>'+
+      '<div class="hf-order-time"><small>PLACED</small><strong>'+esc(dateTime(o.ordered_at))+'</strong></div><div class="hf-order-status-control"><small>ORDER STATUS</small>'+select+'</div></div>'+
+     '<div class="hf-order-card-main"><section class="hf-order-customer-panel"><div class="hf-order-customer-head">'+orderCustomerAvatar(o)+'<div class="hf-order-customer-copy"><strong>'+esc(o.customer_name||"Guest customer")+'</strong><small>'+(o.customer_id?"Registered account":"Guest checkout")+'</small></div></div>'+
+      (phone?'<a class="hf-order-phone" href="tel:'+esc(tel)+'"><span aria-hidden="true">☎</span>'+esc(phone)+'</a>':'<span class="hf-order-phone is-missing">No phone number recorded</span>')+
+      '<div class="hf-order-location"><span class="hf-order-location-icon" aria-hidden="true">⌖</span><div><small>DELIVERY LOCATION</small><strong>'+esc(o.delivery_zone||"Customer provided address")+'</strong><p>'+esc(o.delivery_address||"No delivery address recorded")+'</p></div></div></section>'+
+     '<section class="hf-order-items-panel"><div class="hf-order-panel-heading"><strong>Products ordered</strong><span>'+items.length+' line(s)</span></div>'+(itemHtml||'<div class="hf-order-no-items">No product line details were recorded.</div>')+more+'</section>'+
+     '<section class="hf-order-totals-panel"><div><small>Products subtotal</small><strong>'+money(o.subtotal)+'</strong></div><div><small>Delivery charge</small><strong>'+money(o.delivery_charge)+'</strong></div><div class="hf-order-grand-total"><small>Recorded order total</small><strong>'+money(o.total)+'</strong></div><span class="hf-order-payment-note">'+esc(o.payment_method==="cash_on_delivery"?"Cash on Delivery":"Payment method: "+(o.payment_method||"not recorded"))+'</span></section></div>'+
+     cancel+'<div class="hf-order-card-footer"><div class="hf-order-secondary-info">'+shipmentInfo+'</div><div class="hf-order-actions">'+contact+history+courierAction+'<button class="hf-button hf-button-secondary hf-button-small" type="button" data-order-details="'+esc(o.id)+'">View details</button></div></div></article>';
+   }).join(""):'<div class="hf-orders-empty">'+makeEmpty("No matching orders","Try another status or a shorter search term.")+'</div>';
+   $("ordersDataBody").querySelectorAll(".hf-order-avatar img").forEach(img=>img.addEventListener("error",()=>{img.hidden=true;const fallback=img.nextElementSibling;if(fallback)fallback.hidden=false;},{once:true}));
+   $("ordersDataBody").querySelectorAll(".hf-order-item-image[src]").forEach(img=>img.addEventListener("error",()=>{img.hidden=true;},{once:true}));
+   updateBulkSelectionUi(rows);
   }
   async function refresh(){
-   all=await fetchOrders(null,5000);
+   const [ordersResult,profilesResult]=await Promise.all([
+    fetchOrders(null,5000),
+    signedQuery(client.from("customer_profiles").select("user_id,avatar_url").order("user_id",{ascending:true}).limit(1000)).catch(error=>{
+     console.warn("Customer profile avatar records could not be loaded; initials will be shown.",error);return [];
+    })
+   ]);
+   all=ordersResult;
+   customerProfilesById=new Map((profilesResult||[]).map(profile=>[profile.user_id,profile]));
+   for(const id of [...selectedOrderIds])if(!all.some(order=>order.id===id))selectedOrderIds.delete(id);
    try{
     const {data,error}=await client.from("admin_shipments").select("id,order_id,courier_name,tracking_id,shipment_status,integration_mode,booking_state,booking_error,provider_order_id,parcel_weight_kg,parcel_notes,created_by,provider_response").order("updated_at",{ascending:false}).limit(5000);
     if(error)throw error;
@@ -855,7 +913,25 @@ window.HFAdminReady.then(async H=>{
     row?.querySelectorAll("button[data-security-decision]").forEach(control=>control.disabled=false);
    }
   });
-  $("orderSearch")?.addEventListener("input",render);$("orderStatusFilter")?.addEventListener("change",render);
+  $("toggleBulkOrdersBtn")?.addEventListener("click",()=>{
+   const bar=$("ordersBulkBar");if(!bar)return;bar.hidden=!bar.hidden;
+   $("toggleBulkOrdersBtn").setAttribute("aria-expanded",String(!bar.hidden));
+  });
+  $("ordersSelectAll")?.addEventListener("change",event=>{
+   visibleOrders.forEach(order=>{if(event.currentTarget.checked)selectedOrderIds.add(order.id);else selectedOrderIds.delete(order.id);});
+   render();
+  });
+  $("ordersBulkClearBtn")?.addEventListener("click",()=>{selectedOrderIds.clear();render();});
+  $("ordersBulkExportBtn")?.addEventListener("click",exportSelectedOrders);
+  document.querySelectorAll("[data-bulk-print]").forEach(button=>button.addEventListener("click",()=>printSelectedOrders(button.dataset.bulkPrint)));
+  $("ordersDataBody")?.addEventListener("change",async e=>{
+   const rowCheck=e.target.closest("[data-order-select]");
+   if(rowCheck){
+    if(rowCheck.checked)selectedOrderIds.add(rowCheck.dataset.orderSelect);else selectedOrderIds.delete(rowCheck.dataset.orderSelect);
+    const bar=$("ordersBulkBar");if(selectedOrderIds.size&&bar&&bar.hidden){bar.hidden=false;$("toggleBulkOrdersBtn")?.setAttribute("aria-expanded","true");}
+    updateBulkSelectionUi(visibleOrders);return;
+   }
+   const select=e.target.closest(".order-status-select");if(!select)return;
   const qStatus=new URLSearchParams(location.search).get("status");if(qStatus&&statusOptions.includes(qStatus))$("orderStatusFilter").value=qStatus;
   $("ordersStatusOverview")?.addEventListener("click",e=>{
    const button=e.target.closest("[data-order-quick-filter]");
@@ -878,9 +954,10 @@ window.HFAdminReady.then(async H=>{
    let reason=null;
    if(next==="cancelled"){reason=window.prompt("Why is this order being cancelled? This reason will be saved in the order and status history.","");if(reason===null){select.value=old;return;}reason=reason.trim();if(reason.length<3||reason.length>500){toast("Enter a cancellation reason between 3 and 500 characters.","error");select.value=old;return;}}
    if((next==="cancelled"||next==="delivered")&&!confirm("Change order "+(order.order_number||String(order.id).slice(0,8))+" to "+next+"?")){select.value=old;return;}
+   select.dataset.status=next;
    select.disabled=true;
    try{const {data,error}=await client.rpc("admin_update_order_status",{p_order_id:order.id,p_next_status:next,p_cancellation_reason:reason});if(error)throw error;await audit("order_status_changed","order",order.id,"Order status changed from "+old+" to "+next,{status:next,cancellation_reason:reason||null});toast("Order status and history updated.");await refresh();}
-   catch(err){select.value=old;toast("Status could not be saved: "+(err.message||"check admin access and database permissions"),"error");}
+   catch(err){select.value=old;select.dataset.status=old;toast("Status could not be saved: "+(err.message||"check admin access and database permissions"),"error");}
    finally{select.disabled=false;}
   });
   $("ordersDataBody")?.addEventListener("click",async e=>{
