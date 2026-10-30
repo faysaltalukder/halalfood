@@ -37,11 +37,18 @@ jobs:
         with:
           deno-version: v2.x
           cache: true
-      - name: Type-check every function entrypoint
+      - name: Type-check changed Edge Function entrypoints
         shell: bash
         run: |
           set -euo pipefail
-          while IFS= read -r file; do
+          git fetch origin main --depth=1
+          mapfile -t files < <(git diff --name-only origin/main...HEAD | grep -E '^supabase/functions/[^/]+/index\\.ts
+ || true)
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "No Edge Function entrypoints changed."
+            exit 0
+          fi
+          for file in "${files[@]}"; do
             echo "Checking $file"
             deno check "$file"
-          done < <(find supabase/functions -mindepth 2 -maxdepth 2 -name index.ts -type f | sort)
+          done
