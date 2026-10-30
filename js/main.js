@@ -1010,7 +1010,6 @@ document.addEventListener("DOMContentLoaded", () => {
             price: data.price || (singleProduct ? String(priceNumber(singleProduct.price)) : "0")
           }];
       const localOrderTotal = grandTotal;
-      const checkoutSessionId = window.HFIncompleteCheckout?.getSessionId?.() || "";
 
       const readOrderAttributionCookie = (name) => {
         try {
@@ -1024,7 +1023,6 @@ document.addEventListener("DOMContentLoaded", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...data,
-          checkoutSessionId,
           honeypot: antiAbuseSignals.honeypot,
           formStartedAt: antiAbuseSignals.formStartedAt,
           deviceId: antiAbuseSignals.deviceId,
@@ -1134,7 +1132,6 @@ document.addEventListener("DOMContentLoaded", () => {
         // The Supabase response confirms this order was saved in the primary database.
         const confirmedOrderId = String(winner.orderId || data.orderId || "");
         const confirmedTotal = Number(winner.orderTotal ?? localOrderTotal);
-        if (!winner.heldForReview) void window.HFIncompleteCheckout?.complete(checkoutSessionId, confirmedOrderId);
 
         const orderSuccessKey="HALAL_ORDER_SUCCESS_RECORDED_"+confirmedOrderId;
         let alreadyTracked=false;
