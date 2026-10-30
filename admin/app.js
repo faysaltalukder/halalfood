@@ -828,28 +828,31 @@ window.HFAdminReady.then(async H=>{
     else if(locked){const label=legacyTest?"Legacy courier record — verify with REDX":shipment.booking_state==="unknown"?"Booking outcome uncertain — verify with courier":shipment.booking_state==="in_progress"?"Booking in progress":shipment.booking_state==="succeeded"?"Booking succeeded":shipment.booking_state==="failed"?"Booking failed":"Courier record locked";courierAction='<span class="hf-status hf-status-review">'+esc(label)+'</span>';}
     const stateText=shipment?(legacyTest?"Legacy record — verify in REDX dashboard":shipment.booking_error||(shipment.booking_state==="failed"?"Booking failed":shipment.booking_state==="succeeded"?"Booking succeeded":shipment.booking_state==="unknown"?"Verify with courier":shipment.booking_state==="in_progress"?"Booking in progress":"Not booked")):"";
     const shipmentInfo=shipment?'<span class="hf-order-shipment-note">'+esc(shipment.courier_name||"Courier")+': '+esc(stateText)+'</span>':"";
-    const phone=String(o.customer_phone||"").trim(),tel=phone.replace(/[^+\d]/g,""),wa=whatsappUrl(o);
-    const contact=wa?'<a class="hf-button hf-button-success hf-button-small" href="'+esc(wa)+'" target="_blank" rel="noopener noreferrer">Contact customer</a>':"";
-    const history=courierLookupPhone(phone)?'<button class="hf-button hf-button-secondary hf-button-small" type="button" data-courier-history-check="'+esc(o.id)+'">Courier history</button>':"";
+    const phone=String(o.customer_phone||"").trim(),tel=phone.replace(/[^+\\d]/g,"");
     const items=Array.isArray(o.order_items)?o.order_items:[];
-    const itemHtml=items.slice(0,3).map(item=>{
+    const itemHtml=items.slice(0,2).map(item=>{
      const image=String(item.product_image_url||"").trim(),ok=/^https:\/\/[^"'<>\s]+$/i.test(image)&&image.length<=2048;
      const art=ok?'<img class="hf-order-item-image" src="'+esc(image)+'" alt="" loading="lazy" referrerpolicy="no-referrer">':'<span class="hf-order-item-image hf-order-item-placeholder" aria-hidden="true">▧</span>';
      return '<div class="hf-order-item">'+art+'<div class="hf-order-item-copy"><strong>'+esc(item.product_name||"Product")+'</strong><small>Qty '+esc(item.quantity)+' '+esc(item.unit||"")+' · '+money(item.unit_price)+' each</small></div><b>'+money(item.line_total)+'</b></div>';
     }).join("");
-    const more=items.length>3?'<span class="hf-order-more-items">+'+(items.length-3)+' more product line(s)</span>':"";
+    const more=items.length>2?'<span class="hf-order-more-items">+'+(items.length-2)+' more product line(s)</span>':"";
     const select='<select class="hf-select order-status-select" data-order-id="'+esc(o.id)+'" data-status="'+esc(o.status||"pending")+'" aria-label="Change status for order '+esc(o.order_number||String(o.id).slice(0,8))+'">'+statusOptions.map(s=>'<option value="'+s+'" '+(s===o.status?"selected ":"")+(o.status==="cancelled"&&s!=="cancelled"?"disabled ":"")+'>'+esc(orderStatusLabels[s]||s)+'</option>').join("")+'</select>';
     const cancel=o.status==="cancelled"&&o.cancellation_reason?'<div class="hf-order-cancellation-note">Cancellation reason: '+esc(o.cancellation_reason)+'</div>':"";
+    const statusText=orderStatusLabels[o.status]||o.status||"Pending";
     return '<article class="hf-order-card" data-status="'+esc(o.status||"pending")+'" data-order-card="'+esc(o.id)+'">'+
-     '<div class="hf-order-card-top"><label class="hf-order-select-label"><input type="checkbox" data-order-select="'+esc(o.id)+'" '+(selectedOrderIds.has(o.id)?"checked ":"")+'aria-label="Select order '+esc(o.order_number||String(o.id).slice(0,8))+'"><span></span></label>'+
-      '<div class="hf-order-reference"><strong>Order '+esc(o.order_number||String(o.id).slice(0,8))+'</strong><small>#'+esc(String(o.id).slice(0,8))+'</small></div>'+
-      '<div class="hf-order-time"><small>PLACED</small><strong>'+esc(dateTime(o.ordered_at))+'</strong></div><div class="hf-order-status-control"><small>ORDER STATUS</small>'+select+'</div></div>'+
-     '<div class="hf-order-card-main"><section class="hf-order-customer-panel"><div class="hf-order-customer-head">'+orderCustomerAvatar(o)+'<div class="hf-order-customer-copy"><strong>'+esc(o.customer_name||"Guest customer")+'</strong><small>'+(o.customer_id?"Registered account":"Guest checkout")+'</small></div></div>'+
-      (phone?'<a class="hf-order-phone" href="tel:'+esc(tel)+'"><span aria-hidden="true">☎</span>'+esc(phone)+'</a>':'<span class="hf-order-phone is-missing">No phone number recorded</span>')+
-      '<div class="hf-order-location"><span class="hf-order-location-icon" aria-hidden="true">⌖</span><div><small>DELIVERY LOCATION</small><strong>'+esc(o.delivery_zone||"Customer provided address")+'</strong><p>'+esc(o.delivery_address||"No delivery address recorded")+'</p></div></div></section>'+
-     '<section class="hf-order-items-panel"><div class="hf-order-panel-heading"><strong>Products ordered</strong><span>'+items.length+' line(s)</span></div>'+(itemHtml||'<div class="hf-order-no-items">No product line details were recorded.</div>')+more+'</section>'+
-     '<section class="hf-order-totals-panel"><div><small>Products subtotal</small><strong>'+money(o.subtotal)+'</strong></div><div><small>Delivery charge</small><strong>'+money(o.delivery_charge)+'</strong></div><div class="hf-order-grand-total"><small>Recorded order total</small><strong>'+money(o.total)+'</strong></div><span class="hf-order-payment-note">'+esc(o.payment_method==="cash_on_delivery"?"Cash on Delivery":"Payment method: "+(o.payment_method||"not recorded"))+'</span></section></div>'+
-     cancel+'<div class="hf-order-card-footer"><div class="hf-order-secondary-info">'+shipmentInfo+'</div><div class="hf-order-actions">'+contact+history+courierAction+'<button class="hf-button hf-button-secondary hf-button-small" type="button" data-order-details="'+esc(o.id)+'">View details</button></div></div></article>';
+     '<header class="hf-order-card-top">'+
+      '<label class="hf-order-select-label"><input type="checkbox" data-order-select="'+esc(o.id)+'" '+(selectedOrderIds.has(o.id)?"checked ":"")+'aria-label="Select order '+esc(o.order_number||String(o.id).slice(0,8))+'"></label>'+
+      '<div class="hf-order-reference"><strong>Order '+esc(o.order_number||String(o.id).slice(0,8))+'</strong><small>'+esc(dateTime(o.ordered_at))+'</small></div>'+
+      '<div class="hf-order-status-control"><small>ORDER STATUS</small>'+select+'</div></header>'+
+     '<div class="hf-order-card-main">'+
+      '<section class="hf-order-customer-panel"><div class="hf-order-customer-head">'+orderCustomerAvatar(o)+'<div class="hf-order-customer-copy"><strong>'+esc(o.customer_name||"Guest customer")+'</strong><small>'+(o.customer_id?"Registered customer":"Guest checkout")+'</small></div></div>'+
+       (phone?'<a class="hf-order-phone" href="tel:'+esc(tel)+'">☎ '+esc(phone)+'</a>':'<span class="hf-order-phone is-missing">No phone recorded</span>')+
+       '<div class="hf-order-location"><span class="hf-order-location-icon" aria-hidden="true">⌖</span><div><small>DELIVERY LOCATION</small><strong>'+esc(o.delivery_zone||"Delivery address")+'</strong><p>'+esc(o.delivery_address||"No delivery address recorded")+'</p></div></div></section>'+
+      '<section class="hf-order-items-panel"><div class="hf-order-panel-heading"><strong>Products ordered</strong><span>'+items.length+' item line(s)</span></div>'+(itemHtml||'<div class="hf-order-no-items">No product details recorded.</div>')+more+'</section>'+
+      '<section class="hf-order-totals-panel"><div><small>Products subtotal</small><strong>'+money(o.subtotal)+'</strong></div><div><small>Delivery charge</small><strong>'+money(o.delivery_charge)+'</strong></div><div class="hf-order-grand-total"><small>Order total · COD</small><strong>'+money(o.total)+'</strong></div></section>'+
+     '</div>'+
+     (cancel?'<div class="hf-order-cancellation-note">Cancellation reason: '+esc(o.cancellation_reason)+'</div>':"")+
+     '<footer class="hf-order-card-footer"><div class="hf-order-secondary-info">'+shipmentInfo+'</div><div class="hf-order-actions"><button class="hf-button hf-button-secondary hf-button-small" type="button" data-order-details="'+esc(o.id)+'">Details</button>'+courierAction+'</div></footer></article>';
    }).join(""):'<div class="hf-orders-empty">'+makeEmpty("No matching orders","Try another status or a shorter search term.")+'</div>';
    $("ordersDataBody").querySelectorAll(".hf-order-avatar img").forEach(img=>img.addEventListener("error",()=>{img.hidden=true;const fallback=img.nextElementSibling;if(fallback)fallback.hidden=false;},{once:true}));
    $("ordersDataBody").querySelectorAll(".hf-order-item-image[src]").forEach(img=>img.addEventListener("error",()=>{img.hidden=true;},{once:true}));
@@ -968,12 +971,6 @@ window.HFAdminReady.then(async H=>{
    finally{select.disabled=false;}
   });
   $("ordersDataBody")?.addEventListener("click",async e=>{
-   const historyButton=e.target.closest("[data-courier-history-check]");
-   if(historyButton){
-    const order=all.find(row=>row.id===historyButton.dataset.courierHistoryCheck);
-    if(order)void showCourierHistory(order);
-    return;
-   }
    const confirmButton=e.target.closest("[data-confirm-book]");
    if(confirmButton){openConfirmBook(confirmButton.dataset.confirmBook);return;}
    const button=e.target.closest("[data-order-details]");if(!button)return;
@@ -982,6 +979,7 @@ window.HFAdminReady.then(async H=>{
    const cancellationHtml=order.cancellation_reason?'<div class="hf-span-2"><strong>Cancellation reason</strong><p>'+esc(order.cancellation_reason)+'</p></div>':"";
    $("orderDetailContent").innerHTML='<div class="hf-summary-strip"><div class="hf-summary-pill"><small>Order total</small><strong>'+money(order.total)+'</strong></div><div class="hf-summary-pill"><small>Products subtotal</small><strong>'+money(order.subtotal)+'</strong></div><div class="hf-summary-pill"><small>Delivery</small><strong>'+money(order.delivery_charge)+'</strong></div></div><div class="hf-field-grid"><div><strong>Customer</strong><p>'+esc(order.customer_name||"—")+'</p></div><div><strong>Phone</strong><p>'+esc(order.customer_phone||"—")+'</p></div><div><strong>Email</strong><p>'+esc(order.customer_email||"—")+'</p></div><div><strong>Status</strong><p>'+makeStatus(order.status)+'</p></div><div><strong>Delivery area</strong><p>'+esc(order.delivery_zone||"Not recorded")+'</p></div><div><strong>Payment method</strong><p>'+esc(order.payment_method==="cash_on_delivery"?"Cash on Delivery (COD)":(order.payment_method||"Not recorded"))+'</p></div><div class="hf-span-2"><strong>Delivery address</strong><p>'+esc(order.delivery_address||"—")+'</p></div>'+cancellationHtml+'</div><h3 style="margin:18px 0 8px">Products</h3><div class="hf-table-wrap"><table class="hf-table"><thead><tr><th>Product</th><th>Quantity</th><th>Unit price</th><th>Line total</th></tr></thead><tbody>'+((order.order_items||[]).map(item=>'<tr><td>'+esc(item.product_name)+'</td><td>'+esc(item.quantity)+' '+esc(item.unit||"")+'</td><td>'+money(item.unit_price)+'</td><td>'+money(item.line_total)+'</td></tr>').join("")||'<tr><td colspan="4">No item details</td></tr>')+'</tbody></table></div><p class="hf-data-note">Recorded order value is not proof that payment has been collected. This is currently a testing project; no real payment or delivery is enabled.</p>';
    const wa=$("orderWhatsAppBtn"),waUrl=whatsappUrl(order);if(wa){wa.href=waUrl||"#";wa.hidden=!waUrl;wa.setAttribute("aria-disabled",waUrl?"false":"true");}
+   const courierHistoryButton=$("orderCourierHistoryBtn");if(courierHistoryButton){courierHistoryButton.hidden=!courierLookupPhone(order.customer_phone);courierHistoryButton.dataset.orderId=order.id;}
    $("orderHistoryContent").innerHTML='<p class="hf-loading">Loading status history…</p>';$("orderDialog")?.showModal();
    try{const history=await signedQuery(client.from("order_status_history").select("id,from_status,to_status,reason,changed_by,changed_at").eq("order_id",order.id).order("changed_at",{ascending:false}).limit(30));$("orderHistoryContent").innerHTML=history.length?'<div class="hf-status-timeline">'+history.map(item=>'<div class="hf-status-timeline-row"><span class="hf-status-timeline-dot"></span><div><strong>'+esc((item.from_status||"Initial")+" → "+item.to_status)+'</strong><p>'+esc(item.reason||"No note recorded")+'</p><small>'+esc(dateTime(item.changed_at))+' · '+esc(item.changed_by||"Admin")+'</small></div></div>').join("")+'</div>':makeEmpty("No status changes recorded","Earlier transitions are not available; new changes will appear here.");}
    catch(err){$("orderHistoryContent").innerHTML=makeEmpty("History could not be loaded","Check the admin session and status-history table permissions.");}
@@ -1082,6 +1080,7 @@ window.HFAdminReady.then(async H=>{
    }
   });
   $("orderPrintBtn")?.addEventListener("click",()=>{const order=all.find(x=>x.id===activeOrderId);if(order)printPackingSlip(order);});
+  $("orderCourierHistoryBtn")?.addEventListener("click",()=>{const order=all.find(x=>x.id===$("orderCourierHistoryBtn").dataset.orderId);if(!order)return;$("orderDialog")?.close();void showCourierHistory(order);});
   $("closeOrderDialog")?.addEventListener("click",()=>$("orderDialog")?.close());
   $("courierHistoryClose")?.addEventListener("click",()=>$("courierHistoryDialog")?.close());
   $("courierHistoryDone")?.addEventListener("click",()=>$("courierHistoryDialog")?.close());
