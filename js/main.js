@@ -23,6 +23,7 @@
       document.head.appendChild(script);
     };
     if (window.HALAL_STORE_CONFIG) {
+      window.dispatchEvent(new CustomEvent("halalstore:config-ready"));
       loadCatalog();
       return;
     }
@@ -37,7 +38,10 @@
     const configScript = document.createElement("script");
     configScript.src = configUrl.href;
     configScript.async = false;
-    configScript.onload = loadCatalog;
+    configScript.onload = () => {
+      window.dispatchEvent(new CustomEvent("halalstore:config-ready"));
+      loadCatalog();
+    };
     configScript.onerror = () => console.error("Could not load this website's store-config.js.");
     document.head.appendChild(configScript);
   } catch (error) {
