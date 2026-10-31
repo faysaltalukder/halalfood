@@ -22,6 +22,7 @@
 </section>
 <section class="hf-card hf-card-pad hf-customer-directory"><div class="hf-section-head"><div><h2>Customer directory</h2><p>Search first. Open a profile only when you need more detail.</p></div><span class="hf-customer-total" id="customerResultCount">Loading customers…</span></div>
 <div class="hf-customer-toolbar"><label class="hf-customer-search"><span aria-hidden="true">⌕</span><input id="customerSearch" class="hf-input" type="search" placeholder="Search name, phone, email or address…" aria-label="Search customers"></label>
+<select id="customerTierFilter" class="hf-select" aria-label="Filter customer tier"><option value="">All customer types</option></select>
 <select id="customerStatusFilter" class="hf-select" aria-label="Filter customer status"><option value="active">Active customers</option><option value="all">All customers</option><option value="blocked">Blocked customers</option><option value="archived">Archived customers</option></select><button id="customerClearFilters" class="hf-button hf-button-secondary" type="button">Clear filters</button></div>
 <div class="hf-table-wrap hf-customer-table-wrap" tabindex="0" role="region" aria-label="Customer directory. Scroll horizontally on small screens.">
 <table class="hf-table hf-customer-table"><thead><tr><th>Customer</th><th>Contact</th><th>Location</th><th>Orders</th><th>Customer type</th><th>Status</th><th>Action</th></tr></thead><tbody id="customersTableBody"><tr><td colspan="7" class="hf-loading">Loading customer information…</td></tr></tbody></table></div>
