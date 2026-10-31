@@ -17,14 +17,27 @@ const dict={
  "Eligible email recipients are pre-selected. Untick anyone you do not want to include.":"যোগ্য ইমেইল গ্রাহকরা আগে থেকেই নির্বাচিত থাকবে। কাউকে বাদ দিতে টিক তুলে দিন।",
  "Search by name or email":"নাম বা ইমেইল দিয়ে খুঁজুন","Select all eligible":"সব যোগ্য গ্রাহক নির্বাচন","Clear selection":"নির্বাচন বাতিল",
  "Send email now":"এখনই ইমেইল পাঠান","Ready":"প্রস্তুত","Not eligible":"যোগ্য নয়",
- "Write the email, choose the recipients and send directly from the Halal Food Gmail account.":"ইমেইল লিখুন, গ্রাহক নির্বাচন করুন এবং সরাসরি Halal Food Gmail থেকে পাঠান।"
+ "Write the email, choose the recipients and send directly from the Halal Food Gmail account.":"ইমেইল লিখুন, গ্রাহক নির্বাচন করুন এবং সরাসরি Halal Food Gmail থেকে পাঠান।",
+ "Unique order emails":"অর্ডারের ইউনিক ইমেইল",
+ "Email send-ready":"ইমেইলে পাঠানোর যোগ্য",
+ "Repeated order addresses counted once":"একই ইমেইল একবার গণনা করা হয়েছে",
+ "Customers with email marketing permission":"ইমেইল মার্কেটিং অনুমতি থাকা গ্রাহক",
+ "Select all eligible contacts":"সব যোগ্য গ্রাহক নির্বাচন",
+ "Source / orders":"উৎস / অর্ডার",
+ "Email / phone":"ইমেইল / ফোন",
+ "Send eligibility":"পাঠানোর যোগ্যতা",
+ "Marketing permission missing":"মার্কেটিং অনুমতি নেই",
+ "Order email only":"শুধু অর্ডারে থাকা ইমেইল",
+ "WhatsApp opt-in required":"WhatsApp-এ অনুমতি প্রয়োজন",
+ "Order contact":"অর্ডারের যোগাযোগ",
+ "No contacts match this search.":"এই অনুসন্ধানে কোনো যোগাযোগ পাওয়া যায়নি।"
 };
 if(window.HFAdminLanguage&&window.HFAdminLanguage.dictionary)Object.assign(window.HFAdminLanguage.dictionary,dict);
 window.HFMarketingInit=async function(){
  const H=window.HFAdmin;if(!H)throw new Error("Admin session is not ready.");
  const {client,ADMIN_EMAIL,esc,dateTime,toast,audit,downloadFile,csvText}=H;
  const PAGE_SIZE=30,LOAD_SIZE=500,MAX_CUSTOMERS=30000;
- let customers=[],preferences=new Map(),campaigns=[],segmentRules=[],channel="email",activeTab="compose",selected=new Set(),selectionTouched=false,audiencePage=0,consentPage=0,emailProvider={configured:false,from:"",missing:[],providerNote:""},savedCampaignId=null;
+ let customers=[],orderEmailContacts=[],preferences=new Map(),campaigns=[],segmentRules=[],channel="email",activeTab="compose",selected=new Set(),selectionTouched=false,audiencePage=0,consentPage=0,emailProvider={configured:false,from:"",missing:[],providerNote:""},savedCampaignId=null;
  const cols="id,name,phone,email,created_at,is_blocked,archived_at,anonymized_at,total_orders,delivered_orders,recorded_order_value,last_order_at,qualifying_orders,segment_code,segment_name,segment_color,has_friend_tag";
  const number=n=>Number(n||0).toLocaleString("en-BD");
  const validEmail=v=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v||"").trim());
@@ -64,9 +77,39 @@ window.HFMarketingInit=async function(){
    if(error)throw error;
    (data||[]).forEach(p=>preferences.set(p.customer_id,p));
   }
+  const orderRows=[];let orderOffset=0;
+  while(orderOffset<MAX_CUSTOMERS){
+   const {data,error}=await client.from("orders").select("customer_id,customer_email,customer_name,ordered_at").not("customer_email","is",null).order("ordered_at",{ascending:false}).range(orderOffset,orderOffset+LOAD_SIZE-1);
+   if(error)throw error;
+   orderRows.push(...(data||[]));orderOffset+=(data||[]).length;
+   if(!data||data.length<LOAD_SIZE)break;
+  }
+  const grouped=new Map();
+  orderRows.forEach(o=>{
+   const email=String(o.customer_email||"").trim();
+   if(!validEmail(email))return;
+   const key=email.toLocaleLowerCase();
+   let g=grouped.get(key);
+   if(!g){g={key,email,orderCount:0,customerIds:new Set(),names:new Set(),lastOrderAt:o.ordered_at||null};grouped.set(key,g);}
+   g.orderCount++;
+   if(o.customer_id)g.customerIds.add(o.customer_id);
+   if(o.customer_name)g.names.add(String(o.customer_name).trim());
+   if(o.ordered_at&&(!g.lastOrderAt||new Date(o.ordered_at)>new Date(g.lastOrderAt)))g.lastOrderAt=o.ordered_at;
+  });
+  const byId=new Map(customers.map(c=>[c.id,c]));
+  orderEmailContacts=[...grouped.values()].map(g=>{
+   const linked=[...g.customerIds].map(id=>byId.get(id)).filter(Boolean);
+   const exact=linked.filter(c=>validEmail(c.email)&&String(c.email).trim().toLocaleLowerCase()===g.key);
+   const eligible=exact.filter(c=>channelHasPermission(c,"email")).sort((a,b)=>new Date(b.last_order_at||0)-new Date(a.last_order_at||0));
+   const matched=eligible[0]||exact[0]||null;
+   return {email:g.email,emailKey:g.key,orderCount:g.orderCount,lastOrderAt:g.lastOrderAt,
+    displayName:[...g.names][0]||matched?.name||"Order email contact",
+    linkedCustomerCount:linked.length,customer:matched,eligibleCustomer:eligible[0]||null};
+  }).sort((a,b)=>new Date(b.lastOrderAt||0)-new Date(a.lastOrderAt||0));
   $("marketingStatsActive").textContent=number(customers.length);
   $("marketingStatsWhatsApp").textContent=number(customers.filter(c=>pref(c.id).whatsapp_opt_in&&normalizePhone(c.phone)).length);
   $("marketingStatsEmail").textContent=number(customers.filter(c=>pref(c.id).email_opt_in&&validEmail(c.email)).length);
+  $("marketingStatsOrderEmails").textContent=number(orderEmailContacts.length);
  }
  async function loadCampaigns(){
   const {data,error}=await client.from("marketing_campaigns").select("id,name,channel,subject,status,audience_count,exported_count,sent_count,failed_count,created_at,updated_at,last_error").order("created_at",{ascending:false}).limit(100);
@@ -85,6 +128,14 @@ window.HFMarketingInit=async function(){
   if(title)title.textContent=emailProvider.configured?"Gmail API connected":"Gmail connection needs attention";
   if(detail)detail.textContent=emailProvider.configured?"Halal Food sender verified: "+emailProvider.from:(emailProvider.error?"Connection check failed: "+emailProvider.error:"Missing: "+(emailProvider.missing.length?emailProvider.missing.join(", "):"Gmail OAuth configuration")+"; check Supabase Edge Function secrets.");
   if(hint)hint.textContent=emailProvider.configured?(emailProvider.providerNote+" Only active customers with recorded email opt-in can receive campaigns. Gmail acceptance is not proof of inbox placement or reading."):"Gmail is not ready. No email will be sent until the OAuth credentials are available; CSV export remains restricted to a consent-checked audience.";
+ }
+ function matchingEmailContacts(){
+  const search=$("mktAudienceSearch").value.trim().toLocaleLowerCase();
+  return orderEmailContacts.filter(c=>!search||[c.email,c.displayName].join(" ").toLocaleLowerCase().includes(search));
+ }
+ function eligibleCustomersForCurrentChannel(){
+  if(channel==="email")return matchingEmailContacts().map(c=>c.eligibleCustomer).filter(Boolean);
+  return matchingCustomers().filter(c=>channelHasPermission(c,channel));
  }
  function matchingCustomers(){
   const segment=$("mktSegment").value,search=$("mktAudienceSearch").value.trim().toLocaleLowerCase();
@@ -105,21 +156,31 @@ window.HFMarketingInit=async function(){
  }
  function channelLabel(){return channel==="whatsapp"?"WhatsApp":"Email";}
  function renderAudience(){
-  const matches=matchingCustomers(),eligible=matches.filter(c=>channelHasPermission(c,channel)),selectedRows=customers.filter(c=>selected.has(c.id)&&channelHasPermission(c,channel));
+  const matches=channel==="email"?matchingEmailContacts():matchingCustomers();
+  const eligible=channel==="email"?matches.filter(c=>!!c.eligibleCustomer):matches.filter(c=>channelHasPermission(c,channel));
+  const selectedRows=channel==="email"
+   ?matches.filter(c=>c.eligibleCustomer&&selected.has(c.eligibleCustomer.id))
+   :customers.filter(c=>selected.has(c.id)&&channelHasPermission(c,channel));
   $("mktAudienceCount").textContent=number(matches.length);$("mktEligibleCount").textContent=number(eligible.length);$("mktSelectedCount").textContent=number(selectedRows.length);
   $("mktReviewChannel").textContent=channelLabel();$("mktReviewEligible").textContent=number(eligible.length);$("mktReviewSelected").textContent=number(selectedRows.length);
   $("mktAudiencePage").textContent=matches.length?("Showing "+(audiencePage*PAGE_SIZE+1)+"–"+Math.min((audiencePage+1)*PAGE_SIZE,matches.length)+" of "+number(matches.length)):"No matching records";
   $("mktAudiencePrev").disabled=audiencePage<=0;$("mktAudienceNext").disabled=(audiencePage+1)*PAGE_SIZE>=matches.length;
   const visible=matches.slice(audiencePage*PAGE_SIZE,(audiencePage+1)*PAGE_SIZE);
   const body=$("mktAudienceBody");
-  if(!visible.length){body.innerHTML='<tr><td colspan="5" class="hf-marketing-muted">No customers match these filters.</td></tr>';return;}
-  body.innerHTML=visible.map(c=>{
-   const p=pref(c.id),allowed=channelHasPermission(c,channel),contact=channel==="whatsapp"?normalizePhone(c.phone):(validEmail(c.email)?c.email:"No valid email");
-   const permission=allowed?'<span class="hf-marketing-permission is-allowed">Ready</span>':'<span class="hf-marketing-permission is-denied">Not eligible</span>';
-   const address=contact?esc(contact):'<span class="hf-marketing-permission is-invalid">Invalid contact</span>';
+  if(!visible.length){body.innerHTML='<tr><td colspan="5" class="hf-marketing-muted">No contacts match this search.</td></tr>';$("mktSaveDraft").disabled=true;$("mktSaveDraft").textContent=channel==="email"?"Send email now":"Save WhatsApp audience";return;}
+  body.innerHTML=channel==="email"?visible.map(contact=>{
+   const c=contact.eligibleCustomer||contact.customer,allowed=!!contact.eligibleCustomer;
+   const checkbox=allowed?'<input type="checkbox" data-mkt-select="'+esc(c.id)+'" '+(selected.has(c.id)?"checked ":"")+'aria-label="Select '+esc(contact.email)+'">':'<input type="checkbox" disabled aria-label="Email not eligible">';
+   const permission=allowed?'<span class="hf-marketing-permission is-allowed">Ready</span>':
+    (contact.customer?'<span class="hf-marketing-permission is-denied">Marketing permission missing</span>':'<span class="hf-marketing-permission is-denied">Order email only</span>');
+   return '<tr><td>'+checkbox+'</td><td><div class="hf-marketing-person"><strong>'+esc(contact.displayName)+'</strong><small>'+number(contact.orderCount)+' order record(s)</small></div></td><td><span class="hf-marketing-segment">Order contact</span><small class="hf-marketing-contact">'+(contact.lastOrderAt?esc(dateTime(contact.lastOrderAt)):"")+'</small></td><td><span class="hf-marketing-contact">'+esc(contact.email)+'</span></td><td>'+permission+'</td></tr>';
+  }).join(""):visible.map(c=>{
+   const allowed=channelHasPermission(c,channel),contact=normalizePhone(c.phone);
+   const permission=allowed?'<span class="hf-marketing-permission is-allowed">Ready</span>':'<span class="hf-marketing-permission is-denied">WhatsApp opt-in required</span>';
+   const address=contact?esc(contact):'<span class="hf-marketing-permission is-invalid">Invalid phone</span>';
    return '<tr><td><input type="checkbox" data-mkt-select="'+esc(c.id)+'" '+(selected.has(c.id)?"checked ":"")+(allowed?"":"disabled ")+'aria-label="Select '+esc(safeName(c))+'"></td><td><div class="hf-marketing-person"><strong>'+esc(safeName(c))+'</strong><small>'+esc(c.id.slice(0,8))+'</small></div></td><td><span class="hf-marketing-segment">'+esc(c.segment_name||"Unclassified")+'</span><small class="hf-marketing-contact">'+number(c.qualifying_orders??c.total_orders)+' qualifying orders</small></td><td>'+address+'</td><td>'+permission+'</td></tr>';
   }).join("");
-  $("mktReviewNote").textContent=channel==="whatsapp"?(selectedRows.length?"WhatsApp audience is ready to export. Complete the broadcast manually in WhatsApp Business.":"Select eligible WhatsApp contacts. The final message is sent manually in WhatsApp Business."):"Ready to send to "+number(selectedRows.length)+" selected email recipient(s). Gmail and recipient eligibility are checked again before sending.";
+  $("mktReviewNote").textContent=channel==="whatsapp"?(selectedRows.length?"WhatsApp audience is ready to export. Complete the broadcast manually in WhatsApp Business.":"Select eligible WhatsApp contacts. The final message is sent manually in WhatsApp Business."):"Ready to send to "+number(selectedRows.length)+" eligible email recipient(s). Order addresses without a matching marketing-enabled customer profile are shown but cannot receive campaigns.";
   $("mktSaveDraft").textContent=channel==="email"?"Send email now":"Save WhatsApp audience";
   $("mktSaveDraft").disabled=selectedRows.length===0||(channel==="email"&&!emailProvider.configured);
  }
@@ -159,7 +220,7 @@ window.HFMarketingInit=async function(){
   $("mktEmailFields").hidden=ch!=="email";
   $("marketingChannelNote").textContent=ch==="whatsapp"?"WhatsApp is a manual handoff. Export the selected contacts and send from WhatsApp Business.":"Write the subject and email, choose recipients (eligible contacts are pre-selected), then press Send email now.";
   $("mktReviewChannel").textContent=channelLabel();
-  if(ch==="email")matchingCustomers().filter(c=>channelHasPermission(c,"email")).forEach(c=>selected.add(c.id));
+  if(ch==="email")eligibleCustomersForCurrentChannel().forEach(c=>selected.add(c.id));
   renderAudience();
  }
  async function reloadPrefs(ids){
@@ -337,13 +398,13 @@ window.HFMarketingInit=async function(){
  }
  async function refreshAll(){
   await loadSegmentRules();await loadCustomers();await loadCampaigns();await checkEmailProvider();
-  if(channel==="email"&&!selectionTouched&&!selected.size)matchingCustomers().filter(c=>channelHasPermission(c,"email")).forEach(c=>selected.add(c.id));
+  if(channel==="email"&&!selectionTouched&&!selected.size)eligibleCustomersForCurrentChannel().forEach(c=>selected.add(c.id));
   renderAudience();renderConsent();renderHistory();
  }
  document.querySelectorAll("[data-marketing-tab]").forEach(b=>b.addEventListener("click",()=>switchTab(b.dataset.marketingTab)));
  document.querySelectorAll("[data-marketing-channel]").forEach(b=>b.addEventListener("click",()=>switchChannel(b.dataset.marketingChannel)));
  ["mktSegment","mktMinOrders","mktMaxOrders","mktLastOrder","mktAudienceSearch"].forEach(id=>$(id).addEventListener(id==="mktAudienceSearch"?"input":"change",()=>{selected.clear();selectionTouched=true;audiencePage=0;renderAudience();}));
- $("mktSelectAll").addEventListener("click",()=>{selectionTouched=true;matchingCustomers().filter(c=>channelHasPermission(c,channel)).forEach(c=>selected.add(c.id));renderAudience();});
+ $("mktSelectAll").addEventListener("click",()=>{selectionTouched=true;eligibleCustomersForCurrentChannel().forEach(c=>selected.add(c.id));renderAudience();});
  $("mktClearSelection").addEventListener("click",()=>{selectionTouched=true;selected.clear();renderAudience();});
  $("mktAudienceBody").addEventListener("change",e=>{const box=e.target.closest("[data-mkt-select]");if(!box)return;selectionTouched=true;if(box.checked)selected.add(box.dataset.mktSelect);else selected.delete(box.dataset.mktSelect);renderAudience();});
  $("mktAudiencePrev").addEventListener("click",()=>{audiencePage=Math.max(0,audiencePage-1);renderAudience();});
