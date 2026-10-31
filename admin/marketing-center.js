@@ -19,7 +19,7 @@ window.HFMarketingInit=async function(){
  const H=window.HFAdmin;if(!H)throw new Error("Admin session is not ready.");
  const {client,ADMIN_EMAIL,esc,dateTime,toast,audit,downloadFile,csvText}=H;
  const PAGE_SIZE=30,LOAD_SIZE=500,MAX_CUSTOMERS=30000;
- let customers=[],preferences=new Map(),campaigns=[],segmentRules=[],channel="whatsapp",activeTab="compose",selected=new Set(),audiencePage=0,consentPage=0,emailProvider={configured:false,from:"",missing:[],providerNote:""},savedCampaignId=null;
+ let customers=[],preferences=new Map(),campaigns=[],segmentRules=[],channel="email",activeTab="compose",selected=new Set(),selectionTouched=false,audiencePage=0,consentPage=0,emailProvider={configured:false,from:"",missing:[],providerNote:""},savedCampaignId=null;
  const cols="id,name,phone,email,created_at,is_blocked,archived_at,anonymized_at,total_orders,delivered_orders,recorded_order_value,last_order_at,qualifying_orders,segment_code,segment_name,segment_color,has_friend_tag";
  const number=n=>Number(n||0).toLocaleString("en-BD");
  const validEmail=v=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v||"").trim());
@@ -110,7 +110,7 @@ window.HFMarketingInit=async function(){
   if(!visible.length){body.innerHTML='<tr><td colspan="5" class="hf-marketing-muted">No customers match these filters.</td></tr>';return;}
   body.innerHTML=visible.map(c=>{
    const p=pref(c.id),allowed=channelHasPermission(c,channel),contact=channel==="whatsapp"?normalizePhone(c.phone):(validEmail(c.email)?c.email:"No valid email");
-   const permission=allowed?'<span class="hf-marketing-permission is-allowed">Opted in</span>':'<span class="hf-marketing-permission is-denied">No permission</span>';
+   const permission=allowed?'<span class="hf-marketing-permission is-allowed">Ready</span>':'<span class="hf-marketing-permission is-denied">Not eligible</span>';
    const address=contact?esc(contact):'<span class="hf-marketing-permission is-invalid">Invalid contact</span>';
    return '<tr><td><input type="checkbox" data-mkt-select="'+esc(c.id)+'" '+(selected.has(c.id)?"checked ":"")+(allowed?"":"disabled ")+'aria-label="Select '+esc(safeName(c))+'"></td><td><div class="hf-marketing-person"><strong>'+esc(safeName(c))+'</strong><small>'+esc(c.id.slice(0,8))+'</small></div></td><td><span class="hf-marketing-segment">'+esc(c.segment_name||"Unclassified")+'</span><small class="hf-marketing-contact">'+number(c.qualifying_orders??c.total_orders)+' qualifying orders</small></td><td>'+address+'</td><td>'+permission+'</td></tr>';
   }).join("");
@@ -166,8 +166,8 @@ window.HFMarketingInit=async function(){
  }
  async function saveCampaign(){
   setFeedback("");
-  const name=$("mktCampaignName").value.trim(),subject=$("mktCampaignSubject").value.trim(),body=$("mktCampaignMessage").value.trim();
-  if(name.length<2)throw new Error("Enter a campaign name with at least 2 characters.");
+  const subject=$("mktCampaignSubject").value.trim(),body=$("mktCampaignMessage").value.trim();
+  const name=$("mktCampaignName").value.trim()||subject||((channel==="email"?"Email":"WhatsApp")+" campaign "+new Date().toLocaleDateString("en-GB"));
   if(body.length<2)throw new Error("Write the campaign message first.");
   if(channel==="email"&&subject.length<2)throw new Error("An email subject is required.");
   if(selected.size===0)throw new Error("Select at least one eligible customer.");
@@ -195,8 +195,15 @@ window.HFMarketingInit=async function(){
   savedCampaignId=campaign.id;
   await audit("marketing_campaign_created","marketing_campaign",campaign.id,"Marketing campaign saved with consent-checked audience",{channel,audience_count:audience.length});
   await loadCampaigns();renderHistory();
-  setFeedback("Campaign saved as draft with "+number(audience.length)+" selected, consent-checked recipient(s). No messages have been sent.");
-  toast("Marketing campaign saved as draft.","success");
+  if(channel==="email"){
+   setFeedback("Campaign prepared. Confirm once to send to "+number(audience.length)+" selected recipient(s).");
+   const sent=await sendEmail(campaign.id);
+   if(sent===false)setFeedback("Campaign saved as a draft. Sending was cancelled.");
+   else setFeedback("Email send request completed. See Campaign history for the provider result.");
+   return;
+  }
+  setFeedback("WhatsApp audience saved. Export it from Campaign history, then complete the broadcast manually.");
+  toast("WhatsApp audience saved.","success");
   switchTab("history");
  }
  async function exportCampaign(id){
@@ -283,8 +290,8 @@ window.HFMarketingInit=async function(){
  async function sendEmail(id){
   const campaign=campaigns.find(c=>c.id===id);if(!campaign)throw new Error("Campaign was not found.");
   if(!emailProvider.configured)throw new Error("Email provider is not configured. No email has been sent.");
-  const ok=window.confirm("Approve and send the email campaign “"+campaign.name+"” to up to "+number(campaign.audience_count)+" saved recipient(s)? Consent and address validity will be rechecked by the server. This action sends real emails.");
-  if(!ok)return;
+  const ok=window.confirm("Send email campaign from Halal Food to "+number(campaign.audience_count)+" selected recipient(s)? This sends real emails. Recipient eligibility is rechecked by the server.");
+  if(!ok)return false;
   const {data,error}=await client.from("marketing_campaigns").update({status:"approved",approved_by:ADMIN_EMAIL,approved_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq("id",id).in("status",["draft","partially_sent"]).select("id").maybeSingle();
   if(error)throw error;if(!data)throw new Error("This campaign cannot be sent in its current status.");
   await client.from("marketing_campaign_events").insert({campaign_id:id,event_type:"email_approved",details:{approved_by:ADMIN_EMAIL},created_by:ADMIN_EMAIL});
@@ -293,6 +300,7 @@ window.HFMarketingInit=async function(){
   if(!result||!result.success)throw new Error(result?.error||"Email provider did not confirm the send.");
   await loadCampaigns();renderHistory();
   toast("Gmail accepted "+number(result.acceptedByProvider??result.sent??0)+" email(s); failed/suppressed: "+number(result.failed||0)+", remaining: "+number(result.remaining||0)+".","success");
+  return true;
  }
  function openConsent(customerId,ch,allowed){
   const c=customers.find(x=>x.id===customerId);if(!c)return;
