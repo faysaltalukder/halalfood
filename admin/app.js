@@ -1349,6 +1349,96 @@ window.HFAdminReady.then(async H=>{
   const {error}=await client.storage.from("store-content").upload(path,file,{cacheControl:"3600",upsert:false,contentType:file.type});if(error)throw error;
   return client.storage.from("store-content").getPublicUrl(path).data.publicUrl;
  }
+ async function initProductAdd(){
+  let categories=[];
+  async function loadCategories(){
+   categories=await fetchCategories();
+   const active=categories.filter(category=>category.is_active);
+   $("productCategorySelect").innerHTML='<option value="">Choose category</option>'+active.map(category=>'<option value="'+esc(category.slug)+'">'+esc(category.name)+'</option>').join("");
+   if(!active.length)throw new Error("Add or restore a category in All Products before creating a product.");
+  }
+  const inferWeight=value=>{
+   const raw=String(value||"").trim().toLowerCase();
+   if(raw==="kg")return "1.000";
+   const match=raw.match(/^([0-9]+(?:\\.[0-9]+)?)\\s*(kg|g|gram|grams)$/);
+   if(!match)return "";
+   const amount=Number(match[1]),kg=match[2]==="kg"?amount:amount/1000;
+   return Number.isFinite(kg)&&kg>0&&kg<=100?kg.toFixed(3):"";
+  };
+  $("productName").addEventListener("input",()=>{if(!$("productSlug").dataset.edited)$("productSlug").value=slugify($("productName").value);});
+  $("productSlug").addEventListener("input",()=>{$("productSlug").dataset.edited="1";});
+  $("productUnit").addEventListener("input",()=>{const field=$("productShippingWeight");if(field.dataset.manual==="true")return;const guess=inferWeight($("productUnit").value);if(guess)field.value=guess;});
+  $("productShippingWeight").addEventListener("input",event=>{event.currentTarget.dataset.manual=event.currentTarget.value.trim()?"true":"";});
+  $("productImageUrl").addEventListener("input",()=>{const url=$("productImageUrl").value.trim();if(url){$("productImagePreview").src=url;$("productImagePreview").hidden=false;}});
+  $("productImageFile").addEventListener("change",()=>{const file=$("productImageFile").files?.[0];if(file){$("productImagePreview").src=URL.createObjectURL(file);$("productImagePreview").hidden=false;}});
+  $("productForm").addEventListener("submit",async event=>{
+   event.preventDefault();
+   const button=event.submitter||$("productForm").querySelector('[data-save-state="published"]');
+   const state=button?.dataset.saveState==="draft"?"draft":"published";
+   const buttons=[...$("productForm").querySelectorAll('button[type="submit"]')];
+   buttons.forEach(item=>item.disabled=true);
+   $("productFormError").textContent="";$("productSaveResult").hidden=true;
+   try{
+    const category=categories.find(item=>item.slug===$("productCategorySelect").value&&item.is_active);
+    if(!category)throw new Error("Choose an active category.");
+    const name=$("productName").value.trim(),slug=$("productSlug").value.trim();
+    if(!name)throw new Error("Product name is required.");
+    if(!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug))throw new Error("Use a valid English product URL slug.");
+    const price=Number($("productPrice").value);
+    if(!Number.isFinite(price)||price<0)throw new Error("Enter a valid non-negative price.");
+    const rawWeight=$("productShippingWeight").value.trim(),shippingWeight=rawWeight===""?null:Number(rawWeight);
+    if(shippingWeight!==null&&(!Number.isFinite(shippingWeight)||shippingWeight<=0||shippingWeight>100))throw new Error("Shipping weight must be greater than 0 and no more than 100 kg.");
+    const rawStock=$("productStock").value.trim(),stock=rawStock===""?null:Number(rawStock);
+    if(stock!==null&&(!Number.isFinite(stock)||stock<0))throw new Error("Stock quantity must be zero or greater.");
+    const rawCost=$("productCostPrice").value.trim(),rawPackaging=$("productPackagingCost").value.trim(),rawThreshold=$("productLowStockThreshold").value.trim();
+    const cost=rawCost===""?null:Number(rawCost),packaging=rawPackaging===""?0:Number(rawPackaging),threshold=rawThreshold===""?5:Number(rawThreshold);
+    if(cost!==null&&(!Number.isFinite(cost)||cost<0))throw new Error("Purchase cost must be zero or greater.");
+    if(!Number.isFinite(packaging)||packaging<0)throw new Error("Packaging cost must be zero or greater.");
+    if(!Number.isFinite(threshold)||threshold<0)throw new Error("Low-stock threshold must be zero or greater.");
+    if(state==="draft"&&$("productFeatured").checked)throw new Error("Save as Published before marking a product as Featured.");
+    let imageUrl=$("productImageUrl").value.trim();
+    const imageFile=$("productImageFile").files?.[0];
+    if(imageFile)imageUrl=await uploadImage(imageFile,"products",slug);
+    const unit=$("productUnit").value.trim()||"piece";
+    const displayInput=$("productDisplayPrice").value.trim();
+    const match=displayInput.match(/[0-9][0-9,]*(?:\\.[0-9]+)?/);
+    const shownAmount=match?Number(match[0].replace(/,/g,"")):NaN;
+    const displayPrice=displayInput&&shownAmount===price?displayInput:("৳"+price.toLocaleString("en-BD")+" / "+unit);
+    const payload={
+     name,slug,category:category.name,category_slug:category.slug,price,unit_type:unit,
+     shipping_weight_kg:shippingWeight,display_price:displayPrice,image_url:imageUrl||null,
+     short_description:$("productShortDescription").value.trim(),
+     full_description:$("productFullDescription").value.trim(),
+     stock_quantity:stock,is_active:state==="published",is_featured:$("productFeatured").checked,
+     sort_order:parseInt($("productSortOrder").value||"0",10)||0,
+     seo_title:$("productSeoTitle").value.trim()||null,
+     seo_description:$("productSeoDescription").value.trim()||null,
+     cms_managed:true,cms_created:true
+    };
+    const {data,error}=await client.from("products").insert(payload).select("id,sku").single();
+    if(error)throw error;
+    const costWrite=await client.from("admin_product_costs").upsert({
+     product_id:data.id,cost_price:cost,packaging_cost:packaging,low_stock_threshold:threshold,
+     updated_by:ADMIN_EMAIL,updated_at:new Date().toISOString()
+    },{onConflict:"product_id"});
+    await audit("product_created","product",data.id,"Product created in dedicated Add Product workspace",{slug,sku:data.sku,status:state,cost_recorded:cost!==null});
+    $("productSaveResult").innerHTML='<strong>Product saved successfully</strong><p>Permanent product code: <code>'+esc(data.sku)+'</code></p><div class="hf-table-actions"><a class="hf-button hf-button-secondary hf-button-small" href="./products-barcode.html?sku='+encodeURIComponent(data.sku)+'">Generate label</a><a class="hf-button hf-button-primary hf-button-small" href="./products.html">Open All Products</a></div>';
+    $("productSaveResult").hidden=false;
+    if(costWrite.error){
+     $("productFormError").textContent="Product saved, but private cost/stock alert settings need attention: "+costWrite.error.message;
+     toast("Product saved; private cost settings need attention.","error");
+    }else{
+     toast(state==="published"?"Product published.":"Product saved as draft.");
+    }
+    $("productForm").reset();
+    $("productUnit").value="piece";$("productPackagingCost").value="0";$("productLowStockThreshold").value="5";$("productSortOrder").value="0";
+    $("productSlug").dataset.edited="";$("productShippingWeight").dataset.manual="";
+    $("productImagePreview").hidden=true;$("productImagePreview").removeAttribute("src");
+   }catch(error){$("productFormError").textContent=error.message||"Product could not be saved.";}
+   finally{buttons.forEach(item=>item.disabled=false);}
+  });
+  await loadCategories();attachRefresh(loadCategories);
+ }
  async function initProducts(){
   const productsDateLabel=$("productsDateLabel");
   if(productsDateLabel){
@@ -1382,7 +1472,7 @@ window.HFAdminReady.then(async H=>{
      button.classList.toggle("is-active",active);
      button.setAttribute("aria-pressed",String(active));
     });
-    const rows=products.filter(p=>(stockFilter==="all"||stockState(p)===stockFilter)&&(!search||[p.name,p.slug,p.category,p.short_description].join(" ").toLowerCase().includes(search))&&(!cat||p.category_slug===cat)&&(!state||(state==="visible"?p.is_active:!p.is_active)));
+    const rows=products.filter(p=>(stockFilter==="all"||stockState(p)===stockFilter)&&(!search||[p.name,p.slug,p.sku,p.category,p.short_description].join(" ").toLowerCase().includes(search))&&(!cat||p.category_slug===cat)&&(!state||(state==="visible"?p.is_active:!p.is_active)));
     $("productTableBody").innerHTML=rows.length?rows.map(p=>{
      const tracked=p.stock_quantity!==null&&p.stock_quantity!==undefined&&p.stock_quantity!=="";
      const stock=Number(p.stock_quantity),threshold=Number.isFinite(Number(p.low_stock_threshold))?Number(p.low_stock_threshold):5;
@@ -1393,8 +1483,8 @@ window.HFAdminReady.then(async H=>{
      const marginText=margin===null?"Add purchase cost to calculate margin":'Margin <span class="hf-status '+marginClass+'">'+margin.toLocaleString("en-BD",{maximumFractionDigits:1})+'%</span> · includes packaging';
      const shippingWeightCell=p.shipping_weight_kg!=null?'<strong>'+Number(p.shipping_weight_kg).toLocaleString("en-BD",{minimumFractionDigits:3,maximumFractionDigits:3})+' kg</strong><small>Per sale unit</small>':'<span class="hf-status hf-status-review">Set weight</span><small>Needed for courier auto-calc</small>';
      const stockLabel=!tracked?'<span class="hf-status">Not tracked</span>':outOfStock?'<span class="hf-status hf-status-out-of-stock">Out of stock</span>':low?'<span class="hf-status hf-status-low-stock">'+esc(p.stock_quantity)+' left</span>':'<span class="hf-status hf-status-confirmed">'+esc(p.stock_quantity)+' in stock</span>';
-     return '<tr><td><div style="display:flex;align-items:center;gap:10px">'+(p.image_url?'<img class="hf-thumb" src="'+esc(p.image_url)+'" alt="" loading="lazy">':'<span class="hf-thumb hf-thumb-empty">◇</span>')+'<span><strong>'+esc(p.name)+'</strong><small>/'+esc(p.slug)+'</small></span></div></td><td>'+esc(p.category||"—")+'</td><td><strong>'+esc(p.display_price||money(p.price))+'</strong><small>'+esc(p.unit_type||"piece")+'</small></td><td>'+shippingWeightCell+'</td><td><strong>'+(costKnown?money(totalUnitCost):"Cost not set")+'</strong><small>'+marginText+'</small></td><td>'+stockLabel+'<small>'+(tracked?"Alert at "+esc(threshold)+" "+esc(p.unit_type||"unit"):"Set stock quantity to enable alerts")+'</small></td><td>'+makeStatus(p.is_active?"visible":"hidden")+(p.is_featured?' <span class="hf-status hf-status-review">Featured</span>':"")+'</td><td><div class="hf-table-actions"><button class="hf-button hf-button-secondary hf-button-small" data-edit-product="'+esc(p.id)+'">Edit</button><button class="hf-button '+(p.is_active?"hf-button-danger":"hf-button-success")+' hf-button-small" data-toggle-product="'+esc(p.id)+'">'+(p.is_active?"Hide":"Restore")+'</button></div></td></tr>';
-    }).join(""):'<tr><td colspan="8">'+makeEmpty("No products found","Try a different search or add a product.")+'</td></tr>';
+     return '<tr><td><div style="display:flex;align-items:center;gap:10px">'+(p.image_url?'<img class="hf-thumb" src="'+esc(p.image_url)+'" alt="" loading="lazy">':'<span class="hf-thumb hf-thumb-empty">◇</span>')+'<span><strong>'+esc(p.name)+'</strong><small>/'+esc(p.slug)+'</small></span></div></td><td><strong>'+esc(p.sku||"SKU pending")+'</strong><small>Code 128 · <a href="./products-barcode.html?sku='+encodeURIComponent(p.sku||"")+'">Print label</a></small></td><td>'+esc(p.category||"—")+'</td><td><strong>'+esc(p.display_price||money(p.price))+'</strong><small>'+esc(p.unit_type||"piece")+'</small></td><td>'+shippingWeightCell+'</td><td><strong>'+(costKnown?money(totalUnitCost):"Cost not set")+'</strong><small>'+marginText+'</small></td><td>'+stockLabel+'<small>'+(tracked?"Alert at "+esc(threshold)+" "+esc(p.unit_type||"unit"):"Set stock quantity to enable alerts")+'</small></td><td>'+makeStatus(p.is_active?"visible":"hidden")+(p.is_featured?' <span class="hf-status hf-status-review">Featured</span>':"")+'</td><td><div class="hf-table-actions"><button class="hf-button hf-button-secondary hf-button-small" data-edit-product="'+esc(p.id)+'">Edit</button><button class="hf-button '+(p.is_active?"hf-button-danger":"hf-button-success")+' hf-button-small" data-toggle-product="'+esc(p.id)+'">'+(p.is_active?"Hide":"Restore")+'</button></div></td></tr>';
+    }).join(""):'<tr><td colspan="9">'+makeEmpty("No products found","Try a different search or add a product.")+'</td></tr>';
     const lowCount=products.filter(p=>p.is_active&&stockState(p)==="low").length;
     const outCount=products.filter(p=>p.is_active&&stockState(p)==="out").length;
     $("productsCount").textContent=products.length.toLocaleString("en-BD");$("productsVisibleCount").textContent=products.filter(p=>p.is_active).length.toLocaleString("en-BD");$("productsHiddenCount").textContent=products.filter(p=>!p.is_active).length.toLocaleString("en-BD");$("categoriesCount").textContent=categories.length.toLocaleString("en-BD");$("productsLowStockCount").textContent=lowCount.toLocaleString("en-BD");$("productsOutOfStockCount").textContent=outCount.toLocaleString("en-BD");
@@ -1430,7 +1520,6 @@ async function refresh(){
    const preview=$("productImagePreview");if(p?.image_url){preview.src=p.image_url;preview.hidden=false;}else{preview.removeAttribute("src");preview.hidden=true;}
    $("productDialog").showModal();
   }
-  $("addProductBtn")?.addEventListener("click",()=>openProduct());
   $("addCategoryBtn")?.addEventListener("click",()=>openCategory());
   $("addCategoryQuickBtn")?.addEventListener("click",()=>openCategory());
   $("productImageUrl")?.addEventListener("input",()=>{if($("productImageUrl").value){$("productImagePreview").src=$("productImageUrl").value;$("productImagePreview").hidden=false;}});
@@ -1871,6 +1960,9 @@ async function refresh(){
    "incomplete-orders":async()=>{},
    operations:()=>{if(typeof window.HFOpsInit==="function")return window.HFOpsInit();throw new Error("Operations module did not load.");},
    products:initProducts,
+   "products-add":initProductAdd,
+   "products-barcode":()=>{if(typeof window.HFBarcodeInit==="function")return window.HFBarcodeInit();throw new Error("Barcode module did not load.");},
+   "products-reviews":()=>{if(typeof window.HFReviewsInit==="function")return window.HFReviewsInit();throw new Error("Product Reviews module did not load.");},
    content:initContent,
    customers:initCustomers,
    finance:initFinance,
