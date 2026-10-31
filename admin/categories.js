@@ -5,7 +5,17 @@ window.HFAdminReady.then(async H => {
  const {client,esc,money,toast,audit,slugify}=H;
  const page=document.body.dataset.page||"categories";
  const $=id=>document.getElementById(id);
- const state={categories:[],products:[],loading:false,categoryDrag:null,productDrag:null,lastUndo:null,view:"categories",selectedCategoryId:null};
+ const STORE_CONFIG=window.HALAL_STORE_CONFIG||{};
+const CATALOG_CONFIG=STORE_CONFIG.catalog||{};
+const CATEGORY_TABLE=CATALOG_CONFIG.categoriesTable||"categories";
+const PRODUCT_TABLE=CATALOG_CONFIG.productsTable||"products";
+const MAX_CATEGORIES=Math.min(50000,Math.max(1,Number(CATALOG_CONFIG.maxCategories)||5000));
+const MAX_PRODUCTS=Math.min(50000,Math.max(1,Number(CATALOG_CONFIG.maxProducts)||20000));
+const REORDER_CATEGORY_RPC=CATALOG_CONFIG.reorderCategoriesRpc||"admin_reorder_categories";
+const REORDER_PRODUCT_RPC=CATALOG_CONFIG.reorderProductsRpc||"admin_reorder_products";
+const REORDER_HOME_RPC=CATALOG_CONFIG.reorderHomeProductsRpc||"admin_reorder_home_products";
+const STORAGE_BUCKET=STORE_CONFIG.storage?.publicContentBucket||"store-content";
+const state={categories:[],products:[],loading:false,categoryDrag:null,productDrag:null,lastUndo:null,view:"categories",selectedCategoryId:null};
  const orderOf=row=>Number(row?.sort_order??0);
  const byOrder=(a,b)=>orderOf(a)-orderOf(b)||String(a.name||"").localeCompare(String(b.name||""));
  const categoryById=id=>state.categories.find(c=>c.id===id);
@@ -67,8 +77,8 @@ window.HFAdminReady.then(async H => {
   state.loading=true;
   try{
    const [categories,products]=await Promise.all([
-    fetchCatalogRows("categories","id,name,slug,parent_id,description,image_url,is_active,sort_order,seo_title,seo_description,cms_created,cms_managed,created_at,updated_at",5000,["sort_order","name","id"]),
-    fetchCatalogRows("products","id,name,slug,sku,category,category_slug,price,unit_type,display_price,image_url,short_description,full_description,description,stock_quantity,is_active,is_featured,sort_order,home_sort_order,seo_title,seo_description,cms_created,cms_managed,created_at,updated_at",20000,["sort_order","name","id"])
+    fetchCatalogRows(CATEGORY_TABLE,"id,name,slug,parent_id,description,image_url,is_active,sort_order,seo_title,seo_description,cms_created,cms_managed,created_at,updated_at",MAX_CATEGORIES,["sort_order","name","id"]),
+    fetchCatalogRows(PRODUCT_TABLE,"id,name,slug,sku,category,category_slug,price,unit_type,display_price,image_url,short_description,full_description,description,stock_quantity,is_active,is_featured,sort_order,home_sort_order,seo_title,seo_description,cms_created,cms_managed,created_at,updated_at",MAX_PRODUCTS,["sort_order","name","id"])
    ]);
    state.categories=categories;state.products=products;
    renderPage();
@@ -201,7 +211,7 @@ window.HFAdminReady.then(async H => {
  async function persistCategoryOrder(parentId,ids,previousIds,recordUndo=true,isUndo=false){
   if(!ids.length)return false;
   setStatus("categoryTreeStatus","Saving category order…");
-  const {error}=await client.rpc("admin_reorder_categories",{p_parent_id:parentId||null,p_category_ids:ids});
+  const {error}=await client.rpc(REORDER_CATEGORY_RPC,{p_parent_id:parentId||null,p_category_ids:ids});
   if(error){if(recordUndo)state.lastUndo=null;updateUndoButtons();toast(error.message||"Category order could not be saved.","error");await reload();return false;}
   state.lastUndo=recordUndo?{kind:"category",parentId:parentId||null,ids:previousIds}:null;
   await audit?.(isUndo?"catalog.category.reorder_undone":"catalog.category.reordered","category",parentId||null,(isUndo?"Restored ":"Reordered ")+ids.length+" sibling categories",{parent_id:parentId||null,category_ids:ids});
@@ -212,7 +222,7 @@ window.HFAdminReady.then(async H => {
   const siblings=childrenOf(item.parent_id||null),ids=siblings.map(c=>c.id),from=ids.indexOf(id);
   let to=typeof directionOrTarget==="number"?from+directionOrTarget:ids.indexOf(directionOrTarget);
   if(from<0||to<0||to>=ids.length||from===to)return;
-  if(typeof directionOrTarget!=="number"&&from<to)to--;
+  
   const previousIds=ids.slice();const [moved]=ids.splice(from,1);ids.splice(to,0,moved);
   await persistCategoryOrder(item.parent_id||null,ids,previousIds,true);
  }
@@ -255,9 +265,9 @@ window.HFAdminReady.then(async H => {
   if(file.size>5*1024*1024)throw new Error("Image size must be 5 MB or less.");
   const ext={"image/jpeg":"jpg","image/png":"png","image/webp":"webp","image/avif":"avif"}[file.type];
   const path=folder+"/"+slug+"-"+Date.now()+"."+ext;
-  const {error}=await client.storage.from((window.HALAL_STORE_CONFIG?.storage?.publicContentBucket)||"store-content").upload(path,file,{cacheControl:"3600",upsert:false,contentType:file.type});
+  const {error}=await client.storage.from(STORAGE_BUCKET).upload(path,file,{cacheControl:"3600",upsert:false,contentType:file.type});
   if(error)throw error;
-  return client.storage.from((window.HALAL_STORE_CONFIG?.storage?.publicContentBucket)||"store-content").getPublicUrl(path).data.publicUrl;
+  return client.storage.from(STORAGE_BUCKET).getPublicUrl(path).data.publicUrl;
  }
  async function saveCategory(event){
   event.preventDefault();const button=$("saveCategoryBtn");button.disabled=true;
@@ -277,7 +287,7 @@ window.HFAdminReady.then(async H => {
     seo_description:$("categorySeoDescription").value.trim()||$("categoryDescription").value.trim().slice(0,155),
     sort_order:movedToNewParent?nextParentOrder:Number($("categorySortOrder").value||0),is_active:$("categoryActive").checked,
     cms_created:old?Boolean(old.cms_created):true,cms_managed:true,updated_at:new Date().toISOString()};
-   const result=id?await client.from("categories").update(row).eq("id",id).select("id").single():await client.from("categories").insert(row).select("id").single();
+   const result=id?await client.from(CATEGORY_TABLE).update(row).eq("id",id).select("id").single():await client.from(CATEGORY_TABLE).insert(row).select("id").single();
    if(result.error)throw result.error;
    $("categoryDialog").close();await reload();await audit?.(id?"catalog.category.updated":"catalog.category.created","category",result.data?.id||id,name,{parent_id:parentId});
    toast(id?"Category updated.":"Category created.");
@@ -288,7 +298,7 @@ window.HFAdminReady.then(async H => {
   const item=categoryById(id);if(!item)return;
   const action=item.is_active?"hide":"show";
   if(!confirm((item.is_active?"Hide ":"Show ")+item.name+"? "+(item.is_active?"Its descendants and products will be hidden from public navigation while the parent is hidden. No records will be deleted.":"It will become available to customers again if its parent is visible.")))return;
-  const {error}=await client.from("categories").update({is_active:!item.is_active,updated_at:new Date().toISOString()}).eq("id",id);
+  const {error}=await client.from(CATEGORY_TABLE).update({is_active:!item.is_active,updated_at:new Date().toISOString()}).eq("id",id);
   if(error){toast(error.message||"Category visibility could not be changed.","error");return;}
   await audit?.("catalog.category."+action,"category",id,item.name);
   await reload();toast("Category "+(action==="hide"?"hidden":"restored")+".");
@@ -309,7 +319,7 @@ window.HFAdminReady.then(async H => {
  }
  async function persistProductOrder(mode,categorySlug,ids,previousIds,recordUndo=true,isUndo=false){
   setStatus("productSortStatus","Saving product order…");
-  const rpc=mode==="home"?"admin_reorder_home_products":"admin_reorder_products";
+  const rpc=mode==="home"?REORDER_HOME_RPC:REORDER_PRODUCT_RPC;
   const args=mode==="home"?{p_product_ids:ids}:{p_category_slug:categorySlug,p_product_ids:ids};
   const {error}=await client.rpc(rpc,args);
   if(error){if(recordUndo)state.lastUndo=null;updateUndoButtons();toast(error.message||"Product order could not be saved.","error");await reload();return false;}
@@ -329,7 +339,7 @@ window.HFAdminReady.then(async H => {
   const ids=list.map(p=>p.id),from=ids.indexOf(id);
   let to=typeof directionOrTarget==="number"?from+directionOrTarget:ids.indexOf(directionOrTarget);
   if(from<0||to<0||to>=ids.length||from===to)return;
-  if(typeof directionOrTarget!=="number"&&from<to)to--;
+  
   const previousIds=ids.slice();const [moved]=ids.splice(from,1);ids.splice(to,0,moved);
   reorderStateProducts(ids,mode==="home"?"home_sort_order":"sort_order");renderSorting();
   await persistProductOrder(mode,slug,ids,previousIds,true);
@@ -378,7 +388,7 @@ window.HFAdminReady.then(async H => {
     seo_description:$("quickProductSeoDescription").value.trim()||$("quickProductShortDescription").value.trim().slice(0,155),
     is_active:$("quickProductActive").checked,is_featured:$("quickProductFeatured").checked,
     ...(moved?{sort_order:newOrder}:{}),updated_at:new Date().toISOString()};
-   const {error}=await client.from("products").update(row).eq("id",id);
+   const {error}=await client.from(PRODUCT_TABLE).update(row).eq("id",id);
    if(error)throw error;
    $("quickProductDialog").close();await audit?.("catalog.product.quick_updated","product",id,name,{category_slug:category.slug});
    await reload();toast("Product updated. The live catalog will use the saved details.");
