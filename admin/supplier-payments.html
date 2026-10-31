@@ -52,7 +52,7 @@
 
 <section class="hf-card hf-card-pad">
  <div class="hf-section-head"><div><p class="page-eyebrow">SUPPLIER TRANSACTIONS</p><h2>Payment history</h2><p>Every confirmed supplier payment, with channel, reference and allocated bills.</p></div><button class="hf-button hf-button-secondary hf-button-small" id="exportPaymentsBtn" type="button">Export CSV</button></div>
- <div class="hf-toolbar"><input class="hf-input" id="paymentSearch" type="search" placeholder="Search payment, supplier or transaction reference"><select class="hf-select" id="paymentMethodFilter"><option value="">All payment channels</option><option value="cash">Cash</option><option value="bank_transfer">Bank transfer</option><option value="bkash">bKash</option><option value="nagad">Nagad</option><option value="rocket">Rocket</option><option value="cheque">Cheque</option><option value="other">Other</option></select></div>
+ <div class="hf-toolbar"><input class="hf-input" id="paymentSearch" type="search" aria-label="Search supplier payments by payment number, supplier or transaction reference" placeholder="Search payment, supplier or transaction reference"><select class="hf-select" id="paymentMethodFilter" aria-label="Filter payments by channel"><option value="">All payment channels</option><option value="cash">Cash</option><option value="bank_transfer">Bank transfer</option><option value="bkash">bKash</option><option value="nagad">Nagad</option><option value="rocket">Rocket</option><option value="cheque">Cheque</option><option value="other">Other</option></select></div>
  <div class="hf-table-wrap" tabindex="0" role="region" aria-label="Supplier payment history">
   <table class="hf-table hf-supplier-table"><thead><tr><th>Payment ID / Date</th><th>Supplier</th><th>Channel / Reference</th><th>Amount</th><th>Allocated</th><th>Advance</th><th>Status</th><th>Action</th></tr></thead><tbody id="paymentsTableBody"><tr><td colspan="8" class="hf-loading">Loading payment history…</td></tr></tbody></table>
  </div>
@@ -60,7 +60,7 @@
 
 <section class="hf-card hf-card-pad">
  <div class="hf-section-head"><div><p class="page-eyebrow">ACCOUNTS PAYABLE</p><h2>Outstanding supplier bills</h2><p>Review due dates, amounts paid and outstanding balances.</p></div></div>
- <div class="hf-toolbar"><select class="hf-select" id="billAgingFilter"><option value="">All bill statuses</option><option value="overdue">Overdue only</option><option value="not_due">Not yet due</option><option value="part_paid">Partially paid</option><option value="unpaid">Unpaid</option></select></div>
+ <div class="hf-toolbar"><select class="hf-select" id="billAgingFilter" aria-label="Filter outstanding bills by ageing and payment status"><option value="">All bill statuses</option><option value="overdue">Overdue only</option><option value="not_due">Not yet due</option><option value="part_paid">Partially paid</option><option value="unpaid">Unpaid</option></select></div>
  <div class="hf-table-wrap" tabindex="0" role="region" aria-label="Outstanding supplier invoices">
   <table class="hf-table hf-supplier-table"><thead><tr><th>Bill / Supplier</th><th>Invoice date</th><th>Due date</th><th>Total</th><th>Paid</th><th>Outstanding</th><th>Age</th></tr></thead><tbody id="payablesTableBody"><tr><td colspan="7" class="hf-loading">Loading supplier payables…</td></tr></tbody></table>
  </div>
@@ -68,7 +68,7 @@
 
 <section class="hf-card hf-card-pad" id="supplierLedgerSection">
  <div class="hf-section-head"><div><p class="page-eyebrow">SUPPLIER STATEMENT</p><h2>Supplier ledger</h2><p>Running balance across opening balances, confirmed bills, payments and credit notes.</p></div><button class="hf-button hf-button-secondary hf-button-small" id="exportLedgerBtn" type="button">Export statement CSV</button></div>
- <div class="hf-toolbar hf-ledger-filters"><select class="hf-select" id="ledgerSupplierFilter"><option value="">All suppliers</option></select><label>From<input class="hf-input" id="ledgerDateFrom" type="date"></label><label>To<input class="hf-input" id="ledgerDateTo" type="date"></label><button class="hf-button hf-button-secondary hf-button-small" id="clearLedgerFilters" type="button">Clear dates</button></div>
+ <div class="hf-toolbar hf-ledger-filters"><select class="hf-select" id="ledgerSupplierFilter" aria-label="Filter supplier ledger by supplier"><option value="">All suppliers</option></select><label>From<input class="hf-input" id="ledgerDateFrom" type="date"></label><label>To<input class="hf-input" id="ledgerDateTo" type="date"></label><button class="hf-button hf-button-secondary hf-button-small" id="clearLedgerFilters" type="button">Clear dates</button></div>
  <div class="hf-table-wrap" tabindex="0" role="region" aria-label="Supplier ledger statement">
   <table class="hf-table hf-supplier-table"><thead><tr><th>Date</th><th>Supplier</th><th>Transaction</th><th>Reference</th><th>Increase</th><th>Decrease</th><th>Running balance</th></tr></thead><tbody id="supplierLedgerTableBody"><tr><td colspan="7" class="hf-loading">Loading supplier ledger…</td></tr></tbody></table>
  </div>
