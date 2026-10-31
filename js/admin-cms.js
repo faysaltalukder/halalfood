@@ -53,15 +53,26 @@
       if (ordered.some(item => item.slug === previous)) el("categoryFilter").value = previous;
     }
   }
+  async function paginatedResult(buildQuery, maxRows) {
+    const rows = [], pageSize = 500;
+    for (let offset = 0; offset < maxRows; offset += pageSize) {
+      const { data, error } = await buildQuery().range(offset, offset + pageSize - 1);
+      if (error) return { data: null, error };
+      const page = data || [];
+      rows.push(...page);
+      if (page.length < pageSize) return { data: rows, error: null };
+    }
+    return { data: rows, error: null };
+  }
   async function loadAll() {
     if (state.loading) return;
     state.loading = true;
     ["cmsProductMsg", "cmsCategoryMsg", "cmsPostMsg"].forEach(id => notice(id, ""));
     try {
       const results = await Promise.all([
-        client.from("products").select(PRODUCT_FIELDS).order("sort_order", { ascending: true }).order("name", { ascending: true }).limit(1000),
-        client.from("categories").select(CATEGORY_FIELDS).order("sort_order", { ascending: true }).order("name", { ascending: true }).limit(500),
-        client.from("blog_posts").select(POST_FIELDS).order("updated_at", { ascending: false }).limit(500)
+        paginatedResult(() => client.from("products").select(PRODUCT_FIELDS).order("sort_order", { ascending: true }).order("name", { ascending: true }).order("id", { ascending: true }), 20000),
+        paginatedResult(() => client.from("categories").select(CATEGORY_FIELDS).order("sort_order", { ascending: true }).order("name", { ascending: true }).order("id", { ascending: true }), 5000),
+        paginatedResult(() => client.from("blog_posts").select(POST_FIELDS).order("updated_at", { ascending: false }).order("id", { ascending: true }), 5000)
       ]);
       const labels = ["Products", "Categories", "Blog posts"];
       for (let i = 0; i < results.length; i++) {
