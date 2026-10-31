@@ -283,7 +283,7 @@ const state={categories:[],products:[],loading:false,categoryDrag:null,productDr
    const movedToNewParent=Boolean(old&&String(old.parent_id||"")!==String(parentId||""));
    const nextParentOrder=childrenOf(parentId).filter(category=>category.id!==id).reduce((max,category)=>Math.max(max,orderOf(category)),0)+10;
    const row={name,slug,parent_id:parentId,description:$("categoryDescription").value.trim(),image_url:image,
-    seo_title:$("categorySeoTitle").value.trim()||name+" | Halal Food",
+    seo_title:$("categorySeoTitle").value.trim()||name+" | "+(STORE_CONFIG.storeName||"Store"),
     seo_description:$("categorySeoDescription").value.trim()||$("categoryDescription").value.trim().slice(0,155),
     sort_order:movedToNewParent?nextParentOrder:Number($("categorySortOrder").value||0),is_active:$("categoryActive").checked,
     cms_created:old?Boolean(old.cms_created):true,cms_managed:true,updated_at:new Date().toISOString()};
@@ -384,7 +384,7 @@ const state={categories:[],products:[],loading:false,categoryDrag:null,productDr
    const newOrder=moved?state.products.filter(p=>p.category_slug===category.slug).reduce((max,p)=>Math.max(max,orderOf(p)),0)+10:old.sort_order;
    const row={name,category:category.name,category_slug:category.slug,price,unit_type:unit,display_price:displayPrice,image_url:image,
     short_description:$("quickProductShortDescription").value.trim(),full_description:$("quickProductFullDescription").value.trim(),
-    description:$("quickProductFullDescription").value.trim(),seo_title:$("quickProductSeoTitle").value.trim()||name+" | Halal Food",
+    description:$("quickProductFullDescription").value.trim(),seo_title:$("quickProductSeoTitle").value.trim()||name+" | "+(STORE_CONFIG.storeName||"Store"),
     seo_description:$("quickProductSeoDescription").value.trim()||$("quickProductShortDescription").value.trim().slice(0,155),
     is_active:$("quickProductActive").checked,is_featured:$("quickProductFeatured").checked,
     ...(moved?{sort_order:newOrder}:{}),updated_at:new Date().toISOString()};
