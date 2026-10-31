@@ -84,17 +84,6 @@ window.HFAdminReady.then(async H => {
   if(page==="categories-sorting")renderSorting();
   if(page==="categories-settings")renderSettings();
  }
- function renderHub(){
-  const total=state.categories.length,nested=state.categories.filter(c=>c.parent_id).length,activeProducts=state.products.filter(p=>p.is_active).length;
-  const hidden=state.categories.filter(c=>!c.is_active).length+state.products.filter(p=>!p.is_active).length;
-  if($("catalogCategoryCount"))$("catalogCategoryCount").textContent=String(total);
-  if($("catalogProductCount"))$("catalogProductCount").textContent=String(activeProducts);
-  if($("catalogNestedCount"))$("catalogNestedCount").textContent=String(nested);
-  if($("catalogHiddenCount"))$("catalogHiddenCount").textContent=String(hidden);
-  const box=$("catalogHubTree");if(!box)return;
-  const roots=childrenOf(null);
-  box.innerHTML=roots.length?roots.map(cat=>'<div class="catalog-hub-row"><span aria-hidden="true">▰</span><strong>'+esc(cat.name)+'</strong><small>'+categoryProductCount(cat)+' products · '+(cat.is_active?"Visible":"Hidden")+'</small><a class="catalog-text-link" href="./categories-tree.html">Edit</a></div>'+childrenOf(cat.id).map(child=>'<div class="catalog-hub-row is-child"><span aria-hidden="true">↳</span><strong>'+esc(child.name)+'</strong><small>'+categoryProductCount(child)+' products</small></div>'+childrenOf(child.id).map(grand=>'<div class="catalog-hub-row is-child" style="margin-left:50px"><span aria-hidden="true">↳</span><strong>'+esc(grand.name)+'</strong><small>'+categoryProductCount(grand)+' products</small></div>').join("")).join("")).join(""):'<div class="hf-empty">No categories have been created yet.</div>';
- }
  function categoryNodeMarkup(category,search="",filter="all"){
   const depth=depthOf(category),children=childrenOf(category.id);
   const query=search.toLowerCase();
@@ -136,24 +125,6 @@ window.HFAdminReady.then(async H => {
   tree.innerHTML=childrenOf(null).map(c=>categoryNodeMarkup(c,search,filter)).join("");
   $("categoryTreeCount").textContent=state.categories.length+" categories · "+state.categories.filter(c=>!c.parent_id).length+" top-level categories";
   $("categoryTreeEmpty").hidden=!!tree.children.length;
- }
- function renderSettings(){
-  const body=$("categorySettingsBody");if(!body)return;
-  const search=String($("categorySettingsSearch")?.value||"").toLowerCase().trim(),filter=$("categorySettingsFilter")?.value||"all";
-  const rows=orderedCategories().filter(c=>{
-   const matches=(!search||(c.name+" "+c.slug+" "+categoryPath(c)).toLowerCase().includes(search));
-   const visible=effectiveActive(c);
-   return matches&&(filter==="all"||(filter==="active"?visible:!visible));
-  });
-  body.innerHTML=rows.length?rows.map(c=>{
-   const depth=depthOf(c),status=effectiveActive(c);
-   return '<tr><td><div class="catalog-table-category">'+(c.image_url?'<img class="catalog-table-image" src="'+esc(c.image_url)+'" alt="" loading="lazy">':'<span class="catalog-table-image catalog-table-image-empty">No image</span>')+'<div><strong>'+esc(c.name)+'</strong><small>/'+esc(c.slug)+'</small></div></div></td>'+
-    '<td><div class="catalog-parent-label">'+esc(categoryPath(c))+'</div><small>'+(depth===1?"Category":depth===2?"Subcategory":"Child category")+'</small></td>'+
-    '<td>'+categoryProductCount(c)+'</td><td>'+ (status?'<span class="hf-status hf-status-active">Visible</span>':'<span class="hf-status hf-status-hidden">Hidden</span>')+'</td>'+
-    '<td>'+esc(c.updated_at?new Date(c.updated_at).toLocaleDateString("en-BD"):"—")+'</td>'+
-    '<td><div class="hf-table-actions"><button class="hf-button hf-button-secondary hf-button-small" type="button" data-cat-edit="'+esc(c.id)+'">Edit</button><button class="hf-button hf-button-secondary hf-button-small catalog-settings-toggle" type="button" data-cat-toggle="'+esc(c.id)+'">'+(c.is_active?"Hide":"Show")+'</button></div></td></tr>';
-  }).join(""):'<tr><td colspan="6" class="hf-empty">No categories match this filter.</td></tr>';
-  $("categorySettingsEmpty").hidden=!!rows.length;
  }
  function fillSortCategory(){
   const select=$("sortCategory");if(!select)return;
@@ -423,9 +394,7 @@ window.HFAdminReady.then(async H => {
  function setupEvents(){
   document.querySelectorAll("[data-catalog-refresh]").forEach(btn=>btn.addEventListener("click",()=>reload(true)));
   $("categoryTreeSearch")?.addEventListener("input",renderTree);$("categoryTreeVisibility")?.addEventListener("change",renderTree);
-  $("categorySettingsSearch")?.addEventListener("input",renderSettings);$("categorySettingsFilter")?.addEventListener("change",renderSettings);
   $("addRootCategory")?.addEventListener("click",()=>openCategoryEditor());
-  $("settingsAddCategory")?.addEventListener("click",()=>openCategoryEditor());
   $("categoryForm")?.addEventListener("submit",saveCategory);
   $("undoCategoryOrder")?.addEventListener("click",()=>undoLastOrder("category"));
   $("undoProductOrder")?.addEventListener("click",()=>undoLastOrder("product"));
