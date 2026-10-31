@@ -197,6 +197,7 @@ Deno.serve(async (req: Request) => {
       deliveryZone: clean(d.deliveryZone ?? d.delivery_zone, 40),
       paymentMethod: clean(d.paymentMethod ?? d.payment_method ?? "cash_on_delivery", 40).toLowerCase(),
       orderId: clean(d.orderId, 20),
+      couponCode: clean(d.couponCode ?? d.coupon_code ?? "", 40).toUpperCase(),
       checkoutSessionId: clean(d.checkoutSessionId, 64),
       items: items.map((item: any) => ({
         product: clean(item.product ?? item.name ?? item.slug, 120),
@@ -356,7 +357,7 @@ Deno.serve(async (req: Request) => {
     const { data, error } = await admin.rpc("create_website_order", { p_order: payload });
     if (error) {
       const message = String(error.message || "");
-      const clientError = /Please enter|Sorry, this product|Cash on Delivery|select a valid delivery|Not enough stock|Too many items|between 1 and 30|Too many orders/i.test(message);
+      const clientError = /Please enter|Sorry, this product|Cash on Delivery|select a valid delivery|Not enough stock|Too many items|between 1 and 30|Too many orders|Coupon:/i.test(message);
       return json({ success: false, error: clientError ? message : "Order could not be placed. Please try again or contact us by phone." }, clientError ? 400 : 500);
     }
     if (!data || data.success !== true) return json({ success: false, error: "Order could not be placed. Please try again." }, 500);
