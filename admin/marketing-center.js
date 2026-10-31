@@ -12,7 +12,12 @@ const dict={
  "Campaign safety check":"ক্যাম্পেইন নিরাপত্তা যাচাই","Consent requirement":"সম্মতির শর্ত","Required":"আবশ্যক","Open WhatsApp Web ↗":"WhatsApp Web খুলুন ↗",
  "No customers match these filters.":"এই ফিল্টারে কোনো গ্রাহক পাওয়া যায়নি।","No marketing campaigns have been saved yet.":"এখনো কোনো মার্কেটিং ক্যাম্পেইন সংরক্ষণ করা হয়নি।",
  "Email provider not connected":"ইমেইল প্রোভাইডার সংযুক্ত নয়","Record WhatsApp sent":"WhatsApp-এ পাঠানো হয়েছে হিসেবে রেকর্ড করুন","manually sent":"অ্যাডমিন নিশ্চিত করেছেন: ম্যানুয়ালি পাঠানো হয়েছে","provider accepted":"প্রোভাইডার গ্রহণ করেছে","Export WhatsApp CSV":"WhatsApp CSV এক্সপোর্ট","Export email CSV":"ইমেইল CSV এক্সপোর্ট",
- "Only active, non-blocked customers with recorded consent for the selected channel can be included.":"নির্বাচিত চ্যানেলের সম্মতি থাকা সক্রিয় ও ব্লক নয় এমন গ্রাহকরাই অন্তর্ভুক্ত হবে।"
+ "Only active, non-blocked customers with recorded consent for the selected channel can be included.":"নির্বাচিত চ্যানেলের সম্মতি থাকা সক্রিয় ও ব্লক নয় এমন গ্রাহকরাই অন্তর্ভুক্ত হবে।",
+ "Write your email":"ইমেইল লিখুন","Email message":"ইমেইল বার্তা","Choose customers":"গ্রাহক নির্বাচন করুন",
+ "Eligible email recipients are pre-selected. Untick anyone you do not want to include.":"যোগ্য ইমেইল গ্রাহকরা আগে থেকেই নির্বাচিত থাকবে। কাউকে বাদ দিতে টিক তুলে দিন।",
+ "Search by name or email":"নাম বা ইমেইল দিয়ে খুঁজুন","Select all eligible":"সব যোগ্য গ্রাহক নির্বাচন","Clear selection":"নির্বাচন বাতিল",
+ "Send email now":"এখনই ইমেইল পাঠান","Ready":"প্রস্তুত","Not eligible":"যোগ্য নয়",
+ "Write the email, choose the recipients and send directly from the Halal Food Gmail account.":"ইমেইল লিখুন, গ্রাহক নির্বাচন করুন এবং সরাসরি Halal Food Gmail থেকে পাঠান।"
 };
 if(window.HFAdminLanguage&&window.HFAdminLanguage.dictionary)Object.assign(window.HFAdminLanguage.dictionary,dict);
 window.HFMarketingInit=async function(){
