@@ -227,6 +227,18 @@ Deno.serve(async (req: Request) => {
     const userAgent = clean(req.headers.get("user-agent"), 500) || null;
     const deviceId = clean(d.deviceId ?? d.hf_device_id, 100);
     const normalizedPhone = clean(payload.phone, 32).replace(/[\\s-]/g, "");
+    const { data: blockedCustomer, error: blockedCustomerError } = await admin
+      .from("customers")
+      .select("id,is_blocked,anonymized_at")
+      .eq("phone", normalizedPhone)
+      .maybeSingle();
+    if (blockedCustomerError) {
+      console.error("Customer block status could not be verified before checkout:", String(blockedCustomerError.code || "unknown"));
+      return json({ success: false, error: "অর্ডার যাচাই সেবা সাময়িকভাবে পাওয়া যাচ্ছে না। আবার চেষ্টা করুন।" }, 503);
+    }
+    if (blockedCustomer?.is_blocked || blockedCustomer?.anonymized_at) {
+      return json({ success: false, error: "এই নম্বর থেকে আপাতত নতুন অর্ডার গ্রহণ করা যাচ্ছে না। সহায়তার জন্য আমাদের সঙ্গে যোগাযোগ করুন।" }, 403);
+    }
     const [ipHash, deviceHash, phoneHash] = await Promise.all([
       clientIp ? hmacFingerprint(fingerprintSecret, "ip", clientIp) : Promise.resolve(null),
       deviceId ? hmacFingerprint(fingerprintSecret, "device", deviceId) : Promise.resolve(null),
@@ -357,7 +369,7 @@ Deno.serve(async (req: Request) => {
     const { data, error } = await admin.rpc("create_website_order", { p_order: payload });
     if (error) {
       const message = String(error.message || "");
-      const clientError = /Please enter|Sorry, this product|Cash on Delivery|select a valid delivery|Not enough stock|Too many items|between 1 and 30|Too many orders|Coupon:/i.test(message);
+      const clientError = /Please enter|Sorry, this product|Cash on Delivery|select a valid delivery|Not enough stock|Too many items|between 1 and 30|Too many orders|This customer is blocked|Coupon:/i.test(message);
       return json({ success: false, error: clientError ? message : "Order could not be placed. Please try again or contact us by phone." }, clientError ? 400 : 500);
     }
     if (!data || data.success !== true) return json({ success: false, error: "Order could not be placed. Please try again." }, 500);
