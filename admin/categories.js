@@ -5,7 +5,7 @@ window.HFAdminReady.then(async H => {
  const {client,esc,money,toast,audit,slugify}=H;
  const page=document.body.dataset.page||"categories";
  const $=id=>document.getElementById(id);
- const state={categories:[],products:[],loading:false,categoryDrag:null,productDrag:null};
+ const state={categories:[],products:[],loading:false,categoryDrag:null,productDrag:null,lastUndo:null};
  const orderOf=row=>Number(row?.sort_order??0);
  const byOrder=(a,b)=>orderOf(a)-orderOf(b)||String(a.name||"").localeCompare(String(b.name||""));
  const categoryById=id=>state.categories.find(c=>c.id===id);
@@ -43,7 +43,7 @@ window.HFAdminReady.then(async H => {
   ).join("");
  }
  function productCategoryOptions(selected=""){
-  return '<option value="">Choose category</option>'+orderedCategories().filter(c=>c.is_active||c.slug===selected).map(c=>
+  return '<option value="">Choose category</option>'+orderedCategories().filter(c=>effectiveActive(c)||c.slug===selected).map(c=>
    '<option value="'+esc(c.slug)+'" '+(c.slug===selected?"selected":"")+'>'+esc("— ".repeat(Math.max(0,depthOf(c)-1))+c.name)+'</option>'
   ).join("");
  }
@@ -112,6 +112,7 @@ window.HFAdminReady.then(async H => {
  }
  function renderTree(){
   const tree=$("categoryTree");if(!tree)return;
+  updateUndoButtons();
   const search=$("categoryTreeSearch")?.value||"",filter=$("categoryTreeVisibility")?.value||"all";
   tree.innerHTML=childrenOf(null).map(c=>categoryNodeMarkup(c,search,filter)).join("");
   $("categoryTreeCount").textContent=state.categories.length+" categories · "+state.categories.filter(c=>!c.parent_id).length+" top-level categories";
@@ -151,6 +152,7 @@ window.HFAdminReady.then(async H => {
  }
  function renderSorting(){
   const mode=$("sortMode")?.value||"category",categorySlug=$("sortCategory")?.value||"";
+  updateUndoButtons();
   const wrap=$("sortCategoryWrap");if(wrap)wrap.hidden=mode==="home";
   if(mode==="category"&&!categorySlug){fillSortCategory();}
   const selectedSlug=$("sortCategory")?.value||categorySlug;
@@ -171,21 +173,27 @@ window.HFAdminReady.then(async H => {
  function sortCategoryIds(parentId){
   return childrenOf(parentId).map(c=>c.id);
  }
- async function persistCategoryOrder(parentId,ids){
-  if(!ids.length)return;
+ function updateUndoButtons(){
+  const categoryButton=$("undoCategoryOrder"),productButton=$("undoProductOrder");
+  if(categoryButton)categoryButton.hidden=state.lastUndo?.kind!=="category";
+  if(productButton)productButton.hidden=state.lastUndo?.kind!=="product";
+ }
+ async function persistCategoryOrder(parentId,ids,previousIds,recordUndo=true,isUndo=false){
+  if(!ids.length)return false;
   setStatus("categoryTreeStatus","Saving category order…");
   const {error}=await client.rpc("admin_reorder_categories",{p_parent_id:parentId||null,p_category_ids:ids});
-  if(error){toast(error.message||"Category order could not be saved.","error");await reload();return;}
-  await audit?.("catalog.category.reordered","category",parentId||null,"Reordered "+ids.length+" sibling categories",{parent_id:parentId||null,category_ids:ids});
-  toast("Category order saved.");await reload();
+  if(error){if(recordUndo)state.lastUndo=null;updateUndoButtons();toast(error.message||"Category order could not be saved.","error");await reload();return false;}
+  state.lastUndo=recordUndo?{kind:"category",parentId:parentId||null,ids:previousIds}:null;
+  await audit?.(isUndo?"catalog.category.reorder_undone":"catalog.category.reordered","category",parentId||null,(isUndo?"Restored ":"Reordered ")+ids.length+" sibling categories",{parent_id:parentId||null,category_ids:ids});
+  toast(isUndo?"Previous category order restored.":"Category order saved.");await reload();return true;
  }
  async function reorderCategory(id,directionOrTarget){
   const item=categoryById(id);if(!item)return;
   const siblings=childrenOf(item.parent_id||null),ids=siblings.map(c=>c.id),from=ids.indexOf(id);
   let to=typeof directionOrTarget==="number"?from+directionOrTarget:ids.indexOf(directionOrTarget);
   if(from<0||to<0||to>=ids.length||from===to)return;
-  const [moved]=ids.splice(from,1);ids.splice(to,0,moved);
-  await persistCategoryOrder(item.parent_id||null,ids);
+  const previousIds=ids.slice();const [moved]=ids.splice(from,1);ids.splice(to,0,moved);
+  await persistCategoryOrder(item.parent_id||null,ids,previousIds,true);
  }
  function openCategoryEditor(id=null,parentId=null){
   const form=$("categoryForm");if(!form)return;
@@ -276,14 +284,20 @@ window.HFAdminReady.then(async H => {
   const rank=new Map(ids.map((id,i)=>[id,(i+1)*10]));
   state.products=state.products.map(p=>rank.has(p.id)?{...p,[key]:rank.get(p.id)}:p);
  }
- async function persistProductOrder(mode,categorySlug,ids){
+ async function persistProductOrder(mode,categorySlug,ids,previousIds,recordUndo=true,isUndo=false){
   setStatus("productSortStatus","Saving product order…");
   const rpc=mode==="home"?"admin_reorder_home_products":"admin_reorder_products";
   const args=mode==="home"?{p_product_ids:ids}:{p_category_slug:categorySlug,p_product_ids:ids};
   const {error}=await client.rpc(rpc,args);
-  if(error){toast(error.message||"Product order could not be saved.","error");await reload();return;}
-  await audit?.(mode==="home"?"catalog.product.home_reordered":"catalog.product.category_reordered","product",null,"Reordered "+ids.length+" products",{mode,category_slug:categorySlug||null});
-  toast(mode==="home"?"Homepage product order saved.":"Category product order saved.");await reload();
+  if(error){if(recordUndo)state.lastUndo=null;updateUndoButtons();toast(error.message||"Product order could not be saved.","error");await reload();return false;}
+  state.lastUndo=recordUndo?{kind:"product",mode,categorySlug:categorySlug||null,ids:previousIds}:null;
+  await audit?.(isUndo?"catalog.product.reorder_undone":(mode==="home"?"catalog.product.home_reordered":"catalog.product.category_reordered"),"product",null,(isUndo?"Restored ":"Reordered ")+ids.length+" products",{mode,category_slug:categorySlug||null});
+  toast(isUndo?"Previous product order restored.":(mode==="home"?"Homepage product order saved.":"Category product order saved."));await reload();return true;
+ }
+ async function undoLastOrder(kind){
+  const undo=state.lastUndo;if(!undo||undo.kind!==kind)return;
+  if(kind==="category")await persistCategoryOrder(undo.parentId,undo.ids,null,false,true);
+  else await persistProductOrder(undo.mode,undo.categorySlug,undo.ids,null,false,true);
  }
  async function reorderProduct(id,directionOrTarget){
   const mode=$("sortMode")?.value||"category",slug=$("sortCategory")?.value||"";
@@ -292,9 +306,9 @@ window.HFAdminReady.then(async H => {
   const ids=list.map(p=>p.id),from=ids.indexOf(id);
   let to=typeof directionOrTarget==="number"?from+directionOrTarget:ids.indexOf(directionOrTarget);
   if(from<0||to<0||to>=ids.length||from===to)return;
-  const [moved]=ids.splice(from,1);ids.splice(to,0,moved);
+  const previousIds=ids.slice();const [moved]=ids.splice(from,1);ids.splice(to,0,moved);
   reorderStateProducts(ids,mode==="home"?"home_sort_order":"sort_order");renderSorting();
-  await persistProductOrder(mode,slug,ids);
+  await persistProductOrder(mode,slug,ids,previousIds,true);
  }
  function openQuickProductEditor(id){
   const product=state.products.find(p=>p.id===id);if(!product)return;
@@ -394,6 +408,8 @@ window.HFAdminReady.then(async H => {
   $("addRootCategory")?.addEventListener("click",()=>openCategoryEditor());
   $("settingsAddCategory")?.addEventListener("click",()=>openCategoryEditor());
   $("categoryForm")?.addEventListener("submit",saveCategory);
+  $("undoCategoryOrder")?.addEventListener("click",()=>undoLastOrder("category"));
+  $("undoProductOrder")?.addEventListener("click",()=>undoLastOrder("product"));
   $("sortMode")?.addEventListener("change",renderSorting);
   $("sortCategory")?.addEventListener("change",renderSorting);
   $("productSortSearch")?.addEventListener("input",renderSorting);
