@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow">
+<title>Supplier Payment History | Halal Food Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./shared.css?v=20261031-products-sidebar-v3">
+<link rel="stylesheet" href="./phase4-pages.css?v=20261023-admin-ultimate-v1">
+<link rel="stylesheet" href="./supplier-workspace.css?v=20261031-supplier-v1">
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+</head><body data-page="supplier-payments"><div id="authGate" class="auth-gate"><div class="auth-gate-card"><strong>Checking secure admin access…</strong><p>Supplier, purchase and payment records load only after the authorized account and two-step verification are confirmed.</p></div></div><div id="adminApp" hidden><main id="pageContent" tabindex="-1">
+<div class="page-heading hf-phase4-hero hf-supplier-hero">
+ <div><p class="page-eyebrow">ACCOUNTS PAYABLE &amp; CASH CONTROL</p><h1>Supplier Payment History</h1><p>Record supplier payments, allocate them to one or more confirmed bills, and reconcile the running supplier balance.</p></div>
+ <div class="page-actions"><button class="hf-button hf-button-primary" id="focusPaymentForm" type="button">＋ Record payment</button><button class="hf-button hf-button-secondary" data-refresh-page type="button">↻ Refresh</button></div>
+</div>
+<div class="hf-banner hf-banner-info"><span>ⓘ</span><div><strong>Record only real payments</strong>Saving a payment creates an accounting record in Supplier Ledger and a linked expense in Finance &amp; Cash Flow. It does not send funds. Confirm only after the money has actually been transferred or handed over.</div></div>
+<nav class="hf-supplier-workspace-nav" aria-label="Supplier workspace">
+<a class="hf-supplier-nav-card" data-supplier-tab="add" href="./supplier-add.html"><span class="hf-supplier-nav-icon">＋</span><span><strong>Add Supplier</strong><small>Directory &amp; supplier profiles</small></span><span class="hf-supplier-nav-arrow">↗</span></a>
+<a class="hf-supplier-nav-card" data-supplier-tab="purchases" href="./supplier-purchases.html"><span class="hf-supplier-nav-icon">▤</span><span><strong>Purchase List</strong><small>Purchase orders &amp; goods received</small></span><span class="hf-supplier-nav-arrow">↗</span></a>
+<a class="hf-supplier-nav-card" data-supplier-tab="payments" href="./supplier-payments.html"><span class="hf-supplier-nav-icon">৳</span><span><strong>Payment History</strong><small>Payments, payables &amp; ledger</small></span><span class="hf-supplier-nav-arrow">↗</span></a>
+</nav>
+<section class="hf-supplier-kpis hf-kpi-grid">
+ <article class="hf-card hf-kpi"><div class="hf-kpi-head"><span class="hf-kpi-label">Total payable</span><span class="hf-kpi-icon kpi-icon-orange">৳</span></div><strong class="hf-kpi-value" id="payableTotal">—</strong><span class="hf-kpi-note">Confirmed bills less paid &amp; credited</span></article>
+ <article class="hf-card hf-kpi"><div class="hf-kpi-head"><span class="hf-kpi-label">Payments this month</span><span class="hf-kpi-icon kpi-icon-blue">↗</span></div><strong class="hf-kpi-value" id="paymentsThisMonth">—</strong><span class="hf-kpi-note">Confirmed supplier outflows</span></article>
+ <article class="hf-card hf-kpi"><div class="hf-kpi-head"><span class="hf-kpi-label">Bills overdue</span><span class="hf-kpi-icon kpi-icon-purple">◷</span></div><strong class="hf-kpi-value" id="overdueBills">—</strong><span class="hf-kpi-note">Confirmed bills past due date</span></article>
+ <article class="hf-card hf-kpi"><div class="hf-kpi-head"><span class="hf-kpi-label">Supplier advances</span><span class="hf-kpi-icon kpi-icon-green">＋</span></div><strong class="hf-kpi-value" id="advanceTotal">—</strong><span class="hf-kpi-note">Unallocated payment credit</span></article>
+</section>
+
+<section class="hf-card hf-card-pad" id="paymentCreateSection">
+ <div class="hf-section-head"><div><p class="page-eyebrow">PAYMENT VOUCHER</p><h2>Record a supplier payment</h2><p>One payment can be allocated across several supplier invoices. Any unallocated amount becomes an advance.</p></div><span class="hf-section-context">Payment number generated automatically</span></div>
+ <form id="supplierPaymentForm">
+  <div class="hf-supplier-form-grid">
+   <label class="hf-field">Supplier *<select class="hf-select" id="paymentSupplier" required><option value="">Choose supplier</option></select></label>
+   <label class="hf-field">Payment date *<input class="hf-input" id="paymentDate" type="date" required></label>
+   <label class="hf-field">Payment amount (৳) *<input class="hf-input" id="paymentAmount" type="number" min="0.01" step="0.01" required></label>
+   <label class="hf-field">Payment channel *<select class="hf-select" id="paymentMethod" required><option value="cash">Cash</option><option value="bank_transfer">Bank transfer</option><option value="bkash">bKash</option><option value="nagad">Nagad</option><option value="rocket">Rocket</option><option value="cheque">Cheque</option><option value="other">Other</option></select></label>
+   <label class="hf-field">Paid from account<input class="hf-input" id="paymentAccount" maxlength="180" placeholder="Cash drawer, bank name or wallet"></label>
+   <label class="hf-field">Transaction / cheque reference<input class="hf-input" id="paymentReference" maxlength="180" placeholder="Required for non-cash payments"></label>
+   <label class="hf-field hf-span-2">Payment notes<input class="hf-input" id="paymentNotes" maxlength="1200" placeholder="Optional internal note"></label>
+  </div>
+  <div class="hf-supplier-lines-head"><div><h3>Allocate payment to bills</h3><p>Leave an allocation blank to keep that part as supplier advance.</p></div><span class="hf-section-context" id="allocationSupplierHint">Choose a supplier to load confirmed bills</span></div>
+  <div id="paymentAllocations" class="hf-payment-allocations"><div class="hf-empty-state">Choose a supplier to view outstanding invoices.</div></div>
+  <div class="hf-purchase-total-panel hf-payment-total-panel">
+   <div><span>Payment amount</span><strong id="paymentAmountPreview">৳0</strong></div><div><span>Allocated to bills</span><strong id="paymentAllocatedPreview">৳0</strong></div><div><span>Unallocated advance</span><strong id="paymentAdvancePreview">৳0</strong></div>
+  </div>
+  <label class="hf-payment-confirm"><input type="checkbox" id="confirmPaymentSent"><span><strong>I confirm this payment has actually been sent to the supplier.</strong><small>This action records a confirmed cash outflow. It will appear in Finance &amp; Cash Flow and cannot be deleted.</small></span></label>
+  <p class="hf-form-error" id="paymentFormError" role="alert"></p>
+  <div class="hf-supplier-form-actions"><button class="hf-button hf-button-primary" id="saveSupplierPaymentBtn" type="submit" disabled>Confirm and record payment</button><button class="hf-button hf-button-secondary" id="resetSupplierPayment" type="button">Clear form</button></div>
+ </form>
+</section>
+
+<section class="hf-card hf-card-pad">
+ <div class="hf-section-head"><div><p class="page-eyebrow">SUPPLIER TRANSACTIONS</p><h2>Payment history</h2><p>Every confirmed supplier payment, with channel, reference and allocated bills.</p></div><button class="hf-button hf-button-secondary hf-button-small" id="exportPaymentsBtn" type="button">Export CSV</button></div>
+ <div class="hf-toolbar"><input class="hf-input" id="paymentSearch" type="search" placeholder="Search payment, supplier or transaction reference"><select class="hf-select" id="paymentMethodFilter"><option value="">All payment channels</option><option value="cash">Cash</option><option value="bank_transfer">Bank transfer</option><option value="bkash">bKash</option><option value="nagad">Nagad</option><option value="rocket">Rocket</option><option value="cheque">Cheque</option><option value="other">Other</option></select></div>
+ <div class="hf-table-wrap" tabindex="0" role="region" aria-label="Supplier payment history">
+  <table class="hf-table hf-supplier-table"><thead><tr><th>Payment ID / Date</th><th>Supplier</th><th>Channel / Reference</th><th>Amount</th><th>Allocated</th><th>Advance</th><th>Status</th><th>Action</th></tr></thead><tbody id="paymentsTableBody"><tr><td colspan="8" class="hf-loading">Loading payment history…</td></tr></tbody></table>
+ </div>
+</section>
+
+<section class="hf-card hf-card-pad">
+ <div class="hf-section-head"><div><p class="page-eyebrow">ACCOUNTS PAYABLE</p><h2>Outstanding supplier bills</h2><p>Review due dates, amounts paid and outstanding balances.</p></div></div>
+ <div class="hf-toolbar"><select class="hf-select" id="billAgingFilter"><option value="">All bill statuses</option><option value="overdue">Overdue only</option><option value="not_due">Not yet due</option><option value="part_paid">Partially paid</option><option value="unpaid">Unpaid</option></select></div>
+ <div class="hf-table-wrap" tabindex="0" role="region" aria-label="Outstanding supplier invoices">
+  <table class="hf-table hf-supplier-table"><thead><tr><th>Bill / Supplier</th><th>Invoice date</th><th>Due date</th><th>Total</th><th>Paid</th><th>Outstanding</th><th>Age</th></tr></thead><tbody id="payablesTableBody"><tr><td colspan="7" class="hf-loading">Loading supplier payables…</td></tr></tbody></table>
+ </div>
+</section>
+
+<section class="hf-card hf-card-pad" id="supplierLedgerSection">
+ <div class="hf-section-head"><div><p class="page-eyebrow">SUPPLIER STATEMENT</p><h2>Supplier ledger</h2><p>Running balance across opening balances, confirmed bills, payments and credit notes.</p></div><button class="hf-button hf-button-secondary hf-button-small" id="exportLedgerBtn" type="button">Export statement CSV</button></div>
+ <div class="hf-toolbar hf-ledger-filters"><select class="hf-select" id="ledgerSupplierFilter"><option value="">All suppliers</option></select><label>From<input class="hf-input" id="ledgerDateFrom" type="date"></label><label>To<input class="hf-input" id="ledgerDateTo" type="date"></label><button class="hf-button hf-button-secondary hf-button-small" id="clearLedgerFilters" type="button">Clear dates</button></div>
+ <div class="hf-table-wrap" tabindex="0" role="region" aria-label="Supplier ledger statement">
+  <table class="hf-table hf-supplier-table"><thead><tr><th>Date</th><th>Supplier</th><th>Transaction</th><th>Reference</th><th>Increase</th><th>Decrease</th><th>Running balance</th></tr></thead><tbody id="supplierLedgerTableBody"><tr><td colspan="7" class="hf-loading">Loading supplier ledger…</td></tr></tbody></table>
+ </div>
+ <p class="hf-data-note">Positive balance means payable to supplier. A negative balance means the supplier holds an advance or credit.</p>
+</section>
+</main></div>
+<script defer src="./i18n.js?v=20261031-customer-messages-nav-v1"></script>
+<script defer src="./shared.js?v=20261031-customer-messages-nav-v1"></script>
+<script defer src="./supplier-management.js?v=20261031-supplier-v1"></script>
+<script defer src="./app.js?v=20261031-products-workspace-v1"></script>
+</body></html>
