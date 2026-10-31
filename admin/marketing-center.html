@@ -16,7 +16,7 @@
 <div class="hf-marketing-policy"><span aria-hidden="true">ⓘ</span><div><strong>Customer service only.</strong> This page is strictly for order updates and customer support. Your existing Google Sheets order-confirmation email automation is unchanged.</div></div>
 <section class="hf-marketing-stats" aria-label="Customer messaging overview">
  <article class="hf-marketing-stat"><span>Active CRM customers</span><strong id="marketingStatsActive">—</strong><small>Not blocked, archived or anonymized</small></article>
- <article class="hf-marketing-stat"><span>WhatsApp contacts available</span><strong id="marketingStatsWhatsApp">—</strong><small>Contacts available for customer replies</small></article>
+ <article class="hf-marketing-stat"><span>WhatsApp reply-ready contacts</span><strong id="marketingStatsWhatsApp">—</strong><small>Contacts available for customer replies</small></article>
  <article class="hf-marketing-stat"><span>Unique order emails</span><strong id="marketingStatsOrderEmails">—</strong><small>Duplicate addresses shown once</small></article>
  <article class="hf-marketing-stat"><span>Saved messages</span><strong id="marketingStatsCampaigns">—</strong><small>Previously prepared messages</small></article>
 </section>
@@ -31,7 +31,7 @@
    <section class="hf-card hf-marketing-card">
     <div class="hf-marketing-section-head"><div><p class="hf-marketing-eyebrow">01 / MESSAGE</p><h2>Compose customer message</h2><p>Use this page only for order updates and customer support.</p></div><span class="hf-marketing-step">01</span></div>
     <div class="hf-marketing-channel-picker" role="group" aria-label="Communication channel">
-     <button type="button" data-marketing-channel="whatsapp"><span class="hf-channel-icon hf-channel-whatsapp">◔</span><span><strong>WhatsApp</strong><small>CSV handoff · No WhatsApp API</small></span><i>✓</i></button>
+     <button type="button" data-marketing-channel="whatsapp"><span class="hf-channel-icon hf-channel-whatsapp">◔</span><span><strong>WhatsApp</strong><small>Manual customer chats · No API</small></span><i>✓</i></button>
      <button type="button" class="is-active" data-marketing-channel="email"><span class="hf-channel-icon hf-channel-email">✉</span><span><strong>Email</strong><small>Gmail API · Halal Food sender</small></span><i>✓</i></button>
     </div>
     <div class="hf-marketing-channel-note" id="marketingChannelNote">Select previous-order email addresses, write a subject and customer-service message, then send through Halal Food Gmail.</div>
@@ -75,7 +75,7 @@
    <section class="hf-card hf-marketing-card hf-marketing-setup">
     <p class="hf-marketing-eyebrow">CHANNELS</p><h3>WhatsApp Business</h3>
     <div class="hf-marketing-readiness"><span class="hf-readiness-dot is-ready"></span><div><strong>CSV audience export</strong><small>Manual chat links · No automatic sending</small></div></div>
-    <a class="hf-marketing-external" href="https://faq.whatsapp.com/861663048350950/" target="_blank" rel="noopener">WhatsApp Broadcast guide ↗</a>
+    <small class="hf-marketing-muted">Each selected customer chat opens separately. The message is sent manually in WhatsApp Business.</small>
     <div class="hf-marketing-setup-divider"></div>
     <h3>Customer email</h3>
     <div class="hf-marketing-readiness"><span class="hf-readiness-dot is-pending" id="mktEmailReadyDot"></span><div><strong id="mktEmailReadyText">Gmail connection status</strong><small id="mktEmailReadyDetail">Secure Gmail OAuth credentials are stored server-side. This sender is restricted to customer-service and order-update messages.</small></div></div>
