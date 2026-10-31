@@ -46,7 +46,7 @@ const FEATURES = {
       "admin/pos.html", "admin/pos.js", "admin/pos.css", "admin/shared.js", "admin/app.js",
       "supabase/migrations/20261031044407_create_offline_pos_sales.sql",
       "supabase/migrations/20261031045058_harden_offline_pos_with_invoker_rls.sql",
-      "supabase/migrations/20261031045700_interactive_pos_simple_sale_form.sql"
+      "supabase/migrations/20261031051527_interactive_pos_simple_sale_form.sql"
     ],
     anchors: [
       { file: "admin/pos.js", names: ["selectProduct", "saveSale", "refresh"] },

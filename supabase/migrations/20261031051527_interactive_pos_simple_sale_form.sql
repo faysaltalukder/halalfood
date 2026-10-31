@@ -1,27 +1,6 @@
--- Applied to Supabase as migration 20261031044407_create_offline_pos_sales.
--- Offline POS sales use the central Orders, Inventory and Finance ledgers.
-ALTER TABLE public.orders
-  DROP CONSTRAINT IF EXISTS orders_payment_method_check;
-ALTER TABLE public.orders
-  ADD CONSTRAINT orders_payment_method_check
-  CHECK (payment_method = ANY (ARRAY[
-    'cash'::text, 'mobile_banking'::text, 'bank_transfer'::text,
-    'cash_on_delivery'::text, 'other'::text
-  ]));
-
-ALTER TABLE public.inventory_movements
-  DROP CONSTRAINT IF EXISTS inventory_movements_movement_type_check;
-ALTER TABLE public.inventory_movements
-  ADD CONSTRAINT inventory_movements_movement_type_check
-  CHECK (movement_type = ANY (ARRAY[
-    'opening_balance'::text, 'receipt'::text, 'adjustment_increase'::text,
-    'adjustment_decrease'::text, 'order_reserve'::text,
-    'order_cancel_release'::text, 'pos_sale'::text
-  ]));
-
-COMMENT ON COLUMN public.orders.source IS
-  'Order origin, including website and offline_pos. Offline POS imports are regular order records, not website conversion events.';
-
+-- Update the POS RPC for direct manual offline sales.
+-- The parent migration already created the tables and initial RPC; this migration
+-- only replaces the transaction function while retaining its MFA/RLS protections.
 CREATE OR REPLACE FUNCTION public.create_offline_pos_sale(p_sale jsonb)
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -273,12 +252,9 @@ BEGIN
 END;
 $function$;
 
-REVOKE ALL ON FUNCTION public.create_offline_pos_sale(jsonb) FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.create_offline_pos_sale(jsonb) TO authenticated;
 COMMENT ON FUNCTION public.create_offline_pos_sale(jsonb) IS
   'MFA-gated interactive Halal Food POS transaction. Stores exact sale date/time, customer, selling price, supported kg/liter fractional quantity, stock movement and linked finance income. Uses SECURITY INVOKER and admin RLS. Does not emit website purchase tracking events.';
 
--- Keep the hardened caller-privilege model and explicit RPC grants.
 ALTER FUNCTION public.create_offline_pos_sale(jsonb) SECURITY INVOKER;
 REVOKE ALL ON FUNCTION public.create_offline_pos_sale(jsonb) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.create_offline_pos_sale(jsonb) TO authenticated;
