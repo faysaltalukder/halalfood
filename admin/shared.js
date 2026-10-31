@@ -140,7 +140,7 @@ async function fetchEvents(range=null,limit=15000){
  },limit);
 }
 async function fetchProducts(limit=2000){
- const products=await paginateQuery(()=>client.from("products").select("id,name,slug,category,category_slug,price,display_price,unit_type,image_url,stock_quantity,is_active,is_featured,sort_order,short_description,full_description,seo_title,seo_description,cms_created,cms_managed,created_at,updated_at").order("sort_order",{ascending:true}).order("name",{ascending:true}).order("id",{ascending:true}),limit);
+ const products=await paginateQuery(()=>client.from("products").select("id,name,slug,sku,category,category_slug,price,display_price,unit_type,image_url,stock_quantity,is_active,is_featured,sort_order,short_description,full_description,seo_title,seo_description,cms_created,cms_managed,created_at,updated_at").order("sort_order",{ascending:true}).order("name",{ascending:true}).order("id",{ascending:true}),limit);
  const costs=await paginateQuery(()=>client.from("admin_product_costs").select("product_id,cost_price,packaging_cost,low_stock_threshold,updated_by,updated_at").order("product_id",{ascending:true}),Math.max(limit,1000));
  const costById=new Map(costs.map(row=>[row.product_id,row]));
  return products.map(product=>{
@@ -217,10 +217,10 @@ function navPictureIcon(name){
 
 function makeShell(){
  adminApp.classList.add("admin-app");
- const activePage=pageName==="messenger"?"messenger":pageName;
+ const activePage=pageName==="messenger"?"messenger":(pageName.startsWith("products-")?"products":pageName);
  const menuGroups=[
   {label:"WORKSPACE",items:[["overview","overview","Overview","dashboard home start"]]},
-  {label:"STORE MANAGEMENT",items:[["pos","pos","POS Management","offline pos point of sale offline sales import cash register"],["orders","orders","Orders","order order management customer orders"],["incomplete-orders","orders","Incomplete Orders","incomplete checkout abandoned cart order recovery leads"],["operations","operations","Operations","operation packing fulfillment"],["products","products","Products","product inventory stock"],["content","content","Website Content","content pages blog seo"]]},
+  {label:"STORE MANAGEMENT",items:[["pos","pos","POS Management","offline pos point of sale offline sales import cash register"],["orders","orders","Orders","order order management customer orders"],["incomplete-orders","orders","Incomplete Orders","incomplete checkout abandoned cart order recovery leads"],["operations","operations","Operations","operation packing fulfillment"],["products","products","Products","product inventory stock sku barcode scanner reviews ratings",[['products-add','plus-circle','Add Product','add new create product'],['products','layers','All Products','all products catalogue inventory'],['products-barcode','barcode','Barcode Generation','barcode generate print scan qr'],['products-reviews','star','Product Reviews','customer product reviews ratings moderation']]],["content","content","Website Content","content pages blog seo"]]},
   {label:"CUSTOMERS & MESSAGES",items:[["messages","messages","WhatsApp Inbox","whatsapp inbox customer chat messages"],["messenger","messenger","Messenger Inbox","facebook messenger messages social inbox"],["facebook-publishing","messenger","Facebook Publishing","facebook publishing posts social media schedule"],["meta-ads-review","finance","Meta Ads Review","meta ads advertising campaign paid media copy review draft"],["youtube-publishing","video","YouTube Publishing","youtube channel videos upload schedule"],["customers","customers","Customers","customer contact audience"]]},
   {label:"INSIGHTS & FINANCE",items:[["analytics","analytics","Analytics","analytics insights website traffic marketing"],["finance","finance","Finance & Cash Flow","finance expenses income bookkeeping cash"],["reports","reports","Reports","report export download csv"]]},
   {label:"SYSTEM",items:[["website-publisher","settings","Website Publisher","website publisher deploy code review approve publish"],["tracking","sliders","Tracking Controls","tracking meta pixel conversions api capi google analytics event routing"],["settings","settings","Settings & Security","settings security preferences access"]]}
@@ -247,7 +247,14 @@ function makeShell(){
   return '<button type="button" class="admin-nav-fav-toggle" data-nav-fav="'+esc(id)+'" aria-pressed="'+String(active)+'" aria-label="'+esc(verb)+'" title="'+esc(verb)+'">'+shellIcon("star")+'</button>';
  };
  const renderNavigation=()=>menuGroups.map(group=>{
-  const links=group.items.map(item=>'<div class="admin-nav-item" data-nav-item data-nav-keys="'+esc(item[3])+'"><a class="admin-nav-link '+(item[0]===activePage?"active":"")+'" href="./'+item[0]+'.html" '+(item[0]===activePage?'aria-current="page"':'')+'><span class="nav-icon nav-icon-'+esc(item[0])+'">'+navPictureIcon(item[0])+'</span><span class="admin-nav-text">'+esc(item[2])+'</span></a>'+favoriteStar(item[0],item[2])+'</div>').join("");
+  const links=group.items.map(item=>{
+   if(item[0]==="products"&&Array.isArray(item[4])){
+    const children=item[4],open=children.some(child=>child[0]===pageName);
+    const childLinks=children.map(child=>'<a class="admin-nav-child-link '+(child[0]===pageName?"active":"")+'" href="./'+child[0]+'.html" '+(child[0]===pageName?'aria-current="page"':'')+'><span class="admin-nav-child-icon">'+shellIcon(child[1])+'</span><span>'+esc(child[2])+'</span></a>').join("");
+    return '<div class="admin-nav-item admin-nav-parent-item" data-nav-item data-nav-keys="'+esc(item[3])+'"><div class="admin-nav-parent-row"><button class="admin-nav-link admin-nav-parent-toggle '+(open?"active":"")+'" type="button" data-nav-expand="products" aria-expanded="'+String(open)+'"><span class="nav-icon nav-icon-products">'+navPictureIcon("products")+'</span><span class="admin-nav-text">Products</span><span class="admin-nav-expand-icon" aria-hidden="true">'+shellIcon("chevron")+'</span></button>'+favoriteStar(item[0],item[2])+'</div><div class="admin-nav-children" data-nav-children="products" '+(open?"":"hidden")+'>'+childLinks+'</div></div>';
+   }
+   return '<div class="admin-nav-item" data-nav-item data-nav-keys="'+esc(item[3])+'"><a class="admin-nav-link '+(item[0]===activePage?"active":"")+'" href="./'+item[0]+'.html" '+(item[0]===activePage?'aria-current="page"':'')+'><span class="nav-icon nav-icon-'+esc(item[0])+'">'+navPictureIcon(item[0])+'</span><span class="admin-nav-text">'+esc(item[2])+'</span></a>'+favoriteStar(item[0],item[2])+'</div>';
+  }).join("");
   return '<section class="admin-nav-group" data-nav-group aria-label="'+esc(group.label)+'"><div class="admin-nav-label">'+esc(group.label)+'</div><div class="admin-nav-links">'+links+'</div></section>';
  }).join("");
  const metadata=currentUser?.user_metadata||{};
@@ -399,7 +406,7 @@ function makeShell(){
  navSearchInput?.addEventListener("keydown",event=>{
   const links=[...sidebar.querySelectorAll(".admin-nav-item:not([hidden]) .admin-nav-link")];
   const first=links[0];
-  if(event.key==="Enter"&&String(navSearchInput.value||"").trim()&&first){event.preventDefault();location.href=first.href;}
+  if(event.key==="Enter"&&String(navSearchInput.value||"").trim()&&first){event.preventDefault();const target=first.matches("[data-nav-expand]")?first.closest(".admin-nav-parent-row")?.parentElement?.querySelector(".admin-nav-child-link"):first;if(target?.href)location.href=target.href;}
   else if(event.key==="ArrowDown"&&first){event.preventDefault();first.focus();}
   else if(event.key==="Escape"&&navSearchInput.value){event.preventDefault();clearMenuSearch();}
  });
@@ -414,6 +421,14 @@ function makeShell(){
   else links[Math.max(0,Math.min(links.length-1,index+(event.key==="ArrowDown"?1:-1)))]?.focus();
  });
  sidebar.addEventListener("click",event=>{
+  const expand=event.target.closest?.("[data-nav-expand]");
+  if(expand){
+   const box=sidebar.querySelector('[data-nav-children="'+expand.dataset.navExpand+'"]');
+   const next=expand.getAttribute("aria-expanded")!=="true";
+   expand.setAttribute("aria-expanded",String(next));
+   if(box)box.hidden=!next;
+   return;
+  }
   const star=event.target.closest?.("[data-nav-fav]");
   if(star){event.preventDefault();event.stopPropagation();toggleFavorite(star.dataset.navFav);return;}
   const remove=event.target.closest?.("[data-favorite-remove]");
@@ -424,7 +439,7 @@ function makeShell(){
  });
  menuToggle?.addEventListener("click",()=>sidebar.classList.contains("open")?closeSidebar():openSidebar());
  sidebarBackdrop?.addEventListener("click",()=>closeSidebar(true));
- sidebar.querySelectorAll(".admin-nav-link,.admin-favorite-link").forEach(link=>link.addEventListener("click",()=>{if(window.innerWidth<=900)closeSidebar();}));
+ sidebar.querySelectorAll(".admin-nav-link,.admin-nav-child-link,.admin-favorite-link").forEach(link=>link.addEventListener("click",()=>{if(window.innerWidth<=900)closeSidebar();}));
  window.addEventListener("resize",()=>{if(window.innerWidth>900)closeSidebar();});
  document.addEventListener("keydown",event=>{
   const target=event.target;

@@ -1226,3 +1226,24 @@ html[data-admin-theme="dark"] .hf-chart-foot{color:#AAB9CC}
  html[data-admin-theme="light"] .admin-nav-link,
  html[data-admin-theme="dark"] .admin-nav-link{transition:none!important}
 }
+
+/* Products submenu: compact, clear and touch friendly. */
+.admin-nav-parent-row{display:flex;align-items:center;gap:3px;min-width:0}
+.admin-nav-parent-toggle{width:100%;border:0;text-align:left;cursor:pointer}
+.admin-nav-parent-toggle .admin-nav-expand-icon{margin-left:auto;display:grid;place-items:center;transition:transform .16s ease;color:currentColor;opacity:.7}
+.admin-nav-parent-toggle[aria-expanded="true"] .admin-nav-expand-icon{transform:rotate(180deg)}
+.admin-nav-parent-toggle .admin-nav-expand-icon .hf-shell-icon{width:14px;height:14px}
+.admin-nav-children{display:grid;gap:3px;margin:4px 0 5px 15px;padding:4px 0 4px 13px;border-left:1px solid rgba(155,166,185,.28)}
+.admin-nav-children[hidden]{display:none}
+.admin-nav-child-link{display:flex;align-items:center;gap:9px;min-height:35px;padding:7px 10px;border-radius:9px;color:#8795AA;text-decoration:none;font-size:11px;font-weight:650;transition:background .15s ease,color .15s ease}
+.admin-nav-child-link:hover{background:rgba(201,123,61,.1);color:#F4D1B2}
+.admin-nav-child-link.active{background:rgba(201,123,61,.16);color:#F5D3B6;box-shadow:inset 2px 0 0 #C97B3D}
+.admin-nav-child-icon{display:grid;place-items:center;width:16px;height:16px;flex:0 0 16px;color:#C69A76}
+.admin-nav-child-icon .hf-shell-icon{width:15px;height:15px;stroke-width:1.8}
+html[data-admin-theme="light"] .admin-nav-children{border-left-color:#E4D8C9}
+html[data-admin-theme="light"] .admin-nav-child-link{color:#706F7F}
+html[data-admin-theme="light"] .admin-nav-child-link:hover{background:#F7EEE5;color:#8D522E}
+html[data-admin-theme="light"] .admin-nav-child-link.active{background:#F4E9DF;color:#754628;box-shadow:inset 2px 0 0 #C97B3D}
+html[data-admin-theme="light"] .admin-nav-child-icon{color:#A96D43}
+.admin-nav-parent-toggle.active{color:#F0CBAA}
+html[data-admin-theme="light"] .admin-nav-parent-toggle.active{color:#8D522E}
