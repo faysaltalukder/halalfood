@@ -16,6 +16,11 @@ const required = [
   "supabase/functions/order-track/index.ts",
   "supabase/functions/youtube-publishing/index.ts",
   "supabase/functions/meta-ads-review/index.ts",
+  "admin/pos.html",
+  "admin/pos.css",
+  "admin/pos.js",
+  "supabase/migrations/20261031044407_create_offline_pos_sales.sql",
+  "scripts/admin-pos-check.mjs",
 ];
 
 for (const path of required) {

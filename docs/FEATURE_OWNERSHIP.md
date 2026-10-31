@@ -13,6 +13,7 @@ The file is one IIFE that waits for `window.HFAdminReady`, receives shared servi
 | Business overview | `initOverview()` | `trendCounts`, `chartAxisOptions`, `orderStatusCounts`, `stageActors`, `topProducts`, `visitorSessionKey`, `formatSeconds`, `buildPageExperience`, `buildSessionJourneys`, `buildProductPerformance`, `renderTopProducts`, `renderFunnel`, `renderRecentOrders`, `fetchOverviewOrderSummary`, `renderActionCenter` |
 | Website analytics | `initAnalytics()` | Page-level analytics refresh and chart rendering; shares event and chart helpers with overview |
 | Orders and order security | `initOrders()` | `refreshSecuritySignals`, `refreshSecurityReviewQueue`, `render`, `refresh`, order detail/fulfilment handlers |
+| Offline POS import | `window.HFPosInit()` in `admin/pos.js` | `parseCsv`, `buildGroups`, `validatePreview`, `runImport`; calls the atomic `create_offline_pos_sale` RPC |
 | Single courier booking | Order action in `initOrders()` | `inferRedxDistrict`, `orderPackedWeightKg`, `updateConfirmBookProviderFields`, `loadConfirmBookRedxAreas`, `renderConfirmBookItems`, `refreshConfirmBookItems`, `openConfirmBook`, `normalizePhone`, `whatsappUrl`, `courierLookupPhone`, `courierHistoryPercent`, `courierHistoryHumanize`, `showCourierHistory` |
 | Order print/export and bulk actions | Orders page | `printPackingSlip`, `orderCustomerAvatar`, `updateBulkSelectionUi`, `printSelectedOrders`, `exportSelectedOrders`, `openBulkStatusDialog`, `openBulkAssignDialog`, `deleteSelectedOrders`, `bulkCourierEligibleOrders`, `renderBulkCourierRows`, `openBulkCourierDialog`, `sendSelectedOrdersToCourier` |
 | Product and category management | `initProducts()` | `uploadImage`, `stockState`, `fillCategories`, `render`, `refresh`, `inferShippingWeightFromUnit`, `openProduct`, `openCategory` |
@@ -78,6 +79,13 @@ Do not remove legacy static product files until every fallback, search, SEO and 
 ### `js/admin-cms.js` — CMS integration
 
 Product/category/blog CMS: `loadAll`, `renderProducts`, `renderCategories`, `renderPosts`, `editProduct`, `saveProduct`, `toggleProduct`, `editCategory`, `saveCategory`, `toggleCategory`, `editPost`, `savePost`, `togglePost`. Uses the existing MFA-verified admin session; do not create a second privileged client.
+
+## Offline POS data contract
+
+- One CSV row represents one product line; rows sharing `sale_reference` form one receipt.
+- The RPC writes `orders` + `order_items`, optionally decrements tracked stock and records `inventory_movements.pos_sale`, and creates a linked `admin_finance_entries` income record.
+- Payment received = Confirmed finance entry; not received = Draft. The import does not emit website Purchase events.
+- Duplicate `POS-{SALE_REFERENCE}` order numbers are skipped; conflicting non-POS references are rejected.
 
 ## Backend ownership
 

@@ -38,6 +38,29 @@ const FEATURES = {
     tests: ["scripts/architecture-check.mjs", "scripts/admin-phase12-check.mjs"],
     guardrails: ["Preserve current checkout fields, validation, COD totals and order ID format.", "Keep consent timestamps and consent method semantics intact.", "Do not change inventory reservation/release or Google Sheets fallback semantics without a separate test."]
   },
+  pos: {
+    title: "Offline POS sales import",
+    purpose: "Import in-store/offline sales into the central order, inventory and finance ledgers with preview and duplicate protection.",
+    readFirst: ["admin/pos.html", "admin/pos.js", "admin/app.js"],
+    files: [
+      "admin/pos.html", "admin/pos.js", "admin/pos.css", "admin/shared.js", "admin/app.js",
+      "supabase/migrations/20261031044407_create_offline_pos_sales.sql"
+    ],
+    anchors: [
+      { file: "admin/pos.js", names: ["parseCsv", "buildGroups", "validatePreview", "runImport"] },
+      { file: "admin/app.js", names: ["doInit"] }
+    ],
+    tables: ["products", "orders", "order_items", "inventory_movements", "customers", "admin_finance_entries"],
+    functions: ["create_offline_pos_sale"],
+    tests: ["scripts/admin-pos-check.mjs", "scripts/architecture-check.mjs"],
+    guardrails: [
+      "Require an MFA-verified Halal Food admin for every import.",
+      "Keep one receipt/reference idempotent; never create duplicate sale or income records.",
+      "A sale writes its order, items, optional stock adjustment and linked income in one database transaction.",
+      "Never send offline POS imports as website Purchase/GA ecommerce events.",
+      "Do not silently deduct stock if the operator has already adjusted inventory."
+    ]
+  },
   orders: {
     title: "Admin order management",
     purpose: "Order list/detail, status changes, customer details, packing, finance and order security.",

@@ -10,6 +10,7 @@ From the repository root:
 node scripts/feature-context.mjs --list
 node scripts/feature-context.mjs catalog
 node scripts/feature-context.mjs checkout
+node scripts/feature-context.mjs pos
 node scripts/feature-context.mjs orders
 node scripts/feature-context.mjs courier
 node scripts/feature-context.mjs tracking
@@ -35,6 +36,7 @@ The command prints the feature purpose, first files to inspect, related files, l
 |---|---|---|
 | `catalog` | `js/live-catalog.js`, `js/products-index.js` | — |
 | `checkout` | `js/cart.js`, `js/main.js` | `order-sync`, `incomplete-checkout` |
+| `pos` | `admin/pos.html`, `admin/pos.js` | `create_offline_pos_sale` (admin RPC) |
 | `orders` | `admin/orders.html`, `admin/app.js` | `order-sync`, `order-track`, `order-security-admin` |
 | `courier` | `admin/operations.js`, `courier-integration` | `courier-integration`, `courier-fraud-check` |
 | `tracking` | `admin/tracking.js`, `analytics-ingest` | `analytics-ingest` |
