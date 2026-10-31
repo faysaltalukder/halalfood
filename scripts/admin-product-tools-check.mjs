@@ -56,8 +56,15 @@ check(barcodePage.includes("html5-qrcode@2.3.8"), "Barcode page must load camera
 check(barcodeLogic.includes('format:"CODE128"'), "Barcode page must render Code 128 product barcodes.");
 check(barcodeLogic.includes("product-lookup.html?sku="), "Customer QR must resolve to the public product lookup page.");
 check(barcodeLogic.includes("window.Html5Qrcode"), "Barcode page must support camera scanning.");
+check(barcodeLogic.includes("await window.HFAdminReady"), "Barcode module must wait for the verified admin session instead of capturing HFAdmin too early.");
+check(barcodeLogic.includes('H.client.from("products")'), "Barcode loader must query the product catalogue directly.");
+check(!barcodeLogic.includes("H.fetchProducts()"), "Barcode loader must not wait for unrelated private product-cost records.");
+check(barcodePage.includes('id="barcodeLoadStatus"'), "Barcode page must show a clear product-loading status and failure state.");
+check(!barcodePage.includes('id="barcodeProductTable"'), "Barcode page must use one simple product picker instead of a duplicate product directory.");
+check(barcodePage.includes("20261031-barcode-simple-v2"), "Barcode page must use a fresh cache key for the corrected loader.");
+
 check(barcodeLogic.includes("barcodeScanInput"), "Barcode page must support scanner/keyboard SKU input.");
-check(barcodeLogic.includes("selected.name") && barcodeLogic.includes("selected.price"), "Barcode labels must show product identity and price.");
+check(barcodeLogic.includes("selected.name") && barcodeLogic.includes("moneyFor(selected)"), "Barcode labels must show product identity and current price.");
 check(publicLookup.includes('id="productLookup"') && lookupLogic.includes("price,display_price"), "Public QR lookup must show live product price and details.");
 check(lookupLogic.includes('is_active:"eq.true"'), "Public QR lookup must hide unpublished products.");
 check(!lookupLogic.includes("stock_quantity:product.stock_quantity"), "Public QR page must not expose exact inventory quantity.");
