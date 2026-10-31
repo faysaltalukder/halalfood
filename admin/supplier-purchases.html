@@ -57,7 +57,7 @@
 </section>
 
 <section class="hf-card hf-card-pad">
- <div class="hf-section-head"><div><p class="page-eyebrow">PURCHASE REGISTER</p><h2>Purchase orders</h2><p>Track ordered quantities, receipts and supplier invoice links.</p></div><div class="hf-inline-actions"><button class="hf-button hf-button-secondary hf-button-small" id="exportPurchasesBtn" type="button">Export CSV</button><button class="hf-button hf-button-secondary hf-button-small" id="openBillDialogBtn" type="button">＋ Record supplier bill</button></div></div>
+ <div class="hf-section-head"><div><p class="page-eyebrow">PURCHASE REGISTER</p><h2>Purchase orders</h2><p>Track ordered quantities, receipts and supplier invoice links.</p></div><div class="hf-inline-actions"><button class="hf-button hf-button-secondary hf-button-small" id="exportPurchasesBtn" type="button">Export CSV</button><button class="hf-button hf-button-secondary hf-button-small" id="openCreditNoteBtn" type="button">＋ Supplier credit</button><button class="hf-button hf-button-secondary hf-button-small" id="openBillDialogBtn" type="button">＋ Record supplier bill</button></div></div>
  <div class="hf-toolbar"><input class="hf-input" id="purchaseSearch" type="search" placeholder="Search PO, supplier, product or reference"><select class="hf-select" id="purchaseStatusFilter"><option value="">All PO statuses</option><option value="draft">Draft</option><option value="ordered">Ordered</option><option value="partially_received">Partially received</option><option value="received">Received</option><option value="cancelled">Cancelled</option></select></div>
  <div class="hf-table-wrap" tabindex="0" role="region" aria-label="Purchase orders table; scroll horizontally on smaller screens">
   <table class="hf-table hf-supplier-table"><thead><tr><th>Purchase ID / Date</th><th>Supplier</th><th>Products / Qty</th><th>Order value</th><th>Receiving</th><th>Supplier bill</th><th>Status</th><th>Actions</th></tr></thead><tbody id="purchaseTableBody"><tr><td colspan="8" class="hf-loading">Loading purchase orders…</td></tr></tbody></table>
@@ -69,7 +69,35 @@
  <div class="hf-table-wrap" tabindex="0" role="region" aria-label="Supplier bill register">
   <table class="hf-table hf-supplier-table"><thead><tr><th>Bill / Invoice</th><th>Supplier</th><th>Invoice date</th><th>Due date</th><th>Bill amount</th><th>Paid</th><th>Outstanding</th><th>Status</th><th>Action</th></tr></thead><tbody id="supplierBillsTableBody"><tr><td colspan="9" class="hf-loading">Loading supplier bills…</td></tr></tbody></table>
  </div>
+
 </section>
+
+<section class="hf-card hf-card-pad">
+ <div class="hf-section-head"><div><p class="page-eyebrow">SUPPLIER RETURNS &amp; CREDITS</p><h2>Supplier credit notes</h2><p>Record supplier-approved credits for returned, damaged or short-supplied goods.</p></div></div>
+ <div class="hf-table-wrap" tabindex="0" role="region" aria-label="Supplier credit notes">
+  <table class="hf-table hf-supplier-table"><thead><tr><th>Credit note</th><th>Supplier</th><th>Date</th><th>Reason</th><th>Amount</th><th>Linked bill</th><th>Status</th><th>Action</th></tr></thead><tbody id="supplierCreditNotesBody"><tr><td colspan="8" class="hf-loading">Loading supplier credits…</td></tr></tbody></table>
+ </div>
+
+
+<dialog id="creditNoteDialog" class="hf-dialog">
+ <form id="creditNoteForm" class="hf-dialog-inner">
+  <div class="hf-dialog-head"><div><p class="hf-dialog-title-tag">SUPPLIER CREDIT NOTE</p><h2>Record supplier credit</h2><p>Use this for a verified supplier credit, purchase return or invoice adjustment.</p></div><button class="hf-button hf-button-secondary hf-dialog-close" data-close-supplier-dialog="creditNoteDialog" type="button">×</button></div>
+  <div class="hf-supplier-form-grid">
+   <label class="hf-field">Supplier *<select class="hf-select" id="creditSupplier" required><option value="">Choose supplier</option></select></label>
+   <label class="hf-field">Credit date *<input class="hf-input" id="creditDate" type="date" required></label>
+   <label class="hf-field">Linked supplier bill<select class="hf-select" id="creditBill"><option value="">No linked bill</option></select></label>
+   <label class="hf-field">Linked purchase order<select class="hf-select" id="creditPurchaseOrder"><option value="">No linked purchase order</option></select></label>
+   <label class="hf-field">Credit amount (৳) *<input class="hf-input" id="creditAmount" type="number" min="0.01" step="0.01" required></label>
+   <label class="hf-field">Supplier credit reference<input class="hf-input" id="creditReference" maxlength="180"></label>
+   <label class="hf-field hf-span-2">Reason *<input class="hf-input" id="creditReason" maxlength="500" required placeholder="Returned goods, damaged items, price adjustment…"></label>
+   <label class="hf-field">Record status<select class="hf-select" id="creditStatus"><option value="confirmed">Confirmed — apply to payable</option><option value="draft">Draft — review first</option></select></label>
+   <label class="hf-field">Notes<input class="hf-input" id="creditNotes" maxlength="1200"></label>
+  </div>
+  <p class="hf-data-note">Confirm only after the supplier has accepted the return or credit. A confirmed credit reduces the supplier balance; it does not automatically put goods back into stock.</p>
+  <p class="hf-form-error" id="creditFormError" role="alert"></p>
+  <div class="hf-dialog-actions"><button class="hf-button hf-button-secondary" data-close-supplier-dialog="creditNoteDialog" type="button">Cancel</button><button class="hf-button hf-button-primary" id="saveCreditNoteBtn" type="submit">Save supplier credit</button></div>
+ </form>
+</dialog>
 
 <dialog id="grnDialog" class="hf-dialog hf-large-dialog">
  <form id="grnForm" class="hf-dialog-inner">
