@@ -182,7 +182,7 @@ const state={categories:[],products:[],loading:false,categoryDrag:null,productDr
   $("productSortDescription").textContent=mode==="home"
    ?"হোমপেজে প্রথমে কোন পণ্য দেখাবে, তা এখানে সাজান।"
    :"এই ক্যাটাগরিতে সরাসরি যুক্ত পণ্য সাজান। সাব-ক্যাটাগরির পণ্য আলাদা করে সেই সাব-ক্যাটাগরিতে ঢুকে সাজাতে হবে।";
-  $("productSortScopeBadge").textContent=mode==="home"?"Homepage order":"Category order";
+  $("productSortScopeBadge").textContent=mode==="home"?"হোমপেজের ক্রম":"ক্যাটাগরির ক্রম";
   $("productSortBackBtn").hidden=mode!=="home";
   const scopeSlug=mode==="home"?"":selected.slug;
   const all=mode==="home"
@@ -210,12 +210,12 @@ const state={categories:[],products:[],loading:false,categoryDrag:null,productDr
  }
  async function persistCategoryOrder(parentId,ids,previousIds,recordUndo=true,isUndo=false){
   if(!ids.length)return false;
-  setStatus("categoryTreeStatus","Saving category order…");
+  setStatus("categoryTreeStatus","ক্যাটাগরির ক্রম সংরক্ষণ হচ্ছে…");
   const {error}=await client.rpc(REORDER_CATEGORY_RPC,{p_parent_id:parentId||null,p_category_ids:ids});
   if(error){if(recordUndo)state.lastUndo=null;updateUndoButtons();toast(error.message||"Category order could not be saved.","error");await reload();return false;}
   state.lastUndo=recordUndo?{kind:"category",parentId:parentId||null,ids:previousIds}:null;
   await audit?.(isUndo?"catalog.category.reorder_undone":"catalog.category.reordered","category",parentId||null,(isUndo?"Restored ":"Reordered ")+ids.length+" sibling categories",{parent_id:parentId||null,category_ids:ids});
-  toast(isUndo?"Previous category order restored.":"Category order saved.");await reload();return true;
+  toast(isUndo?"আগের ক্যাটাগরি ক্রম ফিরিয়ে আনা হয়েছে।":"ক্যাটাগরির নতুন ক্রম সংরক্ষণ হয়েছে।");await reload();return true;
  }
  async function reorderCategory(id,directionOrTarget){
   const item=categoryById(id);if(!item)return;
@@ -318,14 +318,14 @@ const state={categories:[],products:[],loading:false,categoryDrag:null,productDr
   state.products=state.products.map(p=>rank.has(p.id)?{...p,[key]:rank.get(p.id)}:p);
  }
  async function persistProductOrder(mode,categorySlug,ids,previousIds,recordUndo=true,isUndo=false){
-  setStatus("productSortStatus","Saving product order…");
+  setStatus("productSortStatus","পণ্যের ক্রম সংরক্ষণ হচ্ছে…");
   const rpc=mode==="home"?REORDER_HOME_RPC:REORDER_PRODUCT_RPC;
   const args=mode==="home"?{p_product_ids:ids}:{p_category_slug:categorySlug,p_product_ids:ids};
   const {error}=await client.rpc(rpc,args);
   if(error){if(recordUndo)state.lastUndo=null;updateUndoButtons();toast(error.message||"Product order could not be saved.","error");await reload();return false;}
   state.lastUndo=recordUndo?{kind:"product",mode,categorySlug:categorySlug||null,ids:previousIds}:null;
   await audit?.(isUndo?"catalog.product.reorder_undone":(mode==="home"?"catalog.product.home_reordered":"catalog.product.category_reordered"),"product",null,(isUndo?"Restored ":"Reordered ")+ids.length+" products",{mode,category_slug:categorySlug||null});
-  toast(isUndo?"Previous product order restored.":(mode==="home"?"Homepage product order saved.":"Category product order saved."));await reload();return true;
+  toast(isUndo?"আগের পণ্য ক্রম ফিরিয়ে আনা হয়েছে।":(mode==="home"?"Homepage product order saved.":"Category product order saved."));await reload();return true;
  }
  async function undoLastOrder(kind){
   const undo=state.lastUndo;if(!undo||undo.kind!==kind)return;
