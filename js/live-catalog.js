@@ -2,7 +2,7 @@
 (function () {
   "use strict";
   const STORE_CONFIG = window.HALAL_STORE_CONFIG || {};
-  const API_ROOT = String(STORE_CONFIG.supabase?.url || "").replace(/\\/$/, "");
+  const API_ROOT = String(STORE_CONFIG.supabase?.url || "").replace(/\/$/, "");
   const PUBLIC_KEY = STORE_CONFIG.supabase?.publishableKey || "";
   const SITE_ROOT = STORE_CONFIG.siteRoot || "";
   const CATALOG = STORE_CONFIG.catalog || {};
@@ -202,11 +202,11 @@
     const template = category.cms_created
       ? (CATALOG.categoryPage || "category.html?slug={slug}")
       : (CATALOG.legacyCategoryPage || "categories/{slug}.html");
-    return rootURL(String(template).replace(/\\{slug\\}/g, slug));
+    return rootURL(String(template).replace(/\{slug\}/g, slug));
   }
   function categorySlugFromHref(href) {
     const value = String(href || "");
-    const match = value.match(/categories\\/([^/?#]+)\\.html/i) || value.match(/[?&]slug=([^&#]+)/i);
+    const match = value.match(/categories\/([^/?#]+)\.html/i) || value.match(/[?&]slug=([^&#]+)/i);
     if (!match) return "";
     try { return decodeURIComponent(match[1]); } catch (_) { return match[1]; }
   }
