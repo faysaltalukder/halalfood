@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <title>Categories · Halal Food Admin</title>
-<link rel="stylesheet" href="./shared.css?v=20261031-category-explorer-v3">
+<link rel="stylesheet" href="./shared.css?v=20261031-category-explorer-v4">
 <link rel="stylesheet" href="./categories.css?v=20261031-category-explorer-v3">
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
 <script defer src="../js/store-config.js?v=20261031-catalog-config-v1"></script>
@@ -22,7 +22,7 @@
   <div class="page-actions"><button class="hf-button hf-button-primary" id="addRootCategory" type="button">＋ Add category</button><button class="hf-button hf-button-secondary" data-catalog-refresh type="button">↻ Refresh</button></div>
  </div>
  <div class="hf-banner hf-banner-info"><span aria-hidden="true">ⓘ</span><div><strong>One workspace. One live catalog.</strong>Create and organise categories, manage visibility and metadata, and arrange products for category pages or the homepage. Changes are saved to Supabase and flow to the live storefront.</div></div>
- <div class="hf-kpi-grid">
+ <div class="hf-kpi-grid" id="catalogOverviewStats">
   <section class="hf-card hf-kpi"><span class="hf-kpi-label">Categories</span><strong class="hf-kpi-value" id="catalogCategoryCount">—</strong><span class="hf-kpi-note">All hierarchy levels</span></section>
   <section class="hf-card hf-kpi"><span class="hf-kpi-label">Active products</span><strong class="hf-kpi-value" id="catalogProductCount">—</strong><span class="hf-kpi-note">Across the catalog</span></section>
   <section class="hf-card hf-kpi"><span class="hf-kpi-label">Nested categories</span><strong class="hf-kpi-value" id="catalogNestedCount">—</strong><span class="hf-kpi-note">Subcategories and child categories</span></section>
@@ -35,16 +35,9 @@
     <button class="hf-button hf-button-secondary hf-button-small" id="categoryBackBtn" type="button" hidden>← Back</button>
     <button class="hf-button hf-button-secondary hf-button-small" id="homeSortToggle" type="button">Homepage product order</button>
     <button class="hf-button hf-button-secondary hf-button-small" id="addChildCategory" type="button" hidden>＋ Add subcategory</button>
-    <button class="hf-button hf-button-primary" id="addRootCategory" type="button">＋ Add category</button>
    </div>
   </div>
   <nav class="catalog-breadcrumb" id="categoryBreadcrumb" aria-label="Category path"><button type="button" data-cat-breadcrumb="root">All categories</button></nav>
-  <div class="hf-kpi-grid catalog-sort-kpis">
-   <section class="hf-kpi"><span class="hf-kpi-label">Categories</span><strong class="hf-kpi-value" id="catalogCategoryCount">—</strong><span class="hf-kpi-note">All levels</span></section>
-   <section class="hf-kpi"><span class="hf-kpi-label">Active products</span><strong class="hf-kpi-value" id="catalogProductCount">—</strong><span class="hf-kpi-note">Across the catalog</span></section>
-   <section class="hf-kpi"><span class="hf-kpi-label">Subcategories</span><strong class="hf-kpi-value" id="catalogNestedCount">—</strong><span class="hf-kpi-note">Inside main categories</span></section>
-   <section class="hf-kpi"><span class="hf-kpi-label">Hidden records</span><strong class="hf-kpi-value" id="catalogHiddenCount">—</strong><span class="hf-kpi-note">Categories and products</span></section>
-  </div>
   <div class="hf-toolbar catalog-explorer-toolbar" id="categoryExplorerToolbar">
    <input class="hf-input" id="categoryTreeSearch" type="search" placeholder="Search categories in this level…" aria-label="Search categories in this level">
    <select class="hf-select" id="categoryTreeVisibility" aria-label="Filter category visibility"><option value="all">All categories</option><option value="active">Visible categories</option><option value="hidden">Hidden categories</option></select>
