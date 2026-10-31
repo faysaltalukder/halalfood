@@ -2020,6 +2020,7 @@ async function refresh(){
  let globalSearchFrame=0;
  function applyGlobalTableSearch(){
   if(!adminMain)return;
+  if(["customers","customer-settings"].includes(document.body.dataset.page))return; // Customer pages apply search server-side.
   const q=String(globalSearchInput?.value||"").toLowerCase().trim();
   adminMain.querySelectorAll(".hf-table tbody tr").forEach(row=>{
    row.hidden=!!q&&!row.textContent.toLowerCase().includes(q);
