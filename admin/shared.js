@@ -139,7 +139,7 @@ async function fetchEvents(range=null,limit=15000){
   return q;
  },limit);
 }
-async function fetchProducts(limit=2000){
+async function fetchProducts(limit=10000){
  const products=await paginateQuery(()=>client.from("products").select("id,name,slug,sku,category,category_slug,price,display_price,unit_type,image_url,stock_quantity,is_active,is_featured,sort_order,home_sort_order,short_description,full_description,seo_title,seo_description,cms_created,cms_managed,created_at,updated_at").order("sort_order",{ascending:true}).order("name",{ascending:true}).order("id",{ascending:true}),limit);
  const costs=await paginateQuery(()=>client.from("admin_product_costs").select("product_id,cost_price,packaging_cost,low_stock_threshold,updated_by,updated_at").order("product_id",{ascending:true}),Math.max(limit,1000));
  const costById=new Map(costs.map(row=>[row.product_id,row]));
