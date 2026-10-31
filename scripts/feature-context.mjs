@@ -47,7 +47,7 @@ const FEATURES = {
       "supabase/migrations/20261031044407_create_offline_pos_sales.sql"
     ],
     anchors: [
-      { file: "admin/pos.js", names: ["parseCsv", "buildGroups", "validatePreview", "runImport"] },
+      { file: "admin/pos.js", names: ["validatePreview", "runImport"] },
       { file: "admin/app.js", names: ["doInit"] }
     ],
     tables: ["products", "orders", "order_items", "inventory_movements", "customers", "admin_finance_entries"],
