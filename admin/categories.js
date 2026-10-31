@@ -50,16 +50,27 @@ window.HFAdminReady.then(async H => {
  function setStatus(id,message,error=false){
   const node=$(id);if(node){node.textContent=message||"";node.classList.toggle("error",!!error);}
  }
+ async function fetchCatalogRows(table,fields,maxRows,sortFields){
+  const pageSize=500,rows=[];
+  for(let offset=0;offset<maxRows;offset+=pageSize){
+   let query=client.from(table).select(fields);
+   sortFields.forEach(field=>{query=query.order(field,{ascending:true});});
+   const {data,error}=await query.range(offset,offset+pageSize-1);
+   if(error)throw error;
+   const page=data||[];rows.push(...page);
+   if(page.length<pageSize)return rows;
+  }
+  throw new Error("The "+table+" catalog reached the workspace safety limit. Narrow the catalog or increase its pagination limit.");
+ }
  async function reload(showToast=false){
   if(state.loading)return;
   state.loading=true;
   try{
-   const [catRes,prodRes]=await Promise.all([
-    client.from("categories").select("id,name,slug,parent_id,description,image_url,is_active,sort_order,seo_title,seo_description,cms_created,cms_managed,created_at,updated_at").order("sort_order",{ascending:true}).order("name",{ascending:true}).order("id",{ascending:true}).limit(1000),
-    client.from("products").select("id,name,slug,sku,category,category_slug,price,unit_type,display_price,image_url,short_description,full_description,description,stock_quantity,is_active,is_featured,sort_order,home_sort_order,seo_title,seo_description,cms_created,cms_managed,created_at,updated_at").order("sort_order",{ascending:true}).order("name",{ascending:true}).order("id",{ascending:true}).limit(5000)
+   const [categories,products]=await Promise.all([
+    fetchCatalogRows("categories","id,name,slug,parent_id,description,image_url,is_active,sort_order,seo_title,seo_description,cms_created,cms_managed,created_at,updated_at",5000,["sort_order","name","id"]),
+    fetchCatalogRows("products","id,name,slug,sku,category,category_slug,price,unit_type,display_price,image_url,short_description,full_description,description,stock_quantity,is_active,is_featured,sort_order,home_sort_order,seo_title,seo_description,cms_created,cms_managed,created_at,updated_at",20000,["sort_order","name","id"])
    ]);
-   if(catRes.error)throw catRes.error;if(prodRes.error)throw prodRes.error;
-   state.categories=catRes.data||[];state.products=prodRes.data||[];
+   state.categories=categories;state.products=products;
    renderPage();
    if(showToast)toast("Catalog refreshed.");
   }catch(error){
