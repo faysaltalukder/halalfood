@@ -325,19 +325,21 @@
       isLoading = true;
       $("couponTableBody").innerHTML = '<tr><td colspan="7" class="hf-loading">Refreshing coupon data…</td></tr>';
       try {
-        const [couponRows, categoryRows, productRows, catRows, productRowsLink, customerRowsLink, redemptionRows, customerResult] = await Promise.all([
+        const [couponRows, categoryResult, productResult, catRows, productRowsLink, customerRowsLink, redemptionRows, customerResult] = await Promise.all([
           signedQuery(client.from("coupons").select("*").order("created_at", { ascending: false }).limit(1500)),
-          H.fetchCategories(),
-          H.fetchProducts(2500),
+          client.from("categories").select("id,name,slug,is_active").eq("is_active", true).order("name").limit(500),
+          client.from("products").select("id,name,slug,category,category_slug,price,is_active").eq("is_active", true).order("name").limit(2000),
           signedQuery(client.from("coupon_categories").select("coupon_id,category_id").limit(10000)),
           signedQuery(client.from("coupon_products").select("coupon_id,product_id").limit(10000)),
           signedQuery(client.from("coupon_customer_allowlist").select("coupon_id,customer_phone").limit(10000)),
           signedQuery(client.from("coupon_redemptions").select("id,coupon_id,order_id,order_number,customer_phone,discount_amount,status,created_at").order("created_at", { ascending: false }).limit(5000)),
-          client.from("customers").select("id,name,phone,email,created_at").order("created_at", { ascending: false }).limit(1000)
+          client.from("customers").select("id,name,phone,created_at").order("created_at", { ascending: false }).limit(1000)
         ]);
+        if (categoryResult.error) throw categoryResult.error;
+        if (productResult.error) throw productResult.error;
         coupons = couponRows || [];
-        categories = (categoryRows || []).filter(c => c.is_active !== false);
-        products = (productRows || []).filter(p => p.is_active !== false);
+        categories = categoryResult.data || [];
+        products = productResult.data || [];
         categoryLinks = catRows || [];
         productLinks = productRowsLink || [];
         customerLinks = customerRowsLink || [];
