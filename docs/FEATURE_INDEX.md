@@ -17,10 +17,17 @@ node scripts/feature-context.mjs facebook
 node scripts/feature-context.mjs youtube
 node scripts/feature-context.mjs messaging
 node scripts/feature-context.mjs site_publishing
+node scripts/feature-context.mjs overview
+node scripts/feature-context.mjs customers
+node scripts/feature-context.mjs finance
+node scripts/feature-context.mjs reports
+node scripts/feature-context.mjs settings
+node scripts/feature-context.mjs incomplete_orders
+node scripts/feature-context.mjs content
 node scripts/feature-context.mjs --check
 ```
 
-The command prints the feature purpose, first files to inspect, related files, database tables, Edge Functions, existing checks and behavior guardrails. It performs no network or database operations and never changes source files.
+The command prints the feature purpose, first files to inspect, related files, live line-number anchors for important functions, database tables, Edge Functions, existing checks and behavior guardrails. It performs no network or database operations and never changes source files.
 
 ## Ownership map
 
@@ -35,6 +42,13 @@ The command prints the feature purpose, first files to inspect, related files, d
 | `youtube` | `admin/youtube-publishing.js` | `youtube-publishing` |
 | `messaging` | `admin/messages.js`, `admin/messenger.js` | WhatsApp and Messenger send/webhook functions |
 | `site_publishing` | `admin/website-publisher.js`, `js/admin-cms.js` | `site-publisher` |
+| `overview` | `admin/overview.html`, overview functions in `admin/app.js` | — |
+| `customers` | customer directory functions in `admin/app.js` | — |
+| `finance` | finance/reconciliation functions in `admin/app.js` | — |
+| `reports` | report builder functions in `admin/app.js` | — |
+| `settings` | settings/health functions in `admin/app.js` | `order-security-admin` |
+| `incomplete_orders` | `admin/incomplete-orders.js` | `incomplete-checkout` |
+| `content` | content/CMS functions in `admin/app.js` | `site-publisher` |
 
 ## How to use it
 
