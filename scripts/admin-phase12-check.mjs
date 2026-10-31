@@ -13,7 +13,7 @@ const read = (path) => readFileSync(join(root, path), "utf8");
 
 const htmlFiles = readdirSync(adminDir).filter((file) => file.endsWith(".html"));
 const unifiedPages = htmlFiles.filter((file) => /<body[^>]*\bdata-page=/.test(read(join("admin", file))));
-assert.equal(unifiedPages.length, 24, `Expected 24 unified admin pages after adding the dedicated Coupon Usage report, found ${unifiedPages.length}.`);
+assert.equal(unifiedPages.length, 29, `Expected 29 unified admin pages after adding Supplier Management, found ${unifiedPages.length}.`);
 assert.ok(unifiedPages.includes("pos.html"), "POS import must use the unified admin shell.");
 assert.ok(unifiedPages.includes("coupons.html"), "Coupon Promotions must use the unified admin shell.");
 assert.ok(unifiedPages.includes("coupon-usage.html"), "Coupon Usage must use the unified admin shell.");
@@ -36,6 +36,29 @@ assert.ok(couponsMigration.includes("private.evaluate_coupon") && couponsMigrati
 assert.ok(couponsMigration.includes("coupon_discount_amount") && couponsMigration.includes("coupon_snapshot"), "Orders must preserve coupon discount and immutable campaign snapshots.");
 assert.ok(couponsMigration.includes("sync_coupon_redemption_after_order_status"), "Coupon reservation must follow order cancellation/delivery lifecycle.");
 assert.ok(couponsMigration.includes("aal2") && couponsMigration.includes("halalfoodbd.official@gmail.com"), "Coupon administration must remain limited to the MFA-protected admin account.");
+
+
+for (const page of ["supplier-add.html","supplier-purchases.html","supplier-payments.html"]) {
+  assert.ok(unifiedPages.includes(page), "Supplier Management route is missing: " + page);
+}
+const supplierAddPage=read("admin/supplier-add.html");
+const supplierPurchasesPage=read("admin/supplier-purchases.html");
+const supplierPaymentsPage=read("admin/supplier-payments.html");
+const supplierUi=read("admin/supplier-management.js");
+const supplierMigration=read("supabase/migrations/20261031160318_supplier_procurement_payables_v1.sql");
+const supplierNav=read("admin/shared.js");
+const supplierApp=read("admin/app.js");
+assert.ok(supplierAddPage.includes('data-page="supplier-add"') && supplierAddPage.includes('supplier-management.js?v='), "Add Supplier must be a cache-busted unified admin page.");
+assert.ok(supplierPurchasesPage.includes('data-page="supplier-purchases"') && supplierPurchasesPage.includes('id="purchaseForm"') && supplierPurchasesPage.includes('id="grnForm"'), "Purchase List must include the multi-item purchase and GRN workflows.");
+assert.ok(supplierPurchasesPage.includes('id="billForm"') && supplierPurchasesPage.includes('id="creditNoteForm"'), "Purchase List must include supplier bill and credit note workflows.");
+assert.ok(supplierPaymentsPage.includes('data-page="supplier-payments"') && supplierPaymentsPage.includes('id="supplierPaymentForm"') && supplierPaymentsPage.includes('id="supplierLedgerTableBody"'), "Payment History must include payment entry and supplier ledger.");
+assert.ok(supplierNav.includes('["suppliers","layers","Suppliers"') && supplierNav.includes('"supplier-add","plus","Add Supplier"') && supplierNav.includes('"supplier-purchases","orders","Purchase List"') && supplierNav.includes('"supplier-payments","finance","Payment History"'), "Admin sidebar must expose all three Supplier child routes.");
+assert.ok(supplierApp.includes('HFSupplierInit("add")') && supplierApp.includes('HFSupplierInit("purchases")') && supplierApp.includes('HFSupplierInit("payments")'), "Admin app must register all Supplier workspace routes.");
+assert.ok(supplierUi.includes('rpc("create_supplier_with_opening_balance"') && supplierUi.includes('rpc("create_supplier_purchase_order"') && supplierUi.includes('rpc("record_supplier_purchase_receipt"') && supplierUi.includes('rpc("create_supplier_bill"') && supplierUi.includes('rpc("record_supplier_payment"'), "Supplier writes must use the protected server-side database RPCs.");
+assert.ok(supplierUi.includes('admin_supplier_credit_notes') && supplierUi.includes('admin_supplier_ledger') && supplierUi.includes('admin_supplier_balances'), "Supplier pages must read supplier credits, ledger and balances.");
+assert.ok(supplierUi.includes('product_id:l.product_id==="__manual__"||!l.product_id?null:l.product_id'), "Purchase orders must support non-catalogue items without adding them to the store catalogue.");
+assert.ok(supplierMigration.includes("aal2") && supplierMigration.includes("admin_supplier_payment_allocations") && supplierMigration.includes("record_supplier_purchase_receipt"), "Supplier migration must preserve admin MFA, payment allocations and the GRN workflow.");
+assert.ok(!read("admin/operations.html").includes('id="suppliersSection"') && read("admin/operations.html").includes("./supplier-add.html"), "Supplier and Purchase management must be routed through the dedicated workspace rather than duplicate Operations forms.");
 
 for (const file of unifiedPages) {
   const source = read(join("admin", file));
