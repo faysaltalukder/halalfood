@@ -13,7 +13,7 @@
  <div><p class="page-eyebrow">CUSTOMER RELATIONSHIP / CAMPAIGN MANAGEMENT</p><h1>Marketing Center</h1><p>Build focused campaigns from your existing CRM. Select the audience, verify channel consent and review recipients before any export or send.</p></div>
  <div class="hf-marketing-hero-actions"><span class="hf-marketing-live"><i></i> CRM connected</span><button class="hf-button hf-button-secondary" data-marketing-refresh type="button">↻ Refresh data</button></div>
 </header>
-<div class="hf-marketing-policy"><span aria-hidden="true">ⓘ</span><div><strong>Controlled sending is enabled.</strong> Only active, non-blocked customers with recorded consent for the selected channel can be included. WhatsApp uses an approved CSV handoff to the WhatsApp Business app — this dashboard does not automate WhatsApp sending or use an unofficial API. Email sending stays locked until a verified email provider is configured.</div></div>
+<div class="hf-marketing-policy"><span aria-hidden="true">ⓘ</span><div><strong>Controlled sending is enabled.</strong> Only active, non-blocked customers with recorded consent for the selected channel can be included. WhatsApp exports a checked worklist and individual chat links; it cannot import contacts into Broadcast Lists or send messages automatically. WhatsApp Broadcast Lists must be created manually in the phone app. Email sending stays locked until a verified sender and email provider are configured.</div></div>
 <section class="hf-marketing-stats" aria-label="Marketing overview">
  <article class="hf-marketing-stat"><span>Active CRM customers</span><strong id="marketingStatsActive">—</strong><small>Not blocked, archived or anonymized</small></article>
  <article class="hf-marketing-stat"><span>WhatsApp consent</span><strong id="marketingStatsWhatsApp">—</strong><small>Recorded WhatsApp opt-ins</small></article>
@@ -35,11 +35,11 @@
      <button type="button" class="is-active" data-marketing-channel="whatsapp"><span class="hf-channel-icon hf-channel-whatsapp">◔</span><span><strong>WhatsApp</strong><small>CSV handoff · No WhatsApp API</small></span><i>✓</i></button>
      <button type="button" data-marketing-channel="email"><span class="hf-channel-icon hf-channel-email">✉</span><span><strong>Email</strong><small>Provider required for direct sending</small></span><i>✓</i></button>
     </div>
-    <div class="hf-marketing-channel-note" id="marketingChannelNote">WhatsApp campaign audience will be exported as a consent-checked CSV. You will complete the broadcast in WhatsApp Business.</div>
+    <div class="hf-marketing-channel-note" id="marketingChannelNote">CSV is a consent-checked worklist, not a WhatsApp import file. Create the Broadcast List manually in the WhatsApp Business phone app; or use each row's personal chat link to send one-to-one.</div>
     <div class="hf-marketing-form-grid">
      <label class="hf-marketing-field hf-marketing-field-wide"><span>Campaign name</span><input id="mktCampaignName" class="hf-input" maxlength="120" placeholder="e.g. VIP Eid special offer" required></label>
      <label class="hf-marketing-field hf-marketing-field-wide" id="mktEmailFields" hidden><span>Email subject</span><input id="mktCampaignSubject" class="hf-input" maxlength="180" placeholder="Your exclusive Halal Food offer"></label>
-     <label class="hf-marketing-field hf-marketing-field-wide"><span>Message content</span><textarea id="mktCampaignMessage" class="hf-input" rows="5" maxlength="4000" placeholder="Write your promotion. Use {{name}} to personalize the customer's name." required></textarea><small>Personalization: <code>{{name}}</code> and <code>{{segment}}</code>. Keep the offer clear and relevant.</small></label>
+     <label class="hf-marketing-field hf-marketing-field-wide"><span>Message content</span><textarea id="mktCampaignMessage" class="hf-input" rows="5" maxlength="4000" placeholder="Write your promotion. Use {{name}} to personalize the customer's name." required></textarea><small>Email supports <code>{{name}}</code> and <code>{{segment}}</code>. A WhatsApp Broadcast List sends the same text to everyone; its CSV also includes per-customer chat links for manual one-to-one messages.</small></label>
     </div>
    </section>
 
@@ -80,7 +80,7 @@
    <section class="hf-card hf-marketing-card hf-marketing-setup">
     <p class="hf-marketing-eyebrow">CHANNEL READINESS</p><h3>WhatsApp Business</h3>
     <div class="hf-marketing-readiness"><span class="hf-readiness-dot is-ready"></span><div><strong>CSV audience export</strong><small>Ready · No WhatsApp API added</small></div></div>
-    <a class="hf-marketing-external" href="https://web.whatsapp.com/" target="_blank" rel="noopener">Open WhatsApp Web ↗</a>
+    <a class="hf-marketing-external" href="https://faq.whatsapp.com/861663048350950/" target="_blank" rel="noopener">WhatsApp Broadcast guide ↗</a>
     <div class="hf-marketing-setup-divider"></div>
     <h3>Email delivery</h3>
     <div class="hf-marketing-readiness"><span class="hf-readiness-dot is-pending" id="mktEmailReadyDot"></span><div><strong id="mktEmailReadyText">Provider setup required</strong><small id="mktEmailReadyDetail">A verified sender and server-side API key are required.</small></div></div>
