@@ -27,6 +27,8 @@ jobs:
         run: node scripts/feature-context.mjs --check
       - name: Run existing admin integrity checks
         run: node scripts/admin-phase12-check.mjs
+      - name: Run POS import contract checks
+        run: node scripts/admin-pos-check.mjs
 
   edge-function-types:
     name: Type-check all Supabase Edge Functions
