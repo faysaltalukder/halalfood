@@ -1897,8 +1897,8 @@ document.addEventListener("DOMContentLoaded", () => {
 /* Public product review submission and moderation display load only on product pages. */
 (() => {
   const path=window.location.pathname||"";
-  const isProductRoute=/\\/products\\/[^/]+\\.html$/i.test(path)
-    || /\\/(?:product|cms-product)\\.html$/i.test(path);
+  const isProductRoute=(path.startsWith("/products/")&&path.endsWith(".html"))
+    || path==="/product.html" || path==="/cms-product.html";
   if(!isProductRoute)return;
   const script=document.createElement("script");
   script.src="https://faysaltalukder.github.io/halalfood/js/product-reviews.js?v=20261031-products-workspace-v1";
