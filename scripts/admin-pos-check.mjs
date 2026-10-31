@@ -28,7 +28,7 @@ if (!failures.length) {
     [app.includes('window.HFPosInit'), "Admin dispatcher must initialize the POS module."],
     [js.includes("function parseCsv") && js.includes("function buildGroups"), "CSV parsing and grouping must be implemented."],
     [js.includes('client.rpc("create_offline_pos_sale"'), "POS imports must use the atomic database RPC."],
-    [js.includes("POS-" ) && js.includes("already imported"), "The UI must communicate POS duplicate protection."],
+    [js.includes("POS-") && js.toLowerCase().includes("already imported"), "The UI must communicate POS duplicate protection."],
     [migration.includes("SECURITY DEFINER") && migration.includes("aal2"), "The database RPC must enforce admin MFA."],
     [migration.includes("inventory_movements") && migration.includes("'pos_sale'"), "The database RPC must write POS stock movements."],
     [migration.includes("admin_finance_entries") && migration.includes("'Offline POS Sale'"), "The database RPC must create a linked finance entry."],
