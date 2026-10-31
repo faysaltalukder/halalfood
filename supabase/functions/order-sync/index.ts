@@ -226,7 +226,7 @@ Deno.serve(async (req: Request) => {
     const ipCountry = clean(req.headers.get("cf-ipcountry"), 8).toUpperCase() || null;
     const userAgent = clean(req.headers.get("user-agent"), 500) || null;
     const deviceId = clean(d.deviceId ?? d.hf_device_id, 100);
-    const normalizedPhone = clean(payload.phone, 32).replace(/[\\s-]/g, "");
+    const normalizedPhone = clean(payload.phone, 32).replace(/\s+/g, "").replace(/-/g, "");
     const { data: blockedCustomer, error: blockedCustomerError } = await admin
       .from("customers")
       .select("id,is_blocked,anonymized_at")
