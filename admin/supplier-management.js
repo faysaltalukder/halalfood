@@ -31,7 +31,7 @@ window.HFSupplierInit = async function(mode) {
     downloadFile(filename,csvText(rows),"text/csv;charset=utf-8");
   };
   const supplierName=id=>suppliers.find(s=>s.id===id)?.name||"Unknown supplier";
-  let suppliers=[],balances=[],products=[],purchaseOrders=[],bills=[],receipts=[],payments=[],allocations=[],credits=[],ledger=[];
+  let suppliers=[],balances=[],products=[],productCosts=[],purchaseOrders=[],bills=[],receipts=[],payments=[],allocations=[],credits=[],ledger=[];
   let purchaseLines=[];
   let currentMode=mode;
   const balanceMap=()=>new Map(balances.map(x=>[x.supplier_id,x]));
@@ -67,8 +67,8 @@ window.HFSupplierInit = async function(mode) {
   };
   const loadPurchases=async()=>{
     const r=await Promise.all([
-      signedQuery(client.from("admin_products").select("*").limit(1).then(()=>({data:[],error:null})).catch(()=>({data:[],error:null})).then(x=>x)),
       signedQuery(client.from("products").select("id,name,sku,unit_type,stock_quantity,is_active").eq("is_active",true).order("name").limit(2000)),
+      signedQuery(client.from("admin_product_costs").select("product_id,cost_price").limit(5000)),
       signedQuery(client.from("admin_purchase_orders").select("*,admin_purchase_order_items(*)").order("order_date",{ascending:false}).limit(2000)),
       signedQuery(client.from("admin_purchase_receipts").select("*").order("receipt_date",{ascending:false}).limit(2000)),
       signedQuery(client.from("admin_supplier_bills").select("*").order("invoice_date",{ascending:false}).limit(2000)),
@@ -76,8 +76,8 @@ window.HFSupplierInit = async function(mode) {
       signedQuery(client.from("admin_supplier_payment_allocations").select("*").limit(5000)),
       signedQuery(client.from("admin_supplier_credit_notes").select("*").limit(5000))
     ]);
-    products=r[1];purchaseOrders=r[2];receipts=r[3];bills=r[4];payments=r[5];allocations=r[6];credits=r[7];
-    return r[0];
+    products=r[0];productCosts=r[1];products=products.map(p=>({...p,cost_price:productCosts.find(c=>c.product_id===p.id)?.cost_price??0}));
+    purchaseOrders=r[2];receipts=r[3];bills=r[4];payments=r[5];allocations=r[6];credits=r[7];
   };
   const loadPayments=async()=>{
     const r=await Promise.all([
@@ -547,6 +547,7 @@ window.HFSupplierInit = async function(mode) {
     $("exportPaymentsBtn").addEventListener("click",()=>exportRows("halal-food-supplier-payments-"+today()+".csv",payments.map(p=>({payment_number:p.payment_number,date:p.payment_date,supplier:supplierName(p.supplier_id),method:p.payment_method,reference:p.transaction_reference,amount:p.amount,allocated:allocations.filter(a=>a.payment_id===p.id).reduce((s,a)=>s+n(a.allocated_amount),0),status:p.status,notes:p.notes}))));
     $("exportLedgerBtn").addEventListener("click",()=>exportRows("halal-food-supplier-ledger-"+today()+".csv",ledger.map(x=>({date:x.transaction_date,supplier:supplierName(x.supplier_id),type:x.transaction_type,reference:x.reference,description:x.description,change:x.balance_delta}))));
   };
+  document.querySelectorAll("[data-supplier-tab]").forEach(a=>a.classList.toggle("active",a.dataset.supplierTab===(currentMode==="add"?"add":currentMode)));
   if(currentMode==="add"){
     await loadCommon();renderSupplierKpis();renderSuppliers();bindAddPage();resetSupplierForm();
   }else if(currentMode==="purchases"){
