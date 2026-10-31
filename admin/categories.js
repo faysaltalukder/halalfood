@@ -79,7 +79,7 @@ window.HFAdminReady.then(async H => {
   }finally{state.loading=false;}
  }
  function renderPage(){
-  if(page==="categories")renderHub();
+  if(page==="categories"){renderTree();renderSorting();}
   if(page==="categories-tree")renderTree();
   if(page==="categories-sorting")renderSorting();
   if(page==="categories-settings")renderSettings();
@@ -124,6 +124,14 @@ window.HFAdminReady.then(async H => {
  function renderTree(){
   const tree=$("categoryTree");if(!tree)return;
   updateUndoButtons();
+  const total=state.categories.length;
+  const nested=state.categories.filter(c=>c.parent_id).length;
+  const activeProducts=state.products.filter(p=>p.is_active).length;
+  const hidden=state.categories.filter(c=>!effectiveActive(c)).length+state.products.filter(p=>!p.is_active).length;
+  if($("catalogCategoryCount"))$("catalogCategoryCount").textContent=String(total);
+  if($("catalogProductCount"))$("catalogProductCount").textContent=String(activeProducts);
+  if($("catalogNestedCount"))$("catalogNestedCount").textContent=String(nested);
+  if($("catalogHiddenCount"))$("catalogHiddenCount").textContent=String(hidden);
   const search=$("categoryTreeSearch")?.value||"",filter=$("categoryTreeVisibility")?.value||"all";
   tree.innerHTML=childrenOf(null).map(c=>categoryNodeMarkup(c,search,filter)).join("");
   $("categoryTreeCount").textContent=state.categories.length+" categories · "+state.categories.filter(c=>!c.parent_id).length+" top-level categories";
