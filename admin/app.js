@@ -2005,7 +2005,7 @@ async function refresh(){
    "products-barcode":()=>{if(typeof window.HFBarcodeInit==="function")return window.HFBarcodeInit();throw new Error("Barcode module did not load.");},
    "products-reviews":()=>{if(typeof window.HFReviewsInit==="function")return window.HFReviewsInit();throw new Error("Product Reviews module did not load.");},
    content:initContent,
-   customers:initCustomers,
+   customers:()=>{if(typeof window.HFCustomersInit==="function")return window.HFCustomersInit();throw new Error("Customer Management module did not load.");},\n   "customer-settings":()=>{if(typeof window.HFCustomerSettingsInit==="function")return window.HFCustomerSettingsInit();throw new Error("Customer Settings module did not load.");},
    finance:initFinance,
    reports:initReports,
    settings:initSettings,
