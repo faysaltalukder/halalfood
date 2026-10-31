@@ -40,7 +40,7 @@ window.HFMarketingInit=async function(){
   select.innerHTML='<option value="all">All active customers</option>'+
    segmentRules.map(rule=>'<option value="'+esc(rule.code)+'">'+esc(rule.name)+'</option>').join("")+
    '<option value="friend">Friend customers</option>';
-  select.value=segmentRules.some(rule=>rule.code===current)||current==="friend"?"all"===current?"all":current:"all";
+  select.value=(segmentRules.some(rule=>rule.code===current)||current==="friend")?current:"all";
  }
  async function loadCustomers(){
   const rows=[];let offset=0;
