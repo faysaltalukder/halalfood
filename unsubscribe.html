@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#f2f0ea">
+<title>Email preferences · Halal Food</title>
+<style>
+:root{color-scheme:light;--navy:#2b2a3d;--orange:#c97b3d;--cream:#f2f0ea;--paper:#fffdf8;--muted:#737487;--border:#e5e0d6}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:20px;background:var(--cream);font:15px/1.6 Inter,system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--navy)}
+main{width:min(100%,520px);padding:32px;background:var(--paper);border:1px solid var(--border);border-radius:22px;box-shadow:0 16px 48px rgba(43,42,61,.08)}
+.logo{display:flex;align-items:center;gap:9px;color:var(--navy);font-weight:800;font-size:17px}.mark{display:grid;place-items:center;width:36px;height:36px;border-radius:12px;background:#f6e9dc;color:#965e36}
+.eyebrow{margin:26px 0 4px;color:#a86d3b;font-size:10px;font-weight:900;letter-spacing:.12em}h1{margin:0 0 9px;font-size:25px;line-height:1.2;letter-spacing:-.04em}p{margin:0;color:var(--muted);font-size:13px}
+button{width:100%;margin-top:22px;min-height:46px;border:0;border-radius:12px;background:var(--orange);color:#fff;font:800 13px inherit;cursor:pointer}button:disabled{opacity:.6;cursor:wait}
+.status{display:none;margin-top:15px;padding:12px;border-radius:10px;background:#f4f1e9;color:#5e5b68;font-size:12px}.status.show{display:block}.status.error{background:#faece9;color:#984d43}.status.success{background:#eaf3ec;color:#326d49}
+footer{margin-top:22px;padding-top:17px;border-top:1px solid var(--border);color:var(--muted);font-size:10px}
+@media(max-width:480px){main{padding:24px;border-radius:17px}h1{font-size:22px}}
+</style>
+</head>
+<body>
+<main>
+<div class="logo"><span class="mark">HF</span> Halal Food</div>
+<div class="eyebrow">EMAIL PREFERENCES</div>
+<h1>Unsubscribe from promotional emails</h1>
+<p id="description">Confirm below to stop receiving promotional emails from Halal Food. This will not affect order updates or service messages.</p>
+<button id="confirm" type="button">Confirm unsubscribe</button>
+<div id="status" class="status" role="status" aria-live="polite"></div>
+<footer>Halal Food · Customer communication preferences. This page changes only your email marketing permission.</footer>
+</main>
+<script>
+(() => {
+ "use strict";
+ const token=new URLSearchParams(location.search).get("t")||"";
+ const button=document.getElementById("confirm"),status=document.getElementById("status");
+ const show=(message,type)=>{status.textContent=message;status.className="status show "+type;};
+ if(!token||token.length<80||token.length>160){
+  button.disabled=true;show("This unsubscribe link is incomplete or invalid. Please use the latest link from your email or contact Halal Food support.","error");return;
+ }
+ button.addEventListener("click",async()=>{
+  button.disabled=true;button.textContent="Updating preference…";status.className="status";
+  try{
+   const response=await fetch("https://qfwvrcfkrsydycbfjsxf.supabase.co/functions/v1/marketing-unsubscribe",{
+    method:"POST",headers:{"Content-Type":"application/json","apikey":"sb_publishable_X32Rb8W-axGIfgFuppdfZQ_jbc38pcL"},
+    body:JSON.stringify({token})
+   });
+   const data=await response.json().catch(()=>({}));
+   if(!response.ok||data.success!==true)throw new Error(data.error||"Your preference could not be updated. Please try again.");
+   button.hidden=true;
+   show(data.already_unsubscribed?"This email address is already unsubscribed from promotional emails.":"You have been unsubscribed from Halal Food promotional emails.","success");
+  }catch(error){
+   button.disabled=false;button.textContent="Try again";
+   show(error.message||"Unsubscribe service is temporarily unavailable. Please try again.","error");
+  }
+ });
+})();
+</script>
+</body></html>
