@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex,nofollow">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<title>Coupon Usage · Halal Food Admin</title>
+<link rel="stylesheet" href="./shared.css?v=20261031-coupon-nav-v2">
+<link rel="stylesheet" href="./coupon-usage.css?v=20261031-coupon-usage-v1">
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
+</head>
+<body data-page="coupon-usage">
+<div id="authGate" class="auth-gate">
+  <div class="auth-gate-card"><strong>Checking secure admin access…</strong><p>Coupon customer and order details are available only to the authorized administrator after two-step verification.</p></div>
+</div>
+<div id="adminApp" hidden>
+<main id="pageContent" tabindex="-1" class="cu-page">
+  <header class="cu-hero">
+    <div class="cu-heading">
+      <p class="page-eyebrow">PROMOTION PERFORMANCE &amp; ORDER ATTRIBUTION</p>
+      <h1>Coupon Usage</h1>
+      <p>See who used each coupon, which orders came from it, and how much discount was applied.</p>
+      <div class="cu-meta"><span class="cu-live-dot"></span><span>Live order and redemption records</span><span class="cu-separator">·</span><span>Admin-only customer details</span></div>
+    </div>
+    <div class="cu-actions">
+      <a class="hf-button hf-button-secondary" href="./coupons.html">Coupon Promotions</a>
+      <button class="hf-button hf-button-secondary" id="couponUsageExportBtn" type="button">Export CSV</button>
+      <button class="hf-button hf-button-primary" id="couponUsageRefreshBtn" type="button">↻ Refresh</button>
+    </div>
+  </header>
+  <section class="cu-kpis" aria-label="Coupon order summary">
+    <article class="hf-card cu-kpi"><span>Coupon orders</span><strong id="cuMetricOrders">—</strong><small>Not cancelled</small></article>
+    <article class="hf-card cu-kpi"><span>Awaiting completion</span><strong id="cuMetricPending">—</strong><small>Pending, processing or shipped</small></article>
+    <article class="hf-card cu-kpi"><span>Delivered orders</span><strong id="cuMetricDelivered">—</strong><small>Completed coupon orders</small></article>
+    <article class="hf-card cu-kpi"><span>Discount applied</span><strong id="cuMetricDiscount">—</strong><small>Pending + delivered; excludes cancelled</small></article>
+    <article class="hf-card cu-kpi"><span>Coupon order value</span><strong id="cuMetricOrderValue">—</strong><small>Recorded total, not cash collected</small></article>
+  </section>
+  <section class="cu-secondary-metrics" aria-label="Discount breakdown">
+    <div class="hf-card cu-secondary"><span>Discount awaiting completion</span><strong id="cuMetricPendingDiscount">—</strong></div>
+    <div class="hf-card cu-secondary"><span>Discount on delivered orders</span><strong id="cuMetricDeliveredDiscount">—</strong></div>
+    <div class="hf-card cu-secondary"><span>Discount on cancelled orders</span><strong id="cuMetricReleasedDiscount">—</strong></div>
+  </section>
+  <div id="cuIntegrityNotice" class="cu-notice" role="status">Checking order-to-redemption matching…</div>
+  <section class="hf-card cu-workspace">
+    <div class="cu-toolbar">
+      <label class="cu-search"><span aria-hidden="true">⌕</span><input class="hf-input" id="couponUsageSearch" type="search" placeholder="Search customer, mobile, order or coupon…" aria-label="Search coupon orders"></label>
+      <select class="hf-select" id="couponUsageCouponFilter" aria-label="Filter by coupon"><option value="all">All coupons</option></select>
+      <select class="hf-select" id="couponUsageStatusFilter" aria-label="Filter by redemption state">
+        <option value="all">All usage states</option>
+        <option value="reserved">Awaiting completion</option>
+        <option value="redeemed">Delivered / completed</option>
+        <option value="released">Cancelled / released</option>
+        <option value="unlinked">Needs reconciliation</option>
+      </select>
+    </div>
+    <div class="cu-table-wrap" tabindex="0" role="region" aria-label="Coupon orders and customers">
+      <table class="hf-table cu-table">
+        <thead><tr><th>Customer</th><th>Order</th><th>Coupon</th><th>Discount</th><th>Subtotal</th><th>Order total</th><th>Order / usage status</th><th>Used at</th></tr></thead>
+        <tbody id="couponUsageTableBody"><tr><td colspan="8" class="hf-loading">Loading coupon usage…</td></tr></tbody>
+      </table>
+    </div>
+    <footer class="cu-table-footer"><span id="cuResultCount">—</span><span>Cancelled orders remain in history but are excluded from applied-discount totals.</span></footer>
+  </section>
+  <p class="cu-footnote">Order value is the recorded order total after discount, not proof of money received. The storefront is currently a COD/testing project; this dashboard reports order records and does not verify cash collection.</p>
+</main>
+</div>
+<script defer src="./i18n.js?v=20261031-coupon-usage-v1"></script>
+<script defer src="./shared.js?v=20261031-coupon-nav-v2"></script>
+<script defer src="./coupon-usage.js?v=20261031-coupon-usage-v1"></script>
+<script defer src="./app.js?v=20261031-coupon-usage-v1"></script>
+</body>
+</html>

@@ -87,11 +87,11 @@
     function renderMetrics() {
       const count = coupons.length;
       const active = coupons.filter(c => ["active", "scheduled"].includes(statusOf(c, countedUses(c.id)))).length;
-      const redeemed = redemptions.filter(r => r.status === "redeemed").length;
-      const discount = redemptions.filter(r => r.status === "redeemed").reduce((sum, r) => sum + Number(r.discount_amount || 0), 0);
+      const validUses = redemptions.filter(r => ["reserved", "redeemed"].includes(r.status)).length;
+      const discount = redemptions.filter(r => ["reserved", "redeemed"].includes(r.status)).reduce((sum, r) => sum + Number(r.discount_amount || 0), 0);
       $("couponMetricTotal").textContent = count.toLocaleString("en-BD");
       $("couponMetricActive").textContent = active.toLocaleString("en-BD");
-      $("couponMetricRedeemed").textContent = redeemed.toLocaleString("en-BD");
+      $("couponMetricRedeemed").textContent = validUses.toLocaleString("en-BD");
       $("couponMetricDiscount").textContent = moneyText(discount);
       $("couponListCount").textContent = count.toLocaleString("en-BD");
     }
@@ -427,13 +427,16 @@
       const reserved = rows.filter(r => r.status === "reserved").length;
       const redeemed = rows.filter(r => r.status === "redeemed").length;
       const released = rows.filter(r => r.status === "released").length;
+      const appliedDiscount = rows.filter(r => ["reserved", "redeemed"].includes(r.status)).reduce((sum, r) => sum + Number(r.discount_amount || 0), 0);
       const discount = rows.filter(r => r.status === "redeemed").reduce((sum, r) => sum + Number(r.discount_amount || 0), 0);
       const status = statusOf(coupon, countedUses(coupon.id));
       $("couponDetailsTitle").textContent = coupon.name;
       $("couponDetailsCode").textContent = coupon.code + " · " + prettyStatus(status);
       $("couponDetailsMetrics").innerHTML = [
+        ["Total valid uses", redeemed + reserved],
         ["Delivered uses", redeemed],
         ["Pending uses", reserved],
+        ["Discount applied", moneyText(appliedDiscount)],
         ["Discount delivered", moneyText(discount)]
       ].map(([label, value]) => '<div class="cp-dialog-kpi"><small>' + escapeHtml(label) + '</small><strong>' + escapeHtml(value) + '</strong></div>').join("");
       const target = coupon.customer_eligibility === "first_order" ? "First-time customers" :
