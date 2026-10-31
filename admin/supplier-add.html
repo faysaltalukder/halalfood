@@ -61,7 +61,7 @@
 
 <section class="hf-card hf-card-pad hf-supplier-list-card" id="supplierDirectorySection">
  <div class="hf-section-head"><div><p class="page-eyebrow">SUPPLIER REGISTER</p><h2>Supplier directory</h2><p>Search suppliers and review their purchase and payable position.</p></div><button class="hf-button hf-button-secondary hf-button-small" id="exportSuppliersBtn" type="button">Export CSV</button></div>
- <div class="hf-toolbar"><input class="hf-input" id="supplierSearch" type="search" placeholder="Search supplier, code, contact or phone"><select class="hf-select" id="supplierStatusFilter"><option value="">All statuses</option><option value="active">Active</option><option value="inactive">Inactive</option></select></div>
+ <div class="hf-toolbar"><input class="hf-input" id="supplierSearch" type="search" aria-label="Search suppliers by name, code, contact or phone" placeholder="Search supplier, code, contact or phone"><select class="hf-select" id="supplierStatusFilter" aria-label="Filter suppliers by status"><option value="">All statuses</option><option value="active">Active</option><option value="inactive">Inactive</option></select></div>
  <div class="hf-table-wrap" tabindex="0" role="region" aria-label="Supplier directory table; scroll horizontally on smaller screens">
   <table class="hf-table hf-supplier-table"><thead><tr><th>Supplier</th><th>Contact</th><th>Category / type</th><th>Total bills</th><th>Paid</th><th>Outstanding</th><th>Status</th><th>Actions</th></tr></thead>
    <tbody id="suppliersTableBody"><tr><td colspan="8" class="hf-loading">Loading supplier records…</td></tr></tbody>
