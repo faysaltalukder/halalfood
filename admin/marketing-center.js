@@ -125,7 +125,7 @@ window.HFMarketingInit=async function(){
   if(dot)dot.className="hf-readiness-dot "+(emailProvider.configured?"is-ready":"is-pending");
   if(title)title.textContent=emailProvider.configured?"Gmail API connected":"Gmail connection needs attention";
   if(detail)detail.textContent=emailProvider.configured?"Halal Food sender verified: "+emailProvider.from:(emailProvider.error?"Connection check failed: "+emailProvider.error:"Missing: "+(emailProvider.missing.length?emailProvider.missing.join(", "):"Gmail OAuth configuration")+"; check Supabase Edge Function secrets.");
-  if(hint)hint.textContent=emailProvider.configured?(emailProvider.providerNote+" Only active customers with recorded email opt-in can receive campaigns. Gmail acceptance is not proof of inbox placement or reading."):"Gmail is not ready. No email will be sent until the OAuth credentials are available; CSV export remains restricted to a consent-checked audience.";
+  if(hint)hint.textContent=emailProvider.configured?(emailProvider.providerNote+" This sender is restricted to order updates and customer-service replies. Gmail acceptance is not proof of inbox placement or reading."):"Gmail is not ready. Connect the server-side OAuth credentials before sending customer updates.";
  }
  function matchingEmailContacts(){
   const search=$("mktAudienceSearch").value.trim().toLocaleLowerCase();
@@ -164,6 +164,26 @@ window.HFMarketingInit=async function(){
    :(selectedRows.length?"Selected WhatsApp contacts can be exported with ready-to-open chat links. Final sending remains manual in WhatsApp Business.":"WhatsApp can only be used for customers who have asked to receive messages. No WhatsApp API is connected; customer replies can be handled in the active chat.");
   $("mktSaveDraft").textContent=channel==="email"?"Send customer update":"Export WhatsApp list";
   $("mktSaveDraft").disabled=selectedRows.length===0||(channel==="email"&&!emailProvider.configured);
+ }
+ function statusBadge(status,channel){
+  const labels={draft:"Draft",approved:"Ready",sending:"Sending",partially_sent:"Partially sent",sent:channel==="whatsapp"?"Manually recorded":"Gmail accepted",failed:"Failed",cancelled:"Cancelled",exported:"List exported"};
+  return '<span class="hf-marketing-status" data-status="'+esc(status)+'">'+esc(labels[status]||String(status||"draft").replace(/_/g," "))+'</span>';
+ }
+ function renderHistory(){
+  const body=$("mktCampaignHistoryBody");
+  if(!campaigns.length){body.innerHTML='<tr><td colspan="6" class="hf-marketing-muted">No customer messages have been saved yet.</td></tr>';return;}
+  body.innerHTML=campaigns.map(c=>{
+   let action="";
+   if(c.channel==="whatsapp"){
+    if(["draft","exported"].includes(c.status))action+='<button type="button" class="hf-button hf-button-secondary" data-mkt-export="'+esc(c.id)+'">Export chat links</button>';
+    if(c.status==="exported")action+='<button type="button" class="hf-button hf-button-primary" data-mkt-whatsapp-sent="'+esc(c.id)+'">Record manually sent</button>';
+   }else{
+    if(["draft","partially_sent"].includes(c.status)&&emailProvider.configured)action+='<button type="button" class="hf-button hf-button-primary" data-mkt-send="'+esc(c.id)+'">'+(c.status==="partially_sent"?"Continue sending":"Send update")+'</button>';
+    if(["draft","partially_sent"].includes(c.status))action+='<button type="button" class="hf-button hf-button-secondary" data-mkt-export="'+esc(c.id)+'">Download contact list</button>';
+    if(!emailProvider.configured)action+='<button type="button" class="hf-button hf-button-secondary" disabled title="Gmail OAuth is not connected">Gmail unavailable</button>';
+   }
+   return '<tr><td><div class="hf-marketing-history-name"><strong>'+esc(c.name)+'</strong><small>'+esc(dateTime(c.created_at))+'</small></div></td><td>'+esc(c.channel==="whatsapp"?"WhatsApp":"Email")+'</td><td>'+statusBadge(c.status,c.channel)+'</td><td>'+number(c.audience_count)+'</td><td>'+number(c.sent_count)+' / '+number(c.failed_count)+'</td><td><div class="hf-marketing-history-actions">'+action+'</div></td></tr>';
+  }).join("");
  }
  function switchTab(tab){
   activeTab=tab;
@@ -308,7 +328,7 @@ window.HFMarketingInit=async function(){
  async function sendEmail(id){
   const campaign=campaigns.find(c=>c.id===id);if(!campaign)throw new Error("Campaign was not found.");
   if(!emailProvider.configured)throw new Error("Email provider is not configured. No email has been sent.");
-  const ok=window.confirm("Send email campaign from Halal Food to "+number(campaign.audience_count)+" selected recipient(s)? This sends real emails. Recipient eligibility is rechecked by the server.");
+  const ok=window.confirm("Send this customer update from Halal Food to "+number(campaign.audience_count)+" selected email address(es)? This sends real emails. Active customer records and address validity are rechecked by the server.");
   if(!ok)return false;
   const {data,error}=await client.from("marketing_campaigns").update({status:"approved",approved_by:ADMIN_EMAIL,approved_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq("id",id).in("status",["draft","partially_sent"]).select("id").maybeSingle();
   if(error)throw error;if(!data)throw new Error("This campaign cannot be sent in its current status.");
@@ -317,7 +337,7 @@ window.HFMarketingInit=async function(){
   if(sendError)throw sendError;
   if(!result||!result.success)throw new Error(result?.error||"Email provider did not confirm the send.");
   await loadCampaigns();renderHistory();
-  toast("Gmail accepted "+number(result.acceptedByProvider??result.sent??0)+" email(s); failed/suppressed: "+number(result.failed||0)+", remaining: "+number(result.remaining||0)+".","success");
+  toast("Gmail accepted "+number(result.acceptedByProvider??result.sent??0)+" customer update(s); failed/held: "+number(result.failed||0)+", remaining: "+number(result.remaining||0)+".","success");
   return true;
  }
  async function refreshAll(){
