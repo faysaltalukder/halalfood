@@ -80,15 +80,12 @@ window.HFAdminReady.then(async H => {
  }
  function renderPage(){
   if(page==="categories"){renderTree();renderSorting();}
-  if(page==="categories-tree")renderTree();
-  if(page==="categories-sorting")renderSorting();
-  if(page==="categories-settings")renderSettings();
  }
  function categoryNodeMarkup(category,search="",filter="all"){
   const depth=depthOf(category),children=childrenOf(category.id);
   const query=search.toLowerCase();
-  const descendantMatches=child=>[child,...[...descendantsOf(child.id)].map(id=>categoryById(id)).filter(Boolean)].some(c=>(c.name+" "+c.slug).toLowerCase().includes(query)&&(filter==="all"||(filter==="active"?c.is_active:!c.is_active)));
-  const ownMatch=(!query||(category.name+" "+category.slug).toLowerCase().includes(query))&&(filter==="all"||(filter==="active"?category.is_active:!category.is_active));
+  const descendantMatches=child=>[child,...[...descendantsOf(child.id)].map(id=>categoryById(id)).filter(Boolean)].some(c=>(c.name+" "+c.slug).toLowerCase().includes(query)&&(filter==="all"||(filter==="active"?effectiveActive(c):!effectiveActive(c))));
+  const ownMatch=(!query||(category.name+" "+category.slug).toLowerCase().includes(query))&&(filter==="all"||(filter==="active"?effectiveActive(category):!effectiveActive(category)));
   const visible=ownMatch||children.some(descendantMatches);
   if((query||filter!=="all")&&!visible)return "";
   const childMarkup=children.map(child=>categoryNodeMarkup(child,search,filter)).join("");
@@ -98,7 +95,7 @@ window.HFAdminReady.then(async H => {
    '<div class="catalog-tree-row" draggable="'+String(canReorder)+'" data-category-id="'+esc(category.id)+'" data-parent-id="'+esc(category.parent_id||"")+'">'+
     '<span class="catalog-tree-grip" aria-hidden="true" title="Drag to reorder">⠿</span>'+
     '<div class="catalog-tree-info"><div class="catalog-tree-title"><strong>'+esc(category.name)+'</strong><span class="catalog-tree-level">'+(depth===1?"Category":depth===2?"Subcategory":"Child category")+'</span></div><small>/'+esc(category.slug)+' · '+categoryProductCount(category)+' products</small></div>'+
-    '<span class="catalog-tree-product-count">'+(category.is_active?'<span class="hf-status hf-status-active">Visible</span>':'<span class="hf-status hf-status-hidden">Hidden</span>')+'</span>'+
+    '<span class="catalog-tree-product-count">'+(effectiveActive(category)?'<span class="hf-status hf-status-active">Visible</span>':'<span class="hf-status hf-status-hidden">Hidden</span>')+'</span>'+
     '<div class="catalog-tree-actions">'+
      '<button class="catalog-mini-button" type="button" data-cat-up="'+esc(category.id)+'" '+(!canReorder?"disabled":"")+' aria-label="Move '+esc(category.name)+' up">↑</button>'+
      '<button class="catalog-mini-button" type="button" data-cat-down="'+esc(category.id)+'" '+(!canReorder?"disabled":"")+' aria-label="Move '+esc(category.name)+' down">↓</button>'+
