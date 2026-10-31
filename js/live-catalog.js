@@ -46,6 +46,8 @@
   const API_ROOT = String(STORE_CONFIG.supabase?.url || "").replace(/\/$/, "");
   const PUBLIC_KEY = STORE_CONFIG.supabase?.publishableKey || "";
   const SITE_ROOT = STORE_CONFIG.siteRoot || "";
+  const STORE_NAME = STORE_CONFIG.storeName || "Store";
+  const WHATSAPP_NUMBER = String(STORE_CONFIG.contact?.whatsappNumber || "").replace(/[^0-9]/g, "");
   const CATALOG = STORE_CONFIG.catalog || {};
   const CATEGORY_TABLE = CATALOG.categoriesTable || "categories";
   const PRODUCT_TABLE = CATALOG.productsTable || "products";
@@ -303,9 +305,9 @@
     const heading = $(".category-page-heading h1, #live-category-title");
     if (heading && (info.generic || category?.cms_created || category?.cms_managed)) heading.textContent = category?.name || "Category unavailable";
     const meta = document.querySelector('meta[name="description"]');
-    if (category && meta && (info.generic || category.cms_created || category.cms_managed)) meta.content = category.seo_description || category.description || "Browse " + category.name + " products from Halal Food.";
+    if (category && meta && (info.generic || category.cms_created || category.cms_managed)) meta.content = category.seo_description || category.description || "Browse " + category.name + " products from " + STORE_NAME + ".";
     if (info.generic || category?.cms_created || category?.cms_managed) {
-      const pageTitle = category ? (category.seo_title || category.name + " | Halal Food") : "Category | Halal Food";
+      const pageTitle = category ? (category.seo_title || category.name + " | " + STORE_NAME) : "Category | " + STORE_NAME;
       document.title = pageTitle;
       const canonical = document.querySelector('link[rel="canonical"]');
       if (canonical) canonical.href = info.generic ? categoryHref(category || {slug:info.slug,cms_created:true}) : categoryHref(category);
@@ -521,7 +523,7 @@
     if (order) order.href = rootURL("order.html?product=" + encodeURIComponent(product.name));
     const message = encodeURIComponent("আমি " + product.name + " অর্ডার করতে চাই");
     const whats = $('.product-detail-actions a[href*="wa.me"]', article);
-    if (whats) whats.href = "https://wa.me/8801842031164?text=" + message;
+    if (whats) whats.href = "https://wa.me/" + WHATSAPP_NUMBER + "?text=" + message;
     const detail = $(".product-description-section .product-description-inner p", article);
     if (detail && (product.full_description != null || product.description != null)) detail.textContent = product.full_description || product.description || "";
     const breadcrumb = $("#product-breadcrumb");
@@ -534,7 +536,7 @@
     }
     const seo = document.querySelector('meta[name="description"]');
     if (seo && product.seo_description) seo.content = product.seo_description;
-    document.title = product.seo_title || product.name + " | Halal Food";
+    document.title = product.seo_title || product.name + " | " + STORE_NAME;
   }
   function handleProductResult(product, info) {
     if (info.kind === "product") renderProductDetail([product], info);
