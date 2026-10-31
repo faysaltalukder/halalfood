@@ -406,11 +406,17 @@ button.auth-submit:disabled{opacity:.65;cursor:wait;transform:none}
 </section>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
+<script src="../js/store-config.js?v=20261101-store-config-v1"></script>
 <script>
-const SUPABASE_URL="https://qfwvrcfkrsydycbfjsxf.supabase.co";
-const SUPABASE_KEY="sb_publishable_X32Rb8W-axGIfgFuppdfZQ_jbc38pcL";
+const STORE_CONFIG=window.HALAL_STORE_CONFIG||{};
+const SUPABASE_URL=String(STORE_CONFIG.supabase?.url||"https://qfwvrcfkrsydycbfjsxf.supabase.co").replace(/\/$/,"");
+const SUPABASE_KEY=STORE_CONFIG.supabase?.publishableKey||"sb_publishable_X32Rb8W-axGIfgFupppdfZQ_jbc38pcL";
+const ADMIN_EMAIL=String(STORE_CONFIG.adminEmail||"halalfoodbd.official@gmail.com").trim().toLowerCase();
+const STORE_NAME=STORE_CONFIG.storeName||"Store";
 const client=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+document.title=STORE_NAME+" Admin";
 const $=id=>document.getElementById(id);
+$("email").value=ADMIN_EMAIL;
 $("togglePassword").addEventListener("click",()=>{
  const field=$("password");
  const reveal=field.type==="password";
@@ -522,7 +528,7 @@ async function routeSession(session){
    $("authCard").classList.remove("hidden");$("dashboard").classList.add("hidden");$("mfaCard").classList.add("hidden");$("logout").classList.add("hidden");return;
   }
   const email=String(session.user?.email||"").trim().toLowerCase();
-  if(email!=="halalfoodbd.official@gmail.com"){
+  if(email!==ADMIN_EMAIL){
    $("authMsg").textContent="Access denied. This dashboard is restricted to the authorized admin account.";
    await client.auth.signOut();return;
   }
@@ -546,14 +552,14 @@ async function routeSession(session){
    setMfaMessage("MFA is required before any admin data can be loaded.");
   }else{
    $("mfaTitle").textContent="Enable admin MFA";
-   $("mfaIntro").textContent="Set up an authenticator for this Halal Food admin account.";
+   $("mfaIntro").textContent="Set up an authenticator for this "+STORE_NAME+" admin account.";
    $("mfaChallengePanel").classList.add("hidden");$("mfaEnrollPanel").classList.remove("hidden");
    if(!pendingMfaFactorId&&!mfaEnrolling){
     mfaEnrolling=true;
     try{
      const existing=(factorResult.data?.all||[]).filter(f=>f.factor_type==="totp"&&f.status!=="verified");
      for(const factor of existing){await client.auth.mfa.unenroll({factorId:factor.id})}
-     const enrolled=await client.auth.mfa.enroll({factorType:"totp",friendlyName:"Halal Food Admin"});
+     const enrolled=await client.auth.mfa.enroll({factorType:"totp",friendlyName:STORE_NAME+" Admin"});
      if(enrolled.error)throw enrolled.error;
      pendingMfaFactorId=enrolled.data.id;
      $("mfaQr").src=enrolled.data.totp.qr_code;

@@ -1,10 +1,62 @@
 /* Live catalog bridge: Supabase remains the source of truth for active store products and categories. */
 (function () {
   "use strict";
-  const API_ROOT = "https://qfwvrcfkrsydycbfjsxf.supabase.co";
-  const PUBLIC_KEY = "sb_publishable_X32Rb8W-axGIfgFuppdfZQ_jbc38pcL";
-  const SITE_ROOT = "https://faysaltalukder.github.io/halalfood/";
+  // Older category/product pages load this bridge directly. Wait for the per-store
+  // config once, then re-run this file with the same URL so every page is configured.
+  if (!window.HALAL_STORE_CONFIG) {
+    const sourceScript = Array.from(document.scripts).find(script =>
+      /(?:^|\/)live-catalog\.js(?:\?|$)/i.test(script.src)
+    );
+    const sourceUrl = sourceScript?.src || "";
+    const retry = () => {
+      if (window.__HALAL_LIVE_CATALOG_RETRYING || !window.HALAL_STORE_CONFIG || !sourceUrl) return;
+      window.__HALAL_LIVE_CATALOG_RETRYING = true;
+      const script = document.createElement("script");
+      script.src = sourceUrl;
+      script.async = true;
+      document.head.appendChild(script);
+    };
+    window.addEventListener("halalstore:config-ready", retry, { once: true });
+    const configScript = Array.from(document.scripts).find(script =>
+      /(?:^|\/)store-config\.js(?:\?|$)/i.test(script.src)
+    );
+    if (configScript) {
+      configScript.addEventListener("load", retry, { once: true });
+      if (window.HALAL_STORE_CONFIG) retry();
+    } else {
+      const mainScript = Array.from(document.scripts).find(script =>
+        /(?:^|\/)main\.js(?:\?|$)/i.test(script.src)
+      );
+      const siteRoot = mainScript ? new URL("../", mainScript.src) :
+        sourceScript ? new URL("../", sourceScript.src) : null;
+      if (siteRoot) {
+        const config = document.createElement("script");
+        config.src = new URL("js/store-config.js", siteRoot).href;
+        config.async = true;
+        config.onload = retry;
+        config.onerror = () => console.error("This website's store-config.js could not be loaded.");
+        document.head.appendChild(config);
+      } else {
+        console.error("The reusable catalog bridge could not find store-config.js.");
+      }
+    }
+    return;
+  }
+  const STORE_CONFIG = window.HALAL_STORE_CONFIG || {};
+  const API_ROOT = String(STORE_CONFIG.supabase?.url || "").replace(/\/$/, "");
+  const PUBLIC_KEY = STORE_CONFIG.supabase?.publishableKey || "";
+  const SITE_ROOT = STORE_CONFIG.siteRoot || "";
+  const STORE_NAME = STORE_CONFIG.storeName || "Store";
+  const WHATSAPP_NUMBER = String(STORE_CONFIG.contact?.whatsappNumber || "").replace(/[^0-9]/g, "");
+  const CATALOG = STORE_CONFIG.catalog || {};
+  const CATEGORY_TABLE = CATALOG.categoriesTable || "categories";
+  const PRODUCT_TABLE = CATALOG.productsTable || "products";
+  const MAX_CATEGORIES = Math.min(5000, Math.max(1, Number(CATALOG.maxCategories) || 5000));
+  const MAX_PRODUCTS = Math.min(50000, Math.max(1, Number(CATALOG.maxProducts) || 10000));
+  const STORAGE_BUCKET = STORE_CONFIG.storage?.publicContentBucket || "store-content";
   let currentCategories = [];
+  let catalogRefreshInFlight = false;
+  let lastSuccessfulCatalogSync = 0;
   const CART_ICON = '<svg aria-hidden="true" class="btn-icon" viewBox="0 0 24 24"><path d="M6 6h15l-1.5 9h-12z"></path><circle cx="9" cy="20" r="1.4"></circle><circle cx="18" cy="20" r="1.4"></circle><path d="M2 3h2l1 3"></path></svg>';
   const $ = (selector, root) => (root || document).querySelector(selector);
   const $$ = (selector, root) => Array.from((root || document).querySelectorAll(selector));
@@ -191,8 +243,54 @@
     return path;
   }
   function categoryHref(category) {
-    return category.cms_created ? rootURL("category.html?slug=" + encodeURIComponent(category.slug)) :
-      rootURL("categories/" + encodeURIComponent(category.slug) + ".html");
+    const slug = encodeURIComponent(category.slug);
+    const template = (category.cms_created || category.cms_managed)
+      ? (CATALOG.categoryPage || "category.html?slug={slug}")
+      : (CATALOG.legacyCategoryPage || "categories/{slug}.html");
+    return rootURL(String(template).replace(/\{slug\}/g, slug));
+  }
+  function categorySlugFromHref(href) {
+    const value = String(href || "");
+    const match = value.match(/categories\/([^/?#]+)\.html/i) || value.match(/[?&]slug=([^&#]+)/i);
+    if (!match) return "";
+    try { return decodeURIComponent(match[1]); } catch (_) { return match[1]; }
+  }
+  function categoryCardImage(card, category) {
+    let imageBox = $(".cat-card-img", card);
+    if (!imageBox) {
+      imageBox = document.createElement("span");
+      imageBox.className = "cat-card-img";
+      card.prepend(imageBox);
+    }
+    let image = $("img", imageBox);
+    if (category.image_url) {
+      if (!image) {
+        image = document.createElement("img");
+        image.loading = "lazy";
+        imageBox.replaceChildren(image);
+      }
+      image.alt = "";
+      setPictureImage(image, category.image_url, "");
+      image.onerror = () => {
+        image.onerror = null;
+        imageBox.innerHTML = '<span class="cms-image-placeholder">Category image</span>';
+      };
+      return;
+    }
+    // Keep the original responsive picture for the ten legacy categories. New
+    // categories without an image receive a neutral placeholder, not a broken URL.
+    if (image && (image.getAttribute("src") || image.getAttribute("srcset"))) return;
+    imageBox.innerHTML = '<span class="cms-image-placeholder">Category image</span>';
+  }
+  function categoryAnchor(category, className) {
+    const link = document.createElement("a");
+    link.href = categoryHref(category);
+    if (className) link.className = className;
+    link.textContent = category.name;
+    return link;
+  }
+  function visibleCategoryTree(categories) {
+    return orderedCategories(categories).filter(category => effectiveCategoryActive(category, categories));
   }
   function ensureLiveCategoryStyles() {
     if ($("#live-category-workspace-styles")) return;
@@ -207,9 +305,9 @@
     const heading = $(".category-page-heading h1, #live-category-title");
     if (heading && (info.generic || category?.cms_created || category?.cms_managed)) heading.textContent = category?.name || "Category unavailable";
     const meta = document.querySelector('meta[name="description"]');
-    if (category && meta && (info.generic || category.cms_created || category.cms_managed)) meta.content = category.seo_description || category.description || "Browse " + category.name + " products from Halal Food.";
+    if (category && meta && (info.generic || category.cms_created || category.cms_managed)) meta.content = category.seo_description || category.description || "Browse " + category.name + " products from " + STORE_NAME + ".";
     if (info.generic || category?.cms_created || category?.cms_managed) {
-      const pageTitle = category ? (category.seo_title || category.name + " | Halal Food") : "Category | Halal Food";
+      const pageTitle = category ? (category.seo_title || category.name + " | " + STORE_NAME) : "Category | " + STORE_NAME;
       document.title = pageTitle;
       const canonical = document.querySelector('link[rel="canonical"]');
       if (canonical) canonical.href = info.generic ? categoryHref(category || {slug:info.slug,cms_created:true}) : categoryHref(category);
@@ -339,88 +437,64 @@
     patchExistingCards(products);
     const rail = $("[data-category-rail]");
     if (rail) {
-      const present = new Map($$(".cat-card", rail).map(card => {
-        const url = card.getAttribute("href") || "";
-        const match = url.match(/categories\/([^/?#]+)\.html/i) || url.match(/[?&]slug=([^&]+)/);
-        return [match ? decodeURIComponent(match[1]) : "", card];
-      }).filter(pair => pair[0]));
-      rail.querySelectorAll(".cat-card").forEach(card => {
-        const href = card.getAttribute("href") || "";
-        const match = href.match(/categories\/([^/?#]+)\.html/i) || href.match(/[?&]slug=([^&]+)/);
-        if (match && !categories.some(cat => cat.slug === decodeURIComponent(match[1]) && !cat.parent_id && effectiveCategoryActive(cat, categories))) card.remove();
+      const oldCards = new Map();
+      $$(".cat-card", rail).forEach(card => {
+        const slug = categorySlugFromHref(card.getAttribute("href"));
+        if (slug && !oldCards.has(slug)) oldCards.set(slug, card);
       });
-      const liveSlugs = new Set($$(".cat-card", rail).map(card => {
-        const href = card.getAttribute("href") || ""; const m = href.match(/categories\/([^/?#]+)\.html/i) || href.match(/[?&]slug=([^&]+)/);
-        return m ? decodeURIComponent(m[1]) : "";
-      }));
-      categories.filter(cat => cat.is_active && !cat.parent_id)
-        .sort((a,b)=>Number(a.sort_order||0)-Number(b.sort_order||0)||String(a.name||"").localeCompare(String(b.name||""))).forEach(cat => {
-        let card = $$(".cat-card", rail).find(node => {
-          const href = node.getAttribute("href") || ""; const m = href.match(/categories\/([^/?#]+)\.html/i) || href.match(/[?&]slug=([^&]+)/);
-          return m && decodeURIComponent(m[1]) === cat.slug;
-        });
+      const rootCategories = categories
+        .filter(category => !category.parent_id && effectiveCategoryActive(category, categories))
+        .sort((a,b) => Number(a.sort_order||0)-Number(b.sort_order||0) || String(a.name||"").localeCompare(String(b.name||"")));
+      const orderedCards = rootCategories.map(category => {
+        let card = oldCards.get(category.slug);
         if (!card) {
-          card = document.createElement("a"); card.className = "cat-card";
-          card.href = cat.cms_created ? rootURL("category.html?slug=" + encodeURIComponent(cat.slug)) : rootURL("categories/" + encodeURIComponent(cat.slug) + ".html");
-          const imageBox = document.createElement("span"); imageBox.className = "cat-card-img";
-          const img = document.createElement("img"); img.alt = ""; img.loading = "lazy"; if (cat.image_url) img.src = cat.image_url;
-          imageBox.appendChild(img); const heading = document.createElement("h3"); heading.textContent = cat.name; card.append(imageBox, heading); rail.appendChild(card);
+          card = document.createElement("a");
+          card.className = "cat-card";
+          const imageBox = document.createElement("span");
+          imageBox.className = "cat-card-img";
+          const heading = document.createElement("h3");
+          card.append(imageBox, heading);
         }
-        const label = $("h3", card); if (label) label.textContent = cat.name;
-        const img = $("img", card); if (img) { img.alt = ""; if (cat.image_url) setPictureImage(img, cat.image_url, ""); }
-        if (cat.cms_created) card.href = rootURL("category.html?slug=" + encodeURIComponent(cat.slug));
+        card.href = categoryHref(category);
+        const heading = $("h3", card);
+        if (heading) heading.textContent = category.name;
+        categoryCardImage(card, category);
+        return card;
       });
+      rail.replaceChildren(...orderedCards);
     }
     window.dispatchEvent(new CustomEvent("halalcatalog:rendered", { detail: { products, categories } }));
   }
   function syncCategoryMenus(categories) {
-    // Keep desktop mega menus and the mobile drawer in sync with the active category tree.
-    const menuCategories = orderedCategories(categories).filter(cat => effectiveCategoryActive(cat, categories));
-    const menuLabel = cat => "— ".repeat(Math.max(0, categoryPath(cat, categories).length - 1)) + cat.name;
-    $(".mega-menu").forEach(menu => {
-      menuCategories.forEach(cat => {
-        let link = Array.from(menu.querySelectorAll("a")).find(a => {
-          const href = a.getAttribute("href") || "";
-          const match = href.match(/categories\/([^/?#]+)\.html/i) || href.match(/[?&]slug=([^&]+)/);
-          return match && decodeURIComponent(match[1]) === cat.slug;
-        });
-        if (!link) {
-          link = document.createElement("a");
-          link.href = cat.cms_created ? rootURL("category.html?slug=" + encodeURIComponent(cat.slug)) :
-            rootURL("categories/" + encodeURIComponent(cat.slug) + ".html");
-          menu.appendChild(link);
-        }
-        link.textContent = menuLabel(cat);
-        if (cat.cms_created) link.href = rootURL("category.html?slug=" + encodeURIComponent(cat.slug));
-      });
-      Array.from(menu.querySelectorAll("a")).forEach(link => {
-        const href = link.getAttribute("href") || "";
-        const match = href.match(/categories\/([^/?#]+)\.html/i) || href.match(/[?&]slug=([^&]+)/);
-        if (match && !menuCategories.some(cat => cat.slug === decodeURIComponent(match[1]))) link.remove();
-      });
+    // All storefront navigation surfaces are rebuilt from the same ordered database tree.
+    // This prevents a rename, hide/show or reorder from leaving stale static links behind.
+    const menuCategories = visibleCategoryTree(categories);
+    const linksFor = (className) => menuCategories.map(category => {
+      const link = categoryAnchor(category, className);
+      const depth = categoryPath(category, categories).length - 1;
+      link.textContent = "— ".repeat(Math.max(0, depth)) + category.name;
+      return link;
+    });
+    $$(".mega-menu").forEach(menu => {
+      menu.replaceChildren(...linksFor(""));
     });
     const mobileLinks = $(".mobile-category-links");
-    if (mobileLinks) {
-      menuCategories.forEach(cat => {
-        let link = Array.from(mobileLinks.querySelectorAll("a")).find(a => {
-          const href = a.getAttribute("href") || "";
-          const match = href.match(/categories\/([^/?#]+)\.html/i) || href.match(/[?&]slug=([^&]+)/);
-          return match && decodeURIComponent(match[1]) === cat.slug;
-        });
-        if (!link) {
-          link = document.createElement("a");
-          mobileLinks.appendChild(link);
-        }
-        link.textContent = menuLabel(cat);
-        link.href = cat.cms_created ? rootURL("category.html?slug=" + encodeURIComponent(cat.slug)) :
-          rootURL("categories/" + encodeURIComponent(cat.slug) + ".html");
-      });
-      Array.from(mobileLinks.querySelectorAll("a")).forEach(link => {
-        const href = link.getAttribute("href") || "";
-        const match = href.match(/categories\/([^/?#]+)\.html/i) || href.match(/[?&]slug=([^&]+)/);
-        if (match && !menuCategories.some(cat => cat.slug === decodeURIComponent(match[1]))) link.remove();
-      });
+    if (mobileLinks) mobileLinks.replaceChildren(...linksFor(""));
+    const footerHeading = $$("footer h4").find(heading => heading.textContent.trim().toLowerCase() === "categories");
+    const footerList = footerHeading?.nextElementSibling;
+    if (footerList && footerList.tagName === "UL") {
+      footerList.replaceChildren(...menuCategories.map(category => {
+        const item = document.createElement("li");
+        const link = categoryAnchor(category, "");
+        const depth = categoryPath(category, categories).length - 1;
+        link.textContent = "— ".repeat(Math.max(0, depth)) + category.name;
+        item.appendChild(link);
+        return item;
+      }));
     }
+    window.dispatchEvent(new CustomEvent("halalcatalog:navigation-synced", {
+      detail: { categories: menuCategories }
+    }));
   }
   function renderProductDetail(products, info, categories) {
     const product = products.find(item => item.slug === info.slug && item.is_active);
@@ -449,7 +523,7 @@
     if (order) order.href = rootURL("order.html?product=" + encodeURIComponent(product.name));
     const message = encodeURIComponent("আমি " + product.name + " অর্ডার করতে চাই");
     const whats = $('.product-detail-actions a[href*="wa.me"]', article);
-    if (whats) whats.href = "https://wa.me/8801842031164?text=" + message;
+    if (whats) whats.href = "https://wa.me/" + WHATSAPP_NUMBER + "?text=" + message;
     const detail = $(".product-description-section .product-description-inner p", article);
     if (detail && (product.full_description != null || product.description != null)) detail.textContent = product.full_description || product.description || "";
     const breadcrumb = $("#product-breadcrumb");
@@ -462,7 +536,7 @@
     }
     const seo = document.querySelector('meta[name="description"]');
     if (seo && product.seo_description) seo.content = product.seo_description;
-    document.title = product.seo_title || product.name + " | Halal Food";
+    document.title = product.seo_title || product.name + " | " + STORE_NAME;
   }
   function handleProductResult(product, info) {
     if (info.kind === "product") renderProductDetail([product], info);
@@ -497,29 +571,46 @@
     window.dispatchEvent(new CustomEvent("halalcart:updated", { detail: window.HALAL_CART_API?.read?.() || [] }));
   }
   async function start() {
-    const info = pathInfo();
-    const [products, categories] = await Promise.all([
-      readTable("products", { select: "id,name,slug,category,category_slug,price,unit_type,display_price,image_url,short_description,full_description,description,is_active,is_featured,cms_created,cms_managed,sort_order,home_sort_order,seo_title,seo_description,stock_quantity,created_at", is_active: "eq.true", order: "home_sort_order.asc,sort_order.asc,name.asc,id.asc", limit: "10000" }),
-      readTable("categories", { select: "id,name,slug,parent_id,description,image_url,is_active,cms_created,cms_managed,sort_order,seo_title,seo_description", is_active: "eq.true", order: "sort_order.asc,name.asc,id.asc", limit: "5000" })
-    ]);
-    currentCategories = categories;
-    // Products assigned to a hidden category should not leak into home, search or cart.
-    const visibleProducts = products.filter(product =>
-      categories.some(category => category.slug === product.category_slug && effectiveCategoryActive(category, categories))
-    );
-    syncProductData(visibleProducts, categories);
-    // Render catalog data before optional navigation synchronization. A navigation
-    // problem must never prevent current prices/descriptions from reaching the page.
-    if (info.kind === "home") renderHome(visibleProducts, categories);
-    else if (info.kind === "category") renderCategory(visibleProducts, categories, info);
-    else if (info.kind === "product") renderProductDetail(visibleProducts, info, categories);
+    if (catalogRefreshInFlight) return;
+    catalogRefreshInFlight = true;
     try {
-      syncCategoryMenus(categories);
-    } catch (error) {
-      console.warn("Live catalog rendered, but category navigation could not sync.", error);
+      const info = pathInfo();
+      if (!API_ROOT || !PUBLIC_KEY || !SITE_ROOT) {
+        throw new Error("This website is missing its HALAL_STORE_CONFIG deployment settings.");
+      }
+      const [products, categories] = await Promise.all([
+        readTable(PRODUCT_TABLE, { select: "id,name,slug,category,category_slug,price,unit_type,display_price,image_url,short_description,full_description,description,is_active,is_featured,cms_created,cms_managed,sort_order,home_sort_order,seo_title,seo_description,stock_quantity,created_at", is_active: "eq.true", order: "home_sort_order.asc,sort_order.asc,name.asc,id.asc", limit: String(MAX_PRODUCTS) }),
+        readTable(CATEGORY_TABLE, { select: "id,name,slug,parent_id,description,image_url,is_active,cms_created,cms_managed,sort_order,seo_title,seo_description", is_active: "eq.true", order: "sort_order.asc,name.asc,id.asc", limit: String(MAX_CATEGORIES) })
+      ]);
+      currentCategories = categories;
+      // Products assigned to a hidden category should not leak into home, search or cart.
+      const visibleProducts = products.filter(product =>
+        categories.some(category => category.slug === product.category_slug && effectiveCategoryActive(category, categories))
+      );
+      syncProductData(visibleProducts, categories);
+      // Render catalog data before optional navigation synchronization. A navigation
+      // problem must never prevent current prices/descriptions from reaching the page.
+      if (info.kind === "home") renderHome(visibleProducts, categories);
+      else if (info.kind === "category") renderCategory(visibleProducts, categories, info);
+      else if (info.kind === "product") renderProductDetail(visibleProducts, info, categories);
+      try {
+        syncCategoryMenus(categories);
+      } catch (error) {
+        console.warn("Live catalog rendered, but category navigation could not sync.", error);
+      }
+      lastSuccessfulCatalogSync = Date.now();
+    } finally {
+      catalogRefreshInFlight = false;
     }
   }
   window.addEventListener("halalnav:ready", () => { if (currentCategories.length) syncCategoryMenus(currentCategories); });
+  const refreshCatalogWhenVisible = () => {
+    if (!document.hidden && Date.now() - lastSuccessfulCatalogSync > 60000) {
+      initLiveCatalog();
+    }
+  };
+  window.addEventListener("focus", refreshCatalogWhenVisible);
+  document.addEventListener("visibilitychange", refreshCatalogWhenVisible);
   const initLiveCatalog = () => start().catch(error => {
     console.warn("Live catalog could not connect; leaving the static catalog in place.", error);
     const status = $("#live-catalog-status");

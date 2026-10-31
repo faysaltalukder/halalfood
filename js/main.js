@@ -1,10 +1,5 @@
-// Load the server-managed catalog on every public page that includes this shared script.
-// Pages that already include it explicitly are left untouched.
-(function ensureLiveCatalogScript() {
-  const alreadyIncluded = Array.from(document.scripts).some(script =>
-    /(?:^|\/)live-catalog\.js(?:\?|$)/i.test(script.src)
-  );
-  if (alreadyIncluded) return;
+// Load the per-store configuration before starting the reusable catalog bridge.
+(function ensureCatalogDependencies() {
   const mainScript = Array.from(document.scripts).find(script =>
     /(?:^|\/)js\/main\.js(?:\?|$)/i.test(script.src)
   );
@@ -12,17 +7,45 @@
   try {
     const mainUrl = new URL(mainScript.src);
     const siteRoot = new URL("../", mainUrl);
-    // Publisher cache-busts main.js on each release. Reuse that release token for
-    // live-catalog.js so the browser cannot keep running an older catalog bridge.
-    const releaseVersion = mainUrl.searchParams.get("v") || "live-catalog";
+    const releaseVersion = mainUrl.searchParams.get("v") || "catalog-engine";
+    const configUrl = new URL("js/store-config.js", siteRoot);
+    configUrl.searchParams.set("v", releaseVersion);
     const catalogUrl = new URL("js/live-catalog.js", siteRoot);
     catalogUrl.searchParams.set("v", releaseVersion);
-    const script = document.createElement("script");
-    script.src = catalogUrl.href;
-    script.async = true;
-    document.head.appendChild(script);
+    const hasCatalogScript = () => Array.from(document.scripts).some(script =>
+      /(?:^|\/)live-catalog\.js(?:\?|$)/i.test(script.src)
+    );
+    const loadCatalog = () => {
+      if (hasCatalogScript()) return;
+      const script = document.createElement("script");
+      script.src = catalogUrl.href;
+      script.async = true;
+      document.head.appendChild(script);
+    };
+    if (window.HALAL_STORE_CONFIG) {
+      window.dispatchEvent(new CustomEvent("halalstore:config-ready"));
+      loadCatalog();
+      return;
+    }
+    const configAlreadyIncluded = Array.from(document.scripts).some(script =>
+      /(?:^|\/)store-config\.js(?:\?|$)/i.test(script.src)
+    );
+    if (configAlreadyIncluded) {
+      // The explicitly ordered config script runs before this defer script.
+      loadCatalog();
+      return;
+    }
+    const configScript = document.createElement("script");
+    configScript.src = configUrl.href;
+    configScript.async = false;
+    configScript.onload = () => {
+      window.dispatchEvent(new CustomEvent("halalstore:config-ready"));
+      loadCatalog();
+    };
+    configScript.onerror = () => console.error("Could not load this website's store-config.js.");
+    document.head.appendChild(configScript);
   } catch (error) {
-    console.warn("Could not initialize the live catalog script.", error);
+    console.warn("Could not initialize the reusable live catalog.", error);
   }
 })();
 

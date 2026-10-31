@@ -8,51 +8,59 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <title>Categories · Halal Food Admin</title>
-<link rel="stylesheet" href="./shared.css?v=20261031-single-categories-workspace-v1">
-<link rel="stylesheet" href="./categories.css?v=20261031-single-categories-workspace-v1">
+<link rel="stylesheet" href="./shared.css?v=20261031-category-explorer-v5">
+<link rel="stylesheet" href="./categories.css?v=20261031-category-explorer-v5">
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
+<script defer src="../js/store-config.js?v=20261101-store-config-v1"></script>
 </head>
 <body data-page="categories">
 <div id="authGate" class="auth-gate"><div class="auth-gate-card"><strong>Checking secure admin access…</strong><p>Your catalog will load only after the authorized administrator and two-step verification are confirmed.</p></div></div>
 <div id="adminApp" hidden>
 <main id="pageContent" tabindex="-1">
  <div class="page-heading">
-  <div><p class="page-eyebrow">CATALOG CONTROL CENTER</p><h1>Categories</h1><p>Manage category structure, product placement and storefront presentation from one workspace.</p></div>
-  <div class="page-actions"><button class="hf-button hf-button-primary" id="addRootCategory" type="button">＋ Add category</button><button class="hf-button hf-button-secondary" data-catalog-refresh type="button">↻ Refresh</button></div>
+  <div><p class="page-eyebrow">CATALOG CONTROL CENTER</p><h1>Categories</h1><p>ক্যাটাগরির ভেতরে প্রবেশ করে সাব-ক্যাটাগরি ও পণ্যের অবস্থান সাজান।</p></div>
+  <div class="page-actions"><button class="hf-button hf-button-primary" id="addRootCategory" type="button">＋ নতুন ক্যাটাগরি</button><button class="hf-button hf-button-secondary" data-catalog-refresh type="button">↻ রিফ্রেশ</button></div>
  </div>
- <div class="hf-banner hf-banner-info"><span aria-hidden="true">ⓘ</span><div><strong>One workspace. One live catalog.</strong>Create and organise categories, manage visibility and metadata, and arrange products for category pages or the homepage. Changes are saved to Supabase and flow to the live storefront.</div></div>
- <div class="hf-kpi-grid">
+ <div class="hf-banner hf-banner-info"><span aria-hidden="true">ⓘ</span><div><strong>একটি ক্যাটালগ, সব জায়গায় একই ডেটা।</strong> এখানে ক্যাটাগরি তৈরি, সাব-ক্যাটাগরি, দৃশ্যমানতা, ছবি ও SEO সম্পাদনা এবং পণ্য সাজানোর কাজ করুন। সেভ হলে ওয়েবসাইটের মেনু ও ক্যাটাগরি কার্ডে তা প্রতিফলিত হবে।</div></div>
+ <div class="hf-kpi-grid" id="catalogOverviewStats">
   <section class="hf-card hf-kpi"><span class="hf-kpi-label">Categories</span><strong class="hf-kpi-value" id="catalogCategoryCount">—</strong><span class="hf-kpi-note">All hierarchy levels</span></section>
   <section class="hf-card hf-kpi"><span class="hf-kpi-label">Active products</span><strong class="hf-kpi-value" id="catalogProductCount">—</strong><span class="hf-kpi-note">Across the catalog</span></section>
   <section class="hf-card hf-kpi"><span class="hf-kpi-label">Nested categories</span><strong class="hf-kpi-value" id="catalogNestedCount">—</strong><span class="hf-kpi-note">Subcategories and child categories</span></section>
   <section class="hf-card hf-kpi"><span class="hf-kpi-label">Hidden records</span><strong class="hf-kpi-value" id="catalogHiddenCount">—</strong><span class="hf-kpi-note">Categories and products</span></section>
  </div>
- <section class="hf-card hf-card-pad catalog-single-section">
-  <div class="hf-section-head"><div><p class="page-eyebrow">STRUCTURE & PRESENTATION</p><h2>Category hierarchy</h2><p>Create, edit, move, reorder or hide categories. Images, descriptions and SEO are managed from the same Edit window.</p></div><span class="hf-status hf-status-review">Maximum depth: 3</span></div>
-  <div class="hf-toolbar">
-   <input class="hf-input" id="categoryTreeSearch" type="search" placeholder="Search category name or URL slug…" aria-label="Search categories">
-   <select class="hf-select" id="categoryTreeVisibility" aria-label="Filter category visibility"><option value="all">All categories</option><option value="active">Visible categories</option><option value="hidden">Hidden categories</option></select>
-   <button class="hf-button hf-button-secondary hf-button-small" id="undoCategoryOrder" type="button" hidden>↶ Undo last reorder</button>
-   <span class="catalog-saving-note" id="categoryTreeStatus" role="status">Changes save to the live catalog.</span>
+ <section class="hf-card hf-card-pad catalog-single-section catalog-explorer-section" id="categoryExplorerSection">
+  <div class="hf-section-head catalog-explorer-head">
+   <div><p class="page-eyebrow">CATEGORY MANAGEMENT · CATALOG</p><h2 id="categoryViewTitle">Top-level categories</h2><p id="categoryViewDescription">ক্যাটাগরিতে ঢুকে তার ভেতরের ক্যাটাগরি এবং পণ্য আলাদাভাবে সাজান।</p></div>
+   <div class="catalog-explorer-head-actions">
+    <button class="hf-button hf-button-secondary hf-button-small" id="categoryBackBtn" type="button" hidden>← আগের ধাপ</button>
+    <button class="hf-button hf-button-secondary hf-button-small" id="homeSortToggle" type="button">হোমপেজের পণ্যের ক্রম</button>
+    <button class="hf-button hf-button-secondary hf-button-small" id="addChildCategory" type="button" hidden>＋ সাব-ক্যাটাগরি যোগ</button>
+   </div>
   </div>
-  <div id="categoryTree" class="catalog-tree"><div class="hf-loading">Loading categories…</div></div>
-  <p id="categoryTreeEmpty" class="hf-empty" hidden>No categories match your search.</p>
+  <nav class="catalog-breadcrumb" id="categoryBreadcrumb" aria-label="Category path"><button type="button" data-cat-breadcrumb="root">সব ক্যাটাগরি</button></nav>
+  <div class="hf-toolbar catalog-explorer-toolbar" id="categoryExplorerToolbar">
+   <input class="hf-input" id="categoryTreeSearch" type="search" placeholder="এই স্তরের ক্যাটাগরি খুঁজুন…" aria-label="Search categories in this level">
+   <select class="hf-select" id="categoryTreeVisibility" aria-label="Filter category visibility"><option value="all">সব ক্যাটাগরি</option><option value="active">দেখানো হচ্ছে</option><option value="hidden">লুকানো আছে</option></select>
+   <button class="hf-button hf-button-secondary hf-button-small" id="undoCategoryOrder" type="button" hidden>↶ Undo reorder</button>
+   <span class="catalog-saving-note" id="categoryTreeStatus" role="status">Order changes are saved to the live store.</span>
+  </div>
+  <div class="catalog-explorer-hint" id="categoryExplorerHint">একটি ক্যাটাগরির **ভেতরে যান**। তারপর তার সাব-ক্যাটাগরি ও সরাসরি যুক্ত পণ্য সাজাতে পারবেন।</div>
+  <div id="categoryTree" class="catalog-tree" aria-live="polite"><div class="hf-loading">Loading categories…</div></div>
+  <p id="categoryTreeEmpty" class="hf-empty" hidden>No categories in this level.</p>
  </section>
- <section class="hf-card hf-card-pad catalog-single-section">
-  <div class="hf-section-head"><div><p class="page-eyebrow">PRODUCT PLACEMENT</p><h2>Product display order</h2><p>Arrange products by category or set the homepage order independently. Quick-edit a product without leaving this page.</p></div><span class="hf-status hf-status-active">Live catalog</span></div>
+ <section class="hf-card hf-card-pad catalog-single-section catalog-product-sort-section" id="productSortSection" hidden>
+  <div class="hf-section-head"><div><p class="page-eyebrow">PRODUCT PLACEMENT</p><h2 id="productSortTitle">Products in category</h2><p id="productSortDescription">Sort products assigned directly to this category. Products in subcategories are managed inside those subcategories.</p></div><div class="catalog-product-sort-head-actions"><button class="hf-button hf-button-secondary hf-button-small" id="productSortBackBtn" type="button" hidden>← আগের ধাপ to categories</button><span class="hf-status hf-status-active" id="productSortScopeBadge">Category order</span></div></div>
   <div class="hf-kpi-grid catalog-sort-kpis">
    <section class="hf-kpi"><span class="hf-kpi-label">Products in view</span><strong class="hf-kpi-value" id="sortingVisibleCount">—</strong><span class="hf-kpi-note" id="sortingScopeNote">Current ordering scope</span></section>
    <section class="hf-kpi"><span class="hf-kpi-label">Visible products</span><strong class="hf-kpi-value" id="sortingActiveCount">—</strong><span class="hf-kpi-note">Shown in the store</span></section>
    <section class="hf-kpi"><span class="hf-kpi-label">Hidden products</span><strong class="hf-kpi-value" id="sortingHiddenCount">—</strong><span class="hf-kpi-note">Kept in the catalog</span></section>
   </div>
   <div class="hf-toolbar catalog-sort-toolbar">
-   <label class="catalog-toolbar-field"><span>Arrange products in</span><select class="hf-select" id="sortMode"><option value="category">Selected category</option><option value="home">Homepage</option></select></label>
-   <label class="catalog-toolbar-field" id="sortCategoryWrap"><span>Category</span><select class="hf-select" id="sortCategory"><option value="">Loading categories…</option></select></label>
-   <input class="hf-input" id="productSortSearch" type="search" placeholder="Search products…" aria-label="Search products in this list">
-   <button class="hf-button hf-button-secondary hf-button-small" id="undoProductOrder" type="button" hidden>↶ Undo last reorder</button>
-   <span class="catalog-saving-note" id="productSortStatus" role="status">Drag to reorder · changes save after drop.</span>
+   <input class="hf-input" id="productSortSearch" type="search" placeholder="এই ক্যাটাগরির পণ্য খুঁজুন…" aria-label="Search products in this category">
+   <button class="hf-button hf-button-secondary hf-button-small" id="undoProductOrder" type="button" hidden>↶ Undo reorder</button>
+   <span class="catalog-saving-note" id="productSortStatus" role="status">Drag products or use Up / Down to change their order.</span>
   </div>
-  <div class="catalog-sort-legend"><span><span class="catalog-dot visible"></span> Visible</span><span><span class="catalog-dot hidden"></span> Hidden</span><span>Drag using the handle, or use Up / Down on touch devices.</span></div>
+  <div class="catalog-sort-legend"><span><span class="catalog-dot visible"></span> Visible</span><span><span class="catalog-dot hidden"></span> Hidden</span><span>প্রতিটি ক্যাটাগরির পণ্য আলাদাভাবে সাজানো হবে।</span></div>
   <div id="productSortList" class="product-sort-list"><div class="hf-loading">Loading products…</div></div>
   <p id="productSortEmpty" class="hf-empty" hidden>No products in this selection.</p>
  </section>
@@ -104,6 +112,6 @@
 </main>
 </div>
 <script defer src="./i18n.js?v=20261031-customer-messages-nav-v1"></script>
-<script defer src="./shared.js?v=20261031-single-categories-workspace-v1"></script>
-<script defer src="./categories.js?v=20261031-single-categories-workspace-v1"></script>
+<script defer src="./shared.js?v=20261101-store-config-v1"></script>
+<script defer src="./categories.js?v=20261031-category-explorer-v5"></script>
 </body></html>

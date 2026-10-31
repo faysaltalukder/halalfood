@@ -25,7 +25,72 @@ const categoriesNav = read("admin/shared.js");
 const categoriesUi = read("admin/categories.js");
 const categoriesPage = read("admin/categories.html");
 const categoriesLive = read("js/live-catalog.js");
+
+const adminSignInPage = read("admin/index.html");
+assert.ok(adminSignInPage.includes("store-config.js") && adminSignInPage.indexOf("store-config.js") < adminSignInPage.indexOf("<script>"), "Admin sign-in must load store config before its Supabase client initialization.");
+assert.ok(adminSignInPage.includes("STORE_CONFIG.adminEmail") && adminSignInPage.includes("if(email!==ADMIN_EMAIL)"), "Admin sign-in authorization must use the configured admin identity.");
+assert.ok(adminSignInPage.includes("STORE_CONFIG.supabase?.url") && adminSignInPage.includes("STORE_CONFIG.supabase?.publishableKey"), "Admin sign-in must use the configured Supabase project.");
+for (const page of htmlFiles.filter(file => read(join("admin", file)).includes("shared.js"))) {
+  const source = read(join("admin", page));
+  assert.ok(source.includes("../js/store-config.js?v=20261101-store-config-v1") && source.indexOf("store-config.js") < source.indexOf("shared.js"), page + ": the shared admin shell must load the store config first.");
+}
+
 const categoriesMigration = read("supabase/migrations/20261031165140_add_reusable_three_level_catalog_management.sql");
+
+const storeConfig = read("js/store-config.js");
+const publicHome = read("index.html");
+
+function listPublicHtml(directory) {
+  return readdirSync(join(root, directory), { withFileTypes: true }).flatMap(entry => {
+    if (entry.name === "admin" || entry.name === ".git") return [];
+    const relative = join(directory, entry.name);
+    if (entry.isDirectory()) return listPublicHtml(relative);
+    return entry.isFile() && entry.name.endsWith(".html") ? [relative.replace(/\\\\/g, "/")] : [];
+  });
+}
+const publicPages = ["index.html", ...listPublicHtml(".").filter(file => file !== "index.html" && !file.startsWith("admin/"))];
+for (const page of publicPages) {
+  const source = read(page);
+  const mainScriptIndex = source.search(/(?:\.\.\/)?js\/main\.js\?v=/);
+  if (mainScriptIndex < 0) continue;
+  const mainMatch = source.slice(mainScriptIndex).match(/(?:\.\.\/)?js\/main\.js\?v=([^"&]+)/);
+  assert.ok(mainMatch && mainMatch[1] === "20261101-catalog-sync-v2", page + ": public page must load the current shared catalog/bootstrap version.");
+  const configIndex = source.indexOf("store-config.js");
+  assert.ok(configIndex >= 0 && configIndex < mainScriptIndex, page + ": store config must load before main.js.");
+  const liveMatch = source.match(/(?:\.\.\/)?js\/live-catalog\.js\?v=([^"&]+)/);
+  if (liveMatch) assert.equal(liveMatch[1], "20261101-catalog-sync-v2", page + ": direct catalog script must use the current version.");
+}
+
+assert.ok(categoriesPage.includes("store-config.js") && categoriesPage.indexOf("store-config.js") < categoriesPage.indexOf("shared.js"), "Category Admin must load its per-store config before initializing Supabase.");
+assert.ok(storeConfig.includes("storeId:") && storeConfig.includes("siteRoot:") && storeConfig.includes("publishableKey:"), "Reusable store config must expose store identity, site root and a publishable Supabase key.");
+assert.ok(!/service[_-]?role|secret[_-]?key/i.test(storeConfig), "Public store config must not contain privileged Supabase credentials.");
+assert.ok(storeConfig.includes("reorderCategoriesRpc") && storeConfig.includes("reorderProductsRpc") && storeConfig.includes("reorderHomeProductsRpc"), "Each store config must be able to map its category/product ordering RPCs.");
+assert.ok(storeConfig.includes("storeName:") && storeConfig.includes("whatsappNumber:"), "Store branding and public contact should be configured per website.");
+assert.ok(categoriesLive.includes("STORE_NAME") && categoriesLive.includes("WHATSAPP_NUMBER"), "Storefront category and product views must not hard-code the Halal Food brand or contact number.");
+assert.ok(categoriesUi.includes("CATALOG_CONFIG") && categoriesUi.includes("CATEGORY_TABLE") && categoriesUi.includes("PRODUCT_TABLE"), "The Category workspace must use per-store table configuration rather than fixed table names.");
+assert.ok(categoriesUi.includes("REORDER_CATEGORY_RPC") && categoriesUi.includes("REORDER_PRODUCT_RPC") && categoriesUi.includes("REORDER_HOME_RPC"), "Category and product ordering must use the store-configured server RPCs.");
+assert.ok(categoriesUi.includes("bindTouchReorder") && categoriesUi.includes("data-touch-drag-handle"), "Category and product lists must support touch drag-and-drop.");
+
+const moveOrderedIdMatch = categoriesUi.match(/function moveOrderedId\(ids,id,directionOrTarget\)\s*\{[\s\S]*?\n \}/);
+assert.ok(moveOrderedIdMatch, "The shared category/product ordering helper must exist.");
+const moveOrderedId = vm.runInNewContext("(" + moveOrderedIdMatch[0] + ")");
+assert.deepEqual(Array.from(moveOrderedId(["a","b","c","d"],"a","d")), ["b","c","a","d"], "Dragging an earlier category onto a later one must insert immediately before the target.");
+assert.deepEqual(Array.from(moveOrderedId(["a","b","c","d"],"d","a")), ["d","a","b","c"], "Dragging a later category onto an earlier one must insert before the target.");
+assert.deepEqual(Array.from(moveOrderedId(["a","b","c","d"],"b",-1)), ["b","a","c","d"], "The Up control must move an item one position up.");
+assert.deepEqual(Array.from(moveOrderedId(["a","b","c","d"],"b",1)), ["a","c","b","d"], "The Down control must move an item one position down.");
+assert.deepEqual(Array.from(moveOrderedId(["a","b","c","d"],"a",-1)), ["a","b","c","d"], "Moving the first item up must not change the order.");
+assert.deepEqual(Array.from(moveOrderedId(["a","b","c","d"],"d",1)), ["a","b","c","d"], "Moving the last item down must not change the order.");
+
+assert.ok(categoriesUi.includes("data-cat-enter") && categoriesUi.includes("categoryBreadcrumb") && categoriesUi.includes("productSortSection"), "The Category workspace must use a drill-down hierarchy with breadcrumb navigation and scoped product sorting.");
+assert.ok(!categoriesUi.includes("renderTree") && !categoriesUi.includes("sortMode") && !categoriesUi.includes("categoryTreeCount"), "No controls from the retired all-in-one workspace may remain wired.");
+assert.ok(categoriesUi.includes("admin_reorder_categories") && categoriesUi.includes("admin_reorder_products") && categoriesUi.includes("admin_reorder_home_products"), "Default store ordering RPC names must remain compatible with the current Supabase project.");
+assert.ok(categoriesLive.includes("halalstore:config-ready") && categoriesLive.includes("HALAL_STORE_CONFIG"), "Legacy storefront pages must wait for the store config before initializing the live catalog.");
+assert.ok(categoriesLive.includes("CATEGORY_TABLE") && categoriesLive.includes("PRODUCT_TABLE") && categoriesLive.includes("MAX_CATEGORIES") && categoriesLive.includes("MAX_PRODUCTS"), "The storefront catalog bridge must use per-store configuration.");
+assert.ok(categoriesLive.includes("menu.replaceChildren") && categoriesLive.includes("mobileLinks.replaceChildren") && categoriesLive.includes("footerList.replaceChildren"), "Desktop header, mobile drawer and footer category navigation must all rebuild from the same ordered live category tree.");
+assert.ok(categoriesLive.includes("rail.replaceChildren") && categoriesLive.includes("categoryCardImage"), "Homepage Featured Category cards must use the same live names, images, links and order.");
+assert.ok(categoriesLive.includes("category.cms_created || category.cms_managed"), "Managed legacy categories must switch to the dynamic category route after edits.");
+assert.ok(publicHome.includes("store-config.js") && publicHome.indexOf("store-config.js") < publicHome.indexOf("main.js"), "The homepage must load the store config before its shared storefront scripts.");
+
 assert.ok(categoriesNav.includes('["categories","layers","Categories"') && !categoriesNav.includes('"categories-tree"') && !categoriesNav.includes('"categories-sorting"') && !categoriesNav.includes('"categories-settings"'), "Admin sidebar must expose one Categories entry without child routes.");
 assert.ok(categoriesPage.includes('id="categoryTree"') && categoriesPage.includes('id="productSortList"') && categoriesPage.includes('id="categoryDialog"') && categoriesPage.includes('id="quickProductDialog"'), "Category, product sorting and editing controls must be consolidated on the single Categories page.");
 assert.ok(categoriesUi.includes("admin_reorder_categories") && categoriesUi.includes("admin_reorder_products") && categoriesUi.includes("admin_reorder_home_products"), "Categories workspace must use atomic server-side order operations.");
