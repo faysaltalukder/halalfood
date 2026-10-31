@@ -4,7 +4,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <title>Marketing Center · Halal Food Admin</title>
-<link rel="stylesheet" href="./shared.css?v=20261031-products-sidebar-v3"><link rel="stylesheet" href="./phase4-pages.css?v=20261023-admin-ultimate-v1"><link rel="stylesheet" href="./marketing-center.css?v=20261031-marketing-v2">
+<link rel="stylesheet" href="./shared.css?v=20261031-products-sidebar-v3"><link rel="stylesheet" href="./phase4-pages.css?v=20261023-admin-ultimate-v1"><link rel="stylesheet" href="./marketing-center.css?v=20261031-contact-list-v1">
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script></head>
 <body data-page="marketing-center">
 <div id="authGate" class="auth-gate"><div class="auth-gate-card"><strong>Checking secure admin access…</strong><p>Marketing data loads only after the authorized account and two-step verification are confirmed.</p></div></div>
@@ -17,7 +17,8 @@
 <section class="hf-marketing-stats" aria-label="Marketing overview">
  <article class="hf-marketing-stat"><span>Active CRM customers</span><strong id="marketingStatsActive">—</strong><small>Not blocked, archived or anonymized</small></article>
  <article class="hf-marketing-stat"><span>WhatsApp consent</span><strong id="marketingStatsWhatsApp">—</strong><small>Recorded WhatsApp opt-ins</small></article>
- <article class="hf-marketing-stat"><span>Email consent</span><strong id="marketingStatsEmail">—</strong><small>Recorded email opt-ins</small></article>
+ <article class="hf-marketing-stat"><span>Email send-ready</span><strong id="marketingStatsEmail">—</strong><small>Customers with email marketing permission</small></article>
+ <article class="hf-marketing-stat"><span>Unique order emails</span><strong id="marketingStatsOrderEmails">—</strong><small>Repeated order addresses counted once</small></article>
  <article class="hf-marketing-stat"><span>Saved campaigns</span><strong id="marketingStatsCampaigns">—</strong><small>Drafts and campaign history</small></article>
 </section>
 <nav class="hf-marketing-tabs" aria-label="Marketing Center sections">
@@ -44,7 +45,7 @@
    </section>
 
    <section class="hf-card hf-marketing-card">
-    <div class="hf-marketing-section-head"><div><p class="hf-marketing-eyebrow">02 / RECIPIENTS</p><h2>Choose customers</h2><p>Eligible email recipients are pre-selected. Untick anyone you do not want to include.</p></div><span class="hf-marketing-step">02</span></div>
+    <div class="hf-marketing-section-head"><div><p class="hf-marketing-eyebrow">02 / RECIPIENTS</p><h2>Choose customers</h2><p>Unique email addresses from order history are shown once each. Select only contacts currently eligible for this campaign.</p></div><span class="hf-marketing-step">02</span></div>
     <div class="hf-marketing-filters">
      <label class="hf-marketing-field hf-marketing-search"><span>Search by name or email</span><input id="mktAudienceSearch" class="hf-input" type="search" placeholder="Name or email"></label>
      <div hidden><select id="mktSegment" class="hf-select"><option value="all" selected>All active customers</option></select><input id="mktMinOrders" type="number" value=""><input id="mktMaxOrders" type="number" value=""><select id="mktLastOrder"><option value="all" selected>Any activity</option><option value="30">30</option><option value="60">60</option><option value="90">90</option><option value="inactive90">inactive90</option><option value="never">never</option></select></div>
@@ -53,10 +54,10 @@
      <div><strong id="mktAudienceCount">—</strong><span>matching CRM records</span></div>
      <div><strong id="mktEligibleCount">—</strong><span>eligible for this channel</span></div>
      <div><strong id="mktSelectedCount">0</strong><span>selected recipients</span></div>
-     <div class="hf-marketing-audience-actions"><button id="mktSelectAll" class="hf-button hf-button-secondary hf-button-small" type="button">Select all eligible</button><button id="mktClearSelection" class="hf-button hf-button-quiet hf-button-small" type="button">Clear selection</button></div>
+     <div class="hf-marketing-audience-actions"><button id="mktSelectAll" class="hf-button hf-button-secondary hf-button-small" type="button">Select all eligible contacts</button><button id="mktClearSelection" class="hf-button hf-button-quiet hf-button-small" type="button">Clear selection</button></div>
     </div>
-    <div class="hf-marketing-table-wrap" role="region" aria-label="Customer audience" tabindex="0">
-     <table class="hf-marketing-table"><thead><tr><th class="hf-check-col"></th><th>Customer</th><th>Segment / orders</th><th>Contact</th><th>Permission</th></tr></thead><tbody id="mktAudienceBody"><tr><td colspan="5" class="hf-marketing-muted">Loading CRM audience…</td></tr></tbody></table>
+    <div class="hf-marketing-table-wrap hf-marketing-scroll-list" role="region" aria-label="Customer email and WhatsApp contacts" tabindex="0">
+     <table class="hf-marketing-table"><thead><tr><th class="hf-check-col"></th><th>Customer</th><th>Source / orders</th><th>Email / phone</th><th>Send eligibility</th></tr></thead><tbody id="mktAudienceBody"><tr><td colspan="5" class="hf-marketing-muted">Loading CRM audience…</td></tr></tbody></table>
     </div>
     <div class="hf-marketing-pager"><span id="mktAudiencePage">—</span><div><button id="mktAudiencePrev" class="hf-button hf-button-secondary hf-button-small" type="button" disabled>Previous</button><button id="mktAudienceNext" class="hf-button hf-button-secondary hf-button-small" type="button" disabled>Next</button></div></div>
     <p class="hf-marketing-footnote">Blocked, archived and anonymized customers are always excluded. Customers without channel-specific consent or a valid contact are visible for review but cannot be selected.</p>
@@ -117,5 +118,5 @@
  <div class="hf-dialog-actions"><button type="button" id="mktConsentCancel" class="hf-button hf-button-secondary">Cancel</button><button type="submit" id="mktConsentSave" class="hf-button hf-button-primary">Save permission record</button></div>
 </form></dialog>
 </main></div>
-<script defer src="./i18n.js?v=20261031-coupons-v1"></script><script defer src="./shared.js?v=20261031-marketing-v2"></script><script defer src="./marketing-center.js?v=20261031-one-click-v1"></script><script defer src="./app.js?v=20261031-marketing-v2"></script>
+<script defer src="./i18n.js?v=20261031-coupons-v1"></script><script defer src="./shared.js?v=20261031-marketing-v2"></script><script defer src="./marketing-center.js?v=20261031-contact-list-v1"></script><script defer src="./app.js?v=20261031-marketing-v2"></script>
 </body></html>
