@@ -152,7 +152,6 @@ async function loadProducts(){
    $("barcodeProductSelect").innerHTML='<option value="">কোনো পণ্য পাওয়া যায়নি</option>';
    $("barcodeScanResult").innerHTML='<div class="pt-empty"><strong>পণ্যের তালিকা খালি</strong><p>All Products-এ অন্তত একটি পণ্য যোগ করুন।</p></div>';
    setLoadStatus("কোনো পণ্য পাওয়া যায়নি",true,true);
-   $("barcodeLoadRetry").addEventListener("click",loadProducts);
    renderPreview();return;
   }
   renderProductOptions();
@@ -163,7 +162,6 @@ async function loadProducts(){
   $("barcodeProductSelect").disabled=true;
   renderPreview();
   setLoadStatus("পণ্য লোড করা যায়নি: "+(error?.message||"Connection error"),true,true);
-  $("barcodeLoadRetry")?.addEventListener("click",loadProducts);
  }
 }
 async function init(){
