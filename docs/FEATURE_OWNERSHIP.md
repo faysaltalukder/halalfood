@@ -82,10 +82,12 @@ Product/category/blog CMS: `loadAll`, `renderProducts`, `renderCategories`, `ren
 
 ## Offline POS data contract
 
-- One CSV row represents one product line; rows sharing `sale_reference` form one receipt.
-- The SECURITY INVOKER RPC writes `orders` + `order_items`, optionally decrements tracked stock and records `inventory_movements.pos_sale` under an admin+MFA INSERT policy, and creates a linked `admin_finance_entries` income record.
-- Payment received = Confirmed finance entry; not received = Draft. The import does not emit website Purchase events.
-- Duplicate `POS-{SALE_REFERENCE}` order numbers are skipped; conflicting non-POS references are rejected.
+- The POS screen is intentionally a small two-panel workflow: choose one catalogue product, enter sale date/time, optional customer details, quantity, selling price and payment status, then save once.
+- The browser generates a private POS reference; operators do not need to enter a receipt ID or product slug.
+- The SECURITY INVOKER RPC writes one orders record and one order_items record, decrements tracked stock and records inventory_movements.pos_sale, then writes a linked admin_finance_entries income row in one transaction.
+- Paid = confirmed finance income; unpaid = draft. Existing Finance totals and charts use the same central finance ledger, so only confirmed receipts increase received-income totals.
+- The form supports fractional quantities for kg/liter products; packaged products and pieces use whole-number quantities.
+- Offline POS never emits website Purchase tracking events.
 
 ## Backend ownership
 

@@ -10,6 +10,7 @@ const required = [
   "admin/app.js",
   "supabase/migrations/20261031044407_create_offline_pos_sales.sql",
   "supabase/migrations/20261031045058_harden_offline_pos_with_invoker_rls.sql",
+  "supabase/migrations/20261031045700_interactive_pos_simple_sale_form.sql",
 ];
 const failures = [];
 for (const file of required) {
@@ -21,20 +22,24 @@ if (!failures.length) {
   const js = read("admin/pos.js");
   const shared = read("admin/shared.js");
   const app = read("admin/app.js");
-  const migration = read("supabase/migrations/20261031044407_create_offline_pos_sales.sql");
-  const hardening = read("supabase/migrations/20261031045058_harden_offline_pos_with_invoker_rls.sql");
+  const migration = read("supabase/migrations/20261031045700_interactive_pos_simple_sale_form.sql");
   const checks = [
     [page.includes('data-page="pos"'), "POS page must use data-page=pos."],
-    [page.includes('id="posImportSection"') && page.includes('id="posRecentSection"'), "POS import and history sections are required."],
-    [shared.includes('"pos","pos","POS Management"'), "POS Management must be in the admin navigation."],
-    [app.includes('window.HFPosInit'), "Admin dispatcher must initialize the POS module."],
-    [js.includes("const parseCsv") && js.includes("function buildGroups"), "CSV parsing and grouping must be implemented."],
-    [js.includes('client.rpc("create_offline_pos_sale"'), "POS imports must use the atomic database RPC."],
-    [js.includes("POS-") && js.toLowerCase().includes("already imported"), "The UI must communicate POS duplicate protection."],
-    [migration.includes("aal2") && hardening.includes("SECURITY INVOKER") && hardening.includes("aal2"), "The database RPC must enforce MFA through invoker privileges and RLS."],
-    [migration.includes("inventory_movements") && migration.includes("'pos_sale'") && hardening.includes("Admins can record POS stock movements"), "The database RPC must write POS stock movements under admin-only RLS."],
-    [migration.includes("admin_finance_entries") && migration.includes("'Offline POS Sale'"), "The database RPC must create a linked finance entry."],
-    [!js.includes("fbq('track', 'Purchase'") && !js.includes("gtag('event', 'purchase'"), "Offline POS must not emit website Purchase tracking."],
+    [page.includes('id="posProductList"') && page.includes('id="posSaleForm"') && page.includes('id="posHistoryBody"'), "POS product, sale form and product history are required."],
+    [!page.includes('type="file"') && !page.toLowerCase().includes("csv import") && !page.includes("posImportSection"), "POS UI must not expose the old CSV import workflow."],
+    [shared.includes('"pos","pos","POS Management"'), "POS Management must remain in admin navigation."],
+    [app.includes("window.HFPosInit"), "Admin dispatcher must initialize the POS module."],
+    [js.includes("async function saveSale") && js.includes('client.rpc("create_offline_pos_sale"'), "Saving a sale must use the atomic database RPC."],
+    [js.includes("sale_time:time") && js.includes("payment_received:paid"), "The sale date/time and payment status must be saved."],
+    [js.includes("adjust_stock:adjustStock") && js.includes("const adjustStock=true"), "Tracked stock must be updated automatically."],
+    [js.includes("referenceFor(date)") && js.includes("crypto.getRandomValues"), "POS reference must be generated internally."],
+    [js.includes("fetchFinance(null,3000)") && js.includes('e.status==="confirmed"'), "POS summary/history must read the central finance ledger."],
+    [js.includes("offline_pos") && !js.includes("fbq(") && !js.includes("gtag("), "Offline sales must not emit website pixel/GA events."],
+    [migration.includes("SECURITY INVOKER") && migration.includes("aal2"), "POS RPC must retain MFA-gated caller privileges."],
+    [migration.includes("inventory_movements") && migration.includes("'pos_sale'"), "POS RPC must record tracked inventory movement."],
+    [migration.includes("admin_finance_entries") && migration.includes("'Offline POS Sale'"), "POS RPC must create a linked finance income entry."],
+    [migration.includes("v_sale_time") && migration.includes("v_sale_date::timestamp + v_sale_time"), "POS RPC must persist the entered sale time."],
+    [migration.includes("round(v_quantity, 3)") && migration.includes("Packaged products and pieces"), "POS RPC must support fractional kg/liter sales and whole packaged units."],
   ];
   for (const [ok, message] of checks) if (!ok) failures.push(message);
 }
@@ -42,5 +47,5 @@ if (failures.length) {
   for (const failure of failures) console.error("FAIL: " + failure);
   process.exitCode = 1;
 } else {
-  console.log("Offline POS contract guard passed.");
+  console.log("Simple offline POS sale-entry contract checks passed.");
 }
