@@ -4,6 +4,8 @@ This guide is for developers and AI coding assistants working on Halal Food.
 
 ## Start from the task, not the entire repository
 
+Run `node scripts/feature-context.mjs <feature>` first (for example `courier`, `orders` or `catalog`). The command prints the owning files, related tables, Edge Functions, checks and non-negotiable behavior. Run `node scripts/feature-context.mjs --check` to verify the index after moving files.
+
 For each request, identify:
 1. User-visible behavior or server operation being changed.
 2. Owning page/feature module.

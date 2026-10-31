@@ -251,6 +251,44 @@ function shouldAdvanceStatus(current: string, next: string): boolean {
   return (rank[next] ?? -1) >= (rank[current] ?? 0);
 }
 
+// Cross-check the saved REDX pickup store and delivery area against REDX's live Production lists
+// before a real booking is created. A failed lookup never blocks a booking; only a confirmed mismatch does.
+async function redxPreflight(areaId: number, areaName: string, storeId: string): Promise<string | null> {
+  const problems: string[] = [];
+  const norm = (value: string) => value.toLowerCase().replace(/\s+/g, " ").trim();
+  try {
+    const { response, data } = await fetchJson(providerBase("redx") + "/pickup/stores", { method: "GET", headers: redxHeaders() });
+    if (response.ok && !providerRejected(data, response.ok)) {
+      const rawStores = Array.isArray(data) ? data : data?.data?.data ?? data?.data?.pickup_stores ?? data?.pickup_stores ?? data?.stores ?? data?.data ?? [];
+      const storeIds = (Array.isArray(rawStores) ? rawStores : [])
+        .map((s: any) => clean(s?.pickup_store_id ?? s?.store_id ?? s?.id, 40))
+        .filter(Boolean);
+      if (storeIds.length && !storeIds.includes(storeId)) {
+        problems.push("REDX_PICKUP_STORE_ID does not match any pickup store returned by REDX. Run the REDX connection test and set REDX_PICKUP_STORE_ID to one of the listed numeric store IDs.");
+      }
+    }
+  } catch (_error) { /* lookup failed: do not block */ }
+  try {
+    const { response, data } = await fetchJson(providerBase("redx") + "/areas", { method: "GET", headers: redxHeaders() });
+    if (response.ok && !providerRejected(data, response.ok)) {
+      const rawAreas = Array.isArray(data) ? data : data?.areas ?? data?.data?.areas ?? data?.data?.data ?? data?.data ?? data?.results ?? [];
+      const list = (Array.isArray(rawAreas) ? rawAreas : []).map((a: any) => ({
+        id: clean(a?.redx_delivery_area_id ?? a?.area_id ?? a?.delivery_area_id ?? a?.id, 40),
+        name: clean(a?.redx_delivery_area ?? a?.area_name ?? a?.delivery_area ?? a?.name ?? a?.title, 120),
+      })).filter((a: any) => a.id && a.name);
+      if (list.length) {
+        const match = list.find((a: any) => a.id === String(areaId));
+        if (!match) {
+          problems.push("The saved delivery area ID " + areaId + " does not exist in REDX's active Production area list. Load the REDX areas again and select the area from the dropdown; do not type an area ID by hand.");
+        } else if (norm(match.name) !== norm(areaName)) {
+          problems.push("The saved area name does not match REDX's name for area ID " + areaId + " (REDX lists '" + match.name + "'). Load the REDX areas again and select the area from the dropdown.");
+        }
+      }
+    }
+  } catch (_error) { /* lookup failed: do not block */ }
+  return problems.length ? problems.join(" ") : null;
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return reply({ success: false, error: "Method not allowed." }, 405);
@@ -380,8 +418,17 @@ Deno.serve(async (req: Request) => {
         cumilla: ["Comilla"], comilla: ["Cumilla"],
         jashore: ["Jessore"], jessore: ["Jashore"],
       };
-      const candidates = [districtName, ...(districtAliases[districtName.toLowerCase()] || [])];
-      let resolvedDistrict = districtName;
+      // Normalise "Upazila, District" / "X District" / "X Division" input so only the district name is sent to REDX.
+      const districtParts = districtName.split(/[,;|\/]+/)
+        .map((part) => part.trim())
+        .filter((part) => part.length >= 2 && !/\bdivision\b/i.test(part))
+        .map((part) => part.replace(/\b(?:district|zila|zilla|upazila|upazilla|thana)\b/gi, "").replace(/\s+/g, " ").trim())
+        .filter((part) => part.length >= 2);
+      const primaryDistrict = districtParts.length ? districtParts[districtParts.length - 1] : districtName;
+      const upazilaHint = districtParts.length > 1 ? districtParts.slice(0, -1).join(", ") : "";
+      const candidateSeed = [primaryDistrict, ...districtParts.slice(0, -1).reverse()];
+      const candidates = [...new Set(candidateSeed.flatMap((name) => [name, ...(districtAliases[name.toLowerCase()] || [])]))];
+      let resolvedDistrict = primaryDistrict;
       let areas: { id: string; name: string }[] = [];
       let upstreamIssue = "";
       for (const candidate of candidates) {
@@ -449,7 +496,7 @@ Deno.serve(async (req: Request) => {
               const key = clean(value, 100).toLowerCase().replace(/[^a-z]/g, "");
               return districtAliasesForMatch[key] || key;
             };
-            const targetDistrict = normalizeDistrict(districtName);
+            const targetDistrict = normalizeDistrict(primaryDistrict);
             const allMapped = (Array.isArray(rawAllAreas) ? rawAllAreas : []).map((a: any) => {
               const name = clean(a?.redx_delivery_area ?? a?.area_name ?? a?.delivery_area ?? a?.name ?? a?.title, 120);
               const explicitDistrict = clean(a?.district_name ?? a?.district ?? a?.districtName, 100);
@@ -470,7 +517,7 @@ Deno.serve(async (req: Request) => {
             }).slice(0, 250);
             if (matchedAreas.length) {
               areas = matchedAreas.map((a: any) => ({ id: a.id, name: a.name }));
-              resolvedDistrict = districtName;
+              resolvedDistrict = primaryDistrict;
             } else {
               const availableDistricts = Array.from(new Set(allMapped
                 .map((a: any) => clean(a.district, 100))
@@ -481,19 +528,19 @@ Deno.serve(async (req: Request) => {
                 ? " District labels returned by REDX include: " + availableDistricts.join(", ") + "."
                 : "";
               console.error("REDX full area list had no exact district match:", JSON.stringify({
-                requestedDistrict: districtName,
+                requestedDistrict: primaryDistrict,
                 totalActiveAreas: allMapped.length,
                 exampleAreas: allMapped.slice(0, 5).map((a: any) => a.name),
               }));
               return reply({
                 success: false,
-                error: "REDX found no active Production delivery area for district '" + districtName + "'. The unfiltered Production area list was checked (" + allMapped.length + " areas) but no exact district match was found." + hint + " Verify the district spelling and the destination before booking.",
+                error: "REDX found no active Production delivery area for district '" + primaryDistrict + "'. The unfiltered Production area list was checked (" + allMapped.length + " areas) but no exact district match was found." + hint + " Enter only the district name (for example Patuakhali, not Kalapara, Patuakhali) and check the spelling.",
               }, 404);
             }
           } else {
             const fallbackError = redxErrorSummary(allData);
             console.error("REDX unfiltered area fallback failed:", JSON.stringify({
-              district_name_sent: districtName,
+              district_name_sent: primaryDistrict,
               upstream_http_status: allResponse.status,
               error_summary: fallbackError,
             }));
@@ -505,7 +552,7 @@ Deno.serve(async (req: Request) => {
         } catch (fallbackError) {
           const detail = clean(fallbackError instanceof Error ? fallbackError.message : fallbackError, 220);
           console.error("REDX unfiltered area fallback network failure:", JSON.stringify({
-            district_name_sent: districtName,
+            district_name_sent: primaryDistrict,
             upstream_http_status: null,
             error_summary: redxErrorSummary(detail),
           }));
@@ -515,14 +562,21 @@ Deno.serve(async (req: Request) => {
           }, 502);
         }
       }
+      const hintKey = upazilaHint.toLowerCase().replace(/[^a-z0-9]/g, "");
+      const suggestedAreas = hintKey.length >= 3
+        ? areas.filter((a) => a.name.toLowerCase().replace(/[^a-z0-9]/g, "").includes(hintKey)).slice(0, 20)
+        : [];
       return reply({
         success: true,
         provider: "REDX",
         district_name: districtName,
+        normalized_district_name: primaryDistrict,
+        upazila_hint: upazilaHint,
         resolved_district_name: resolvedDistrict,
         areas,
+        suggested_areas: suggestedAreas,
         message: areas.length
-          ? "REDX delivery areas loaded" + (resolvedDistrict.toLowerCase() !== districtName.toLowerCase() ? " using district spelling " + resolvedDistrict : "") + ". Select the exact area matching the customer address."
+          ? "REDX delivery areas loaded" + (resolvedDistrict.toLowerCase() !== districtName.toLowerCase() ? " using district " + resolvedDistrict : "") + ". Select the exact area matching the customer address."
           : "No REDX delivery areas were returned for " + candidates.join(" / ") + ". Check the English district name and Production API access.",
       });
     }
@@ -734,6 +788,16 @@ Deno.serve(async (req: Request) => {
     }
     if (Math.abs(Number(shipment.cod_amount || 0) - total) > 0.01) {
       throw new Error("The parcel COD amount must match the saved order total.");
+    }
+    if (provider === "redx") {
+      const preflightProblem = await redxPreflight(redxAreaId, redxAreaName, String(Deno.env.get("REDX_PICKUP_STORE_ID") || "").trim());
+      if (preflightProblem) {
+        await db.from("admin_shipments").update({
+          booking_error: clean(preflightProblem, 700),
+          updated_at: new Date().toISOString(),
+        }).eq("id", shipmentId);
+        return reply({ success: false, error: clean(preflightProblem, 700) }, 400);
+      }
     }
 
     const { data: claim, error: claimError } = await db.from("admin_shipments").update({
