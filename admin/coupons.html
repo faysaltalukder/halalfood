@@ -110,7 +110,7 @@
           <label class="cp-field cp-field-narrow">Customer eligibility<select class="hf-select" id="couponCustomerEligibility"><option value="all">All customers</option><option value="first_order">First-time customers only</option><option value="selected">Selected customers only</option></select></label>
           <div class="cp-picker-panel" id="couponCustomerPanel" hidden>
             <div class="cp-picker-heading"><strong>Selected customer mobile numbers</strong><small>Choose existing customers or enter verified 11-digit Bangladesh mobile numbers, one per line.</small></div>
-            <input class="hf-input cp-picker-search" id="couponCustomerSearch" type="search" placeholder="Search customer name or mobile…">
+            <label class="cp-sr-only" for="couponCustomerSearch">Search customer name or mobile</label><input class="hf-input cp-picker-search" id="couponCustomerSearch" type="search" placeholder="Search customer name or mobile…" aria-label="Search customer name or mobile">
             <div class="cp-checklist cp-customer-checklist" id="couponCustomerPicker"><span class="cp-muted">Loading customer records…</span></div>
             <label class="cp-field cp-field-full cp-manual-phones">Add mobile numbers manually<textarea class="hf-textarea" id="couponCustomerPhones" rows="3" placeholder="017XXXXXXXX&#10;018XXXXXXXX"></textarea><small class="cp-help">Numbers are normalized before matching. An order can use this coupon only when its checkout mobile number is on the list.</small></label>
           </div>
