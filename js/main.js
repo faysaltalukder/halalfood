@@ -1006,6 +1006,14 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       if (!form.reportValidity()) return;
+      const typedCouponCode = String(document.querySelector("#coupon-code")?.value || "").trim().toUpperCase();
+      if (typedCouponCode && (!appliedCoupon || appliedCoupon.code !== typedCouponCode)) {
+        if (error) {
+          error.textContent = "Apply the coupon and wait for its validation before placing your order.";
+          error.style.display = "block";
+        }
+        return;
+      }
 
       if (submit) {
         submit.disabled = true;
@@ -1099,6 +1107,7 @@ document.addEventListener("DOMContentLoaded", () => {
         quantity:data.quantity || "1",
         price:data.price || (singleProduct ? String(priceNumber(singleProduct.price)) : "0")
       }];
+      data.couponCode = appliedCoupon?.code || "";
       const checkoutValue = checkoutItems.reduce((sum,item) => sum + (Number(item.price)||0) * Math.max(1,Number(item.quantity)||1), 0);
       const deliveryZone = String(data.deliveryZone || "");
       if (deliveryZone !== "inside_dhaka" && deliveryZone !== "outside_dhaka") {
@@ -1114,7 +1123,8 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
       const deliveryCharge = deliveryChargeFor(deliveryZone);
-      const grandTotal = checkoutValue + deliveryCharge;
+      const couponDiscount = appliedCoupon ? Math.min(Number(appliedCoupon.discountAmount) || 0, checkoutValue) : 0;
+      const grandTotal = Math.max(0, checkoutValue - couponDiscount) + deliveryCharge;
       data.deliveryZone = deliveryZone;
       data.deliveryCharge = String(deliveryCharge);
       data.subtotal = String(checkoutValue);
@@ -1218,6 +1228,8 @@ document.addEventListener("DOMContentLoaded", () => {
           success: true,
           orderId: confirmedOrderId,
           orderTotal: confirmedTotal,
+          couponCode: typeof result?.couponCode === "string" ? result.couponCode : "",
+          couponDiscount: Number.isFinite(Number(result?.couponDiscount)) ? Number(result.couponDiscount) : 0,
           purchaseEventId,
           heldForReview: result?.heldForReview === true,
           reviewId: typeof result?.reviewId === "string" ? result.reviewId : null,
@@ -1235,6 +1247,12 @@ document.addEventListener("DOMContentLoaded", () => {
         // Only now mirror the accepted order to Google Sheets. A rejected challenge or
         // failed Supabase save can no longer create a false backup order row.
         const googleBackupData = { ...data };
+        googleBackupData.subtotal = String(Number.isFinite(Number(winner.subtotal)) ? Number(winner.subtotal) : checkoutValue);
+        googleBackupData.total = String(winner.orderTotal);
+        googleBackupData.orderTotal = String(winner.orderTotal);
+        googleBackupData.price = String(winner.orderTotal);
+        googleBackupData.couponCode = winner.couponCode || data.couponCode || "";
+        googleBackupData.couponDiscount = String(Number(winner.couponDiscount || 0));
         if (winner.heldForReview === true) {
           googleBackupData.notes = [
             String(googleBackupData.notes || "").trim(),
