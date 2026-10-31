@@ -38,6 +38,10 @@ Do not change a user-visible behavior or an API/data contract as part of a code-
 
 For the current function-level ownership map, see [FEATURE_OWNERSHIP.md](./FEATURE_OWNERSHIP.md). For task-scoped AI/developer instructions, see [AI_WORKFLOW.md](./AI_WORKFLOW.md).
 
+## Task-context index
+
+Use `node scripts/feature-context.mjs <feature>` to get a bounded starting set of files, database tables, Edge Functions and guardrails. Keep the index current when a feature moves. CI validates every indexed path.
+
 ## Safe change protocol
 
 1. Identify the feature owner and read only its entry point, service/repository, shared dependency and relevant tests.
