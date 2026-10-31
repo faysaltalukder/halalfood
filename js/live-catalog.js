@@ -159,6 +159,7 @@
     let current = category, guard = 0;
     while (current && guard++ < 4) {
       if (!current.is_active) return false;
+      if (current.parent_id && !byId.has(current.parent_id)) return false;
       current = current.parent_id ? byId.get(current.parent_id) : null;
     }
     return true;
@@ -253,7 +254,7 @@
     if (!records.length) grid.innerHTML = '<p class="muted">No active products are currently listed in this category.</p>';
   }
   // Render every active homepage category rail from the same current catalog as category pages.
-  function renderMerchandisingRails(products) {
+  function renderMerchandisingRails(products, categories) {
     $$("[data-mrow]").forEach(wrap => {
       const track = $("[data-mrow-track]", wrap);
       const section = wrap.closest("section") || wrap.parentElement;
@@ -264,11 +265,20 @@
       if (!match) return;
       let categorySlug = match[1];
       try { categorySlug = decodeURIComponent(categorySlug); } catch (_) {}
+      const rootCategory = categories.find(item => item.slug === categorySlug);
+      const branchSlugs = new Set(rootCategory ? [rootCategory.slug] : [categorySlug]);
+      const addDescendants = parentId => categories.filter(item => item.parent_id === parentId).forEach(item => {
+        branchSlugs.add(item.slug);
+        addDescendants(item.id);
+      });
+      if (rootCategory) addDescendants(rootCategory.id);
+      const categoryRank = new Map(orderedCategories(categories).map((item,index)=>[item.slug,index]));
       const rows = products
-        .filter(item => item.is_active && item.category_slug === categorySlug)
+        .filter(item => item.is_active && branchSlugs.has(item.category_slug))
         .sort((a, b) =>
-          Number(Boolean(b.is_featured)) - Number(Boolean(a.is_featured)) ||
+          (categoryRank.get(a.category_slug) ?? 0) - (categoryRank.get(b.category_slug) ?? 0) ||
           Number(a.sort_order || 0) - Number(b.sort_order || 0) ||
+          Number(Boolean(b.is_featured)) - Number(Boolean(a.is_featured)) ||
           (Date.parse(b.created_at || "") || 0) - (Date.parse(a.created_at || "") || 0) ||
           String(a.name || "").localeCompare(String(b.name || ""))
         );
@@ -322,7 +332,7 @@
       loadMoreButton.disabled = jfyRemainder.length === 0;
     }
     // Rebuild category product rails from the current database so new products and edits appear here too.
-    renderMerchandisingRails(products);
+    renderMerchandisingRails(products, categories);
     patchExistingCards(products);
     const rail = $("[data-category-rail]");
     if (rail) {
@@ -383,7 +393,7 @@
       Array.from(menu.querySelectorAll("a")).forEach(link => {
         const href = link.getAttribute("href") || "";
         const match = href.match(/categories\/([^/?#]+)\.html/i) || href.match(/[?&]slug=([^&]+)/);
-        if (match && !categories.some(cat => cat.slug === decodeURIComponent(match[1]) && cat.is_active)) link.remove();
+        if (match && !menuCategories.some(cat => cat.slug === decodeURIComponent(match[1]))) link.remove();
       });
     });
     const mobileLinks = $(".mobile-category-links");
@@ -398,14 +408,14 @@
           link = document.createElement("a");
           mobileLinks.appendChild(link);
         }
-        link.textContent = cat.name;
+        link.textContent = menuLabel(cat);
         link.href = cat.cms_created ? rootURL("category.html?slug=" + encodeURIComponent(cat.slug)) :
           rootURL("categories/" + encodeURIComponent(cat.slug) + ".html");
       });
       Array.from(mobileLinks.querySelectorAll("a")).forEach(link => {
         const href = link.getAttribute("href") || "";
         const match = href.match(/categories\/([^/?#]+)\.html/i) || href.match(/[?&]slug=([^&]+)/);
-        if (match && !categories.some(cat => cat.slug === decodeURIComponent(match[1]) && cat.is_active)) link.remove();
+        if (match && !menuCategories.some(cat => cat.slug === decodeURIComponent(match[1]))) link.remove();
       });
     }
   }
