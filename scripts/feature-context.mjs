@@ -39,32 +39,36 @@ const FEATURES = {
     guardrails: ["Preserve current checkout fields, validation, COD totals and order ID format.", "Keep consent timestamps and consent method semantics intact.", "Do not change inventory reservation/release or Google Sheets fallback semantics without a separate test."]
   },
   pos: {
-    title: "Simple offline POS sale entry",
-    purpose: "Record one manually sold offline product at a time and link the sale to central Orders, Inventory and Finance reports.",
-    readFirst: ["admin/pos.html", "admin/pos.js", "admin/app.js"],
+    title: "Offline sales and manual delivery orders",
+    purpose: "Record walk-in offline sales or create customer-confirmed WhatsApp/phone delivery orders in the central Orders, Inventory and Finance ledgers, with optional courier booking.",
+    readFirst: ["admin/pos.html", "admin/pos.js", "admin/app.js", "supabase/functions/courier-integration/index.ts"],
     files: [
       "admin/pos.html", "admin/pos.js", "admin/pos.css", "admin/shared.js", "admin/app.js",
+      "supabase/functions/courier-integration/index.ts",
       "supabase/migrations/20261031044407_create_offline_pos_sales.sql",
       "supabase/migrations/20261031045058_harden_offline_pos_with_invoker_rls.sql",
-      "supabase/migrations/20261031051527_interactive_pos_simple_sale_form.sql"
+      "supabase/migrations/20261031051527_interactive_pos_simple_sale_form.sql",
+      "supabase/migrations/20261031054500_create_manual_delivery_order_from_pos.sql"
     ],
     anchors: [
-      { file: "admin/pos.js", names: ["selectProduct", "saveSale", "refresh"] },
+      { file: "admin/pos.js", names: ["saveOfflineSale", "saveDeliveryOrder", "loadRedxAreas", "refresh"] },
+      { file: "supabase/functions/courier-integration/index.ts", names: ["redxPreflight", "providerBase"] },
       { file: "admin/app.js", names: ["doInit"] }
     ],
-    tables: ["products", "orders", "order_items", "inventory_movements", "customers", "admin_finance_entries"],
-    functions: ["create_offline_pos_sale"],
+    tables: ["products", "orders", "order_items", "inventory_movements", "customers", "admin_finance_entries", "admin_shipments"],
+    functions: ["create_offline_pos_sale", "create_manual_delivery_order", "courier-integration"],
     tests: ["scripts/admin-pos-check.mjs", "scripts/architecture-check.mjs"],
     guardrails: [
-      "Keep the operator workflow to product selection, a small sale form and one Save action.",
-      "Require an MFA-verified Halal Food admin for every sale.",
-      "Generate the POS sale reference internally and prevent duplicate order/finance records.",
-      "Write the order, item, tracked stock movement and linked finance entry atomically.",
-      "Paid sales count as confirmed finance income; unpaid sales stay draft and do not inflate received cash.",
-      "Never send offline POS sales as website Purchase/GA ecommerce events."
+      "Keep POS to two entry modes: direct offline sale and customer-confirmed delivery order.",
+      "A delivery order may contain multiple product lines and must save as one central order.",
+      "Require an MFA-verified Halal Food admin for each POS write.",
+      "Create the delivery order, order items, stock reservation, linked finance entry and optional courier parcel atomically.",
+      "Paid income is confirmed; unpaid/COD order value remains draft and is not counted as received cash.",
+      "Courier API booking is an explicit second step after the order is saved; failed or uncertain booking must never erase the order or be blindly retried.",
+      "The existing courier API booking path supports unpaid COD only; REDX requires a Production area ID and Pathao/REDX require the configured packed-weight ranges.",
+      "Never send offline/manual orders as website Purchase/GA ecommerce events."
     ]
   },
-
   orders: {
     title: "Admin order management",
     purpose: "Order list/detail, status changes, customer details, packing, finance and order security.",

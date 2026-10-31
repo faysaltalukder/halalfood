@@ -80,14 +80,15 @@ Do not remove legacy static product files until every fallback, search, SEO and 
 
 Product/category/blog CMS: `loadAll`, `renderProducts`, `renderCategories`, `renderPosts`, `editProduct`, `saveProduct`, `toggleProduct`, `editCategory`, `saveCategory`, `toggleCategory`, `editPost`, `savePost`, `togglePost`. Uses the existing MFA-verified admin session; do not create a second privileged client.
 
-## Offline POS data contract
+## POS data contract
 
-- The POS screen is intentionally a small two-panel workflow: choose one catalogue product, enter sale date/time, optional customer details, quantity, selling price and payment status, then save once.
-- The browser generates a private POS reference; operators do not need to enter a receipt ID or product slug.
-- The SECURITY INVOKER RPC writes one orders record and one order_items record, decrements tracked stock and records inventory_movements.pos_sale, then writes a linked admin_finance_entries income row in one transaction.
-- Paid = confirmed finance income; unpaid = draft. Existing Finance totals and charts use the same central finance ledger, so only confirmed receipts increase received-income totals.
-- The form supports fractional quantities for kg/liter products; packaged products and pieces use whole-number quantities.
-- Offline POS never emits website Purchase tracking events.
+- POS has two entry types: a direct offline sale or a customer-confirmed delivery order received through WhatsApp, phone, Facebook or another manual channel.
+- A delivery order can contain up to 30 product lines. The operator selects catalogue items, quantities and actual selling prices, then enters customer phone/address, delivery charge and payment status.
+- The SECURITY INVOKER manual-delivery RPC writes one orders record with status processing and a manual_* source, its order_items, inventory_movements.order_reserve stock reservations, one linked admin_finance_entries income row and an optional admin_shipments parcel in a single transaction.
+- Existing cancellation logic releases the order-reserved stock. Paid deliveries create confirmed income; unpaid/COD deliveries create a draft entry and do not inflate collected cash.
+- Courier selection creates an API-ready parcel record. A real external booking is a separate explicit step through the existing courier-integration function; failed or uncertain booking leaves the customer order saved.
+- The existing API-booking path accepts unpaid Cash on Delivery only. Pathao packed weight is 0.5–10 kg; REDX packed weight is 0.1–10 kg and requires an exact Production delivery-area ID/name. No REDX sandbox test area may be used for a customer order.
+- Offline POS sales continue using create_offline_pos_sale; manual delivery orders use create_manual_delivery_order. Neither emits website Purchase/GA ecommerce events.
 
 ## Backend ownership
 
