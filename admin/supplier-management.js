@@ -180,12 +180,16 @@ window.HFSupplierInit = async function(mode) {
     const host=$("purchaseLines");if(!host)return;
     host.innerHTML=purchaseLines.map((line,i)=>{
       const chosen=products.find(p=>p.id===line.product_id);
-      return '<div class="hf-purchase-line" data-purchase-line="'+i+'">'+
-        '<label class="line-product">Product *<select class="product-select" data-field="product_id"><option value="">Choose catalogue product</option>'+products.map(p=>'<option value="'+esc(p.id)+'" '+(p.id===line.product_id?"selected":"")+'>'+esc(p.name)+' · '+esc(p.sku||"SKU")+'</option>').join("")+'</select></label>'+
+      const manual=line.product_id==="__manual__";
+      const productField=manual
+        ? '<label class="line-product">Non-catalog item name *<input data-field="product_name" maxlength="180" value="'+esc(line.product_name||"")+'" placeholder="Enter purchased item name"></label><label>SKU / code<input data-field="sku_snapshot" maxlength="100" value="'+esc(line.sku_snapshot||"")+'" placeholder="Optional"></label><label>Unit<select data-field="unit"><option value="piece" '+(line.unit==="piece"?"selected":"")+'>piece</option><option value="kg" '+(line.unit==="kg"?"selected":"")+'>kg</option><option value="gram" '+(line.unit==="gram"?"selected":"")+'>gram</option><option value="litre" '+(line.unit==="litre"?"selected":"")+'>litre</option><option value="pack" '+(line.unit==="pack"?"selected":"")+'>pack</option><option value="box" '+(line.unit==="box"?"selected":"")+'>box</option></select></label>'
+        : '<label class="line-product">Product *<select class="product-select" data-field="product_id"><option value="">Choose catalogue product</option><option value="__manual__">＋ Non-catalog item</option>'+products.map(p=>'<option value="'+esc(p.id)+'" '+(p.id===line.product_id?"selected":"")+'>'+esc(p.name)+' · '+esc(p.sku||"SKU")+'</option>').join("")+'</select></label>';
+      const unit=manual?(line.unit||"piece"):(chosen?.unit_type||line.unit||"piece");
+      return '<div class="hf-purchase-line" data-purchase-line="'+i+'">'+productField+
         '<label>Quantity<input data-field="quantity" type="number" min="0.001" step="0.001" value="'+esc(line.quantity)+'"></label>'+
         '<label>Unit cost ৳<input data-field="unit_cost" type="number" min="0" step="0.01" value="'+esc(line.unit_cost)+'"></label>'+
         '<label>Discount ৳<input data-field="discount_amount" type="number" min="0" step="0.01" value="'+esc(line.discount_amount)+'"></label>'+
-        '<div><label>Line total</label><strong class="line-total">'+money(Math.max(0,n(line.quantity)*n(line.unit_cost)-n(line.discount_amount)))+'</strong><small>'+(chosen?esc(chosen.unit_type||"piece")+" · stock "+n(chosen.stock_quantity).toLocaleString("en-BD"):"Select a product")+'</small></div>'+
+        '<div><label>Line total</label><strong class="line-total">'+money(Math.max(0,n(line.quantity)*n(line.unit_cost)-n(line.discount_amount)))+'</strong><small>'+(manual?"Non-catalog · not added to store stock":chosen?esc(unit)+" · stock "+n(chosen.stock_quantity).toLocaleString("en-BD"):"Choose a product or enter a non-catalog item")+'</small></div>'+
         '<button class="hf-line-remove" data-remove-purchase-line="'+i+'" type="button" aria-label="Remove product line">×</button>'+
       '</div>';
     }).join("");
@@ -381,7 +385,7 @@ window.HFSupplierInit = async function(mode) {
     document.querySelectorAll("[data-close-supplier-profile]").forEach(b=>b.addEventListener("click",()=>$("supplierProfileDialog").close()));
   };
   const bindPurchasePage=()=>{
-    purchaseLines=[{product_id:"",quantity:1,unit_cost:0,discount_amount:0}];renderPurchaseLines();
+    purchaseLines=[{product_id:"",product_name:"",sku_snapshot:"",unit:"piece",quantity:1,unit_cost:0,discount_amount:0}];renderPurchaseLines();
     $("focusPurchaseForm").addEventListener("click",()=>$("purchaseCreateSection").scrollIntoView({behavior:"smooth",block:"start"}));
     $("addPurchaseLine").addEventListener("click",()=>{purchaseLines.push({product_id:"",quantity:1,unit_cost:0,discount_amount:0});renderPurchaseLines();});
     $("purchaseLines").addEventListener("input",e=>{
@@ -397,7 +401,9 @@ window.HFSupplierInit = async function(mode) {
       purchaseLines[i][field]=e.target.value;
       if(field==="product_id"){
         const p=products.find(x=>x.id===e.target.value);
-        if(p){purchaseLines[i].unit_cost=p.cost_price??purchaseLines[i].unit_cost;renderPurchaseLines();}
+        if(p){purchaseLines[i].unit_cost=p.cost_price??purchaseLines[i].unit_cost;purchaseLines[i].unit=p.unit_type||"piece";}
+        if(e.target.value==="__manual__"){purchaseLines[i].product_name="";purchaseLines[i].sku_snapshot="";purchaseLines[i].unit="piece";}
+        renderPurchaseLines();
       }
       calcPurchaseTotal();
     });
@@ -410,8 +416,15 @@ window.HFSupplierInit = async function(mode) {
     $("purchaseForm").addEventListener("submit",async e=>{
       e.preventDefault();const b=$("savePurchaseBtn");submitting(b,true);errorText("purchaseFormError","");
       try{
-        if(!purchaseLines.length||purchaseLines.some(l=>!l.product_id))throw Error("Select a product for every purchase line.");
-        const items=purchaseLines.map(l=>({product_id:l.product_id,quantity:n(l.quantity),unit_cost:n(l.unit_cost),discount_amount:n(l.discount_amount)}));
+        if(!purchaseLines.length)throw Error("Add at least one purchase line.");
+        const items=purchaseLines.map(l=>({
+          product_id:l.product_id==="__manual__"||!l.product_id?null:l.product_id,
+          product_name:l.product_name||"",
+          sku_snapshot:l.sku_snapshot||"",
+          unit:l.unit||"piece",
+          quantity:n(l.quantity),unit_cost:n(l.unit_cost),discount_amount:n(l.discount_amount)
+        }));
+        if(items.some(x=>x.product_id===null&&x.product_name.trim().length<2))throw Error("Enter a name for each non-catalog item.");
         if(items.some(x=>x.quantity<=0||x.unit_cost<0||x.discount_amount<0||x.discount_amount>x.quantity*x.unit_cost))throw Error("Check quantities, unit costs and line discounts.");
         const po=await rpc("create_supplier_purchase_order",{
           p_supplier_id:$("purchaseSupplier").value,p_order_date:$("purchaseDate").value,
