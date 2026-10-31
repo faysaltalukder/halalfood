@@ -68,8 +68,8 @@ window.HFMarketingInit=async function(){
   const dot=$("mktEmailReadyDot"),title=$("mktEmailReadyText"),detail=$("mktEmailReadyDetail"),hint=$("mktEmailProviderHint");
   if(dot)dot.className="hf-readiness-dot "+(emailProvider.configured?"is-ready":"is-pending");
   if(title)title.textContent=emailProvider.configured?"Email provider connected":"Provider setup required";
-  if(detail)detail.textContent=emailProvider.configured?"Verified sender: "+emailProvider.from:"Missing: "+(emailProvider.missing.length?emailProvider.missing.join(", "):"Provider setup required")+". Add these as Supabase Edge Function secrets.";
-  if(hint)hint.textContent=emailProvider.configured?"Email campaigns can be sent after recipient consent is rechecked and you approve the send.":"No email is sent while the provider is unconfigured. CSV export remains available for a consented audience.";
+  if(detail)detail.textContent=emailProvider.configured?"Configured sender: "+emailProvider.from+" · Must belong to a domain verified in Resend.":"Missing: "+(emailProvider.missing.length?emailProvider.missing.join(", "):"Provider setup required")+". Add these as Supabase Edge Function secrets.";
+  if(hint)hint.textContent=emailProvider.configured?"Email campaigns can be approved after recipient consent is rechecked. Resend still must recognise the sender domain as verified; provider acceptance is not proof of inbox delivery.":"No email is sent while the provider is unconfigured. CSV export remains available for a consented audience.";
  }
  function matchingCustomers(){
   const segment=$("mktSegment").value,search=$("mktAudienceSearch").value.trim().toLocaleLowerCase();
