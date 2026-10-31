@@ -100,7 +100,7 @@ window.HFCustomersInit=async function(){
  $("customerClearFilters").addEventListener("click",()=>{$("customerSearch").value="";$("customerStatusFilter").value="active";$("customerTierFilter").value="";segment="all";page=0;refresh().catch(e=>toast(e.message||"Could not refresh customers.","error"));});
  $("customerPrevPage").addEventListener("click",()=>{if(page>0){page--;refresh().catch(e=>toast(e.message||"Could not load customers.","error"));}});
  $("customerNextPage").addEventListener("click",()=>{if((page+1)*pageSize<total){page++;refresh().catch(e=>toast(e.message||"Could not load customers.","error"));}});
- document.querySelectorAll("[data-customer-segment]").forEach(b=>b.addEventListener("click",()=>{segment=b.dataset.customerSegment||"all";page=0;refresh().catch(e=>toast(e.message||"Could not filter customers.","error"));}));
+ document.querySelectorAll("[data-customer-segment]").forEach(b=>b.addEventListener("click",()=>{$("customerTierFilter").value="";segment=b.dataset.customerSegment||"all";page=0;refresh().catch(e=>toast(e.message||"Could not filter customers.","error"));}));
  const tagResult=await client.from("customer_tags").select("id,code").eq("code","friend").maybeSingle();if(tagResult.error)throw tagResult.error;friendTag=tagResult.data;
  const manualRefresh=document.querySelector("[data-refresh-page]");manualRefresh?.addEventListener("click",()=>refresh().then(()=>toast("Customer information refreshed.")).catch(e=>toast(e.message||"Refresh failed.","error")));
  await refresh();
