@@ -201,7 +201,7 @@ window.HFMarketingInit=async function(){
    setFeedback("Campaign prepared. Confirm once to send to "+number(audience.length)+" selected recipient(s).");
    const sent=await sendEmail(campaign.id);
    if(sent===false)setFeedback("Campaign saved as a draft. Sending was cancelled.");
-   else setFeedback("Email send request completed. See Campaign history for the provider result.");
+   else{setFeedback("Email send request completed. See Campaign history for the provider result.");selected.clear();selectionTouched=true;renderAudience();}
    return;
   }
   setFeedback("WhatsApp audience saved. Export it from Campaign history, then complete the broadcast manually.");
