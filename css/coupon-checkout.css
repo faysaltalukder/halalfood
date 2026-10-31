@@ -1,0 +1,21 @@
+.checkout-coupon{margin:14px 0 16px;padding:14px;border:1px solid #e5dfd4;border-radius:12px;background:#fffdf8}
+.checkout-coupon-heading{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.checkout-coupon-icon{width:34px;height:34px;display:grid;place-items:center;border-radius:10px;background:#f7ecdf;color:#9b5e30;font-weight:800;font-size:18px}
+.checkout-coupon-heading h3{margin:0;color:#2b2a3d;font:700 14px/1.35 Arial,sans-serif}
+.checkout-coupon-heading p{margin:3px 0 0;color:#777482;font-size:11px;line-height:1.45}
+.checkout-coupon-entry{display:flex;gap:8px}
+.checkout-coupon-entry input{min-width:0;flex:1;height:42px;padding:0 12px;border:1px solid #d8d4c9;border-radius:8px;background:#fff;color:#2b2a3d;font:600 13px Arial,sans-serif;letter-spacing:.045em;text-transform:uppercase}
+.checkout-coupon-entry input:focus{outline:2px solid #e6c4a4;outline-offset:1px;border-color:#c97b3d}
+.checkout-coupon-apply{min-width:78px;padding:0 15px;border:1px solid #c97b3d;border-radius:8px;background:#c97b3d;color:#fff;font-weight:700;font-size:12px}
+.checkout-coupon-apply:hover{background:#ad672f;border-color:#ad672f}
+.checkout-coupon-apply:disabled{opacity:.6;cursor:wait}
+.checkout-coupon-feedback{margin:8px 0 0;color:#777482;font-size:11px;line-height:1.5}
+.checkout-coupon-feedback.is-success{color:#287a52}
+.checkout-coupon-feedback.is-error{color:#b4453a}
+.checkout-coupon-applied{margin-top:10px;padding:10px 11px;border:1px solid #cfe2d5;border-radius:9px;background:#f2f8f3;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.checkout-coupon-applied strong{display:block;color:#286346;font-size:12px;letter-spacing:.04em}
+.checkout-coupon-applied small{display:block;margin-top:2px;color:#52705d;font-size:11px}
+.checkout-coupon-applied button{padding:4px 7px;border:0;background:transparent;color:#8e4f32;font-size:11px;font-weight:700;text-decoration:underline}
+.checkout-discount-row{color:#287a52}
+.checkout-discount-row strong{color:#287a52}
+@media(max-width:480px){.checkout-coupon{padding:12px}.checkout-coupon-entry input{font-size:12px}.checkout-coupon-apply{min-width:70px;padding:0 12px}}
