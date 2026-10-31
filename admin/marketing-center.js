@@ -125,7 +125,7 @@ window.HFMarketingInit=async function(){
   const body=$("mktCampaignHistoryBody");
   if(!campaigns.length){body.innerHTML='<tr><td colspan="6" class="hf-marketing-muted">No marketing campaigns have been saved yet.</td></tr>';return;}
   body.innerHTML=campaigns.map(c=>{
-   const action=c.channel==="whatsapp"?'<button type="button" class="hf-button hf-button-secondary" data-mkt-export="'+esc(c.id)+'">Export WhatsApp CSV</button>':('<button type="button" class="hf-button hf-button-secondary" data-mkt-export="'+esc(c.id)+'">Export email CSV</button>'+(emailProvider.configured&&["draft","partially_sent"].includes(c.status)?'<button type="button" class="hf-button hf-button-primary" data-mkt-send="'+esc(c.id)+'">'+(c.status==="partially_sent"?"Continue send":"Approve & send")+'</button>':(!emailProvider.configured?'<button type="button" class="hf-button hf-button-secondary" disabled title="Configure RESEND_API_KEY and MARKETING_FROM_EMAIL in Supabase Edge Function secrets">Provider needed</button>':"")));
+   const action=c.channel==="whatsapp"?((["draft","exported"].includes(c.status)?'<button type="button" class="hf-button hf-button-secondary" data-mkt-export="'+esc(c.id)+'">Export WhatsApp CSV</button>':"")+(c.status==="exported"?'<button type="button" class="hf-button hf-button-primary" data-mkt-whatsapp-sent="'+esc(c.id)+'">Record WhatsApp sent</button>':"")):('<button type="button" class="hf-button hf-button-secondary" data-mkt-export="'+esc(c.id)+'">Export email CSV</button>'+(emailProvider.configured&&["draft","partially_sent"].includes(c.status)?'<button type="button" class="hf-button hf-button-primary" data-mkt-send="'+esc(c.id)+'">'+(c.status==="partially_sent"?"Continue send":"Approve & send")+'</button>':(!emailProvider.configured?'<button type="button" class="hf-button hf-button-secondary" disabled title="Configure RESEND_API_KEY and MARKETING_FROM_EMAIL in Supabase Edge Function secrets">Provider needed</button>':"")));
    return '<tr><td><div class="hf-marketing-history-name"><strong>'+esc(c.name)+'</strong><small>'+esc(dateTime(c.created_at))+'</small></div></td><td>'+esc(c.channel==="whatsapp"?"WhatsApp":"Email")+'</td><td>'+statusBadge(c.status)+'</td><td>'+number(c.audience_count)+'</td><td>'+number(c.sent_count)+' / '+number(c.failed_count)+'</td><td><div class="hf-marketing-history-actions">'+action+'</div></td></tr>';
   }).join("");
  }
@@ -203,11 +203,12 @@ window.HFMarketingInit=async function(){
   }
   await reloadPrefs(ids);
   const byId=new Map(directory.map(c=>[c.id,c]));
-  const rows=[],validRecipientIds=[],suppressed=recipients.length-directory.length;
+  const rows=[],validRecipientIds=[];
+  const suppressedRecipientIds=[];
   recipients.forEach(r=>{
-   const c=byId.get(r.customer_id);if(!c||!channelHasPermission(c,campaign.channel))return;
+   const c=byId.get(r.customer_id);if(!c||!channelHasPermission(c,campaign.channel)){suppressedRecipientIds.push(r.id);return;}
    const contact=campaign.channel==="whatsapp"?normalizePhone(c.phone):(validEmail(c.email)?String(c.email).trim():"");
-   if(!contact)return;
+   if(!contact){suppressedRecipientIds.push(r.id);return;}
    rows.push(campaign.channel==="whatsapp"?{name:safeName(c),phone:contact,personalized_message:personalize(campaign.message_body,c)}:{name:safeName(c),email:contact,personalized_message:personalize(campaign.message_body,c),subject:personalize(campaign.subject||"",c)});
    validRecipientIds.push(r.id);
   });
@@ -216,16 +217,52 @@ window.HFMarketingInit=async function(){
   const file=(campaign.channel==="whatsapp"?"halal-food-whatsapp-":"halal-food-email-")+String(campaign.name||"campaign").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,40)+"-"+id.slice(0,8)+".csv";
   downloadFile(file,content,"text/csv;charset=utf-8");
   const now=new Date().toISOString();
+  for(let i=0;i<suppressedRecipientIds.length;i+=400){
+   const batch=suppressedRecipientIds.slice(i,i+400);
+   const {error:suppressError}=await client.from("marketing_campaign_recipients")
+    .update({status:"suppressed",last_error:"Consent or valid contact details changed before export."})
+    .in("id",batch).eq("campaign_id",id);
+   if(suppressError)throw suppressError;
+  }
   for(let i=0;i<validRecipientIds.length;i+=400){
    const batch=validRecipientIds.slice(i,i+400);
    const {error:updateError}=await client.from("marketing_campaign_recipients").update({status:"exported",exported_at:now}).in("id",batch);
    if(updateError)throw updateError;
   }
   if(campaign.channel==="whatsapp")await client.from("marketing_campaigns").update({status:"exported",exported_count:validRecipientIds.length,updated_at:now}).eq("id",id);
-  await client.from("marketing_campaign_events").insert({campaign_id:id,event_type:"audience_exported",details:{channel:campaign.channel,exported_count:validRecipientIds.length,suppressed_count:Math.max(0,suppressed)},created_by:ADMIN_EMAIL});
+  await client.from("marketing_campaign_events").insert({campaign_id:id,event_type:"audience_exported",details:{channel:campaign.channel,exported_count:validRecipientIds.length,suppressed_count:suppressedRecipientIds.length},created_by:ADMIN_EMAIL});
   await audit("marketing_audience_exported","marketing_campaign",id,"Consent rechecked and campaign audience exported",{channel:campaign.channel,exported_count:validRecipientIds.length});
   await loadCampaigns();renderHistory();
-  toast(number(validRecipientIds.length)+" eligible contact(s) exported. Export does not mean sent.","success");
+  toast(number(validRecipientIds.length)+" eligible contact(s) exported. Export does not mean sent. "+number(suppressedRecipientIds.length)+" no longer eligible contact(s) were suppressed.","success");
+ }
+ async function recordWhatsAppSent(id){
+  const campaign=campaigns.find(c=>c.id===id);
+  if(!campaign||campaign.channel!=="whatsapp"||campaign.status!=="exported")throw new Error("Only an exported WhatsApp campaign can be marked as manually sent.");
+  const {data:recipients,error}=await client.from("marketing_campaign_recipients").select("id")
+   .eq("campaign_id",id).eq("status","exported").order("created_at",{ascending:true}).limit(10000);
+  if(error)throw error;
+  if(!recipients?.length)throw new Error("No exported WhatsApp recipients are waiting for a send confirmation.");
+  const ok=window.confirm("Have you finished manually sending this campaign in the WhatsApp Business app to all "+number(recipients.length)+" exported recipient(s)? This only records your confirmation in the dashboard; it does not send any WhatsApp messages or verify delivery.");
+  if(!ok)return;
+  const now=new Date().toISOString(),ids=recipients.map(r=>r.id);
+  for(let i=0;i<ids.length;i+=400){
+   const batch=ids.slice(i,i+400);
+   const {error:updateError}=await client.from("marketing_campaign_recipients").update({status:"sent",sent_at:now,last_error:null}).in("id",batch).eq("campaign_id",id).eq("status","exported");
+   if(updateError)throw updateError;
+  }
+  const {data:updated,error:updateCampaignError}=await client.from("marketing_campaigns")
+   .update({status:"sent",sent_count:ids.length,sent_at:now,updated_at:now})
+   .eq("id",id).eq("channel","whatsapp").eq("status","exported").select("id").maybeSingle();
+  if(updateCampaignError)throw updateCampaignError;
+  if(!updated)throw new Error("WhatsApp campaign status changed while it was being recorded. Refresh campaign history.");
+  await client.from("marketing_campaign_events").insert({
+   campaign_id:id,event_type:"whatsapp_manual_send_recorded",
+   details:{channel:"whatsapp",recipient_count:ids.length,method:"WhatsApp Business app",confirmed_by_admin:true,delivery_independently_verified:false},
+   created_by:ADMIN_EMAIL
+  });
+  await audit("marketing_whatsapp_manual_send_confirmed","marketing_campaign",id,"Administrator confirmed WhatsApp messages were sent manually in WhatsApp Business",{recipient_count:ids.length,delivery_independently_verified:false});
+  await loadCampaigns();renderHistory();
+  toast(number(ids.length)+" WhatsApp recipients recorded as manually sent. Delivery was not independently verified.","success");
  }
  async function sendEmail(id){
   const campaign=campaigns.find(c=>c.id===id);if(!campaign)throw new Error("Campaign was not found.");
