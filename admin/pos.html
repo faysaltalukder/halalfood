@@ -1,110 +1,65 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="robots" content="noindex,nofollow">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow">
 <title>POS Management · Halal Food Admin</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./shared.css?v=20261031-offline-pos-v1">
-<link rel="stylesheet" href="./phase4-pages.css?v=20261023-admin-ultimate-v1">
-<link rel="stylesheet" href="./pos.css?v=20261031-offline-pos-v1">
+<link rel="stylesheet" href="./shared.css?v=20261030-admin-theme-v2"><link rel="stylesheet" href="./phase4-pages.css?v=20261023-admin-ultimate-v1"><link rel="stylesheet" href="./pos.css?v=20261031-pos-simple-v1">
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 </head>
 <body data-page="pos">
 <div id="authGate" class="auth-gate"><div class="auth-gate-card"><strong>Checking secure admin access…</strong><p>Your dashboard data will load only after the authorized account and two-step verification are confirmed.</p></div></div>
-<div id="adminApp" hidden>
-<main id="pageContent" tabindex="-1">
-  <div class="page-heading hf-phase4-hero pos-hero">
-    <div><p class="page-eyebrow">STORE MANAGEMENT · OFFLINE SALES</p><h1>POS Management</h1><p>Import in-store and offline sales into the same order, inventory and finance records used by the rest of your business dashboard.</p></div>
-    <div class="page-actions"><span class="hf-status hf-status-active">Admin · MFA protected</span><button class="hf-button hf-button-secondary" id="posRefreshBtn" type="button">↻ Refresh</button></div>
-  </div>
-
-  <nav class="hf-workspace-nav pos-workspace-nav" aria-label="POS sections">
-    <a href="#posImportSection" class="hf-workspace-nav-item"><span class="hf-workspace-nav-number">01</span><span class="hf-workspace-nav-copy"><strong>Import offline sales</strong><small>Upload CSV and preview first</small></span><span class="hf-workspace-nav-arrow" aria-hidden="true">↗</span></a>
-    <a href="#posRecentSection" class="hf-workspace-nav-item"><span class="hf-workspace-nav-number">02</span><span class="hf-workspace-nav-copy"><strong>Imported sales</strong><small>Review records in Orders</small></span><span class="hf-workspace-nav-arrow" aria-hidden="true">↗</span></a>
-    <a href="#posCatalogSection" class="hf-workspace-nav-item"><span class="hf-workspace-nav-number">03</span><span class="hf-workspace-nav-copy"><strong>Product mapping</strong><small>Use the exact product slug</small></span><span class="hf-workspace-nav-arrow" aria-hidden="true">↗</span></a>
-  </nav>
-
-  <section class="pos-metrics" aria-label="Offline sales summary">
-    <article class="hf-card pos-metric"><small>Imported POS sales</small><strong id="posMetricCount">—</strong><span>All available offline POS orders</span></article>
-    <article class="hf-card pos-metric"><small>Recorded POS value</small><strong id="posMetricValue">—</strong><span>Recorded sale value, not a bank balance</span></article>
-    <article class="hf-card pos-metric"><small>Latest sale</small><strong id="posMetricLatest">—</strong><span id="posMetricLatestDate">Based on saved sale date</span></article>
-  </section>
-
-  <section id="posImportSection" class="hf-card hf-card-pad pos-section">
-    <div class="pos-section-head">
-      <div><p class="page-eyebrow">IMPORT CENTER</p><h2>Offline Sales Import</h2><p>Bring handwritten-counter sales, shop sales or sales recorded outside this website into your central business records.</p></div>
-      <div class="pos-head-actions"><button class="hf-button hf-button-secondary hf-button-small" id="posTemplateBtn" type="button">↓ CSV template</button><button class="hf-button hf-button-secondary hf-button-small" id="posProductCsvBtn" type="button">↓ Product slug list</button></div>
-    </div>
-
-    <div class="pos-import-grid">
-      <div class="pos-upload-panel">
-        <label class="pos-upload-label" for="posCsvFile"><span class="pos-upload-icon" aria-hidden="true">↑</span><strong>Choose offline sales CSV</strong><small>CSV file · maximum 2 MB · up to 5,000 item rows / 300 sales per import</small></label>
-        <input id="posCsvFile" class="pos-file-input" type="file" accept=".csv,text/csv">
-        <p id="posFileName" class="pos-file-name">No file selected yet.</p>
-      </div>
-      <div class="pos-settings-panel">
-        <label class="pos-check-row"><input id="posAdjustStock" type="checkbox" checked><span><strong>Deduct imported quantities from current stock</strong><small>Recommended for sales not yet reflected in your inventory. Uncheck when stock has already been adjusted separately. Products with untracked stock stay unchanged.</small></span></label>
-        <div class="pos-import-note"><strong>Payment handling</strong><span>Each sale uses the <code>payment_received</code> CSV field. “yes” creates a Confirmed income entry; “no” keeps it as Draft. This records the supplied information and is not bank verification.</span></div>
-      </div>
-    </div>
-
-    <div class="pos-format-guide">
-      <strong>CSV columns</strong>
-      <p><code>sale_reference</code>, <code>sale_date</code>, <code>customer_name</code>, <code>customer_phone</code>, <code>customer_email</code>, <code>payment_method</code>, <code>payment_received</code>, <code>notes</code>, <code>product_slug</code>, <code>quantity</code>, <code>unit_price</code>.</p>
-      <ul>
-        <li>Use the same <code>sale_reference</code> on every product row belonging to one receipt. A different reference starts a separate sale.</li>
-        <li><code>sale_date</code> must be YYYY-MM-DD. Customer name and phone can be blank for walk-in customers.</li>
-        <li>Payment method: <code>cash</code>, <code>mobile_banking</code>, <code>bank_transfer</code>, <code>cash_on_delivery</code> or <code>other</code>. Blank defaults to cash.</li>
-        <li><code>payment_received</code>: yes/no. Blank defaults to yes. <code>unit_price</code> is optional; blank uses the current catalogue price.</li>
-        <li>Use the exact <code>product_slug</code> shown in Product Mapping. The same file can be imported again safely: already-imported sale references are skipped.</li>
-      </ul>
-    </div>
-
-    <div class="pos-action-row"><p id="posFileMessage" class="pos-status-message" role="status" aria-live="polite">Select a CSV to validate it. No records are saved until you review the preview and choose Import.</p><button id="posPreviewBtn" class="hf-button hf-button-primary" type="button" disabled>Validate &amp; preview CSV</button></div>
-
-    <div id="posPreviewPanel" class="pos-preview-panel" hidden>
-      <div class="pos-preview-head"><div><h3>Import preview</h3><p id="posPreviewDescription">Review each sale before importing.</p></div><button id="posClearPreviewBtn" class="hf-button hf-button-secondary hf-button-small" type="button">Clear preview</button></div>
-      <div class="pos-preview-metrics">
-        <div><small>Ready to import</small><strong id="posReadyCount">0</strong></div>
-        <div><small>Already imported</small><strong id="posDuplicateCount">0</strong></div>
-        <div><small>Needs correction</small><strong id="posErrorCount">0</strong></div>
-        <div><small>Estimated ready value</small><strong id="posReadyValue">৳0</strong></div>
-      </div>
-      <div class="hf-table-wrap pos-table-wrap" tabindex="0" role="region" aria-label="Import preview table. Scroll horizontally to view all columns.">
-        <table class="hf-table pos-table"><thead><tr><th>Sale reference</th><th>Sale date</th><th>Customer</th><th>Items</th><th>Payment</th><th>Sale total</th><th>Preview status</th></tr></thead><tbody id="posPreviewBody"><tr><td colspan="7">Preview will appear here.</td></tr></tbody></table>
-      </div>
-      <div id="posImportErrors" class="pos-import-errors" hidden></div>
-      <div class="pos-action-row pos-import-action"><p>Each ready sale is saved atomically. Failed sales can be corrected and retried; successful references will be detected as duplicates.</p><button id="posImportBtn" class="hf-button hf-button-primary" type="button" disabled>Import ready sales</button></div>
-      <div id="posImportResults" class="pos-import-results" role="status" aria-live="polite" hidden></div>
-    </div>
-  </section>
-
-  <section id="posRecentSection" class="hf-card hf-card-pad pos-section">
-    <div class="pos-section-head"><div><p class="page-eyebrow">CENTRAL ORDER RECORDS</p><h2>Recent imported sales</h2><p>These entries are regular orders with the source label Offline POS. They also appear in the Orders, Finance and Reports sections.</p></div><a class="hf-button hf-button-secondary hf-button-small" href="./orders.html">Open Orders</a></div>
-    <div class="hf-toolbar"><input id="posRecentSearch" class="hf-input" type="search" placeholder="Search sale reference, customer or phone" aria-label="Search imported POS sales"></div>
-    <div class="hf-table-wrap pos-table-wrap" tabindex="0" role="region" aria-label="Recent offline POS sales. Scroll horizontally to view all columns.">
-      <table class="hf-table pos-table"><thead><tr><th>POS reference</th><th>Date</th><th>Customer</th><th>Items</th><th>Payment method</th><th>Recorded value</th><th>Order status</th></tr></thead><tbody id="posRecentBody"><tr><td colspan="7">Loading offline sales…</td></tr></tbody></table>
-    </div>
-    <p class="hf-data-note">Importing a sale does not emit a website Purchase pixel/GA event. It records the offline transaction in the business ledgers without misrepresenting it as an online checkout conversion.</p>
-  </section>
-
-  <section id="posCatalogSection" class="hf-card hf-card-pad pos-section">
-    <div class="pos-section-head"><div><p class="page-eyebrow">CSV PRODUCT MATCHING</p><h2>Product Mapping</h2><p>Use the exact slug in your CSV so every imported item links to the correct catalogue product and stock record.</p></div></div>
-    <div class="hf-toolbar"><input id="posProductSearch" class="hf-input" type="search" placeholder="Search product name or slug" aria-label="Search product mapping"></div>
-    <div class="hf-table-wrap pos-table-wrap" tabindex="0" role="region" aria-label="Product mapping table. Scroll horizontally to view all columns.">
-      <table class="hf-table pos-table"><thead><tr><th>Product</th><th>Product slug (CSV)</th><th>Current price</th><th>Current stock</th><th>Catalogue status</th></tr></thead><tbody id="posCatalogBody"><tr><td colspan="5">Loading products…</td></tr></tbody></table>
-    </div>
-    <p class="hf-data-note">Inactive products remain available for importing historical offline sales, but a product must still exist in the catalogue. If its stock is tracked, the stock setting above controls whether the import adjusts it.</p>
-  </section>
-</main>
+<div id="adminApp" hidden><main id="pageContent" tabindex="-1">
+<div class="page-heading pos-hero">
+ <div><p class="page-eyebrow">STORE MANAGEMENT</p><h1>POS Management</h1><p>Record products sold offline. Saved sales are automatically added to Orders and Finance.</p></div>
+ <div class="page-actions"><button class="hf-button hf-button-secondary" id="posRefreshBtn" type="button">↻ Refresh</button></div>
 </div>
+
+<section class="pos-workspace" aria-label="Offline sales entry">
+ <aside class="hf-card pos-products-pane" aria-labelledby="posProductsHeading">
+  <div class="pos-pane-heading"><div><h2 id="posProductsHeading">Products</h2><p>Select the product sold offline.</p></div><span class="pos-count-badge" id="posProductCount">0</span></div>
+  <label class="pos-search-wrap" for="posProductSearch"><span aria-hidden="true">⌕</span><input id="posProductSearch" type="search" placeholder="Search products…" autocomplete="off"></label>
+  <div class="pos-product-list" id="posProductList" role="list" aria-label="Product list"><div class="pos-list-loading">Loading products…</div></div>
+ </aside>
+
+ <section class="hf-card pos-form-pane" aria-labelledby="posDetailHeading">
+  <div class="pos-empty" id="posSelectedEmpty"><div class="pos-empty-icon" aria-hidden="true">＋</div><h2 id="posDetailHeading">Choose a product</h2><p>Select a product from the left. Then enter its offline sale details and save.</p></div>
+  <div id="posSelectedContent" hidden>
+   <div class="pos-selected-product">
+    <div class="pos-selected-image" id="posSelectedImage" aria-hidden="true"></div>
+    <div class="pos-selected-copy"><span class="page-eyebrow">SELECTED PRODUCT</span><h2 id="posSelectedName">—</h2><p id="posSelectedMeta">—</p></div>
+    <div class="pos-stock"><small>Stock</small><strong id="posSelectedStock">—</strong></div>
+   </div>
+
+   <form id="posSaleForm" class="pos-sale-form" novalidate>
+    <div class="pos-fields">
+     <div class="pos-field"><label for="posSaleDate">Sale date</label><input id="posSaleDate" type="date" required></div>
+     <div class="pos-field"><label for="posSaleTime">Sale time</label><input id="posSaleTime" type="time" required></div>
+     <div class="pos-field"><label for="posCustomerName">Customer name <span>(optional)</span></label><input id="posCustomerName" type="text" maxlength="80" placeholder="Walk-in customer"></div>
+     <div class="pos-field"><label for="posCustomerPhone">Phone <span>(optional)</span></label><input id="posCustomerPhone" type="tel" inputmode="tel" maxlength="24" placeholder="01XXXXXXXXX"></div>
+     <div class="pos-field"><label for="posSaleQuantity">Quantity <span id="posQuantityUnit"></span></label><input id="posSaleQuantity" type="number" min="1" max="1000" step="1" value="1" required></div>
+     <div class="pos-field"><label for="posSaleUnitPrice">Selling price per unit (৳)</label><input id="posSaleUnitPrice" type="number" min="0.01" max="1000000" step="0.01" required></div>
+     <div class="pos-field"><label for="posPaymentMethod">Payment method</label><select id="posPaymentMethod"><option value="cash">Cash</option><option value="mobile_banking">bKash / Nagad / Rocket</option><option value="bank_transfer">Bank transfer</option><option value="other">Other</option></select></div>
+     <fieldset class="pos-payment"><legend>Payment received?</legend><label><input type="radio" name="payment_received" value="true" checked><span>Paid</span></label><label><input type="radio" name="payment_received" value="false"><span>Unpaid</span></label></fieldset>
+    </div>
+    <div class="pos-total-row"><div><small>Sale total</small><strong id="posSaleTotal">৳0</strong><span id="posSaleCalculation">1 × ৳0</span></div><button id="posSaveSaleBtn" type="submit" class="hf-button hf-button-primary pos-save-button">Save sale</button></div>
+    <p class="pos-explainer">Saved sales appear in Orders. Paid sales are added to confirmed Finance income; unpaid sales are saved separately and are not counted as received money.</p>
+    <p id="posFormMessage" class="pos-message" role="status" aria-live="polite"></p>
+   </form>
+
+   <section class="pos-history" aria-labelledby="posHistoryHeading">
+    <div class="pos-history-heading"><h3 id="posHistoryHeading">Recent sales for this product</h3><span id="posHistoryCount">0</span></div>
+    <div class="pos-history-scroll" tabindex="0" role="region" aria-label="Recent sales for this product">
+     <table class="hf-table"><thead><tr><th>Date</th><th>Customer</th><th>Qty</th><th>Price</th><th>Total</th><th>Payment</th></tr></thead><tbody id="posHistoryBody"><tr><td colspan="6">No sales yet.</td></tr></tbody></table>
+    </div>
+   </section>
+  </div>
+ </section>
+</section>
+</main></div>
 <script defer src="./i18n.js?v=20261023-admin-ultimate-v1"></script>
-<script defer src="./shared.js?v=20261031-offline-pos-v1"></script>
-<script defer src="./pos.js?v=20261031-offline-pos-v1"></script>
-<script defer src="./app.js?v=20261031-offline-pos-v1"></script>
-</body>
-</html>
+<script defer src="./shared.js?v=20261030-illustrated-nav-v1"></script>
+<script defer src="./pos.js?v=20261031-pos-simple-v1"></script>
+<script defer src="./app.js?v=20261030-orders-polish-v5"></script>
+</body></html>

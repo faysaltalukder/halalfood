@@ -51,5 +51,5 @@ jobs:
           deno check supabase/functions/site-publisher/index.ts
       - name: Run final admin quality checks
         run: node scripts/admin-phase12-check.mjs
-      - name: Run POS import contract checks
+      - name: Run simple POS sale-entry contract checks
         run: node scripts/admin-pos-check.mjs

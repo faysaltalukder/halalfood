@@ -39,29 +39,32 @@ const FEATURES = {
     guardrails: ["Preserve current checkout fields, validation, COD totals and order ID format.", "Keep consent timestamps and consent method semantics intact.", "Do not change inventory reservation/release or Google Sheets fallback semantics without a separate test."]
   },
   pos: {
-    title: "Offline POS sales import",
-    purpose: "Import in-store/offline sales into the central order, inventory and finance ledgers with preview and duplicate protection.",
+    title: "Simple offline POS sale entry",
+    purpose: "Record one manually sold offline product at a time and link the sale to central Orders, Inventory and Finance reports.",
     readFirst: ["admin/pos.html", "admin/pos.js", "admin/app.js"],
     files: [
       "admin/pos.html", "admin/pos.js", "admin/pos.css", "admin/shared.js", "admin/app.js",
       "supabase/migrations/20261031044407_create_offline_pos_sales.sql",
-      "supabase/migrations/20261031045058_harden_offline_pos_with_invoker_rls.sql"
+      "supabase/migrations/20261031045058_harden_offline_pos_with_invoker_rls.sql",
+      "supabase/migrations/20261031045700_interactive_pos_simple_sale_form.sql"
     ],
     anchors: [
-      { file: "admin/pos.js", names: ["validatePreview", "runImport"] },
+      { file: "admin/pos.js", names: ["selectProduct", "saveSale", "refresh"] },
       { file: "admin/app.js", names: ["doInit"] }
     ],
     tables: ["products", "orders", "order_items", "inventory_movements", "customers", "admin_finance_entries"],
     functions: ["create_offline_pos_sale"],
     tests: ["scripts/admin-pos-check.mjs", "scripts/architecture-check.mjs"],
     guardrails: [
-      "Require an MFA-verified Halal Food admin for every import.",
-      "Keep one receipt/reference idempotent; never create duplicate sale or income records.",
-      "A sale writes its order, items, optional stock adjustment and linked income in one database transaction.",
-      "Never send offline POS imports as website Purchase/GA ecommerce events.",
-      "Do not silently deduct stock if the operator has already adjusted inventory."
+      "Keep the operator workflow to product selection, a small sale form and one Save action.",
+      "Require an MFA-verified Halal Food admin for every sale.",
+      "Generate the POS sale reference internally and prevent duplicate order/finance records.",
+      "Write the order, item, tracked stock movement and linked finance entry atomically.",
+      "Paid sales count as confirmed finance income; unpaid sales stay draft and do not inflate received cash.",
+      "Never send offline POS sales as website Purchase/GA ecommerce events."
     ]
   },
+
   orders: {
     title: "Admin order management",
     purpose: "Order list/detail, status changes, customer details, packing, finance and order security.",
