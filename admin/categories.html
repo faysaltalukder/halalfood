@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex,nofollow">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<title>Categories · Halal Food Admin</title>
+<link rel="stylesheet" href="./shared.css?v=20261031-catalog-workspace-v1">
+<link rel="stylesheet" href="./categories.css?v=20261031-catalog-workspace-v1">
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
+</head>
+<body data-page="categories">
+<div id="authGate" class="auth-gate"><div class="auth-gate-card"><strong>Checking secure admin access…</strong><p>Your catalog will load only after the authorized administrator and two-step verification are confirmed.</p></div></div>
+<div id="adminApp" hidden><main id="pageContent" tabindex="-1">
+<div class="page-heading">
+ <div><p class="page-eyebrow">CATALOG CONTROL CENTER</p><h1>Categories</h1><p>Manage your store structure, product placement and catalog presentation from one reusable workspace.</p></div>
+ <div class="page-actions"><button class="hf-button hf-button-secondary" data-catalog-refresh type="button">↻ Refresh catalog</button></div>
+</div>
+<div class="hf-banner hf-banner-info"><span aria-hidden="true">ⓘ</span><div><strong>One catalog, one source of truth</strong>Changes are stored in Supabase and read by the live storefront. Category nesting is limited to three levels to keep navigation clear and manageable.</div></div>
+<div class="hf-kpi-grid">
+ <section class="hf-card hf-kpi"><span class="hf-kpi-label">Categories</span><strong class="hf-kpi-value" id="catalogCategoryCount">—</strong><span class="hf-kpi-note">All hierarchy levels</span></section>
+ <section class="hf-card hf-kpi"><span class="hf-kpi-label">Active products</span><strong class="hf-kpi-value" id="catalogProductCount">—</strong><span class="hf-kpi-note">All catalog records currently active</span></section>
+ <section class="hf-card hf-kpi"><span class="hf-kpi-label">Nested categories</span><strong class="hf-kpi-value" id="catalogNestedCount">—</strong><span class="hf-kpi-note">Subcategories and child categories</span></section>
+ <section class="hf-card hf-kpi"><span class="hf-kpi-label">Hidden records</span><strong class="hf-kpi-value" id="catalogHiddenCount">—</strong><span class="hf-kpi-note">Categories and products</span></section>
+</div>
+<div class="catalog-hub-grid">
+ <a class="hf-card catalog-hub-card" href="./categories-tree.html"><span class="catalog-hub-icon">⌘</span><span class="catalog-hub-kicker">STRUCTURE</span><strong>Category Structure</strong><p>Create and arrange parent categories, subcategories and child categories. Edit, move or hide a category without deleting its products.</p><span class="catalog-hub-cta">Open category structure →</span></a>
+ <a class="hf-card catalog-hub-card" href="./categories-sorting.html"><span class="catalog-hub-icon">↕</span><span class="catalog-hub-kicker">MERCHANDISING</span><strong>Product Sorting</strong><p>Drag products into the exact order for their category or the homepage. Quick-edit product details without leaving this workspace.</p><span class="catalog-hub-cta">Arrange products →</span></a>
+ <a class="hf-card catalog-hub-card" href="./categories-settings.html"><span class="catalog-hub-icon">⚙</span><span class="catalog-hub-kicker">PRESENTATION</span><strong>Catalog Settings</strong><p>Control category visibility, descriptions, images and search metadata. Review how the structure is presented to customers.</p><span class="catalog-hub-cta">Manage settings →</span></a>
+</div>
+<section class="hf-card hf-card-pad">
+ <div class="hf-section-head"><div><h2>Current category structure</h2><p>A quick view of the live category hierarchy. Select a category to edit it.</p></div><a class="hf-button hf-button-secondary hf-button-small" href="./categories-tree.html">Manage structure</a></div>
+ <div id="catalogHubTree" class="catalog-hub-tree"><div class="hf-loading">Loading catalog…</div></div>
+ <p class="hf-data-note" id="catalogHubNote">New products and categories automatically appear here after they are saved.</p>
+</section></main></div>
+<script defer src="./i18n.js?v=20261031-customer-messages-nav-v1"></script>
+<script defer src="./shared.js?v=20261031-catalog-workspace-v1"></script>
+<script defer src="./categories.js?v=20261031-catalog-workspace-v1"></script>
+</body></html>
