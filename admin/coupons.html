@@ -26,6 +26,7 @@
       <div class="cp-hero-meta"><span class="cp-live-dot"></span><span>Connected to the live store rules</span><span class="cp-meta-separator">·</span><span>Server-validated discounts</span></div>
     </div>
     <div class="page-actions cp-hero-actions">
+      <a class="hf-button hf-button-secondary" href="./coupon-usage.html">Coupon Usage</a>
       <button class="hf-button hf-button-secondary" id="couponRefreshBtn" type="button">↻ Refresh</button>
       <button class="hf-button hf-button-primary" id="couponNewBtn" type="button">＋ Add Coupon</button>
     </div>
@@ -34,8 +35,8 @@
   <div class="cp-kpis" aria-label="Coupon summary">
     <section class="hf-card cp-kpi"><span class="cp-kpi-label">Total coupons</span><strong id="couponMetricTotal">—</strong><small>Campaigns created</small></section>
     <section class="hf-card cp-kpi"><span class="cp-kpi-label">Currently active</span><strong id="couponMetricActive">—</strong><small>Available or scheduled</small></section>
-    <section class="hf-card cp-kpi"><span class="cp-kpi-label">Delivered redemptions</span><strong id="couponMetricRedeemed">—</strong><small>Completed orders only</small></section>
-    <section class="hf-card cp-kpi"><span class="cp-kpi-label">Discount delivered</span><strong id="couponMetricDiscount">—</strong><small>Confirmed delivered orders</small></section>
+    <section class="hf-card cp-kpi"><span class="cp-kpi-label">Coupon orders</span><strong id="couponMetricRedeemed">—</strong><small>Includes pending and delivered orders</small></section>
+    <section class="hf-card cp-kpi"><span class="cp-kpi-label">Discount applied</span><strong id="couponMetricDiscount">—</strong><small>Excludes cancelled orders</small></section>
   </div>
 
   <section class="hf-card cp-workspace" aria-labelledby="couponWorkspaceHeading">

@@ -2000,6 +2000,7 @@ async function refresh(){
    operations:()=>{if(typeof window.HFOpsInit==="function")return window.HFOpsInit();throw new Error("Operations module did not load.");},
    products:initProducts,
    coupons:()=>{if(typeof window.HFCouponsInit==="function")return window.HFCouponsInit();throw new Error("Coupon module did not load.");},
+   "coupon-usage":()=>{if(typeof window.HFCouponUsageInit==="function")return window.HFCouponUsageInit();throw new Error("Coupon usage module did not load.");},
    "products-add":initProductAdd,
    "products-barcode":()=>{if(typeof window.HFBarcodeInit==="function")return window.HFBarcodeInit();throw new Error("Barcode module did not load.");},
    "products-reviews":()=>{if(typeof window.HFReviewsInit==="function")return window.HFReviewsInit();throw new Error("Product Reviews module did not load.");},
