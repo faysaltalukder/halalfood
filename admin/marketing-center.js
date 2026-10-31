@@ -100,19 +100,17 @@ window.HFMarketingInit=async function(){
   orderEmailContacts=[...grouped.values()].map(g=>{
    const linked=[...g.customerIds].map(id=>byId.get(id)).filter(Boolean);
    const exact=linked.filter(c=>validEmail(c.email)&&String(c.email).trim().toLocaleLowerCase()===g.key);
-   const eligible=exact.filter(c=>channelHasPermission(c,"email")).sort((a,b)=>new Date(b.last_order_at||0)-new Date(a.last_order_at||0));
-   const matched=eligible[0]||exact[0]||null;
+   const matched=exact[0]||linked[0]||null;
    return {email:g.email,emailKey:g.key,orderCount:g.orderCount,lastOrderAt:g.lastOrderAt,
     displayName:[...g.names][0]||matched?.name||"Order email contact",
-    linkedCustomerCount:linked.length,customer:matched,eligibleCustomer:eligible[0]||null};
+    linkedCustomerCount:linked.length,customer:matched};
   }).sort((a,b)=>new Date(b.lastOrderAt||0)-new Date(a.lastOrderAt||0));
   $("marketingStatsActive").textContent=number(customers.length);
   $("marketingStatsWhatsApp").textContent=number(customers.filter(c=>pref(c.id).whatsapp_opt_in&&normalizePhone(c.phone)).length);
-  $("marketingStatsEmail").textContent=number(customers.filter(c=>pref(c.id).email_opt_in&&validEmail(c.email)).length);
   $("marketingStatsOrderEmails").textContent=number(orderEmailContacts.length);
  }
  async function loadCampaigns(){
-  const {data,error}=await client.from("marketing_campaigns").select("id,name,channel,subject,status,audience_count,exported_count,sent_count,failed_count,created_at,updated_at,last_error").order("created_at",{ascending:false}).limit(100);
+  const {data,error}=await client.from("marketing_campaigns").select("id,name,channel,subject,audience_rules,status,audience_count,exported_count,sent_count,failed_count,created_at,updated_at,last_error").order("created_at",{ascending:false}).limit(100);
   if(error)throw error;
   campaigns=data||[];
   $("marketingStatsCampaigns").textContent=number(campaigns.length);
@@ -131,96 +129,56 @@ window.HFMarketingInit=async function(){
  }
  function matchingEmailContacts(){
   const search=$("mktAudienceSearch").value.trim().toLocaleLowerCase();
-  return orderEmailContacts.filter(c=>!search||[c.email,c.displayName].join(" ").toLocaleLowerCase().includes(search));
+  return orderEmailContacts.filter(c=>!!c.customer&&(!search||[c.email,c.displayName].join(" ").toLocaleLowerCase().includes(search)));
  }
  function eligibleCustomersForCurrentChannel(){
-  if(channel==="email")return matchingEmailContacts().map(c=>c.eligibleCustomer).filter(Boolean);
+  if(channel==="email")return matchingEmailContacts();
   return matchingCustomers().filter(c=>channelHasPermission(c,channel));
  }
  function matchingCustomers(){
-  const segment=$("mktSegment").value,search=$("mktAudienceSearch").value.trim().toLocaleLowerCase();
-  const min=$("mktMinOrders").value===""?null:Number($("mktMinOrders").value),max=$("mktMaxOrders").value===""?null:Number($("mktMaxOrders").value);
-  const recent=$("mktLastOrder").value,cutoff=Date.now()-Number(recent||0)*86400000;
-  return customers.filter(c=>{
-   if(segment==="friend"&&!c.has_friend_tag)return false;
-   if(segment!=="all"&&segment!=="friend"&&c.segment_code!==segment)return false;
-   const orders=Number(c.total_orders||0);
-   if(min!==null&&Number(c.qualifying_orders??orders)<min)return false;
-   if(max!==null&&Number(c.qualifying_orders??orders)>max)return false;
-   if(recent==="never"&&c.last_order_at)return false;
-   if(recent==="inactive90"&&c.last_order_at&&new Date(c.last_order_at).getTime()>=Date.now()-90*86400000)return false;
-   if(["30","60","90"].includes(recent)&&(!c.last_order_at||new Date(c.last_order_at).getTime()<cutoff))return false;
-   if(search&&!([c.name,c.phone,c.email,c.segment_name].join(" ").toLocaleLowerCase().includes(search)))return false;
-   return true;
-  });
+  const search=$("mktAudienceSearch").value.trim().toLocaleLowerCase();
+  return customers.filter(c=>!search||[c.name,c.phone,c.email,c.segment_name].join(" ").toLocaleLowerCase().includes(search));
  }
  function channelLabel(){return channel==="whatsapp"?"WhatsApp":"Email";}
  function renderAudience(){
   const matches=channel==="email"?matchingEmailContacts():matchingCustomers();
-  const eligible=channel==="email"?matches.filter(c=>!!c.eligibleCustomer):matches.filter(c=>channelHasPermission(c,channel));
-  const selectedRows=channel==="email"
-   ?matches.filter(c=>c.eligibleCustomer&&selected.has(c.eligibleCustomer.id))
-   :customers.filter(c=>selected.has(c.id)&&channelHasPermission(c,channel));
+  const eligible=channel==="email"?matches:matches.filter(c=>channelHasPermission(c,channel));
+  const selectedRows=channel==="email"?matches.filter(c=>selected.has(c.emailKey)):customers.filter(c=>selected.has(c.id)&&channelHasPermission(c,channel));
   $("mktAudienceCount").textContent=number(matches.length);$("mktEligibleCount").textContent=number(eligible.length);$("mktSelectedCount").textContent=number(selectedRows.length);
   $("mktReviewChannel").textContent=channelLabel();$("mktReviewEligible").textContent=number(eligible.length);$("mktReviewSelected").textContent=number(selectedRows.length);
-  $("mktAudiencePage").textContent=matches.length?("Showing "+(audiencePage*PAGE_SIZE+1)+"–"+Math.min((audiencePage+1)*PAGE_SIZE,matches.length)+" of "+number(matches.length)):"No matching records";
+  $("mktAudiencePage").textContent=matches.length?("Showing "+(audiencePage*PAGE_SIZE+1)+"–"+Math.min((audiencePage+1)*PAGE_SIZE,matches.length)+" of "+number(matches.length)):"No matching contacts";
   $("mktAudiencePrev").disabled=audiencePage<=0;$("mktAudienceNext").disabled=(audiencePage+1)*PAGE_SIZE>=matches.length;
-  const visible=matches.slice(audiencePage*PAGE_SIZE,(audiencePage+1)*PAGE_SIZE);
-  const body=$("mktAudienceBody");
-  if(!visible.length){body.innerHTML='<tr><td colspan="5" class="hf-marketing-muted">No contacts match this search.</td></tr>';$("mktSaveDraft").disabled=true;$("mktSaveDraft").textContent=channel==="email"?"Send email now":"Save WhatsApp audience";return;}
+  const visible=matches.slice(audiencePage*PAGE_SIZE,(audiencePage+1)*PAGE_SIZE),body=$("mktAudienceBody");
+  if(!visible.length){body.innerHTML='<tr><td colspan="5" class="hf-marketing-muted">No contacts match this search.</td></tr>';$("mktSaveDraft").disabled=true;$("mktSaveDraft").textContent=channel==="email"?"Send customer update":"Export WhatsApp list";return;}
   body.innerHTML=channel==="email"?visible.map(contact=>{
-   const c=contact.eligibleCustomer||contact.customer,allowed=!!contact.eligibleCustomer;
-   const checkbox=allowed?'<input type="checkbox" data-mkt-select="'+esc(c.id)+'" '+(selected.has(c.id)?"checked ":"")+'aria-label="Select '+esc(contact.email)+'">':'<input type="checkbox" disabled aria-label="Email not eligible">';
-   const permission=allowed?'<span class="hf-marketing-permission is-allowed">Ready</span>':
-    (contact.customer?'<span class="hf-marketing-permission is-denied">Marketing permission missing</span>':'<span class="hf-marketing-permission is-denied">Order email only</span>');
-   return '<tr><td>'+checkbox+'</td><td><div class="hf-marketing-person"><strong>'+esc(contact.displayName)+'</strong><small>'+number(contact.orderCount)+' order record(s)</small></div></td><td><span class="hf-marketing-segment">Order contact</span><small class="hf-marketing-contact">'+(contact.lastOrderAt?esc(dateTime(contact.lastOrderAt)):"")+'</small></td><td><span class="hf-marketing-contact">'+esc(contact.email)+'</span></td><td>'+permission+'</td></tr>';
+   const checkbox='<input type="checkbox" data-mkt-select="'+esc(contact.emailKey)+'" '+(selected.has(contact.emailKey)?"checked ":"")+'aria-label="Select '+esc(contact.email)+'">';
+   return '<tr><td>'+checkbox+'</td><td><div class="hf-marketing-person"><strong>'+esc(contact.displayName)+'</strong><small>'+number(contact.orderCount)+' order record(s)</small></div></td><td><span class="hf-marketing-segment">Previous order</span><small class="hf-marketing-contact">'+(contact.lastOrderAt?esc(dateTime(contact.lastOrderAt)):"")+'</small></td><td><span class="hf-marketing-contact">'+esc(contact.email)+'</span></td><td><span class="hf-marketing-permission is-allowed">Order update ready</span></td></tr>';
   }).join(""):visible.map(c=>{
    const allowed=channelHasPermission(c,channel),contact=normalizePhone(c.phone);
-   const permission=allowed?'<span class="hf-marketing-permission is-allowed">Ready</span>':'<span class="hf-marketing-permission is-denied">WhatsApp opt-in required</span>';
+   const permission=allowed?'<span class="hf-marketing-permission is-allowed">Available for reply</span>':'<span class="hf-marketing-permission is-denied">WhatsApp permission required</span>';
    const address=contact?esc(contact):'<span class="hf-marketing-permission is-invalid">Invalid phone</span>';
-   return '<tr><td><input type="checkbox" data-mkt-select="'+esc(c.id)+'" '+(selected.has(c.id)?"checked ":"")+(allowed?"":"disabled ")+'aria-label="Select '+esc(safeName(c))+'"></td><td><div class="hf-marketing-person"><strong>'+esc(safeName(c))+'</strong><small>'+esc(c.id.slice(0,8))+'</small></div></td><td><span class="hf-marketing-segment">'+esc(c.segment_name||"Unclassified")+'</span><small class="hf-marketing-contact">'+number(c.qualifying_orders??c.total_orders)+' qualifying orders</small></td><td>'+address+'</td><td>'+permission+'</td></tr>';
+   return '<tr><td><input type="checkbox" data-mkt-select="'+esc(c.id)+'" '+(selected.has(c.id)?"checked ":"")+(allowed?"":"disabled ")+'aria-label="Select '+esc(safeName(c))+'"></td><td><div class="hf-marketing-person"><strong>'+esc(safeName(c))+'</strong><small>'+esc(c.id.slice(0,8))+'</small></div></td><td><span class="hf-marketing-segment">'+esc(c.segment_name||"Customer")+'</span><small class="hf-marketing-contact">'+number(c.total_orders||0)+' order(s)</small></td><td>'+address+'</td><td>'+permission+'</td></tr>';
   }).join("");
-  $("mktReviewNote").textContent=channel==="whatsapp"?(selectedRows.length?"WhatsApp audience is ready to export. Complete the broadcast manually in WhatsApp Business.":"Select eligible WhatsApp contacts. The final message is sent manually in WhatsApp Business."):"Ready to send to "+number(selectedRows.length)+" eligible email recipient(s). Order addresses without a matching marketing-enabled customer profile are shown but cannot receive campaigns.";
-  $("mktSaveDraft").textContent=channel==="email"?"Send email now":"Save WhatsApp audience";
+  $("mktReviewNote").textContent=channel==="email"
+   ?"Send order-related updates or customer-service messages to the selected previous-order email addresses. The separate Google Sheets order-confirmation automation remains unchanged."
+   :(selectedRows.length?"Selected WhatsApp contacts can be exported with ready-to-open chat links. Final sending remains manual in WhatsApp Business.":"WhatsApp can only be used for customers who have asked to receive messages. No WhatsApp API is connected; customer replies can be handled in the active chat.");
+  $("mktSaveDraft").textContent=channel==="email"?"Send customer update":"Export WhatsApp list";
   $("mktSaveDraft").disabled=selectedRows.length===0||(channel==="email"&&!emailProvider.configured);
- }
- function renderConsent(){
-  const query=$("mktConsentSearch").value.trim().toLocaleLowerCase();
-  const rows=customers.filter(c=>!query||[c.name,c.phone,c.email,c.segment_name].join(" ").toLocaleLowerCase().includes(query));
-  $("mktConsentCount").textContent=number(rows.length)+" active customer records";
-  const visible=rows.slice(0,100);
-  if(!visible.length){$("mktConsentBody").innerHTML='<tr><td colspan="4" class="hf-marketing-muted">No customer records match this search.</td></tr>';return;}
-  $("mktConsentBody").innerHTML=visible.map(c=>{
-   const p=pref(c.id),wa=p.whatsapp_opt_in?'<span class="hf-marketing-permission is-allowed">Opted in</span>':'<span class="hf-marketing-permission is-denied">Not opted in</span>',em=p.email_opt_in?'<span class="hf-marketing-permission is-allowed">Opted in</span>':'<span class="hf-marketing-permission is-denied">Not opted in</span>';
-   const waAction=p.whatsapp_opt_in?'<button class="hf-button hf-button-secondary" type="button" data-mkt-consent="whatsapp:off" data-customer-id="'+esc(c.id)+'">Revoke WA</button>':'<button class="hf-button hf-button-secondary" type="button" data-mkt-consent="whatsapp:on" data-customer-id="'+esc(c.id)+'" '+(normalizePhone(c.phone)?"":"disabled")+'>WhatsApp opt-in</button>';
-   const emAction=p.email_opt_in?'<button class="hf-button hf-button-secondary" type="button" data-mkt-consent="email:off" data-customer-id="'+esc(c.id)+'">Unsubscribe</button>':'<button class="hf-button hf-button-secondary" type="button" data-mkt-consent="email:on" data-customer-id="'+esc(c.id)+'" '+(validEmail(c.email)?"":"disabled")+'>Email opt-in</button>';
-   return '<tr><td><div class="hf-marketing-person"><strong>'+esc(safeName(c))+'</strong><small>'+esc(c.phone||c.email||"No contact")+'</small></div></td><td>'+wa+'</td><td>'+em+'</td><td><div class="hf-marketing-consent-actions">'+waAction+emAction+'</div></td></tr>';
-  }).join("");
-  if(rows.length>100){$("mktConsentCount").textContent="Showing first 100 of "+number(rows.length)+" matching records. Refine search to narrow the list.";}
- }
- function statusBadge(status,channel){const label=status==="sent"&&channel==="whatsapp"?"manually sent":status==="sent"&&channel==="email"?"provider accepted":String(status||"draft").replace(/_/g," ");return '<span class="hf-marketing-status" data-status="'+esc(status)+'">'+esc(label)+'</span>';}
- function renderHistory(){
-  const body=$("mktCampaignHistoryBody");
-  if(!campaigns.length){body.innerHTML='<tr><td colspan="6" class="hf-marketing-muted">No marketing campaigns have been saved yet.</td></tr>';return;}
-  body.innerHTML=campaigns.map(c=>{
-   const action=c.channel==="whatsapp"?((["draft","exported"].includes(c.status)?'<button type="button" class="hf-button hf-button-secondary" data-mkt-export="'+esc(c.id)+'">Export WhatsApp CSV</button>':"")+(c.status==="exported"?'<button type="button" class="hf-button hf-button-primary" data-mkt-whatsapp-sent="'+esc(c.id)+'">Record WhatsApp sent</button>':"")):('<button type="button" class="hf-button hf-button-secondary" data-mkt-export="'+esc(c.id)+'">Export email CSV</button>'+(emailProvider.configured&&["draft","partially_sent"].includes(c.status)?'<button type="button" class="hf-button hf-button-primary" data-mkt-send="'+esc(c.id)+'">'+(c.status==="partially_sent"?"Continue send":"Approve & send")+'</button>':(!emailProvider.configured?'<button type="button" class="hf-button hf-button-secondary" disabled title="Configure GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET and GMAIL_REFRESH_TOKEN in Supabase Edge Function secrets">Provider needed</button>':"")));
-   return '<tr><td><div class="hf-marketing-history-name"><strong>'+esc(c.name)+'</strong><small>'+esc(dateTime(c.created_at))+'</small></div></td><td>'+esc(c.channel==="whatsapp"?"WhatsApp":"Email")+'</td><td>'+statusBadge(c.status,c.channel)+'</td><td>'+number(c.audience_count)+'</td><td>'+number(c.sent_count)+' / '+number(c.failed_count)+'</td><td><div class="hf-marketing-history-actions">'+action+'</div></td></tr>';
-  }).join("");
  }
  function switchTab(tab){
   activeTab=tab;
   document.querySelectorAll("[data-marketing-tab]").forEach(b=>b.classList.toggle("is-active",b.dataset.marketingTab===tab));
   document.querySelectorAll("[data-marketing-panel]").forEach(p=>{const active=p.dataset.marketingPanel===tab;p.classList.toggle("is-active",active);p.hidden=!active;});
-  if(tab==="history")renderHistory();if(tab==="consent")renderConsent();
+  if(tab==="history")renderHistory();
  }
  function switchChannel(ch){
   if(ch===channel)return;
   channel=ch;selected.clear();selectionTouched=false;audiencePage=0;
   document.querySelectorAll("[data-marketing-channel]").forEach(b=>b.classList.toggle("is-active",b.dataset.marketingChannel===ch));
   $("mktEmailFields").hidden=ch!=="email";
-  $("marketingChannelNote").textContent=ch==="whatsapp"?"WhatsApp is a manual handoff. Export the selected contacts and send from WhatsApp Business.":"Write the subject and email, choose recipients (eligible contacts are pre-selected), then press Send email now.";
+  $("marketingChannelNote").textContent=ch==="whatsapp"?"WhatsApp recipients are handled manually. Select eligible contacts, export the chat-link list and use WhatsApp Business.":"Select previous-order email addresses, write a subject and customer-service message, then send through Halal Food Gmail.";
   $("mktReviewChannel").textContent=channelLabel();
-  if(ch==="email")eligibleCustomersForCurrentChannel().forEach(c=>selected.add(c.id));
+  if(ch==="email")eligibleCustomersForCurrentChannel().forEach(c=>selected.add(c.emailKey));
   renderAudience();
  }
  async function reloadPrefs(ids){
@@ -235,96 +193,88 @@ window.HFMarketingInit=async function(){
  async function saveCampaign(){
   setFeedback("");
   const subject=$("mktCampaignSubject").value.trim(),body=$("mktCampaignMessage").value.trim();
-  const name=$("mktCampaignName").value.trim()||subject||((channel==="email"?"Email":"WhatsApp")+" campaign "+new Date().toLocaleDateString("en-GB"));
-  if(body.length<2)throw new Error("Write the campaign message first.");
+  const name=subject||((channel==="email"?"Customer update":"WhatsApp reply list")+" "+new Date().toLocaleDateString("en-GB"));
+  if(body.length<2)throw new Error("Write the message first.");
   if(channel==="email"&&subject.length<2)throw new Error("An email subject is required.");
-  if(selected.size===0)throw new Error("Select at least one eligible customer.");
-  const ids=[...selected];
-  await reloadPrefs(ids);
-  const audience=customers.filter(c=>selected.has(c.id)&&channelHasPermission(c,channel));
-  if(!audience.length)throw new Error("No selected customers currently have valid channel consent and contact details.");
-  if(audience.length!==ids.length)throw new Error("Some selected recipients are no longer eligible. Review the updated audience and try again.");
-  if(audience.length>10000)throw new Error("A single campaign is limited to 10,000 recipients. Narrow the audience first.");
-  const rules=getFilterState();
-  const payload={name,channel,subject:channel==="email"?subject:null,message_body:body,audience_rules:rules,status:"draft",audience_count:audience.length,created_by:ADMIN_EMAIL};
+  if(selected.size===0)throw new Error("Select at least one recipient.");
+  let audience=[],emailRecipients=[];
+  if(channel==="email"){
+   const chosen=orderEmailContacts.filter(c=>selected.has(c.emailKey));
+   if(!chosen.length)throw new Error("Select at least one previous-order email address.");
+   const liveById=new Map(customers.map(c=>[c.id,c]));
+   const verified=chosen.map(contact=>({contact,customer:liveById.get(contact.customer?.id)}));
+   if(verified.some(x=>!x.customer))throw new Error("One or more customer records are no longer active. Refresh the contact list.");
+   if(verified.length>10000)throw new Error("A single message is limited to 10,000 recipients.");
+   emailRecipients=verified.map(x=>({campaign_id:null,customer_id:x.customer.id,recipient_email:x.contact.email,recipient_name:x.contact.displayName,status:"selected"}));
+   audience=verified.map(x=>x.customer);
+  }else{
+   const ids=[...selected];await reloadPrefs(ids);
+   audience=customers.filter(c=>selected.has(c.id)&&channelHasPermission(c,"whatsapp"));
+   if(!audience.length)throw new Error("No selected WhatsApp contacts are currently eligible.");
+   if(audience.length!==ids.length)throw new Error("Some WhatsApp contacts are no longer eligible. Refresh the list.");
+   if(audience.length>10000)throw new Error("A single message is limited to 10,000 recipients.");
+  }
+  const rules={...getFilterState(),email_purpose:channel==="email"?"customer_update":null,message_type:"customer_service"};
+  const recipientCount=channel==="email"?emailRecipients.length:audience.length;
+  const payload={name,channel,subject:channel==="email"?subject:null,message_body:body,audience_rules:rules,status:"draft",audience_count:recipientCount,created_by:ADMIN_EMAIL};
   const {data:campaign,error}=await client.from("marketing_campaigns").insert(payload).select("id").single();
   if(error)throw error;
   try{
-   for(let i=0;i<audience.length;i+=200){
-    const chunk=audience.slice(i,i+200).map(c=>({campaign_id:campaign.id,customer_id:c.id,status:"selected"}));
-    const {error:recipientError}=await client.from("marketing_campaign_recipients").insert(chunk);
-    if(recipientError)throw recipientError;
-   }
-   await client.from("marketing_campaign_events").insert({campaign_id:campaign.id,event_type:"created",details:{channel,audience_count:audience.length,segment:rules.segment},created_by:ADMIN_EMAIL});
+   const recipientRows=channel==="email"?emailRecipients.map(r=>({...r,campaign_id:campaign.id})):audience.map(c=>({campaign_id:campaign.id,customer_id:c.id,status:"selected"}));
+   for(let i=0;i<recipientRows.length;i+=200){const {error:recipientError}=await client.from("marketing_campaign_recipients").insert(recipientRows.slice(i,i+200));if(recipientError)throw recipientError;}
+   await client.from("marketing_campaign_events").insert({campaign_id:campaign.id,event_type:"created",details:{channel,audience_count:recipientCount,message_type:"customer_service"},created_by:ADMIN_EMAIL});
   }catch(err){
-   await client.from("marketing_campaigns").update({status:"failed",last_error:"Audience snapshot could not be completed."}).eq("id",campaign.id);
-   throw err;
+   await client.from("marketing_campaigns").update({status:"failed",last_error:"Recipient list could not be saved."}).eq("id",campaign.id);throw err;
   }
   savedCampaignId=campaign.id;
-  await audit("marketing_campaign_created","marketing_campaign",campaign.id,"Marketing campaign saved with consent-checked audience",{channel,audience_count:audience.length});
+  await audit("customer_message_created","marketing_campaign",campaign.id,"Customer update saved with selected order and support contacts",{channel,audience_count:recipientCount});
   await loadCampaigns();renderHistory();
   if(channel==="email"){
-   setFeedback("Campaign prepared. Confirm once to send to "+number(audience.length)+" selected recipient(s).");
+   setFeedback("Customer update prepared. Confirm once to send to "+number(recipientCount)+" selected email address(es).");
    const sent=await sendEmail(campaign.id);
-   if(sent===false)setFeedback("Campaign saved as a draft. Sending was cancelled.");
-   else{setFeedback("Email send request completed. See Campaign history for the provider result.");selected.clear();selectionTouched=true;renderAudience();}
+   if(sent===false)setFeedback("Customer update was saved but not sent.");
+   else{setFeedback("Gmail accepted the customer update. See Message history for the provider result.");selected.clear();selectionTouched=true;renderAudience();}
    return;
   }
-  setFeedback("WhatsApp audience saved. Export it from Campaign history, then complete the broadcast manually.");
-  toast("WhatsApp audience saved.","success");
-  switchTab("history");
+  setFeedback("WhatsApp recipient list saved. Export the list and use the individual chat links in WhatsApp Business.");
+  toast("WhatsApp contact list saved.","success");switchTab("history");
  }
  async function exportCampaign(id){
   const {data:campaign,error:campaignError}=await client.from("marketing_campaigns").select("id,name,channel,subject,message_body,status").eq("id",id).single();
   if(campaignError)throw campaignError;
-  const {data:recipients,error}=await client.from("marketing_campaign_recipients").select("id,customer_id,status").eq("campaign_id",id).in("status",["selected","exported"]).order("created_at",{ascending:true}).limit(10000);
-  if(error)throw error;
-  if(!recipients||!recipients.length)throw new Error("There are no exportable recipients in this campaign.");
-  const ids=[...new Set(recipients.map(r=>r.customer_id))];
-  const directory=[];
+  const {data:recipients,error}=await client.from("marketing_campaign_recipients").select("id,customer_id,recipient_email,recipient_name,status").eq("campaign_id",id).in("status",["selected","exported"]).order("created_at",{ascending:true}).limit(10000);
+  if(error)throw error;if(!recipients?.length)throw new Error("There are no recipients to export.");
+  const ids=[...new Set(recipients.map(r=>r.customer_id))],directory=[];
   for(let i=0;i<ids.length;i+=400){
    const {data,error:dirError}=await client.from("customer_directory").select(cols).in("id",ids.slice(i,i+400)).is("archived_at",null).is("anonymized_at",null).eq("is_blocked",false);
    if(dirError)throw dirError;(data||[]).forEach(c=>directory.push(c));
   }
-  await reloadPrefs(ids);
-  const byId=new Map(directory.map(c=>[c.id,c]));
-  const rows=[],validRecipientIds=[];
-  const suppressedRecipientIds=[];
+  await reloadPrefs(ids);const byId=new Map(directory.map(c=>[c.id,c]));
+  const rows=[],validRecipientIds=[],suppressedRecipientIds=[];
   recipients.forEach(r=>{
-   const c=byId.get(r.customer_id);if(!c||!channelHasPermission(c,campaign.channel)){suppressedRecipientIds.push(r.id);return;}
-   const contact=campaign.channel==="whatsapp"?normalizePhone(c.phone):(validEmail(c.email)?String(c.email).trim():"");
+   const c=byId.get(r.customer_id);if(!c){suppressedRecipientIds.push(r.id);return;}
+   const contact=campaign.channel==="whatsapp"?normalizePhone(c.phone):(validEmail(r.recipient_email||c.email)?String(r.recipient_email||c.email).trim():"");
    if(!contact){suppressedRecipientIds.push(r.id);return;}
    if(campaign.channel==="whatsapp"){
-    const waNumber="880"+contact.slice(1);
-    const personalMessage=personalize(campaign.message_body,c);
-    rows.push({name:safeName(c),phone:contact,whatsapp_number:waNumber,broadcast_batch:String(Math.floor(rows.length/256)+1),personalized_message:personalMessage,whatsapp_chat_url:"https://wa.me/"+waNumber+"?text="+encodeURIComponent(personalMessage)});
-   }else{
-    rows.push({name:safeName(c),email:contact,personalized_message:personalize(campaign.message_body,c),subject:personalize(campaign.subject||"",c)});
-   }
+    if(!channelHasPermission(c,"whatsapp")){suppressedRecipientIds.push(r.id);return;}
+    const waNumber="880"+contact.slice(1),personalMessage=personalize(campaign.message_body,c);
+    rows.push({name:safeName(c),phone:contact,whatsapp_number:waNumber,personalized_message:personalMessage,whatsapp_chat_url:"https://wa.me/"+waNumber+"?text="+encodeURIComponent(personalMessage)});
+   }else rows.push({name:r.recipient_name||safeName(c),email:contact,personalized_message:personalize(campaign.message_body,c),subject:personalize(campaign.subject||"",c)});
    validRecipientIds.push(r.id);
   });
-  if(!rows.length)throw new Error("Consent or contact details changed. No recipients remain eligible.");
-  const content=csvText(rows);
-  const file=(campaign.channel==="whatsapp"?"halal-food-whatsapp-":"halal-food-email-")+String(campaign.name||"campaign").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,40)+"-"+id.slice(0,8)+".csv";
-  downloadFile(file,content,"text/csv;charset=utf-8");
+  if(!rows.length)throw new Error("No active contacts remain for this export.");
+  downloadFile((campaign.channel==="whatsapp"?"halal-food-whatsapp-replies-":"halal-food-customer-updates-")+id.slice(0,8)+".csv",csvText(rows),"text/csv;charset=utf-8");
   const now=new Date().toISOString();
   for(let i=0;i<suppressedRecipientIds.length;i+=400){
-   const batch=suppressedRecipientIds.slice(i,i+400);
-   const {error:suppressError}=await client.from("marketing_campaign_recipients")
-    .update({status:"suppressed",last_error:"Consent or valid contact details changed before export."})
-    .in("id",batch).eq("campaign_id",id);
-   if(suppressError)throw suppressError;
+   const {error}=await client.from("marketing_campaign_recipients").update({status:"suppressed",last_error:"The customer profile is no longer active or the contact is invalid."}).in("id",suppressedRecipientIds.slice(i,i+400)).eq("campaign_id",id);if(error)throw error;
   }
   for(let i=0;i<validRecipientIds.length;i+=400){
-   const batch=validRecipientIds.slice(i,i+400);
-   const {error:updateError}=await client.from("marketing_campaign_recipients").update({status:"exported",exported_at:now}).in("id",batch);
-   if(updateError)throw updateError;
+   const {error}=await client.from("marketing_campaign_recipients").update({status:"exported",exported_at:now}).in("id",validRecipientIds.slice(i,i+400));if(error)throw error;
   }
   if(campaign.channel==="whatsapp")await client.from("marketing_campaigns").update({status:"exported",exported_count:validRecipientIds.length,updated_at:now}).eq("id",id);
-  await client.from("marketing_campaign_events").insert({campaign_id:id,event_type:"audience_exported",details:{channel:campaign.channel,exported_count:validRecipientIds.length,suppressed_count:suppressedRecipientIds.length},created_by:ADMIN_EMAIL});
-  await audit("marketing_audience_exported","marketing_campaign",id,"Consent rechecked and campaign audience exported",{channel:campaign.channel,exported_count:validRecipientIds.length});
-  await loadCampaigns();renderHistory();
-  toast(number(validRecipientIds.length)+" eligible contact(s) exported. Export does not mean sent. "+number(suppressedRecipientIds.length)+" no longer eligible contact(s) were suppressed.","success");
+  await client.from("marketing_campaign_events").insert({campaign_id:id,event_type:"audience_exported",details:{channel:campaign.channel,exported_count:validRecipientIds.length},created_by:ADMIN_EMAIL});
+  await audit("customer_contact_list_exported","marketing_campaign",id,"Selected customer contact list exported",{channel:campaign.channel,exported_count:validRecipientIds.length});
+  await loadCampaigns();renderHistory();toast(number(validRecipientIds.length)+" contacts exported. WhatsApp links open chats; export does not send WhatsApp messages.","success");
  }
  async function recordWhatsAppSent(id){
   const campaign=campaigns.find(c=>c.id===id);
@@ -370,54 +320,23 @@ window.HFMarketingInit=async function(){
   toast("Gmail accepted "+number(result.acceptedByProvider??result.sent??0)+" email(s); failed/suppressed: "+number(result.failed||0)+", remaining: "+number(result.remaining||0)+".","success");
   return true;
  }
- function openConsent(customerId,ch,allowed){
-  const c=customers.find(x=>x.id===customerId);if(!c)return;
-  $("mktConsentCustomerId").value=customerId;$("mktConsentChannel").value=ch;$("mktConsentAllowed").value=allowed?"true":"false";
-  $("mktConsentTitle").textContent=(allowed?"Record ":"Revoke ")+(ch==="whatsapp"?"WhatsApp":"Email")+" marketing permission";
-  $("mktConsentCustomer").textContent=safeName(c)+" · "+(c.phone||c.email||"");
-  $("mktConsentEvidence").value="";$("mktConsentSource").value="";
-  $("mktConsentEvidence").required=allowed;
-  $("mktConsentEvidenceRequired").textContent=allowed?"Required for opt-in":"Optional for opt-out";
-  $("mktConsentEvidence").placeholder=allowed?"Enter where and when this customer gave permission (minimum 8 characters).":"Optional reference for the customer’s opt-out request.";
-  $("mktConsentDialog").showModal();
- }
- async function saveConsent(e){
-  e.preventDefault();
-  const customerId=$("mktConsentCustomerId").value,ch=$("mktConsentChannel").value,allowed=$("mktConsentAllowed").value==="true",source=$("mktConsentSource").value,evidence=$("mktConsentEvidence").value.trim(),button=$("mktConsentSave");
-  if(!source)throw new Error("Choose the documented permission source.");
-  if(allowed&&evidence.length<8)throw new Error("An evidence note of at least 8 characters is required for opt-in.");
-  button.disabled=true;
-  try{
-   const {data,error}=await client.rpc("admin_set_customer_marketing_consent",{p_customer_id:customerId,p_channel:ch,p_allowed:allowed,p_source:source,p_evidence_note:evidence||null});
-   if(error)throw error;
-   await reloadPrefs([customerId]);
-   $("mktConsentDialog").close();renderConsent();renderAudience();
-   await audit("customer_marketing_consent_"+(allowed?"opt_in":"opt_out"),"customer",customerId,"Marketing consent updated",{channel:ch,allowed,source});
-   toast("Customer "+(allowed?"opt-in":"opt-out")+" recorded.","success");
-  }finally{button.disabled=false;}
- }
  async function refreshAll(){
   await loadSegmentRules();await loadCustomers();await loadCampaigns();await checkEmailProvider();
-  if(channel==="email"&&!selectionTouched&&!selected.size)eligibleCustomersForCurrentChannel().forEach(c=>selected.add(c.id));
-  renderAudience();renderConsent();renderHistory();
+  if(channel==="email"&&!selectionTouched&&!selected.size)eligibleCustomersForCurrentChannel().forEach(c=>selected.add(c.emailKey));
+  renderAudience();renderHistory();
  }
  document.querySelectorAll("[data-marketing-tab]").forEach(b=>b.addEventListener("click",()=>switchTab(b.dataset.marketingTab)));
  document.querySelectorAll("[data-marketing-channel]").forEach(b=>b.addEventListener("click",()=>switchChannel(b.dataset.marketingChannel)));
  ["mktSegment","mktMinOrders","mktMaxOrders","mktLastOrder","mktAudienceSearch"].forEach(id=>$(id).addEventListener(id==="mktAudienceSearch"?"input":"change",()=>{selected.clear();selectionTouched=true;audiencePage=0;renderAudience();}));
- $("mktSelectAll").addEventListener("click",()=>{selectionTouched=true;eligibleCustomersForCurrentChannel().forEach(c=>selected.add(c.id));renderAudience();});
+ $("mktSelectAll").addEventListener("click",()=>{selectionTouched=true;eligibleCustomersForCurrentChannel().forEach(c=>selected.add(channel==="email"?c.emailKey:c.id));renderAudience();});
  $("mktClearSelection").addEventListener("click",()=>{selectionTouched=true;selected.clear();renderAudience();});
  $("mktAudienceBody").addEventListener("change",e=>{const box=e.target.closest("[data-mkt-select]");if(!box)return;selectionTouched=true;if(box.checked)selected.add(box.dataset.mktSelect);else selected.delete(box.dataset.mktSelect);renderAudience();});
  $("mktAudiencePrev").addEventListener("click",()=>{audiencePage=Math.max(0,audiencePage-1);renderAudience();});
  $("mktAudienceNext").addEventListener("click",()=>{audiencePage++;renderAudience();});
- $("mktConsentSearch").addEventListener("input",()=>{consentPage=0;renderConsent();});
- $("mktConsentBody").addEventListener("click",e=>{const b=e.target.closest("[data-mkt-consent]");if(!b)return;const parts=b.dataset.mktConsent.split(":");openConsent(b.dataset.customerId,parts[0],parts[1]==="on");});
- $("mktConsentClose").addEventListener("click",()=>$("mktConsentDialog").close());
- $("mktConsentCancel").addEventListener("click",()=>$("mktConsentDialog").close());
- $("mktConsentForm").addEventListener("submit",e=>saveConsent(e).catch(err=>toast(err.message||"Consent could not be saved.","error")));
  $("mktSaveDraft").addEventListener("click",async b=>{const button=$("mktSaveDraft");button.disabled=true;try{await saveCampaign();}catch(err){setFeedback(err.message||"Campaign could not be saved.",true);toast(err.message||"Campaign save failed.","error");}finally{renderAudience();}});
  $("mktCampaignHistoryBody").addEventListener("click",async e=>{
-  const exportButton=e.target.closest("[data-mkt-export]"),sendButton=e.target.closest("[data-mkt-send]");
-  try{if(exportButton)await exportCampaign(exportButton.dataset.mktExport);else if(sendButton)await sendEmail(sendButton.dataset.mktSend);}
+  const exportButton=e.target.closest("[data-mkt-export]"),sendButton=e.target.closest("[data-mkt-send]"),waSent=e.target.closest("[data-mkt-whatsapp-sent]");
+  try{if(exportButton)await exportCampaign(exportButton.dataset.mktExport);else if(sendButton)await sendEmail(sendButton.dataset.mktSend);else if(waSent)await recordWhatsAppSent(waSent.dataset.mktWhatsappSent);}
   catch(err){toast(err.message||"Campaign action failed.","error");await loadCampaigns();renderHistory();}
  });
  document.querySelector("[data-marketing-refresh]")?.addEventListener("click",()=>refreshAll().then(()=>toast("Marketing data refreshed.","success")).catch(e=>toast(e.message||"Refresh failed.","error")));
