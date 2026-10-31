@@ -200,6 +200,22 @@ const state={categories:[],products:[],loading:false,categoryDrag:null,productDr
   $("productSortStatus").textContent=search?"সম্পূর্ণ ক্রম সাজাতে সার্চ মুছে দিন।":"ড্র্যাগ করুন অথবা ↑ উপরে / ↓ নিচে চাপুন।";
   updateUndoButtons();
  }
+ function moveOrderedId(ids,id,directionOrTarget){
+  const from=ids.indexOf(id);
+  if(from<0)return ids.slice();
+  const next=ids.slice();
+  const [moved]=next.splice(from,1);
+  let insertAt;
+  if(typeof directionOrTarget==="number"){
+   insertAt=Math.max(0,Math.min(next.length,from+directionOrTarget));
+  }else{
+   if(!ids.includes(directionOrTarget)||directionOrTarget===id)return ids.slice();
+   insertAt=next.indexOf(directionOrTarget);
+  }
+  if(insertAt<0)return ids.slice();
+  next.splice(insertAt,0,moved);
+  return next;
+ }
  function sortCategoryIds(parentId){
   return childrenOf(parentId).map(c=>c.id);
  }
@@ -219,11 +235,10 @@ const state={categories:[],products:[],loading:false,categoryDrag:null,productDr
  }
  async function reorderCategory(id,directionOrTarget){
   const item=categoryById(id);if(!item)return;
-  const siblings=childrenOf(item.parent_id||null),ids=siblings.map(c=>c.id),from=ids.indexOf(id);
-  let to=typeof directionOrTarget==="number"?from+directionOrTarget:ids.indexOf(directionOrTarget);
-  if(from<0||to<0||to>=ids.length||from===to)return;
-  
-  const previousIds=ids.slice();const [moved]=ids.splice(from,1);ids.splice(to,0,moved);
+  const previousIds=childrenOf(item.parent_id||null).map(c=>c.id);
+  if(!previousIds.includes(id))return;
+  const ids=moveOrderedId(previousIds,id,directionOrTarget);
+  if(ids.every((value,index)=>value===previousIds[index]))return;
   await persistCategoryOrder(item.parent_id||null,ids,previousIds,true);
  }
  function openCategoryEditor(id=null,parentId=null){
@@ -334,13 +349,13 @@ const state={categories:[],products:[],loading:false,categoryDrag:null,productDr
  }
  async function reorderProduct(id,directionOrTarget){
   const mode=state.view==="home"?"home":"category",slug=mode==="home"?"":categoryById(state.selectedCategoryId)?.slug||"";
-  let list=mode==="home"?state.products.filter(p=>p.is_active).sort((a,b)=>Number(a.home_sort_order??1000000)-Number(b.home_sort_order??1000000)||orderOf(a)-orderOf(b)||String(a.name).localeCompare(String(b.name))):
-   state.products.filter(p=>p.category_slug===slug).sort((a,b)=>orderOf(a)-orderOf(b)||String(a.name).localeCompare(String(b.name)));
-  const ids=list.map(p=>p.id),from=ids.indexOf(id);
-  let to=typeof directionOrTarget==="number"?from+directionOrTarget:ids.indexOf(directionOrTarget);
-  if(from<0||to<0||to>=ids.length||from===to)return;
-  
-  const previousIds=ids.slice();const [moved]=ids.splice(from,1);ids.splice(to,0,moved);
+  const list=mode==="home"
+   ?state.products.filter(p=>p.is_active).sort((a,b)=>Number(a.home_sort_order??1000000)-Number(b.home_sort_order??1000000)||orderOf(a)-orderOf(b)||String(a.name).localeCompare(String(b.name)))
+   :state.products.filter(p=>p.category_slug===slug).sort((a,b)=>orderOf(a)-orderOf(b)||String(a.name).localeCompare(String(b.name)));
+  const previousIds=list.map(p=>p.id);
+  if(!previousIds.includes(id))return;
+  const ids=moveOrderedId(previousIds,id,directionOrTarget);
+  if(ids.every((value,index)=>value===previousIds[index]))return;
   reorderStateProducts(ids,mode==="home"?"home_sort_order":"sort_order");renderSorting();
   await persistProductOrder(mode,slug,ids,previousIds,true);
  }
@@ -412,6 +427,7 @@ const state={categories:[],products:[],loading:false,categoryDrag:null,productDr
    if(event.cancelable)event.preventDefault();
    const target=document.elementFromPoint(event.clientX,event.clientY)?.closest(rowSelector);
    container.querySelectorAll(".is-drop-target").forEach(row=>row.classList.remove("is-drop-target"));
+   drag.target=null;
    if(!target||target===drag.row)return;
    if(scopeField&&String(target.dataset[scopeField]||"")!==String(drag.scope||""))return;
    target.classList.add("is-drop-target");
