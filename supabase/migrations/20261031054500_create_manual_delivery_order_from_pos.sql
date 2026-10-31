@@ -61,7 +61,7 @@ BEGIN
   IF v_reference !~ '^[A-Z0-9][A-Z0-9_-]{0,39}$' THEN
     RAISE EXCEPTION 'The internal order reference is invalid.' USING ERRCODE = '22023';
   END IF;
-  v_order_number := 'HF-MD-' || v_reference;
+  v_order_number := 'HF-' || v_reference;
 
   -- Repeated requests after a network timeout return the same saved order.
   PERFORM pg_advisory_xact_lock(hashtext(v_order_number));

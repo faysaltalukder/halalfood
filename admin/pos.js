@@ -24,7 +24,7 @@ window.HFPosInit = async function () {
  const referenceFor=mode=>{
   const now=dhakaNow(),bytes=crypto.getRandomValues(new Uint8Array(5));
   const suffix=Array.from(bytes).map(x=>x.toString(16).padStart(2,"0")).join("").toUpperCase();
-  return (mode==="delivery"?"MD-":"POS-")+now.date.replace(/-/g,"")+"-"+suffix;
+  return now.date.replace(/-/g,"")+"-"+suffix;
  };
  const getProduct=id=>products.find(p=>p.id===id)||null;
  const stockValue=p=>p.stock_quantity===null||p.stock_quantity===undefined||p.stock_quantity===""?null:Number(p.stock_quantity);
@@ -264,7 +264,7 @@ window.HFPosInit = async function () {
    pendingReference=null;formDirty=false;
    try{await audit("offline_pos_sale_recorded","order",data.orderId,"Offline sale recorded",{order_number:data.orderNumber,product_id:p.id,quantity:payload.items[0].quantity,unit_price:payload.items[0].unit_price,total:data.total,payment_received:payload.payment_received});}catch(_){}
    const text="Saved. "+money(data.total)+" added to sales. "+(payload.payment_received?"Finance income confirmed.":"Payment remains unpaid.");
-   resetEntryFields();await refresh();setMessage(text,true);toast("Offline sale saved successfully.");
+   resetEntryFields();try{await refresh();}catch(refreshError){console.warn("Sale saved, but POS history refresh failed.",refreshError);}setMessage(text,true);toast("Offline sale saved successfully.");
   }catch(err){setMessage(err.message||"Sale could not be saved.");toast(err.message||"Sale could not be saved.","error");}
   finally{button.disabled=false;button.textContent=entryMode==="delivery"?"Save delivery order":"Save sale";}
  }
@@ -319,9 +319,9 @@ window.HFPosInit = async function () {
    if(error)throw new Error(await functionError(error));
    if(data?.success!==true)throw new Error(data?.error||"The order was not confirmed by the server.");
    if(data.duplicate){
-    pendingReference=null;formDirty=false;
+    pendingReference=null;deliveryCart=[];formDirty=false;resetEntryFields();renderCart();
     setMessage("This order was already saved as "+data.orderNumber+". No duplicate order or finance entry was created.",true);
-    await refresh();return;
+    try{await refresh();}catch(refreshError){console.warn("Existing order found, but POS history refresh failed.",refreshError);}return;
    }
    const orderNumber=data.orderNumber,orderTotal=Number(data.total||0);
    pendingReference=null;deliveryCart=[];formDirty=false;
@@ -345,7 +345,7 @@ window.HFPosInit = async function () {
      resultMessage+=" "+courierLabel+" parcel is prepared but not booked. You can book it later from Operations.";
     }
    }
-   resetEntryFields();await refresh();setMessage(resultMessage,true);
+   resetEntryFields();try{await refresh();}catch(refreshError){console.warn("Delivery order saved, but POS history refresh failed.",refreshError);}setMessage(resultMessage,true);
    toast(bookNow&&provider?"Delivery order saved. Courier result is shown below.":"Delivery order saved successfully.");
   }catch(err){
    setMessage(err.message||"Delivery order could not be saved.");
