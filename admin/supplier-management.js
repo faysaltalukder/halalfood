@@ -1,6 +1,6 @@
 (() => {
 "use strict";
-window.HFSupplierInit = async function(mode) {
+async function HFSupplierInit(mode) {
   const H=window.HFAdmin;
   if(!H) throw new Error("Secure admin session is not ready.");
   const {client,ADMIN_EMAIL,esc,money,dateOnly,toast,audit,signedQuery,downloadFile,csvText,makeStatus,makeEmpty}=H;
@@ -629,4 +629,5 @@ window.HFSupplierInit = async function(mode) {
     }catch(err){toast(err.message||"Refresh failed.","error");}
   });
 };
+  window.HFSupplierInit = HFSupplierInit;
 })();
