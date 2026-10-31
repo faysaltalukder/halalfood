@@ -11,6 +11,8 @@ const required = [
   "supabase/migrations/20261031044407_create_offline_pos_sales.sql",
   "supabase/migrations/20261031045058_harden_offline_pos_with_invoker_rls.sql",
   "supabase/migrations/20261031051527_interactive_pos_simple_sale_form.sql",
+  "supabase/migrations/20261031054500_create_manual_delivery_order_from_pos.sql",
+  "supabase/functions/courier-integration/index.ts",
 ];
 const failures = [];
 for (const file of required) {
@@ -22,24 +24,33 @@ if (!failures.length) {
   const js = read("admin/pos.js");
   const shared = read("admin/shared.js");
   const app = read("admin/app.js");
-  const migration = read("supabase/migrations/20261031051527_interactive_pos_simple_sale_form.sql");
+  const offline = read("supabase/migrations/20261031051527_interactive_pos_simple_sale_form.sql");
+  const delivery = read("supabase/migrations/20261031054500_create_manual_delivery_order_from_pos.sql");
+  const courier = read("supabase/functions/courier-integration/index.ts");
   const checks = [
     [page.includes('data-page="pos"'), "POS page must use data-page=pos."],
     [page.includes('id="posProductList"') && page.includes('id="posSaleForm"') && page.includes('id="posHistoryBody"'), "POS product, sale form and product history are required."],
+    [page.includes('data-pos-mode="offline"') && page.includes('data-pos-mode="delivery"'), "POS must expose direct-sale and delivery-order modes."],
+    [page.includes('id="posOrderCartBody"') && page.includes('id="posDeliveryAddress"') && page.includes('id="posOrderChannel"'), "Delivery mode must support multiple products, an address and an order channel."],
+    [page.includes('id="posCourierProvider"') && page.includes('id="posBookCourierNow"') && page.includes('id="posRedxArea"'), "Delivery mode must support an optional courier and explicit booking."],
     [!page.includes('type="file"') && !page.toLowerCase().includes("csv import") && !page.includes("posImportSection"), "POS UI must not expose the old CSV import workflow."],
     [shared.includes('"pos","pos","POS Management"'), "POS Management must remain in admin navigation."],
     [app.includes("window.HFPosInit"), "Admin dispatcher must initialize the POS module."],
-    [js.includes("async function saveSale") && js.includes('client.rpc("create_offline_pos_sale"'), "Saving a sale must use the atomic database RPC."],
-    [js.includes("sale_time:time") && js.includes("payment_received:paid"), "The sale date/time and payment status must be saved."],
-    [js.includes("adjust_stock:adjustStock") && js.includes("const adjustStock=true"), "Tracked stock must be updated automatically."],
-    [js.includes("referenceFor(date)") && js.includes("crypto.getRandomValues"), "POS reference must be generated internally."],
-    [js.includes("fetchFinance(null,3000)") && js.includes('payment?.status==="confirmed"'), "POS history must read the central finance ledger and show confirmed payment status."],
-    [js.includes("offline_pos") && !js.includes("fbq(") && !js.includes("gtag("), "Offline sales must not emit website pixel/GA events."],
-    [migration.includes("SECURITY INVOKER") && migration.includes("aal2"), "POS RPC must retain MFA-gated caller privileges."],
-    [migration.includes("inventory_movements") && migration.includes("'pos_sale'"), "POS RPC must record tracked inventory movement."],
-    [migration.includes("admin_finance_entries") && migration.includes("'Offline POS Sale'"), "POS RPC must create a linked finance income entry."],
-    [migration.includes("v_sale_time") && migration.includes("v_sale_date::timestamp + v_sale_time"), "POS RPC must persist the entered sale time."],
-    [migration.includes("round(v_quantity, 3)") && migration.includes("Packaged products and pieces"), "POS RPC must support fractional kg/liter sales and whole packaged units."],
+    [js.includes("async function saveOfflineSale") && js.includes('client.rpc("create_offline_pos_sale"'), "Offline sale must use its atomic database RPC."],
+    [js.includes("async function saveDeliveryOrder") && js.includes('client.rpc("create_manual_delivery_order"'), "Manual delivery order must use its atomic database RPC."],
+    [js.includes('client.functions.invoke("courier-integration"') && js.includes('action:"book"'), "Courier booking must use the existing courier integration function."],
+    [js.includes('action:"areas"') && js.includes('provider:"redx"'), "REDX area selection must use the Production area lookup."],
+    [js.includes("payment_received:paid") && js.includes("courier_provider:provider"), "Payment status and optional courier provider must be persisted."],
+    [js.includes("order_reference:pendingReference") && js.includes("crypto.getRandomValues"), "Manual delivery order reference must be generated internally and be retry-safe."],
+    [js.includes("fetchFinance(null,3000)") && js.includes('payment?.status==="confirmed"'), "POS history must read linked Finance status."],
+    [!js.includes("fbq(") && !js.includes("gtag("), "Manual POS actions must not emit website pixel/GA events."],
+    [offline.includes("SECURITY INVOKER") && offline.includes("aal2"), "Offline POS RPC must retain MFA and invoker security."],
+    [delivery.includes("SECURITY INVOKER") && delivery.includes("aal2"), "Manual delivery RPC must require admin MFA and invoker security."],
+    [delivery.includes("'order_reserve'") && delivery.includes("admin_shipments"), "Delivery RPC must reserve stock and atomically create an optional courier parcel."],
+    [delivery.includes("admin_finance_entries") && delivery.includes("'Manual Delivery Order'"), "Delivery RPC must create one linked Finance entry."],
+    [delivery.includes("'processing'") && delivery.includes("'manual_'"), "Manual confirmed orders must enter the normal Orders workflow."],
+    [delivery.includes("redx_delivery_area_id") && delivery.includes("v_redx_area_id IS NULL"), "REDX courier parcel must require a selected Production area ID."],
+    [courier.includes('action === "book"') && courier.includes("Only Cash on Delivery orders are enabled for courier booking."), "The POS must preserve the courier API's COD-only booking guard."],
   ];
   for (const [ok, message] of checks) if (!ok) failures.push(message);
 }
@@ -47,5 +58,5 @@ if (failures.length) {
   for (const failure of failures) console.error("FAIL: " + failure);
   process.exitCode = 1;
 } else {
-  console.log("Simple offline POS sale-entry contract checks passed.");
+  console.log("POS offline sale + manual delivery order contract checks passed.");
 }
