@@ -122,7 +122,11 @@ async function init(){
  $("barcodeCameraStop").addEventListener("click",stopCamera);
  const initialSku=new URLSearchParams(location.search).get("sku");
  if(initialSku){$("barcodeScanInput").value=initialSku;renderScanResult(initialSku);const product=products.find(p=>skuOf(p)===initialSku);if(product)selectProduct(product.id);}
- attachRefresh(async()=>{products=await H.fetchProducts();renderDirectory();if(selected)selectProduct(selected.id);});
+ const refreshButton=document.querySelector("[data-refresh-page]");
+ refreshButton?.addEventListener("click",async()=>{
+  try{const selectedId=selected?.id;products=await H.fetchProducts();renderDirectory();if(selectedId)selectProduct(selectedId);H.toast("Product barcode directory refreshed.");}
+  catch(error){H.toast(error.message||"Could not refresh product codes.","error");}
+ });
 }
 window.HFBarcodeInit=init;
 })();
