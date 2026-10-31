@@ -33,9 +33,22 @@ assert.ok(categoriesPage.includes("store-config.js") && categoriesPage.indexOf("
 assert.ok(storeConfig.includes("storeId:") && storeConfig.includes("siteRoot:") && storeConfig.includes("publishableKey:"), "Reusable store config must expose store identity, site root and a publishable Supabase key.");
 assert.ok(!/service[_-]?role|secret[_-]?key/i.test(storeConfig), "Public store config must not contain privileged Supabase credentials.");
 assert.ok(storeConfig.includes("reorderCategoriesRpc") && storeConfig.includes("reorderProductsRpc") && storeConfig.includes("reorderHomeProductsRpc"), "Each store config must be able to map its category/product ordering RPCs.");
+assert.ok(storeConfig.includes("storeName:") && storeConfig.includes("whatsappNumber:"), "Store branding and public contact should be configured per website.");
+assert.ok(categoriesLive.includes("STORE_NAME") && categoriesLive.includes("WHATSAPP_NUMBER"), "Storefront category and product views must not hard-code the Halal Food brand or contact number.");
 assert.ok(categoriesUi.includes("CATALOG_CONFIG") && categoriesUi.includes("CATEGORY_TABLE") && categoriesUi.includes("PRODUCT_TABLE"), "The Category workspace must use per-store table configuration rather than fixed table names.");
 assert.ok(categoriesUi.includes("REORDER_CATEGORY_RPC") && categoriesUi.includes("REORDER_PRODUCT_RPC") && categoriesUi.includes("REORDER_HOME_RPC"), "Category and product ordering must use the store-configured server RPCs.");
 assert.ok(categoriesUi.includes("bindTouchReorder") && categoriesUi.includes("data-touch-drag-handle"), "Category and product lists must support touch drag-and-drop.");
+
+const moveOrderedIdMatch = categoriesUi.match(/function moveOrderedId\(ids,id,directionOrTarget\)\s*\{[\s\S]*?\n \}/);
+assert.ok(moveOrderedIdMatch, "The shared category/product ordering helper must exist.");
+const moveOrderedId = vm.runInNewContext("(" + moveOrderedIdMatch[0] + ")");
+assert.deepEqual(Array.from(moveOrderedId(["a","b","c","d"],"a","d")), ["b","c","a","d"], "Dragging an earlier category onto a later one must insert immediately before the target.");
+assert.deepEqual(Array.from(moveOrderedId(["a","b","c","d"],"d","a")), ["d","a","b","c"], "Dragging a later category onto an earlier one must insert before the target.");
+assert.deepEqual(Array.from(moveOrderedId(["a","b","c","d"],"b",-1)), ["b","a","c","d"], "The Up control must move an item one position up.");
+assert.deepEqual(Array.from(moveOrderedId(["a","b","c","d"],"b",1)), ["a","c","b","d"], "The Down control must move an item one position down.");
+assert.deepEqual(Array.from(moveOrderedId(["a","b","c","d"],"a",-1)), ["a","b","c","d"], "Moving the first item up must not change the order.");
+assert.deepEqual(Array.from(moveOrderedId(["a","b","c","d"],"d",1)), ["a","b","c","d"], "Moving the last item down must not change the order.");
+
 assert.ok(categoriesUi.includes("data-cat-enter") && categoriesUi.includes("categoryBreadcrumb") && categoriesUi.includes("productSortSection"), "The Category workspace must use a drill-down hierarchy with breadcrumb navigation and scoped product sorting.");
 assert.ok(!categoriesUi.includes("renderTree") && !categoriesUi.includes("sortMode") && !categoriesUi.includes("categoryTreeCount"), "No controls from the retired all-in-one workspace may remain wired.");
 assert.ok(categoriesUi.includes("admin_reorder_categories") && categoriesUi.includes("admin_reorder_products") && categoriesUi.includes("admin_reorder_home_products"), "Default store ordering RPC names must remain compatible with the current Supabase project.");
