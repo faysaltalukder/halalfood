@@ -222,11 +222,21 @@ window.HFSupplierInit = async function(mode) {
       const a=allocatedToBill(b.id),due=billDue(b);
       return '<tr><td><strong>'+esc(b.bill_number)+'</strong><small>'+esc(b.supplier_invoice_number||"No supplier invoice #")+'</small></td><td>'+esc(supplierName(b.supplier_id))+'</td><td>'+esc(fmtDate(b.invoice_date))+'</td><td>'+esc(fmtDate(b.due_date))+'</td><td>'+money(b.total_amount)+'</td><td>'+money(a.paid)+'</td><td>'+money(due)+'</td><td>'+statusPill(b.status)+'</td><td>'+(b.status==="draft"?'<button class="hf-button hf-button-secondary hf-button-small" data-confirm-bill="'+esc(b.id)+'" type="button">Confirm</button>':"")+'</td></tr>';
     }).join(""):'<tr><td colspan="9">'+makeEmpty("No supplier bills","Record a supplier invoice against a purchase order or directly.")+'</td></tr>';
+    const creditBody=$("supplierCreditNotesBody");
+    if(creditBody)creditBody.innerHTML=credits.length?credits.map(c=>'<tr><td><strong>'+esc(c.credit_note_number)+'</strong><small>'+esc(c.supplier_reference||"")+'</small></td><td>'+esc(supplierName(c.supplier_id))+'</td><td>'+esc(fmtDate(c.credit_date))+'</td><td>'+esc(c.reason)+'</td><td>'+money(c.amount)+'</td><td>'+esc(bills.find(b=>b.id===c.supplier_bill_id)?.bill_number||"—")+'</td><td>'+statusPill(c.status)+'</td><td>'+(c.status==="draft"?'<button class="hf-button hf-button-secondary hf-button-small" data-confirm-credit="'+esc(c.id)+'" type="button">Confirm</button>':c.status==="confirmed"?'<button class="hf-button hf-button-secondary hf-button-small" data-void-credit="'+esc(c.id)+'" type="button">Void</button>':"")+'</td></tr>').join(""):'<tr><td colspan="8">'+makeEmpty("No supplier credits","Approved supplier returns and credit notes will appear here.")+'</td></tr>';
+
   };
   const poOptions=supplierId=>purchaseOrders.filter(p=>(!supplierId||p.supplier_id===supplierId)&&p.status!=="cancelled").map(p=>({value:p.id,label:p.purchase_number+" · "+money(p.total_amount)}));
   const updateBillTotal=()=>{
     const total=round(n($("billSubtotal").value)-n($("billDiscount").value)+n($("billCharges").value)+n($("billTax").value));
     $("billTotal").value=total.toFixed(2);
+  };
+  const creditBillOptions=supplierId=>bills.filter(b=>b.supplier_id===supplierId&&b.status==="confirmed").map(b=>({value:b.id,label:b.bill_number+" · due "+money(billDue(b))}));
+  const openCreditNote=()=>{
+    $("creditNoteForm").reset();$("creditDate").value=today();$("creditStatus").value="confirmed";
+    options($("creditSupplier"),suppliers.map(s=>({value:s.id,label:s.name})),"Choose supplier");
+    options($("creditBill"),[],"No linked bill");options($("creditPurchaseOrder"),[],"No linked purchase order");
+    errorText("creditFormError","");$("creditNoteDialog").showModal();
   };
   const openBill=(poId="")=>{
     $("billForm").reset();$("billInvoiceDate").value=today();$("billDueDate").value=today();
@@ -442,6 +452,48 @@ window.HFSupplierInit = async function(mode) {
       }catch(err){toast(err.message||"Could not confirm bill.","error");}
     });
     $("openBillDialogBtn").addEventListener("click",()=>openBill());
+    $("openCreditNoteBtn").addEventListener("click",openCreditNote);
+    $("creditSupplier").addEventListener("change",()=>{
+      const supplierId=$("creditSupplier").value;
+      options($("creditBill"),creditBillOptions(supplierId),"No linked bill");
+      options($("creditPurchaseOrder"),poOptions(supplierId),"No linked purchase order");
+    });
+    $("creditBill").addEventListener("change",()=>{
+      const bill=bills.find(x=>x.id===$("creditBill").value);
+      if(bill){$("creditSupplier").value=bill.supplier_id;options($("creditPurchaseOrder"),poOptions(bill.supplier_id),"No linked purchase order",bill.purchase_order_id||"");}
+    });
+    $("creditNoteForm").addEventListener("submit",async e=>{
+      e.preventDefault();const b=$("saveCreditNoteBtn");submitting(b,true);errorText("creditFormError","");
+      try{
+        const supplierId=$("creditSupplier").value,billId=$("creditBill").value||null,poId=$("creditPurchaseOrder").value||null;
+        const amount=round($("creditAmount").value),reason=$("creditReason").value.trim();
+        if(!supplierId||amount<=0||reason.length<2)throw Error("Choose a supplier and enter a valid amount and reason.");
+        const linkedBill=billId?bills.find(x=>x.id===billId):null;
+        if(linkedBill&&linkedBill.supplier_id!==supplierId)throw Error("The selected bill belongs to a different supplier.");
+        if(poId&&!purchaseOrders.some(x=>x.id===poId&&x.supplier_id===supplierId))throw Error("The selected purchase order belongs to a different supplier.");
+        if(linkedBill&&amount>n(linkedBill.total_amount))throw Error("A credit note cannot exceed the linked bill's original total.");
+        const payload={supplier_id:supplierId,supplier_bill_id:billId,purchase_order_id:poId,credit_date:$("creditDate").value,
+          amount,reason,supplier_reference:$("creditReference").value.trim(),status:$("creditStatus").value,
+          notes:$("creditNotes").value.trim(),created_by:ADMIN_EMAIL};
+        const {data,error}=await client.from("admin_supplier_credit_notes").insert(payload).select("id,credit_note_number").single();
+        if(error)throw error;
+        await audit("supplier_credit_note_created","supplier_credit_note",data?.id,"Supplier credit note "+data?.credit_note_number+" recorded",{amount,status:payload.status,supplier_id:supplierId});
+        $("creditNoteDialog").close();await loadPurchases();await loadCommon();renderPurchasePage();toast("Supplier credit note recorded.");
+      }catch(err){errorText("creditFormError",err.message||"Supplier credit note could not be saved.");}
+      finally{submitting(b,false);}
+    });
+    $("supplierCreditNotesBody").addEventListener("click",async e=>{
+      const confirmButton=e.target.closest("[data-confirm-credit]"),voidButton=e.target.closest("[data-void-credit]");
+      const button=confirmButton||voidButton;if(!button)return;
+      const credit=credits.find(x=>x.id===(confirmButton?.dataset.confirmCredit||voidButton?.dataset.voidCredit));if(!credit)return;
+      const next=confirmButton?"confirmed":"void";
+      if(!confirm((next==="confirmed"?"Confirm":"Void")+" credit note "+credit.credit_note_number+" for "+money(credit.amount)+"?"))return;
+      try{
+        const {error}=await client.from("admin_supplier_credit_notes").update({status:next,updated_at:new Date().toISOString()}).eq("id",credit.id);
+        if(error)throw error;await audit("supplier_credit_note_status_changed","supplier_credit_note",credit.id,"Supplier credit note status changed",{from:credit.status,to:next});
+        await loadPurchases();await loadCommon();renderPurchasePage();toast("Supplier credit note updated.");
+      }catch(err){toast(err.message||"Supplier credit note could not be updated.","error");}
+    });
     $("billSupplier").addEventListener("change",()=>options($("billPurchaseOrder"),poOptions($("billSupplier").value),"No linked purchase order"));
     $("billPurchaseOrder").addEventListener("change",()=>{
       const p=purchaseOrders.find(x=>x.id===$("billPurchaseOrder").value);if(p){$("billSupplier").value=p.supplier_id;$("billSubtotal").value=n(p.total_amount).toFixed(2);updateBillTotal();}
