@@ -1247,3 +1247,86 @@ html[data-admin-theme="light"] .admin-nav-child-link.active{background:#F4E9DF;c
 html[data-admin-theme="light"] .admin-nav-child-icon{color:#A96D43}
 .admin-nav-parent-toggle.active{color:#F0CBAA}
 html[data-admin-theme="light"] .admin-nav-parent-toggle.active{color:#8D522E}
+
+/* Products menu — clear hierarchy, comfortable height and readable child links. */
+.admin-nav-parent-row{
+ position:relative;display:block;min-width:0;
+}
+.admin-nav-parent-toggle{
+ position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;
+ gap:6px;width:100%;min-height:86px;padding:10px 38px 11px 12px;
+ text-align:center;transform:none;
+}
+.admin-nav-parent-toggle .nav-icon{
+ width:38px;height:38px;flex:0 0 38px;margin:0;
+}
+.admin-nav-parent-toggle .nav-icon .hf-nav-art{width:29px;height:29px}
+.admin-nav-parent-toggle .admin-nav-text{
+ font-size:13px;font-weight:800;line-height:1.25;text-align:center;
+}
+.admin-nav-parent-toggle .admin-nav-expand-icon{
+ position:absolute;right:11px;bottom:12px;display:grid;place-items:center;margin:0;
+ color:currentColor;opacity:.9;transition:transform .16s ease;
+}
+.admin-nav-parent-toggle[aria-expanded="true"] .admin-nav-expand-icon{transform:rotate(180deg)}
+.admin-nav-parent-toggle .admin-nav-expand-icon .hf-shell-icon{width:14px;height:14px}
+.admin-nav-parent-row>.admin-nav-fav-toggle{
+ position:absolute;right:6px;top:6px;z-index:2;
+}
+.admin-nav-parent-toggle.active,
+.admin-nav-parent-toggle[aria-expanded="true"]{
+ background:rgba(201,123,61,.13);
+ border-color:rgba(201,123,61,.36);
+ color:#FFF0E2;
+ box-shadow:inset 0 0 0 1px rgba(201,123,61,.06);
+}
+.admin-nav-children{
+ display:grid;grid-template-columns:minmax(0,1fr);grid-auto-flow:row;gap:6px;
+ margin:8px 0 7px 11px;padding:7px 0 7px 11px;
+ border-left:2px solid rgba(201,123,61,.48);
+}
+.admin-nav-children[hidden]{display:none!important}
+.admin-nav-child-link{
+ display:flex;align-items:center;gap:9px;min-height:42px;padding:9px 11px;
+ border:1px solid rgba(201,123,61,.13);border-radius:10px;
+ background:rgba(255,255,255,.055);color:#DCE7F5;
+ text-decoration:none;font-size:12px;font-weight:650;line-height:1.35;
+ transition:background .15s ease,border-color .15s ease,color .15s ease,transform .15s ease;
+}
+.admin-nav-child-link:hover{
+ background:rgba(201,123,61,.17);border-color:rgba(201,123,61,.40);
+ color:#FFF8EF;transform:translateX(2px);
+}
+.admin-nav-child-link.active{
+ background:rgba(201,123,61,.29);border-color:rgba(217,154,33,.76);
+ color:#FFF8EF;font-weight:800;
+ box-shadow:inset 3px 0 0 #D99A21,0 4px 12px rgba(7,18,32,.18);
+}
+.admin-nav-child-icon{
+ display:grid;place-items:center;width:18px;height:18px;flex:0 0 18px;color:#E7BF99;
+}
+.admin-nav-child-icon .hf-shell-icon{width:16px;height:16px;stroke-width:1.9}
+.admin-nav-child-link.active .admin-nav-child-icon{color:#FFD9A8}
+html[data-admin-theme="light"] .admin-nav-parent-toggle.active,
+html[data-admin-theme="light"] .admin-nav-parent-toggle[aria-expanded="true"]{color:#FFF4E8}
+html[data-admin-theme="light"] .admin-nav-child-link{color:#DFE9F6}
+html[data-admin-theme="light"] .admin-nav-child-link:hover{
+ background:rgba(201,123,61,.20);border-color:rgba(201,123,61,.50);color:#FFF8EF;
+}
+html[data-admin-theme="light"] .admin-nav-child-link.active{
+ background:rgba(201,123,61,.31);border-color:rgba(217,154,33,.82);color:#FFF8EF;
+}
+html[data-admin-theme="light"] .admin-nav-child-icon{color:#E7BF99}
+html[data-admin-theme="dark"] .admin-nav-parent-toggle.active,
+html[data-admin-theme="dark"] .admin-nav-parent-toggle[aria-expanded="true"]{color:#FFF4E8}
+html[data-admin-theme="dark"] .admin-nav-child-link{color:#E7E0E8}
+html[data-admin-theme="dark"] .admin-nav-child-link:hover,
+html[data-admin-theme="dark"] .admin-nav-child-link.active{color:#FFF8EF}
+@media(max-width:620px){
+ .admin-nav-parent-toggle{min-height:84px;padding-top:9px;padding-bottom:10px}
+ .admin-nav-child-link{min-height:43px;padding:10px 11px}
+}
+@media(prefers-reduced-motion:reduce){
+ .admin-nav-parent-toggle .admin-nav-expand-icon,
+ .admin-nav-child-link{transition:none!important}
+}
