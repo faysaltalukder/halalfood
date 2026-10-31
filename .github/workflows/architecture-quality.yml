@@ -29,6 +29,8 @@ jobs:
         run: node scripts/admin-phase12-check.mjs
       - name: Run simple POS sale-entry contract checks
         run: node scripts/admin-pos-check.mjs
+      - name: Run Product, Barcode and Reviews contract checks
+        run: node scripts/admin-product-tools-check.mjs
 
   edge-function-types:
     name: Type-check all Supabase Edge Functions
