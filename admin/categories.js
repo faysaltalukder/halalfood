@@ -431,7 +431,7 @@ const state={categories:[],products:[],loading:false,categoryDrag:null,productDr
    if(event.pointerType!=="touch")return;
    const handle=event.target.closest("[data-touch-drag-handle]");
    const row=handle?.closest(rowSelector);
-   if(!row)return;
+   if(!row||row.draggable===false)return;
    event.preventDefault();
    drag={id:row.dataset[idField],scope:scopeField?row.dataset[scopeField]:"",row,target:null};
    row.classList.add("is-dragging");
