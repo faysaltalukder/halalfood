@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex,nofollow">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<title>Product Sorting · Halal Food Admin</title>
+<link rel="stylesheet" href="./shared.css?v=20261031-catalog-workspace-v1">
+<link rel="stylesheet" href="./categories.css?v=20261031-catalog-workspace-v1">
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
+</head>
+<body data-page="categories-sorting">
+<div id="authGate" class="auth-gate"><div class="auth-gate-card"><strong>Checking secure admin access…</strong><p>Your catalog will load only after the authorized administrator and two-step verification are confirmed.</p></div></div>
+<div id="adminApp" hidden><main id="pageContent" tabindex="-1">
+<div class="page-heading">
+ <div><p class="page-eyebrow">CATALOG / MERCHANDISING</p><h1>Product Sorting</h1><p>Set product positions visually. Arrange a category’s products or control the homepage order independently.</p></div>
+ <div class="page-actions"><button class="hf-button hf-button-secondary" data-catalog-refresh type="button">↻ Refresh</button><a class="hf-button hf-button-secondary" href="./products.html">Full product workspace ↗</a></div>
+</div>
+<div class="hf-banner hf-banner-info"><span aria-hidden="true">ⓘ</span><div><strong>Separate positions for separate storefront areas</strong>Category order affects the category page and its product rail. Homepage order is stored separately, so rearranging a category does not unexpectedly reorder the homepage. Product IDs, SKU, URLs and order history are not changed.</div></div>
+<div class="hf-kpi-grid">
+ <section class="hf-card hf-kpi"><span class="hf-kpi-label">Products in view</span><strong class="hf-kpi-value" id="sortingVisibleCount">—</strong><span class="hf-kpi-note" id="sortingScopeNote">Current ordering scope</span></section>
+ <section class="hf-card hf-kpi"><span class="hf-kpi-label">Visible products</span><strong class="hf-kpi-value" id="sortingActiveCount">—</strong><span class="hf-kpi-note">Shown in the store</span></section>
+ <section class="hf-card hf-kpi"><span class="hf-kpi-label">Hidden products</span><strong class="hf-kpi-value" id="sortingHiddenCount">—</strong><span class="hf-kpi-note">Kept in the catalog</span></section>
+</div>
+<section class="hf-card hf-card-pad">
+ <div class="hf-toolbar catalog-sort-toolbar">
+  <label class="catalog-toolbar-field"><span>Sort products in</span><select class="hf-select" id="sortMode"><option value="category">Selected category</option><option value="home">Homepage</option></select></label>
+  <label class="catalog-toolbar-field" id="sortCategoryWrap"><span>Category</span><select class="hf-select" id="sortCategory"><option value="">Loading categories…</option></select></label>
+  <input class="hf-input" id="productSortSearch" type="search" placeholder="Search products…" aria-label="Search products in this list">
+  <span class="catalog-saving-note" id="productSortStatus" role="status">Drag to reorder · changes save after drop.</span>
+ </div>
+ <div class="catalog-sort-legend"><span><span class="catalog-dot visible"></span> Visible</span><span><span class="catalog-dot hidden"></span> Hidden</span><span>Use the handle or Up / Down controls on touch devices.</span></div>
+ <div id="productSortList" class="product-sort-list"><div class="hf-loading">Loading products…</div></div>
+ <p id="productSortEmpty" class="hf-empty" hidden>No products in this selection.</p>
+</section>
+<dialog id="quickProductDialog" class="hf-dialog">
+ <form id="quickProductForm" class="hf-dialog-inner">
+  <div class="hf-dialog-head"><div><p class="hf-dialog-title-tag">QUICK PRODUCT EDITOR</p><h2 id="quickProductTitle">Edit product</h2><p>Core catalog details can be changed here. Stock, cost and shipping settings remain in the full Products workspace.</p></div><button class="hf-button hf-button-secondary hf-dialog-close" type="button" data-close-catalog-dialog>×</button></div>
+  <input id="quickProductId" type="hidden">
+  <div class="hf-field-grid">
+   <label class="hf-field">Product name *<input class="hf-input" id="quickProductName" maxlength="140" required></label>
+   <label class="hf-field">Product URL slug<input class="hf-input" id="quickProductSlug" readonly></label>
+   <label class="hf-field">Category *<select class="hf-select" id="quickProductCategory" required></select></label>
+   <div class="catalog-inline-fields"><label class="hf-field">Price (৳) *<input class="hf-input" id="quickProductPrice" type="number" min="0" step="0.01" required></label><label class="hf-field">Unit label<input class="hf-input" id="quickProductUnit" maxlength="40" required></label></div>
+   <label class="hf-field hf-span-2">Image URL<input class="hf-input" id="quickProductImageUrl" type="url" placeholder="https://…"></label>
+   <label class="hf-field hf-span-2">Or upload image<input class="hf-input" id="quickProductImageFile" type="file" accept="image/jpeg,image/png,image/webp,image/avif"><small class="hf-help">JPG, PNG, WebP or AVIF · maximum 5 MB</small></label>
+   <div class="catalog-image-preview hf-span-2"><img id="quickProductImagePreview" alt="Product preview" hidden><span id="quickProductImagePreviewNote">Image preview</span></div>
+   <label class="hf-field hf-span-2">Short description<textarea class="hf-textarea" id="quickProductShortDescription" rows="2" maxlength="500"></textarea></label>
+   <label class="hf-field hf-span-2">Full description<textarea class="hf-textarea" id="quickProductFullDescription" rows="4"></textarea></label>
+   <label class="hf-field">SEO title<input class="hf-input" id="quickProductSeoTitle" maxlength="180"></label>
+   <label class="hf-field">SEO description<input class="hf-input" id="quickProductSeoDescription" maxlength="320"></label>
+   <label class="hf-check catalog-check"><input id="quickProductActive" type="checkbox"> Visible on the store</label>
+   <label class="hf-check catalog-check"><input id="quickProductFeatured" type="checkbox"> Featured product</label>
+  </div>
+  <p id="quickProductFormError" class="hf-form-error" role="alert"></p>
+  <div class="catalog-editor-foot"><a id="openFullProductEditor" href="./products.html" class="catalog-text-link">Open full product workspace for stock, cost and shipping ↗</a></div>
+  <div class="hf-dialog-actions"><button class="hf-button hf-button-secondary" type="button" data-close-catalog-dialog>Cancel</button><button class="hf-button hf-button-primary" id="saveQuickProductBtn" type="submit">Save product</button></div>
+ </form>
+</dialog></main></div>
+<script defer src="./i18n.js?v=20261031-customer-messages-nav-v1"></script>
+<script defer src="./shared.js?v=20261031-catalog-workspace-v1"></script>
+<script defer src="./categories.js?v=20261031-catalog-workspace-v1"></script>
+</body></html>
