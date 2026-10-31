@@ -325,17 +325,42 @@ window.HFMarketingInit=async function(){
   await loadCampaigns();renderHistory();
   toast(number(ids.length)+" WhatsApp recipients recorded as manually sent. Delivery was not independently verified.","success");
  }
+ async function restoreDraftAfterPreflightFailure(id,reason){
+  const {data:current,error:readError}=await client.from("marketing_campaigns").select("status,sent_count,failed_count").eq("id",id).maybeSingle();
+  if(readError||!current||current.status!=="approved"||number(current.sent_count)>0||number(current.failed_count)>0)return;
+  await client.from("marketing_campaigns").update({status:"draft",approved_by:null,approved_at:null,last_error:String(reason||"Send could not start. No email was sent.").slice(0,900),updated_at:new Date().toISOString()}).eq("id",id).eq("status","approved");
+  await loadCampaigns();renderHistory();
+ }
+ async function readFunctionError(error){
+  let detail="";
+  try{
+   const response=error?.context;
+   if(response&&typeof response.clone==="function"){
+    const payload=await response.clone().json();
+    detail=String(payload?.error||payload?.message||"");
+   }
+  }catch(_){}
+  return detail||String(error?.message||"Email service request failed.");
+ }
  async function sendEmail(id){
   const campaign=campaigns.find(c=>c.id===id);if(!campaign)throw new Error("Campaign was not found.");
-  if(!emailProvider.configured)throw new Error("Email provider is not configured. No email has been sent.");
+  if(!emailProvider.configured)throw new Error("Gmail and server database are not ready. Refresh the connection check before sending.");
   const ok=window.confirm("Send this customer update from Halal Food to "+number(campaign.audience_count)+" selected email address(es)? This sends real emails. Active customer records and address validity are rechecked by the server.");
   if(!ok)return false;
-  const {data,error}=await client.from("marketing_campaigns").update({status:"approved",approved_by:ADMIN_EMAIL,approved_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq("id",id).in("status",["draft","partially_sent"]).select("id").maybeSingle();
-  if(error)throw error;if(!data)throw new Error("This campaign cannot be sent in its current status.");
+  const {data,error}=await client.from("marketing_campaigns").update({status:"approved",approved_by:ADMIN_EMAIL,approved_at:new Date().toISOString(),updated_at:new Date().toISOString(),last_error:null}).eq("id",id).in("status",["draft","partially_sent"]).select("id").maybeSingle();
+  if(error)throw error;if(!data)throw new Error("This customer update cannot be sent in its current status. Refresh message history.");
   await client.from("marketing_campaign_events").insert({campaign_id:id,event_type:"email_approved",details:{approved_by:ADMIN_EMAIL},created_by:ADMIN_EMAIL});
   const {data:result,error:sendError}=await client.functions.invoke("marketing-email",{body:{action:"send",campaign_id:id}});
-  if(sendError)throw sendError;
-  if(!result||!result.success)throw new Error(result?.error||"Email provider did not confirm the send.");
+  if(sendError){
+   const detail=await readFunctionError(sendError);
+   await restoreDraftAfterPreflightFailure(id,detail);
+   throw new Error(detail);
+  }
+  if(!result||!result.success){
+   const detail=String(result?.error||"Email provider did not confirm the send.");
+   await restoreDraftAfterPreflightFailure(id,detail);
+   throw new Error(detail);
+  }
   await loadCampaigns();renderHistory();
   toast("Gmail accepted "+number(result.acceptedByProvider??result.sent??0)+" customer update(s); failed/held: "+number(result.failed||0)+", remaining: "+number(result.remaining||0)+".","success");
   return true;
