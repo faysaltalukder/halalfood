@@ -21,7 +21,7 @@
 <div class="pt-two-column">
  <section class="hf-card hf-card-pad">
   <div class="pt-section-heading"><div><p class="page-eyebrow">SCAN TO LOOK UP</p><h2>Scan a product code</h2><p>A USB scanner can type into this field. The camera scanner can read QR and supported 1D product codes.</p></div><span class="hf-status hf-status-active">Live lookup</span></div>
-  <div class="pt-scan-row"><input class="hf-input" id="barcodeScanInput" type="search" autocomplete="off" placeholder="Scan or enter SKU, e.g. HF-000001"><button class="hf-button hf-button-primary" id="barcodeScanSubmit" type="button">Find product</button></div>
+  <div class="pt-scan-row"><input class="hf-input" id="barcodeScanInput" type="search" autocomplete="off" aria-label="Scan or enter a product SKU or barcode" placeholder="Scan or enter SKU, e.g. HF-000001"><button class="hf-button hf-button-primary" id="barcodeScanSubmit" type="button">Find product</button></div>
   <div class="pt-scan-actions"><button class="hf-button hf-button-secondary" id="barcodeCameraStart" type="button">▣ Start camera scanner</button><button class="hf-button hf-button-secondary" id="barcodeCameraStop" type="button" disabled>Stop camera</button></div>
   <div id="barcodeCamera" class="pt-camera" hidden></div>
   <div id="barcodeScanResult" class="pt-scan-result"><div class="pt-empty"><span>▥</span><strong>Ready to scan</strong><p>Scan a product barcode or QR label to see product details.</p></div></div>
@@ -37,7 +37,7 @@
 </div>
 <section class="hf-card hf-card-pad pt-products-card">
  <div class="pt-section-heading"><div><p class="page-eyebrow">SKU DIRECTORY</p><h2>Product barcode directory</h2><p>Search the catalogue and select a product to preview or print its labels.</p></div><span class="hf-status hf-status-active" id="barcodeProductCount">Loading…</span></div>
- <input class="hf-input" id="barcodeProductSearch" type="search" placeholder="Search product name, SKU or category…">
+ <input class="hf-input" id="barcodeProductSearch" type="search" aria-label="Search barcode directory by product name, SKU or category" placeholder="Search product name, SKU or category…">
  <div class="hf-table-wrap"><table class="hf-table"><thead><tr><th>Product</th><th>SKU / Code 128</th><th>Price</th><th>Stock status</th><th>Action</th></tr></thead><tbody id="barcodeProductTable"><tr><td colspan="5" class="hf-loading">Loading product directory…</td></tr></tbody></table></div>
 </section>
 </main></div>
