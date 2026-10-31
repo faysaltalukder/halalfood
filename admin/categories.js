@@ -120,7 +120,7 @@ window.HFAdminReady.then(async H => {
   if($("catalogHiddenCount"))$("catalogHiddenCount").textContent=String(hidden);
   const search=$("categoryTreeSearch")?.value||"",filter=$("categoryTreeVisibility")?.value||"all";
   tree.innerHTML=childrenOf(null).map(c=>categoryNodeMarkup(c,search,filter)).join("");
-  $("categoryTreeCount").textContent=state.categories.length+" categories · "+state.categories.filter(c=>!c.parent_id).length+" top-level categories";
+  const categoryCountNode=$("categoryTreeCount");if(categoryCountNode)categoryCountNode.textContent=state.categories.length+" categories · "+state.categories.filter(c=>!c.parent_id).length+" top-level categories";
   $("categoryTreeEmpty").hidden=!!tree.children.length;
  }
  function fillSortCategory(){
