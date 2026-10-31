@@ -190,7 +190,7 @@ BEGIN
     END;
     v_redx_area_name := left(trim(coalesce(p_order ->> 'redx_delivery_area', '')), 120);
     v_redx_district := left(trim(coalesce(p_order ->> 'redx_delivery_district', '')), 80);
-    IF v_redx_area_id <= 0 OR v_redx_area_name = '' OR length(v_redx_district) < 2
+    IF v_redx_area_id IS NULL OR v_redx_area_id <= 0 OR v_redx_area_name = '' OR length(v_redx_district) < 2
        OR coalesce((p_order ->> 'redx_sandbox_test_area')::boolean, false)
        OR lower(v_redx_area_name) IN ('test area', 'test district') THEN
       RAISE EXCEPTION 'Choose a real REDX Production area matching the customer address. Sandbox test areas cannot be used for customer deliveries.'
