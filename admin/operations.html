@@ -15,7 +15,7 @@
 <div id="adminApp" hidden><main id="pageContent" tabindex="-1">
 <div class="page-heading hf-phase4-hero hf-operations-hero"><div><p class="page-eyebrow">BUSINESS OPERATING SYSTEM</p><h1>Operations Center</h1><p>Coordinate packing, placeholder courier records, COD reconciliation, team tasks, purchasing and returns from one workspace.</p></div><div class="page-actions"><span class="hf-status hf-status-review">Courier setup pending</span><button class="hf-button hf-button-secondary" data-refresh-page type="button">↻ Refresh</button></div></div>
 <div class="ops-note"><strong>Testing-project safety:</strong> Saving a placeholder parcel does not contact a courier. However, the explicit Book with Steadfast/Pathao action sends a live API request and may create a real shipment. This site does not take online payments and cannot send a cancellation request to the courier. If you cancel a parcel in the courier Merchant Dashboard, use Sync live statuses to refresh it here; if the API cannot return the status, use Confirm cancelled only after verifying cancellation in the provider dashboard. Confirm the customer, phone, full address, COD amount and parcel weight before booking. Do not treat sample entries or order totals as real payments.</div>
-<nav class="ops-subnav hf-phase4-local-nav" aria-label="Operations work areas"><a href="#packingSection">Packing queue</a><a href="#courierSection">Courier & COD</a><a href="#tasksSection">Team tasks</a><a href="#suppliersSection">Suppliers</a><a href="#purchaseSection">Purchase orders</a><a href="#returnsSection">Returns & refunds</a></nav>
+<nav class="ops-subnav hf-phase4-local-nav" aria-label="Operations work areas"><a href="#packingSection">Packing queue</a><a href="#courierSection">Courier & COD</a><a href="#tasksSection">Team tasks</a><a href="./supplier-add.html">Suppliers</a><a href="./supplier-purchases.html">Purchase list</a><a href="#returnsSection">Returns & refunds</a></nav>
 <div class="ops-metrics hf-phase4-ops-metrics">
 <section class="hf-card ops-metric"><small>Orders waiting for packing</small><strong id="metricPacking">—</strong></section>
 <section class="hf-card ops-metric"><small>Courier records not delivered</small><strong id="metricCourier">—</strong></section>
@@ -69,38 +69,10 @@
 </section>
 </section>
 
-<section id="suppliersSection" class="hf-card hf-card-pad ops-section">
-<div class="ops-title"><div><h2>Supplier directory</h2><p>Keep supplier contacts in one place for future replenishment.</p></div></div>
-<form id="supplierForm" class="ops-form">
-<label>Supplier name *<input id="supplierName" class="hf-input" required maxlength="180"></label>
-<label>Contact person<input id="supplierContact" class="hf-input" maxlength="180"></label>
-<label>Phone<input id="supplierPhone" class="hf-input" maxlength="60"></label>
-<label>Email<input id="supplierEmail" class="hf-input" type="email" maxlength="180"></label>
-<label class="wide">Address<input id="supplierAddress" class="hf-input" maxlength="500"></label>
-<label class="wide">Notes<textarea id="supplierNotes" class="hf-textarea" rows="2" maxlength="1200"></textarea></label>
-<div class="wide"><button class="hf-button hf-button-primary" type="submit">＋ Save supplier</button></div>
-</form>
-<div class="hf-table-wrap" tabindex="0" role="region" aria-label="Scrollable table results. On small screens, scroll horizontally to see all columns."><table class="hf-table ops-table"><thead><tr><th>Supplier</th><th>Contact</th><th>Address / notes</th><th>Status</th><th>Action</th></tr></thead><tbody id="suppliersBody"><tr><td colspan="5" class="hf-loading">Loading suppliers…</td></tr></tbody></table></div>
+<section class="hf-card hf-card-pad ops-section">
+<div class="ops-title"><div><h2>Supplier &amp; procurement workspace</h2><p>Supplier records, multi-product purchase orders, goods receiving, supplier invoices and payment history now have a dedicated workspace.</p></div><div class="ops-actions"><a class="hf-button hf-button-primary" href="./supplier-add.html">Open Suppliers</a><a class="hf-button hf-button-secondary" href="./supplier-purchases.html">Purchase List</a><a class="hf-button hf-button-secondary" href="./supplier-payments.html">Payment History</a></div></div>
 </section>
 </div>
-
-<section id="purchaseSection" class="hf-card hf-card-pad ops-section">
-<div class="ops-title"><div><h2>Purchase orders</h2><p>Record replenishment orders, quantities, unit costs, expected dates and supplier references.</p></div></div>
-<form id="purchaseForm" class="ops-form">
-<label>Supplier<select id="purchaseSupplier" class="hf-select"><option value="">Choose supplier (optional)</option></select></label>
-<label>Product *<select id="purchaseProduct" class="hf-select" required><option value="">Choose product</option></select></label>
-<label>Quantity *<input id="purchaseQty" class="hf-input" type="number" min="0.001" step="0.001" required></label>
-<label>Unit cost (৳) *<input id="purchaseCost" class="hf-input" type="number" min="0" step="0.01" required></label>
-<label>Order date *<input id="purchaseDate" class="hf-input" type="date" required></label>
-<label>Expected date<input id="purchaseExpected" class="hf-input" type="date"></label>
-<label>Supplier reference<input id="purchaseReference" class="hf-input" maxlength="180" placeholder="Invoice or quotation number"></label>
-<label>Initial status<select id="purchaseStatus" class="hf-select"><option value="draft">Draft</option><option value="ordered">Ordered</option></select></label>
-<label class="wide">Notes<textarea id="purchaseNotes" class="hf-textarea" rows="2" maxlength="1200"></textarea></label>
-<div class="wide"><button class="hf-button hf-button-primary" type="submit">＋ Create purchase order</button></div>
-</form>
-<div class="ops-note">Recording a purchase order does not increase stock or confirm a supplier payment. When goods arrive, count the received quantity and record the stock receipt separately. This avoids overstating inventory.</div>
-<div class="hf-table-wrap" tabindex="0" role="region" aria-label="Scrollable table results. On small screens, scroll horizontally to see all columns."><table class="hf-table ops-table"><thead><tr><th>Purchase order</th><th>Supplier</th><th>Product / quantity</th><th>Amount</th><th>Order / expected date</th><th>Status</th><th>Action</th></tr></thead><tbody id="purchaseBody"><tr><td colspan="7" class="hf-loading">Loading purchase orders…</td></tr></tbody></table></div>
-</section>
 
 <section id="returnsSection" class="hf-card hf-card-pad ops-section">
 <div class="ops-title"><div><h2>Returns, exchanges & refunds</h2><p>Track a return request, inspection result and refund reference without changing stock automatically.</p></div></div>
