@@ -723,8 +723,10 @@
         try { localStorage.setItem("hf_admin_language", select.value); } catch (_) {}
         applyLanguage();
       });
-      const anchor = header.querySelector("#themeToggle") || header.querySelector("#logout") || null;
-      if (anchor) header.insertBefore(wrap, anchor);
+      const anchor = header.querySelector(":scope > .admin-topbar-actions") ||
+        header.querySelector(":scope > #themeToggle") ||
+        header.querySelector(":scope > #logoutBtn") || null;
+      if (anchor && anchor.parentElement === header) header.insertBefore(wrap, anchor);
       else header.appendChild(wrap);
       translateTree(wrap, language());
     });
