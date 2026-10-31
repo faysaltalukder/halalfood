@@ -11,7 +11,7 @@ const dict={
  "Provider setup required":"প্রোভাইডার সেটআপ প্রয়োজন","Record opt-in":"সম্মতি নথিভুক্ত করুন","Revoke":"সম্মতি প্রত্যাহার করুন","Save permission record":"সম্মতির তথ্য সংরক্ষণ",
  "Campaign safety check":"ক্যাম্পেইন নিরাপত্তা যাচাই","Consent requirement":"সম্মতির শর্ত","Required":"আবশ্যক","Open WhatsApp Web ↗":"WhatsApp Web খুলুন ↗",
  "No customers match these filters.":"এই ফিল্টারে কোনো গ্রাহক পাওয়া যায়নি।","No marketing campaigns have been saved yet.":"এখনো কোনো মার্কেটিং ক্যাম্পেইন সংরক্ষণ করা হয়নি।",
- "Email provider not connected":"ইমেইল প্রোভাইডার সংযুক্ত নয়","Export WhatsApp CSV":"WhatsApp CSV এক্সপোর্ট","Export email CSV":"ইমেইল CSV এক্সপোর্ট",
+ "Email provider not connected":"ইমেইল প্রোভাইডার সংযুক্ত নয়","Record WhatsApp sent":"WhatsApp-এ পাঠানো হয়েছে হিসেবে রেকর্ড করুন","manually sent":"অ্যাডমিন নিশ্চিত করেছেন: ম্যানুয়ালি পাঠানো হয়েছে","provider accepted":"প্রোভাইডার গ্রহণ করেছে","Export WhatsApp CSV":"WhatsApp CSV এক্সপোর্ট","Export email CSV":"ইমেইল CSV এক্সপোর্ট",
  "Only active, non-blocked customers with recorded consent for the selected channel can be included.":"নির্বাচিত চ্যানেলের সম্মতি থাকা সক্রিয় ও ব্লক নয় এমন গ্রাহকরাই অন্তর্ভুক্ত হবে।"
 };
 if(window.HFAdminLanguage&&window.HFAdminLanguage.dictionary)Object.assign(window.HFAdminLanguage.dictionary,dict);
@@ -126,7 +126,7 @@ window.HFMarketingInit=async function(){
   if(!campaigns.length){body.innerHTML='<tr><td colspan="6" class="hf-marketing-muted">No marketing campaigns have been saved yet.</td></tr>';return;}
   body.innerHTML=campaigns.map(c=>{
    const action=c.channel==="whatsapp"?((["draft","exported"].includes(c.status)?'<button type="button" class="hf-button hf-button-secondary" data-mkt-export="'+esc(c.id)+'">Export WhatsApp CSV</button>':"")+(c.status==="exported"?'<button type="button" class="hf-button hf-button-primary" data-mkt-whatsapp-sent="'+esc(c.id)+'">Record WhatsApp sent</button>':"")):('<button type="button" class="hf-button hf-button-secondary" data-mkt-export="'+esc(c.id)+'">Export email CSV</button>'+(emailProvider.configured&&["draft","partially_sent"].includes(c.status)?'<button type="button" class="hf-button hf-button-primary" data-mkt-send="'+esc(c.id)+'">'+(c.status==="partially_sent"?"Continue send":"Approve & send")+'</button>':(!emailProvider.configured?'<button type="button" class="hf-button hf-button-secondary" disabled title="Configure RESEND_API_KEY and MARKETING_FROM_EMAIL in Supabase Edge Function secrets">Provider needed</button>':"")));
-   return '<tr><td><div class="hf-marketing-history-name"><strong>'+esc(c.name)+'</strong><small>'+esc(dateTime(c.created_at))+'</small></div></td><td>'+esc(c.channel==="whatsapp"?"WhatsApp":"Email")+'</td><td>'+statusBadge(c.status)+'</td><td>'+number(c.audience_count)+'</td><td>'+number(c.sent_count)+' / '+number(c.failed_count)+'</td><td><div class="hf-marketing-history-actions">'+action+'</div></td></tr>';
+   return '<tr><td><div class="hf-marketing-history-name"><strong>'+esc(c.name)+'</strong><small>'+esc(dateTime(c.created_at))+'</small></div></td><td>'+esc(c.channel==="whatsapp"?"WhatsApp":"Email")+'</td><td>'+statusBadge(c.status,c.channel)+'</td><td>'+number(c.audience_count)+'</td><td>'+number(c.sent_count)+' / '+number(c.failed_count)+'</td><td><div class="hf-marketing-history-actions">'+action+'</div></td></tr>';
   }).join("");
  }
  function switchTab(tab){
