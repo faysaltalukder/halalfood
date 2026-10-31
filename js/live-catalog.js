@@ -300,10 +300,9 @@
         Number(a.sort_order || 0) - Number(b.sort_order || 0) ||
         (Date.parse(b.created_at || "") || 0) - (Date.parse(a.created_at || "") || 0) ||
         String(a.name || "").localeCompare(String(b.name || ""));
-      const featured = products.filter(item => item.is_featured && item.is_active).sort(catalogOrder);
-      const featuredSlugs = new Set(featured.map(item => item.slug));
-      const remaining = products.filter(item => item.is_active && !featuredSlugs.has(item.slug)).sort(catalogOrder);
-      const rows = [...featured, ...remaining].slice(0,4);
+      // Homepage position is authoritative. Featured remains an independent product flag,
+      // rather than silently overriding the administrator's explicit display order.
+      const rows = products.filter(item => item.is_active).sort(catalogOrder).slice(0,4);
       featuredGrid.replaceChildren(...rows.map(item => makeProductCard(item, "standard")));
       featuredGrid.classList.add("featured-grid-4");
     }
@@ -344,7 +343,7 @@
       rail.querySelectorAll(".cat-card").forEach(card => {
         const href = card.getAttribute("href") || "";
         const match = href.match(/categories\/([^/?#]+)\.html/i) || href.match(/[?&]slug=([^&]+)/);
-        if (match && !categories.some(cat => cat.slug === decodeURIComponent(match[1]) && cat.is_active)) card.remove();
+        if (match && !categories.some(cat => cat.slug === decodeURIComponent(match[1]) && !cat.parent_id && effectiveCategoryActive(cat, categories))) card.remove();
       });
       const liveSlugs = new Set($$(".cat-card", rail).map(card => {
         const href = card.getAttribute("href") || ""; const m = href.match(/categories\/([^/?#]+)\.html/i) || href.match(/[?&]slug=([^&]+)/);
