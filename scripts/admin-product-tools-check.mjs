@@ -24,7 +24,7 @@ const publicReviews = read("js/product-reviews.js");
 const main = read("js/main.js");
 const skuMigration = read("supabase/migrations/20261031061456_add_product_catalog_sku_and_reviews.sql");
 const reviewModerationMigration = read("supabase/migrations/20261031062432_allow_admin_moderation_of_customer_reviews.sql");
-const reviewUnlinkedMigration = read("supabase/migrations/20261031064000_allow_unlinked_customer_review_submissions.sql");
+const reviewUnlinkedMigration = read("supabase/migrations/20261031063731_allow_unlinked_customer_review_submissions.sql");
 
 for (const route of ["products-add", "products-barcode", "products-reviews"]) {
   check(shared.includes(route), "Products navigation is missing " + route + ".");
