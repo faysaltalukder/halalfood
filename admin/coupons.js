@@ -355,9 +355,9 @@
         customers = customerResult.error ? [] : (customerResult.data || []);
         renderMetrics();
         renderCouponRows();
-        renderCategoryPicker([]);
-        renderProductPicker([]);
-        renderCustomerPicker([]);
+        renderCategoryPicker();
+        renderProductPicker();
+        renderCustomerPicker();
         $("couponListMessage").textContent = "Reserved and redeemed orders count toward usage limits. " +
           redemptions.filter(r => r.status === "reserved").length + " use(s) are currently pending; " +
           redemptions.filter(r => r.status === "released").length + " cancelled use(s) have been returned.";
