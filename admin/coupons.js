@@ -35,7 +35,7 @@
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
   }[ch]));
   const codeFromEntropy = () => {
-    const bytes = new Uint8Array(4);
+    const bytes = new Uint8Array(8);
     crypto.getRandomValues(bytes);
     return "HALAL-" + Array.from(bytes).map(v => v.toString(16).padStart(2, "0")).join("").toUpperCase();
   };
@@ -55,6 +55,9 @@
     let redemptions = [];
     let currentEdit = null;
     let isLoading = false;
+    let selectedCategoryIds = [];
+    let selectedProductIds = [];
+    let selectedCustomerPhones = [];
 
     const countedUses = couponId => redemptions.filter(r =>
       r.coupon_id === couponId && ["reserved", "redeemed"].includes(r.status)
@@ -159,7 +162,7 @@
       return [...$(containerId).querySelectorAll('input[type="checkbox"]:checked')].map(node => node.value);
     }
 
-    function renderCategoryPicker(selected = selectedCheckboxValues("couponCategoryPicker")) {
+    function renderCategoryPicker(selected = selectedCategoryIds) {
       const container = $("couponCategoryPicker");
       const available = categories.filter(c => c.is_active !== false);
       container.innerHTML = available.length ? available.map(c =>
@@ -168,7 +171,7 @@
       ).join("") : '<span class="cp-muted">No active categories available.</span>';
     }
 
-    function renderProductPicker(selected = selectedCheckboxValues("couponProductPicker")) {
+    function renderProductPicker(selected = selectedProductIds) {
       const query = String($("couponProductSearch")?.value || "").trim().toLowerCase();
       const available = products.filter(p => p.is_active !== false && (
         !query || String(p.name || "").toLowerCase().includes(query) ||
@@ -182,7 +185,7 @@
       ).join("") : '<span class="cp-muted">No matching active products found.</span>';
     }
 
-    function renderCustomerPicker(selected = selectedCheckboxValues("couponCustomerPicker")) {
+    function renderCustomerPicker(selected = selectedCustomerPhones) {
       const query = String($("couponCustomerSearch")?.value || "").trim().toLowerCase();
       const available = customers.filter(c =>
         !query || String(c.name || "").toLowerCase().includes(query) ||
@@ -209,6 +212,9 @@
 
     function resetForm() {
       $("couponForm").reset();
+      selectedCategoryIds = [];
+      selectedProductIds = [];
+      selectedCustomerPhones = [];
       $("couponId").value = "";
       $("couponFormHeading").textContent = "Create a coupon";
       $("couponSaveBtn").textContent = "Save coupon";
@@ -241,6 +247,9 @@
       const selectedProducts = productIdsFor(id);
       const selectedPhones = phonesFor(id);
       resetForm();
+      selectedCategoryIds = duplicate ? [] : selectedCategories.slice();
+      selectedProductIds = duplicate ? [] : selectedProducts.slice();
+      selectedCustomerPhones = duplicate ? [] : selectedPhones.slice();
       currentEdit = duplicate ? null : coupon;
       $("couponId").value = duplicate ? "" : coupon.id;
       $("couponName").value = duplicate ? "Copy of " + coupon.name : coupon.name;
@@ -272,8 +281,7 @@
 
     function phonesFromForm() {
       const manual = String($("couponCustomerPhones").value || "").split(/[\n,;]+/).map(normalizePhone).filter(Boolean);
-      const selected = selectedCheckboxValues("couponCustomerPicker").map(normalizePhone).filter(Boolean);
-      return [...new Set([...selected, ...manual])];
+      return [...new Set([...selectedCustomerPhones.map(normalizePhone).filter(Boolean), ...manual])];
     }
 
     function formPayload() {
@@ -292,8 +300,8 @@
         max_discount_amount: discountType === "percentage" && $("couponMaxDiscount").value !== "" ? Number($("couponMaxDiscount").value) : null,
         minimum_order_amount: Number($("couponMinimumOrder").value || 0),
         applies_to: $("couponAppliesTo").value,
-        category_ids: selectedCheckboxValues("couponCategoryPicker"),
-        product_ids: selectedCheckboxValues("couponProductPicker"),
+        category_ids: selectedCategoryIds.slice(),
+        product_ids: selectedProductIds.slice(),
         customer_eligibility: customerEligibility,
         customer_phones: customerEligibility === "selected" ? phonesFromForm() : [],
         usage_limit: $("couponUsageLimit").value === "" ? null : Number($("couponUsageLimit").value),
@@ -500,6 +508,15 @@
       downloadFile("halal-food-coupons.csv", csvText(rows), "text/csv;charset=utf-8");
     }
 
+    $("couponCategoryPicker").addEventListener("change", () => {
+      selectedCategoryIds = selectedCheckboxValues("couponCategoryPicker");
+    });
+    $("couponProductPicker").addEventListener("change", () => {
+      selectedProductIds = selectedCheckboxValues("couponProductPicker");
+    });
+    $("couponCustomerPicker").addEventListener("change", () => {
+      selectedCustomerPhones = selectedCheckboxValues("couponCustomerPicker").map(normalizePhone).filter(Boolean);
+    });
     $("couponForm").addEventListener("submit", saveCoupon);
     $("couponListTab").addEventListener("click", () => setTab("list"));
     $("couponAddTab").addEventListener("click", () => {
