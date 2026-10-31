@@ -33,7 +33,7 @@
    <input class="hf-input" id="categoryTreeSearch" type="search" placeholder="Search category name or URL slug…" aria-label="Search categories">
    <select class="hf-select" id="categoryTreeVisibility" aria-label="Filter category visibility"><option value="all">All categories</option><option value="active">Visible categories</option><option value="hidden">Hidden categories</option></select>
    <button class="hf-button hf-button-secondary hf-button-small" id="undoCategoryOrder" type="button" hidden>↶ Undo last reorder</button>
-   <span class="catalog-saving-note" id="categoryTreeStatus" role="status">Changes save to the live catalog.</span>
+   <span class="catalog-saving-note" id="categoryTreeCount" aria-live="polite">Loading category structure…</span><span class="catalog-saving-note" id="categoryTreeStatus" role="status">Changes save to the live catalog.</span>
   </div>
   <div id="categoryTree" class="catalog-tree"><div class="hf-loading">Loading categories…</div></div>
   <p id="categoryTreeEmpty" class="hf-empty" hidden>No categories match your search.</p>
@@ -105,5 +105,5 @@
 </div>
 <script defer src="./i18n.js?v=20261031-customer-messages-nav-v1"></script>
 <script defer src="./shared.js?v=20261031-single-categories-workspace-v1"></script>
-<script defer src="./categories.js?v=20261031-single-categories-workspace-v1"></script>
+<script defer src="./categories.js?v=20261101-category-workspace-fix-v1"></script>
 </body></html>
