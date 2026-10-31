@@ -888,6 +888,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   // When the live catalog arrives, use the server-managed price/name/image for a single-product checkout.
   window.addEventListener("halalcatalog:updated", () => {
+    if (appliedCoupon) clearAppliedCoupon("Product information changed. Apply your coupon again.");
     if (!singleProductName || checkoutIsCart) return;
     const source = Array.isArray(window.PRODUCTS_DATA) ? window.PRODUCTS_DATA : [];
     const normalized = singleProductName.trim().toLowerCase();
@@ -921,6 +922,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
   const syncQuantity = (value) => {
+    if (appliedCoupon) clearAppliedCoupon("Quantity changed. Apply your coupon again.");
     const n = Math.max(1, Math.min(99, Number(value) || 1));
     if (quantityInput) quantityInput.value = String(n);
     if (quantityDisplay) quantityDisplay.textContent = String(n);
@@ -937,6 +939,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Allow direct quantity entry on the single-product order form.
   // Keep calculations live while the shopper types; normalize only on change.
   quantityInput?.addEventListener("input", () => {
+    if (appliedCoupon) clearAppliedCoupon("Quantity changed. Apply your coupon again.");
     const raw = quantityInput.value;
     if (raw === "") return;
     const n = Number(raw);
@@ -1228,6 +1231,8 @@ document.addEventListener("DOMContentLoaded", () => {
           success: true,
           orderId: confirmedOrderId,
           orderTotal: confirmedTotal,
+          subtotal: Number.isFinite(Number(result?.subtotal)) ? Number(result.subtotal) : checkoutValue,
+          deliveryCharge: Number.isFinite(Number(result?.deliveryCharge)) ? Number(result.deliveryCharge) : deliveryCharge,
           couponCode: typeof result?.couponCode === "string" ? result.couponCode : "",
           couponDiscount: Number.isFinite(Number(result?.couponDiscount)) ? Number(result.couponDiscount) : 0,
           purchaseEventId,
@@ -1302,8 +1307,10 @@ document.addEventListener("DOMContentLoaded", () => {
           sessionStorage.setItem("HALAL_ORDER_CONFIRMATION", JSON.stringify({
             orderId: confirmedOrderId,
             orderTotal: confirmedTotal,
-            subtotal: checkoutValue,
-            deliveryCharge,
+            subtotal: Number.isFinite(Number(winner.subtotal)) ? Number(winner.subtotal) : checkoutValue,
+            deliveryCharge: Number.isFinite(Number(winner.deliveryCharge)) ? Number(winner.deliveryCharge) : deliveryCharge,
+            couponCode: winner.couponCode || "",
+            couponDiscount: Number(winner.couponDiscount || 0),
             deliveryZone,
             paymentMethod: "cash_on_delivery",
             items: confirmedItems,
@@ -1331,7 +1338,10 @@ document.addEventListener("DOMContentLoaded", () => {
         try { window.turnstile?.reset?.(); } catch (_) {}
         console.error("Order submission failed:", err);
         if (error) {
-          error.textContent = "অর্ডার নিশ্চিত করতে সাময়িক সমস্যা হয়েছে। অনুগ্রহ করে কিছুক্ষণ পর আবার চেষ্টা করুন।";
+          const message = String(err?.message || "");
+          error.textContent = /^Coupon:/i.test(message)
+            ? message.replace(/^Coupon:\\s*/i, "")
+            : "অর্ডার নিশ্চিত করতে সাময়িক সমস্যা হয়েছে। অনুগ্রহ করে কিছুক্ষণ পর আবার চেষ্টা করুন।";
           error.style.display = "block";
         }
       } finally {
