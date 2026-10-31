@@ -13,8 +13,19 @@ const read = (path) => readFileSync(join(root, path), "utf8");
 
 const htmlFiles = readdirSync(adminDir).filter((file) => file.endsWith(".html"));
 const unifiedPages = htmlFiles.filter((file) => /<body[^>]*\bdata-page=/.test(read(join("admin", file))));
-assert.equal(unifiedPages.length, 22, `Expected 22 unified admin pages after the dedicated Product, Barcode and Reviews workspaces, found ${unifiedPages.length}.`);
+assert.equal(unifiedPages.length, 23, `Expected 23 unified admin pages after the dedicated Product, Barcode, Reviews and Coupons workspaces, found ${unifiedPages.length}.`);
 assert.ok(unifiedPages.includes("pos.html"), "POS import must use the unified admin shell.");
+assert.ok(unifiedPages.includes("coupons.html"), "Coupon Management must use the unified admin shell.");
+const couponsPage = read("admin/coupons.html");
+const couponsApp = read("admin/coupons.js");
+const couponsMigration = read("supabase/migrations/20261031140000_add_coupon_management_system.sql");
+assert.ok(couponsPage.includes('id="couponForm"') && couponsPage.includes('id="couponTableBody"'), "Coupon Management must include the Add Coupon form and Coupon List.");
+assert.ok(couponsApp.includes('client.rpc("admin_save_coupon"') && couponsApp.includes('client.rpc("admin_set_coupon_status"'), "Coupon creation and status changes must use protected server RPCs.");
+assert.ok(couponsApp.includes('coupon_redemptions') && couponsApp.includes('coupon_categories') && couponsApp.includes('coupon_products'), "Coupon management must read actual usage and product/category targeting records.");
+assert.ok(couponsMigration.includes("private.evaluate_coupon") && couponsMigration.includes("FOR UPDATE"), "Coupon use limits must be validated under an atomic coupon lock.");
+assert.ok(couponsMigration.includes("coupon_discount_amount") && couponsMigration.includes("coupon_snapshot"), "Orders must preserve coupon discount and immutable campaign snapshots.");
+assert.ok(couponsMigration.includes("sync_coupon_redemption_after_order_status"), "Coupon reservation must follow order cancellation/delivery lifecycle.");
+assert.ok(couponsMigration.includes("aal2") && couponsMigration.includes("halalfoodbd.official@gmail.com"), "Coupon administration must remain limited to the MFA-protected admin account.");
 
 for (const file of unifiedPages) {
   const source = read(join("admin", file));
