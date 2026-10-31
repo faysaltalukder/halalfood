@@ -104,7 +104,7 @@ window.HFMarketingInit=async function(){
    const address=contact?esc(contact):'<span class="hf-marketing-permission is-invalid">Invalid contact</span>';
    return '<tr><td><input type="checkbox" data-mkt-select="'+esc(c.id)+'" '+(selected.has(c.id)?"checked ":"")+(allowed?"":"disabled ")+'aria-label="Select '+esc(safeName(c))+'"></td><td><div class="hf-marketing-person"><strong>'+esc(safeName(c))+'</strong><small>'+esc(c.id.slice(0,8))+'</small></div></td><td><span class="hf-marketing-segment">'+esc(c.segment_name||"Unclassified")+'</span><small class="hf-marketing-contact">'+number(c.qualifying_orders??c.total_orders)+' qualifying orders</small></td><td>'+address+'</td><td>'+permission+'</td></tr>';
   }).join("");
-  $("mktReviewNote").textContent=channel==="whatsapp"?"WhatsApp is not automated here. The app will export the checked, consented recipients for WhatsApp Business.":"Email delivery is server-controlled. Each recipient's email consent will be checked again immediately before sending.";
+  $("mktReviewNote").textContent=channel==="whatsapp"?"WhatsApp is not automated here. Create "+Math.max(1,Math.ceil(selectedRows.length/256))+" phone-app Broadcast List(s) for the selected contacts (maximum 256 per list; each recipient must have saved your business number). The CSV contains list-batch labels and individual pre-filled chat links.":"Email delivery is server-controlled. Each recipient's email consent will be checked again immediately before sending.";
  }
  function renderConsent(){
   const query=$("mktConsentSearch").value.trim().toLocaleLowerCase();
@@ -209,7 +209,13 @@ window.HFMarketingInit=async function(){
    const c=byId.get(r.customer_id);if(!c||!channelHasPermission(c,campaign.channel)){suppressedRecipientIds.push(r.id);return;}
    const contact=campaign.channel==="whatsapp"?normalizePhone(c.phone):(validEmail(c.email)?String(c.email).trim():"");
    if(!contact){suppressedRecipientIds.push(r.id);return;}
-   rows.push(campaign.channel==="whatsapp"?{name:safeName(c),phone:contact,personalized_message:personalize(campaign.message_body,c)}:{name:safeName(c),email:contact,personalized_message:personalize(campaign.message_body,c),subject:personalize(campaign.subject||"",c)});
+   if(campaign.channel==="whatsapp"){
+    const waNumber="880"+contact.slice(1);
+    const personalMessage=personalize(campaign.message_body,c);
+    rows.push({name:safeName(c),phone:contact,whatsapp_number:waNumber,broadcast_batch:String(Math.floor(rows.length/256)+1),personalized_message:personalMessage,whatsapp_chat_url:"https://wa.me/"+waNumber+"?text="+encodeURIComponent(personalMessage)});
+   }else{
+    rows.push({name:safeName(c),email:contact,personalized_message:personalize(campaign.message_body,c),subject:personalize(campaign.subject||"",c)});
+   }
    validRecipientIds.push(r.id);
   });
   if(!rows.length)throw new Error("Consent or contact details changed. No recipients remain eligible.");
@@ -242,7 +248,7 @@ window.HFMarketingInit=async function(){
    .eq("campaign_id",id).eq("status","exported").order("created_at",{ascending:true}).limit(10000);
   if(error)throw error;
   if(!recipients?.length)throw new Error("No exported WhatsApp recipients are waiting for a send confirmation.");
-  const ok=window.confirm("Have you finished manually sending this campaign in the WhatsApp Business app to all "+number(recipients.length)+" exported recipient(s)? This only records your confirmation in the dashboard; it does not send any WhatsApp messages or verify delivery.");
+  const listCount=Math.ceil(recipients.length/256);const ok=window.confirm("Have you finished manually sending this campaign in the WhatsApp Business phone app to all "+number(recipients.length)+" exported recipient(s)? If using Broadcast Lists, create "+number(listCount)+" separate list(s) (maximum 256 recipients per list) and each recipient must have saved your number. This only records your confirmation; it does not send WhatsApp messages or verify delivery.");
   if(!ok)return;
   const now=new Date().toISOString(),ids=recipients.map(r=>r.id);
   for(let i=0;i<ids.length;i+=400){
