@@ -5,61 +5,94 @@
 <title>POS Management · Halal Food Admin</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./shared.css?v=20261030-admin-theme-v2"><link rel="stylesheet" href="./phase4-pages.css?v=20261023-admin-ultimate-v1"><link rel="stylesheet" href="./pos.css?v=20261031-pos-simple-v1">
+<link rel="stylesheet" href="./shared.css?v=20261030-admin-theme-v2"><link rel="stylesheet" href="./phase4-pages.css?v=20261023-admin-ultimate-v1"><link rel="stylesheet" href="./pos.css?v=20261031-pos-manual-orders-v1">
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 </head>
 <body data-page="pos">
 <div id="authGate" class="auth-gate"><div class="auth-gate-card"><strong>Checking secure admin access…</strong><p>Your dashboard data will load only after the authorized account and two-step verification are confirmed.</p></div></div>
 <div id="adminApp" hidden><main id="pageContent" tabindex="-1">
-<div class="page-heading pos-hero">
- <div><p class="page-eyebrow">STORE MANAGEMENT</p><h1>POS Management</h1><p>Record products sold offline. Saved sales are automatically added to Orders and Finance.</p></div>
- <div class="page-actions"><button class="hf-button hf-button-secondary" id="posRefreshBtn" type="button">↻ Refresh</button></div>
+<div class="page-heading pos-hero"><div><p class="page-eyebrow">STORE MANAGEMENT</p><h1>POS Management</h1><p>Record an offline product sale or enter an order confirmed through WhatsApp or phone.</p></div><div class="page-actions"><button class="hf-button hf-button-secondary" id="posRefreshBtn" type="button">↻ Refresh</button></div></div>
+<section class="pos-workspace" aria-label="Offline sales and manual delivery orders">
+<aside class="hf-card pos-products-pane" aria-labelledby="posProductsHeading">
+<div class="pos-pane-heading"><div><h2 id="posProductsHeading">Products</h2><p>Select the product sold or ordered by the customer.</p></div><span class="pos-count-badge" id="posProductCount">0</span></div>
+<label class="pos-search-wrap" for="posProductSearch"><span aria-hidden="true">⌕</span><input id="posProductSearch" type="search" placeholder="Search products…" autocomplete="off"></label>
+<div class="pos-product-list" id="posProductList" role="list" aria-label="Product list"><div class="pos-list-loading">Loading products…</div></div>
+</aside>
+
+<section class="hf-card pos-form-pane" aria-labelledby="posDetailHeading">
+<div class="pos-mode-switch" role="group" aria-label="Choose entry type">
+<button type="button" class="pos-mode-button is-active" data-pos-mode="offline" aria-pressed="true"><span aria-hidden="true">▣</span><span><b>Offline sale</b><small>Sold directly in person</small></span></button>
+<button type="button" class="pos-mode-button" data-pos-mode="delivery" aria-pressed="false"><span aria-hidden="true">⇢</span><span><b>Delivery order</b><small>WhatsApp / phone / Facebook</small></span></button>
+</div>
+<div class="pos-empty" id="posSelectedEmpty"><div class="pos-empty-icon" aria-hidden="true">＋</div><h2 id="posDetailHeading">Choose a product</h2><p id="posEmptyDescription">Select a product from the left to record its offline sale.</p></div>
+<div id="posSelectedContent" hidden>
+<div class="pos-selected-product"><div class="pos-selected-image" id="posSelectedImage" aria-hidden="true"></div><div class="pos-selected-copy"><span class="page-eyebrow">SELECTED PRODUCT</span><h2 id="posSelectedName">—</h2><p id="posSelectedMeta">—</p></div><div class="pos-stock"><small>Stock</small><strong id="posSelectedStock">—</strong></div></div>
+
+<form id="posSaleForm" class="pos-sale-form" novalidate>
+<div class="pos-fields">
+<div class="pos-offline-date-fields" id="posOfflineDateFields">
+<div class="pos-field"><label for="posSaleDate">Sale date</label><input id="posSaleDate" type="date" required></div>
+<div class="pos-field"><label for="posSaleTime">Sale time</label><input id="posSaleTime" type="time" required></div>
+</div>
+<div class="pos-field"><label for="posCustomerName" id="posCustomerNameLabel">Customer name <span>(optional)</span></label><input id="posCustomerName" type="text" maxlength="80" placeholder="Walk-in customer"></div>
+<div class="pos-field"><label for="posCustomerPhone" id="posCustomerPhoneLabel">Phone <span>(optional)</span></label><input id="posCustomerPhone" type="tel" inputmode="tel" maxlength="24" placeholder="01XXXXXXXXX"></div>
+<div class="pos-field"><label for="posSaleQuantity">Quantity <span id="posQuantityUnit"></span></label><input id="posSaleQuantity" type="number" min="1" max="1000" step="1" value="1" required></div>
+<div class="pos-field"><label for="posSaleUnitPrice">Selling price per unit (৳)</label><input id="posSaleUnitPrice" type="number" min="0.01" max="1000000" step="0.01" required></div>
+<div class="pos-field"><label for="posPaymentMethod">Payment method</label><select id="posPaymentMethod"><option value="cash">Cash</option><option value="mobile_banking">bKash / Nagad / Rocket</option><option value="bank_transfer">Bank transfer</option><option value="cash_on_delivery">Cash on Delivery (COD)</option><option value="other">Other</option></select></div>
+<fieldset class="pos-payment"><legend>Payment received?</legend><label><input type="radio" name="payment_received" value="true" checked><span>Paid</span></label><label><input type="radio" name="payment_received" value="false"><span>Unpaid</span></label></fieldset>
 </div>
 
-<section class="pos-workspace" aria-label="Offline sales entry">
- <aside class="hf-card pos-products-pane" aria-labelledby="posProductsHeading">
-  <div class="pos-pane-heading"><div><h2 id="posProductsHeading">Products</h2><p>Select the product sold offline.</p></div><span class="pos-count-badge" id="posProductCount">0</span></div>
-  <label class="pos-search-wrap" for="posProductSearch"><span aria-hidden="true">⌕</span><input id="posProductSearch" type="search" placeholder="Search products…" autocomplete="off"></label>
-  <div class="pos-product-list" id="posProductList" role="list" aria-label="Product list"><div class="pos-list-loading">Loading products…</div></div>
- </aside>
+<div class="pos-delivery-fields" id="posDeliveryFields" hidden>
+<div class="pos-delivery-divider"></div>
+<div class="pos-section-mini-head"><div><h3>Customer delivery details</h3><p>This order will go to the main Orders section as Processing.</p></div></div>
+<div class="pos-delivery-grid">
+<div class="pos-field"><label for="posOrderChannel">Order received through</label><select id="posOrderChannel"><option value="whatsapp">WhatsApp</option><option value="phone">Phone call</option><option value="facebook">Facebook</option><option value="other">Other</option></select></div>
+<div class="pos-field"><label for="posDeliveryCharge">Delivery charge (৳)</label><input id="posDeliveryCharge" type="number" min="0" max="100000" step="0.01" value="0"></div>
+<div class="pos-field pos-address-field"><label for="posDeliveryAddress">Full delivery address</label><textarea id="posDeliveryAddress" rows="2" maxlength="250" placeholder="House / village, area / upazila, district…"></textarea></div>
+<div class="pos-field"><label for="posOrderNotes">Order note <span>(optional)</span></label><input id="posOrderNotes" type="text" maxlength="500" placeholder="Any delivery instruction…"></div>
+</div>
 
- <section class="hf-card pos-form-pane" aria-labelledby="posDetailHeading">
-  <div class="pos-empty" id="posSelectedEmpty"><div class="pos-empty-icon" aria-hidden="true">＋</div><h2 id="posDetailHeading">Choose a product</h2><p>Select a product from the left. Then enter its offline sale details and save.</p></div>
-  <div id="posSelectedContent" hidden>
-   <div class="pos-selected-product">
-    <div class="pos-selected-image" id="posSelectedImage" aria-hidden="true"></div>
-    <div class="pos-selected-copy"><span class="page-eyebrow">SELECTED PRODUCT</span><h2 id="posSelectedName">—</h2><p id="posSelectedMeta">—</p></div>
-    <div class="pos-stock"><small>Stock</small><strong id="posSelectedStock">—</strong></div>
-   </div>
+<div class="pos-delivery-divider"></div>
+<div class="pos-section-mini-head"><div><h3>Courier service <span class="pos-optional">(optional)</span></h3><p>Choose a courier to prepare a parcel. You can book it now or later from Operations.</p></div></div>
+<div class="pos-delivery-grid">
+<div class="pos-field"><label for="posCourierProvider">Courier</label><select id="posCourierProvider"><option value="">No courier yet</option><option value="steadfast">Steadfast</option><option value="pathao">Pathao</option><option value="redx">REDX</option></select></div>
+<div class="pos-field" id="posCourierWeightField" hidden><label for="posCourierWeight">Packed weight (kg)</label><input id="posCourierWeight" type="number" min="0.1" max="10" step="0.01" placeholder="e.g. 1.2"></div>
+<div class="pos-field" id="posCourierFeeField" hidden><label for="posCourierFee">Courier fee (৳) <span>(optional)</span></label><input id="posCourierFee" type="number" min="0" max="100000" step="0.01" value="0"></div>
+<div class="pos-redx-fields" id="posRedxFields" hidden>
+<div class="pos-field"><label for="posRedxDistrict">REDX destination district (English)</label><input id="posRedxDistrict" type="text" maxlength="80" placeholder="e.g. Patuakhali"></div>
+<button type="button" id="posRedxLoadAreas" class="hf-button hf-button-secondary pos-redx-load">Load REDX areas</button>
+<div class="pos-field"><label for="posRedxArea">Exact REDX delivery area</label><select id="posRedxArea" disabled><option value="">Load areas first</option></select></div>
+<p id="posRedxHint" class="pos-redx-hint">Select the area that matches the customer's address.</p>
+</div>
+</div>
+<label class="pos-book-now" id="posBookNowLabel" hidden><input id="posBookCourierNow" type="checkbox"><span><b>Book with this courier now</b><small>This sends the order and customer details to the courier and may create a real shipment. You will confirm once more before sending.</small></span></label>
+<p class="pos-delivery-note">Courier booking currently uses Cash on Delivery only. For COD, Finance remains Pending until the money is actually collected. If booking fails, the customer order remains saved in Orders.</p>
+</div>
 
-   <form id="posSaleForm" class="pos-sale-form" novalidate>
-    <div class="pos-fields">
-     <div class="pos-field"><label for="posSaleDate">Sale date</label><input id="posSaleDate" type="date" required></div>
-     <div class="pos-field"><label for="posSaleTime">Sale time</label><input id="posSaleTime" type="time" required></div>
-     <div class="pos-field"><label for="posCustomerName">Customer name <span>(optional)</span></label><input id="posCustomerName" type="text" maxlength="80" placeholder="Walk-in customer"></div>
-     <div class="pos-field"><label for="posCustomerPhone">Phone <span>(optional)</span></label><input id="posCustomerPhone" type="tel" inputmode="tel" maxlength="24" placeholder="01XXXXXXXXX"></div>
-     <div class="pos-field"><label for="posSaleQuantity">Quantity <span id="posQuantityUnit"></span></label><input id="posSaleQuantity" type="number" min="1" max="1000" step="1" value="1" required></div>
-     <div class="pos-field"><label for="posSaleUnitPrice">Selling price per unit (৳)</label><input id="posSaleUnitPrice" type="number" min="0.01" max="1000000" step="0.01" required></div>
-     <div class="pos-field"><label for="posPaymentMethod">Payment method</label><select id="posPaymentMethod"><option value="cash">Cash</option><option value="mobile_banking">bKash / Nagad / Rocket</option><option value="bank_transfer">Bank transfer</option><option value="other">Other</option></select></div>
-     <fieldset class="pos-payment"><legend>Payment received?</legend><label><input type="radio" name="payment_received" value="true" checked><span>Paid</span></label><label><input type="radio" name="payment_received" value="false"><span>Unpaid</span></label></fieldset>
-    </div>
-    <div class="pos-total-row"><div><small>Sale total</small><strong id="posSaleTotal">৳0</strong><span id="posSaleCalculation">1 × ৳0</span></div><button id="posSaveSaleBtn" type="submit" class="hf-button hf-button-primary pos-save-button">Save sale</button></div>
-    <p class="pos-explainer">Saved sales appear in Orders. Paid sales are added to confirmed Finance income; unpaid sales are saved separately and are not counted as received money.</p>
-    <p id="posFormMessage" class="pos-message" role="status" aria-live="polite"></p>
-   </form>
+<div class="pos-order-cart" id="posOrderCartPanel" hidden>
+<div class="pos-cart-heading"><h3>Products in this order</h3><span id="posCartCount">0 items</span></div>
+<div class="pos-cart-table-wrap"><table class="hf-table"><thead><tr><th>Product</th><th>Qty</th><th>Unit price</th><th>Total</th><th></th></tr></thead><tbody id="posOrderCartBody"><tr><td colspan="5">Add products from the left.</td></tr></tbody></table></div>
+<div class="pos-cart-totals"><div><span>Subtotal</span><strong id="posOrderSubtotal">৳0</strong></div><div><span>Delivery</span><strong id="posOrderDelivery">৳0</strong></div><div class="pos-cart-grand"><span>Order total</span><strong id="posOrderGrandTotal">৳0</strong></div></div>
+</div>
 
-   <section class="pos-history" aria-labelledby="posHistoryHeading">
-    <div class="pos-history-heading"><h3 id="posHistoryHeading">Recent sales for this product</h3><span id="posHistoryCount">0</span></div>
-    <div class="pos-history-scroll" tabindex="0" role="region" aria-label="Recent sales for this product">
-     <table class="hf-table"><thead><tr><th>Date</th><th>Customer</th><th>Qty</th><th>Price</th><th>Total</th><th>Payment</th></tr></thead><tbody id="posHistoryBody"><tr><td colspan="6">No sales yet.</td></tr></tbody></table>
-    </div>
-   </section>
-  </div>
- </section>
+<button id="posAddItemBtn" class="hf-button hf-button-secondary pos-add-item" type="button" hidden>＋ Add selected product to order</button>
+<div class="pos-total-row"><div><small id="posTotalLabel">Sale total</small><strong id="posSaleTotal">৳0</strong><span id="posSaleCalculation">1 × ৳0</span></div><button id="posSaveSaleBtn" type="submit" class="hf-button hf-button-primary pos-save-button">Save sale</button></div>
+<p class="pos-explainer" id="posSaveExplainer">Saved sales appear in Orders. Paid sales are added to confirmed Finance income; unpaid sales are saved separately and are not counted as received money.</p>
+<p id="posFormMessage" class="pos-message" role="status" aria-live="polite"></p>
+</form>
+
+<section class="pos-history" aria-labelledby="posHistoryHeading">
+<div class="pos-history-heading"><h3 id="posHistoryHeading">Recent sales for this product</h3><span id="posHistoryCount">0</span></div>
+<div class="pos-history-scroll" tabindex="0" role="region" aria-label="Recent sales for this product">
+<table class="hf-table"><thead><tr><th>Date</th><th>Customer</th><th>Qty</th><th>Price</th><th>Total</th><th>Payment</th></tr></thead><tbody id="posHistoryBody"><tr><td colspan="6">No sales yet.</td></tr></tbody></table>
+</div>
+</section>
+</div>
+</section>
 </section>
 </main></div>
 <script defer src="./i18n.js?v=20261023-admin-ultimate-v1"></script>
 <script defer src="./shared.js?v=20261030-illustrated-nav-v1"></script>
-<script defer src="./pos.js?v=20261031-pos-simple-v1"></script>
+<script defer src="./pos.js?v=20261031-pos-manual-orders-v1"></script>
 <script defer src="./app.js?v=20261030-orders-polish-v5"></script>
 </body></html>
