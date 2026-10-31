@@ -2007,6 +2007,7 @@ async function refresh(){
    content:initContent,
    customers:()=>{if(typeof window.HFCustomersInit==="function")return window.HFCustomersInit();throw new Error("Customer Management module did not load.");},
    "customer-settings":()=>{if(typeof window.HFCustomerSettingsInit==="function")return window.HFCustomerSettingsInit();throw new Error("Customer Settings module did not load.");},
+    "marketing-center":()=>{if(typeof window.HFMarketingInit==="function")return window.HFMarketingInit();throw new Error("Marketing Center module did not load.");},
    finance:initFinance,
    reports:initReports,
    settings:initSettings,
