@@ -10,10 +10,10 @@
 <div id="authGate" class="auth-gate"><div class="auth-gate-card"><strong>Checking secure admin access…</strong><p>Marketing data loads only after the authorized account and two-step verification are confirmed.</p></div></div>
 <div id="adminApp" hidden><main id="pageContent" tabindex="-1" class="hf-marketing-page">
 <header class="hf-marketing-hero">
- <div><p class="page-eyebrow">CUSTOMER RELATIONSHIP / CAMPAIGN MANAGEMENT</p><h1>Marketing Center</h1><p>Build focused campaigns from your existing CRM. Select the audience, verify channel consent and review recipients before any export or send.</p></div>
+ <div><p class="page-eyebrow">CUSTOMER RELATIONSHIP / CAMPAIGN MANAGEMENT</p><h1>Marketing Center</h1><p>Write the email, choose the recipients and send directly from the Halal Food Gmail account.</p></div>
  <div class="hf-marketing-hero-actions"><span class="hf-marketing-live"><i></i> CRM connected</span><button class="hf-button hf-button-secondary" data-marketing-refresh type="button">↻ Refresh data</button></div>
 </header>
-<div class="hf-marketing-policy"><span aria-hidden="true">ⓘ</span><div><strong>Controlled sending is enabled.</strong> Only active, non-blocked customers with recorded consent for the selected channel can be included. WhatsApp exports a checked worklist and individual chat links; it cannot import contacts into Broadcast Lists or send messages automatically. WhatsApp Broadcast Lists must be created manually in the phone app. Email campaigns use the Halal Food Gmail account. Only customers with recorded email marketing consent can receive messages; Google OAuth is currently in Testing mode.</div></div>
+<div class="hf-marketing-policy"><span aria-hidden="true">ⓘ</span><div><strong>Quick email sending is enabled.</strong> Eligible active customers are pre-selected. Review the names, write your subject and message, then send directly through the Halal Food Gmail account. Unsubscribe requests are always respected.</div></div>
 <section class="hf-marketing-stats" aria-label="Marketing overview">
  <article class="hf-marketing-stat"><span>Active CRM customers</span><strong id="marketingStatsActive">—</strong><small>Not blocked, archived or anonymized</small></article>
  <article class="hf-marketing-stat"><span>WhatsApp consent</span><strong id="marketingStatsWhatsApp">—</strong><small>Recorded WhatsApp opt-ins</small></article>
@@ -32,31 +32,28 @@
    <section class="hf-card hf-marketing-card">
     <div class="hf-marketing-section-head"><div><p class="hf-marketing-eyebrow">01 / CAMPAIGN SETUP</p><h2>Choose your channel and message</h2><p>One campaign is created for one channel, with a saved audience snapshot.</p></div><span class="hf-marketing-step">01</span></div>
     <div class="hf-marketing-channel-picker" role="group" aria-label="Communication channel">
-     <button type="button" class="is-active" data-marketing-channel="whatsapp"><span class="hf-channel-icon hf-channel-whatsapp">◔</span><span><strong>WhatsApp</strong><small>CSV handoff · No WhatsApp API</small></span><i>✓</i></button>
-     <button type="button" data-marketing-channel="email"><span class="hf-channel-icon hf-channel-email">✉</span><span><strong>Email</strong><small>Gmail API · Halal Food sender</small></span><i>✓</i></button>
+     <button type="button" data-marketing-channel="whatsapp"><span class="hf-channel-icon hf-channel-whatsapp">◔</span><span><strong>WhatsApp</strong><small>CSV handoff · No WhatsApp API</small></span><i>✓</i></button>
+     <button type="button" class="is-active" data-marketing-channel="email"><span class="hf-channel-icon hf-channel-email">✉</span><span><strong>Email</strong><small>Gmail API · Halal Food sender</small></span><i>✓</i></button>
     </div>
-    <div class="hf-marketing-channel-note" id="marketingChannelNote">CSV is a consent-checked worklist, not a WhatsApp import file. Create the Broadcast List manually in the WhatsApp Business phone app; or use each row's personal chat link to send one-to-one.</div>
+    <div class="hf-marketing-channel-note" id="marketingChannelNote">Write the subject and email, choose recipients (eligible contacts are pre-selected), then press Send email now.</div>
     <div class="hf-marketing-form-grid">
-     <label class="hf-marketing-field hf-marketing-field-wide"><span>Campaign name</span><input id="mktCampaignName" class="hf-input" maxlength="120" placeholder="e.g. VIP Eid special offer" required></label>
-     <label class="hf-marketing-field hf-marketing-field-wide" id="mktEmailFields" hidden><span>Email subject</span><input id="mktCampaignSubject" class="hf-input" maxlength="180" placeholder="Your exclusive Halal Food offer"></label>
-     <label class="hf-marketing-field hf-marketing-field-wide"><span>Message content</span><textarea id="mktCampaignMessage" class="hf-input" rows="5" maxlength="4000" placeholder="Write your promotion. Use {{name}} to personalize the customer's name." required></textarea><small>Email supports <code>{{name}}</code> and <code>{{segment}}</code>. A WhatsApp Broadcast List sends the same text to everyone; its CSV also includes per-customer chat links for manual one-to-one messages.</small></label>
+     <input id="mktCampaignName" type="hidden" value="">
+     <label class="hf-marketing-field hf-marketing-field-wide" id="mktEmailFields"><span>Email subject</span><input id="mktCampaignSubject" class="hf-input" maxlength="180" placeholder="Your exclusive Halal Food offer"></label>
+     <label class="hf-marketing-field hf-marketing-field-wide"><span>Email message</span><textarea id="mktCampaignMessage" class="hf-input" rows="6" maxlength="4000" placeholder="Write your email. Use {{name}} to personalize the customer's name." required></textarea><small>You can use <code>{{name}}</code> and <code>{{segment}}</code>. The campaign name is generated automatically from the subject.</small></label>
     </div>
    </section>
 
    <section class="hf-card hf-marketing-card">
-    <div class="hf-marketing-section-head"><div><p class="hf-marketing-eyebrow">02 / AUDIENCE BUILDER</p><h2>Find the right customers</h2><p>Use CRM tiers and order behaviour. Consent and contact availability are checked automatically.</p></div><span class="hf-marketing-step">02</span></div>
+    <div class="hf-marketing-section-head"><div><p class="hf-marketing-eyebrow">02 / RECIPIENTS</p><h2>Choose customers</h2><p>Eligible email recipients are pre-selected. Untick anyone you do not want to include.</p></div><span class="hf-marketing-step">02</span></div>
     <div class="hf-marketing-filters">
-     <label class="hf-marketing-field"><span>Customer segment</span><select id="mktSegment" class="hf-select"><option value="all">All active customers</option><option value="new">New customers</option><option value="regular">Regular customers</option><option value="special">Special customers</option><option value="vip">VIP customers</option><option value="friend">Friend customers</option></select></label>
-     <label class="hf-marketing-field"><span>Minimum qualifying orders</span><input id="mktMinOrders" class="hf-input" type="number" min="0" step="1" placeholder="Any"></label>
-     <label class="hf-marketing-field"><span>Maximum qualifying orders</span><input id="mktMaxOrders" class="hf-input" type="number" min="0" step="1" placeholder="Any"></label>
-     <label class="hf-marketing-field"><span>Last order activity</span><select id="mktLastOrder" class="hf-select"><option value="all">Any activity</option><option value="30">Ordered in last 30 days</option><option value="60">Ordered in last 60 days</option><option value="90">Ordered in last 90 days</option><option value="inactive90">No order in 90+ days</option><option value="never">Never ordered</option></select></label>
-     <label class="hf-marketing-field hf-marketing-search"><span>Search customers</span><input id="mktAudienceSearch" class="hf-input" type="search" placeholder="Name, phone or email"></label>
+     <label class="hf-marketing-field hf-marketing-search"><span>Search by name or email</span><input id="mktAudienceSearch" class="hf-input" type="search" placeholder="Name or email"></label>
+     <div hidden><select id="mktSegment" class="hf-select"><option value="all" selected>All active customers</option></select><input id="mktMinOrders" type="number" value=""><input id="mktMaxOrders" type="number" value=""><select id="mktLastOrder"><option value="all" selected>Any activity</option><option value="30">30</option><option value="60">60</option><option value="90">90</option><option value="inactive90">inactive90</option><option value="never">never</option></select></div>
     </div>
     <div class="hf-marketing-audience-summary">
      <div><strong id="mktAudienceCount">—</strong><span>matching CRM records</span></div>
      <div><strong id="mktEligibleCount">—</strong><span>eligible for this channel</span></div>
      <div><strong id="mktSelectedCount">0</strong><span>selected recipients</span></div>
-     <div class="hf-marketing-audience-actions"><button id="mktSelectAll" class="hf-button hf-button-secondary hf-button-small" type="button">Select eligible matches</button><button id="mktClearSelection" class="hf-button hf-button-quiet hf-button-small" type="button">Clear selection</button></div>
+     <div class="hf-marketing-audience-actions"><button id="mktSelectAll" class="hf-button hf-button-secondary hf-button-small" type="button">Select all eligible</button><button id="mktClearSelection" class="hf-button hf-button-quiet hf-button-small" type="button">Clear selection</button></div>
     </div>
     <div class="hf-marketing-table-wrap" role="region" aria-label="Customer audience" tabindex="0">
      <table class="hf-marketing-table"><thead><tr><th class="hf-check-col"></th><th>Customer</th><th>Segment / orders</th><th>Contact</th><th>Permission</th></tr></thead><tbody id="mktAudienceBody"><tr><td colspan="5" class="hf-marketing-muted">Loading CRM audience…</td></tr></tbody></table>
@@ -69,12 +66,12 @@
   <aside class="hf-marketing-side">
    <section class="hf-card hf-marketing-card hf-marketing-review">
     <p class="hf-marketing-eyebrow">03 / REVIEW BEFORE ACTION</p><h2>Campaign safety check</h2>
-    <div class="hf-marketing-review-row"><span>Channel</span><strong id="mktReviewChannel">WhatsApp</strong></div>
+    <div class="hf-marketing-review-row"><span>Channel</span><strong id="mktReviewChannel">Email</strong></div>
     <div class="hf-marketing-review-row"><span>Eligible audience</span><strong id="mktReviewEligible">—</strong></div>
     <div class="hf-marketing-review-row"><span>Selected audience</span><strong id="mktReviewSelected">0</strong></div>
     <div class="hf-marketing-review-row"><span>Consent requirement</span><strong class="hf-review-ok">Required</strong></div>
-    <div class="hf-marketing-review-note" id="mktReviewNote">WhatsApp sends are not triggered here. Export is created only after a final consent re-check.</div>
-    <button id="mktSaveDraft" class="hf-button hf-button-primary hf-marketing-primary-action" type="button">Save campaign &amp; audience</button>
+    <div class="hf-marketing-review-note" id="mktReviewNote">Ready to send to selected email recipients. Eligibility is checked again by the server.</div>
+    <button id="mktSaveDraft" class="hf-button hf-button-primary hf-marketing-primary-action" type="button">Send email now</button>
     <div id="mktDraftFeedback" class="hf-marketing-feedback" aria-live="polite"></div>
    </section>
    <section class="hf-card hf-marketing-card hf-marketing-setup">
@@ -92,7 +89,7 @@
 
 <section class="hf-marketing-panel" data-marketing-panel="consent" hidden>
  <section class="hf-card hf-marketing-card">
-  <div class="hf-marketing-section-head"><div><p class="hf-marketing-eyebrow">CUSTOMER PERMISSIONS</p><h2>Audience &amp; consent management</h2><p>Record permission separately for WhatsApp and Email. An order phone number or email address is not marketing consent.</p></div><span class="hf-marketing-step">04</span></div>
+  <div class="hf-marketing-section-head"><div><p class="hf-marketing-eyebrow">CUSTOMER PERMISSIONS</p><h2>Customer contact permissions</h2><p>Manage email and WhatsApp preferences. Unsubscribe requests are saved and excluded from future campaigns.</p></div><span class="hf-marketing-step">04</span></div>
   <div class="hf-marketing-consent-callout"><strong>Evidence is required for every new opt-in.</strong> Record the actual source and a short evidence reference (for example, website signup checkbox and date). Never mark permission as granted without customer approval.</div>
   <div class="hf-marketing-toolbar"><input id="mktConsentSearch" class="hf-input" type="search" placeholder="Search customer name, phone or email"><span id="mktConsentCount" class="hf-marketing-muted">—</span></div>
   <div class="hf-marketing-table-wrap" role="region" aria-label="Customer marketing permissions" tabindex="0">
@@ -120,5 +117,5 @@
  <div class="hf-dialog-actions"><button type="button" id="mktConsentCancel" class="hf-button hf-button-secondary">Cancel</button><button type="submit" id="mktConsentSave" class="hf-button hf-button-primary">Save permission record</button></div>
 </form></dialog>
 </main></div>
-<script defer src="./i18n.js?v=20261031-coupons-v1"></script><script defer src="./shared.js?v=20261031-marketing-v2"></script><script defer src="./marketing-center.js?v=20261031-gmail-api-v1"></script><script defer src="./app.js?v=20261031-marketing-v2"></script>
+<script defer src="./i18n.js?v=20261031-coupons-v1"></script><script defer src="./shared.js?v=20261031-marketing-v2"></script><script defer src="./marketing-center.js?v=20261031-one-click-v1"></script><script defer src="./app.js?v=20261031-marketing-v2"></script>
 </body></html>
