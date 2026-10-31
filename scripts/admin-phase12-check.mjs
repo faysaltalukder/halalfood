@@ -149,7 +149,7 @@ const productsPage = read("admin/products.html");
 const productsCss = read("admin/products.css");
 const shippingWeightMigration = read("supabase/migrations/20261030160000_add_shipping_weight_bulk_order_workflows.sql");
 const financeDeleteMigration = read("supabase/migrations/20261030161000_protect_financially_referenced_bulk_deletions.sql");
-assert.ok(productsPage.includes('products.css?v=20261030-shipping-weight-v1'), "Product shipping-weight editor CSS must be cache-busted.");
+assert.ok(productsPage.includes('products.css?v=20261031-products-workspace-v1'), "Product workspace stylesheet must be cache-busted.");
 assert.ok(productsPage.includes('app.js?v=20261030-bulk-manager-v3'), "Product shipping-weight editor must load the updated admin script.");
 assert.ok(productsPage.includes('id="productShippingWeight"'), "Product editor needs a numeric shipping weight field.");
 assert.ok(productsPage.includes("<th>Ship weight</th>"), "Product table must expose the shipping weight column.");
