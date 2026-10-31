@@ -19,7 +19,7 @@ window.HFMarketingInit=async function(){
  const H=window.HFAdmin;if(!H)throw new Error("Admin session is not ready.");
  const {client,ADMIN_EMAIL,esc,dateTime,toast,audit,downloadFile,csvText}=H;
  const PAGE_SIZE=30,LOAD_SIZE=500,MAX_CUSTOMERS=30000;
- let customers=[],preferences=new Map(),campaigns=[],channel="whatsapp",activeTab="compose",selected=new Set(),audiencePage=0,consentPage=0,emailProvider={configured:false,from:"",missing:[]},savedCampaignId=null;
+ let customers=[],preferences=new Map(),campaigns=[],segmentRules=[],channel="whatsapp",activeTab="compose",selected=new Set(),audiencePage=0,consentPage=0,emailProvider={configured:false,from:"",missing:[]},savedCampaignId=null;
  const cols="id,name,phone,email,created_at,is_blocked,archived_at,anonymized_at,total_orders,delivered_orders,recorded_order_value,last_order_at,qualifying_orders,segment_code,segment_name,segment_color,has_friend_tag";
  const number=n=>Number(n||0).toLocaleString("en-BD");
  const validEmail=v=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v||"").trim());
@@ -32,6 +32,16 @@ window.HFMarketingInit=async function(){
  const safeName=c=>String(c.name||"Customer").trim()||"Customer";
  const personalize=(body,c)=>String(body||"").replace(/\{\{\s*name\s*\}\}/gi,safeName(c)).replace(/\{\{\s*segment\s*\}\}/gi,String(c.segment_name||"Customer"));
  const getFilterState=()=>({segment:$("mktSegment").value,minOrders:$("mktMinOrders").value,maxOrders:$("mktMaxOrders").value,lastOrder:$("mktLastOrder").value,search:$("mktAudienceSearch").value.trim(),channel});
+ async function loadSegmentRules(){
+  const {data,error}=await client.from("customer_segment_rules").select("code,name,sort_order,is_active").eq("is_active",true).order("sort_order",{ascending:true}).order("name",{ascending:true});
+  if(error)throw error;
+  segmentRules=data||[];
+  const select=$("mktSegment"),current=select.value;
+  select.innerHTML='<option value="all">All active customers</option>'+
+   segmentRules.map(rule=>'<option value="'+esc(rule.code)+'">'+esc(rule.name)+'</option>').join("")+
+   '<option value="friend">Friend customers</option>';
+  select.value=segmentRules.some(rule=>rule.code===current)||current==="friend"?"all"===current?"all":current:"all";
+ }
  async function loadCustomers(){
   const rows=[];let offset=0;
   while(offset<MAX_CUSTOMERS){
@@ -311,7 +321,7 @@ window.HFMarketingInit=async function(){
   }finally{button.disabled=false;}
  }
  async function refreshAll(){
-  await loadCustomers();await loadCampaigns();await checkEmailProvider();
+  await loadSegmentRules();await loadCustomers();await loadCampaigns();await checkEmailProvider();
   renderAudience();renderConsent();renderHistory();
  }
  document.querySelectorAll("[data-marketing-tab]").forEach(b=>b.addEventListener("click",()=>switchTab(b.dataset.marketingTab)));
