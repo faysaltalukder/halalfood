@@ -10,6 +10,7 @@ window.HALAL_STORE_CONFIG = Object.freeze({
   storeName: "Halal Food",
   siteRoot: "https://faysaltalukder.github.io/halalfood/",
   adminEmail: "halalfoodbd.official@gmail.com",
+  contact: Object.freeze({ whatsappNumber: "8801842031164" }),
   supabase: Object.freeze({
     url: "https://qfwvrcfkrsydycbfjsxf.supabase.co",
     publishableKey: "sb_publishable_X32Rb8W-axGIfgFuppdfZQ_jbc38pcL"
