@@ -83,6 +83,7 @@ window.HFPosInit = async function () {
   renderHistory(p);
  }
  function updateCurrentLineTotal(){
+  if(entryMode==="delivery"){renderCart();return;}
   const qty=Number($("posSaleQuantity").value||0),price=Number($("posSaleUnitPrice").value||0);
   $("posSaleTotal").textContent=money(qty>0&&price>0?qty*price:0);
   $("posSaleCalculation").textContent=quantityText(qty)+" × "+money(price);
@@ -276,8 +277,10 @@ window.HFPosInit = async function () {
   const provider=$("posCourierProvider").value,weight=$("posCourierWeight").value?Number($("posCourierWeight").value):null;
   const fee=Number($("posCourierFee").value||0),notes=$("posOrderNotes").value.trim();
   if(name.length<2){setMessage("Enter the customer's name.");return;}
+  if(provider&&name.length<3){setMessage("Courier booking requires a customer name with at least 3 characters.");return;}
   if(phone===null||!phone){setMessage("Enter a valid 11-digit Bangladesh mobile number.");return;}
   if(address.length<10){setMessage("Enter the complete delivery address, including area/upazila and district.");return;}
+  if(provider==="pathao"&&address.length>220){setMessage("Pathao delivery addresses must be 220 characters or fewer. Shorten the address without removing its area/district.");return;}
   if(!["whatsapp","phone","facebook","other"].includes(channel)){setMessage("Choose how the customer placed the order.");return;}
   if(!Number.isFinite(delivery)||delivery<0||delivery>100000){setMessage("Enter a valid delivery charge.");return;}
   if(!paymentMethods.has(method)){setMessage("Choose a valid payment method.");return;}
