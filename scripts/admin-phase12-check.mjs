@@ -13,7 +13,8 @@ const read = (path) => readFileSync(join(root, path), "utf8");
 
 const htmlFiles = readdirSync(adminDir).filter((file) => file.endsWith(".html"));
 const unifiedPages = htmlFiles.filter((file) => /<body[^>]*\bdata-page=/.test(read(join("admin", file))));
-assert.equal(unifiedPages.length, 18, `Expected 18 unified admin pages, found ${unifiedPages.length}.`);
+assert.equal(unifiedPages.length, 19, `Expected 19 unified admin pages, found ${unifiedPages.length}.`);
+assert.ok(unifiedPages.includes("pos.html"), "POS import must use the unified admin shell.");
 
 for (const file of unifiedPages) {
   const source = read(join("admin", file));

@@ -11,6 +11,7 @@ on:
       - "supabase/functions/site-publisher/**"
       - "supabase/migrations/**"
       - "scripts/admin-phase12-check.mjs"
+      - "scripts/admin-pos-check.mjs"
       - ".github/workflows/admin-phase12-integrity.yml"
   pull_request:
     paths:
@@ -50,3 +51,5 @@ jobs:
           deno check supabase/functions/site-publisher/index.ts
       - name: Run final admin quality checks
         run: node scripts/admin-phase12-check.mjs
+      - name: Run POS import contract checks
+        run: node scripts/admin-pos-check.mjs
