@@ -73,12 +73,12 @@ window.HFMarketingInit=async function(){
   try{
    const {data,error}=await client.functions.invoke("marketing-email",{body:{action:"status"}});
    if(error||!data){emailProvider={configured:false,from:"",missing:["Gmail connection status unavailable"],providerNote:""};return;}
-   emailProvider={configured:!!data.configured,from:String(data.sender||""),missing:Array.isArray(data.missing)?data.missing:[],providerNote:String(data.providerNote||"")};
+   emailProvider={configured:!!data.configured,from:String(data.sender||""),missing:Array.isArray(data.missing)?data.missing:[],providerNote:String(data.providerNote||""),error:String(data.error||"")};
   }catch(_){emailProvider={configured:false,from:"",missing:[],providerNote:""};}
   const dot=$("mktEmailReadyDot"),title=$("mktEmailReadyText"),detail=$("mktEmailReadyDetail"),hint=$("mktEmailProviderHint");
   if(dot)dot.className="hf-readiness-dot "+(emailProvider.configured?"is-ready":"is-pending");
   if(title)title.textContent=emailProvider.configured?"Gmail API connected":"Gmail connection needs attention";
-  if(detail)detail.textContent=emailProvider.configured?"Halal Food sender: "+emailProvider.from:"Missing: "+(emailProvider.missing.length?emailProvider.missing.join(", "):"Gmail OAuth configuration")+"; check Supabase Edge Function secrets.";
+  if(detail)detail.textContent=emailProvider.configured?"Halal Food sender verified: "+emailProvider.from:(emailProvider.error?"Connection check failed: "+emailProvider.error:"Missing: "+(emailProvider.missing.length?emailProvider.missing.join(", "):"Gmail OAuth configuration")+"; check Supabase Edge Function secrets.");
   if(hint)hint.textContent=emailProvider.configured?(emailProvider.providerNote+" Only active customers with recorded email opt-in can receive campaigns. Gmail acceptance is not proof of inbox placement or reading."):"Gmail is not ready. No email will be sent until the OAuth credentials are available; CSV export remains restricted to a consent-checked audience.";
  }
  function matchingCustomers(){
