@@ -5,7 +5,7 @@ try{
  document.documentElement.dataset.adminTheme=savedTheme==="dark"?"dark":"light";
 }catch(_themeError){document.documentElement.dataset.adminTheme="light";}
 const STORE_CONFIG=window.HALAL_STORE_CONFIG||{};
-const SUPABASE_URL=String(STORE_CONFIG.supabase?.url||"https://qfwvrcfkrsydycbfjsxf.supabase.co").replace(/\\/$/,"");
+const SUPABASE_URL=String(STORE_CONFIG.supabase?.url||"https://qfwvrcfkrsydycbfjsxf.supabase.co").replace(/\/$/,"");
 const SUPABASE_KEY=STORE_CONFIG.supabase?.publishableKey||"sb_publishable_X32Rb8W-axGIfgFuppdfZQ_jbc38pcL";
 const ADMIN_EMAIL=STORE_CONFIG.adminEmail||"halalfoodbd.official@gmail.com";
 const adminApp=document.getElementById("adminApp");
