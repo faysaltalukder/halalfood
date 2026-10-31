@@ -30,7 +30,7 @@
   <label class="catalog-toolbar-field"><span>Sort products in</span><select class="hf-select" id="sortMode"><option value="category">Selected category</option><option value="home">Homepage</option></select></label>
   <label class="catalog-toolbar-field" id="sortCategoryWrap"><span>Category</span><select class="hf-select" id="sortCategory"><option value="">Loading categories…</option></select></label>
   <input class="hf-input" id="productSortSearch" type="search" placeholder="Search products…" aria-label="Search products in this list">
-  <span class="catalog-saving-note" id="productSortStatus" role="status">Drag to reorder · changes save after drop.</span>
+  <button class="hf-button hf-button-secondary hf-button-small" id="undoProductOrder" type="button" hidden>↶ Undo last reorder</button><span class="catalog-saving-note" id="productSortStatus" role="status">Drag to reorder · changes save after drop.</span>
  </div>
  <div class="catalog-sort-legend"><span><span class="catalog-dot visible"></span> Visible</span><span><span class="catalog-dot hidden"></span> Hidden</span><span>Use the handle or Up / Down controls on touch devices.</span></div>
  <div id="productSortList" class="product-sort-list"><div class="hf-loading">Loading products…</div></div>
