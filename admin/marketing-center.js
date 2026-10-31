@@ -190,7 +190,7 @@ window.HFMarketingInit=async function(){
   switchTab("history");
  }
  async function exportCampaign(id){
-  const {data:campaign,error:campaignError}=await client.from("marketing_campaigns").select("id,name,channel,message_body,status").eq("id",id).single();
+  const {data:campaign,error:campaignError}=await client.from("marketing_campaigns").select("id,name,channel,subject,message_body,status").eq("id",id).single();
   if(campaignError)throw campaignError;
   const {data:recipients,error}=await client.from("marketing_campaign_recipients").select("id,customer_id,status").eq("campaign_id",id).in("status",["selected","exported"]).order("created_at",{ascending:true}).limit(10000);
   if(error)throw error;
