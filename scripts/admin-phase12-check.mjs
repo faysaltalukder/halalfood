@@ -13,10 +13,24 @@ const read = (path) => readFileSync(join(root, path), "utf8");
 
 const htmlFiles = readdirSync(adminDir).filter((file) => file.endsWith(".html"));
 const unifiedPages = htmlFiles.filter((file) => /<body[^>]*\bdata-page=/.test(read(join("admin", file))));
-assert.equal(unifiedPages.length, 29, `Expected 29 unified admin pages after adding Supplier Management, found ${unifiedPages.length}.`);
+assert.equal(unifiedPages.length, 33, `Expected 33 unified admin pages after adding Categories Management, found ${unifiedPages.length}.`);
 assert.ok(unifiedPages.includes("pos.html"), "POS import must use the unified admin shell.");
 assert.ok(unifiedPages.includes("coupons.html"), "Coupon Promotions must use the unified admin shell.");
 assert.ok(unifiedPages.includes("coupon-usage.html"), "Coupon Usage must use the unified admin shell.");
+assert.ok(unifiedPages.includes("categories.html"), "Categories workspace hub must use the unified admin shell.");
+for (const page of ["categories-tree.html","categories-sorting.html","categories-settings.html"]) {
+  assert.ok(unifiedPages.includes(page), "Categories child route is missing: " + page);
+}
+const categoriesNav = read("admin/shared.js");
+const categoriesUi = read("admin/categories.js");
+const categoriesLive = read("js/live-catalog.js");
+const categoriesMigration = read("supabase/migrations/20261031165140_add_reusable_three_level_catalog_management.sql");
+assert.ok(categoriesNav.includes('["categories","layers","Categories"') && categoriesNav.includes('"categories-tree","layers","Category Structure"') && categoriesNav.includes('"categories-sorting","products","Product Sorting"') && categoriesNav.includes('"categories-settings","settings","Catalog Settings"'), "Admin sidebar must expose all three Categories child routes.");
+assert.ok(categoriesUi.includes("admin_reorder_categories") && categoriesUi.includes("admin_reorder_products") && categoriesUi.includes("admin_reorder_home_products"), "Categories workspace must use atomic server-side order operations.");
+assert.ok(categoriesUi.includes("data-cat-add-child") && categoriesUi.includes("validateCategoryMove") && categoriesUi.includes("undoLastOrder"), "Category hierarchy, safe parent moves and one-step sorting undo must be present.");
+assert.ok(categoriesUi.includes("quickProductForm") && categoriesUi.includes("quickProductCategory"), "Product sorting workspace must include quick product editing and category moves.");
+assert.ok(categoriesLive.includes("effectiveCategoryActive") && categoriesLive.includes("home_sort_order") && categoriesLive.includes("live-category-children"), "The public storefront must render the active hierarchy and independent homepage position.");
+assert.ok(categoriesMigration.includes("parent_id") && categoriesMigration.includes("admin_reorder_home_products") && categoriesMigration.includes("validate_category_hierarchy"), "Catalog migration must include the hierarchy constraint and reorder RPCs.");
 const couponsPage = read("admin/coupons.html");
 const couponsApp = read("admin/coupons.js");
 const couponsMigration = read("supabase/migrations/20261031140000_add_coupon_management_system.sql");
