@@ -176,7 +176,7 @@ window.HFPosInit = async function () {
   $("posReadyValue").textContent=money(ready.reduce((sum,g)=>sum+g.total,0));
   $("posPreviewDescription").textContent=draftSales.length.toLocaleString("en-BD")+" unique sales · "+draftSales.reduce((sum,g)=>sum+g.items.length,0).toLocaleString("en-BD")+" matched item rows · "+fatalRows.length+" ungrouped invalid row(s).";
   $("posPreviewBody").innerHTML=draftSales.length?draftSales.map(g=>{
-   const status=g.status==="ready"?'<span class="pos-preview-status pos-preview-ready">Ready</span>':g.status==="duplicate"?'<span class="pos-preview-status pos-preview-duplicate">Already imported</span>':'<span class="pos-preview-status pos-preview-error">Needs correction</span>';
+   const status=g.status==="ready"?'<span class="pos-preview-status pos-preview-ready">Ready</span>':g.status==="duplicate"?'<span class="pos-preview-status pos-preview-duplicate">Already imported</span>':g.status==="imported"?'<span class="pos-preview-status pos-preview-imported">Imported</span>':'<span class="pos-preview-status pos-preview-error">Needs correction</span>';
    return '<tr><td><span class="pos-ref">'+esc("POS-"+g.sale_reference)+'</span><small>CSV rows '+esc(g.lines.join(", "))+'</small></td><td>'+esc(g.sale_date||"—")+'</td><td>'+esc(g.customer_name||"Walk-in Customer")+'<small>'+esc(g.customer_phone||"No phone")+'</small></td><td>'+g.items.length+' item row(s)</td><td>'+esc(paymentLabel(g.payment_method))+'<small>'+(g.payment_received?"Marked received":"Not received · draft")+'</small></td><td class="pos-money">'+money(g.total)+'</td><td>'+status+'</td></tr>';
   }).join(""):'<tr><td colspan="7">No valid sale rows were found.</td></tr>';
   const errorList=[...fatalRows,...bad.flatMap(g=>g.errors.map(err=>"POS-"+g.sale_reference+": "+err))];
@@ -216,10 +216,11 @@ window.HFPosInit = async function () {
      if(error)throw new Error(error.message||"Server rejected this sale.");
      if(data?.success!==true)throw new Error(data?.error||"The server did not confirm the import.");
      if(data.duplicate){results.push({ref:g.sale_reference,status:"duplicate",text:"Already imported — skipped."});g.status="duplicate";continue;}
-     await audit("offline_pos_sale_imported","order",data.orderId,"Offline POS sale imported",{order_number:data.orderNumber,total:data.total,items:data.itemsCount,stock_adjusted:data.stockAdjusted,finance_status:data.financeStatus});
+     try{await audit("offline_pos_sale_imported","order",data.orderId,"Offline POS sale imported",{order_number:data.orderNumber,total:data.total,items:data.itemsCount,stock_adjusted:data.stockAdjusted,finance_status:data.financeStatus});}
+     catch(auditError){console.warn("POS sale saved, but its separate activity-log entry failed.",auditError);}
      results.push({ref:g.sale_reference,status:"success",text:data.orderNumber+" · "+money(data.total)+" · Finance "+data.financeStatus+"."});
      g.status="imported";
-    }catch(err){results.push({ref:g.sale_reference,status:"error",text:err.message||"Import failed."});}
+    }catch(err){g.status="error";g.errors.push(err.message||"Import failed.");results.push({ref:g.sale_reference,status:"error",text:err.message||"Import failed."});}
    }
    isImported=true;
    $("posImportResults").hidden=false;
