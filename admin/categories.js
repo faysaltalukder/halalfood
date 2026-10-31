@@ -97,7 +97,7 @@ window.HFAdminReady.then(async H => {
   const childCount=childrenOf(category.id).length;
   return '<article class="catalog-tree-node catalog-explorer-row" data-node-id="'+esc(category.id)+'">'+
    '<div class="catalog-tree-row" draggable="'+String(canReorder)+'" data-category-id="'+esc(category.id)+'" data-parent-id="'+esc(category.parent_id||"")+'">'+
-    '<span class="catalog-tree-grip" aria-hidden="true" title="Drag to reorder">⠿</span>'+
+    '<span class="catalog-tree-grip" data-touch-drag-handle aria-hidden="true" title="Hold and drag to reorder">⠿</span>'+
     image+
     '<div class="catalog-tree-info"><div class="catalog-tree-title"><strong>'+esc(category.name)+'</strong><span class="catalog-tree-level">'+(depth===1?"মূল ক্যাটাগরি":depth===2?"সাব-ক্যাটাগরি":"চাইল্ড ক্যাটাগরি")+'</span></div>'+
      '<small>/'+esc(category.slug)+' · '+directCount+'টি সরাসরি পণ্য · '+childCount+'টি সাব-ক্যাটাগরি</small></div>'+
@@ -156,7 +156,7 @@ window.HFAdminReady.then(async H => {
  }
  function productRowMarkup(product,index,total,canDrag){
   return '<article class="product-sort-item" draggable="'+String(canDrag)+'" data-product-id="'+esc(product.id)+'">'+
-   '<span class="product-sort-grip" aria-hidden="true" title="Drag to reorder">⠿</span>'+
+   '<span class="product-sort-grip" data-touch-drag-handle aria-hidden="true" title="Hold and drag to reorder">⠿</span>'+
    (product.image_url?'<img class="product-sort-image" src="'+esc(product.image_url)+'" alt="" loading="lazy">':'<span class="product-sort-image product-sort-image-empty">No image</span>')+
    '<div class="product-sort-main"><strong>'+esc(product.name)+'</strong><small>'+esc(product.sku||product.slug)+' · '+esc(categoryPath(categoryBySlug(product.category_slug)||{name:product.category||"Unassigned"}))+'</small><div class="product-sort-meta"><span class="product-sort-price">'+esc(product.display_price||money(product.price))+'</span><span class="hf-status '+(product.is_active?"hf-status-active":"hf-status-hidden")+'">'+(product.is_active?"Visible":"Hidden")+'</span>'+(product.is_featured?'<span class="hf-status hf-status-review">Featured</span>':"")+'</div></div>'+
    '<div class="product-sort-actions"><button type="button" class="catalog-mini-button" data-product-up="'+esc(product.id)+'" '+(index===0||!canDrag?"disabled":"")+' aria-label="Move '+esc(product.name)+' up">↑ উপরে</button><button type="button" class="catalog-mini-button" data-product-down="'+esc(product.id)+'" '+(index===total-1||!canDrag?"disabled":"")+' aria-label="Move '+esc(product.name)+' down">↓ নিচে</button><button type="button" class="catalog-mini-button" data-product-edit="'+esc(product.id)+'">সম্পাদনা</button></div></article>';
@@ -181,7 +181,7 @@ window.HFAdminReady.then(async H => {
   const search=String($("productSortSearch")?.value||"").toLowerCase().trim();
   const filtered=search?all.filter(p=>(p.name+" "+p.slug+" "+(p.sku||"")).toLowerCase().includes(search)):all;
   const canDrag=!search;
-  list.innerHTML=filtered.length?filtered.map((p,i)=>productRowMarkup(p,i,filtered.length,canDrag)).join():"";
+  list.innerHTML=filtered.length?filtered.map((p,i)=>productRowMarkup(p,i,filtered.length,canDrag)).join(""):"";
   $("productSortEmpty").hidden=!!filtered.length;
   $("sortingVisibleCount").textContent=String(all.length);
   $("sortingActiveCount").textContent=String(all.filter(p=>p.is_active).length);
@@ -212,6 +212,7 @@ window.HFAdminReady.then(async H => {
   const siblings=childrenOf(item.parent_id||null),ids=siblings.map(c=>c.id),from=ids.indexOf(id);
   let to=typeof directionOrTarget==="number"?from+directionOrTarget:ids.indexOf(directionOrTarget);
   if(from<0||to<0||to>=ids.length||from===to)return;
+  if(typeof directionOrTarget!=="number"&&from<to)to--;
   const previousIds=ids.slice();const [moved]=ids.splice(from,1);ids.splice(to,0,moved);
   await persistCategoryOrder(item.parent_id||null,ids,previousIds,true);
  }
@@ -254,9 +255,9 @@ window.HFAdminReady.then(async H => {
   if(file.size>5*1024*1024)throw new Error("Image size must be 5 MB or less.");
   const ext={"image/jpeg":"jpg","image/png":"png","image/webp":"webp","image/avif":"avif"}[file.type];
   const path=folder+"/"+slug+"-"+Date.now()+"."+ext;
-  const {error}=await client.storage.from("store-content").upload(path,file,{cacheControl:"3600",upsert:false,contentType:file.type});
+  const {error}=await client.storage.from((window.HALAL_STORE_CONFIG?.storage?.publicContentBucket)||"store-content").upload(path,file,{cacheControl:"3600",upsert:false,contentType:file.type});
   if(error)throw error;
-  return client.storage.from("store-content").getPublicUrl(path).data.publicUrl;
+  return client.storage.from((window.HALAL_STORE_CONFIG?.storage?.publicContentBucket)||"store-content").getPublicUrl(path).data.publicUrl;
  }
  async function saveCategory(event){
   event.preventDefault();const button=$("saveCategoryBtn");button.disabled=true;
@@ -269,10 +270,12 @@ window.HFAdminReady.then(async H => {
    let image=$("categoryImageUrl").value.trim()||null;
    const uploaded=await uploadContentImage($("categoryImageFile"),"categories",slug);if(uploaded)image=uploaded;
    const old=id?categoryById(id):null;
+   const movedToNewParent=Boolean(old&&String(old.parent_id||"")!==String(parentId||""));
+   const nextParentOrder=childrenOf(parentId).filter(category=>category.id!==id).reduce((max,category)=>Math.max(max,orderOf(category)),0)+10;
    const row={name,slug,parent_id:parentId,description:$("categoryDescription").value.trim(),image_url:image,
     seo_title:$("categorySeoTitle").value.trim()||name+" | Halal Food",
     seo_description:$("categorySeoDescription").value.trim()||$("categoryDescription").value.trim().slice(0,155),
-    sort_order:Number($("categorySortOrder").value||0),is_active:$("categoryActive").checked,
+    sort_order:movedToNewParent?nextParentOrder:Number($("categorySortOrder").value||0),is_active:$("categoryActive").checked,
     cms_created:old?Boolean(old.cms_created):true,cms_managed:true,updated_at:new Date().toISOString()};
    const result=id?await client.from("categories").update(row).eq("id",id).select("id").single():await client.from("categories").insert(row).select("id").single();
    if(result.error)throw result.error;
@@ -326,6 +329,7 @@ window.HFAdminReady.then(async H => {
   const ids=list.map(p=>p.id),from=ids.indexOf(id);
   let to=typeof directionOrTarget==="number"?from+directionOrTarget:ids.indexOf(directionOrTarget);
   if(from<0||to<0||to>=ids.length||from===to)return;
+  if(typeof directionOrTarget!=="number"&&from<to)to--;
   const previousIds=ids.slice();const [moved]=ids.splice(from,1);ids.splice(to,0,moved);
   reorderStateProducts(ids,mode==="home"?"home_sort_order":"sort_order");renderSorting();
   await persistProductOrder(mode,slug,ids,previousIds,true);
@@ -381,6 +385,51 @@ window.HFAdminReady.then(async H => {
   }catch(error){setStatus("quickProductFormError",error.message||"Could not save product.",true);}
   finally{button.disabled=false;}
  }
+ function bindTouchReorder(container,rowSelector,idField,scopeField,reorder){
+  if(!container)return;
+  let drag=null;
+  const clear=()=>{
+   if(!drag)return;
+   drag.row?.classList.remove("is-dragging");
+   container.querySelectorAll(".is-drop-target").forEach(row=>row.classList.remove("is-drop-target"));
+   drag=null;
+   document.removeEventListener("pointermove",move,{passive:false});
+   document.removeEventListener("pointerup",finish);
+   document.removeEventListener("pointercancel",cancel);
+  };
+  const move=event=>{
+   if(!drag||event.pointerType!=="touch")return;
+   if(event.cancelable)event.preventDefault();
+   const target=document.elementFromPoint(event.clientX,event.clientY)?.closest(rowSelector);
+   container.querySelectorAll(".is-drop-target").forEach(row=>row.classList.remove("is-drop-target"));
+   if(!target||target===drag.row)return;
+   if(scopeField&&String(target.dataset[scopeField]||"")!==String(drag.scope||""))return;
+   target.classList.add("is-drop-target");
+   drag.target=target;
+  };
+  const finish=event=>{
+   if(!drag)return;
+   const target=drag.target;
+   const sourceId=drag.id;
+   const targetId=target?.dataset[idField];
+   const sameScope=!target||!scopeField||String(target.dataset[scopeField]||"")===String(drag.scope||"");
+   clear();
+   if(event.pointerType==="touch"&&targetId&&sourceId!==targetId&&sameScope)reorder(sourceId,targetId);
+  };
+  const cancel=()=>clear();
+  container.addEventListener("pointerdown",event=>{
+   if(event.pointerType!=="touch")return;
+   const handle=event.target.closest("[data-touch-drag-handle]");
+   const row=handle?.closest(rowSelector);
+   if(!row)return;
+   event.preventDefault();
+   drag={id:row.dataset[idField],scope:scopeField?row.dataset[scopeField]:"",row,target:null};
+   row.classList.add("is-dragging");
+   document.addEventListener("pointermove",move,{passive:false});
+   document.addEventListener("pointerup",finish);
+   document.addEventListener("pointercancel",cancel);
+  },{passive:false});
+ }
  function bindTreeDrag(){
   const tree=$("categoryTree");if(!tree)return;
   tree.addEventListener("dragstart",event=>{
@@ -402,6 +451,7 @@ window.HFAdminReady.then(async H => {
    await reorderCategory(dragged,dest.id);
   });
   tree.addEventListener("dragend",()=>{state.categoryDrag=null;tree.querySelectorAll(".is-dragging,.is-drop-target").forEach(x=>x.classList.remove("is-dragging","is-drop-target"));});
+  bindTouchReorder(tree,"[data-category-id]","categoryId","parentId",reorderCategory);
  }
  function bindProductDrag(){
   const list=$("productSortList");if(!list)return;
@@ -420,6 +470,7 @@ window.HFAdminReady.then(async H => {
    await reorderProduct(dragged,row.dataset.productId);
   });
   list.addEventListener("dragend",()=>{state.productDrag=null;list.querySelectorAll(".is-dragging,.is-drop-target").forEach(x=>x.classList.remove("is-dragging","is-drop-target"));});
+  bindTouchReorder(list,"[data-product-id]","productId",null,reorderProduct);
  }
  function setupEvents(){
   document.querySelectorAll("[data-catalog-refresh]").forEach(btn=>btn.addEventListener("click",()=>reload(true)));
@@ -433,8 +484,6 @@ window.HFAdminReady.then(async H => {
   $("categoryForm")?.addEventListener("submit",saveCategory);
   $("undoCategoryOrder")?.addEventListener("click",()=>undoLastOrder("category"));
   $("undoProductOrder")?.addEventListener("click",()=>undoLastOrder("product"));
-  $("sortMode")?.addEventListener("change",renderSorting);
-  $("sortCategory")?.addEventListener("change",renderSorting);
   $("productSortSearch")?.addEventListener("input",renderSorting);
   $("quickProductForm")?.addEventListener("submit",saveQuickProduct);
   $("categoryName")?.addEventListener("input",()=>{if(!$("categorySlug").readOnly)$("categorySlug").value=slugify($("categoryName").value);});
