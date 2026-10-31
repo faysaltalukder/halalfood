@@ -64,7 +64,7 @@ check(!barcodePage.includes('id="barcodeProductTable"'), "Barcode page must use 
 check(barcodePage.includes("20261031-barcode-simple-v2"), "Barcode page must use a fresh cache key for the corrected loader.");
 
 check(barcodeLogic.includes("barcodeScanInput"), "Barcode page must support scanner/keyboard SKU input.");
-check(barcodeLogic.includes("selected.name") && barcodeLogic.includes("selected.price"), "Barcode labels must show product identity and price.");
+check(barcodeLogic.includes("selected.name") && barcodeLogic.includes("moneyFor(selected)"), "Barcode labels must show product identity and current price.");
 check(publicLookup.includes('id="productLookup"') && lookupLogic.includes("price,display_price"), "Public QR lookup must show live product price and details.");
 check(lookupLogic.includes('is_active:"eq.true"'), "Public QR lookup must hide unpublished products.");
 check(!lookupLogic.includes("stock_quantity:product.stock_quantity"), "Public QR page must not expose exact inventory quantity.");
