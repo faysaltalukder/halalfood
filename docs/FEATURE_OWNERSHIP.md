@@ -19,6 +19,7 @@ The file is one IIFE that waits for `window.HFAdminReady`, receives shared servi
 | Product and category management | `initProducts()` | `uploadImage`, `stockState`, `fillCategories`, `render`, `refresh`, `inferShippingWeightFromUnit`, `openProduct`, `openCategory` |
 | Site content and blog CMS | `initContent()` | `siteUrl`, `renderBlocks`, `renderPosts`, `render`, `refresh`, `openSiteBlock`, `openPost` |
 | Customer directory | Customer page initializer | `normalizePhone`, `buildDirectory`, `render`, `refresh` |
+| Supplier management and procurement | `window.HFSupplierInit()` in `admin/supplier-management.js` | Supplier directory/profile, multi-product Purchase Order, GRN, supplier invoice, payment allocation, credit notes and Supplier Ledger |
 | Finance and reconciliation | `initFinance()` | `linkedIncomeTotal`, `renderReconciliation`, `totals`, `render`, `refresh`, `openEntry` |
 | Reports | `initReports()` | `buildReport` |
 | Settings and health | `initSettings()` | `healthCheck`, `loadActivity`, `refresh` |

@@ -3,6 +3,41 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const FEATURES = {
+  supplier_management: {
+    title: "Supplier management, procurement and payables",
+    purpose: "Supplier directory, multi-product purchase orders, goods received notes, supplier invoices, payments, credits and supplier ledger.",
+    readFirst: ["admin/supplier-add.html", "admin/supplier-management.js", "admin/supplier-purchases.html"],
+    files: [
+      "admin/supplier-add.html", "admin/supplier-purchases.html", "admin/supplier-payments.html",
+      "admin/supplier-management.js", "admin/supplier-workspace.css", "admin/shared.js", "admin/app.js",
+      "admin/operations.html", "admin/operations.js",
+      "supabase/migrations/20261031160318_supplier_procurement_payables_v1.sql",
+      "supabase/migrations/20261031160349_supplier_procurement_performance_hardening_v1.sql",
+      "supabase/migrations/20261031162000_supplier_ledger_integrity_v1.sql"
+    ],
+    anchors: [{ file: "admin/supplier-management.js", names: ["HFSupplierInit"] }],
+    tables: [
+      "admin_suppliers", "admin_purchase_orders", "admin_purchase_order_items",
+      "admin_purchase_receipts", "admin_purchase_receipt_items", "admin_supplier_bills",
+      "admin_supplier_payments", "admin_supplier_payment_allocations", "admin_supplier_credit_notes",
+      "admin_supplier_ledger_adjustments", "admin_supplier_ledger", "admin_supplier_balances",
+      "products", "inventory_movements", "admin_finance_entries"
+    ],
+    functions: [
+      "create_supplier_with_opening_balance", "create_supplier_purchase_order",
+      "record_supplier_purchase_receipt", "create_supplier_bill", "record_supplier_payment"
+    ],
+    tests: ["scripts/admin-phase12-check.mjs", "scripts/architecture-check.mjs"],
+    guardrails: [
+      "Preserve the existing Supplier and Purchase tables and data; migrations are additive only.",
+      "A purchase order never changes stock. Only accepted quantities in a confirmed GRN update product stock and inventory movements.",
+      "Only confirmed supplier bills create payables. Confirmed payments reduce payable and create one linked Finance & Cash Flow expense.",
+      "Record supplier payments only after real funds have been transferred; the dashboard never sends money.",
+      "Allocate payments against confirmed bills without overpayment; unallocated amounts remain supplier advances.",
+      "Reverse supplier payments from Supplier Payment History so the linked finance record and supplier ledger stay in sync.",
+      "Keep all supplier financial records behind the MFA-protected admin RLS policies; never expose bank details, invoices or payment receipts publicly."
+    ]
+  },
   catalog: {
     title: "Public product catalogue",
     purpose: "Product/category data, listing, search, product detail and catalogue rendering.",

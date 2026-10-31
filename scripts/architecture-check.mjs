@@ -37,6 +37,14 @@ const required = [
   "supabase/migrations/20261031062432_allow_admin_moderation_of_customer_reviews.sql",
   "supabase/migrations/20261031063731_allow_unlinked_customer_review_submissions.sql",
   "scripts/admin-product-tools-check.mjs",
+  "admin/supplier-add.html",
+  "admin/supplier-purchases.html",
+  "admin/supplier-payments.html",
+  "admin/supplier-management.js",
+  "admin/supplier-workspace.css",
+  "supabase/migrations/20261031160318_supplier_procurement_payables_v1.sql",
+  "supabase/migrations/20261031160349_supplier_procurement_performance_hardening_v1.sql",
+  "supabase/migrations/20261031162000_supplier_ledger_integrity_v1.sql",
 ];
 
 for (const path of required) {

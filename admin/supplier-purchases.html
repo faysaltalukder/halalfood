@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow">
+<title>Purchase List | Halal Food Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./shared.css?v=20261031-products-sidebar-v3">
+<link rel="stylesheet" href="./phase4-pages.css?v=20261023-admin-ultimate-v1">
+<link rel="stylesheet" href="./supplier-workspace.css?v=20261031-supplier-v1">
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+</head><body data-page="supplier-purchases"><div id="authGate" class="auth-gate"><div class="auth-gate-card"><strong>Checking secure admin access…</strong><p>Supplier, purchase and payment records load only after the authorized account and two-step verification are confirmed.</p></div></div><div id="adminApp" hidden><main id="pageContent" tabindex="-1">
+<div class="page-heading hf-phase4-hero hf-supplier-hero">
+ <div><p class="page-eyebrow">PURCHASING &amp; INVENTORY CONTROL</p><h1>Purchase List</h1><p>Create multi-product purchase orders, record actual goods received, and attach the supplier’s invoice separately.</p></div>
+ <div class="page-actions"><button class="hf-button hf-button-primary" id="focusPurchaseForm" type="button">＋ New purchase</button><button class="hf-button hf-button-secondary" data-refresh-page type="button">↻ Refresh</button></div>
+</div>
+<div class="hf-banner hf-banner-info"><span>ⓘ</span><div><strong>Order value is not stock or payment</strong>Creating a purchase order does not increase inventory or reduce cash. Stock changes only when accepted quantities are recorded through a Goods Received Note (GRN). Payables begin when a supplier invoice is confirmed.</div></div>
+<nav class="hf-supplier-workspace-nav" aria-label="Supplier workspace">
+<a class="hf-supplier-nav-card" data-supplier-tab="add" href="./supplier-add.html"><span class="hf-supplier-nav-icon">＋</span><span><strong>Add Supplier</strong><small>Directory &amp; supplier profiles</small></span><span class="hf-supplier-nav-arrow">↗</span></a>
+<a class="hf-supplier-nav-card" data-supplier-tab="purchases" href="./supplier-purchases.html"><span class="hf-supplier-nav-icon">▤</span><span><strong>Purchase List</strong><small>Purchase orders &amp; goods received</small></span><span class="hf-supplier-nav-arrow">↗</span></a>
+<a class="hf-supplier-nav-card" data-supplier-tab="payments" href="./supplier-payments.html"><span class="hf-supplier-nav-icon">৳</span><span><strong>Payment History</strong><small>Payments, payables &amp; ledger</small></span><span class="hf-supplier-nav-arrow">↗</span></a>
+</nav>
+<section class="hf-supplier-kpis hf-kpi-grid">
+ <article class="hf-card hf-kpi"><div class="hf-kpi-head"><span class="hf-kpi-label">Purchase orders</span><span class="hf-kpi-icon kpi-icon-blue">▤</span></div><strong class="hf-kpi-value" id="purchaseOrderCount">—</strong><span class="hf-kpi-note">All recorded purchase orders</span></article>
+ <article class="hf-card hf-kpi"><div class="hf-kpi-head"><span class="hf-kpi-label">Ordered value</span><span class="hf-kpi-icon kpi-icon-purple">৳</span></div><strong class="hf-kpi-value" id="purchaseOrderValue">—</strong><span class="hf-kpi-note">Value of all non-cancelled orders</span></article>
+ <article class="hf-card hf-kpi"><div class="hf-kpi-head"><span class="hf-kpi-label">Awaiting receiving</span><span class="hf-kpi-icon kpi-icon-orange">↓</span></div><strong class="hf-kpi-value" id="purchaseAwaitingCount">—</strong><span class="hf-kpi-note">Draft / ordered / partially received</span></article>
+ <article class="hf-card hf-kpi"><div class="hf-kpi-head"><span class="hf-kpi-label">Confirmed supplier bills</span><span class="hf-kpi-icon kpi-icon-green">✓</span></div><strong class="hf-kpi-value" id="purchaseBillValue">—</strong><span class="hf-kpi-note">Confirmed invoice value</span></article>
+</section>
+
+<section class="hf-card hf-card-pad" id="purchaseCreateSection">
+ <div class="hf-section-head"><div><p class="page-eyebrow">PURCHASE ORDER</p><h2>Create a purchase order</h2><p>Add one or more catalogue products to the same supplier order.</p></div><span class="hf-section-context">PO number generated automatically</span></div>
+ <form id="purchaseForm">
+  <div class="hf-supplier-form-grid">
+   <label class="hf-field">Supplier *<select class="hf-select" id="purchaseSupplier" required><option value="">Choose active supplier</option></select></label>
+   <label class="hf-field">Order date *<input class="hf-input" id="purchaseDate" type="date" required></label>
+   <label class="hf-field">Expected delivery<input class="hf-input" id="purchaseExpected" type="date"></label>
+   <label class="hf-field">Initial status<select class="hf-select" id="purchaseStatus"><option value="ordered">Ordered — sent to supplier</option><option value="draft">Draft — not yet sent</option></select></label>
+   <label class="hf-field">Supplier quotation / reference<input class="hf-input" id="purchaseReference" maxlength="180" placeholder="Quotation or supplier reference"></label>
+   <label class="hf-field">Supplier discount (৳)<input class="hf-input" id="purchaseDiscount" type="number" min="0" step="0.01" value="0"></label>
+   <label class="hf-field">Transport cost (৳)<input class="hf-input" id="purchaseTransport" type="number" min="0" step="0.01" value="0"></label>
+   <label class="hf-field">Handling / loading (৳)<input class="hf-input" id="purchaseHandling" type="number" min="0" step="0.01" value="0"></label>
+   <label class="hf-field">Tax / VAT (৳)<input class="hf-input" id="purchaseTax" type="number" min="0" step="0.01" value="0"></label>
+   <label class="hf-field">Other charges (৳)<input class="hf-input" id="purchaseOther" type="number" min="0" step="0.01" value="0"></label>
+   <label class="hf-field hf-span-2">Purchase notes<textarea class="hf-textarea" id="purchaseNotes" rows="2" maxlength="1200" placeholder="Delivery instructions, quality or packaging requirements"></textarea></label>
+  </div>
+  <div class="hf-supplier-lines-head"><div><h3>Purchase items</h3><p>Each line stores the SKU, unit cost, quantity and discount snapshot.</p></div><button class="hf-button hf-button-secondary hf-button-small" id="addPurchaseLine" type="button">＋ Add product line</button></div>
+  <div id="purchaseLines" class="hf-purchase-lines"></div>
+  <div class="hf-purchase-total-panel">
+   <div><span>Item subtotal</span><strong id="purchaseSubtotal">৳0</strong></div>
+   <div><span>Line discounts</span><strong id="purchaseLineDiscount">৳0</strong></div>
+   <div><span>Supplier discount &amp; costs</span><strong id="purchaseOtherAdjustments">৳0</strong></div>
+   <div class="hf-purchase-grand-total"><span>Purchase total</span><strong id="purchaseGrandTotal">৳0</strong></div>
+  </div>
+  <p class="hf-form-error" id="purchaseFormError" role="alert"></p>
+  <div class="hf-supplier-form-actions"><button class="hf-button hf-button-primary" id="savePurchaseBtn" type="submit">Create purchase order</button><button class="hf-button hf-button-secondary" id="resetPurchaseForm" type="button">Clear form</button></div>
+ </form>
+</section>
+
+<section class="hf-card hf-card-pad">
+ <div class="hf-section-head"><div><p class="page-eyebrow">PURCHASE REGISTER</p><h2>Purchase orders</h2><p>Track ordered quantities, receipts and supplier invoice links.</p></div><div class="hf-inline-actions"><button class="hf-button hf-button-secondary hf-button-small" id="exportPurchasesBtn" type="button">Export CSV</button><button class="hf-button hf-button-secondary hf-button-small" id="openCreditNoteBtn" type="button">＋ Supplier credit</button><button class="hf-button hf-button-secondary hf-button-small" id="openBillDialogBtn" type="button">＋ Record supplier bill</button></div></div>
+ <div class="hf-toolbar"><input class="hf-input" id="purchaseSearch" type="search" aria-label="Search purchase orders by reference, supplier or product" placeholder="Search PO, supplier, product or reference"><select class="hf-select" id="purchaseStatusFilter" aria-label="Filter purchase orders by status"><option value="">All PO statuses</option><option value="draft">Draft</option><option value="ordered">Ordered</option><option value="partially_received">Partially received</option><option value="received">Received</option><option value="cancelled">Cancelled</option></select></div>
+ <div class="hf-table-wrap" tabindex="0" role="region" aria-label="Purchase orders table; scroll horizontally on smaller screens">
+  <table class="hf-table hf-supplier-table"><thead><tr><th>Purchase ID / Date</th><th>Supplier</th><th>Products / Qty</th><th>Order value</th><th>Receiving</th><th>Supplier bill</th><th>Status</th><th>Actions</th></tr></thead><tbody id="purchaseTableBody"><tr><td colspan="8" class="hf-loading">Loading purchase orders…</td></tr></tbody></table>
+ </div>
+</section>
+
+<section class="hf-card hf-card-pad">
+ <div class="hf-section-head"><div><p class="page-eyebrow">SUPPLIER INVOICES</p><h2>Bill register</h2><p>Only confirmed invoices contribute to accounts payable.</p></div></div>
+ <div class="hf-table-wrap" tabindex="0" role="region" aria-label="Supplier bill register">
+  <table class="hf-table hf-supplier-table"><thead><tr><th>Bill / Invoice</th><th>Supplier</th><th>Invoice date</th><th>Due date</th><th>Bill amount</th><th>Paid</th><th>Outstanding</th><th>Status</th><th>Action</th></tr></thead><tbody id="supplierBillsTableBody"><tr><td colspan="9" class="hf-loading">Loading supplier bills…</td></tr></tbody></table>
+ </div>
+
+</section>
+
+<section class="hf-card hf-card-pad">
+ <div class="hf-section-head"><div><p class="page-eyebrow">SUPPLIER RETURNS &amp; CREDITS</p><h2>Supplier credit notes</h2><p>Record supplier-approved credits for returned, damaged or short-supplied goods.</p></div></div>
+ <div class="hf-table-wrap" tabindex="0" role="region" aria-label="Supplier credit notes">
+  <table class="hf-table hf-supplier-table"><thead><tr><th>Credit note</th><th>Supplier</th><th>Date</th><th>Reason</th><th>Amount</th><th>Linked bill</th><th>Status</th><th>Action</th></tr></thead><tbody id="supplierCreditNotesBody"><tr><td colspan="8" class="hf-loading">Loading supplier credits…</td></tr></tbody></table>
+ </div>
+
+
+<dialog id="creditNoteDialog" class="hf-dialog">
+ <form id="creditNoteForm" class="hf-dialog-inner">
+  <div class="hf-dialog-head"><div><p class="hf-dialog-title-tag">SUPPLIER CREDIT NOTE</p><h2>Record supplier credit</h2><p>Use this for a verified supplier credit, purchase return or invoice adjustment.</p></div><button class="hf-button hf-button-secondary hf-dialog-close" data-close-supplier-dialog="creditNoteDialog" type="button">×</button></div>
+  <div class="hf-supplier-form-grid">
+   <label class="hf-field">Supplier *<select class="hf-select" id="creditSupplier" required><option value="">Choose supplier</option></select></label>
+   <label class="hf-field">Credit date *<input class="hf-input" id="creditDate" type="date" required></label>
+   <label class="hf-field">Linked supplier bill<select class="hf-select" id="creditBill"><option value="">No linked bill</option></select></label>
+   <label class="hf-field">Linked purchase order<select class="hf-select" id="creditPurchaseOrder"><option value="">No linked purchase order</option></select></label>
+   <label class="hf-field">Credit amount (৳) *<input class="hf-input" id="creditAmount" type="number" min="0.01" step="0.01" required></label>
+   <label class="hf-field">Supplier credit reference<input class="hf-input" id="creditReference" maxlength="180"></label>
+   <label class="hf-field hf-span-2">Reason *<input class="hf-input" id="creditReason" maxlength="500" required placeholder="Returned goods, damaged items, price adjustment…"></label>
+   <label class="hf-field">Record status<select class="hf-select" id="creditStatus"><option value="confirmed">Confirmed — apply to payable</option><option value="draft">Draft — review first</option></select></label>
+   <label class="hf-field">Notes<input class="hf-input" id="creditNotes" maxlength="1200"></label>
+  </div>
+  <p class="hf-data-note">Confirm only after the supplier has accepted the return or credit. A confirmed credit reduces the supplier balance; it does not automatically put goods back into stock.</p>
+  <p class="hf-form-error" id="creditFormError" role="alert"></p>
+  <div class="hf-dialog-actions"><button class="hf-button hf-button-secondary" data-close-supplier-dialog="creditNoteDialog" type="button">Cancel</button><button class="hf-button hf-button-primary" id="saveCreditNoteBtn" type="submit">Save supplier credit</button></div>
+ </form>
+</dialog>
+
+<dialog id="grnDialog" class="hf-dialog hf-large-dialog">
+ <form id="grnForm" class="hf-dialog-inner">
+  <div class="hf-dialog-head"><div><p class="hf-dialog-title-tag">GOODS RECEIVED NOTE</p><h2 id="grnDialogTitle">Record goods received</h2><p>Only accepted quantities will increase product stock. Rejected goods remain out of inventory.</p></div><button class="hf-button hf-button-secondary hf-dialog-close" data-close-supplier-dialog="grnDialog" type="button">×</button></div>
+  <input type="hidden" id="grnPurchaseOrderId">
+  <div class="hf-supplier-form-grid"><label class="hf-field">Receipt date *<input class="hf-input" id="grnDate" type="date" required></label><label class="hf-field">Supplier challan / delivery note<input class="hf-input" id="grnChallan" maxlength="180"></label><label class="hf-field">Received by<input class="hf-input" id="grnReceivedBy" maxlength="180" placeholder="Person checking the goods"></label><label class="hf-field hf-span-2">Receiving notes<input class="hf-input" id="grnNotes" maxlength="1200"></label></div>
+  <div id="grnLines" class="hf-grn-lines"></div><p class="hf-form-error" id="grnFormError" role="alert"></p>
+  <div class="hf-dialog-actions"><button class="hf-button hf-button-secondary" data-close-supplier-dialog="grnDialog" type="button">Cancel</button><button class="hf-button hf-button-primary" id="saveGrnBtn" type="submit">Confirm goods received</button></div>
+ </form>
+</dialog>
+
+<dialog id="billDialog" class="hf-dialog">
+ <form id="billForm" class="hf-dialog-inner">
+  <div class="hf-dialog-head"><div><p class="hf-dialog-title-tag">SUPPLIER INVOICE</p><h2>Record supplier bill</h2><p>Capture the supplier invoice separately from the purchase order.</p></div><button class="hf-button hf-button-secondary hf-dialog-close" data-close-supplier-dialog="billDialog" type="button">×</button></div>
+  <div class="hf-supplier-form-grid">
+   <label class="hf-field">Supplier *<select class="hf-select" id="billSupplier" required><option value="">Choose supplier</option></select></label>
+   <label class="hf-field">Link purchase order<select class="hf-select" id="billPurchaseOrder"><option value="">No linked PO</option></select></label>
+   <label class="hf-field">Supplier invoice number<input class="hf-input" id="billInvoiceNumber" maxlength="180" placeholder="Invoice / bill number"></label>
+   <label class="hf-field">Invoice date *<input class="hf-input" id="billInvoiceDate" type="date" required></label>
+   <label class="hf-field">Due date *<input class="hf-input" id="billDueDate" type="date" required></label>
+   <label class="hf-field">Subtotal (৳) *<input class="hf-input" id="billSubtotal" type="number" min="0.01" step="0.01" required></label>
+   <label class="hf-field">Discount (৳)<input class="hf-input" id="billDiscount" type="number" min="0" step="0.01" value="0"></label>
+   <label class="hf-field">Additional charges (৳)<input class="hf-input" id="billCharges" type="number" min="0" step="0.01" value="0"></label>
+   <label class="hf-field">Tax / VAT (৳)<input class="hf-input" id="billTax" type="number" min="0" step="0.01" value="0"></label>
+   <label class="hf-field">Bill total (৳)<input class="hf-input" id="billTotal" type="number" min="0.01" step="0.01" required readonly></label>
+   <label class="hf-field">Initial record status<select class="hf-select" id="billStatus"><option value="confirmed">Confirmed — include in payable</option><option value="draft">Draft — review first</option></select></label>
+   <label class="hf-field hf-span-2">Notes<input class="hf-input" id="billNotes" maxlength="1200"></label>
+  </div>
+  <p class="hf-data-note">Confirm only after checking the supplier’s actual invoice. If an invoice is not yet verified, save it as Draft.</p>
+  <p class="hf-form-error" id="billFormError" role="alert"></p>
+  <div class="hf-dialog-actions"><button class="hf-button hf-button-secondary" data-close-supplier-dialog="billDialog" type="button">Cancel</button><button class="hf-button hf-button-primary" id="saveBillBtn" type="submit">Save supplier bill</button></div>
+ </form>
+</dialog>
+</main></div>
+<script defer src="./i18n.js?v=20261031-customer-messages-nav-v1"></script>
+<script defer src="./shared.js?v=20261031-customer-messages-nav-v1"></script>
+<script defer src="./supplier-management.js?v=20261031-supplier-v1"></script>
+<script defer src="./app.js?v=20261031-products-workspace-v1"></script>
+</body></html>
