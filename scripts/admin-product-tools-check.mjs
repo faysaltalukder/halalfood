@@ -24,6 +24,7 @@ const publicReviews = read("js/product-reviews.js");
 const main = read("js/main.js");
 const skuMigration = read("supabase/migrations/20261031061456_add_product_catalog_sku_and_reviews.sql");
 const reviewModerationMigration = read("supabase/migrations/20261031062432_allow_admin_moderation_of_customer_reviews.sql");
+const reviewUnlinkedMigration = read("supabase/migrations/20261031064000_allow_unlinked_customer_review_submissions.sql");
 
 for (const route of ["products-add", "products-barcode", "products-reviews"]) {
   check(shared.includes(route), "Products navigation is missing " + route + ".");
@@ -45,6 +46,9 @@ check(skuMigration.includes("CREATE TABLE IF NOT EXISTS public.product_reviews")
 check(skuMigration.includes("Customers can submit pending product reviews"), "Review RLS must restrict customer submissions to Pending.");
 check(skuMigration.includes("Admin MFA can manage product reviews"), "Review RLS must require the MFA admin for moderation.");
 check(reviewModerationMigration.includes("DROP CONSTRAINT IF EXISTS product_reviews_source_customer_guard"), "Review moderation migration must allow admin approval of customer submissions.");
+check(reviewUnlinkedMigration.includes("customer_id IS NULL"), "Customer review form must allow public or signed-in users without mandatory account linkage.");
+check(reviewUnlinkedMigration.includes("customer_id = (SELECT auth.uid())"), "An authenticated reviewer must not be able to attach another user's Auth ID.");
+check(reviewUnlinkedMigration.includes("status = 'pending'"), "Both anonymous and signed-in customer review submissions must remain Pending.");
 
 check(barcodePage.includes("jsbarcode@3.12.3"), "Barcode page must load the pinned Code 128 library.");
 check(barcodePage.includes("qrcodejs@1.0.0"), "Barcode page must load the QR generator.");
