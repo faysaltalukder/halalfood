@@ -5,6 +5,18 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <title>Barcode Generation · Halal Food Admin</title>
 <link rel="stylesheet" href="./shared.css?v=20261031-products-workspace-v1"><link rel="stylesheet" href="./products-tools.css?v=20261031-products-workspace-v1">
+<style>
+.pt-barcode-flow{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;align-items:start}
+.pt-barcode-status{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:10px 0 14px;color:var(--hf-muted);font-size:12px}
+.pt-barcode-status strong{color:var(--hf-navy)}
+.pt-barcode-status .hf-button{padding:6px 10px}
+.pt-barcode-help{margin:12px 0 0;color:var(--hf-muted);font-size:11px;line-height:1.55}
+.pt-barcode-scan-card{margin-top:18px}
+.pt-barcode-scan-card>summary{cursor:pointer;color:var(--hf-navy);font-weight:750;list-style-position:inside}
+.pt-barcode-scan-card[open]>summary{margin-bottom:18px}
+.pt-barcode-scan-card summary:focus-visible{outline:3px solid #C97B3D;outline-offset:4px;border-radius:5px}
+@media(max-width:700px){.pt-barcode-flow{grid-template-columns:1fr}}
+</style>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/jsbarcode@3.12.3/dist/JsBarcode.all.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
@@ -13,33 +25,38 @@
 <body data-page="products-barcode">
 <div id="authGate" class="auth-gate"><div class="auth-gate-card"><strong>Checking secure admin access…</strong><p>Barcode generation and product scanning are restricted to the MFA-verified admin.</p></div></div>
 <div id="adminApp" hidden><main id="pageContent" tabindex="-1">
-<div class="pt-hero"><div><p class="page-eyebrow">PRODUCT IDENTIFICATION</p><h1>Barcode Generation</h1><p>Print permanent product labels and scan codes to look up current catalogue information.</p></div><div class="page-actions"><a class="hf-button hf-button-secondary" href="./products.html">All Products</a><button class="hf-button hf-button-secondary" data-refresh-page type="button">↻ Refresh</button></div></div>
-<div class="pt-explain-grid">
- <div class="pt-explain-card"><span class="pt-icon pt-icon-barcode" aria-hidden="true">▥</span><div><strong>Code 128 · POS &amp; stock</strong><p>Each product has one permanent SKU. All units of the same product share this barcode.</p></div></div>
- <div class="pt-explain-card"><span class="pt-icon pt-icon-qr" aria-hidden="true">▦</span><div><strong>QR · Customer information</strong><p>Customers scan the QR using their phone camera to open the current product name, code, price and details.</p></div></div>
-</div>
-<div class="pt-two-column">
- <section class="hf-card hf-card-pad">
-  <div class="pt-section-heading"><div><p class="page-eyebrow">SCAN TO LOOK UP</p><h2>Scan a product code</h2><p>A USB scanner can type into this field. The camera scanner can read QR and supported 1D product codes.</p></div><span class="hf-status hf-status-active">Live lookup</span></div>
-  <div class="pt-scan-row"><input class="hf-input" id="barcodeScanInput" type="search" autocomplete="off" aria-label="Scan or enter a product SKU or barcode" placeholder="Scan or enter SKU, e.g. HF-000001"><button class="hf-button hf-button-primary" id="barcodeScanSubmit" type="button">Find product</button></div>
-  <div class="pt-scan-actions"><button class="hf-button hf-button-secondary" id="barcodeCameraStart" type="button">▣ Start camera scanner</button><button class="hf-button hf-button-secondary" id="barcodeCameraStop" type="button" disabled>Stop camera</button></div>
-  <div id="barcodeCamera" class="pt-camera" hidden></div>
-  <div id="barcodeScanResult" class="pt-scan-result"><div class="pt-empty"><span>▥</span><strong>Ready to scan</strong><p>Scan a product barcode or QR label to see product details.</p></div></div>
- </section>
- <section class="hf-card hf-card-pad">
-  <div class="pt-section-heading"><div><p class="page-eyebrow">PRINT PRODUCT LABELS</p><h2>Generate labels</h2><p>Select a product, set copies and print. Labels contain both Code 128 and a customer QR link.</p></div></div>
-  <label class="hf-field">Choose product<select class="hf-select" id="barcodeProductSelect"><option value="">Loading products…</option></select></label>
-  <div id="barcodeLabelPreview" class="pt-label-preview"><div class="pt-empty"><span>▤</span><strong>Select a product</strong><p>Preview will show its 1D barcode and customer QR.</p></div></div>
-  <div class="pt-print-controls"><label class="hf-field">Label copies<input class="hf-input" id="barcodeLabelCopies" type="number" min="1" max="250" value="1"></label><label class="hf-field">Label size<select class="hf-select" id="barcodeLabelSize"><option value="40x25">40 × 25 mm</option><option value="50x30">50 × 30 mm</option><option value="60x40">60 × 40 mm</option></select></label></div>
-  <button class="hf-button hf-button-primary pt-print-button" id="barcodePrintLabels" type="button" disabled>Print barcode &amp; QR labels</button>
-  <p class="hf-data-note">Barcode and QR artwork is generated in your browser. Label images are not stored in Supabase.</p>
- </section>
-</div>
-<section class="hf-card hf-card-pad pt-products-card">
- <div class="pt-section-heading"><div><p class="page-eyebrow">SKU DIRECTORY</p><h2>Product barcode directory</h2><p>Search the catalogue and select a product to preview or print its labels.</p></div><span class="hf-status hf-status-active" id="barcodeProductCount">Loading…</span></div>
- <input class="hf-input" id="barcodeProductSearch" type="search" aria-label="Search barcode directory by product name, SKU or category" placeholder="Search product name, SKU or category…">
- <div class="hf-table-wrap"><table class="hf-table"><thead><tr><th>Product</th><th>SKU / Code 128</th><th>Price</th><th>Stock status</th><th>Action</th></tr></thead><tbody id="barcodeProductTable"><tr><td colspan="5" class="hf-loading">Loading product directory…</td></tr></tbody></table></div>
+<div class="pt-hero"><div><p class="page-eyebrow">PRODUCT IDENTIFICATION</p><h1>Barcode Generation</h1><p>একটি পণ্য বেছে নিন, কতটি লেবেল চান লিখুন, তারপর প্রিন্ট করুন।</p></div><div class="page-actions"><a class="hf-button hf-button-secondary" href="./products.html">All Products</a><button class="hf-button hf-button-secondary" data-refresh-page type="button">↻ Refresh</button></div></div>
+<section class="hf-card hf-card-pad">
+ <div class="pt-section-heading"><div><p class="page-eyebrow">STEP 1 · SELECT PRODUCT</p><h2>পণ্য বেছে নিন</h2><p>পণ্যের নাম, SKU বা ক্যাটাগরি লিখে তালিকা ছোট করুন; তারপর পণ্যটি নির্বাচন করুন।</p></div></div>
+ <div class="pt-barcode-status" id="barcodeLoadStatus" role="status" aria-live="polite"><strong>পণ্যের তালিকা লোড হচ্ছে…</strong></div>
+ <div class="pt-barcode-flow">
+  <label class="hf-field">পণ্য খুঁজুন<input class="hf-input" id="barcodeProductSearch" type="search" autocomplete="off" aria-label="Search product name, SKU or category" placeholder="যেমন: ঘি অথবা HF-000001"></label>
+  <label class="hf-field">পণ্য নির্বাচন করুন<select class="hf-select" id="barcodeProductSelect" aria-label="Choose product"><option value="">পণ্যের তালিকা লোড হচ্ছে…</option></select></label>
+ </div>
+ <p class="pt-barcode-help">নতুন পণ্য যোগ করার পর এখানে না দেখালে Refresh চাপুন। তালিকার প্রতিটি পণ্যের নিজস্ব স্থায়ী SKU থাকে।</p>
 </section>
+<section class="hf-card hf-card-pad" style="margin-top:18px">
+ <div class="pt-section-heading"><div><p class="page-eyebrow">STEP 2 · PRINT LABELS</p><h2>লেবেল তৈরি করুন</h2><p>নির্বাচিত পণ্যের Code 128 বারকোড ও গ্রাহকের জন্য QR একসঙ্গে তৈরি হবে।</p></div></div>
+ <div id="barcodeLabelPreview" class="pt-label-preview"><div class="pt-empty"><span>▤</span><strong>এখনো কোনো পণ্য নির্বাচন করা হয়নি</strong><p>উপরের তালিকা থেকে একটি পণ্য বেছে নিন।</p></div></div>
+ <div class="pt-print-controls">
+  <label class="hf-field">কতটি লেবেল লাগবে?<input class="hf-input" id="barcodeLabelCopies" type="number" min="1" max="250" value="1"></label>
+  <label class="hf-field">লেবেলের মাপ<select class="hf-select" id="barcodeLabelSize"><option value="50x30" selected>50 × 30 mm · Recommended</option><option value="40x25">40 × 25 mm</option><option value="60x40">60 × 40 mm</option></select></label>
+ </div>
+ <button class="hf-button hf-button-primary pt-print-button" id="barcodePrintLabels" type="button" disabled>বারকোড লেবেল প্রিন্ট করুন</button>
+ <p class="pt-barcode-help">প্রিন্টারে স্টিকার/লেবেল পেপার থাকলে সেটি নির্বাচন করুন। সাধারণ কাগজে প্রিন্ট করলেও কেটে পণ্যে লাগাতে পারবেন। শুধু লেবেল তৈরি করলে Supabase-এ কোনো ছবি বা ফাইল জমা হয় না।</p>
+</section>
+<div class="pt-explain-grid" style="margin-top:18px">
+ <div class="pt-explain-card"><span class="pt-icon pt-icon-barcode" aria-hidden="true">▥</span><div><strong>Code 128 · দোকান ও স্টক</strong><p>USB/হ্যান্ডহেল্ড বারকোড স্ক্যানার দিয়ে পণ্য শনাক্ত করার জন্য।</p></div></div>
+ <div class="pt-explain-card"><span class="pt-icon pt-icon-qr" aria-hidden="true">▦</span><div><strong>QR · ক্রেতার তথ্য</strong><p>মোবাইল ক্যামেরা দিয়ে স্ক্যান করলে পণ্যের বর্তমান দাম ও বিবরণ দেখা যাবে।</p></div></div>
+</div>
+<details class="hf-card hf-card-pad pt-barcode-scan-card">
+ <summary>ঐচ্ছিক: বারকোড স্ক্যান করে পণ্য খুঁজুন</summary>
+ <div class="pt-section-heading"><div><h2>Scan to look up</h2><p>USB স্ক্যানার, ফোন/কম্পিউটারের ক্যামেরা অথবা SKU লিখে পণ্য খুঁজতে পারবেন।</p></div><span class="hf-status hf-status-active">Live lookup</span></div>
+ <div class="pt-scan-row"><input class="hf-input" id="barcodeScanInput" type="search" autocomplete="off" aria-label="Scan or enter a product SKU or barcode" placeholder="বারকোড স্ক্যান করুন বা HF-000001 লিখুন"><button class="hf-button hf-button-primary" id="barcodeScanSubmit" type="button" disabled>পণ্য খুঁজুন</button></div>
+ <div class="pt-scan-actions"><button class="hf-button hf-button-secondary" id="barcodeCameraStart" type="button" disabled>▣ ক্যামেরা চালু করুন</button><button class="hf-button hf-button-secondary" id="barcodeCameraStop" type="button" disabled>ক্যামেরা বন্ধ</button></div>
+ <div id="barcodeCamera" class="pt-camera" hidden></div>
+ <div id="barcodeScanResult" class="pt-scan-result"><div class="pt-empty"><span>▥</span><strong>স্ক্যান করার জন্য প্রস্তুত</strong><p>কোড স্ক্যান করলে পণ্যের তথ্য এখানে দেখাবে।</p></div></div>
+</details>
 </main></div>
-<script defer src="./i18n.js?v=20261023-admin-ultimate-v1"></script><script defer src="./shared.js?v=20261031-products-workspace-v1"></script><script defer src="./app.js?v=20261031-products-workspace-v1"></script><script defer src="./products-barcode.js?v=20261031-products-workspace-v1"></script>
+<script defer src="./i18n.js?v=20261023-admin-ultimate-v1"></script><script defer src="./shared.js?v=20261031-products-workspace-v1"></script><script defer src="./app.js?v=20261031-products-workspace-v1"></script><script defer src="./products-barcode.js?v=20261031-barcode-simple-v2"></script>
 </body></html>
