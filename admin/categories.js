@@ -5,7 +5,7 @@ window.HFAdminReady.then(async H => {
  const {client,esc,money,toast,audit,slugify}=H;
  const page=document.body.dataset.page||"categories";
  const $=id=>document.getElementById(id);
- const state={categories:[],products:[],loading:false,categoryDrag:null,productDrag:null,lastUndo:null};
+ const state={categories:[],products:[],loading:false,categoryDrag:null,productDrag:null,lastUndo:null,view:"categories",selectedCategoryId:null};
  const orderOf=row=>Number(row?.sort_order??0);
  const byOrder=(a,b)=>orderOf(a)-orderOf(b)||String(a.name||"").localeCompare(String(b.name||""));
  const categoryById=id=>state.categories.find(c=>c.id===id);
@@ -79,83 +79,116 @@ window.HFAdminReady.then(async H => {
   }finally{state.loading=false;}
  }
  function renderPage(){
-  if(page==="categories"){renderTree();renderSorting();}
+  if(page==="categories"){renderExplorer();renderSorting();}
  }
- function categoryNodeMarkup(category,search="",filter="all"){
-  const depth=depthOf(category),children=childrenOf(category.id);
-  const query=search.toLowerCase();
-  const descendantMatches=child=>[child,...[...descendantsOf(child.id)].map(id=>categoryById(id)).filter(Boolean)].some(c=>(c.name+" "+c.slug).toLowerCase().includes(query)&&(filter==="all"||(filter==="active"?effectiveActive(c):!effectiveActive(c))));
-  const ownMatch=(!query||(category.name+" "+category.slug).toLowerCase().includes(query))&&(filter==="all"||(filter==="active"?effectiveActive(category):!effectiveActive(category)));
-  const visible=ownMatch||children.some(descendantMatches);
-  if((query||filter!=="all")&&!visible)return "";
-  const childMarkup=children.map(child=>categoryNodeMarkup(child,search,filter)).join("");
+ function directCategoryProductCount(category){
+  return state.products.filter(product=>product.category_slug===category.slug).length;
+ }
+ function categoryNodeMarkup(category,index,total,search="",filter="all"){
+  const depth=depthOf(category),query=String(search||"").toLowerCase().trim();
+  const active=effectiveActive(category),directCount=directCategoryProductCount(category),branchCount=categoryProductCount(category);
+  if(query&&!(category.name+" "+category.slug).toLowerCase().includes(query))return "";
+  if(filter==="active"&&!active)return "";
+  if(filter==="hidden"&&active)return "";
   const canReorder=!query&&filter==="all";
-  const childButton=depth<3?'<button class="catalog-mini-button" type="button" data-cat-add-child="'+esc(category.id)+'" title="Add child category">＋ Child</button>':"";
-  return '<article class="catalog-tree-node" data-node-id="'+esc(category.id)+'">'+
+  const image=category.image_url
+   ?'<img class="catalog-category-thumb" src="'+esc(category.image_url)+'" alt="" loading="lazy">'
+   :'<span class="catalog-category-thumb catalog-category-thumb-empty" aria-hidden="true">▧</span>';
+  const childCount=childrenOf(category.id).length;
+  return '<article class="catalog-tree-node catalog-explorer-row" data-node-id="'+esc(category.id)+'">'+
    '<div class="catalog-tree-row" draggable="'+String(canReorder)+'" data-category-id="'+esc(category.id)+'" data-parent-id="'+esc(category.parent_id||"")+'">'+
     '<span class="catalog-tree-grip" aria-hidden="true" title="Drag to reorder">⠿</span>'+
-    '<div class="catalog-tree-info"><div class="catalog-tree-title"><strong>'+esc(category.name)+'</strong><span class="catalog-tree-level">'+(depth===1?"Category":depth===2?"Subcategory":"Child category")+'</span></div><small>/'+esc(category.slug)+' · '+categoryProductCount(category)+' products</small></div>'+
-    '<span class="catalog-tree-product-count">'+(effectiveActive(category)?'<span class="hf-status hf-status-active">Visible</span>':'<span class="hf-status hf-status-hidden">Hidden</span>')+'</span>'+
+    image+
+    '<div class="catalog-tree-info"><div class="catalog-tree-title"><strong>'+esc(category.name)+'</strong><span class="catalog-tree-level">'+(depth===1?"মূল ক্যাটাগরি":depth===2?"সাব-ক্যাটাগরি":"চাইল্ড ক্যাটাগরি")+'</span></div>'+
+     '<small>/'+esc(category.slug)+' · '+directCount+'টি সরাসরি পণ্য · '+childCount+'টি সাব-ক্যাটাগরি</small></div>'+
+    '<span class="catalog-tree-product-count">'+(active?'<span class="hf-status hf-status-active">Visible</span>':'<span class="hf-status hf-status-hidden">Hidden</span>')+'</span>'+
     '<div class="catalog-tree-actions">'+
-     '<button class="catalog-mini-button" type="button" data-cat-up="'+esc(category.id)+'" '+(!canReorder?"disabled":"")+' aria-label="Move '+esc(category.name)+' up">↑</button>'+
-     '<button class="catalog-mini-button" type="button" data-cat-down="'+esc(category.id)+'" '+(!canReorder?"disabled":"")+' aria-label="Move '+esc(category.name)+' down">↓</button>'+
-     '<button class="catalog-mini-button" type="button" data-cat-edit="'+esc(category.id)+'">Edit</button>'+
-     '<button class="catalog-mini-button" type="button" data-cat-toggle="'+esc(category.id)+'">'+(category.is_active?"Hide":"Show")+'</button>'+
-     childButton+
+     '<button class="catalog-mini-button" type="button" data-cat-up="'+esc(category.id)+'" '+(index===0||!canReorder?"disabled":"")+' aria-label="Move '+esc(category.name)+' up">↑ উপরে</button>'+
+     '<button class="catalog-mini-button" type="button" data-cat-down="'+esc(category.id)+'" '+(index===total-1||!canReorder?"disabled":"")+' aria-label="Move '+esc(category.name)+' down">↓ নিচে</button>'+
+     '<button class="catalog-mini-button catalog-enter-button" type="button" data-cat-enter="'+esc(category.id)+'">ভেতরে যান →</button>'+
+     '<button class="catalog-mini-button" type="button" data-cat-edit="'+esc(category.id)+'">সম্পাদনা</button>'+
+     '<button class="catalog-mini-button" type="button" data-cat-toggle="'+esc(category.id)+'">'+(category.is_active?"লুকান":"দেখান")+'</button>'+
+     (depth<3?'<button class="catalog-mini-button" type="button" data-cat-add-child="'+esc(category.id)+'">＋ সাব-ক্যাটাগরি</button>':"")+
     '</div>'+
-   '</div>'+
-   (childMarkup?'<div class="catalog-tree-branch">'+childMarkup+'</div>':"")+
-  '</article>';
+    '<span class="catalog-explorer-count">'+branchCount+'টি মোট পণ্য · '+childCount+'টি সাব-ক্যাটাগরি</span>'+
+   '</div></article>';
  }
- function renderTree(){
-  const tree=$("categoryTree");if(!tree)return;
-  updateUndoButtons();
-  const total=state.categories.length;
-  const nested=state.categories.filter(c=>c.parent_id).length;
+ function renderExplorer(){
+  const section=$("categoryExplorerSection"),tree=$("categoryTree");
+  if(!section||!tree)return;
+  const isHome=state.view==="home";
+  section.hidden=isHome;
+  if(isHome)return;
+  let selected=state.selectedCategoryId?categoryById(state.selectedCategoryId):null;
+  if(state.selectedCategoryId&&!selected){state.selectedCategoryId=null;selected=null;}
+  const siblings=childrenOf(selected?.id||null);
+  const depth=selected?depthOf(selected):0;
+  const search=$("categoryTreeSearch")?.value||"",filter=$("categoryTreeVisibility")?.value||"all";
+  $("categoryViewTitle").textContent=selected?selected.name+" · ক্যাটাগরি":"মূল ক্যাটাগরি";
+  $("categoryViewDescription").textContent=selected
+   ?"এই ক্যাটাগরির সাব-ক্যাটাগরিতে যেতে পারবেন। নিচে সরাসরি যুক্ত পণ্য আলাদাভাবে সাজানো যাবে।"
+   :"প্রথমে একটি ক্যাটাগরি খুলুন। তার ভেতরে সাব-ক্যাটাগরি ও পণ্যের তালিকা পাবেন।";
+  $("categoryBackBtn").hidden=!selected;
+  $("addRootCategory").hidden=!!selected;
+  $("addChildCategory").hidden=!selected||depth>=3;
+  $("categoryTreeSearch").placeholder=selected?"এই স্তরের সাব-ক্যাটাগরি খুঁজুন…":"মূল ক্যাটাগরি খুঁজুন…";
+  $("categoryExplorerHint").innerHTML=selected
+   ?'<strong>'+esc(selected.name)+'</strong> · '+childrenOf(selected.id).length+'টি সাব-ক্যাটাগরি · '+directCategoryProductCount(selected)+'টি সরাসরি পণ্য। সাব-ক্যাটাগরি সাজাতে ↑/↓ ব্যবহার করুন; পণ্য সাজানোর জন্য নিচের তালিকা ব্যবহার করুন।'
+   :'একটি ক্যাটাগরির <strong>ভেতরে যান →</strong>। তারপর তার ভেতরের সাব-ক্যাটাগরি এবং সরাসরি যুক্ত পণ্য সাজাতে পারবেন।';
+  const crumbs=[{id:"root",name:"সব ক্যাটাগরি"},...(selected?ancestorsOf(selected).map(c=>({id:c.id,name:c.name})):[])];
+  $("categoryBreadcrumb").innerHTML=crumbs.map((crumb,index)=>
+   (index===crumbs.length-1
+    ?'<span class="catalog-breadcrumb-current" aria-current="page">'+esc(crumb.name)+'</span>'
+    :'<button type="button" data-cat-breadcrumb="'+esc(crumb.id)+'">'+esc(crumb.name)+'</button>')
+  ).join('<span aria-hidden="true">/</span>');
   const activeProducts=state.products.filter(p=>p.is_active).length;
   const hidden=state.categories.filter(c=>!effectiveActive(c)).length+state.products.filter(p=>!p.is_active).length;
-  if($("catalogCategoryCount"))$("catalogCategoryCount").textContent=String(total);
-  if($("catalogProductCount"))$("catalogProductCount").textContent=String(activeProducts);
-  if($("catalogNestedCount"))$("catalogNestedCount").textContent=String(nested);
-  if($("catalogHiddenCount"))$("catalogHiddenCount").textContent=String(hidden);
-  const search=$("categoryTreeSearch")?.value||"",filter=$("categoryTreeVisibility")?.value||"all";
-  tree.innerHTML=childrenOf(null).map(c=>categoryNodeMarkup(c,search,filter)).join("");
-  $("categoryTreeCount").textContent=state.categories.length+" categories · "+state.categories.filter(c=>!c.parent_id).length+" top-level categories";
-  $("categoryTreeEmpty").hidden=!!tree.children.length;
- }
- function fillSortCategory(){
-  const select=$("sortCategory");if(!select)return;
-  const previous=select.value;
-  select.innerHTML='<option value="">Choose a category</option>'+orderedCategories().map(c=>'<option value="'+esc(c.slug)+'">'+esc("— ".repeat(Math.max(0,depthOf(c)-1))+c.name)+'</option>').join("");
-  if(state.categories.some(c=>c.slug===previous))select.value=previous;
-  else select.value=childrenOf(null)[0]?.slug||"";
+  $("catalogCategoryCount").textContent=String(state.categories.length);
+  $("catalogProductCount").textContent=String(activeProducts);
+  $("catalogNestedCount").textContent=String(state.categories.filter(c=>c.parent_id).length);
+  $("catalogHiddenCount").textContent=String(hidden);
+  const markup=siblings.map((category,index)=>categoryNodeMarkup(category,index,siblings.length,search,filter)).filter(Boolean).join("");
+  tree.innerHTML=markup;
+  $("categoryTreeEmpty").hidden=!!markup;
+  $("categoryTreeEmpty").textContent=search||filter!=="all"?"এই স্তরে খোঁজের সঙ্গে মেলে এমন কোনো ক্যাটাগরি নেই।":"এখানে এখনো কোনো সাব-ক্যাটাগরি নেই।";
+  setStatus("categoryTreeStatus","ক্যাটাগরির ক্রম বদলালে তা ওয়েবসাইটেও আপডেট হবে।");
+  updateUndoButtons();
  }
  function productRowMarkup(product,index,total,canDrag){
   return '<article class="product-sort-item" draggable="'+String(canDrag)+'" data-product-id="'+esc(product.id)+'">'+
    '<span class="product-sort-grip" aria-hidden="true" title="Drag to reorder">⠿</span>'+
    (product.image_url?'<img class="product-sort-image" src="'+esc(product.image_url)+'" alt="" loading="lazy">':'<span class="product-sort-image product-sort-image-empty">No image</span>')+
    '<div class="product-sort-main"><strong>'+esc(product.name)+'</strong><small>'+esc(product.sku||product.slug)+' · '+esc(categoryPath(categoryBySlug(product.category_slug)||{name:product.category||"Unassigned"}))+'</small><div class="product-sort-meta"><span class="product-sort-price">'+esc(product.display_price||money(product.price))+'</span><span class="hf-status '+(product.is_active?"hf-status-active":"hf-status-hidden")+'">'+(product.is_active?"Visible":"Hidden")+'</span>'+(product.is_featured?'<span class="hf-status hf-status-review">Featured</span>':"")+'</div></div>'+
-   '<div class="product-sort-actions"><button type="button" class="catalog-mini-button" data-product-up="'+esc(product.id)+'" '+(index===0||!canDrag?"disabled":"")+' aria-label="Move '+esc(product.name)+' up">↑</button><button type="button" class="catalog-mini-button" data-product-down="'+esc(product.id)+'" '+(index===total-1||!canDrag?"disabled":"")+' aria-label="Move '+esc(product.name)+' down">↓</button><button type="button" class="catalog-mini-button" data-product-edit="'+esc(product.id)+'">Quick edit</button></div></article>';
+   '<div class="product-sort-actions"><button type="button" class="catalog-mini-button" data-product-up="'+esc(product.id)+'" '+(index===0||!canDrag?"disabled":"")+' aria-label="Move '+esc(product.name)+' up">↑ উপরে</button><button type="button" class="catalog-mini-button" data-product-down="'+esc(product.id)+'" '+(index===total-1||!canDrag?"disabled":"")+' aria-label="Move '+esc(product.name)+' down">↓ নিচে</button><button type="button" class="catalog-mini-button" data-product-edit="'+esc(product.id)+'">সম্পাদনা</button></div></article>';
  }
  function renderSorting(){
-  const mode=$("sortMode")?.value||"category",categorySlug=$("sortCategory")?.value||"";
-  updateUndoButtons();
-  const wrap=$("sortCategoryWrap");if(wrap)wrap.hidden=mode==="home";
-  if(mode==="category"&&!categorySlug){fillSortCategory();}
-  const selectedSlug=$("sortCategory")?.value||categorySlug;
-  let all=mode==="home"?state.products.filter(p=>p.is_active).sort((a,b)=>Number(a.home_sort_order??1000000)-Number(b.home_sort_order??1000000)||orderOf(a)-orderOf(b)||String(a.name).localeCompare(String(b.name))):
-   state.products.filter(p=>p.category_slug===selectedSlug).sort((a,b)=>orderOf(a)-orderOf(b)||String(a.name).localeCompare(String(b.name)));
+  const section=$("productSortSection"),list=$("productSortList");
+  if(!section||!list)return;
+  const mode=state.view==="home"?"home":"category";
+  const selected=state.selectedCategoryId?categoryById(state.selectedCategoryId):null;
+  section.hidden=mode!=="home"&&!selected;
+  if(section.hidden)return;
+  $("productSortTitle").textContent=mode==="home"?"হোমপেজের পণ্যের ক্রম":"পণ্য · "+selected.name;
+  $("productSortDescription").textContent=mode==="home"
+   ?"হোমপেজে প্রথমে কোন পণ্য দেখাবে, তা এখানে সাজান।"
+   :"এই ক্যাটাগরিতে সরাসরি যুক্ত পণ্য সাজান। সাব-ক্যাটাগরির পণ্য আলাদা করে সেই সাব-ক্যাটাগরিতে ঢুকে সাজাতে হবে।";
+  $("productSortScopeBadge").textContent=mode==="home"?"Homepage order":"Category order";
+  $("productSortBackBtn").hidden=mode!=="home";
+  const scopeSlug=mode==="home"?"":selected.slug;
+  const all=mode==="home"
+   ?state.products.filter(p=>p.is_active).sort((a,b)=>Number(a.home_sort_order??1000000)-Number(b.home_sort_order??1000000)||orderOf(a)-orderOf(b)||String(a.name).localeCompare(String(b.name)))
+   :state.products.filter(p=>p.category_slug===scopeSlug).sort((a,b)=>orderOf(a)-orderOf(b)||String(a.name).localeCompare(String(b.name)));
   const search=String($("productSortSearch")?.value||"").toLowerCase().trim();
   const filtered=search?all.filter(p=>(p.name+" "+p.slug+" "+(p.sku||"")).toLowerCase().includes(search)):all;
-  const list=$("productSortList");if(!list)return;
   const canDrag=!search;
-  list.innerHTML=filtered.length?filtered.map((p,i)=>productRowMarkup(p,i,filtered.length,canDrag)).join(""):"";
+  list.innerHTML=filtered.length?filtered.map((p,i)=>productRowMarkup(p,i,filtered.length,canDrag)).join():"";
   $("productSortEmpty").hidden=!!filtered.length;
   $("sortingVisibleCount").textContent=String(all.length);
   $("sortingActiveCount").textContent=String(all.filter(p=>p.is_active).length);
   $("sortingHiddenCount").textContent=String(all.filter(p=>!p.is_active).length);
-  $("sortingScopeNote").textContent=mode==="home"?"Homepage order · active products":"Products assigned to "+(categoryBySlug(selectedSlug)?.name||"the selected category");
-  $("productSortStatus").textContent=search?"Clear search to reorder the complete list.":"Drag to reorder · changes save after drop.";
+  $("sortingScopeNote").textContent=mode==="home"?"হোমপেজের সক্রিয় পণ্য":"সরাসরি যুক্ত পণ্য · "+selected.name;
+  $("productSortStatus").textContent=search?"সম্পূর্ণ ক্রম সাজাতে সার্চ মুছে দিন।":"ড্র্যাগ করুন অথবা ↑ উপরে / ↓ নিচে চাপুন।";
+  updateUndoButtons();
  }
  function sortCategoryIds(parentId){
   return childrenOf(parentId).map(c=>c.id);
@@ -287,7 +320,7 @@ window.HFAdminReady.then(async H => {
   else await persistProductOrder(undo.mode,undo.categorySlug,undo.ids,null,false,true);
  }
  async function reorderProduct(id,directionOrTarget){
-  const mode=$("sortMode")?.value||"category",slug=$("sortCategory")?.value||"";
+  const mode=state.view==="home"?"home":"category",slug=mode==="home"?"":categoryById(state.selectedCategoryId)?.slug||"";
   let list=mode==="home"?state.products.filter(p=>p.is_active).sort((a,b)=>Number(a.home_sort_order??1000000)-Number(b.home_sort_order??1000000)||orderOf(a)-orderOf(b)||String(a.name).localeCompare(String(b.name))):
    state.products.filter(p=>p.category_slug===slug).sort((a,b)=>orderOf(a)-orderOf(b)||String(a.name).localeCompare(String(b.name)));
   const ids=list.map(p=>p.id),from=ids.indexOf(id);
@@ -390,7 +423,12 @@ window.HFAdminReady.then(async H => {
  }
  function setupEvents(){
   document.querySelectorAll("[data-catalog-refresh]").forEach(btn=>btn.addEventListener("click",()=>reload(true)));
-  $("categoryTreeSearch")?.addEventListener("input",renderTree);$("categoryTreeVisibility")?.addEventListener("change",renderTree);
+  $("categoryTreeSearch")?.addEventListener("input",renderExplorer);$("categoryTreeVisibility")?.addEventListener("change",renderExplorer);
+   $("categoryBackBtn")?.addEventListener("click",()=>{const selected=categoryById(state.selectedCategoryId);state.selectedCategoryId=selected?.parent_id||null;$("categoryTreeSearch").value="";renderPage();});
+   $("addChildCategory")?.addEventListener("click",()=>{if(state.selectedCategoryId)openCategoryEditor(null,state.selectedCategoryId);});
+   $("homeSortToggle")?.addEventListener("click",()=>{state.view="home";renderPage();});
+   $("productSortBackBtn")?.addEventListener("click",()=>{state.view="categories";state.selectedCategoryId=null;renderPage();});
+
   $("addRootCategory")?.addEventListener("click",()=>openCategoryEditor());
   $("categoryForm")?.addEventListener("submit",saveCategory);
   $("undoCategoryOrder")?.addEventListener("click",()=>undoLastOrder("category"));
@@ -402,6 +440,8 @@ window.HFAdminReady.then(async H => {
   $("categoryName")?.addEventListener("input",()=>{if(!$("categorySlug").readOnly)$("categorySlug").value=slugify($("categoryName").value);});
   document.addEventListener("click",event=>{
    const close=event.target.closest("[data-close-catalog-dialog]");if(close){document.querySelectorAll("dialog[open]").forEach(d=>d.close());return;}
+   const breadcrumb=event.target.closest("[data-cat-breadcrumb]");if(breadcrumb){state.view="categories";state.selectedCategoryId=breadcrumb.dataset.catBreadcrumb==="root"?null:breadcrumb.dataset.catBreadcrumb;$("categoryTreeSearch").value="";renderPage();return;}
+   const enter=event.target.closest("[data-cat-enter]");if(enter){state.view="categories";state.selectedCategoryId=enter.dataset.catEnter;$("categoryTreeSearch").value="";$("categoryTreeVisibility").value="all";$("productSortSearch").value="";renderPage();return;}
    const edit=event.target.closest("[data-cat-edit]");if(edit){openCategoryEditor(edit.dataset.catEdit);return;}
    const toggle=event.target.closest("[data-cat-toggle]");if(toggle){toggleCategory(toggle.dataset.catToggle);return;}
    const addChild=event.target.closest("[data-cat-add-child]");if(addChild){openCategoryEditor(null,addChild.dataset.catAddChild);return;}
