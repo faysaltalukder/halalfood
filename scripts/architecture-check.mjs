@@ -20,6 +20,7 @@ const required = [
   "admin/pos.css",
   "admin/pos.js",
   "supabase/migrations/20261031044407_create_offline_pos_sales.sql",
+  "supabase/migrations/20261031045058_harden_offline_pos_with_invoker_rls.sql",
   "scripts/admin-pos-check.mjs",
 ];
 

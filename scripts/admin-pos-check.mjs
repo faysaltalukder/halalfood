@@ -9,6 +9,7 @@ const required = [
   "admin/shared.js",
   "admin/app.js",
   "supabase/migrations/20261031044407_create_offline_pos_sales.sql",
+  "supabase/migrations/20261031045058_harden_offline_pos_with_invoker_rls.sql",
 ];
 const failures = [];
 for (const file of required) {
@@ -21,6 +22,7 @@ if (!failures.length) {
   const shared = read("admin/shared.js");
   const app = read("admin/app.js");
   const migration = read("supabase/migrations/20261031044407_create_offline_pos_sales.sql");
+  const hardening = read("supabase/migrations/20261031045058_harden_offline_pos_with_invoker_rls.sql");
   const checks = [
     [page.includes('data-page="pos"'), "POS page must use data-page=pos."],
     [page.includes('id="posImportSection"') && page.includes('id="posRecentSection"'), "POS import and history sections are required."],
@@ -29,8 +31,8 @@ if (!failures.length) {
     [js.includes("const parseCsv") && js.includes("function buildGroups"), "CSV parsing and grouping must be implemented."],
     [js.includes('client.rpc("create_offline_pos_sale"'), "POS imports must use the atomic database RPC."],
     [js.includes("POS-") && js.toLowerCase().includes("already imported"), "The UI must communicate POS duplicate protection."],
-    [migration.includes("SECURITY DEFINER") && migration.includes("aal2"), "The database RPC must enforce admin MFA."],
-    [migration.includes("inventory_movements") && migration.includes("'pos_sale'"), "The database RPC must write POS stock movements."],
+    [migration.includes("aal2") && hardening.includes("SECURITY INVOKER") && hardening.includes("aal2"), "The database RPC must enforce MFA through invoker privileges and RLS."],
+    [migration.includes("inventory_movements") && migration.includes("'pos_sale'") && hardening.includes("Admins can record POS stock movements"), "The database RPC must write POS stock movements under admin-only RLS."],
     [migration.includes("admin_finance_entries") && migration.includes("'Offline POS Sale'"), "The database RPC must create a linked finance entry."],
     [!js.includes("fbq('track', 'Purchase'") && !js.includes("gtag('event', 'purchase'"), "Offline POS must not emit website Purchase tracking."],
   ];

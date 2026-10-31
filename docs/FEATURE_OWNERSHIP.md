@@ -83,7 +83,7 @@ Product/category/blog CMS: `loadAll`, `renderProducts`, `renderCategories`, `ren
 ## Offline POS data contract
 
 - One CSV row represents one product line; rows sharing `sale_reference` form one receipt.
-- The RPC writes `orders` + `order_items`, optionally decrements tracked stock and records `inventory_movements.pos_sale`, and creates a linked `admin_finance_entries` income record.
+- The SECURITY INVOKER RPC writes `orders` + `order_items`, optionally decrements tracked stock and records `inventory_movements.pos_sale` under an admin+MFA INSERT policy, and creates a linked `admin_finance_entries` income record.
 - Payment received = Confirmed finance entry; not received = Draft. The import does not emit website Purchase events.
 - Duplicate `POS-{SALE_REFERENCE}` order numbers are skipped; conflicting non-POS references are rejected.
 

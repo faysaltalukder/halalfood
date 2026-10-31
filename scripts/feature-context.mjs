@@ -44,7 +44,8 @@ const FEATURES = {
     readFirst: ["admin/pos.html", "admin/pos.js", "admin/app.js"],
     files: [
       "admin/pos.html", "admin/pos.js", "admin/pos.css", "admin/shared.js", "admin/app.js",
-      "supabase/migrations/20261031044407_create_offline_pos_sales.sql"
+      "supabase/migrations/20261031044407_create_offline_pos_sales.sql",
+      "supabase/migrations/20261031045058_harden_offline_pos_with_invoker_rls.sql"
     ],
     anchors: [
       { file: "admin/pos.js", names: ["validatePreview", "runImport"] },
