@@ -19,7 +19,7 @@ window.HFMarketingInit=async function(){
  const H=window.HFAdmin;if(!H)throw new Error("Admin session is not ready.");
  const {client,ADMIN_EMAIL,esc,dateTime,toast,audit,downloadFile,csvText}=H;
  const PAGE_SIZE=30,LOAD_SIZE=500,MAX_CUSTOMERS=30000;
- let customers=[],preferences=new Map(),campaigns=[],segmentRules=[],channel="whatsapp",activeTab="compose",selected=new Set(),audiencePage=0,consentPage=0,emailProvider={configured:false,from:"",missing:[]},savedCampaignId=null;
+ let customers=[],preferences=new Map(),campaigns=[],segmentRules=[],channel="whatsapp",activeTab="compose",selected=new Set(),audiencePage=0,consentPage=0,emailProvider={configured:false,from:"",missing:[],providerNote:""},savedCampaignId=null;
  const cols="id,name,phone,email,created_at,is_blocked,archived_at,anonymized_at,total_orders,delivered_orders,recorded_order_value,last_order_at,qualifying_orders,segment_code,segment_name,segment_color,has_friend_tag";
  const number=n=>Number(n||0).toLocaleString("en-BD");
  const validEmail=v=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v||"").trim());
@@ -72,14 +72,14 @@ window.HFMarketingInit=async function(){
  async function checkEmailProvider(){
   try{
    const {data,error}=await client.functions.invoke("marketing-email",{body:{action:"status"}});
-   if(error||!data){emailProvider={configured:false,from:"",missing:["Email provider status unavailable"]};return;}
-   emailProvider={configured:!!data.configured,from:String(data.sender||""),missing:Array.isArray(data.missing)?data.missing:[]};
-  }catch(_){emailProvider={configured:false,from:""};}
+   if(error||!data){emailProvider={configured:false,from:"",missing:["Gmail connection status unavailable"],providerNote:""};return;}
+   emailProvider={configured:!!data.configured,from:String(data.sender||""),missing:Array.isArray(data.missing)?data.missing:[],providerNote:String(data.providerNote||"")};
+  }catch(_){emailProvider={configured:false,from:"",missing:[],providerNote:""};}
   const dot=$("mktEmailReadyDot"),title=$("mktEmailReadyText"),detail=$("mktEmailReadyDetail"),hint=$("mktEmailProviderHint");
   if(dot)dot.className="hf-readiness-dot "+(emailProvider.configured?"is-ready":"is-pending");
-  if(title)title.textContent=emailProvider.configured?"Email provider connected":"Provider setup required";
-  if(detail)detail.textContent=emailProvider.configured?"Configured sender: "+emailProvider.from+" · Must belong to a domain verified in Resend.":"Missing: "+(emailProvider.missing.length?emailProvider.missing.join(", "):"Provider setup required")+". Add these as Supabase Edge Function secrets.";
-  if(hint)hint.textContent=emailProvider.configured?"Email campaigns can be approved after recipient consent is rechecked. Resend still must recognise the sender domain as verified; provider acceptance is not proof of inbox delivery.":"No email is sent while the provider is unconfigured. CSV export remains available for a consented audience.";
+  if(title)title.textContent=emailProvider.configured?"Gmail API connected":"Gmail connection needs attention";
+  if(detail)detail.textContent=emailProvider.configured?"Halal Food sender: "+emailProvider.from:"Missing: "+(emailProvider.missing.length?emailProvider.missing.join(", "):"Gmail OAuth configuration")+"; check Supabase Edge Function secrets.";
+  if(hint)hint.textContent=emailProvider.configured?(emailProvider.providerNote+" Only active customers with recorded email opt-in can receive campaigns. Gmail acceptance is not proof of inbox placement or reading."):"Gmail is not ready. No email will be sent until the OAuth credentials are available; CSV export remains restricted to a consent-checked audience.";
  }
  function matchingCustomers(){
   const segment=$("mktSegment").value,search=$("mktAudienceSearch").value.trim().toLocaleLowerCase();
@@ -135,7 +135,7 @@ window.HFMarketingInit=async function(){
   const body=$("mktCampaignHistoryBody");
   if(!campaigns.length){body.innerHTML='<tr><td colspan="6" class="hf-marketing-muted">No marketing campaigns have been saved yet.</td></tr>';return;}
   body.innerHTML=campaigns.map(c=>{
-   const action=c.channel==="whatsapp"?((["draft","exported"].includes(c.status)?'<button type="button" class="hf-button hf-button-secondary" data-mkt-export="'+esc(c.id)+'">Export WhatsApp CSV</button>':"")+(c.status==="exported"?'<button type="button" class="hf-button hf-button-primary" data-mkt-whatsapp-sent="'+esc(c.id)+'">Record WhatsApp sent</button>':"")):('<button type="button" class="hf-button hf-button-secondary" data-mkt-export="'+esc(c.id)+'">Export email CSV</button>'+(emailProvider.configured&&["draft","partially_sent"].includes(c.status)?'<button type="button" class="hf-button hf-button-primary" data-mkt-send="'+esc(c.id)+'">'+(c.status==="partially_sent"?"Continue send":"Approve & send")+'</button>':(!emailProvider.configured?'<button type="button" class="hf-button hf-button-secondary" disabled title="Configure RESEND_API_KEY and MARKETING_FROM_EMAIL in Supabase Edge Function secrets">Provider needed</button>':"")));
+   const action=c.channel==="whatsapp"?((["draft","exported"].includes(c.status)?'<button type="button" class="hf-button hf-button-secondary" data-mkt-export="'+esc(c.id)+'">Export WhatsApp CSV</button>':"")+(c.status==="exported"?'<button type="button" class="hf-button hf-button-primary" data-mkt-whatsapp-sent="'+esc(c.id)+'">Record WhatsApp sent</button>':"")):('<button type="button" class="hf-button hf-button-secondary" data-mkt-export="'+esc(c.id)+'">Export email CSV</button>'+(emailProvider.configured&&["draft","partially_sent"].includes(c.status)?'<button type="button" class="hf-button hf-button-primary" data-mkt-send="'+esc(c.id)+'">'+(c.status==="partially_sent"?"Continue send":"Approve & send")+'</button>':(!emailProvider.configured?'<button type="button" class="hf-button hf-button-secondary" disabled title="Configure GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET and GMAIL_REFRESH_TOKEN in Supabase Edge Function secrets">Provider needed</button>':"")));
    return '<tr><td><div class="hf-marketing-history-name"><strong>'+esc(c.name)+'</strong><small>'+esc(dateTime(c.created_at))+'</small></div></td><td>'+esc(c.channel==="whatsapp"?"WhatsApp":"Email")+'</td><td>'+statusBadge(c.status,c.channel)+'</td><td>'+number(c.audience_count)+'</td><td>'+number(c.sent_count)+' / '+number(c.failed_count)+'</td><td><div class="hf-marketing-history-actions">'+action+'</div></td></tr>';
   }).join("");
  }
@@ -292,7 +292,7 @@ window.HFMarketingInit=async function(){
   if(sendError)throw sendError;
   if(!result||!result.success)throw new Error(result?.error||"Email provider did not confirm the send.");
   await loadCampaigns();renderHistory();
-  toast("Email batch accepted by provider: "+number(result.acceptedByProvider??result.sent??0)+", failed/suppressed: "+number(result.failed||0)+".","success");
+  toast("Gmail accepted "+number(result.acceptedByProvider??result.sent??0)+" email(s); failed/suppressed: "+number(result.failed||0)+", remaining: "+number(result.remaining||0)+".","success");
  }
  function openConsent(customerId,ch,allowed){
   const c=customers.find(x=>x.id===customerId);if(!c)return;
