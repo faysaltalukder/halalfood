@@ -123,7 +123,7 @@ for (const id of [
   assert.ok(ordersPage.includes(`id="${id}"`), `Orders workspace is missing #${id}.`);
 }
 assert.ok(ordersPage.includes("orders.css?v=20261030-bulk-manager-v1"), "Orders workspace bulk-manager stylesheet must be cache-busted.");
-assert.ok(ordersPage.includes("app.js?v=20261031-products-workspace-v1"), "Orders workspace must load the current application script with product barcode support.");
+assert.ok(ordersPage.includes("app.js?v=20261031-coupons-v1"), "Orders workspace must load the current application script with coupon discount details.");
 assert.ok(ordersPage.includes("bulkStatusDialog") && ordersPage.includes("bulkAssignDialog") && ordersPage.includes("bulkCourierDialog"), "All bulk workflow dialogs must be present.");
 for (const status of ["pending", "processing", "shipped", "delivered", "cancelled"]) {
   assert.ok(ordersCss.includes(`.hf-order-card[data-status="${status}"]`), `Order cards need a distinct ${status} color.`);
