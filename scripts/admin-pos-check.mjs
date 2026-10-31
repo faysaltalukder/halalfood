@@ -26,7 +26,7 @@ if (!failures.length) {
     [page.includes('id="posImportSection"') && page.includes('id="posRecentSection"'), "POS import and history sections are required."],
     [shared.includes('"pos","pos","POS Management"'), "POS Management must be in the admin navigation."],
     [app.includes('window.HFPosInit'), "Admin dispatcher must initialize the POS module."],
-    [js.includes("const parseCsv") && js.includes("const buildGroups"), "CSV parsing and grouping must be implemented."],
+    [js.includes("const parseCsv") && js.includes("function buildGroups"), "CSV parsing and grouping must be implemented."],
     [js.includes('client.rpc("create_offline_pos_sale"'), "POS imports must use the atomic database RPC."],
     [js.includes("POS-") && js.toLowerCase().includes("already imported"), "The UI must communicate POS duplicate protection."],
     [migration.includes("SECURITY DEFINER") && migration.includes("aal2"), "The database RPC must enforce admin MFA."],
