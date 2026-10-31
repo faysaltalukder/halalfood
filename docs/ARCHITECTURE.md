@@ -24,6 +24,7 @@ Do not change a user-visible behavior or an API/data contract as part of a code-
 | Public styles | `css/` | Customer-facing visual system |
 | Admin shell | `admin/index.html` | Admin markup and shell |
 | Admin logic | `admin/app.js`, `admin/shared.js`, `admin/i18n.js`, `js/admin-cms.js` | Dashboard features, shared data access, language, CMS |
+| Supplier procurement workspace | `admin/supplier-management.js`, `admin/supplier-*.html` | Supplier master data, multi-item purchase orders, GRN, supplier bills, payments, credits and ledger |
 | Edge Functions | `supabase/functions/<function>/index.ts` | Server-side operations and external integrations |
 | Database history | `supabase/migrations/` | Versioned schema and policy changes |
 | Quality checks | `scripts/`, `.github/workflows/` | Automated validation |
