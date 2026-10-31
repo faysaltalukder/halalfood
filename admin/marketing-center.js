@@ -19,7 +19,7 @@ window.HFMarketingInit=async function(){
  const H=window.HFAdmin;if(!H)throw new Error("Admin session is not ready.");
  const {client,ADMIN_EMAIL,esc,dateTime,toast,audit,downloadFile,csvText}=H;
  const PAGE_SIZE=30,LOAD_SIZE=500,MAX_CUSTOMERS=30000;
- let customers=[],preferences=new Map(),campaigns=[],channel="whatsapp",activeTab="compose",selected=new Set(),audiencePage=0,consentPage=0,emailProvider={configured:false,from:""},savedCampaignId=null;
+ let customers=[],preferences=new Map(),campaigns=[],channel="whatsapp",activeTab="compose",selected=new Set(),audiencePage=0,consentPage=0,emailProvider={configured:false,from:"",missing:[]},savedCampaignId=null;
  const cols="id,name,phone,email,created_at,is_blocked,archived_at,anonymized_at,total_orders,delivered_orders,recorded_order_value,last_order_at,qualifying_orders,segment_code,segment_name,segment_color,has_friend_tag";
  const number=n=>Number(n||0).toLocaleString("en-BD");
  const validEmail=v=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v||"").trim());
@@ -62,13 +62,13 @@ window.HFMarketingInit=async function(){
  async function checkEmailProvider(){
   try{
    const {data,error}=await client.functions.invoke("marketing-email",{body:{action:"status"}});
-   if(error||!data){emailProvider={configured:false,from:""};return;}
-   emailProvider={configured:!!data.configured,from:String(data.from||"")};
+   if(error||!data){emailProvider={configured:false,from:"",missing:["Email provider status unavailable"]};return;}
+   emailProvider={configured:!!data.configured,from:String(data.sender||""),missing:Array.isArray(data.missing)?data.missing:[]};
   }catch(_){emailProvider={configured:false,from:""};}
   const dot=$("mktEmailReadyDot"),title=$("mktEmailReadyText"),detail=$("mktEmailReadyDetail"),hint=$("mktEmailProviderHint");
   if(dot)dot.className="hf-readiness-dot "+(emailProvider.configured?"is-ready":"is-pending");
   if(title)title.textContent=emailProvider.configured?"Email provider connected":"Provider setup required";
-  if(detail)detail.textContent=emailProvider.configured?"Verified sender: "+emailProvider.from:"A verified sender and server-side API key are required.";
+  if(detail)detail.textContent=emailProvider.configured?"Verified sender: "+emailProvider.from:"Missing: "+(emailProvider.missing.length?emailProvider.missing.join(", "):"Provider setup required")+". Add these as Supabase Edge Function secrets.";
   if(hint)hint.textContent=emailProvider.configured?"Email campaigns can be sent after recipient consent is rechecked and you approve the send.":"No email is sent while the provider is unconfigured. CSV export remains available for a consented audience.";
  }
  function matchingCustomers(){
@@ -239,7 +239,7 @@ window.HFMarketingInit=async function(){
   if(sendError)throw sendError;
   if(!result||!result.success)throw new Error(result?.error||"Email provider did not confirm the send.");
   await loadCampaigns();renderHistory();
-  toast("Email batch processed. Sent: "+number(result.sent||0)+", failed: "+number(result.failed||0)+".","success");
+  toast("Email batch accepted by provider: "+number(result.acceptedByProvider??result.sent??0)+", failed/suppressed: "+number(result.failed||0)+".","success");
  }
  function openConsent(customerId,ch,allowed){
   const c=customers.find(x=>x.id===customerId);if(!c)return;
@@ -273,7 +273,7 @@ window.HFMarketingInit=async function(){
  }
  document.querySelectorAll("[data-marketing-tab]").forEach(b=>b.addEventListener("click",()=>switchTab(b.dataset.marketingTab)));
  document.querySelectorAll("[data-marketing-channel]").forEach(b=>b.addEventListener("click",()=>switchChannel(b.dataset.marketingChannel)));
- ["mktSegment","mktMinOrders","mktMaxOrders","mktLastOrder","mktAudienceSearch"].forEach(id=>$(id).addEventListener(id==="mktAudienceSearch"?"input":"change",()=>{audiencePage=0;renderAudience();}));
+ ["mktSegment","mktMinOrders","mktMaxOrders","mktLastOrder","mktAudienceSearch"].forEach(id=>$(id).addEventListener(id==="mktAudienceSearch"?"input":"change",()=>{selected.clear();audiencePage=0;renderAudience();}));
  $("mktSelectAll").addEventListener("click",()=>{matchingCustomers().filter(c=>channelHasPermission(c,channel)).forEach(c=>selected.add(c.id));renderAudience();});
  $("mktClearSelection").addEventListener("click",()=>{selected.clear();renderAudience();});
  $("mktAudienceBody").addEventListener("change",e=>{const box=e.target.closest("[data-mkt-select]");if(!box)return;if(box.checked)selected.add(box.dataset.mktSelect);else selected.delete(box.dataset.mktSelect);renderAudience();});
