@@ -327,9 +327,10 @@ window.HFMarketingInit=async function(){
  }
  async function restoreDraftAfterPreflightFailure(id,reason){
   const {data:current,error:readError}=await client.from("marketing_campaigns").select("status,sent_count,failed_count").eq("id",id).maybeSingle();
-  if(readError||!current||current.status!=="approved"||number(current.sent_count)>0||number(current.failed_count)>0)return;
-  await client.from("marketing_campaigns").update({status:"draft",approved_by:null,approved_at:null,last_error:String(reason||"Send could not start. No email was sent.").slice(0,900),updated_at:new Date().toISOString()}).eq("id",id).eq("status","approved");
-  await loadCampaigns();renderHistory();
+  if(readError||!current||current.status!=="approved"||Number(current.sent_count||0)>0||Number(current.failed_count||0)>0)return;
+  const {error:resetError}=await client.from("marketing_campaigns").update({status:"draft",approved_by:null,approved_at:null,last_error:String(reason||"Send could not start. No email was sent.").slice(0,900),updated_at:new Date().toISOString()}).eq("id",id).eq("status","approved");
+  if(resetError)throw new Error("The send did not start, but the campaign could not be returned to Draft. Refresh history and inspect its status before retrying.");
+  await loadCampaigns();renderHistory();switchTab("history");
  }
  async function readFunctionError(error){
   let detail="";
