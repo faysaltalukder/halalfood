@@ -241,17 +241,10 @@
     const records = products.filter(item => branchSlugs.has(item.category_slug) && item.is_active)
       .sort((a,b) => (categoryRank.get(a.category_slug)??0)-(categoryRank.get(b.category_slug)??0) ||
         Number(a.sort_order||0)-Number(b.sort_order||0) || String(a.name||"").localeCompare(String(b.name||"")));
-    $$(".product-card", grid).forEach(card => {
-      const slug = $("[data-add-to-cart][data-slug]", card)?.dataset.slug;
-      if (!slug || !records.some(item => item.slug === slug)) card.remove();
-    });
-    const present = new Set($$(".product-card", grid).map(card => $("[data-add-to-cart][data-slug]", card)?.dataset.slug).filter(Boolean));
-    records.forEach(item => {
-      const existing = present.has(item.slug) ? $$(".product-card", grid).find(card => $("[data-add-to-cart][data-slug]", card)?.dataset.slug === item.slug) : null;
-      if (existing) updateProductCard(existing, item);
-      else grid.appendChild(makeProductCard(item, "standard"));
-    });
-    if (!records.length) grid.innerHTML = '<p class="muted">No active products are currently listed in this category.</p>';
+    // Rebuild the grid in the database-defined order. Updating cards in place would
+    // leave old static product cards in their original positions after a drag reorder.
+    if (records.length) grid.replaceChildren(...records.map(item => makeProductCard(item, "standard")));
+    else grid.innerHTML = '<p class="muted">No active products are currently listed in this category.</p>';
   }
   // Render every active homepage category rail from the same current catalog as category pages.
   function renderMerchandisingRails(products, categories) {
