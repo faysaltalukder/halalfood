@@ -1,6 +1,47 @@
 /* Live catalog bridge: Supabase remains the source of truth for active store products and categories. */
 (function () {
   "use strict";
+  // Older category/product pages load this bridge directly. Wait for the per-store
+  // config once, then re-run this file with the same URL so every page is configured.
+  if (!window.HALAL_STORE_CONFIG) {
+    const sourceScript = Array.from(document.scripts).find(script =>
+      /(?:^|\/)live-catalog\.js(?:\?|$)/i.test(script.src)
+    );
+    const sourceUrl = sourceScript?.src || "";
+    const retry = () => {
+      if (window.__HALAL_LIVE_CATALOG_RETRYING || !window.HALAL_STORE_CONFIG || !sourceUrl) return;
+      window.__HALAL_LIVE_CATALOG_RETRYING = true;
+      const script = document.createElement("script");
+      script.src = sourceUrl;
+      script.async = true;
+      document.head.appendChild(script);
+    };
+    window.addEventListener("halalstore:config-ready", retry, { once: true });
+    const configScript = Array.from(document.scripts).find(script =>
+      /(?:^|\/)store-config\.js(?:\?|$)/i.test(script.src)
+    );
+    if (configScript) {
+      configScript.addEventListener("load", retry, { once: true });
+      if (window.HALAL_STORE_CONFIG) retry();
+    } else {
+      const mainScript = Array.from(document.scripts).find(script =>
+        /(?:^|\/)main\.js(?:\?|$)/i.test(script.src)
+      );
+      const siteRoot = mainScript ? new URL("../", mainScript.src) :
+        sourceScript ? new URL("../", sourceScript.src) : null;
+      if (siteRoot) {
+        const config = document.createElement("script");
+        config.src = new URL("js/store-config.js", siteRoot).href;
+        config.async = true;
+        config.onload = retry;
+        config.onerror = () => console.error("This website's store-config.js could not be loaded.");
+        document.head.appendChild(config);
+      } else {
+        console.error("The reusable catalog bridge could not find store-config.js.");
+      }
+    }
+    return;
+  }
   const STORE_CONFIG = window.HALAL_STORE_CONFIG || {};
   const API_ROOT = String(STORE_CONFIG.supabase?.url || "").replace(/\/$/, "");
   const PUBLIC_KEY = STORE_CONFIG.supabase?.publishableKey || "";
@@ -199,7 +240,7 @@
   }
   function categoryHref(category) {
     const slug = encodeURIComponent(category.slug);
-    const template = category.cms_created
+    const template = (category.cms_created || category.cms_managed)
       ? (CATALOG.categoryPage || "category.html?slug={slug}")
       : (CATALOG.legacyCategoryPage || "categories/{slug}.html");
     return rootURL(String(template).replace(/\{slug\}/g, slug));
