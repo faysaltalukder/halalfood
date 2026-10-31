@@ -33,7 +33,7 @@ if (!failures.length) {
     [js.includes("sale_time:time") && js.includes("payment_received:paid"), "The sale date/time and payment status must be saved."],
     [js.includes("adjust_stock:adjustStock") && js.includes("const adjustStock=true"), "Tracked stock must be updated automatically."],
     [js.includes("referenceFor(date)") && js.includes("crypto.getRandomValues"), "POS reference must be generated internally."],
-    [js.includes("fetchFinance(null,3000)") && js.includes('e.status==="confirmed"'), "POS summary/history must read the central finance ledger."],
+    [js.includes("fetchFinance(null,3000)") && js.includes('payment?.status==="confirmed"'), "POS history must read the central finance ledger and show confirmed payment status."],
     [js.includes("offline_pos") && !js.includes("fbq(") && !js.includes("gtag("), "Offline sales must not emit website pixel/GA events."],
     [migration.includes("SECURITY INVOKER") && migration.includes("aal2"), "POS RPC must retain MFA-gated caller privileges."],
     [migration.includes("inventory_movements") && migration.includes("'pos_sale'"), "POS RPC must record tracked inventory movement."],
