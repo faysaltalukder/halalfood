@@ -214,5 +214,5 @@ BEGIN
 END;
 $function$;
 
-REVOKE ALL ON FUNCTION public.admin_set_customer_marketing_consent(uuid,text,boolean,text) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.admin_set_customer_marketing_consent(uuid,text,boolean,text,text) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.admin_set_customer_marketing_consent(uuid,text,boolean,text,text) TO authenticated;
