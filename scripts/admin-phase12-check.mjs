@@ -29,6 +29,28 @@ const categoriesMigration = read("supabase/migrations/20261031165140_add_reusabl
 
 const storeConfig = read("js/store-config.js");
 const publicHome = read("index.html");
+
+function listPublicHtml(directory) {
+  return readdirSync(join(root, directory), { withFileTypes: true }).flatMap(entry => {
+    if (entry.name === "admin" || entry.name === ".git") return [];
+    const relative = join(directory, entry.name);
+    if (entry.isDirectory()) return listPublicHtml(relative);
+    return entry.isFile() && entry.name.endsWith(".html") ? [relative.replace(/\\\\/g, "/")] : [];
+  });
+}
+const publicPages = ["index.html", ...listPublicHtml(".").filter(file => file !== "index.html" && !file.startsWith("admin/"))];
+for (const page of publicPages) {
+  const source = read(page);
+  const mainScriptIndex = source.search(/(?:\\.\\.\\/)?js\\/main\\.js\\?v=/);
+  if (mainScriptIndex < 0) continue;
+  const mainMatch = source.slice(mainScriptIndex).match(/(?:\\.\\.\\/)?js\\/main\\.js\\?v=([^"&]+)/);
+  assert.ok(mainMatch && mainMatch[1] === "20261101-catalog-sync-v2", page + ": public page must load the current shared catalog/bootstrap version.");
+  const configIndex = source.indexOf("store-config.js");
+  assert.ok(configIndex >= 0 && configIndex < mainScriptIndex, page + ": store config must load before main.js.");
+  const liveMatch = source.match(/(?:\\.\\.\\/)?js\\/live-catalog\\.js\\?v=([^"&]+)/);
+  if (liveMatch) assert.equal(liveMatch[1], "20261101-catalog-sync-v2", page + ": direct catalog script must use the current version.");
+}
+
 assert.ok(categoriesPage.includes("store-config.js") && categoriesPage.indexOf("store-config.js") < categoriesPage.indexOf("shared.js"), "Category Admin must load its per-store config before initializing Supabase.");
 assert.ok(storeConfig.includes("storeId:") && storeConfig.includes("siteRoot:") && storeConfig.includes("publishableKey:"), "Reusable store config must expose store identity, site root and a publishable Supabase key.");
 assert.ok(!/service[_-]?role|secret[_-]?key/i.test(storeConfig), "Public store config must not contain privileged Supabase credentials.");
