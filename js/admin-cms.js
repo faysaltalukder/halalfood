@@ -2,8 +2,8 @@
 (function () {
   "use strict";
   const ADMIN_EMAIL = "halalfoodbd.official@gmail.com";
-  const PRODUCT_FIELDS = "id,name,slug,category,category_slug,price,unit_type,display_price,image_url,short_description,full_description,stock_quantity,is_active,is_featured,sort_order,seo_title,seo_description,cms_created,cms_managed,updated_at,created_at";
-  const CATEGORY_FIELDS = "id,name,slug,description,image_url,is_active,sort_order,cms_created,cms_managed,updated_at,created_at";
+  const PRODUCT_FIELDS = "id,name,slug,category,category_slug,price,unit_type,display_price,image_url,short_description,full_description,stock_quantity,is_active,is_featured,sort_order,home_sort_order,seo_title,seo_description,cms_created,cms_managed,updated_at,created_at";
+  const CATEGORY_FIELDS = "id,name,slug,parent_id,description,image_url,is_active,sort_order,seo_title,seo_description,cms_created,cms_managed,updated_at,created_at";
   const POST_FIELDS = "id,title,slug,excerpt,content,featured_image_url,category,status,published_at,seo_title,seo_description,cms_created,cms_managed,updated_at,created_at";
   const state = { products: [], categories: [], posts: [], ready: false, loading: false };
   const el = id => document.getElementById(id);
@@ -22,17 +22,35 @@
   function adminSession(session) {
     return Boolean(session && String(session.user?.email || "").toLowerCase() === ADMIN_EMAIL);
   }
+  function categoryChoices() {
+    const ordered = [];
+    const visit = parentId => state.categories
+      .filter(item => (item.parent_id || null) === (parentId || null))
+      .sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0) || String(a.name).localeCompare(String(b.name)))
+      .forEach(item => { ordered.push(item); visit(item.id); });
+    visit(null);
+    return ordered;
+  }
+  function categoryLabel(item) {
+    let depth = 1, current = item, guard = 0;
+    while (current?.parent_id && guard++ < 3) {
+      current = state.categories.find(row => row.id === current.parent_id);
+      if (current) depth++;
+    }
+    return "— ".repeat(Math.max(0, depth - 1)) + item.name;
+  }
   function fillCategoryOptions(selected) {
-    const choices = state.categories.filter(item => item.is_active || item.slug === selected);
+    const ordered = categoryChoices();
+    const choices = ordered.filter(item => item.is_active || item.slug === selected);
     const html = '<option value="">Choose a category</option>' + choices
       .map(item => '<option value="' + esc(item.slug) + '" data-name="' + esc(item.name) + '"' +
-        (item.slug === selected ? " selected" : "") + ">" + esc(item.name) + "</option>").join("");
+        (item.slug === selected ? " selected" : "") + ">" + esc(categoryLabel(item)) + "</option>").join("");
     if (el("productCategory")) el("productCategory").innerHTML = html;
     if (el("categoryFilter")) {
       const previous = el("categoryFilter").value;
       el("categoryFilter").innerHTML = '<option value="">All categories</option>' +
-        state.categories.map(item => '<option value="' + esc(item.slug) + '">' + esc(item.name) + "</option>").join("");
-      if (state.categories.some(item => item.slug === previous)) el("categoryFilter").value = previous;
+        ordered.map(item => '<option value="' + esc(item.slug) + '">' + esc(categoryLabel(item)) + "</option>").join("");
+      if (ordered.some(item => item.slug === previous)) el("categoryFilter").value = previous;
     }
   }
   async function loadAll() {
