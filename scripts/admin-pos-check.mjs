@@ -11,7 +11,7 @@ const required = [
   "supabase/migrations/20261031044407_create_offline_pos_sales.sql",
   "supabase/migrations/20261031045058_harden_offline_pos_with_invoker_rls.sql",
   "supabase/migrations/20261031051527_interactive_pos_simple_sale_form.sql",
-  "supabase/migrations/20261031054500_create_manual_delivery_order_from_pos.sql",
+  "supabase/migrations/20261031055535_create_manual_delivery_order_from_pos.sql",
   "supabase/functions/courier-integration/index.ts",
 ];
 const failures = [];
@@ -25,7 +25,7 @@ if (!failures.length) {
   const shared = read("admin/shared.js");
   const app = read("admin/app.js");
   const offline = read("supabase/migrations/20261031051527_interactive_pos_simple_sale_form.sql");
-  const delivery = read("supabase/migrations/20261031054500_create_manual_delivery_order_from_pos.sql");
+  const delivery = read("supabase/migrations/20261031055535_create_manual_delivery_order_from_pos.sql");
   const courier = read("supabase/functions/courier-integration/index.ts");
   const checks = [
     [page.includes('data-page="pos"'), "POS page must use data-page=pos."],
