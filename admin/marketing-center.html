@@ -13,7 +13,7 @@
  <div><p class="page-eyebrow">CUSTOMER RELATIONSHIP / CAMPAIGN MANAGEMENT</p><h1>Marketing Center</h1><p>Build focused campaigns from your existing CRM. Select the audience, verify channel consent and review recipients before any export or send.</p></div>
  <div class="hf-marketing-hero-actions"><span class="hf-marketing-live"><i></i> CRM connected</span><button class="hf-button hf-button-secondary" data-marketing-refresh type="button">↻ Refresh data</button></div>
 </header>
-<div class="hf-marketing-policy"><span aria-hidden="true">ⓘ</span><div><strong>Controlled sending is enabled.</strong> Only active, non-blocked customers with recorded consent for the selected channel can be included. WhatsApp exports a checked worklist and individual chat links; it cannot import contacts into Broadcast Lists or send messages automatically. WhatsApp Broadcast Lists must be created manually in the phone app. Email sending stays locked until a verified sender and email provider are configured.</div></div>
+<div class="hf-marketing-policy"><span aria-hidden="true">ⓘ</span><div><strong>Controlled sending is enabled.</strong> Only active, non-blocked customers with recorded consent for the selected channel can be included. WhatsApp exports a checked worklist and individual chat links; it cannot import contacts into Broadcast Lists or send messages automatically. WhatsApp Broadcast Lists must be created manually in the phone app. Email campaigns use the Halal Food Gmail account. Only customers with recorded email marketing consent can receive messages; Google OAuth is currently in Testing mode.</div></div>
 <section class="hf-marketing-stats" aria-label="Marketing overview">
  <article class="hf-marketing-stat"><span>Active CRM customers</span><strong id="marketingStatsActive">—</strong><small>Not blocked, archived or anonymized</small></article>
  <article class="hf-marketing-stat"><span>WhatsApp consent</span><strong id="marketingStatsWhatsApp">—</strong><small>Recorded WhatsApp opt-ins</small></article>
@@ -33,7 +33,7 @@
     <div class="hf-marketing-section-head"><div><p class="hf-marketing-eyebrow">01 / CAMPAIGN SETUP</p><h2>Choose your channel and message</h2><p>One campaign is created for one channel, with a saved audience snapshot.</p></div><span class="hf-marketing-step">01</span></div>
     <div class="hf-marketing-channel-picker" role="group" aria-label="Communication channel">
      <button type="button" class="is-active" data-marketing-channel="whatsapp"><span class="hf-channel-icon hf-channel-whatsapp">◔</span><span><strong>WhatsApp</strong><small>CSV handoff · No WhatsApp API</small></span><i>✓</i></button>
-     <button type="button" data-marketing-channel="email"><span class="hf-channel-icon hf-channel-email">✉</span><span><strong>Email</strong><small>Provider required for direct sending</small></span><i>✓</i></button>
+     <button type="button" data-marketing-channel="email"><span class="hf-channel-icon hf-channel-email">✉</span><span><strong>Email</strong><small>Gmail API · Halal Food sender</small></span><i>✓</i></button>
     </div>
     <div class="hf-marketing-channel-note" id="marketingChannelNote">CSV is a consent-checked worklist, not a WhatsApp import file. Create the Broadcast List manually in the WhatsApp Business phone app; or use each row's personal chat link to send one-to-one.</div>
     <div class="hf-marketing-form-grid">
@@ -83,7 +83,7 @@
     <a class="hf-marketing-external" href="https://faq.whatsapp.com/861663048350950/" target="_blank" rel="noopener">WhatsApp Broadcast guide ↗</a>
     <div class="hf-marketing-setup-divider"></div>
     <h3>Email delivery</h3>
-    <div class="hf-marketing-readiness"><span class="hf-readiness-dot is-pending" id="mktEmailReadyDot"></span><div><strong id="mktEmailReadyText">Provider setup required</strong><small id="mktEmailReadyDetail">A verified sender and server-side API key are required.</small></div></div>
+    <div class="hf-marketing-readiness"><span class="hf-readiness-dot is-pending" id="mktEmailReadyDot"></span><div><strong id="mktEmailReadyText">Gmail connection status</strong><small id="mktEmailReadyDetail">Secure Gmail OAuth credentials are stored server-side. Sending requires admin approval and recorded customer consent.</small></div></div>
     <div class="hf-marketing-setup-note" id="mktEmailProviderHint">No email is sent while the provider is unconfigured. CSV export remains available for a consented audience.</div>
    </section>
   </aside>
@@ -120,5 +120,5 @@
  <div class="hf-dialog-actions"><button type="button" id="mktConsentCancel" class="hf-button hf-button-secondary">Cancel</button><button type="submit" id="mktConsentSave" class="hf-button hf-button-primary">Save permission record</button></div>
 </form></dialog>
 </main></div>
-<script defer src="./i18n.js?v=20261031-coupons-v1"></script><script defer src="./shared.js?v=20261031-marketing-v2"></script><script defer src="./marketing-center.js?v=20261031-marketing-v3"></script><script defer src="./app.js?v=20261031-marketing-v2"></script>
+<script defer src="./i18n.js?v=20261031-coupons-v1"></script><script defer src="./shared.js?v=20261031-marketing-v2"></script><script defer src="./marketing-center.js?v=20261031-gmail-api-v1"></script><script defer src="./app.js?v=20261031-marketing-v2"></script>
 </body></html>
