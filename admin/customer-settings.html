@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="robots" content="noindex,nofollow"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<title>Customer Settings · Halal Food Admin</title>
+<link rel="stylesheet" href="./shared.css?v=20261031-products-sidebar-v3"><link rel="stylesheet" href="./phase4-pages.css?v=20261023-admin-ultimate-v1"><link rel="stylesheet" href="./customer-management.css?v=20261031-crm-v1">
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script></head>
+<body data-page="customer-settings">
+<div id="authGate" class="auth-gate"><div class="auth-gate-card"><strong>Checking secure admin access…</strong><p>Customer settings load only after the authorized account and two-step verification are confirmed.</p></div></div>
+<div id="adminApp" hidden><main id="pageContent" tabindex="-1" class="hf-customer-page">
+<div class="page-heading hf-phase4-hero hf-customer-hero"><div><p class="page-eyebrow">CUSTOMER MANAGEMENT / SETTINGS</p><h1>Customer Settings</h1><p>Choose how customers qualify for each tier. Changes update the customer directory automatically.</p></div><div class="page-actions"><a href="./customers.html" class="hf-button hf-button-secondary">← Customer Information</a><button class="hf-button hf-button-primary" id="saveCustomerSettingsBtn" type="button">Save settings</button></div></div>
+<div class="hf-banner hf-banner-info hf-customer-notice"><span>ⓘ</span><div><strong>Keep customer tiers clear and non-overlapping</strong>The first four tiers are automatically calculated. Friend Customer is a manual relationship tag and can be applied from an individual customer profile.</div></div>
+<section class="hf-card hf-card-pad hf-customer-settings-card"><div class="hf-section-head"><div><h2>Customer qualification</h2><p>Choose which orders count towards Special and VIP status.</p></div><span class="hf-customer-setting-mark">01</span></div>
+<label class="hf-customer-basis"><span><strong>Classification basis</strong><small>Recommended: Delivered orders only. Cancelled, pending and processing orders do not earn loyalty status.</small></span><select id="customerClassificationBasis" class="hf-select"><option value="delivered">Delivered orders only</option><option value="non_cancelled">All non-cancelled orders</option></select></label></section>
+<section class="hf-card hf-card-pad hf-customer-settings-card"><div class="hf-section-head"><div><h2>Customer categories</h2><p>Change the minimum and maximum qualifying order count for each tier.</p></div><span class="hf-customer-setting-mark">02</span></div>
+<div class="hf-customer-rules-head"><span>Category</span><span>Minimum orders</span><span>Maximum orders</span><span>Enabled</span></div><div id="customerRulesList" class="hf-customer-rules-list"><div class="hf-loading">Loading tier settings…</div></div>
+<p class="hf-data-note">Use an empty maximum for an unlimited tier. Enabled ranges cannot overlap. The dashboard calculates each customer's tier from the selected qualification basis; no manual recalculation is needed.</p></section>
+<section class="hf-card hf-card-pad hf-customer-settings-card"><div class="hf-section-head"><div><h2>Add a customer category</h2><p>Create another automatically calculated tier for a special business programme.</p></div><span class="hf-customer-setting-mark">03</span></div>
+<form id="addCustomerRuleForm" class="hf-customer-add-rule"><label>Category name<input id="newCustomerRuleName" class="hf-input" required maxlength="60" placeholder="e.g. Premium Customer"></label><label>Minimum orders<input id="newCustomerRuleMin" class="hf-input" type="number" min="0" step="1" required value="100"></label><label>Maximum orders<input id="newCustomerRuleMax" class="hf-input" type="number" min="0" step="1" placeholder="Leave blank for unlimited"></label><button class="hf-button hf-button-secondary" type="submit">＋ Add category</button></form></section>
+<section class="hf-card hf-card-pad hf-customer-settings-card"><div class="hf-section-head"><div><h2>Manual customer tag</h2><p>Use this for relationship labels that should not be calculated from order totals.</p></div><span class="hf-customer-setting-mark">04</span></div>
+<div class="hf-customer-tag-preview"><span class="hf-customer-tier hf-tier-rose">Friend Customer</span><div><strong>Friend Customer</strong><small>Apply or remove this tag inside a customer's profile. A customer can be both VIP and Friend.</small></div><span class="hf-status hf-status-active">Available</span></div></section>
+</main></div>
+<script defer src="./i18n.js?v=20261031-coupons-v1"></script><script defer src="./shared.js?v=20261031-customer-nav-v1"></script><script defer src="./customer-management.js?v=20261031-crm-v1"></script><script defer src="./app.js?v=20261031-customer-crm-v1"></script>
+</body></html>
