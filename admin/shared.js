@@ -4,9 +4,10 @@ try{
  const savedTheme=localStorage.getItem("hf_admin_theme");
  document.documentElement.dataset.adminTheme=savedTheme==="dark"?"dark":"light";
 }catch(_themeError){document.documentElement.dataset.adminTheme="light";}
-const SUPABASE_URL="https://qfwvrcfkrsydycbfjsxf.supabase.co";
-const SUPABASE_KEY="sb_publishable_X32Rb8W-axGIfgFuppdfZQ_jbc38pcL";
-const ADMIN_EMAIL="halalfoodbd.official@gmail.com";
+const STORE_CONFIG=window.HALAL_STORE_CONFIG||{};
+const SUPABASE_URL=String(STORE_CONFIG.supabase?.url||"https://qfwvrcfkrsydycbfjsxf.supabase.co").replace(/\\/$/,"");
+const SUPABASE_KEY=STORE_CONFIG.supabase?.publishableKey||"sb_publishable_X32Rb8W-axGIfgFuppdfZQ_jbc38pcL";
+const ADMIN_EMAIL=STORE_CONFIG.adminEmail||"halalfoodbd.official@gmail.com";
 const adminApp=document.getElementById("adminApp");
 const gate=document.getElementById("authGate");
 const initialContent=document.getElementById("pageContent")?.innerHTML||"";
