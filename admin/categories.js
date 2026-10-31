@@ -79,27 +79,13 @@ window.HFAdminReady.then(async H => {
   }finally{state.loading=false;}
  }
  function renderPage(){
-  if(page==="categories")renderHub();
-  if(page==="categories-tree")renderTree();
-  if(page==="categories-sorting")renderSorting();
-  if(page==="categories-settings")renderSettings();
- }
- function renderHub(){
-  const total=state.categories.length,nested=state.categories.filter(c=>c.parent_id).length,activeProducts=state.products.filter(p=>p.is_active).length;
-  const hidden=state.categories.filter(c=>!c.is_active).length+state.products.filter(p=>!p.is_active).length;
-  if($("catalogCategoryCount"))$("catalogCategoryCount").textContent=String(total);
-  if($("catalogProductCount"))$("catalogProductCount").textContent=String(activeProducts);
-  if($("catalogNestedCount"))$("catalogNestedCount").textContent=String(nested);
-  if($("catalogHiddenCount"))$("catalogHiddenCount").textContent=String(hidden);
-  const box=$("catalogHubTree");if(!box)return;
-  const roots=childrenOf(null);
-  box.innerHTML=roots.length?roots.map(cat=>'<div class="catalog-hub-row"><span aria-hidden="true">▰</span><strong>'+esc(cat.name)+'</strong><small>'+categoryProductCount(cat)+' products · '+(cat.is_active?"Visible":"Hidden")+'</small><a class="catalog-text-link" href="./categories-tree.html">Edit</a></div>'+childrenOf(cat.id).map(child=>'<div class="catalog-hub-row is-child"><span aria-hidden="true">↳</span><strong>'+esc(child.name)+'</strong><small>'+categoryProductCount(child)+' products</small></div>'+childrenOf(child.id).map(grand=>'<div class="catalog-hub-row is-child" style="margin-left:50px"><span aria-hidden="true">↳</span><strong>'+esc(grand.name)+'</strong><small>'+categoryProductCount(grand)+' products</small></div>').join("")).join("")).join(""):'<div class="hf-empty">No categories have been created yet.</div>';
+  if(page==="categories"){renderTree();renderSorting();}
  }
  function categoryNodeMarkup(category,search="",filter="all"){
   const depth=depthOf(category),children=childrenOf(category.id);
   const query=search.toLowerCase();
-  const descendantMatches=child=>[child,...[...descendantsOf(child.id)].map(id=>categoryById(id)).filter(Boolean)].some(c=>(c.name+" "+c.slug).toLowerCase().includes(query)&&(filter==="all"||(filter==="active"?c.is_active:!c.is_active)));
-  const ownMatch=(!query||(category.name+" "+category.slug).toLowerCase().includes(query))&&(filter==="all"||(filter==="active"?category.is_active:!category.is_active));
+  const descendantMatches=child=>[child,...[...descendantsOf(child.id)].map(id=>categoryById(id)).filter(Boolean)].some(c=>(c.name+" "+c.slug).toLowerCase().includes(query)&&(filter==="all"||(filter==="active"?effectiveActive(c):!effectiveActive(c))));
+  const ownMatch=(!query||(category.name+" "+category.slug).toLowerCase().includes(query))&&(filter==="all"||(filter==="active"?effectiveActive(category):!effectiveActive(category)));
   const visible=ownMatch||children.some(descendantMatches);
   if((query||filter!=="all")&&!visible)return "";
   const childMarkup=children.map(child=>categoryNodeMarkup(child,search,filter)).join("");
@@ -109,7 +95,7 @@ window.HFAdminReady.then(async H => {
    '<div class="catalog-tree-row" draggable="'+String(canReorder)+'" data-category-id="'+esc(category.id)+'" data-parent-id="'+esc(category.parent_id||"")+'">'+
     '<span class="catalog-tree-grip" aria-hidden="true" title="Drag to reorder">⠿</span>'+
     '<div class="catalog-tree-info"><div class="catalog-tree-title"><strong>'+esc(category.name)+'</strong><span class="catalog-tree-level">'+(depth===1?"Category":depth===2?"Subcategory":"Child category")+'</span></div><small>/'+esc(category.slug)+' · '+categoryProductCount(category)+' products</small></div>'+
-    '<span class="catalog-tree-product-count">'+(category.is_active?'<span class="hf-status hf-status-active">Visible</span>':'<span class="hf-status hf-status-hidden">Hidden</span>')+'</span>'+
+    '<span class="catalog-tree-product-count">'+(effectiveActive(category)?'<span class="hf-status hf-status-active">Visible</span>':'<span class="hf-status hf-status-hidden">Hidden</span>')+'</span>'+
     '<div class="catalog-tree-actions">'+
      '<button class="catalog-mini-button" type="button" data-cat-up="'+esc(category.id)+'" '+(!canReorder?"disabled":"")+' aria-label="Move '+esc(category.name)+' up">↑</button>'+
      '<button class="catalog-mini-button" type="button" data-cat-down="'+esc(category.id)+'" '+(!canReorder?"disabled":"")+' aria-label="Move '+esc(category.name)+' down">↓</button>'+
@@ -124,28 +110,18 @@ window.HFAdminReady.then(async H => {
  function renderTree(){
   const tree=$("categoryTree");if(!tree)return;
   updateUndoButtons();
+  const total=state.categories.length;
+  const nested=state.categories.filter(c=>c.parent_id).length;
+  const activeProducts=state.products.filter(p=>p.is_active).length;
+  const hidden=state.categories.filter(c=>!effectiveActive(c)).length+state.products.filter(p=>!p.is_active).length;
+  if($("catalogCategoryCount"))$("catalogCategoryCount").textContent=String(total);
+  if($("catalogProductCount"))$("catalogProductCount").textContent=String(activeProducts);
+  if($("catalogNestedCount"))$("catalogNestedCount").textContent=String(nested);
+  if($("catalogHiddenCount"))$("catalogHiddenCount").textContent=String(hidden);
   const search=$("categoryTreeSearch")?.value||"",filter=$("categoryTreeVisibility")?.value||"all";
   tree.innerHTML=childrenOf(null).map(c=>categoryNodeMarkup(c,search,filter)).join("");
   $("categoryTreeCount").textContent=state.categories.length+" categories · "+state.categories.filter(c=>!c.parent_id).length+" top-level categories";
   $("categoryTreeEmpty").hidden=!!tree.children.length;
- }
- function renderSettings(){
-  const body=$("categorySettingsBody");if(!body)return;
-  const search=String($("categorySettingsSearch")?.value||"").toLowerCase().trim(),filter=$("categorySettingsFilter")?.value||"all";
-  const rows=orderedCategories().filter(c=>{
-   const matches=(!search||(c.name+" "+c.slug+" "+categoryPath(c)).toLowerCase().includes(search));
-   const visible=effectiveActive(c);
-   return matches&&(filter==="all"||(filter==="active"?visible:!visible));
-  });
-  body.innerHTML=rows.length?rows.map(c=>{
-   const depth=depthOf(c),status=effectiveActive(c);
-   return '<tr><td><div class="catalog-table-category">'+(c.image_url?'<img class="catalog-table-image" src="'+esc(c.image_url)+'" alt="" loading="lazy">':'<span class="catalog-table-image catalog-table-image-empty">No image</span>')+'<div><strong>'+esc(c.name)+'</strong><small>/'+esc(c.slug)+'</small></div></div></td>'+
-    '<td><div class="catalog-parent-label">'+esc(categoryPath(c))+'</div><small>'+(depth===1?"Category":depth===2?"Subcategory":"Child category")+'</small></td>'+
-    '<td>'+categoryProductCount(c)+'</td><td>'+ (status?'<span class="hf-status hf-status-active">Visible</span>':'<span class="hf-status hf-status-hidden">Hidden</span>')+'</td>'+
-    '<td>'+esc(c.updated_at?new Date(c.updated_at).toLocaleDateString("en-BD"):"—")+'</td>'+
-    '<td><div class="hf-table-actions"><button class="hf-button hf-button-secondary hf-button-small" type="button" data-cat-edit="'+esc(c.id)+'">Edit</button><button class="hf-button hf-button-secondary hf-button-small catalog-settings-toggle" type="button" data-cat-toggle="'+esc(c.id)+'">'+(c.is_active?"Hide":"Show")+'</button></div></td></tr>';
-  }).join(""):'<tr><td colspan="6" class="hf-empty">No categories match this filter.</td></tr>';
-  $("categorySettingsEmpty").hidden=!!rows.length;
  }
  function fillSortCategory(){
   const select=$("sortCategory");if(!select)return;
@@ -415,9 +391,7 @@ window.HFAdminReady.then(async H => {
  function setupEvents(){
   document.querySelectorAll("[data-catalog-refresh]").forEach(btn=>btn.addEventListener("click",()=>reload(true)));
   $("categoryTreeSearch")?.addEventListener("input",renderTree);$("categoryTreeVisibility")?.addEventListener("change",renderTree);
-  $("categorySettingsSearch")?.addEventListener("input",renderSettings);$("categorySettingsFilter")?.addEventListener("change",renderSettings);
   $("addRootCategory")?.addEventListener("click",()=>openCategoryEditor());
-  $("settingsAddCategory")?.addEventListener("click",()=>openCategoryEditor());
   $("categoryForm")?.addEventListener("submit",saveCategory);
   $("undoCategoryOrder")?.addEventListener("click",()=>undoLastOrder("category"));
   $("undoProductOrder")?.addEventListener("click",()=>undoLastOrder("product"));
