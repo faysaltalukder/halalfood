@@ -59,6 +59,40 @@ Deno.serve(async (req: Request) => {
     const server = createClient(url, serviceKey, {
       auth: { persistSession: false, autoRefreshToken: false }
     });
+
+    const clientIp = clean(
+      req.headers.get("cf-connecting-ip") ||
+      req.headers.get("x-real-ip") ||
+      req.headers.get("x-forwarded-for")?.split(",")[0] ||
+      "unknown",
+      128
+    );
+    const fingerprint = await crypto.subtle.digest(
+      "SHA-256",
+      new TextEncoder().encode("halal-food-coupon-preview:" + clientIp)
+    );
+    const ipHash = Array.from(new Uint8Array(fingerprint))
+      .map(value => value.toString(16).padStart(2, "0"))
+      .join("");
+    const { data: rateLimit, error: rateLimitError } = await server.rpc(
+      "consume_coupon_validation_rate_limit",
+      { p_ip_hash: ipHash }
+    );
+    if (rateLimitError) {
+      console.error("Coupon preview rate-limit check failed:", String(rateLimitError.code || "unknown"));
+      return json({ success: false, error: "Coupon service is temporarily unavailable. Please try again." }, 503);
+    }
+    if (rateLimit?.allowed !== true) {
+      const retryAfter = Math.max(1, Math.min(60, Number(rateLimit?.retryAfterSeconds) || 60));
+      return new Response(JSON.stringify({
+        success: false,
+        error: "Too many coupon checks. Please wait a moment and try again."
+      }), {
+        status: 429,
+        headers: { ...headers, "Retry-After": String(retryAfter) }
+      });
+    }
+
     const { data, error } = await server.rpc("preview_coupon_discount", {
       p_code: code,
       p_items: items,
