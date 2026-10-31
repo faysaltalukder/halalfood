@@ -290,7 +290,7 @@ if (checkMode) {
       const line = locateFunction(anchor.file, name);
       return line ? `- ${anchor.file}:${line} — ${name}()` : `- MISSING ${anchor.file} — ${name}()`;
     }));
-    if (anchorLines.length) console.log(`CODE ANCHORS\\n${anchorLines.join("\\n")}\\n`);
+    if (anchorLines.length) console.log(`CODE ANCHORS\n${anchorLines.join("\n")}\n`);
     console.log(`DATABASE TABLES\n${feature.tables.map((table) => `- ${table}`).join("\n")}\n`);
     console.log(`EDGE FUNCTIONS\n${(feature.functions.length ? feature.functions : ["None identified"]).map((name) => `- ${name}`).join("\n")}\n`);
     console.log(`CHECKS\n${feature.tests.map((file) => `- node ${file}`).join("\n")}\n`);
