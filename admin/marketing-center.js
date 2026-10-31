@@ -115,7 +115,8 @@ window.HFMarketingInit=async function(){
    return '<tr><td><input type="checkbox" data-mkt-select="'+esc(c.id)+'" '+(selected.has(c.id)?"checked ":"")+(allowed?"":"disabled ")+'aria-label="Select '+esc(safeName(c))+'"></td><td><div class="hf-marketing-person"><strong>'+esc(safeName(c))+'</strong><small>'+esc(c.id.slice(0,8))+'</small></div></td><td><span class="hf-marketing-segment">'+esc(c.segment_name||"Unclassified")+'</span><small class="hf-marketing-contact">'+number(c.qualifying_orders??c.total_orders)+' qualifying orders</small></td><td>'+address+'</td><td>'+permission+'</td></tr>';
   }).join("");
   $("mktReviewNote").textContent=channel==="whatsapp"?(selectedRows.length?"WhatsApp audience is ready to export. Complete the broadcast manually in WhatsApp Business.":"Select eligible WhatsApp contacts. The final message is sent manually in WhatsApp Business."):"Ready to send to "+number(selectedRows.length)+" selected email recipient(s). Gmail and recipient eligibility are checked again before sending.";
-  $("mktSaveDraft").textContent=channel==="email"?"Send email now":"Save WhatsApp audience";\n  $("mktSaveDraft").disabled=selectedRows.length===0||(channel==="email"&&!emailProvider.configured);
+  $("mktSaveDraft").textContent=channel==="email"?"Send email now":"Save WhatsApp audience";
+  $("mktSaveDraft").disabled=selectedRows.length===0||(channel==="email"&&!emailProvider.configured);
  }
  function renderConsent(){
   const query=$("mktConsentSearch").value.trim().toLocaleLowerCase();
