@@ -17,15 +17,26 @@
   };
   const rootURL = path => new URL(path, SITE_ROOT).href;
   async function readTable(table, params) {
-    const query = new URLSearchParams(params || {});
-    const response = await fetch(API_ROOT + "/rest/v1/" + table + "?" + query.toString(), {
-      headers: { apikey: PUBLIC_KEY, Authorization: "Bearer " + PUBLIC_KEY, Accept: "application/json" },
-      cache: "no-store"
-    });
-    if (!response.ok) throw new Error("Catalog request failed (" + response.status + ")");
-    const data = await response.json();
-    if (!Array.isArray(data)) throw new Error("Unexpected catalog response");
-    return data;
+    const base = new URLSearchParams(params || {});
+    const requestedLimit = Math.min(50000, Math.max(1, Number(base.get("limit") || 1000)));
+    const pageSize = 500;
+    const rows = [];
+    for (let offset = 0; offset < requestedLimit; offset += pageSize) {
+      const query = new URLSearchParams(base);
+      const requested = Math.min(pageSize, requestedLimit - offset);
+      query.set("limit", String(requested));
+      query.set("offset", String(offset));
+      const response = await fetch(API_ROOT + "/rest/v1/" + table + "?" + query.toString(), {
+        headers: { apikey: PUBLIC_KEY, Authorization: "Bearer " + PUBLIC_KEY, Accept: "application/json" },
+        cache: "no-store"
+      });
+      if (!response.ok) throw new Error("Catalog request failed (" + response.status + ")");
+      const data = await response.json();
+      if (!Array.isArray(data)) throw new Error("Unexpected catalog response");
+      rows.push(...data);
+      if (data.length < requested) break;
+    }
+    return rows;
   }
   function pathInfo() {
     const path = window.location.pathname;
@@ -488,8 +499,8 @@
   async function start() {
     const info = pathInfo();
     const [products, categories] = await Promise.all([
-      readTable("products", { select: "id,name,slug,category,category_slug,price,unit_type,display_price,image_url,short_description,full_description,description,is_active,is_featured,cms_created,cms_managed,sort_order,home_sort_order,seo_title,seo_description,stock_quantity,created_at", is_active: "eq.true", order: "home_sort_order.asc,sort_order.asc,name.asc", limit: "1000" }),
-      readTable("categories", { select: "id,name,slug,parent_id,description,image_url,is_active,cms_created,cms_managed,sort_order,seo_title,seo_description", is_active: "eq.true", order: "sort_order.asc,name.asc", limit: "500" })
+      readTable("products", { select: "id,name,slug,category,category_slug,price,unit_type,display_price,image_url,short_description,full_description,description,is_active,is_featured,cms_created,cms_managed,sort_order,home_sort_order,seo_title,seo_description,stock_quantity,created_at", is_active: "eq.true", order: "home_sort_order.asc,sort_order.asc,name.asc,id.asc", limit: "10000" }),
+      readTable("categories", { select: "id,name,slug,parent_id,description,image_url,is_active,cms_created,cms_managed,sort_order,seo_title,seo_description", is_active: "eq.true", order: "sort_order.asc,name.asc,id.asc", limit: "5000" })
     ]);
     currentCategories = categories;
     // Products assigned to a hidden category should not leak into home, search or cart.
