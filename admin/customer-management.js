@@ -17,15 +17,29 @@ window.HFCustomersInit=async function(){
  }
  async function refresh(){
   $("customersTableBody").innerHTML='<tr><td colspan="7" class="hf-loading">Loading customer information…</td></tr>';
-  const ruleResult=await client.from("customer_segment_rules").select("code,name,min_orders,max_orders").order("sort_order");if(ruleResult.error)throw ruleResult.error;rules=ruleResult.data||[];
+  const ruleResult=await client.from("customer_segment_rules").select("code,name,min_orders,max_orders,is_active").order("sort_order");if(ruleResult.error)throw ruleResult.error;rules=ruleResult.data||[];
+  const tierSelect=$("customerTierFilter"),selectedTier=tierSelect.value;
+  tierSelect.innerHTML='<option value="">All customer types</option>'+rules.filter(r=>r.is_active).map(r=>'<option value="'+esc(r.code)+'">'+esc(r.name)+'</option>').join("");
+  if(rules.some(r=>r.code===selectedTier&&r.is_active))tierSelect.value=selectedTier;
   await summary();
   const status=$("customerStatusFilter").value;
   let q=client.from("customer_directory").select(viewColumns,{count:"exact"}).order("last_order_at",{ascending:false,nullsFirst:false}).order("created_at",{ascending:false}).order("id",{ascending:true});
   if(status==="active")q=q.is("archived_at",null);else if(status==="archived")q=q.not("archived_at","is",null);
   else if(status==="blocked")q=q.is("archived_at",null).eq("is_blocked",true);
+  if($("customerTierFilter").value)q=q.eq("segment_code",$("customerTierFilter").value);
   if(segment==="blocked")q=q.eq("is_blocked",true);else if(["new","regular","special","vip"].includes(segment))q=q.eq("segment_code",segment);else if(segment==="friend")q=q.eq("has_friend_tag",true);
   const term=String($("customerSearch").value||$("globalSearch").value||"").trim().replace(/[%_*(),]/g," ").replace(/\s+/g," ").slice(0,80);
-  if(term){if(/^[0-9a-f-]{36}$/i.test(term))q=q.eq("id",term);else q=q.or("name.ilike.%"+term+"%,phone.ilike.%"+term+"%,email.ilike.%"+term+"%,address.ilike.%"+term+"%");}
+  if(term){
+   if(/^[0-9a-f-]{36}$/i.test(term))q=q.eq("id",term);
+   else{
+    const [ordersByNumber]=await Promise.all([client.from("orders").select("customer_id").ilike("order_number","%"+term+"%").not("customer_id","is",null).limit(500)]);
+    if(ordersByNumber.error)throw ordersByNumber.error;
+    const ids=[...new Set((ordersByNumber.data||[]).map(o=>o.customer_id).filter(Boolean))];
+    const clauses=["name.ilike.%"+term+"%","phone.ilike.%"+term+"%","email.ilike.%"+term+"%","address.ilike.%"+term+"%"];
+    if(ids.length)clauses.push("id.in.("+ids.join(",")+")");
+    q=q.or(clauses.join(","));
+   }
+  }
   const result=await q.range(page*pageSize,(page+1)*pageSize-1);if(result.error)throw result.error;rows=result.data||[];total=Number(result.count||0);render();
  }
  function render(){
@@ -82,7 +96,8 @@ window.HFCustomersInit=async function(){
  let searchTimer;const searchRefresh=()=>{clearTimeout(searchTimer);searchTimer=setTimeout(()=>{page=0;refresh().catch(e=>toast(e.message||"Could not refresh customers.","error"));},250);};
  $("customerSearch").addEventListener("input",searchRefresh);$("globalSearch")?.addEventListener("input",searchRefresh);
  $("customerStatusFilter").addEventListener("change",()=>{page=0;refresh().catch(e=>toast(e.message||"Could not filter customers.","error"));});
- $("customerClearFilters").addEventListener("click",()=>{$("customerSearch").value="";$("customerStatusFilter").value="active";segment="all";page=0;refresh().catch(e=>toast(e.message||"Could not refresh customers.","error"));});
+ $("customerTierFilter").addEventListener("change",()=>{segment="all";page=0;refresh().catch(e=>toast(e.message||"Could not filter customer tiers.","error"));});
+ $("customerClearFilters").addEventListener("click",()=>{$("customerSearch").value="";$("customerStatusFilter").value="active";$("customerTierFilter").value="";segment="all";page=0;refresh().catch(e=>toast(e.message||"Could not refresh customers.","error"));});
  $("customerPrevPage").addEventListener("click",()=>{if(page>0){page--;refresh().catch(e=>toast(e.message||"Could not load customers.","error"));}});
  $("customerNextPage").addEventListener("click",()=>{if((page+1)*pageSize<total){page++;refresh().catch(e=>toast(e.message||"Could not load customers.","error"));}});
  document.querySelectorAll("[data-customer-segment]").forEach(b=>b.addEventListener("click",()=>{segment=b.dataset.customerSegment||"all";page=0;refresh().catch(e=>toast(e.message||"Could not filter customers.","error"));}));
