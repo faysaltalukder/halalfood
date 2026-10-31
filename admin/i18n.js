@@ -3,6 +3,7 @@
 
   const translations = {
     "Language": "ভাষা",
+    "Customer Information": "গ্রাহক তথ্য", "Customer Settings": "গ্রাহক সেটিংস", "Customer Messages": "কাস্টমার মেসেজ",
     "Overview": "সারসংক্ষেপ", "Analytics": "অ্যানালিটিক্স", "Orders": "অর্ডারসমূহ",
     "Operations": "কার্যক্রম", "Products": "পণ্য", "Website Content": "ওয়েবসাইটের কনটেন্ট",
     "Coupons & Promotions": "কুপন ও প্রমোশন", "Coupons": "কুপন", "Coupon Promotions": "কুপন প্রমোশন", "Coupon Usage": "কুপন ব্যবহার", "Coupon List": "কুপন তালিকা",
