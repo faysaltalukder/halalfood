@@ -52,7 +52,7 @@ const FEATURES = {
     ],
     anchors: [
       { file: "admin/pos.js", names: ["saveOfflineSale", "saveDeliveryOrder", "loadRedxAreas", "refresh"] },
-      { file: "supabase/functions/courier-integration/index.ts", names: ["action === \"book\"", "action === \"areas\""] },
+      { file: "supabase/functions/courier-integration/index.ts", names: ["redxPreflight", "providerBase"] },
       { file: "admin/app.js", names: ["doInit"] }
     ],
     tables: ["products", "orders", "order_items", "inventory_movements", "customers", "admin_finance_entries", "admin_shipments"],
