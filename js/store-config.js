@@ -20,7 +20,10 @@ window.HALAL_STORE_CONFIG = Object.freeze({
     categoryPage: "category.html?slug={slug}",
     legacyCategoryPage: "categories/{slug}.html",
     maxCategories: 5000,
-    maxProducts: 10000
+    maxProducts: 10000,
+    reorderCategoriesRpc: "admin_reorder_categories",
+    reorderProductsRpc: "admin_reorder_products",
+    reorderHomeProductsRpc: "admin_reorder_home_products"
   }),
   storage: Object.freeze({
     publicContentBucket: "store-content"
