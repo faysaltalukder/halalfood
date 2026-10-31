@@ -114,7 +114,7 @@ window.HFMarketingInit=async function(){
    const address=contact?esc(contact):'<span class="hf-marketing-permission is-invalid">Invalid contact</span>';
    return '<tr><td><input type="checkbox" data-mkt-select="'+esc(c.id)+'" '+(selected.has(c.id)?"checked ":"")+(allowed?"":"disabled ")+'aria-label="Select '+esc(safeName(c))+'"></td><td><div class="hf-marketing-person"><strong>'+esc(safeName(c))+'</strong><small>'+esc(c.id.slice(0,8))+'</small></div></td><td><span class="hf-marketing-segment">'+esc(c.segment_name||"Unclassified")+'</span><small class="hf-marketing-contact">'+number(c.qualifying_orders??c.total_orders)+' qualifying orders</small></td><td>'+address+'</td><td>'+permission+'</td></tr>';
   }).join("");
-  $("mktReviewNote").textContent=channel==="whatsapp"?(selectedRows.length?"Prepare "+Math.ceil(selectedRows.length/256)+" phone-app Broadcast List(s) for the selected contacts (maximum 256 per list; each recipient must have saved your business number).":"Select consented contacts first. WhatsApp Broadcast Lists are created manually in the phone app; the CSV is a worklist, not an import file."):"Email delivery is server-controlled. Each recipient's email consent will be checked again immediately before sending.";
+  $("mktReviewNote").textContent=channel==="whatsapp"?(selectedRows.length?"WhatsApp audience is ready to export. Complete the broadcast manually in WhatsApp Business.":"Select eligible WhatsApp contacts. The final message is sent manually in WhatsApp Business."):"Ready to send to "+number(selectedRows.length)+" selected email recipient(s). Gmail and recipient eligibility are checked again before sending.";\n  $("mktSaveDraft").textContent=channel==="email"?"Send email now":"Save WhatsApp audience";\n  $("mktSaveDraft").disabled=selectedRows.length===0||(channel==="email"&&!emailProvider.configured);
  }
  function renderConsent(){
   const query=$("mktConsentSearch").value.trim().toLocaleLowerCase();
@@ -147,12 +147,12 @@ window.HFMarketingInit=async function(){
  }
  function switchChannel(ch){
   if(ch===channel)return;
-  channel=ch;selected.clear();audiencePage=0;
+  channel=ch;selected.clear();selectionTouched=false;audiencePage=0;
   document.querySelectorAll("[data-marketing-channel]").forEach(b=>b.classList.toggle("is-active",b.dataset.marketingChannel===ch));
   $("mktEmailFields").hidden=ch!=="email";
-  $("marketingChannelNote").textContent=ch==="whatsapp"?"WhatsApp campaign audience will be exported as a consent-checked CSV. You will complete the broadcast in WhatsApp Business.":"Email campaigns can be sent only after server-side provider setup. A consented CSV export is available in the meantime.";
+  $("marketingChannelNote").textContent=ch==="whatsapp"?"WhatsApp is a manual handoff. Export the selected contacts and send from WhatsApp Business.":"Write the subject and email, choose recipients (eligible contacts are pre-selected), then press Send email now.";
   $("mktReviewChannel").textContent=channelLabel();
-  $("mktSaveDraft").textContent="Save campaign & audience";
+  if(ch==="email")matchingCustomers().filter(c=>channelHasPermission(c,"email")).forEach(c=>selected.add(c.id));
   renderAudience();
  }
  async function reloadPrefs(ids){
@@ -330,14 +330,15 @@ window.HFMarketingInit=async function(){
  }
  async function refreshAll(){
   await loadSegmentRules();await loadCustomers();await loadCampaigns();await checkEmailProvider();
+  if(channel==="email"&&!selectionTouched&&!selected.size)matchingCustomers().filter(c=>channelHasPermission(c,"email")).forEach(c=>selected.add(c.id));
   renderAudience();renderConsent();renderHistory();
  }
  document.querySelectorAll("[data-marketing-tab]").forEach(b=>b.addEventListener("click",()=>switchTab(b.dataset.marketingTab)));
  document.querySelectorAll("[data-marketing-channel]").forEach(b=>b.addEventListener("click",()=>switchChannel(b.dataset.marketingChannel)));
- ["mktSegment","mktMinOrders","mktMaxOrders","mktLastOrder","mktAudienceSearch"].forEach(id=>$(id).addEventListener(id==="mktAudienceSearch"?"input":"change",()=>{selected.clear();audiencePage=0;renderAudience();}));
- $("mktSelectAll").addEventListener("click",()=>{matchingCustomers().filter(c=>channelHasPermission(c,channel)).forEach(c=>selected.add(c.id));renderAudience();});
- $("mktClearSelection").addEventListener("click",()=>{selected.clear();renderAudience();});
- $("mktAudienceBody").addEventListener("change",e=>{const box=e.target.closest("[data-mkt-select]");if(!box)return;if(box.checked)selected.add(box.dataset.mktSelect);else selected.delete(box.dataset.mktSelect);renderAudience();});
+ ["mktSegment","mktMinOrders","mktMaxOrders","mktLastOrder","mktAudienceSearch"].forEach(id=>$(id).addEventListener(id==="mktAudienceSearch"?"input":"change",()=>{selected.clear();selectionTouched=true;audiencePage=0;renderAudience();}));
+ $("mktSelectAll").addEventListener("click",()=>{selectionTouched=true;matchingCustomers().filter(c=>channelHasPermission(c,channel)).forEach(c=>selected.add(c.id));renderAudience();});
+ $("mktClearSelection").addEventListener("click",()=>{selectionTouched=true;selected.clear();renderAudience();});
+ $("mktAudienceBody").addEventListener("change",e=>{const box=e.target.closest("[data-mkt-select]");if(!box)return;selectionTouched=true;if(box.checked)selected.add(box.dataset.mktSelect);else selected.delete(box.dataset.mktSelect);renderAudience();});
  $("mktAudiencePrev").addEventListener("click",()=>{audiencePage=Math.max(0,audiencePage-1);renderAudience();});
  $("mktAudienceNext").addEventListener("click",()=>{audiencePage++;renderAudience();});
  $("mktConsentSearch").addEventListener("input",()=>{consentPage=0;renderConsent();});
