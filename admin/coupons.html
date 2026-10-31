@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex,nofollow">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<title>Coupons & Promotions · Halal Food Admin</title>
+<link rel="stylesheet" href="./shared.css?v=20261031-coupons-v1">
+<link rel="stylesheet" href="./coupons.css?v=20261031-coupons-v1">
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
+</head>
+<body data-page="coupons">
+<div id="authGate" class="auth-gate">
+  <div class="auth-gate-card"><strong>Checking secure admin access…</strong><p>Your coupon controls load only after the authorized account and two-step verification are confirmed.</p></div>
+</div>
+<div id="adminApp" hidden>
+<main id="pageContent" tabindex="-1" class="cp-page">
+  <div class="page-heading cp-hero">
+    <div class="cp-hero-copy">
+      <p class="page-eyebrow">STORE GROWTH &amp; CUSTOMER OFFERS</p>
+      <h1>Coupons &amp; Promotions</h1>
+      <p>Create controlled offers, choose eligible products or customers, and track actual coupon use at checkout.</p>
+      <div class="cp-hero-meta"><span class="cp-live-dot"></span><span>Connected to the live store rules</span><span class="cp-meta-separator">·</span><span>Server-validated discounts</span></div>
+    </div>
+    <div class="page-actions cp-hero-actions">
+      <button class="hf-button hf-button-secondary" id="couponRefreshBtn" type="button">↻ Refresh</button>
+      <button class="hf-button hf-button-primary" id="couponNewBtn" type="button">＋ Add Coupon</button>
+    </div>
+  </div>
+
+  <div class="cp-kpis" aria-label="Coupon summary">
+    <section class="hf-card cp-kpi"><span class="cp-kpi-label">Total coupons</span><strong id="couponMetricTotal">—</strong><small>Campaigns created</small></section>
+    <section class="hf-card cp-kpi"><span class="cp-kpi-label">Currently active</span><strong id="couponMetricActive">—</strong><small>Available or scheduled</small></section>
+    <section class="hf-card cp-kpi"><span class="cp-kpi-label">Delivered redemptions</span><strong id="couponMetricRedeemed">—</strong><small>Completed orders only</small></section>
+    <section class="hf-card cp-kpi"><span class="cp-kpi-label">Discount delivered</span><strong id="couponMetricDiscount">—</strong><small>Confirmed delivered orders</small></section>
+  </div>
+
+  <section class="hf-card cp-workspace" aria-labelledby="couponWorkspaceHeading">
+    <div class="cp-tabs" role="tablist" aria-label="Coupon management">
+      <button type="button" role="tab" aria-selected="true" aria-controls="couponListPanel" id="couponListTab" class="cp-tab is-active" data-coupon-tab="list"><span class="cp-tab-icon" aria-hidden="true">▤</span>Coupon List <span class="cp-tab-count" id="couponListCount">—</span></button>
+      <button type="button" role="tab" aria-selected="false" aria-controls="couponFormPanel" id="couponAddTab" class="cp-tab" data-coupon-tab="form"><span class="cp-tab-icon" aria-hidden="true">＋</span>Add Coupon</button>
+    </div>
+
+    <section id="couponListPanel" role="tabpanel" aria-labelledby="couponListTab" class="cp-panel">
+      <div class="cp-panel-heading">
+        <div><p class="page-eyebrow">PROMOTION LIBRARY</p><h2 id="couponWorkspaceHeading">Your coupons</h2><p>Review usage, availability and campaign rules. Changes are reflected in website checkout.</p></div>
+        <button class="hf-button hf-button-primary hf-button-small" id="couponListAddBtn" type="button">＋ Create coupon</button>
+      </div>
+      <div class="cp-toolbar">
+        <label class="cp-search-wrap"><span aria-hidden="true">⌕</span><input class="hf-input" type="search" id="couponSearch" placeholder="Search by code or campaign name…" aria-label="Search coupon campaigns"></label>
+        <select class="hf-select" id="couponStatusFilter" aria-label="Filter coupons by status">
+          <option value="all">All statuses</option><option value="active">Active</option><option value="scheduled">Scheduled</option><option value="paused">Paused</option><option value="draft">Draft</option><option value="exhausted">Exhausted</option><option value="expired">Expired</option><option value="archived">Archived</option>
+        </select>
+        <button class="hf-button hf-button-secondary hf-button-small" id="couponExportBtn" type="button">Export CSV</button>
+      </div>
+      <div class="cp-table-wrap" tabindex="0" role="region" aria-label="Scrollable coupon campaign list">
+        <table class="hf-table cp-table">
+          <thead><tr><th>Campaign / Code</th><th>Discount</th><th>Applies to</th><th>Usage</th><th>Validity</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="couponTableBody"><tr><td colspan="7" class="hf-loading">Loading coupon campaigns…</td></tr></tbody>
+        </table>
+      </div>
+      <p id="couponListMessage" class="hf-data-note">Reserved and redeemed orders count toward usage limits. Only delivered orders count as completed redemptions.</p>
+    </section>
+
+    <section id="couponFormPanel" role="tabpanel" aria-labelledby="couponAddTab" class="cp-panel" hidden>
+      <div class="cp-panel-heading">
+        <div><p class="page-eyebrow">CAMPAIGN SETUP</p><h2 id="couponFormHeading">Create a coupon</h2><p>Keep the offer clear and set limits before sharing the code with customers.</p></div>
+        <button class="hf-button hf-button-secondary hf-button-small" type="button" id="couponBackToList">← Coupon List</button>
+      </div>
+      <form id="couponForm" novalidate>
+        <input type="hidden" id="couponId">
+        <div class="cp-form-section">
+          <div class="cp-section-title"><span class="cp-section-number">01</span><div><h3>Coupon details</h3><p>Give the campaign a name and a customer-facing code.</p></div></div>
+          <div class="cp-form-grid">
+            <label class="cp-field">Campaign name <span>*</span><input class="hf-input" id="couponName" maxlength="100" required placeholder="e.g. November Ghee Offer"></label>
+            <div class="cp-field"><label for="couponCode">Coupon code <span>*</span></label><div class="cp-code-row"><input class="hf-input" id="couponCode" maxlength="40" required pattern="[A-Za-z0-9_-]{3,40}" placeholder="HALAL20" autocomplete="off" autocapitalize="characters"><button type="button" class="hf-button hf-button-secondary hf-button-small" id="couponGenerateCode">Generate</button></div><small class="cp-help">3–40 letters, numbers, hyphens or underscores. Codes are case-insensitive.</small></div>
+            <label class="cp-field cp-field-full">Internal description <small>(optional)</small><textarea class="hf-textarea" id="couponDescription" rows="2" maxlength="500" placeholder="What is this campaign intended to achieve?"></textarea></label>
+          </div>
+        </div>
+
+        <div class="cp-form-section">
+          <div class="cp-section-title"><span class="cp-section-number">02</span><div><h3>Discount &amp; order rules</h3><p>Set a safe discount amount and the minimum order value.</p></div></div>
+          <div class="cp-form-grid cp-form-grid-3">
+            <label class="cp-field">Discount type<select class="hf-select" id="couponDiscountType"><option value="percentage">Percentage off (%)</option><option value="fixed">Fixed amount off (৳)</option></select></label>
+            <label class="cp-field">Discount value <span>*</span><input class="hf-input" id="couponDiscountValue" type="number" min="0.01" max="100" step="0.01" required value="10"></label>
+            <label class="cp-field" id="couponMaxDiscountField">Maximum discount (৳)<input class="hf-input" id="couponMaxDiscount" type="number" min="0.01" step="0.01" placeholder="No cap"><small class="cp-help">Optional cap for percentage offers.</small></label>
+            <label class="cp-field">Minimum order value (৳)<input class="hf-input" id="couponMinimumOrder" type="number" min="0" step="0.01" value="0"><small class="cp-help">Checked against the whole product subtotal.</small></label>
+          </div>
+        </div>
+
+        <div class="cp-form-section">
+          <div class="cp-section-title"><span class="cp-section-number">03</span><div><h3>Where can it be used?</h3><p>Choose all products, selected categories, or selected products.</p></div></div>
+          <label class="cp-field cp-field-narrow">Product eligibility<select class="hf-select" id="couponAppliesTo"><option value="all">All active products</option><option value="categories">Selected categories only</option><option value="products">Selected products only</option></select></label>
+          <div class="cp-picker-panel" id="couponCategoryPanel" hidden>
+            <div class="cp-picker-heading"><strong>Choose categories</strong><small>Discount applies only to items in the selected categories.</small></div>
+            <div class="cp-checklist" id="couponCategoryPicker"><span class="cp-muted">Loading categories…</span></div>
+          </div>
+          <div class="cp-picker-panel" id="couponProductPanel" hidden>
+            <div class="cp-picker-heading"><strong>Choose products</strong><small>Only selected products are eligible for the discount.</small></div>
+            <input class="hf-input cp-picker-search" id="couponProductSearch" type="search" placeholder="Search active products…" aria-label="Search products">
+            <div class="cp-checklist" id="couponProductPicker"><span class="cp-muted">Loading products…</span></div>
+          </div>
+        </div>
+
+        <div class="cp-form-section">
+          <div class="cp-section-title"><span class="cp-section-number">04</span><div><h3>Who can use this coupon?</h3><p>Target every shopper, new customers, or selected mobile numbers.</p></div></div>
+          <label class="cp-field cp-field-narrow">Customer eligibility<select class="hf-select" id="couponCustomerEligibility"><option value="all">All customers</option><option value="first_order">First-time customers only</option><option value="selected">Selected customers only</option></select></label>
+          <div class="cp-picker-panel" id="couponCustomerPanel" hidden>
+            <div class="cp-picker-heading"><strong>Selected customer mobile numbers</strong><small>Choose existing customers or enter verified 11-digit Bangladesh mobile numbers, one per line.</small></div>
+            <input class="hf-input cp-picker-search" id="couponCustomerSearch" type="search" placeholder="Search customer name or mobile…">
+            <div class="cp-checklist cp-customer-checklist" id="couponCustomerPicker"><span class="cp-muted">Loading customer records…</span></div>
+            <label class="cp-field cp-field-full cp-manual-phones">Add mobile numbers manually<textarea class="hf-textarea" id="couponCustomerPhones" rows="3" placeholder="017XXXXXXXX&#10;018XXXXXXXX"></textarea><small class="cp-help">Numbers are normalized before matching. An order can use this coupon only when its checkout mobile number is on the list.</small></label>
+          </div>
+        </div>
+
+        <div class="cp-form-section">
+          <div class="cp-section-title"><span class="cp-section-number">05</span><div><h3>Usage limits &amp; validity</h3><p>Control campaign reach and avoid unlimited discount exposure.</p></div></div>
+          <div class="cp-form-grid cp-form-grid-3">
+            <label class="cp-field">Total uses allowed<input class="hf-input" id="couponUsageLimit" type="number" min="1" step="1" placeholder="Unlimited"><small class="cp-help">Example: 100 means 100 total orders can reserve it.</small></label>
+            <label class="cp-field">Uses per customer <span>*</span><input class="hf-input" id="couponPerCustomerLimit" type="number" min="1" step="1" value="1" required><small class="cp-help">Matched by the checkout mobile number.</small></label>
+            <label class="cp-field">Campaign status<select class="hf-select" id="couponStatus"><option value="draft">Draft — not available online</option><option value="active">Active — allow checkout use</option></select></label>
+            <label class="cp-field">Start date &amp; time<input class="hf-input" id="couponStartsAt" type="datetime-local" required></label>
+            <label class="cp-field">Expiry date &amp; time <small>(optional)</small><input class="hf-input" id="couponEndsAt" type="datetime-local"><small class="cp-help">Leave blank for no expiry date.</small></label>
+          </div>
+          <div class="cp-rule-note"><span aria-hidden="true">ⓘ</span><span>Delivery charges are not discounted. The discount is calculated on eligible product lines only, and the server rechecks the rules when the order is placed.</span></div>
+        </div>
+
+        <div class="cp-form-footer">
+          <p id="couponFormError" class="cp-form-error" role="alert"></p>
+          <div><button class="hf-button hf-button-secondary" id="couponCancelForm" type="button">Cancel</button><button class="hf-button hf-button-primary" id="couponSaveBtn" type="submit">Save coupon</button></div>
+        </div>
+      </form>
+    </section>
+  </section>
+</main>
+</div>
+
+<dialog id="couponDetailsDialog" class="cp-dialog">
+  <div class="cp-dialog-content">
+    <div class="cp-dialog-head"><div><p class="page-eyebrow">CAMPAIGN PERFORMANCE</p><h2 id="couponDetailsTitle">Coupon details</h2><p id="couponDetailsCode"></p></div><button type="button" class="hf-button hf-button-secondary hf-button-small" id="couponDetailsClose">Close</button></div>
+    <div class="cp-dialog-kpis" id="couponDetailsMetrics"></div>
+    <div class="cp-dialog-summary" id="couponDetailsSummary"></div>
+    <h3 class="cp-dialog-subhead">Recent coupon uses</h3>
+    <div class="cp-table-wrap cp-dialog-table-wrap"><table class="hf-table"><thead><tr><th>Order</th><th>Customer mobile</th><th>Discount</th><th>State</th><th>Time</th></tr></thead><tbody id="couponRedemptionBody"><tr><td colspan="5">No coupon uses recorded yet.</td></tr></tbody></table></div>
+  </div>
+</dialog>
+
+<script defer src="./i18n.js?v=20261031-coupons-v1"></script>
+<script defer src="./shared.js?v=20261031-coupons-v1"></script>
+<script defer src="./coupons.js?v=20261031-coupons-v1"></script>
+<script defer src="./app.js?v=20261031-coupons-v1"></script>
+</body>
+</html>
