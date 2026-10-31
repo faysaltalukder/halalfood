@@ -26,6 +26,26 @@ const categoriesUi = read("admin/categories.js");
 const categoriesPage = read("admin/categories.html");
 const categoriesLive = read("js/live-catalog.js");
 const categoriesMigration = read("supabase/migrations/20261031165140_add_reusable_three_level_catalog_management.sql");
+
+const storeConfig = read("js/store-config.js");
+const publicHome = read("index.html");
+assert.ok(categoriesPage.includes("store-config.js") && categoriesPage.indexOf("store-config.js") < categoriesPage.indexOf("shared.js"), "Category Admin must load its per-store config before initializing Supabase.");
+assert.ok(storeConfig.includes("storeId:") && storeConfig.includes("siteRoot:") && storeConfig.includes("publishableKey:"), "Reusable store config must expose store identity, site root and a publishable Supabase key.");
+assert.ok(!/service[_-]?role|secret[_-]?key/i.test(storeConfig), "Public store config must not contain privileged Supabase credentials.");
+assert.ok(storeConfig.includes("reorderCategoriesRpc") && storeConfig.includes("reorderProductsRpc") && storeConfig.includes("reorderHomeProductsRpc"), "Each store config must be able to map its category/product ordering RPCs.");
+assert.ok(categoriesUi.includes("CATALOG_CONFIG") && categoriesUi.includes("CATEGORY_TABLE") && categoriesUi.includes("PRODUCT_TABLE"), "The Category workspace must use per-store table configuration rather than fixed table names.");
+assert.ok(categoriesUi.includes("REORDER_CATEGORY_RPC") && categoriesUi.includes("REORDER_PRODUCT_RPC") && categoriesUi.includes("REORDER_HOME_RPC"), "Category and product ordering must use the store-configured server RPCs.");
+assert.ok(categoriesUi.includes("bindTouchReorder") && categoriesUi.includes("data-touch-drag-handle"), "Category and product lists must support touch drag-and-drop.");
+assert.ok(categoriesUi.includes("data-cat-enter") && categoriesUi.includes("categoryBreadcrumb") && categoriesUi.includes("productSortSection"), "The Category workspace must use a drill-down hierarchy with breadcrumb navigation and scoped product sorting.");
+assert.ok(!categoriesUi.includes("renderTree") && !categoriesUi.includes("sortMode") && !categoriesUi.includes("categoryTreeCount"), "No controls from the retired all-in-one workspace may remain wired.");
+assert.ok(categoriesUi.includes("admin_reorder_categories") && categoriesUi.includes("admin_reorder_products") && categoriesUi.includes("admin_reorder_home_products"), "Default store ordering RPC names must remain compatible with the current Supabase project.");
+assert.ok(categoriesLive.includes("halalstore:config-ready") && categoriesLive.includes("HALAL_STORE_CONFIG"), "Legacy storefront pages must wait for the store config before initializing the live catalog.");
+assert.ok(categoriesLive.includes("CATEGORY_TABLE") && categoriesLive.includes("PRODUCT_TABLE") && categoriesLive.includes("MAX_CATEGORIES") && categoriesLive.includes("MAX_PRODUCTS"), "The storefront catalog bridge must use per-store configuration.");
+assert.ok(categoriesLive.includes("menu.replaceChildren") && categoriesLive.includes("mobileLinks.replaceChildren") && categoriesLive.includes("footerList.replaceChildren"), "Desktop header, mobile drawer and footer category navigation must all rebuild from the same ordered live category tree.");
+assert.ok(categoriesLive.includes("rail.replaceChildren") && categoriesLive.includes("categoryCardImage"), "Homepage Featured Category cards must use the same live names, images, links and order.");
+assert.ok(categoriesLive.includes("category.cms_created || category.cms_managed"), "Managed legacy categories must switch to the dynamic category route after edits.");
+assert.ok(publicHome.includes("store-config.js") && publicHome.indexOf("store-config.js") < publicHome.indexOf("main.js"), "The homepage must load the store config before its shared storefront scripts.");
+
 assert.ok(categoriesNav.includes('["categories","layers","Categories"') && !categoriesNav.includes('"categories-tree"') && !categoriesNav.includes('"categories-sorting"') && !categoriesNav.includes('"categories-settings"'), "Admin sidebar must expose one Categories entry without child routes.");
 assert.ok(categoriesPage.includes('id="categoryTree"') && categoriesPage.includes('id="productSortList"') && categoriesPage.includes('id="categoryDialog"') && categoriesPage.includes('id="quickProductDialog"'), "Category, product sorting and editing controls must be consolidated on the single Categories page.");
 assert.ok(categoriesUi.includes("admin_reorder_categories") && categoriesUi.includes("admin_reorder_products") && categoriesUi.includes("admin_reorder_home_products"), "Categories workspace must use atomic server-side order operations.");
