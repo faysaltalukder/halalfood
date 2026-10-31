@@ -20,7 +20,7 @@ window.HFMarketingInit=async function(){
  const {client,ADMIN_EMAIL,esc,dateTime,toast,audit,downloadFile,csvText}=H;
  const PAGE_SIZE=30,LOAD_SIZE=500,MAX_CUSTOMERS=30000;
  let customers=[],preferences=new Map(),campaigns=[],channel="whatsapp",activeTab="compose",selected=new Set(),audiencePage=0,consentPage=0,emailProvider={configured:false,from:""},savedCampaignId=null;
- const cols="id,name,phone,email,created_at,is_blocked,archived_at,anonymized_at,total_orders,delivered_orders,recorded_order_value,last_order_at,segment_code,segment_name,segment_color,has_friend_tag";
+ const cols="id,name,phone,email,created_at,is_blocked,archived_at,anonymized_at,total_orders,delivered_orders,recorded_order_value,last_order_at,qualifying_orders,segment_code,segment_name,segment_color,has_friend_tag";
  const number=n=>Number(n||0).toLocaleString("en-BD");
  const validEmail=v=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v||"").trim());
  const normalizePhone=v=>{let d=String(v||"").replace(/\D/g,"");if(d.startsWith("00880"))d="0"+d.slice(5);else if(d.startsWith("880"))d="0"+d.slice(3);return /^01\d{9}$/.test(d)?d:"";};
@@ -208,7 +208,7 @@ window.HFMarketingInit=async function(){
    const c=byId.get(r.customer_id);if(!c||!channelHasPermission(c,campaign.channel))return;
    const contact=campaign.channel==="whatsapp"?normalizePhone(c.phone):(validEmail(c.email)?String(c.email).trim():"");
    if(!contact)return;
-   rows.push(campaign.channel==="whatsapp"?{name:safeName(c),phone:contact,personalized_message:personalize(campaign.message_body,c)}:{name:safeName(c),email:contact,personalized_message:personalize(campaign.message_body,c),subject:""});
+   rows.push(campaign.channel==="whatsapp"?{name:safeName(c),phone:contact,personalized_message:personalize(campaign.message_body,c)}:{name:safeName(c),email:contact,personalized_message:personalize(campaign.message_body,c),subject:personalize(campaign.subject||"",c)});
    validRecipientIds.push(r.id);
   });
   if(!rows.length)throw new Error("Consent or contact details changed. No recipients remain eligible.");
