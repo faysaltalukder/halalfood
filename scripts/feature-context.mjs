@@ -241,7 +241,7 @@ const FEATURES = {
 function locateFunction(file, name) {
   const source = readFileSync(resolve(process.cwd(), file), "utf8");
   const lines = source.split(/\r?\n/);
-  const pattern = new RegExp("^\\s*(?:async\\s+)?function\\s+" + name + "\\s*\\(");
+  const pattern = new RegExp("\\b(?:async\\s+)?function\\s+" + name + "\\s*\\(");
   const index = lines.findIndex((line) => pattern.test(line));
   return index >= 0 ? index + 1 : null;
 }
