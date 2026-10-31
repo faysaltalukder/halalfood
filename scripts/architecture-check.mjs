@@ -35,7 +35,7 @@ const required = [
   "js/product-reviews.js",
   "supabase/migrations/20261031061456_add_product_catalog_sku_and_reviews.sql",
   "supabase/migrations/20261031062432_allow_admin_moderation_of_customer_reviews.sql",
-  "supabase/migrations/20261031064000_allow_unlinked_customer_review_submissions.sql",
+  "supabase/migrations/20261031063731_allow_unlinked_customer_review_submissions.sql",
   "scripts/admin-product-tools-check.mjs",
 ];
 
