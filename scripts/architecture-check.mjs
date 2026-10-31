@@ -24,6 +24,19 @@ const required = [
   "supabase/migrations/20261031051527_interactive_pos_simple_sale_form.sql",
   "supabase/migrations/20261031055535_create_manual_delivery_order_from_pos.sql",
   "scripts/admin-pos-check.mjs",
+  "admin/products-add.html",
+  "admin/products-barcode.html",
+  "admin/products-barcode.js",
+  "admin/products-reviews.html",
+  "admin/products-reviews.js",
+  "admin/products-tools.css",
+  "product-lookup.html",
+  "js/product-lookup.js",
+  "js/product-reviews.js",
+  "supabase/migrations/20261031061456_add_product_catalog_sku_and_reviews.sql",
+  "supabase/migrations/20261031062432_allow_admin_moderation_of_customer_reviews.sql",
+  "supabase/migrations/20261031063731_allow_unlinked_customer_review_submissions.sql",
+  "scripts/admin-product-tools-check.mjs",
 ];
 
 for (const path of required) {

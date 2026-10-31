@@ -782,14 +782,44 @@ window.HFAdminReady.then(async H=>{
    }
   }
 
+  async function loadOrderProductCodes(orderRows){
+   const ids=[...new Set((orderRows||[]).flatMap(order=>(order.order_items||[]).map(item=>item.product_id).filter(Boolean)))];
+   if(!ids.length)return new Map();
+   const rows=await signedQuery(client.from("products").select("id,sku,slug").in("id",ids));
+   return new Map(rows.map(product=>[product.id,product]));
+  }
+  function orderProductCodeMarkup(product){
+   if(!product?.sku)return '<small class="code-missing">Product code unavailable</small>';
+   let barcode="",qr="";
+   try{
+    if(window.JsBarcode){
+     const svg=document.createElementNS("http://www.w3.org/2000/svg","svg");
+     window.JsBarcode(svg,product.sku,{format:"CODE128",width:1.45,height:28,displayValue:false,margin:0,background:"#fff",lineColor:"#282738"});
+     barcode=svg.outerHTML;
+    }
+    if(window.QRCode){
+     const holder=document.createElement("div");
+     new QRCode(holder,{text:"https://faysaltalukder.github.io/halalfood/product-lookup.html?sku="+encodeURIComponent(product.sku),width:90,height:90,colorDark:"#2B2A3D",colorLight:"#FFFFFF"});
+     const canvas=holder.querySelector("canvas"),image=holder.querySelector("img");
+     qr=canvas?canvas.toDataURL("image/png"):(image?.src||"");
+    }
+   }catch(error){console.warn("Product code rendering failed",error);}
+   return '<div class="order-product-code"><div class="order-product-code-bars">'+barcode+'</div>'+(qr?'<img class="order-product-code-qr" src="'+qr+'" alt="Scan product information">':"")+'<small>SKU '+esc(product.sku)+'</small></div>';
+  }
   function printPackingSlip(order){
    const win=window.open("","_blank");
    if(!win){toast("Printing window was blocked. Allow pop-ups for this admin page and try again.","error");return;}
-   const orderNo=order.order_number||String(order.id).slice(0,8);
-   const itemRows=(order.order_items||[]).map(item=>"<tr><td>"+esc(item.product_name)+"</td><td>"+esc(item.quantity)+" "+esc(item.unit||"")+"</td><td>"+money(item.unit_price)+"</td><td>"+money(item.line_total)+"</td></tr>").join("");
-   const documentHtml="<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>Halal Food · Test Order "+esc(orderNo)+"</title><style>*{box-sizing:border-box}body{font:14px/1.5 Arial,sans-serif;color:#2b2a3d;margin:0;padding:28px;max-width:860px;margin:auto}header{display:flex;justify-content:space-between;align-items:start;border-bottom:2px solid #c97b3d;padding-bottom:16px;margin-bottom:20px;gap:16px}h1{margin:0;font-size:24px}h2{font-size:16px;margin:22px 0 8px}small,.muted{color:#686778}.tag{display:inline-block;background:#fff0df;padding:5px 9px;border-radius:99px;font-weight:700;font-size:11px}.notice{margin:18px 0;padding:12px;background:#fff4e7;border:1px solid #edd5b8;border-radius:8px;font-size:12px}.meta{display:grid;grid-template-columns:1fr 1fr;gap:12px}.meta div{padding:12px;background:#faf8f3;border-radius:8px;overflow-wrap:anywhere}table{width:100%;border-collapse:collapse;margin-top:10px}th,td{text-align:left;border-bottom:1px solid #e8e4dc;padding:10px 8px;font-size:12px}th{background:#f5f1e9;text-transform:uppercase;font-size:10px;letter-spacing:.05em}.totals{margin:16px 0 0 auto;width:min(320px,100%)}.totals div{display:flex;justify-content:space-between;padding:5px 0}.totals .grand{border-top:1px solid #cfc8bc;margin-top:5px;padding-top:10px;font-size:17px;font-weight:800}@media print{body{padding:0}.notice{break-inside:avoid}}@media(max-width:600px){body{padding:14px}.meta{grid-template-columns:1fr}}</style></head><body><header><div><h1>Halal Food</h1><div class='muted'>Premium Products · Order packing summary</div></div><div style='text-align:right'><span class='tag'>TEST ORDER</span><p><strong>"+esc(orderNo)+"</strong><br><small>"+esc(dateTime(order.ordered_at))+"</small></p></div></header><div class='notice'><strong>Testing project:</strong> This document is not a receipt or proof of payment/delivery. Halal Food is currently a learning/testing storefront; real transactions and delivery are not enabled.</div><div class='meta'><div><strong>Customer</strong><br>"+esc(order.customer_name||"—")+"<br>"+esc(order.customer_phone||"—")+"<br>"+esc(order.customer_email||"")+"</div><div><strong>Delivery details</strong><br>"+esc(order.delivery_address||"—")+"<br><span class='muted'>Zone: "+esc(order.delivery_zone||"Not recorded")+" · Status: "+esc(order.status||"pending")+"</span></div></div><h2>Items</h2><table><thead><tr><th>Product</th><th>Quantity</th><th>Unit price</th><th>Line total</th></tr></thead><tbody>"+(itemRows||"<tr><td colspan='4'>No item details recorded</td></tr>")+"</tbody></table><div class='totals'><div><span>Subtotal</span><strong>"+money(order.subtotal)+"</strong></div><div><span>Delivery</span><strong>"+money(order.delivery_charge)+"</strong></div><div class='grand'><span>Recorded total</span><strong>"+money(order.total)+"</strong></div></div><p class='muted' style='margin-top:28px;font-size:11px'>Printed from the Halal Food admin panel. Recorded amounts do not confirm collected payment.</p><script>window.addEventListener('load',()=>setTimeout(()=>window.print(),250));<\/script></body></html>";
-   try{win.document.open();win.document.write(documentHtml);win.document.close();win.opener=null;}catch(err){win.close();toast("The packing summary could not be opened.","error");}
+   (async()=>{
+    try{
+     const codeMap=await loadOrderProductCodes([order]);
+     const orderNo=order.order_number||String(order.id).slice(0,8);
+     const itemRows=(order.order_items||[]).map(item=>"<tr><td><strong>"+esc(item.product_name)+"</strong>"+orderProductCodeMarkup(codeMap.get(item.product_id))+"</td><td>"+esc(item.quantity)+" "+esc(item.unit||"")+"</td><td>"+money(item.unit_price)+"</td><td>"+money(item.line_total)+"</td></tr>").join("");
+     const html="<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>Halal Food · Order "+esc(orderNo)+"</title><style>*{box-sizing:border-box}body{font:14px/1.5 Arial,sans-serif;color:#2b2a3d;margin:0;padding:28px;max-width:900px;margin:auto}header{display:flex;justify-content:space-between;align-items:start;border-bottom:2px solid #c97b3d;padding-bottom:16px;margin-bottom:20px;gap:16px}h1{margin:0;font-size:24px}h2{font-size:16px;margin:22px 0 8px}small,.muted{color:#686778}.tag{display:inline-block;background:#fff0df;padding:5px 9px;border-radius:99px;font-weight:700;font-size:11px}.notice{margin:18px 0;padding:12px;background:#fff4e7;border:1px solid #edd5b8;border-radius:8px;font-size:12px}.meta{display:grid;grid-template-columns:1fr 1fr;gap:12px}.meta div{padding:12px;background:#faf8f3;border-radius:8px;overflow-wrap:anywhere}table{width:100%;border-collapse:collapse;margin-top:10px}th,td{text-align:left;border-bottom:1px solid #e8e4dc;padding:10px 8px;font-size:11px;vertical-align:top}th{background:#f5f1e9;text-transform:uppercase;font-size:10px}.totals{margin:16px 0 0 auto;width:min(320px,100%)}.totals div{display:flex;justify-content:space-between;padding:5px 0}.totals .grand{border-top:1px solid #cfc8bc;margin-top:5px;padding-top:10px;font-size:17px;font-weight:800}.order-product-code{display:flex;align-items:center;gap:7px;margin-top:5px;break-inside:avoid}.order-product-code-bars{width:130px;max-width:56%;min-width:60px}.order-product-code-bars svg{width:100%;height:27px}.order-product-code-qr{width:43px;height:43px;object-fit:contain}.order-product-code small,.code-missing{font-size:8px;align-self:center}@media print{body{padding:0}.notice,.order-product-code{break-inside:avoid}}@media(max-width:600px){body{padding:14px}.meta{grid-template-columns:1fr}}</style></head><body><header><div><h1>Halal Food</h1><div class='muted'>Premium Products · Customer order sheet</div></div><div style='text-align:right'><span class='tag'>ORDER SUMMARY</span><p><strong>"+esc(orderNo)+"</strong><br><small>"+esc(dateTime(order.ordered_at))+"</small></p></div></header><div class='notice'><strong>Learning/testing project:</strong> This document is an order summary, not proof of payment or delivery.</div><div class='meta'><div><strong>Customer</strong><br>"+esc(order.customer_name||"—")+"<br>"+esc(order.customer_phone||"—")+"<br>"+esc(order.customer_email||"")+"</div><div><strong>Delivery details</strong><br>"+esc(order.delivery_address||"—")+"<br><span class='muted'>Zone: "+esc(order.delivery_zone||"Not recorded")+" · Status: "+esc(order.status||"pending")+"</span></div></div><h2>Items &amp; product codes</h2><table><thead><tr><th>Product</th><th>Quantity</th><th>Unit price</th><th>Line total</th></tr></thead><tbody>"+(itemRows||"<tr><td colspan='4'>No item details recorded</td></tr>")+"</tbody></table><div class='totals'><div><span>Subtotal</span><strong>"+money(order.subtotal)+"</strong></div><div><span>Delivery</span><strong>"+money(order.delivery_charge)+"</strong></div><div class='grand'><span>Recorded total</span><strong>"+money(order.total)+"</strong></div></div><p class='muted' style='margin-top:26px;font-size:10px'>Scan the QR beside a product for its current public details and price. The 1D barcode identifies the product SKU for POS/inventory scanners. Recorded totals do not confirm collected payment.</p><script>window.addEventListener('load',()=>setTimeout(()=>window.print(),250));<\\/script></body></html>";
+     win.document.open();win.document.write(html);win.document.close();win.opener=null;
+    }catch(error){win.close();toast("The order sheet could not be prepared. "+(error?.message||""),"error");}
+   })();
   }
+
   const orderStatusLabels={pending:"Pending",processing:"Processing",shipped:"Shipped",delivered:"Delivered",cancelled:"Cancelled"};
   function orderCustomerAvatar(order){
    const profile=order.customer_id?customerProfilesById.get(order.customer_id):null;
@@ -812,15 +842,21 @@ window.HFAdminReady.then(async H=>{
    if(!chosen.length){toast("Select at least one order first.","error");return;}
    const win=window.open("","_blank");
    if(!win){toast("The print window was blocked. Allow pop-ups for this admin page and try again.","error");return;}
-   const invoice=kind==="invoice";
-   const pages=chosen.map(order=>{
-    const items=(order.order_items||[]).map(item=>'<tr><td>'+(invoice?"":'<span class="check"></span>')+esc(item.product_name||"Product")+'</td><td>'+esc(item.quantity)+' '+esc(item.unit||"")+'</td><td>'+money(item.unit_price)+'</td><td>'+money(item.line_total)+'</td></tr>').join("");
-    return '<section class="sheet"><header><div><b>Halal Food</b><small>Order operations · '+(invoice?"Order invoice":"Packing slip")+'</small></div><div class="ref"><span>'+(invoice?"ORDER INVOICE · TEST":"PACKING SLIP")+'</span><strong>'+esc(order.order_number||String(order.id).slice(0,8))+'</strong><small>'+esc(dateTime(order.ordered_at))+'</small></div></header><p class="notice"><b>Testing project:</b> This is not a receipt or proof of payment, dispatch or delivery.</p><div class="people"><div><small>CUSTOMER</small><b>'+esc(order.customer_name||"Guest")+'</b><span>'+esc(order.customer_phone||"No phone")+'</span><span>'+esc(order.customer_email||"")+'</span></div><div><small>DELIVERY LOCATION</small><b>'+esc(order.delivery_zone||"Customer provided address")+'</b><span>'+esc(order.delivery_address||"No address recorded")+'</span></div></div><h3>Products & quantities</h3><table><thead><tr><th>Product</th><th>Quantity</th><th>Unit price</th><th>Line total</th></tr></thead><tbody>'+(items||'<tr><td colspan="4">No items recorded</td></tr>')+'</tbody></table><div class="totals"><div><span>Products subtotal</span><b>'+money(order.subtotal)+'</b></div><div><span>Delivery charge</span><b>'+money(order.delivery_charge)+'</b></div><div class="grand"><span>Recorded total</span><b>'+money(order.total)+'</b></div></div>'+(invoice?'<p class="note">Cash on Delivery order · this document does not confirm receipt of payment.</p>':'<div class="packing"><b>Packing checklist</b><span>□ Products checked</span><span>□ Quantities checked</span><span>□ Address checked</span><span>□ Parcel packed</span></div>')+'<footer>Halal Food · '+esc(order.status||"pending")+'</footer></section>';
-   }).join("");
-   const css='*{box-sizing:border-box}body{margin:0;background:#e9eef5;color:#20334f;font:13px/1.5 Inter,Arial,sans-serif}.sheet{max-width:900px;margin:24px auto;padding:30px;background:#fff;box-shadow:0 8px 28px #1f314c1a;break-after:page;page-break-after:always}.sheet:last-child{break-after:auto;page-break-after:auto}header{display:flex;justify-content:space-between;gap:18px;border-bottom:2px solid #2869c7;padding-bottom:16px}header b{display:block;font-size:25px}.ref{text-align:right}.ref span{display:inline-block;padding:5px 10px;border-radius:99px;background:#e8f1ff;color:#245c9f;font-size:10px;font-weight:800}.ref strong,.ref small{display:block;margin-top:4px}.notice{margin:18px 0;padding:12px;border:1px solid #efcfac;background:#fff5e9;border-radius:10px;font-size:11px}.people{display:grid;grid-template-columns:1fr 1fr;gap:12px}.people>div{display:grid;gap:4px;padding:14px;border:1px solid #dbe4ee;background:#f6f9fd;border-radius:10px;overflow-wrap:anywhere}.people small{font-weight:800;letter-spacing:.1em}.people span,small,.note{color:#66778f}h3{margin:20px 0 8px}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:10px 8px;border-bottom:1px solid #e2e9f1;font-size:11px}th{background:#eff4fa;text-transform:uppercase;font-size:9px}.totals{width:min(340px,100%);margin:18px 0 0 auto}.totals div{display:flex;justify-content:space-between;padding:6px 0}.grand{border-top:2px solid #cdd9e7;margin-top:6px;padding-top:12px!important;font-size:16px}.check{display:inline-block;width:11px;height:11px;border:1px solid #8b9bb0;margin-right:7px}.packing{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-top:22px;padding:14px;border:1px solid #dbe4ee;background:#f7f9fc;border-radius:10px;font-size:10px}.packing b{grid-column:1/-1}.note{margin-top:20px;font-size:10px}footer{margin-top:28px;padding-top:10px;border-top:1px solid #dce4ee;color:#78889e;font-size:9px}@media print{body{background:#fff}.sheet{max-width:none;margin:0;padding:15mm;box-shadow:none;min-height:270mm}}@media(max-width:640px){.sheet{margin:0;padding:18px}.people{grid-template-columns:1fr}.packing{grid-template-columns:1fr 1fr}}';
-   const doc='<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Halal Food · '+(invoice?"Order invoices":"Packing slips")+'</title><style>'+css+'</style></head><body>'+pages+'<script>window.addEventListener("load",()=>setTimeout(()=>window.print(),250));<\/script></body></html>';
-   try{win.document.open();win.document.write(doc);win.document.close();win.opener=null;}catch(err){win.close();toast("Could not prepare selected orders for printing.","error");}
+   (async()=>{
+    try{
+     const codeMap=await loadOrderProductCodes(chosen);
+     const invoice=kind==="invoice";
+     const pages=chosen.map(order=>{
+      const items=(order.order_items||[]).map(item=>'<tr><td>'+(invoice?"":'<span class="check"></span>')+'<strong>'+esc(item.product_name||"Product")+'</strong>'+orderProductCodeMarkup(codeMap.get(item.product_id))+'</td><td>'+esc(item.quantity)+' '+esc(item.unit||"")+'</td><td>'+money(item.unit_price)+'</td><td>'+money(item.line_total)+'</td></tr>').join("");
+      return '<section class="sheet"><header><div><b>Halal Food</b><small>Order operations · '+(invoice?"Customer order sheet":"Packing slip")+'</small></div><div class="ref"><span>'+(invoice?"ORDER SUMMARY":"PACKING SLIP")+'</span><strong>'+esc(order.order_number||String(order.id).slice(0,8))+'</strong><small>'+esc(dateTime(order.ordered_at))+'</small></div></header><p class="notice"><b>Learning/testing project:</b> This is an order summary, not proof of payment, dispatch or delivery.</p><div class="people"><div><small>CUSTOMER</small><b>'+esc(order.customer_name||"Guest")+'</b><span>'+esc(order.customer_phone||"No phone")+'</span><span>'+esc(order.customer_email||"")+'</span></div><div><small>DELIVERY LOCATION</small><b>'+esc(order.delivery_zone||"Customer provided address")+'</b><span>'+esc(order.delivery_address||"No address recorded")+'</span></div></div><h3>Products &amp; product codes</h3><table><thead><tr><th>Product</th><th>Quantity</th><th>Unit price</th><th>Line total</th></tr></thead><tbody>'+(items||'<tr><td colspan="4">No items recorded</td></tr>')+'</tbody></table><div class="totals"><div><span>Products subtotal</span><b>'+money(order.subtotal)+'</b></div><div><span>Delivery charge</span><b>'+money(order.delivery_charge)+'</b></div><div class="grand"><span>Recorded total</span><b>'+money(order.total)+'</b></div></div>'+(invoice?'<p class="note">Cash on Delivery order · this document does not confirm receipt of payment.</p>':'<div class="packing"><b>Packing checklist</b><span>□ Products checked</span><span>□ Quantities checked</span><span>□ Address checked</span><span>□ Parcel packed</span></div>')+'<p class="note">Scan the QR beside a product to view its current public product information and price. The 1D barcode is the product SKU for POS/inventory scanners.</p><footer>Halal Food · '+esc(order.status||"pending")+'</footer></section>';
+     }).join("");
+     const css='*{box-sizing:border-box}body{margin:0;background:#e9eef5;color:#2b2a3d;font:13px/1.5 Inter,Arial,sans-serif}.sheet{max-width:900px;margin:24px auto;padding:30px;background:#fff;box-shadow:0 8px 28px #1f314c1a;break-after:page;page-break-after:always}.sheet:last-child{break-after:auto;page-break-after:auto}header{display:flex;justify-content:space-between;gap:18px;border-bottom:2px solid #c97b3d;padding-bottom:16px}header b{display:block;font-size:25px}.ref{text-align:right}.ref span{display:inline-block;padding:5px 10px;border-radius:99px;background:#F6E9DC;color:#8F572F;font-size:10px;font-weight:800}.ref strong,.ref small{display:block;margin-top:4px}.notice{margin:18px 0;padding:12px;border:1px solid #efcfac;background:#fff5e9;border-radius:10px;font-size:11px}.people{display:grid;grid-template-columns:1fr 1fr;gap:12px}.people>div{display:grid;gap:4px;padding:14px;border:1px solid #e4ddd3;background:#fbf9f5;border-radius:10px;overflow-wrap:anywhere}.people small{font-weight:800;letter-spacing:.1em}.people span,small,.note{color:#667085}h3{margin:20px 0 8px}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:9px 7px;border-bottom:1px solid #e2e9f1;font-size:10px;vertical-align:top}th{background:#f5f1e9;text-transform:uppercase;font-size:9px}.totals{width:min(340px,100%);margin:18px 0 0 auto}.totals div{display:flex;justify-content:space-between;padding:6px 0}.grand{border-top:2px solid #cfc8bc;margin-top:6px;padding-top:12px!important;font-size:16px}.check{display:inline-block;width:11px;height:11px;border:1px solid #8b9bb0;margin-right:7px}.packing{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-top:22px;padding:14px;border:1px solid #e4ddd3;background:#fbf9f5;border-radius:10px;font-size:10px}.packing b{grid-column:1/-1}.note{margin-top:14px;font-size:9px}.order-product-code{display:flex;align-items:center;gap:6px;margin-top:4px;break-inside:avoid}.order-product-code-bars{width:122px;max-width:56%;min-width:55px}.order-product-code-bars svg{width:100%;height:24px}.order-product-code-qr{width:40px;height:40px;object-fit:contain}.order-product-code small,.code-missing{font-size:7px}footer{margin-top:22px;padding-top:10px;border-top:1px solid #dce4ee;color:#78889e;font-size:9px}@media print{body{background:#fff}.sheet{max-width:none;margin:0;padding:13mm;box-shadow:none;min-height:270mm}}@media(max-width:640px){.sheet{margin:0;padding:18px}.people{grid-template-columns:1fr}.packing{grid-template-columns:1fr 1fr}}';
+     const html='<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Halal Food · '+(invoice?"Order sheets":"Packing slips")+'</title><style>'+css+'</style></head><body>'+pages+'<script>window.addEventListener("load",()=>setTimeout(()=>window.print(),250));<\\/script></body></html>';
+     win.document.open();win.document.write(html);win.document.close();win.opener=null;
+    }catch(error){win.close();toast("Could not prepare selected orders for printing. "+(error?.message||""),"error");}
+   })();
   }
+
   function exportSelectedOrders(){
    const chosen=all.filter(order=>selectedOrderIds.has(order.id));
    if(!chosen.length){toast("Select at least one order first.","error");return;}
@@ -1349,6 +1385,96 @@ window.HFAdminReady.then(async H=>{
   const {error}=await client.storage.from("store-content").upload(path,file,{cacheControl:"3600",upsert:false,contentType:file.type});if(error)throw error;
   return client.storage.from("store-content").getPublicUrl(path).data.publicUrl;
  }
+ async function initProductAdd(){
+  let categories=[];
+  async function loadCategories(){
+   categories=await fetchCategories();
+   const active=categories.filter(category=>category.is_active);
+   $("productCategorySelect").innerHTML='<option value="">Choose category</option>'+active.map(category=>'<option value="'+esc(category.slug)+'">'+esc(category.name)+'</option>').join("");
+   if(!active.length)throw new Error("Add or restore a category in All Products before creating a product.");
+  }
+  const inferWeight=value=>{
+   const raw=String(value||"").trim().toLowerCase();
+   if(raw==="kg")return "1.000";
+   const match=raw.match(/^([0-9]+(?:\.[0-9]+)?)\s*(kg|g|gram|grams)$/);
+   if(!match)return "";
+   const amount=Number(match[1]),kg=match[2]==="kg"?amount:amount/1000;
+   return Number.isFinite(kg)&&kg>0&&kg<=100?kg.toFixed(3):"";
+  };
+  $("productName").addEventListener("input",()=>{if(!$("productSlug").dataset.edited)$("productSlug").value=slugify($("productName").value);});
+  $("productSlug").addEventListener("input",()=>{$("productSlug").dataset.edited="1";});
+  $("productUnit").addEventListener("input",()=>{const field=$("productShippingWeight");if(field.dataset.manual==="true")return;const guess=inferWeight($("productUnit").value);if(guess)field.value=guess;});
+  $("productShippingWeight").addEventListener("input",event=>{event.currentTarget.dataset.manual=event.currentTarget.value.trim()?"true":"";});
+  $("productImageUrl").addEventListener("input",()=>{const url=$("productImageUrl").value.trim();if(url){$("productImagePreview").src=url;$("productImagePreview").hidden=false;}});
+  $("productImageFile").addEventListener("change",()=>{const file=$("productImageFile").files?.[0];if(file){$("productImagePreview").src=URL.createObjectURL(file);$("productImagePreview").hidden=false;}});
+  $("productForm").addEventListener("submit",async event=>{
+   event.preventDefault();
+   const button=event.submitter||$("productForm").querySelector('[data-save-state="published"]');
+   const state=button?.dataset.saveState==="draft"?"draft":"published";
+   const buttons=[...$("productForm").querySelectorAll('button[type="submit"]')];
+   buttons.forEach(item=>item.disabled=true);
+   $("productFormError").textContent="";$("productSaveResult").hidden=true;
+   try{
+    const category=categories.find(item=>item.slug===$("productCategorySelect").value&&item.is_active);
+    if(!category)throw new Error("Choose an active category.");
+    const name=$("productName").value.trim(),slug=$("productSlug").value.trim();
+    if(!name)throw new Error("Product name is required.");
+    if(!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug))throw new Error("Use a valid English product URL slug.");
+    const price=Number($("productPrice").value);
+    if(!Number.isFinite(price)||price<0)throw new Error("Enter a valid non-negative price.");
+    const rawWeight=$("productShippingWeight").value.trim(),shippingWeight=rawWeight===""?null:Number(rawWeight);
+    if(shippingWeight!==null&&(!Number.isFinite(shippingWeight)||shippingWeight<=0||shippingWeight>100))throw new Error("Shipping weight must be greater than 0 and no more than 100 kg.");
+    const rawStock=$("productStock").value.trim(),stock=rawStock===""?null:Number(rawStock);
+    if(stock!==null&&(!Number.isFinite(stock)||stock<0))throw new Error("Stock quantity must be zero or greater.");
+    const rawCost=$("productCostPrice").value.trim(),rawPackaging=$("productPackagingCost").value.trim(),rawThreshold=$("productLowStockThreshold").value.trim();
+    const cost=rawCost===""?null:Number(rawCost),packaging=rawPackaging===""?0:Number(rawPackaging),threshold=rawThreshold===""?5:Number(rawThreshold);
+    if(cost!==null&&(!Number.isFinite(cost)||cost<0))throw new Error("Purchase cost must be zero or greater.");
+    if(!Number.isFinite(packaging)||packaging<0)throw new Error("Packaging cost must be zero or greater.");
+    if(!Number.isFinite(threshold)||threshold<0)throw new Error("Low-stock threshold must be zero or greater.");
+    if(state==="draft"&&$("productFeatured").checked)throw new Error("Save as Published before marking a product as Featured.");
+    let imageUrl=$("productImageUrl").value.trim();
+    const imageFile=$("productImageFile").files?.[0];
+    if(imageFile)imageUrl=await uploadImage(imageFile,"products",slug);
+    const unit=$("productUnit").value.trim()||"piece";
+    const displayInput=$("productDisplayPrice").value.trim();
+    const match=displayInput.match(/[0-9][0-9,]*(?:\.[0-9]+)?/);
+    const shownAmount=match?Number(match[0].replace(/,/g,"")):NaN;
+    const displayPrice=displayInput&&shownAmount===price?displayInput:("৳"+price.toLocaleString("en-BD")+" / "+unit);
+    const payload={
+     name,slug,category:category.name,category_slug:category.slug,price,unit_type:unit,
+     shipping_weight_kg:shippingWeight,display_price:displayPrice,image_url:imageUrl||null,
+     short_description:$("productShortDescription").value.trim(),
+     full_description:$("productFullDescription").value.trim(),
+     stock_quantity:stock,is_active:state==="published",is_featured:$("productFeatured").checked,
+     sort_order:parseInt($("productSortOrder").value||"0",10)||0,
+     seo_title:$("productSeoTitle").value.trim()||null,
+     seo_description:$("productSeoDescription").value.trim()||null,
+     cms_managed:true,cms_created:true
+    };
+    const {data,error}=await client.from("products").insert(payload).select("id,sku").single();
+    if(error)throw error;
+    const costWrite=await client.from("admin_product_costs").upsert({
+     product_id:data.id,cost_price:cost,packaging_cost:packaging,low_stock_threshold:threshold,
+     updated_by:ADMIN_EMAIL,updated_at:new Date().toISOString()
+    },{onConflict:"product_id"});
+    await audit("product_created","product",data.id,"Product created in dedicated Add Product workspace",{slug,sku:data.sku,status:state,cost_recorded:cost!==null});
+    $("productSaveResult").innerHTML='<strong>Product saved successfully</strong><p>Permanent product code: <code>'+esc(data.sku)+'</code></p><div class="hf-table-actions"><a class="hf-button hf-button-secondary hf-button-small" href="./products-barcode.html?sku='+encodeURIComponent(data.sku)+'">Generate label</a><a class="hf-button hf-button-primary hf-button-small" href="./products.html">Open All Products</a></div>';
+    $("productSaveResult").hidden=false;
+    if(costWrite.error){
+     $("productFormError").textContent="Product saved, but private cost/stock alert settings need attention: "+costWrite.error.message;
+     toast("Product saved; private cost settings need attention.","error");
+    }else{
+     toast(state==="published"?"Product published.":"Product saved as draft.");
+    }
+    $("productForm").reset();
+    $("productUnit").value="piece";$("productPackagingCost").value="0";$("productLowStockThreshold").value="5";$("productSortOrder").value="0";
+    $("productSlug").dataset.edited="";$("productShippingWeight").dataset.manual="";
+    $("productImagePreview").hidden=true;$("productImagePreview").removeAttribute("src");
+   }catch(error){$("productFormError").textContent=error.message||"Product could not be saved.";}
+   finally{buttons.forEach(item=>item.disabled=false);}
+  });
+  await loadCategories();attachRefresh(loadCategories);
+ }
  async function initProducts(){
   const productsDateLabel=$("productsDateLabel");
   if(productsDateLabel){
@@ -1382,7 +1508,7 @@ window.HFAdminReady.then(async H=>{
      button.classList.toggle("is-active",active);
      button.setAttribute("aria-pressed",String(active));
     });
-    const rows=products.filter(p=>(stockFilter==="all"||stockState(p)===stockFilter)&&(!search||[p.name,p.slug,p.category,p.short_description].join(" ").toLowerCase().includes(search))&&(!cat||p.category_slug===cat)&&(!state||(state==="visible"?p.is_active:!p.is_active)));
+    const rows=products.filter(p=>(stockFilter==="all"||stockState(p)===stockFilter)&&(!search||[p.name,p.slug,p.sku,p.category,p.short_description].join(" ").toLowerCase().includes(search))&&(!cat||p.category_slug===cat)&&(!state||(state==="visible"?p.is_active:!p.is_active)));
     $("productTableBody").innerHTML=rows.length?rows.map(p=>{
      const tracked=p.stock_quantity!==null&&p.stock_quantity!==undefined&&p.stock_quantity!=="";
      const stock=Number(p.stock_quantity),threshold=Number.isFinite(Number(p.low_stock_threshold))?Number(p.low_stock_threshold):5;
@@ -1393,8 +1519,8 @@ window.HFAdminReady.then(async H=>{
      const marginText=margin===null?"Add purchase cost to calculate margin":'Margin <span class="hf-status '+marginClass+'">'+margin.toLocaleString("en-BD",{maximumFractionDigits:1})+'%</span> · includes packaging';
      const shippingWeightCell=p.shipping_weight_kg!=null?'<strong>'+Number(p.shipping_weight_kg).toLocaleString("en-BD",{minimumFractionDigits:3,maximumFractionDigits:3})+' kg</strong><small>Per sale unit</small>':'<span class="hf-status hf-status-review">Set weight</span><small>Needed for courier auto-calc</small>';
      const stockLabel=!tracked?'<span class="hf-status">Not tracked</span>':outOfStock?'<span class="hf-status hf-status-out-of-stock">Out of stock</span>':low?'<span class="hf-status hf-status-low-stock">'+esc(p.stock_quantity)+' left</span>':'<span class="hf-status hf-status-confirmed">'+esc(p.stock_quantity)+' in stock</span>';
-     return '<tr><td><div style="display:flex;align-items:center;gap:10px">'+(p.image_url?'<img class="hf-thumb" src="'+esc(p.image_url)+'" alt="" loading="lazy">':'<span class="hf-thumb hf-thumb-empty">◇</span>')+'<span><strong>'+esc(p.name)+'</strong><small>/'+esc(p.slug)+'</small></span></div></td><td>'+esc(p.category||"—")+'</td><td><strong>'+esc(p.display_price||money(p.price))+'</strong><small>'+esc(p.unit_type||"piece")+'</small></td><td>'+shippingWeightCell+'</td><td><strong>'+(costKnown?money(totalUnitCost):"Cost not set")+'</strong><small>'+marginText+'</small></td><td>'+stockLabel+'<small>'+(tracked?"Alert at "+esc(threshold)+" "+esc(p.unit_type||"unit"):"Set stock quantity to enable alerts")+'</small></td><td>'+makeStatus(p.is_active?"visible":"hidden")+(p.is_featured?' <span class="hf-status hf-status-review">Featured</span>':"")+'</td><td><div class="hf-table-actions"><button class="hf-button hf-button-secondary hf-button-small" data-edit-product="'+esc(p.id)+'">Edit</button><button class="hf-button '+(p.is_active?"hf-button-danger":"hf-button-success")+' hf-button-small" data-toggle-product="'+esc(p.id)+'">'+(p.is_active?"Hide":"Restore")+'</button></div></td></tr>';
-    }).join(""):'<tr><td colspan="8">'+makeEmpty("No products found","Try a different search or add a product.")+'</td></tr>';
+     return '<tr><td><div style="display:flex;align-items:center;gap:10px">'+(p.image_url?'<img class="hf-thumb" src="'+esc(p.image_url)+'" alt="" loading="lazy">':'<span class="hf-thumb hf-thumb-empty">◇</span>')+'<span><strong>'+esc(p.name)+'</strong><small>/'+esc(p.slug)+'</small></span></div></td><td><strong>'+esc(p.sku||"SKU pending")+'</strong><small>Code 128 · <a href="./products-barcode.html?sku='+encodeURIComponent(p.sku||"")+'">Print label</a></small></td><td>'+esc(p.category||"—")+'</td><td><strong>'+esc(p.display_price||money(p.price))+'</strong><small>'+esc(p.unit_type||"piece")+'</small></td><td>'+shippingWeightCell+'</td><td><strong>'+(costKnown?money(totalUnitCost):"Cost not set")+'</strong><small>'+marginText+'</small></td><td>'+stockLabel+'<small>'+(tracked?"Alert at "+esc(threshold)+" "+esc(p.unit_type||"unit"):"Set stock quantity to enable alerts")+'</small></td><td>'+makeStatus(p.is_active?"visible":"hidden")+(p.is_featured?' <span class="hf-status hf-status-review">Featured</span>':"")+'</td><td><div class="hf-table-actions"><button class="hf-button hf-button-secondary hf-button-small" data-edit-product="'+esc(p.id)+'">Edit</button><button class="hf-button '+(p.is_active?"hf-button-danger":"hf-button-success")+' hf-button-small" data-toggle-product="'+esc(p.id)+'">'+(p.is_active?"Hide":"Restore")+'</button></div></td></tr>';
+    }).join(""):'<tr><td colspan="9">'+makeEmpty("No products found","Try a different search or add a product.")+'</td></tr>';
     const lowCount=products.filter(p=>p.is_active&&stockState(p)==="low").length;
     const outCount=products.filter(p=>p.is_active&&stockState(p)==="out").length;
     $("productsCount").textContent=products.length.toLocaleString("en-BD");$("productsVisibleCount").textContent=products.filter(p=>p.is_active).length.toLocaleString("en-BD");$("productsHiddenCount").textContent=products.filter(p=>!p.is_active).length.toLocaleString("en-BD");$("categoriesCount").textContent=categories.length.toLocaleString("en-BD");$("productsLowStockCount").textContent=lowCount.toLocaleString("en-BD");$("productsOutOfStockCount").textContent=outCount.toLocaleString("en-BD");
@@ -1430,7 +1556,6 @@ async function refresh(){
    const preview=$("productImagePreview");if(p?.image_url){preview.src=p.image_url;preview.hidden=false;}else{preview.removeAttribute("src");preview.hidden=true;}
    $("productDialog").showModal();
   }
-  $("addProductBtn")?.addEventListener("click",()=>openProduct());
   $("addCategoryBtn")?.addEventListener("click",()=>openCategory());
   $("addCategoryQuickBtn")?.addEventListener("click",()=>openCategory());
   $("productImageUrl")?.addEventListener("input",()=>{if($("productImageUrl").value){$("productImagePreview").src=$("productImageUrl").value;$("productImagePreview").hidden=false;}});
@@ -1871,6 +1996,9 @@ async function refresh(){
    "incomplete-orders":async()=>{},
    operations:()=>{if(typeof window.HFOpsInit==="function")return window.HFOpsInit();throw new Error("Operations module did not load.");},
    products:initProducts,
+   "products-add":initProductAdd,
+   "products-barcode":()=>{if(typeof window.HFBarcodeInit==="function")return window.HFBarcodeInit();throw new Error("Barcode module did not load.");},
+   "products-reviews":()=>{if(typeof window.HFReviewsInit==="function")return window.HFReviewsInit();throw new Error("Product Reviews module did not load.");},
    content:initContent,
    customers:initCustomers,
    finance:initFinance,

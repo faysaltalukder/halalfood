@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="robots" content="noindex,nofollow"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<title>Add Product · Halal Food Admin</title>
+<link rel="stylesheet" href="./shared.css?v=20261031-products-workspace-v1"><link rel="stylesheet" href="./products.css?v=20261031-products-workspace-v1"><link rel="stylesheet" href="./products-tools.css?v=20261031-products-workspace-v1">
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
+</head>
+<body data-page="products-add">
+<div id="authGate" class="auth-gate"><div class="auth-gate-card"><strong>Checking secure admin access…</strong><p>Your dashboard data will load only after the authorized account and two-step verification are confirmed.</p></div></div>
+<div id="adminApp" hidden><main id="pageContent" tabindex="-1">
+<div class="pt-hero">
+ <div><p class="page-eyebrow">CATALOG MANAGEMENT</p><h1>Add Product</h1><p>Create a new catalogue item. A permanent SKU and its Code 128 barcode are assigned automatically after saving.</p></div>
+ <div class="page-actions"><a class="hf-button hf-button-secondary" href="./products.html">← All Products</a><button class="hf-button hf-button-secondary" data-refresh-page type="button">↻ Refresh</button></div>
+</div>
+<div class="pt-note"><span aria-hidden="true">✦</span><div><strong>One product, one permanent code.</strong>Each catalogue product receives a single permanent SKU. Every pack of that product uses the same Code 128 barcode; the QR beside it opens customer-facing product information.</div></div>
+<section class="hf-card hf-card-pad pt-form-card">
+<form id="productForm" novalidate>
+ <div class="pt-form-heading"><div><p class="page-eyebrow">PRODUCT INFORMATION</p><h2>New product details</h2><p>Fill in the required details, then choose whether to save as a draft or publish.</p></div><span class="hf-status hf-status-active">SKU auto-generated</span></div>
+ <div class="hf-field-grid">
+  <label class="hf-field">Product name *<input class="hf-input" id="productName" maxlength="140" required placeholder="Pure Cow Ghee"></label>
+  <label class="hf-field">Product URL slug *<input class="hf-input" id="productSlug" required pattern="[a-z0-9]+(-[a-z0-9]+)*" placeholder="pure-cow-ghee"><small class="hf-help">English letters, numbers and hyphens only. Existing product URLs are never changed here.</small></label>
+  <label class="hf-field">Category *<select class="hf-select" id="productCategorySelect" required><option value="">Loading categories…</option></select></label>
+  <label class="hf-field">Price in ৳ *<input class="hf-input" id="productPrice" type="number" min="0" step="0.01" required placeholder="290"></label>
+  <label class="hf-field">Purchase cost per unit (৳)<input class="hf-input" id="productCostPrice" type="number" min="0" step="0.01" placeholder="Leave blank until known"><small class="hf-help">Private admin data; not exposed in public product details.</small></label>
+  <label class="hf-field">Packaging cost per unit (৳)<input class="hf-input" id="productPackagingCost" type="number" min="0" step="0.01" value="0"></label>
+  <label class="hf-field">Unit label *<input class="hf-input" id="productUnit" maxlength="40" value="piece" required placeholder="kg, 500g, bottle, 1L"></label>
+  <label class="hf-field">Packed shipping weight per unit (kg)<input class="hf-input" id="productShippingWeight" type="number" min="0.001" max="100" step="0.001" placeholder="e.g. 0.500"><small class="hf-help">Used by courier workflows. Include the outer packaging weight.</small></label>
+  <label class="hf-field">Display price (optional)<input class="hf-input" id="productDisplayPrice" maxlength="80" placeholder="৳290 / 1L"></label>
+  <label class="hf-field hf-span-2">Image URL<input class="hf-input" id="productImageUrl" type="url" placeholder="https://…"></label>
+  <label class="hf-field hf-span-2">Or upload an image<input class="hf-input" id="productImageFile" type="file" accept="image/jpeg,image/png,image/webp,image/avif"><small class="hf-help">JPG, PNG, WebP or AVIF, maximum 5 MB.</small></label>
+  <div class="hf-span-2 pt-image-preview"><img id="productImagePreview" alt="Product image preview" hidden><span class="hf-help">Image preview</span></div>
+  <label class="hf-field hf-span-2">Short description<textarea class="hf-textarea" id="productShortDescription" rows="2" maxlength="500"></textarea></label>
+  <label class="hf-field hf-span-2">Full description<textarea class="hf-textarea" id="productFullDescription" rows="4"></textarea></label>
+  <label class="hf-field">Stock quantity<input class="hf-input" id="productStock" type="number" min="0" step="any" placeholder="Leave blank if not tracked"><small class="hf-help">Leave blank when stock is not tracked.</small></label>
+  <label class="hf-field">Low-stock alert threshold<input class="hf-input" id="productLowStockThreshold" type="number" min="0" step="any" value="5" required></label>
+  <label class="hf-field">Display order<input class="hf-input" id="productSortOrder" type="number" step="1" value="0"></label>
+  <label class="hf-field">SEO title<input class="hf-input" id="productSeoTitle" maxlength="180"></label>
+  <label class="hf-field hf-span-2">SEO description<input class="hf-input" id="productSeoDescription" maxlength="320"></label>
+  <div class="hf-span-2 pt-check-row"><label class="hf-check"><input id="productFeatured" type="checkbox"> Featured product</label></div>
+ </div>
+ <div id="productSaveResult" class="pt-sku-result" hidden aria-live="polite"></div>
+ <p id="productFormError" class="hf-form-error" role="alert"></p>
+ <div class="pt-form-footer"><span class="hf-data-note">The new product will appear in All Products. Draft products remain hidden from the public catalogue.</span><div class="hf-table-actions"><a class="hf-button hf-button-secondary" href="./products.html">Cancel</a><button class="hf-button hf-button-secondary" type="submit" data-save-state="draft">Save as Draft</button><button class="hf-button hf-button-primary" type="submit" data-save-state="published">Save &amp; Publish</button></div></div>
+</form>
+</section>
+</main></div>
+<script defer src="./i18n.js?v=20261023-admin-ultimate-v1"></script><script defer src="./shared.js?v=20261031-products-workspace-v1"></script><script defer src="./app.js?v=20261031-products-workspace-v1"></script>
+</body></html>

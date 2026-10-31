@@ -21,6 +21,40 @@ const FEATURES = {
     tests: ["scripts/architecture-check.mjs", "scripts/admin-phase12-check.mjs"],
     guardrails: ["Supabase is the live catalogue source.", "Keep product/category URLs, SEO metadata, filters and listing order compatible.", "Do not delete legacy product data until all fallbacks and page consumers are mapped."]
   },
+  product_tools: {
+    title: "Product creation, barcode/QR and review management",
+    purpose: "Separate Add Product and All Products workspaces, permanent product SKU identity, retail barcode labels, customer QR product information and moderated product reviews.",
+    readFirst: ["admin/products.html", "admin/products-barcode.js", "admin/products-reviews.js"],
+    files: [
+      "admin/products.html", "admin/products-add.html", "admin/products-barcode.html",
+      "admin/products-barcode.js", "admin/products-reviews.html", "admin/products-reviews.js",
+      "admin/products-tools.css", "admin/shared.js", "admin/app.js", "admin/orders.html",
+      "product-lookup.html", "js/product-lookup.js", "js/product-reviews.js", "js/main.js",
+      "supabase/migrations/20261031061456_add_product_catalog_sku_and_reviews.sql",
+      "supabase/migrations/20261031062432_allow_admin_moderation_of_customer_reviews.sql",
+      "supabase/migrations/20261031063731_allow_unlinked_customer_review_submissions.sql",
+      "scripts/admin-product-tools-check.mjs"
+    ],
+    anchors: [
+      { file: "admin/app.js", names: ["initProducts", "initProductAdd", "loadOrderProductCodes", "printPackingSlip", "printSelectedOrders"] },
+      { file: "admin/products-barcode.js", names: ["renderScanResult", "printLabels", "startCamera", "init"] },
+      { file: "admin/products-reviews.js", names: ["openReview", "setStatus", "refresh", "init"] },
+      { file: "js/product-lookup.js", names: ["loadProduct"] },
+      { file: "js/product-reviews.js", names: ["refreshReviews", "init"] }
+    ],
+    tables: ["products", "product_reviews", "categories", "inventory_movements", "order_items"],
+    functions: [],
+    tests: ["scripts/architecture-check.mjs", "scripts/admin-product-tools-check.mjs"],
+    guardrails: [
+      "Keep SKU permanent and unique; the same product and all its units share its SKU/barcode.",
+      "Code 128 is for POS and stock workflows; the QR opens customer-facing current product information and price.",
+      "Show only active products on public QR pages and never expose exact inventory quantities publicly.",
+      "Customer review submissions must remain Pending; only the MFA admin may publish, hide, edit or delete.",
+      "Include each order item's SKU, Code 128 and customer QR in single-order and selected-order printouts.",
+      "Never generate a different catalogue barcode per customer or per individual product unit.",
+      "Preserve existing order, product, stock and financial history; use additive migrations only."
+    ]
+  },
   checkout: {
     title: "Cart and checkout",
     purpose: "Cart state, checkout validation, incomplete-checkout consent and order submission.",

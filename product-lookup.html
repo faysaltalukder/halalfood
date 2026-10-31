@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="index,follow"><meta name="theme-color" content="#F2F0EA">
+<title>Product Information · Halal Food</title>
+<link rel="icon" href="images/logo-favicon/favicon.png">
+<style>
+:root{color-scheme:light;--navy:#2B2A3D;--gold:#C97B3D;--paper:#FFFDF8;--cream:#F2F0EA;--border:#E4DED2;--muted:#777486}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 10% 0%,#F4E6D8 0,transparent 42%),var(--cream);font:15px/1.65 Inter,system-ui,Arial,sans-serif;color:var(--navy);padding:24px}
+.lookup-shell{width:min(720px,100%);margin:5vh auto;background:var(--paper);border:1px solid var(--border);border-radius:24px;box-shadow:0 22px 60px #2b2a3d12;overflow:hidden}
+.lookup-head{padding:22px 26px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px}.lookup-head img{width:54px;height:54px;object-fit:contain}.lookup-head strong{font-size:19px;display:block}.lookup-head small{color:var(--muted)}
+.lookup-body{padding:28px}.product-grid{display:grid;grid-template-columns:180px 1fr;gap:24px}
+.product-image{width:100%;aspect-ratio:1;object-fit:contain;background:#F7F3EC;border-radius:16px;padding:10px}
+.eyebrow{font-size:10px;font-weight:800;letter-spacing:.14em;color:#A96D36;margin:0 0 6px}.product-title{font-size:clamp(25px,5vw,34px);line-height:1.15;margin:0 0 8px;letter-spacing:-.04em}.sku{font-size:12px;color:var(--muted);font-weight:700;letter-spacing:.04em}
+.price{font-size:28px;font-weight:850;color:#9C5D30;margin:17px 0 8px}.availability{display:inline-flex;padding:5px 10px;border-radius:999px;background:#E8F3EC;color:#276C4C;font-size:11px;font-weight:800}.availability.out{background:#FBEDEA;color:#9B4B3D}
+.meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:16px 0}.meta div{padding:12px;border:1px solid var(--border);border-radius:12px;background:#FBF9F4}.meta small{display:block;font-size:10px;color:var(--muted);letter-spacing:.08em;font-weight:800}.description{color:#666476;white-space:pre-line}
+.lookup-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}.lookup-actions a{padding:11px 15px;border-radius:11px;text-decoration:none;background:var(--gold);color:#fff;font-weight:750}.lookup-actions a.secondary{background:#F1ECE3;color:var(--navy);border:1px solid var(--border)}
+.lookup-message{padding:34px;text-align:center;color:var(--muted)}.lookup-footer{padding:14px 26px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);text-align:center}
+@media(max-width:560px){body{padding:12px}.lookup-shell{margin:0 auto;border-radius:18px}.lookup-head{padding:17px}.lookup-body{padding:20px}.product-grid{grid-template-columns:1fr;gap:16px}.product-image{max-width:220px;margin:auto}.meta{grid-template-columns:1fr 1fr}.product-title,.sku,.price{text-align:center;display:block}}
+</style>
+</head>
+<body>
+<article class="lookup-shell">
+<header class="lookup-head"><img src="images/logo-favicon/logo.png" alt="Halal Food logo"><div><strong>Halal Food</strong><small>Product information · scanned label</small></div></header>
+<main class="lookup-body" id="productLookup"><div class="lookup-message">Loading current product information…</div></main>
+<footer class="lookup-footer">The code identifies a catalogue product. Price and availability are loaded live from Halal Food.</footer>
+</article>
+<script defer src="js/product-lookup.js?v=20261031-products-workspace-v1"></script>
+</body></html>
