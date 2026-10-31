@@ -2,7 +2,7 @@
 "use strict";
 const $=id=>document.getElementById(id);
 const dict={
- "Marketing Center":"মার্কেটিং সেন্টার","Create campaign":"ক্যাম্পেইন তৈরি","Audience & consent":"অডিয়েন্স ও সম্মতি","Campaign history":"ক্যাম্পেইন ইতিহাস",
+ "Customer Messages":"কাস্টমার মেসেজ","Compose message":"মেসেজ লিখুন","Message history":"মেসেজের ইতিহাস",
  "Active CRM customers":"সক্রিয় CRM গ্রাহক","WhatsApp consent":"WhatsApp সম্মতি","Email consent":"ইমেইল সম্মতি","Saved campaigns":"সংরক্ষিত ক্যাম্পেইন",
  "Choose your channel and message":"চ্যানেল ও বার্তা নির্বাচন করুন","Campaign name":"ক্যাম্পেইনের নাম","Email subject":"ইমেইলের বিষয়","Message content":"বার্তার বিষয়বস্তু",
  "Customer segment":"গ্রাহক সেগমেন্ট","All active customers":"সব সক্রিয় গ্রাহক","New customers":"নতুন গ্রাহক","Regular customers":"নিয়মিত গ্রাহক","Special customers":"বিশেষ গ্রাহক","VIP customers":"ভিআইপি গ্রাহক","Friend customers":"ফ্রেন্ড গ্রাহক",
