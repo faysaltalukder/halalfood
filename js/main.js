@@ -743,22 +743,158 @@ document.addEventListener("DOMContentLoaded", () => {
   };
   const selectedDeliveryZone = () => document.querySelector('input[name="deliveryZone"]:checked')?.value || "";
   const deliveryChargeFor = (zone) => zone === "inside_dhaka" ? 70 : zone === "outside_dhaka" ? 120 : 0;
+  let appliedCoupon = null;
+  let couponRequestSequence = 0;
+  const couponInput = document.querySelector("#coupon-code");
+  const couponFeedback = document.querySelector("#coupon-feedback");
+  const couponAppliedBox = document.querySelector("#coupon-applied");
+  const couponApplyButton = document.querySelector("#apply-coupon");
+  const setCouponFeedback = (message, state = "") => {
+    if (!couponFeedback) return;
+    couponFeedback.textContent = message;
+    couponFeedback.className = "checkout-coupon-feedback" + (state ? " is-" + state : "");
+  };
+  const clearAppliedCoupon = (message = "") => {
+    couponRequestSequence += 1;
+    if (couponApplyButton) couponApplyButton.disabled = false;
+    appliedCoupon = null;
+    if (couponAppliedBox) couponAppliedBox.hidden = true;
+    if (message) setCouponFeedback(message, "error");
+    updateCheckoutTotals();
+  };
+  const getCouponPreviewItems = () => {
+    if (checkoutIsCart && window.HALAL_CART_API) {
+      return window.HALAL_CART_API.read().map(item => ({
+        product: String(item.name || item.slug || ""),
+        slug: String(item.slug || ""),
+        quantity: Math.max(1, Number(item.qty) || 1)
+      }));
+    }
+    if (!singleProduct) return [];
+    return [{
+      product: String(singleProduct.name || singleProduct.slug || ""),
+      slug: String(singleProduct.slug || ""),
+      quantity: Math.max(1, Number(quantityInput?.value) || 1)
+    }];
+  };
+  const applyCheckoutCoupon = async () => {
+    const code = String(couponInput?.value || "").trim().toUpperCase();
+    if (!code) {
+      setCouponFeedback("Enter a coupon code first.", "error");
+      couponInput?.focus();
+      return;
+    }
+    const items = getCouponPreviewItems();
+    if (!items.length) {
+      setCouponFeedback("Your products are still loading. Please try again.", "error");
+      return;
+    }
+    const currentRequest = ++couponRequestSequence;
+    if (couponApplyButton) couponApplyButton.disabled = true;
+    setCouponFeedback("Checking your coupon…");
+    try {
+      const response = await fetch("https://qfwvrcfkrsydycbfjsxf.supabase.co/functions/v1/coupon-validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code,
+          phone: String(document.querySelector("#mobile")?.value || ""),
+          items
+        })
+      });
+      const result = await response.json().catch(() => null);
+      if (currentRequest !== couponRequestSequence) return;
+      if (!response.ok || result?.success !== true) {
+        throw new Error(result?.error || "Coupon service is temporarily unavailable. Please try again.");
+      }
+      if (result.valid !== true || !result.coupon) {
+        appliedCoupon = null;
+        if (couponAppliedBox) couponAppliedBox.hidden = true;
+        setCouponFeedback(result.error || "This coupon is invalid or unavailable.", "error");
+        updateCheckoutTotals();
+        return;
+      }
+      const quote = result.coupon;
+      const subtotal = getCheckoutSubtotal();
+      if (!Number.isFinite(Number(quote.discountAmount)) || Number(quote.discountAmount) <= 0 ||
+          Math.abs(Number(quote.subtotal) - subtotal) > 0.01) {
+        appliedCoupon = null;
+        if (couponAppliedBox) couponAppliedBox.hidden = true;
+        setCouponFeedback("Product prices changed while checking this coupon. Refresh your cart and try again.", "error");
+        updateCheckoutTotals();
+        return;
+      }
+      appliedCoupon = {
+        code: String(quote.code || code),
+        name: String(quote.name || "Coupon"),
+        discountAmount: Number(quote.discountAmount),
+        subtotal: Number(quote.subtotal)
+      };
+      const codeNode = document.querySelector("#coupon-applied-code");
+      const savingNode = document.querySelector("#coupon-applied-saving");
+      if (codeNode) codeNode.textContent = appliedCoupon.code;
+      if (savingNode) savingNode.textContent = "You save " + money(appliedCoupon.discountAmount);
+      if (couponAppliedBox) couponAppliedBox.hidden = false;
+      setCouponFeedback("Coupon applied. Your final discount will be confirmed securely when you place the order.", "success");
+      updateCheckoutTotals();
+    } catch (error) {
+      if (currentRequest === couponRequestSequence) {
+        appliedCoupon = null;
+        if (couponAppliedBox) couponAppliedBox.hidden = true;
+        setCouponFeedback(error?.message || "Could not check this coupon. Please try again.", "error");
+        updateCheckoutTotals();
+      }
+    } finally {
+      if (currentRequest === couponRequestSequence && couponApplyButton) couponApplyButton.disabled = false;
+    }
+  };
   const updateCheckoutTotals = () => {
     const subtotal = getCheckoutSubtotal();
     const zone = selectedDeliveryZone();
     const deliveryCharge = deliveryChargeFor(zone);
+    const couponDiscount = appliedCoupon ? Math.min(Number(appliedCoupon.discountAmount) || 0, subtotal) : 0;
+    const total = Math.max(0, subtotal - couponDiscount) + deliveryCharge;
     const subtotalNode = document.querySelector("#checkout-subtotal");
     const deliveryNode = document.querySelector("#checkout-delivery-charge");
     const totalNode = document.querySelector("#checkout-grand-total");
+    const discountRow = document.querySelector("#checkout-discount-row");
+    const discountNode = document.querySelector("#checkout-discount-amount");
     if (subtotalNode) subtotalNode.textContent = money(subtotal);
     if (deliveryNode) deliveryNode.textContent = zone ? money(deliveryCharge) : "Choose an area";
-    if (totalNode) totalNode.textContent = zone ? money(subtotal + deliveryCharge) : "Select delivery area";
-    return { subtotal, deliveryCharge, total: subtotal + deliveryCharge, deliveryZone: zone };
+    if (discountRow) discountRow.hidden = couponDiscount <= 0;
+    if (discountNode) discountNode.textContent = "−" + money(couponDiscount);
+    if (totalNode) totalNode.textContent = zone ? money(total) : "Select delivery area";
+    return { subtotal, deliveryCharge, couponDiscount, couponCode: appliedCoupon?.code || "", total, deliveryZone: zone };
   };
+  couponApplyButton?.addEventListener("click", applyCheckoutCoupon);
+  couponInput?.addEventListener("keydown", event => {
+    if (event.key === "Enter") { event.preventDefault(); applyCheckoutCoupon(); }
+  });
+  couponInput?.addEventListener("input", () => {
+    if (appliedCoupon && String(couponInput.value || "").trim().toUpperCase() !== appliedCoupon.code) {
+      clearAppliedCoupon("Coupon code changed. Apply it again to refresh the discount.");
+    } else if (!appliedCoupon) {
+      couponRequestSequence += 1;
+      if (couponApplyButton) couponApplyButton.disabled = false;
+    }
+  });
+  document.querySelector("#remove-coupon")?.addEventListener("click", () => {
+    if (couponInput) couponInput.value = "";
+    clearAppliedCoupon("Coupon removed.");
+    couponFeedback?.classList.remove("is-error");
+  });
+  document.querySelector("#mobile")?.addEventListener("input", () => {
+    if (appliedCoupon) clearAppliedCoupon("Mobile number changed. Apply your coupon again.");
+  });
   document.querySelectorAll('input[name="deliveryZone"]').forEach((radio) => radio.addEventListener("change", updateCheckoutTotals));
-  window.addEventListener("halalcart:updated", updateCheckoutTotals);
+  window.addEventListener("halalcart:updated", () => {
+    if (appliedCoupon || couponApplyButton?.disabled) clearAppliedCoupon("Your cart changed. Apply the coupon again.");
+    else { couponRequestSequence += 1; updateCheckoutTotals(); }
+  });
   // When the live catalog arrives, use the server-managed price/name/image for a single-product checkout.
   window.addEventListener("halalcatalog:updated", () => {
+    if (appliedCoupon || couponApplyButton?.disabled) clearAppliedCoupon("Product information changed. Apply your coupon again.");
+    else couponRequestSequence += 1;
     if (!singleProductName || checkoutIsCart) return;
     const source = Array.isArray(window.PRODUCTS_DATA) ? window.PRODUCTS_DATA : [];
     const normalized = singleProductName.trim().toLowerCase();
@@ -792,6 +928,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
   const syncQuantity = (value) => {
+    if (appliedCoupon || couponApplyButton?.disabled) clearAppliedCoupon("Quantity changed. Apply your coupon again.");
+    else couponRequestSequence += 1;
     const n = Math.max(1, Math.min(99, Number(value) || 1));
     if (quantityInput) quantityInput.value = String(n);
     if (quantityDisplay) quantityDisplay.textContent = String(n);
@@ -808,6 +946,8 @@ document.addEventListener("DOMContentLoaded", () => {
   // Allow direct quantity entry on the single-product order form.
   // Keep calculations live while the shopper types; normalize only on change.
   quantityInput?.addEventListener("input", () => {
+    if (appliedCoupon || couponApplyButton?.disabled) clearAppliedCoupon("Quantity changed. Apply your coupon again.");
+    else couponRequestSequence += 1;
     const raw = quantityInput.value;
     if (raw === "") return;
     const n = Number(raw);
@@ -877,6 +1017,14 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       if (!form.reportValidity()) return;
+      const typedCouponCode = String(document.querySelector("#coupon-code")?.value || "").trim().toUpperCase();
+      if (typedCouponCode && (!appliedCoupon || appliedCoupon.code !== typedCouponCode)) {
+        if (error) {
+          error.textContent = "Apply the coupon and wait for its validation before placing your order.";
+          error.style.display = "block";
+        }
+        return;
+      }
 
       if (submit) {
         submit.disabled = true;
@@ -970,6 +1118,7 @@ document.addEventListener("DOMContentLoaded", () => {
         quantity:data.quantity || "1",
         price:data.price || (singleProduct ? String(priceNumber(singleProduct.price)) : "0")
       }];
+      data.couponCode = appliedCoupon?.code || "";
       const checkoutValue = checkoutItems.reduce((sum,item) => sum + (Number(item.price)||0) * Math.max(1,Number(item.quantity)||1), 0);
       const deliveryZone = String(data.deliveryZone || "");
       if (deliveryZone !== "inside_dhaka" && deliveryZone !== "outside_dhaka") {
@@ -985,7 +1134,8 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
       const deliveryCharge = deliveryChargeFor(deliveryZone);
-      const grandTotal = checkoutValue + deliveryCharge;
+      const couponDiscount = appliedCoupon ? Math.min(Number(appliedCoupon.discountAmount) || 0, checkoutValue) : 0;
+      const grandTotal = Math.max(0, checkoutValue - couponDiscount) + deliveryCharge;
       data.deliveryZone = deliveryZone;
       data.deliveryCharge = String(deliveryCharge);
       data.subtotal = String(checkoutValue);
@@ -1089,6 +1239,10 @@ document.addEventListener("DOMContentLoaded", () => {
           success: true,
           orderId: confirmedOrderId,
           orderTotal: confirmedTotal,
+          subtotal: Number.isFinite(Number(result?.subtotal)) ? Number(result.subtotal) : checkoutValue,
+          deliveryCharge: Number.isFinite(Number(result?.deliveryCharge)) ? Number(result.deliveryCharge) : deliveryCharge,
+          couponCode: typeof result?.couponCode === "string" ? result.couponCode : "",
+          couponDiscount: Number.isFinite(Number(result?.couponDiscount)) ? Number(result.couponDiscount) : 0,
           purchaseEventId,
           heldForReview: result?.heldForReview === true,
           reviewId: typeof result?.reviewId === "string" ? result.reviewId : null,
@@ -1106,6 +1260,12 @@ document.addEventListener("DOMContentLoaded", () => {
         // Only now mirror the accepted order to Google Sheets. A rejected challenge or
         // failed Supabase save can no longer create a false backup order row.
         const googleBackupData = { ...data };
+        googleBackupData.subtotal = String(Number.isFinite(Number(winner.subtotal)) ? Number(winner.subtotal) : checkoutValue);
+        googleBackupData.total = String(winner.orderTotal);
+        googleBackupData.orderTotal = String(winner.orderTotal);
+        googleBackupData.price = String(winner.orderTotal);
+        googleBackupData.couponCode = winner.couponCode || data.couponCode || "";
+        googleBackupData.couponDiscount = String(Number(winner.couponDiscount || 0));
         if (winner.heldForReview === true) {
           googleBackupData.notes = [
             String(googleBackupData.notes || "").trim(),
@@ -1155,8 +1315,10 @@ document.addEventListener("DOMContentLoaded", () => {
           sessionStorage.setItem("HALAL_ORDER_CONFIRMATION", JSON.stringify({
             orderId: confirmedOrderId,
             orderTotal: confirmedTotal,
-            subtotal: checkoutValue,
-            deliveryCharge,
+            subtotal: Number.isFinite(Number(winner.subtotal)) ? Number(winner.subtotal) : checkoutValue,
+            deliveryCharge: Number.isFinite(Number(winner.deliveryCharge)) ? Number(winner.deliveryCharge) : deliveryCharge,
+            couponCode: winner.couponCode || "",
+            couponDiscount: Number(winner.couponDiscount || 0),
             deliveryZone,
             paymentMethod: "cash_on_delivery",
             items: confirmedItems,
@@ -1184,7 +1346,10 @@ document.addEventListener("DOMContentLoaded", () => {
         try { window.turnstile?.reset?.(); } catch (_) {}
         console.error("Order submission failed:", err);
         if (error) {
-          error.textContent = "অর্ডার নিশ্চিত করতে সাময়িক সমস্যা হয়েছে। অনুগ্রহ করে কিছুক্ষণ পর আবার চেষ্টা করুন।";
+          const message = String(err?.message || "");
+          error.textContent = /^Coupon:/i.test(message)
+            ? message.slice("Coupon:".length).trim()
+            : "অর্ডার নিশ্চিত করতে সাময়িক সমস্যা হয়েছে। অনুগ্রহ করে কিছুক্ষণ পর আবার চেষ্টা করুন।";
           error.style.display = "block";
         }
       } finally {
