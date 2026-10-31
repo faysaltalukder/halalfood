@@ -755,6 +755,8 @@ document.addEventListener("DOMContentLoaded", () => {
     couponFeedback.className = "checkout-coupon-feedback" + (state ? " is-" + state : "");
   };
   const clearAppliedCoupon = (message = "") => {
+    couponRequestSequence += 1;
+    if (couponApplyButton) couponApplyButton.disabled = false;
     appliedCoupon = null;
     if (couponAppliedBox) couponAppliedBox.hidden = true;
     if (message) setCouponFeedback(message, "error");
@@ -871,6 +873,9 @@ document.addEventListener("DOMContentLoaded", () => {
   couponInput?.addEventListener("input", () => {
     if (appliedCoupon && String(couponInput.value || "").trim().toUpperCase() !== appliedCoupon.code) {
       clearAppliedCoupon("Coupon code changed. Apply it again to refresh the discount.");
+    } else if (!appliedCoupon) {
+      couponRequestSequence += 1;
+      if (couponApplyButton) couponApplyButton.disabled = false;
     }
   });
   document.querySelector("#remove-coupon")?.addEventListener("click", () => {
