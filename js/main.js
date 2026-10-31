@@ -1893,3 +1893,15 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 })();
+
+/* Public product review submission and moderation display load only on product pages. */
+(() => {
+  const path=window.location.pathname||"";
+  const isProductRoute=/\\/products\\/[^/]+\\.html$/i.test(path)
+    || /\\/(?:product|cms-product)\\.html$/i.test(path);
+  if(!isProductRoute)return;
+  const script=document.createElement("script");
+  script.src="https://faysaltalukder.github.io/halalfood/js/product-reviews.js?v=20261031-products-workspace-v1";
+  script.async=true;
+  document.head.appendChild(script);
+})();
