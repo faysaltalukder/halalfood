@@ -888,12 +888,13 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   document.querySelectorAll('input[name="deliveryZone"]').forEach((radio) => radio.addEventListener("change", updateCheckoutTotals));
   window.addEventListener("halalcart:updated", () => {
-    if (appliedCoupon) clearAppliedCoupon("Your cart changed. Apply the coupon again.");
-    else updateCheckoutTotals();
+    if (appliedCoupon || couponApplyButton?.disabled) clearAppliedCoupon("Your cart changed. Apply the coupon again.");
+    else { couponRequestSequence += 1; updateCheckoutTotals(); }
   });
   // When the live catalog arrives, use the server-managed price/name/image for a single-product checkout.
   window.addEventListener("halalcatalog:updated", () => {
-    if (appliedCoupon) clearAppliedCoupon("Product information changed. Apply your coupon again.");
+    if (appliedCoupon || couponApplyButton?.disabled) clearAppliedCoupon("Product information changed. Apply your coupon again.");
+    else couponRequestSequence += 1;
     if (!singleProductName || checkoutIsCart) return;
     const source = Array.isArray(window.PRODUCTS_DATA) ? window.PRODUCTS_DATA : [];
     const normalized = singleProductName.trim().toLowerCase();
@@ -927,7 +928,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
   const syncQuantity = (value) => {
-    if (appliedCoupon) clearAppliedCoupon("Quantity changed. Apply your coupon again.");
+    if (appliedCoupon || couponApplyButton?.disabled) clearAppliedCoupon("Quantity changed. Apply your coupon again.");
+    else couponRequestSequence += 1;
     const n = Math.max(1, Math.min(99, Number(value) || 1));
     if (quantityInput) quantityInput.value = String(n);
     if (quantityDisplay) quantityDisplay.textContent = String(n);
@@ -944,7 +946,8 @@ document.addEventListener("DOMContentLoaded", () => {
   // Allow direct quantity entry on the single-product order form.
   // Keep calculations live while the shopper types; normalize only on change.
   quantityInput?.addEventListener("input", () => {
-    if (appliedCoupon) clearAppliedCoupon("Quantity changed. Apply your coupon again.");
+    if (appliedCoupon || couponApplyButton?.disabled) clearAppliedCoupon("Quantity changed. Apply your coupon again.");
+    else couponRequestSequence += 1;
     const raw = quantityInput.value;
     if (raw === "") return;
     const n = Number(raw);
@@ -1345,7 +1348,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (error) {
           const message = String(err?.message || "");
           error.textContent = /^Coupon:/i.test(message)
-            ? message.replace(/^Coupon:\\s*/i, "")
+            ? message.slice("Coupon:".length).trim()
             : "অর্ডার নিশ্চিত করতে সাময়িক সমস্যা হয়েছে। অনুগ্রহ করে কিছুক্ষণ পর আবার চেষ্টা করুন।";
           error.style.display = "block";
         }
