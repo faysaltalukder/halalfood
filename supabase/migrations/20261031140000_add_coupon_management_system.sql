@@ -146,9 +146,10 @@ BEGIN
   IF nullif(upper(trim(coalesce(p_code,''))),'') IS NULL THEN
     RETURN jsonb_build_object('valid',false,'message','Enter a coupon code.');
   END IF;
-  IF jsonb_typeof(coalesce(p_items,'null'::jsonb)) <> 'array'
-     OR jsonb_array_length(coalesce(p_items,'[]'::jsonb)) < 1
-     OR jsonb_array_length(coalesce(p_items,'[]'::jsonb)) > 30 THEN
+  IF p_items IS NULL OR jsonb_typeof(p_items) <> 'array' THEN
+    RETURN jsonb_build_object('valid',false,'message','Your cart could not be checked. Refresh and try again.');
+  END IF;
+  IF jsonb_array_length(p_items) < 1 OR jsonb_array_length(p_items) > 30 THEN
     RETURN jsonb_build_object('valid',false,'message','Your cart could not be checked. Refresh and try again.');
   END IF;
 
@@ -382,8 +383,10 @@ BEGIN
   IF v_status NOT IN ('draft','active','paused','archived') THEN RAISE EXCEPTION 'Choose a valid coupon status.' USING ERRCODE='22023'; END IF;
 
   IF v_applies_to='categories' THEN
-    IF jsonb_typeof(coalesce(p_coupon->'category_ids','[]'::jsonb))<>'array'
-       OR jsonb_array_length(coalesce(p_coupon->'category_ids','[]'::jsonb))=0 THEN
+    IF jsonb_typeof(coalesce(p_coupon->'category_ids','[]'::jsonb))<>'array' THEN
+      RAISE EXCEPTION 'Select at least one category for this coupon.' USING ERRCODE='22023';
+    END IF;
+    IF jsonb_array_length(coalesce(p_coupon->'category_ids','[]'::jsonb))=0 THEN
       RAISE EXCEPTION 'Select at least one category for this coupon.' USING ERRCODE='22023';
     END IF;
     IF EXISTS(
@@ -392,8 +395,10 @@ BEGIN
     ) THEN RAISE EXCEPTION 'A selected category is unavailable. Refresh categories and try again.' USING ERRCODE='22023'; END IF;
   END IF;
   IF v_applies_to='products' THEN
-    IF jsonb_typeof(coalesce(p_coupon->'product_ids','[]'::jsonb))<>'array'
-       OR jsonb_array_length(coalesce(p_coupon->'product_ids','[]'::jsonb))=0 THEN
+    IF jsonb_typeof(coalesce(p_coupon->'product_ids','[]'::jsonb))<>'array' THEN
+      RAISE EXCEPTION 'Select at least one product for this coupon.' USING ERRCODE='22023';
+    END IF;
+    IF jsonb_array_length(coalesce(p_coupon->'product_ids','[]'::jsonb))=0 THEN
       RAISE EXCEPTION 'Select at least one product for this coupon.' USING ERRCODE='22023';
     END IF;
     IF EXISTS(
@@ -402,8 +407,10 @@ BEGIN
     ) THEN RAISE EXCEPTION 'A selected product is unavailable. Refresh products and try again.' USING ERRCODE='22023'; END IF;
   END IF;
   IF v_customer_eligibility='selected' THEN
-    IF jsonb_typeof(coalesce(p_coupon->'customer_phones','[]'::jsonb))<>'array'
-       OR jsonb_array_length(coalesce(p_coupon->'customer_phones','[]'::jsonb))=0 THEN
+    IF jsonb_typeof(coalesce(p_coupon->'customer_phones','[]'::jsonb))<>'array' THEN
+      RAISE EXCEPTION 'Add at least one customer mobile number for this coupon.' USING ERRCODE='22023';
+    END IF;
+    IF jsonb_array_length(coalesce(p_coupon->'customer_phones','[]'::jsonb))=0 THEN
       RAISE EXCEPTION 'Add at least one customer mobile number for this coupon.' USING ERRCODE='22023';
     END IF;
     SELECT count(*)::integer INTO v_valid_phones
