@@ -19,9 +19,9 @@
 <main id="pageContent" tabindex="-1">
  <div class="page-heading">
   <div><p class="page-eyebrow">CATALOG CONTROL CENTER</p><h1>Categories</h1><p>ক্যাটাগরির ভেতরে প্রবেশ করে সাব-ক্যাটাগরি ও পণ্যের অবস্থান সাজান।</p></div>
-  <div class="page-actions"><button class="hf-button hf-button-primary" id="addRootCategory" type="button">＋ Add category</button><button class="hf-button hf-button-secondary" data-catalog-refresh type="button">↻ Refresh</button></div>
+  <div class="page-actions"><button class="hf-button hf-button-primary" id="addRootCategory" type="button">＋ নতুন ক্যাটাগরি</button><button class="hf-button hf-button-secondary" data-catalog-refresh type="button">↻ রিফ্রেশ</button></div>
  </div>
- <div class="hf-banner hf-banner-info"><span aria-hidden="true">ⓘ</span><div><strong>One workspace. One live catalog.</strong>Create and organise categories, manage visibility and metadata, and arrange products for category pages or the homepage. Changes are saved to Supabase and flow to the live storefront.</div></div>
+ <div class="hf-banner hf-banner-info"><span aria-hidden="true">ⓘ</span><div><strong>একটি ক্যাটালগ, সব জায়গায় একই ডেটা।</strong> এখানে ক্যাটাগরি তৈরি, সাব-ক্যাটাগরি, দৃশ্যমানতা, ছবি ও SEO সম্পাদনা এবং পণ্য সাজানোর কাজ করুন। সেভ হলে ওয়েবসাইটের মেনু ও ক্যাটাগরি কার্ডে তা প্রতিফলিত হবে।</div></div>
  <div class="hf-kpi-grid" id="catalogOverviewStats">
   <section class="hf-card hf-kpi"><span class="hf-kpi-label">Categories</span><strong class="hf-kpi-value" id="catalogCategoryCount">—</strong><span class="hf-kpi-note">All hierarchy levels</span></section>
   <section class="hf-card hf-kpi"><span class="hf-kpi-label">Active products</span><strong class="hf-kpi-value" id="catalogProductCount">—</strong><span class="hf-kpi-note">Across the catalog</span></section>
@@ -32,15 +32,15 @@
   <div class="hf-section-head catalog-explorer-head">
    <div><p class="page-eyebrow">CATEGORY MANAGEMENT · CATALOG</p><h2 id="categoryViewTitle">Top-level categories</h2><p id="categoryViewDescription">ক্যাটাগরিতে ঢুকে তার ভেতরের ক্যাটাগরি এবং পণ্য আলাদাভাবে সাজান।</p></div>
    <div class="catalog-explorer-head-actions">
-    <button class="hf-button hf-button-secondary hf-button-small" id="categoryBackBtn" type="button" hidden>← Back</button>
-    <button class="hf-button hf-button-secondary hf-button-small" id="homeSortToggle" type="button">Homepage product order</button>
-    <button class="hf-button hf-button-secondary hf-button-small" id="addChildCategory" type="button" hidden>＋ Add subcategory</button>
+    <button class="hf-button hf-button-secondary hf-button-small" id="categoryBackBtn" type="button" hidden>← আগের ধাপ</button>
+    <button class="hf-button hf-button-secondary hf-button-small" id="homeSortToggle" type="button">হোমপেজের পণ্যের ক্রম</button>
+    <button class="hf-button hf-button-secondary hf-button-small" id="addChildCategory" type="button" hidden>＋ সাব-ক্যাটাগরি যোগ</button>
    </div>
   </div>
-  <nav class="catalog-breadcrumb" id="categoryBreadcrumb" aria-label="Category path"><button type="button" data-cat-breadcrumb="root">All categories</button></nav>
+  <nav class="catalog-breadcrumb" id="categoryBreadcrumb" aria-label="Category path"><button type="button" data-cat-breadcrumb="root">সব ক্যাটাগরি</button></nav>
   <div class="hf-toolbar catalog-explorer-toolbar" id="categoryExplorerToolbar">
-   <input class="hf-input" id="categoryTreeSearch" type="search" placeholder="Search categories in this level…" aria-label="Search categories in this level">
-   <select class="hf-select" id="categoryTreeVisibility" aria-label="Filter category visibility"><option value="all">All categories</option><option value="active">Visible categories</option><option value="hidden">Hidden categories</option></select>
+   <input class="hf-input" id="categoryTreeSearch" type="search" placeholder="এই স্তরের ক্যাটাগরি খুঁজুন…" aria-label="Search categories in this level">
+   <select class="hf-select" id="categoryTreeVisibility" aria-label="Filter category visibility"><option value="all">সব ক্যাটাগরি</option><option value="active">দেখানো হচ্ছে</option><option value="hidden">লুকানো আছে</option></select>
    <button class="hf-button hf-button-secondary hf-button-small" id="undoCategoryOrder" type="button" hidden>↶ Undo reorder</button>
    <span class="catalog-saving-note" id="categoryTreeStatus" role="status">Order changes are saved to the live store.</span>
   </div>
@@ -49,14 +49,14 @@
   <p id="categoryTreeEmpty" class="hf-empty" hidden>No categories in this level.</p>
  </section>
  <section class="hf-card hf-card-pad catalog-single-section catalog-product-sort-section" id="productSortSection" hidden>
-  <div class="hf-section-head"><div><p class="page-eyebrow">PRODUCT PLACEMENT</p><h2 id="productSortTitle">Products in category</h2><p id="productSortDescription">Sort products assigned directly to this category. Products in subcategories are managed inside those subcategories.</p></div><div class="catalog-product-sort-head-actions"><button class="hf-button hf-button-secondary hf-button-small" id="productSortBackBtn" type="button" hidden>← Back to categories</button><span class="hf-status hf-status-active" id="productSortScopeBadge">Category order</span></div></div>
+  <div class="hf-section-head"><div><p class="page-eyebrow">PRODUCT PLACEMENT</p><h2 id="productSortTitle">Products in category</h2><p id="productSortDescription">Sort products assigned directly to this category. Products in subcategories are managed inside those subcategories.</p></div><div class="catalog-product-sort-head-actions"><button class="hf-button hf-button-secondary hf-button-small" id="productSortBackBtn" type="button" hidden>← আগের ধাপ to categories</button><span class="hf-status hf-status-active" id="productSortScopeBadge">Category order</span></div></div>
   <div class="hf-kpi-grid catalog-sort-kpis">
    <section class="hf-kpi"><span class="hf-kpi-label">Products in view</span><strong class="hf-kpi-value" id="sortingVisibleCount">—</strong><span class="hf-kpi-note" id="sortingScopeNote">Current ordering scope</span></section>
    <section class="hf-kpi"><span class="hf-kpi-label">Visible products</span><strong class="hf-kpi-value" id="sortingActiveCount">—</strong><span class="hf-kpi-note">Shown in the store</span></section>
    <section class="hf-kpi"><span class="hf-kpi-label">Hidden products</span><strong class="hf-kpi-value" id="sortingHiddenCount">—</strong><span class="hf-kpi-note">Kept in the catalog</span></section>
   </div>
   <div class="hf-toolbar catalog-sort-toolbar">
-   <input class="hf-input" id="productSortSearch" type="search" placeholder="Search products in this category…" aria-label="Search products in this category">
+   <input class="hf-input" id="productSortSearch" type="search" placeholder="এই ক্যাটাগরির পণ্য খুঁজুন…" aria-label="Search products in this category">
    <button class="hf-button hf-button-secondary hf-button-small" id="undoProductOrder" type="button" hidden>↶ Undo reorder</button>
    <span class="catalog-saving-note" id="productSortStatus" role="status">Drag products or use Up / Down to change their order.</span>
   </div>
