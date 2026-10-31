@@ -1396,7 +1396,7 @@ window.HFAdminReady.then(async H=>{
   const inferWeight=value=>{
    const raw=String(value||"").trim().toLowerCase();
    if(raw==="kg")return "1.000";
-   const match=raw.match(/^([0-9]+(?:\\.[0-9]+)?)\\s*(kg|g|gram|grams)$/);
+   const match=raw.match(/^([0-9]+(?:\.[0-9]+)?)\s*(kg|g|gram|grams)$/);
    if(!match)return "";
    const amount=Number(match[1]),kg=match[2]==="kg"?amount:amount/1000;
    return Number.isFinite(kg)&&kg>0&&kg<=100?kg.toFixed(3):"";
@@ -1437,7 +1437,7 @@ window.HFAdminReady.then(async H=>{
     if(imageFile)imageUrl=await uploadImage(imageFile,"products",slug);
     const unit=$("productUnit").value.trim()||"piece";
     const displayInput=$("productDisplayPrice").value.trim();
-    const match=displayInput.match(/[0-9][0-9,]*(?:\\.[0-9]+)?/);
+    const match=displayInput.match(/[0-9][0-9,]*(?:\.[0-9]+)?/);
     const shownAmount=match?Number(match[0].replace(/,/g,"")):NaN;
     const displayPrice=displayInput&&shownAmount===price?displayInput:("৳"+price.toLocaleString("en-BD")+" / "+unit);
     const payload={
