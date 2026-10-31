@@ -1,0 +1,96 @@
+/* Halal Food Marketing Center */
+.hf-marketing-page{display:grid;gap:18px;max-width:1500px;margin:0 auto;padding-bottom:30px;color:var(--hf-text,#2b2a3d)}
+.hf-marketing-hero{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;padding:24px 26px;border:1px solid var(--hf-border,#e5e0d6);border-radius:20px;background:linear-gradient(120deg,#fffdf8 0%,#f5eee4 58%,#f1f3f6 100%)}
+.hf-marketing-hero h1{margin:4px 0 7px;font-size:clamp(26px,3vw,36px);letter-spacing:-.045em;color:#2b2a3d}
+.hf-marketing-hero p:not(.page-eyebrow){max-width:760px;margin:0;color:#707083;font-size:13px}
+.hf-marketing-hero-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.hf-marketing-live{display:inline-flex;align-items:center;gap:7px;padding:8px 11px;border:1px solid #d7e5dc;border-radius:99px;background:#f3f8f4;color:#376b4d;font-size:11px;font-weight:800;white-space:nowrap}
+.hf-marketing-live i,.hf-readiness-dot{width:8px;height:8px;border-radius:50%;background:#3c9662;display:inline-block}
+.hf-marketing-policy{display:flex;align-items:flex-start;gap:11px;padding:13px 15px;border:1px solid #e7d9c6;border-radius:14px;background:#fff8ef;color:#6f5b47;font-size:12px;line-height:1.55}
+.hf-marketing-policy>span{font-size:17px;color:#b17a3e}.hf-marketing-policy strong{color:#59452f;margin-right:4px}
+.hf-marketing-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.hf-marketing-stat{display:flex;flex-direction:column;gap:5px;min-width:0;padding:16px;border:1px solid var(--hf-border,#e5e0d6);border-radius:15px;background:var(--hf-card,#fffdf8)}
+.hf-marketing-stat span{font-size:11px;font-weight:800;color:var(--hf-muted,#737487)}.hf-marketing-stat strong{font-size:27px;line-height:1.1;letter-spacing:-.04em;color:var(--hf-text,#2b2a3d)}
+.hf-marketing-stat small{font-size:10px;color:var(--hf-muted,#737487)}
+.hf-marketing-tabs{display:flex;gap:5px;padding:5px;border:1px solid var(--hf-border,#e5e0d6);border-radius:13px;background:var(--hf-surface,#f7f5ef);width:max-content;max-width:100%;overflow:auto}
+.hf-marketing-tabs button{border:0;border-radius:9px;background:transparent;padding:10px 15px;color:var(--hf-muted,#737487);font-size:12px;font-weight:800;white-space:nowrap}
+.hf-marketing-tabs button.is-active{background:var(--hf-card,#fffdf8);color:var(--hf-text,#2b2a3d);box-shadow:0 2px 8px rgba(43,42,61,.08)}
+.hf-marketing-panel{display:none;min-width:0}.hf-marketing-panel.is-active{display:block}
+.hf-marketing-layout{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(270px,.8fr);gap:15px;align-items:start}
+.hf-marketing-main,.hf-marketing-side{display:grid;gap:15px;min-width:0}
+.hf-marketing-card{padding:19px!important;border:1px solid var(--hf-border,#e5e0d6);border-radius:16px;background:var(--hf-card,#fffdf8);min-width:0}
+.hf-marketing-section-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:16px}
+.hf-marketing-section-head h2,.hf-marketing-review h2{margin:2px 0 4px;font-size:18px;letter-spacing:-.025em;color:var(--hf-text,#2b2a3d)}
+.hf-marketing-section-head p:not(.hf-marketing-eyebrow){margin:0;color:var(--hf-muted,#737487);font-size:11px;line-height:1.5}
+.hf-marketing-eyebrow{margin:0 0 5px;color:#b4773f;font-size:9px;font-weight:900;letter-spacing:.12em}
+.hf-marketing-step{display:grid;place-items:center;flex:0 0 34px;height:34px;border-radius:11px;background:#f6e9dc;color:#965e36;font-size:11px;font-weight:900}
+.hf-marketing-channel-picker{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px}
+.hf-marketing-channel-picker button{display:flex;align-items:center;gap:11px;min-width:0;text-align:left;padding:12px;border:1px solid var(--hf-border,#e5e0d6);border-radius:12px;background:var(--hf-surface,#faf8f3);color:var(--hf-text,#2b2a3d)}
+.hf-marketing-channel-picker button.is-active{border-color:#c97b3d;box-shadow:inset 0 0 0 1px #c97b3d;background:#fffaf3}
+.hf-marketing-channel-picker button>span:nth-child(2){display:grid;gap:3px;flex:1}.hf-marketing-channel-picker strong{font-size:12px}.hf-marketing-channel-picker small{font-size:10px;color:var(--hf-muted,#737487)}
+.hf-marketing-channel-picker button>i{font-style:normal;display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:#eee9e0;color:transparent;font-size:11px}
+.hf-marketing-channel-picker button.is-active>i{background:#c97b3d;color:white}
+.hf-channel-icon{width:33px;height:33px;display:grid;place-items:center;border-radius:10px;font-size:19px;font-weight:800}
+.hf-channel-whatsapp{background:#e5f2e9;color:#27804c}.hf-channel-email{background:#ece9f5;color:#7657a5}
+.hf-marketing-channel-note{padding:10px 12px;border-radius:10px;background:var(--hf-surface,#f7f5ef);color:var(--hf-muted,#737487);font-size:11px;line-height:1.5}
+.hf-marketing-form-grid,.hf-marketing-filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:15px}
+.hf-marketing-field{display:grid;gap:6px;min-width:0;color:var(--hf-text,#2b2a3d);font-size:11px;font-weight:800}
+.hf-marketing-field>span{display:flex;align-items:center;gap:6px}
+.hf-marketing-field small{color:var(--hf-muted,#737487);font-size:10px;font-weight:500;line-height:1.45}
+.hf-marketing-field input,.hf-marketing-field select,.hf-marketing-field textarea{width:100%;min-width:0}
+.hf-marketing-field textarea{resize:vertical;line-height:1.55}
+.hf-marketing-field-wide{grid-column:1/-1}
+.hf-marketing-field code{background:#f5eee4;padding:1px 4px;border-radius:4px;font-size:10px}
+.hf-marketing-filters{grid-template-columns:repeat(4,minmax(0,1fr));margin:0 0 15px}
+.hf-marketing-search{grid-column:1/-1}
+.hf-marketing-audience-summary{display:flex;align-items:center;gap:15px;flex-wrap:wrap;padding:12px;margin-bottom:12px;border:1px solid var(--hf-border,#e5e0d6);border-radius:12px;background:var(--hf-surface,#faf8f3)}
+.hf-marketing-audience-summary>div:not(.hf-marketing-audience-actions){display:grid;gap:2px;min-width:84px}.hf-marketing-audience-summary strong{font-size:18px;line-height:1.1;color:var(--hf-text,#2b2a3d)}.hf-marketing-audience-summary span{font-size:9px;color:var(--hf-muted,#737487);font-weight:700}
+.hf-marketing-audience-actions{display:flex;align-items:center;gap:6px;margin-left:auto;flex-wrap:wrap}
+.hf-marketing-table-wrap{width:100%;overflow:auto;border:1px solid var(--hf-border,#e5e0d6);border-radius:12px}
+.hf-marketing-table{width:100%;border-collapse:separate;border-spacing:0;min-width:690px}
+.hf-marketing-table th{padding:11px 10px;text-align:left;background:var(--hf-surface,#f6f3ed);color:var(--hf-muted,#737487);font-size:9px;font-weight:900;letter-spacing:.055em;text-transform:uppercase;white-space:nowrap}
+.hf-marketing-table td{padding:11px 10px;border-top:1px solid var(--hf-border,#e5e0d6);font-size:11px;vertical-align:middle;color:var(--hf-text,#2b2a3d)}
+.hf-marketing-table tr:first-child td{border-top:0}.hf-marketing-table .hf-check-col{width:42px}
+.hf-marketing-table input[type=checkbox]{width:16px;height:16px;accent-color:#c97b3d;cursor:pointer}
+.hf-marketing-person{display:grid;gap:2px;min-width:125px}.hf-marketing-person strong{font-size:11px}.hf-marketing-person small,.hf-marketing-contact small{font-size:9px;color:var(--hf-muted,#737487);overflow-wrap:anywhere}
+.hf-marketing-contact{display:grid;gap:3px;max-width:180px;overflow-wrap:anywhere}
+.hf-marketing-segment{display:inline-flex;max-width:145px;padding:4px 7px;border-radius:99px;background:#eeeaf3;color:#665481;font-size:9px;font-weight:800;white-space:nowrap}
+.hf-marketing-permission{display:inline-flex;padding:4px 7px;border-radius:99px;font-size:9px;font-weight:900;white-space:nowrap}
+.hf-marketing-permission.is-allowed{background:#e6f2e9;color:#32714b}.hf-marketing-permission.is-denied{background:#f1efeb;color:#777482}
+.hf-marketing-permission.is-invalid{background:#f8e9e5;color:#9d584d}
+.hf-marketing-muted{color:var(--hf-muted,#737487)!important;font-size:11px!important}
+.hf-marketing-pager{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px;color:var(--hf-muted,#737487);font-size:10px}
+.hf-marketing-pager>div{display:flex;gap:7px}
+.hf-marketing-footnote{margin:12px 0 0;color:var(--hf-muted,#737487);font-size:10px;line-height:1.5}
+.hf-marketing-review h2{margin-bottom:15px}
+.hf-marketing-review-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 0;border-top:1px solid var(--hf-border,#e5e0d6);font-size:11px}
+.hf-marketing-review-row span{color:var(--hf-muted,#737487)}.hf-marketing-review-row strong{font-size:11px}
+.hf-review-ok{color:#32714b}
+.hf-marketing-review-note,.hf-marketing-setup-note{margin:13px 0;padding:11px;border-radius:10px;background:#fff8ef;color:#80684e;font-size:10px;line-height:1.55}
+.hf-marketing-primary-action{width:100%;justify-content:center;margin-top:5px;min-height:43px}
+.hf-marketing-feedback{margin-top:9px;color:var(--hf-muted,#737487);font-size:10px;line-height:1.5}
+.hf-marketing-setup h3{margin:5px 0 9px;font-size:12px}
+.hf-marketing-readiness{display:flex;align-items:flex-start;gap:9px;margin:9px 0}
+.hf-marketing-readiness>div{display:grid;gap:3px}.hf-marketing-readiness strong{font-size:11px}.hf-marketing-readiness small{color:var(--hf-muted,#737487);font-size:9px;line-height:1.45}
+.hf-readiness-dot{margin-top:4px;flex:0 0 8px}.hf-readiness-dot.is-pending{background:#c28b48}
+.hf-marketing-external{display:inline-flex;margin:2px 0 9px;color:#93623b;font-size:10px;font-weight:800;text-decoration:underline;text-underline-offset:3px}
+.hf-marketing-setup-divider{height:1px;background:var(--hf-border,#e5e0d6);margin:10px 0}
+.hf-marketing-consent-callout{padding:12px 14px;border:1px solid #e7d9c6;border-radius:11px;background:#fff8ef;color:#80684e;font-size:11px;line-height:1.5}
+.hf-marketing-consent-callout strong{display:block;color:#59452f;margin-bottom:3px}
+.hf-marketing-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:14px 0}.hf-marketing-toolbar input{max-width:420px}
+.hf-marketing-consent-table{min-width:820px}.hf-marketing-consent-actions{display:flex;gap:6px;flex-wrap:wrap}
+.hf-marketing-consent-actions .hf-button{font-size:9px;padding:6px 8px;min-height:29px}
+.hf-marketing-history-table{min-width:850px}.hf-marketing-history-name{display:grid;gap:3px}.hf-marketing-history-name strong{font-size:11px}.hf-marketing-history-name small{font-size:9px;color:var(--hf-muted,#737487)}
+.hf-marketing-status{display:inline-flex;padding:5px 8px;border-radius:99px;background:#f1efeb;color:#696778;font-size:9px;font-weight:900;text-transform:capitalize}
+.hf-marketing-status[data-status=draft]{background:#f4efe7;color:#8a6845}.hf-marketing-status[data-status=sent]{background:#e5f2e9;color:#32714b}.hf-marketing-status[data-status=partially_sent]{background:#fff2df;color:#97672d}.hf-marketing-status[data-status=failed]{background:#f8e9e5;color:#9d584d}.hf-marketing-status[data-status=exported]{background:#e8edf5;color:#526b8a}
+.hf-marketing-history-actions{display:flex;gap:6px;flex-wrap:wrap;min-width:190px}
+.hf-marketing-history-actions .hf-button{font-size:9px;padding:7px 9px;min-height:30px}
+.hf-marketing-dialog{width:min(560px,calc(100vw - 28px));max-width:560px;border:0;border-radius:18px;padding:0;box-shadow:0 24px 80px rgba(20,25,35,.25);color:var(--hf-text,#2b2a3d)}
+.hf-marketing-dialog::backdrop{background:rgba(30,31,43,.48);backdrop-filter:blur(3px)}
+.hf-marketing-dialog .hf-dialog-inner{display:grid;gap:14px;max-height:86vh;overflow:auto;padding:22px;background:var(--hf-card,#fffdf8);border-radius:18px}
+.hf-marketing-dialog .hf-dialog-head{margin:0}.hf-marketing-dialog h2{margin:0;font-size:19px}.hf-marketing-dialog-note{padding:10px 12px;border-radius:9px;background:var(--hf-surface,#f7f5ef);color:var(--hf-muted,#737487);font-size:10px;line-height:1.5}
+.hf-marketing-dialog .hf-dialog-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:3px}
+.hf-marketing-dialog #mktConsentEvidenceRequired{font-size:9px;color:#9b6840}
+@media(max-width:1100px){.hf-marketing-layout{grid-template-columns:1fr}.hf-marketing-side{grid-template-columns:repeat(2,minmax(0,1fr))}.hf-marketing-filters{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){.hf-marketing-hero{align-items:flex-start;flex-direction:column;padding:19px}.hf-marketing-hero-actions{justify-content:flex-start;width:100%}.hf-marketing-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.hf-marketing-side{grid-template-columns:1fr}.hf-marketing-card{padding:14px!important}.hf-marketing-form-grid{grid-template-columns:1fr}.hf-marketing-filters{grid-template-columns:1fr 1fr}.hf-marketing-audience-summary{gap:10px}.hf-marketing-audience-actions{margin-left:0;width:100%}.hf-marketing-audience-actions .hf-button{flex:1}.hf-marketing-tabs{width:100%}.hf-marketing-tabs button{flex:1;padding:9px 10px;font-size:10px}.hf-marketing-pager{align-items:flex-start;flex-direction:column}}
+@media(max-width:430px){.hf-marketing-filters{grid-template-columns:1fr}.hf-marketing-channel-picker{grid-template-columns:1fr}.hf-marketing-stats{gap:8px}.hf-marketing-stat{padding:12px}.hf-marketing-stat strong{font-size:23px}.hf-marketing-hero-actions .hf-button{width:100%}}
