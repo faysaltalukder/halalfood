@@ -120,7 +120,7 @@ window.HFMarketingInit=async function(){
   }).join("");
   if(rows.length>100){$("mktConsentCount").textContent="Showing first 100 of "+number(rows.length)+" matching records. Refine search to narrow the list.";}
  }
- function statusBadge(status){return '<span class="hf-marketing-status" data-status="'+esc(status)+'">'+esc(String(status||"draft").replace(/_/g," "))+'</span>';}
+ function statusBadge(status,channel){const label=status==="sent"&&channel==="whatsapp"?"manually sent":status==="sent"&&channel==="email"?"provider accepted":String(status||"draft").replace(/_/g," ");return '<span class="hf-marketing-status" data-status="'+esc(status)+'">'+esc(label)+'</span>';}
  function renderHistory(){
   const body=$("mktCampaignHistoryBody");
   if(!campaigns.length){body.innerHTML='<tr><td colspan="6" class="hf-marketing-muted">No marketing campaigns have been saved yet.</td></tr>';return;}
