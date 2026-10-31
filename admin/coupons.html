@@ -121,7 +121,7 @@
           <div class="cp-form-grid cp-form-grid-3">
             <label class="cp-field">Total uses allowed<input class="hf-input" id="couponUsageLimit" type="number" min="1" step="1" placeholder="Unlimited"><small class="cp-help">Example: 100 means 100 total orders can reserve it.</small></label>
             <label class="cp-field">Uses per customer <span>*</span><input class="hf-input" id="couponPerCustomerLimit" type="number" min="1" step="1" value="1" required><small class="cp-help">Matched by the checkout mobile number.</small></label>
-            <label class="cp-field">Campaign status<select class="hf-select" id="couponStatus"><option value="draft">Draft — not available online</option><option value="active">Active — allow checkout use</option></select></label>
+            <label class="cp-field">Campaign status<select class="hf-select" id="couponStatus"><option value="draft">Draft — not available online</option><option value="active">Active — allow checkout use</option><option value="paused">Paused — temporarily unavailable</option></select></label>
             <label class="cp-field">Start date &amp; time<input class="hf-input" id="couponStartsAt" type="datetime-local" required></label>
             <label class="cp-field">Expiry date &amp; time <small>(optional)</small><input class="hf-input" id="couponEndsAt" type="datetime-local"><small class="cp-help">Leave blank for no expiry date.</small></label>
           </div>
