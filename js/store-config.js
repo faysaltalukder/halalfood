@@ -2,7 +2,7 @@
  * Store deployment configuration.
  *
  * For a new website, copy this file and change only the values below.
- * Never put a Supabase secret/service_role key in this public file.
+ * Never put privileged credentials in this public file.
  */
 window.HALAL_STORE_CONFIG = Object.freeze({
   configVersion: 1,
