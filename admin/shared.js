@@ -537,6 +537,35 @@ ADMIN_COLOR_THEMES["glass-studio"]={
  chartColors:["#385D80","#C79A5B","#6F98B7","#5D8C91","#8A83A7","#C47D69","#6480A0","#9AABBA","#B18B5C","#708F83"]
 };
 
+ADMIN_COLOR_THEMES["glyph-signal"]={
+ id:"glyph-signal",name:"Glyph Signal",profile:"Iconic · Minimal · Visual",
+ previewColors:["#302B42","#A34E85","#E2C65D","#F5F0E8"],
+ tokens:Object.assign({},ADMIN_COLOR_THEMES["warm-harvest"].tokens,{
+  "sidebar-bg":"linear-gradient(155deg,#302B42 0%,#3C344F 54%,#4B3B58 100%)","sidebar-pattern-filter":"none",
+  "sidebar-ink":"#F8F4FA","sidebar-muted":"#D7CEDF","sidebar-border":"rgba(245,240,248,.22)",
+  "side-group-bg":"rgba(255,255,255,.055)","side-group-border":"rgba(245,240,248,.13)",
+  "side-menu-1":"linear-gradient(110deg,#F1EAF4,#FBF7FA)","side-menu-2":"linear-gradient(110deg,#F5EAF0,#FCF7FA)",
+  "side-menu-3":"linear-gradient(110deg,#EAE7F4,#F7F4FA)","side-menu-4":"linear-gradient(110deg,#F6F0DB,#FCF8E9)",
+  "side-menu-ink":"#302B42","side-menu-border":"rgba(255,255,255,.88)","side-menu-hover":"linear-gradient(110deg,#F1DFEB,#F8EAF2)",
+  "side-menu-active":"linear-gradient(115deg,#E9D27A,#E2C65D)","side-menu-active-ink":"#302B42",
+  "side-child-bg":"linear-gradient(145deg,#FBF7FC,#EEE8F3)","side-child-ink":"#443B57",
+  "side-accent":"#E2C65D","side-icon-bg":"#E9E3F3","side-icon-ink":"#674476",
+  "side-note-bg":"rgba(255,255,255,.065)","side-search-bg":"rgba(255,255,255,.075)","side-search-border":"rgba(245,240,248,.2)",
+  "canvas-bg":"radial-gradient(ellipse at 86% 3%,rgba(163,78,133,.10),transparent 34%),radial-gradient(ellipse at 12% 36%,rgba(155,139,206,.12),transparent 36%),linear-gradient(135deg,#F8F4EF 0%,#F5F0E8 54%,#EEE8E2 100%)",
+  "canvas-ink":"#302B42","header-bg":"rgba(250,247,243,.96)","header-border":"#DDD4E2",
+  "header-control-bg":"#EEE8F1","header-control-ink":"#463B58","header-control-border":"#D8CDDF",
+  "hero-bg":"linear-gradient(125deg,#FFFCF8 0%,#F1EAF3 58%,#F7F0E8 100%)","hero-border":"#DDD1E2",
+  "card-bg":"linear-gradient(145deg,#FFFDFA 0%,#F7F1F5 100%)","card-border":"#E0D6E3","nested-bg":"linear-gradient(125deg,#EFE9F3,#F7F1F5)","control-bg":"#FFFDFA",
+  "text":"#302B42","muted":"#62596D","border":"#DDD4E2","primary":"#A34E85","primary-hover":"#843D6C",
+  "secondary":"#EEE8F1","secondary-ink":"#453A57","secondary-hover":"#E3D9E9","accent":"#E2C65D","accent-alt":"#9B8BCE","focus":"#8B5D9A",
+  "kpi-1":"linear-gradient(145deg,#F0E7F3,#E5D9ED)","kpi-2":"linear-gradient(145deg,#F7EED7,#F0E3BE)",
+  "kpi-3":"linear-gradient(145deg,#E7F0EF,#DCEBE8)","kpi-4":"linear-gradient(145deg,#F5E7EF,#EEDBE8)",
+  "table-bg":"#FFFDFA","table-head":"#EDE6F1","table-row":"#FFFDFA","table-alt":"#F6F1F6","table-hover":"#EEE6F0",
+  "chart-bg":"linear-gradient(145deg,#F1EAF3,#EAE3EF)","chart-text":"#40364F","chart-muted":"#6A6173","chart-grid":"#DDD4E4",
+  "chart-surface":"#FFFDFA","tooltip-bg":"#FFFDFA","leaf-filter":"none"
+ }),
+ chartColors:["#A34E85","#9B8BCE","#76A7A4","#E2C65D","#6F5A89","#C47BA2","#648E9B","#B49A63","#8071A9","#A96C5E"]
+};
 function makeExtendedAdminTheme(config){
  const p=config.palette;
  const lightGradient=(a,b)=>"linear-gradient(110deg,"+a+","+b+")";
@@ -578,7 +607,7 @@ const ADMIN_THEME_GROUPS=[
  {id:"modern",label:"Modern",description:"Expressive · contemporary",themeIds:["ocean-calm","berry-rose","plum-amethyst","coral-peach"]},
  {id:"balanced",label:"Balanced",description:"Premium · versatile · business",themeIds:["warm-harvest","royal-indigo","coastal-blue","copper-espresso"]},
  {id:"classic-comfort",label:"Classic Comfort",description:"Calm · familiar · easy on the eyes",themeIds:["forest-sage","olive-citrus"]},
- {id:"signature",label:"Signature",description:"Editorial · tactile · unmistakable",themeIds:["merchant-fieldbook","glass-studio"]}
+ {id:"signature",label:"Signature",description:"Editorial · tactile · unmistakable",themeIds:["merchant-fieldbook","glass-studio","glyph-signal"]}
 ];
 const ADMIN_THEME_CATEGORY_BY_ID=Object.fromEntries(ADMIN_THEME_GROUPS.flatMap(group=>group.themeIds.map(id=>[id,group.id])));
 Object.values(ADMIN_COLOR_THEMES).forEach(theme=>{theme.category=ADMIN_THEME_CATEGORY_BY_ID[theme.id]||"balanced";});
@@ -596,7 +625,8 @@ function themeStorageKey(){return "hf_admin_color_theme:"+(String(currentUser?.i
 function syncThemeStyles(themeId){
  const themeStyles=[
   {theme:"merchant-fieldbook",id:"hfMerchantFieldbookStylesheet",href:"./merchant-fieldbook.css?v=20261101-merchant-fieldbook-v1"},
-  {theme:"glass-studio",id:"hfGlassStudioStylesheet",href:"./glass-studio.css?v=20261102-glass-studio-v1"}
+  {theme:"glass-studio",id:"hfGlassStudioStylesheet",href:"./glass-studio.css?v=20261102-glass-studio-v1"},
+   {theme:"glyph-signal",id:"hfGlyphSignalStylesheet",href:"./glyph-signal.css?v=20261102-glyph-signal-v1"}
  ];
  themeStyles.forEach(item=>{
   let link=document.getElementById(item.id);
@@ -750,7 +780,30 @@ function shellIcon(name){
   layers:'<path d="m12 3 9 5-9 5-9-5 9-5Z"/><path d="m3 12 9 5 9-5M3 16l9 5 9-5"/>',
   star:'<path d="m12 3 2.75 5.58 6.16.9-4.45 4.33 1.05 6.12L12 17.04l-5.51 2.9 1.05-6.13L3.1 9.48l6.15-.9L12 3Z"/>',
   plus:'<path d="M12 5v14M5 12h14"/>',
-  close:'<path d="m18 6-12 12M6 6l12 12"/>'
+  close:'<path d="m18 6-12 12M6 6l12 12"/>',
+
+   edit:'<path d="m4 20 4.5-1 10.9-10.9a2.1 2.1 0 0 0-3-3L5.5 16 4 20Z"/>',
+   trash:'<path d="M4 7h16M10 11v6M14 11v6M6 7l1 14h10l1-14M9 7V4h6v3"/>',
+   save:'<path d="M5 3h12l4 4v14H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/><path d="M8 3v6h8V3M8 21v-7h8v7"/>',
+   refresh:'<path d="M20 7v5h-5M4 17v-5h5"/><path d="M6 9a7 7 0 0 1 12-3l2 6M4 12l2 6a7 7 0 0 0 12-3"/>',
+   download:'<path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v4h16v-4"/>',
+   upload:'<path d="M12 15V3m0 0 4 4m-4-4L8 7M4 17v4h16v-4"/>',
+   filter:'<path d="M4 5h16l-6.5 7.5V19l-3 2v-8.5L4 5Z"/>',
+   eye:'<path d="M2.5 12s3.3-6 9.5-6 9.5 6 9.5 6-3.3 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.7"/>',
+   calendar:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18"/>',
+   printer:'<path d="M6 8V3h12v5M6 17H4a2 2 0 0 1-2-2v-4a3 3 0 0 1 3-3h14a3 3 0 0 1 3 3v4a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v7H6z"/>',
+   copy:'<rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h3"/>',
+   send:'<path d="m22 2-7 20-4-9-9-4 20-7Z"/>',
+   truck:'<path d="M3 6h11v12H3zM14 10h4l3 4v4h-7z"/><circle cx="7.5" cy="19" r="2"/><circle cx="17.5" cy="19" r="2"/>',
+   map:'<path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3V6Z"/><path d="M9 3v15M15 6v15"/>',
+   phone:'<path d="M7 3h3l2 5-2.5 1.5a14 14 0 0 0 5 5L16 12l5 2v3a3 3 0 0 1-3 3C10 20 4 14 4 6a3 3 0 0 1 3-3Z"/>',
+   mail:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/>',
+   hash:'<path d="M5 9h14M4 15h14M10 3 8 21M16 3l-2 18"/>',
+   box:'<path d="m12 3 9 5-9 5-9-5 9-5Z"/><path d="m3 8 9 5 9-5M3 13l9 5 9-5M12 13v8"/>',
+   more:'<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>',
+   wallet:'<rect x="3" y="5" width="18" height="15" rx="2"/><path d="M3 9h18M16 14h3"/>',
+   chart:'<path d="M3 20V4M3 20h18M7 16v-4M12 16V7M17 16V9"/>',
+   badge:'<circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/>'
  };
  return '<svg class="hf-shell-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">'+(paths[name]||paths.overview)+'</svg>';
 }
@@ -779,6 +832,114 @@ function navPictureIcon(name){
   settings:'<path d="M17 4a4 4 0 0 1 4 3l2 1 3-.5 2 4-2 2v3l2 2-2 4-3-.5-2 1a4 4 0 0 1-8 0l-2-1-3 .5-2-4 2-2v-3l-2-2 2-4 3 .5 2-1a4 4 0 0 1 4-3Z" fill="#E9E5DC" stroke="#8B8377" stroke-width="1.7"/><circle cx="17" cy="15.5" r="4.5" fill="#FFFDF8" stroke="#8B8377" stroke-width="1.8"/>'
  };
  return '<svg class="hf-nav-art" viewBox="0 0 34 34" aria-hidden="true" focusable="false">'+(art[name]||art.overview)+'</svg>';
+}
+
+
+let glyphSignalObserver=null;
+function glyphSignalIconForLabel(value){
+ const label=String(value||"").toLowerCase().replace(/[＋+↻×✓→←]/g," ").replace(/[^a-z0-9৳\s&/-]/g," ").replace(/\s+/g," ").trim();
+ const rules=[
+  [/favorite|favourite|star/,"star"],[/\b(add|new|create)\b/,"plus"],[/\b(edit|change|update|modify)\b/,"edit"],
+  [/\b(delete|remove|discard|archive)\b/,"trash"],[/\b(save|submit|confirm|approve|complete)\b/,"save"],
+  [/\b(cancel|close|dismiss)\b/,"close"],[/\b(refresh|reload|sync|retry)\b/,"refresh"],[/\b(search|find)\b/,"search"],
+  [/\b(filter|sort)\b/,"filter"],[/\b(download|export)\b/,"download"],[/\b(upload|import|attach)\b/,"upload"],
+  [/\b(print|invoice|packing slip)\b/,"printer"],[/\b(copy|duplicate)\b/,"copy"],[/\b(view|preview|open|details|show)\b/,"eye"],
+  [/\b(send|publish|share)\b/,"send"],[/\b(courier|shipment|shipping|delivery|dispatch)\b/,"truck"],[/\b(order|orders)\b/,"orders"],
+  [/\b(product|products|item|items)\b/,"products"],[/\b(customer|customers|user|users)\b/,"customers"],[/\b(category|categories|catalog|catalogue)\b/,"layers"],
+  [/\b(payment|finance|income|expense|cash|wallet|balance|revenue|sales)\b/,"wallet"],[/\b(report|analytics|chart|insight|traffic|views)\b/,"chart"],
+  [/\b(message|messages|whatsapp|messenger|chat)\b/,"messages"],[/\b(setting|settings|config|security)\b/,"settings"],[/\b(help|guide)\b/,"help"],
+  [/\b(date|calendar|schedule)\b/,"calendar"],[/\b(phone|call|mobile)\b/,"phone"],[/\b(email|mail)\b/,"mail"],[/\b(address|location|area)\b/,"map"],
+  [/\b(status|state|verified|active|pending)\b/,"badge"],[/\b(quantity|qty|count|number)\b/,"hash"],[/\b(stock|inventory|package|box)\b/,"box"],
+  [/\b(more|actions|options|menu)\b/,"more"],[/\b(next|forward|previous|back)\b/,"chevron"]
+ ];
+ const found=rules.find(rule=>rule[0].test(label));return found?found[1]:"";
+}
+function glyphSignalKeepName(element,label){
+ if(!element.hasAttribute("aria-label")){element.setAttribute("aria-label",label);element.dataset.glyphAddedAria="1";}
+ if(!element.hasAttribute("title")){element.setAttribute("title",label);element.dataset.glyphAddedTitle="1";}
+}
+function glyphSignalRestoreName(element){
+ if(element.dataset.glyphAddedAria==="1")element.removeAttribute("aria-label");
+ if(element.dataset.glyphAddedTitle==="1")element.removeAttribute("title");
+ delete element.dataset.glyphAddedAria;delete element.dataset.glyphAddedTitle;
+}
+function glyphSignalDecorateNav(element){
+ if(element.dataset.glyphNavEnhanced==="1")return;
+ const text=(element.querySelector(".admin-nav-text")||element.querySelector(".admin-favorite-link>span:last-child")||element).textContent.trim();
+ if(text){glyphSignalKeepName(element,text);element.dataset.glyphNavEnhanced="1";}
+}
+function glyphSignalDecorateControl(element){
+ if(element.dataset.glyphEnhanced==="1"||element.querySelector("select,input"))return;
+ const text=(element.getAttribute("aria-label")||element.getAttribute("title")||element.textContent||"").replace(/\s+/g," ").trim();
+ const iconName=glyphSignalIconForLabel(text);if(!iconName)return;
+ glyphSignalKeepName(element,text);element.dataset.glyphLabel=text;
+ const existingIcon=[...element.children].find(child=>child.matches("svg,img")||child.querySelector("svg,img"));
+ const label=document.createElement("span");label.className="glyph-signal-label";
+ [...element.childNodes].forEach(node=>{if(!existingIcon||node!==existingIcon)label.appendChild(node);});
+ if(existingIcon){element.append(label);}
+ else{
+  const iconWrap=document.createElement("span");iconWrap.className="glyph-signal-icon";iconWrap.setAttribute("aria-hidden","true");iconWrap.innerHTML=shellIcon(iconName);
+  element.append(iconWrap,label);
+ }
+ element.classList.add("glyph-signal-control");element.dataset.glyphEnhanced="1";
+}
+function glyphSignalDecorateMetric(element){
+ if(element.dataset.glyphMetric==="1"||element.querySelector(".glyph-signal-metric-icon"))return;
+ const iconName=glyphSignalIconForLabel(element.textContent);if(!iconName)return;
+ const label=document.createElement("span");label.className="glyph-signal-label";while(element.firstChild)label.appendChild(element.firstChild);
+ const iconWrap=document.createElement("span");iconWrap.className="glyph-signal-metric-icon";iconWrap.setAttribute("aria-hidden","true");iconWrap.innerHTML=shellIcon(iconName);
+ element.append(iconWrap,label);element.dataset.glyphMetric="1";
+}
+function glyphSignalDecorateHeading(element){
+ if(element.dataset.glyphHeading==="1"||element.querySelector(".glyph-signal-heading-icon"))return;
+ const text=element.textContent.trim(),iconName=glyphSignalIconForLabel(text);if(!iconName)return;
+ glyphSignalKeepName(element,text);element.dataset.glyphLabel=text;
+ const label=document.createElement("span");label.className="glyph-signal-label";while(element.firstChild)label.appendChild(element.firstChild);
+ const iconWrap=document.createElement("span");iconWrap.className="glyph-signal-heading-icon";iconWrap.setAttribute("aria-hidden","true");iconWrap.innerHTML=shellIcon(iconName);
+ element.append(iconWrap,label);element.dataset.glyphHeading="1";
+}
+function glyphSignalEnhance(root){
+ if(!root||root.nodeType!==1)return;
+ const nav=".admin-nav-link,.admin-nav-parent-toggle,.admin-nav-child-link,.admin-favorite-link";
+ const controls="button,a.hf-button,a.hf-workspace-nav-item,.hf-tab,.hf-workspace-tab,.ops-subnav a";
+ const metric=".hf-kpi-label,.cu-kpi-label,.cp-kpi-label,.hf-orders-stat-label";
+ const process=element=>{
+  if(element.matches(nav)){glyphSignalDecorateNav(element);}else if(element.matches(controls)){glyphSignalDecorateControl(element);}
+  if(element.matches(metric))glyphSignalDecorateMetric(element);
+  if(element.matches(".hf-table thead th"))glyphSignalDecorateHeading(element);
+  element.querySelectorAll(nav).forEach(glyphSignalDecorateNav);
+  element.querySelectorAll(controls).forEach(control=>{if(!control.matches(nav))glyphSignalDecorateControl(control);});
+  element.querySelectorAll(metric).forEach(glyphSignalDecorateMetric);
+  element.querySelectorAll(".hf-table thead th").forEach(glyphSignalDecorateHeading);
+ };
+ process(root);
+}
+function glyphSignalRestore(root){
+ root.querySelectorAll("[data-glyph-enhanced]").forEach(element=>{
+  const label=element.querySelector(":scope > .glyph-signal-label"),icon=element.querySelector(":scope > .glyph-signal-icon");
+  if(label){while(label.firstChild)element.insertBefore(label.firstChild,label);label.remove();}
+  if(icon)icon.remove();element.classList.remove("glyph-signal-control");delete element.dataset.glyphEnhanced;delete element.dataset.glyphLabel;glyphSignalRestoreName(element);
+ });
+ root.querySelectorAll("[data-glyph-metric]").forEach(element=>{
+  const label=element.querySelector(":scope > .glyph-signal-label"),icon=element.querySelector(":scope > .glyph-signal-metric-icon");
+  if(label){while(label.firstChild)element.insertBefore(label.firstChild,label);label.remove();}
+  if(icon)icon.remove();delete element.dataset.glyphMetric;
+ });
+ root.querySelectorAll("[data-glyph-heading]").forEach(element=>{
+  const label=element.querySelector(":scope > .glyph-signal-label"),icon=element.querySelector(":scope > .glyph-signal-heading-icon");
+  if(label){while(label.firstChild)element.insertBefore(label.firstChild,label);label.remove();}
+  if(icon)icon.remove();delete element.dataset.glyphHeading;delete element.dataset.glyphLabel;glyphSignalRestoreName(element);
+ });
+ root.querySelectorAll("[data-glyph-nav-enhanced]").forEach(element=>{glyphSignalRestoreName(element);delete element.dataset.glyphNavEnhanced;});
+}
+function syncGlyphSignalMode(active){
+ if(!adminApp)return;adminApp.classList.toggle("glyph-signal-mode",Boolean(active));
+ if(!active){if(glyphSignalObserver){glyphSignalObserver.disconnect();glyphSignalObserver=null;}glyphSignalRestore(adminApp);return;}
+ glyphSignalEnhance(adminApp);
+ if(!glyphSignalObserver&&typeof MutationObserver==="function"){
+  glyphSignalObserver=new MutationObserver(records=>records.forEach(record=>record.addedNodes.forEach(node=>{if(node.nodeType===1)glyphSignalEnhance(node);})));
+  glyphSignalObserver.observe(adminApp,{childList:true,subtree:true});
+ }
 }
 
 function makeShell(){
