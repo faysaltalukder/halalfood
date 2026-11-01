@@ -319,14 +319,21 @@ assert.ok(observatoryOverview.includes("hf-theme-copy--observatory") && observat
 assert.ok(observatoryCss.includes('html[data-hf-theme="the-observatory"]') && observatoryCss.includes('body[data-page="overview"]') && observatoryCss.includes("prefers-reduced-motion"), "Observatory CSS must be scoped and include responsive and motion safeguards.");
 assert.ok(observatoryOverview.includes('class="hf-observatory-scene"') && observatoryOverview.includes('class="hf-observatory-svg"') && observatoryOverview.includes('aria-hidden="true"'), "The Observatory Overview must include a decorative inline SVG space scene.");
 assert.ok(observatoryCss.includes(".obs-satellite-orbit") && observatoryCss.includes("@keyframes obsSatelliteOrbit") && observatoryCss.includes("radial-gradient(circle at 6% 13%"), "Observatory must include satellite motion and a subtle starfield background.");
-const observatorySidebarRule = observatoryCss.match(/html\\[data-hf-theme="the-observatory"\\] body\\[data-page\\] \\.admin-sidebar\\{([^}]*)\\}/)?.[1] || "";
-assert.ok(!/\\bposition\\s*:/.test(observatorySidebarRule) && !/\\boverflow\\s*:\\s*hidden/.test(observatorySidebarRule), "The Observatory skin must not override shared Sidebar positioning or scroll behavior.");
+const observatorySidebarStart = observatoryCss.indexOf('html[data-hf-theme="the-observatory"] body[data-page] .admin-sidebar{');
+const observatorySidebarEnd = observatoryCss.indexOf("}",observatorySidebarStart);
+const observatorySidebarRule = observatoryCss.slice(observatorySidebarStart,observatorySidebarEnd);
+assert.ok(observatorySidebarStart>=0 && !observatorySidebarRule.includes("position:") && !observatorySidebarRule.includes("overflow:hidden"), "The Observatory skin must not override shared Sidebar positioning or scroll behavior.");
 const sharedLayoutCss = read("admin/shared.css");
-const desktopSidebarRule = sharedLayoutCss.match(/\\.admin-sidebar\\{([^}]*)\\}/)?.[1] || "";
+const desktopSidebarStart = sharedLayoutCss.indexOf(".admin-sidebar{");
+const desktopSidebarRule = sharedLayoutCss.slice(desktopSidebarStart,sharedLayoutCss.indexOf("}",desktopSidebarStart));
 assert.ok(desktopSidebarRule.includes("position:sticky") && desktopSidebarRule.includes("overflow:auto"), "Desktop Sidebar must remain sticky and independently scrollable.");
-const mobileSidebarRule = sharedLayoutCss.match(/@media\\(max-width:900px\\)\\{[\\s\\S]*?\\.admin-sidebar\\{([^}]*)\\}/)?.[1] || "";
+const mobileSidebarMedia = sharedLayoutCss.indexOf("@media(max-width:900px)");
+const mobileSidebarStart = sharedLayoutCss.indexOf(".admin-sidebar{",mobileSidebarMedia);
+const mobileSidebarRule = sharedLayoutCss.slice(mobileSidebarStart,sharedLayoutCss.indexOf("}",mobileSidebarStart));
 assert.ok(mobileSidebarRule.includes("position:fixed") && mobileSidebarRule.includes("transform:translateX(-102%)"), "Mobile Sidebar must remain a fixed off-canvas drawer.");
-const observatorySelectorSource=observatoryCss.replace(/@keyframes obsSatelliteOrbit\\{from\\{[^}]*\\}to\\{[^}]*\\}\\}/g,"");
+const keyframesStart = observatoryCss.indexOf("@keyframes obsSatelliteOrbit{");
+const keyframesEnd = keyframesStart>=0 ? observatoryCss.indexOf("}}",keyframesStart)+2 : -1;
+const observatorySelectorSource = keyframesStart>=0 && keyframesEnd>keyframesStart ? observatoryCss.slice(0,keyframesStart)+observatoryCss.slice(keyframesEnd) : observatoryCss;
 const observatorySelectors=[];let observatoryStart=0;
 for(let index=0;index<observatorySelectorSource.length;index++){if(observatorySelectorSource[index]==="{"){const selectorText=observatorySelectorSource.slice(observatoryStart,index).trim();if(selectorText&&!selectorText.startsWith("@"))observatorySelectors.push(...splitFieldbookSelectorList(selectorText));observatoryStart=index+1;}else if(observatorySelectorSource[index]==="}")observatoryStart=index+1;}
 assert.ok(observatorySelectors.length>100,"Observatory must cover the workspace UI.");
