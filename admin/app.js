@@ -226,6 +226,18 @@ window.HFAdminReady.then(async H=>{
    }
    return rows;
   }
+  async function fetchOverviewOrderLines(range,maxRows=5000){
+   const rows=[],pageSize=1000;
+   for(let offset=0;offset<maxRows;offset+=pageSize){
+    const size=Math.min(pageSize,maxRows-offset);
+    let query=client.from("orders").select("id,ordered_at,status,order_items(id)").order("ordered_at",{ascending:false}).order("id",{ascending:true});
+    query=rangeQuery(query,"ordered_at",range);
+    const page=await signedQuery(query.range(offset,offset+size-1));
+    rows.push(...page);
+    if(page.length<size)break;
+   }
+   return rows;
+  }
   async function fetchOverviewEvents(range,maxRows=15000){
    const rows=[],pageSize=1000;
    const fields="id,event_name,occurred_at,page_path,page_title,session_id,anonymous_id,item_id,item_name,item_category,value,quantity,search_term,source,medium,campaign,metadata";
@@ -270,9 +282,9 @@ window.HFAdminReady.then(async H=>{
    const buckets=buildChartBuckets(range);
    const [summaryOrders,chartOrders,events,todayOrders,todayEvents,products,pendingResult,recentOrders]=await Promise.all([
     fetchOverviewOrderSummary(range,5000),
-    fetchOrders(range,5000),
+    fetchOverviewOrderLines(range,5000),
     fetchOverviewEvents(range,15000),
-    fetchOrders(todayRange,1000),
+    fetchOverviewOrderLines(todayRange,1000),
     fetchOverviewEvents(todayRange,15000),
     fetchProducts(1000),
     client.from("orders").select("id",{count:"exact",head:true}).eq("status","pending"),

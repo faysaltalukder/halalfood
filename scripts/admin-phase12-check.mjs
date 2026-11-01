@@ -250,6 +250,7 @@ const overviewCss = read("admin/overview.css");
 assert.ok(overview.includes('id="overviewRangeSelect"') && overview.includes('id="overviewCustomRange"') && overview.includes('id="overviewApplyRange"'), "Overview must provide a selectable date range and custom date controls.");
 assert.ok(overviewApp.includes("const readOverviewRange=()=>") && overviewApp.includes('timeZone:"Asia/Dhaka"'), "Overview date filters must use explicit Bangladesh-local date handling.");
 assert.ok(overviewApp.includes("fetchOverviewEvents(range,maxRows=15000)") && overviewApp.includes('.in("event_name",eventNames)'), "Overview event queries should load only the event types used by its charts.");
+assert.ok(overviewApp.includes("fetchOverviewOrderLines(range,maxRows=5000)") && overviewApp.includes('order_items(id)'), "Overview order-line trend should fetch only lightweight order-item identifiers.");
 assert.ok(overviewCss.includes(".hf-overview-range-toolbar"), "Overview date-range controls must use the responsive shared visual style.");
 assert.ok(!overview.includes("চতুর্থ ডিপ্লয়মেন্ট"), "Overview should not show the obsolete deployment marker.");
 assert.ok(!overview.includes('class="hf-deployment-marker"'), "Obsolete deployment marker component should be removed.");
