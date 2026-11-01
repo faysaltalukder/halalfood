@@ -128,6 +128,8 @@ window.HFAdminReady.then(async H=>{
   const customRange=$("overviewCustomRange");
   const fromInput=$("overviewDateFrom");
   const toInput=$("overviewDateTo");
+  const trendTypeSelect=$("overviewTrendType");
+  let overviewTrendSnapshot=null;
   const financeStrip=$("overviewFinanceStrip");
   const financeToggle=$("overviewFinanceToggle");
   if(financeStrip&&financeToggle){
@@ -213,6 +215,15 @@ window.HFAdminReady.then(async H=>{
     }
    }
    return {monthly,items};
+  };
+  const renderOverviewOperationsTrend=()=>{
+   if(!overviewTrendSnapshot)return;
+   const selected=trendTypeSelect?.value||"area";
+   const useBars=selected==="bar";
+   drawChart("overviewOperationsChart",{type:useBars?"bar":"line",data:{labels:overviewTrendSnapshot.labels,datasets:[
+    {label:"Order item lines",data:overviewTrendSnapshot.orderLineCounts,borderColor:palette.orange,backgroundColor:"#F59E0B22",fill:selected==="area",tension:.32,pointRadius:2,borderWidth:2,borderRadius:useBars?5:0,maxBarThickness:useBars?24:undefined},
+    {label:"Add-to-cart events",data:overviewTrendSnapshot.cartEventCounts,borderColor:palette.blue,backgroundColor:"#4F7CFF20",fill:false,tension:.32,pointRadius:2,borderWidth:2,borderRadius:useBars?5:0,maxBarThickness:useBars?24:undefined}
+   ]},options:{...chartAxisOptions(),plugins:{legend:{position:"bottom"}},onClick:(ev,items)=>{if(items.length)location.href=items[0].datasetIndex===0?"./orders.html":"./analytics.html";}}});
   };
   async function fetchOverviewOrderSummary(range,maxRows=5000){
    const rows=[],pageSize=1000;
@@ -329,10 +340,12 @@ window.HFAdminReady.then(async H=>{
     ?"Confirmed manual entries only. COD settlement is not reconciled here."
     :"Finance unavailable. Refresh after signing in and completing MFA.";
    const labels=buckets.items.map(item=>item.label);
-   drawChart("overviewOperationsChart",{type:"line",data:{labels,datasets:[
-    {label:"Order item lines",data:buckets.items.map(bucket=>chartOrders.filter(o=>bucketKey(o.ordered_at)===bucket.key&&o.status!=="cancelled").reduce((sum,o)=>sum+(o.order_items||[]).length,0)),borderColor:palette.orange,backgroundColor:"#F59E0B22",fill:true,tension:.32,pointRadius:2,borderWidth:2},
-    {label:"Add-to-cart events",data:buckets.items.map(bucket=>events.filter(e=>e.event_name==="add_to_cart"&&bucketKey(e.occurred_at)===bucket.key).length),borderColor:palette.blue,backgroundColor:"#4F7CFF20",fill:false,tension:.32,pointRadius:2,borderWidth:2}
-   ]},options:{...chartAxisOptions(),plugins:{legend:{position:"bottom"}},onClick:(ev,items)=>{if(items.length)location.href=items[0].datasetIndex===0?"./orders.html":"./analytics.html";}}});
+   overviewTrendSnapshot={
+    labels,
+    orderLineCounts:buckets.items.map(bucket=>chartOrders.filter(o=>bucketKey(o.ordered_at)===bucket.key&&o.status!=="cancelled").reduce((sum,o)=>sum+(o.order_items||[]).length,0)),
+    cartEventCounts:buckets.items.map(bucket=>events.filter(e=>e.event_name==="add_to_cart"&&bucketKey(e.occurred_at)===bucket.key).length)
+   };
+   renderOverviewOperationsTrend();
    const financeCanvas=$("overviewFinanceChart");
    if(financeAvailable){
     if(financeCanvas)financeCanvas.hidden=false;
@@ -369,6 +382,7 @@ window.HFAdminReady.then(async H=>{
    if(rangeSelect.value!=="custom")refresh().catch(error=>toast(error.message||"Could not refresh this overview.","error"));
   });
   $("overviewApplyRange")?.addEventListener("click",()=>refresh().catch(error=>toast(error.message||"Choose a valid date range.","error")));
+  trendTypeSelect?.addEventListener("change",renderOverviewOperationsTrend);
   toggleCustomRange();
   await refresh();attachRefresh(refresh);
  }

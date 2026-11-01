@@ -386,3 +386,9 @@ html[data-admin-theme="dark"] .hf-overview-tool:nth-child(5){background:#4A4028!
  .hf-overview-custom-range .hf-field{width:100%;min-width:0}
  .hf-overview-custom-range .hf-button{grid-column:1/-1;width:100%}
 }
+
+/* Overview trend chart type selector */
+.hf-overview-chart-controls{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap}
+.hf-overview-chart-type{display:inline-flex;align-items:center;gap:7px;color:var(--hf-muted);font-size:10px;font-weight:750}
+.hf-overview-chart-type select{width:104px;min-height:34px;padding:5px 27px 5px 9px}
+@media(max-width:560px){.hf-overview-chart-controls{justify-content:flex-start}.hf-overview-chart-type{flex:1 1 100%;justify-content:space-between}.hf-overview-chart-type select{width:120px}}

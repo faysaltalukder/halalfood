@@ -618,6 +618,10 @@
     "Apply": "প্রয়োগ করুন",
     "Performance period": "সময়সীমা",
     "Last year": "গত বছর",
+    "Area": "এরিয়া",
+    "Line": "লাইন",
+    "Bar": "বার",
+    "Chart type": "চার্টের ধরন",
   };
 
   const textState = new WeakMap();
