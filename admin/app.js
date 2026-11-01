@@ -15,17 +15,52 @@ window.HFAdminReady.then(async H=>{
  const todayISO=()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
  const fileBase=s=>String(s||"halal-food-report").toLowerCase().replace(/[^a-z0-9-]+/g,"-").replace(/^-|-$/g,"")||"halal-food-report";
  const statusOptions=["pending","processing","shipped","delivered","cancelled"];
+ const dhakaDateKey=value=>{
+  const date=value instanceof Date?value:new Date(value);
+  if(Number.isNaN(date.getTime()))return "";
+  const parts=new Intl.DateTimeFormat("en-US",{timeZone:"Asia/Dhaka",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(date);
+  const part=type=>parts.find(item=>item.type===type)?.value||"";
+  return part("year")+"-"+part("month")+"-"+part("day");
+ };
+ const addDhakaDays=(key,amount)=>{
+  const [year,month,day]=String(key).split("-").map(Number);
+  const date=new Date(Date.UTC(year,month-1,day+amount));
+  return date.getUTCFullYear()+"-"+String(date.getUTCMonth()+1).padStart(2,"0")+"-"+String(date.getUTCDate()).padStart(2,"0");
+ };
+ const buildDhakaRange=(fromDay,toDay,label)=>{
+  if(!fromDay||!toDay||fromDay>toDay)throw new Error("Choose a valid start and end date.");
+  const days=Math.max(1,Math.round((Date.parse(toDay+"T00:00:00Z")-Date.parse(fromDay+"T00:00:00Z"))/86400000)+1);
+  return {from:new Date(fromDay+"T00:00:00+06:00").toISOString(),to:new Date(toDay+"T23:59:59.999+06:00").toISOString(),fromDay,toDay,days,label};
+ };
  function selectedRange(){
   const p=$("rangeSelect")?.value||"30";
+  const today=dhakaDateKey(new Date());
+  const monthStart=today.slice(0,7)+"-01";
+  const weekday=new Date(today+"T12:00:00+06:00").getUTCDay();
+  const weekStart=addDhakaDays(today,-((weekday+1)%7));
   if(p==="custom"){
    const from=$("dateFrom")?.value,to=$("dateTo")?.value;
    if(!from||!to||from>to)throw new Error("Choose a valid start and end date.");
-   const start=new Date(from+"T00:00:00"),end=new Date(to+"T23:59:59.999");
-   return {from:start.toISOString(),to:end.toISOString(),days:Math.max(1,Math.ceil((end-start)/86400000)+1),label:from+" to "+to};
+   return buildDhakaRange(from,to,from+" to "+to);
   }
-  if(p==="all")return {from:null,to:null,days:null,label:"All available time"};
-  const days=Number(p)||30;const d=new Date();d.setHours(23,59,59,999);
-  return {from:new Date(Date.now()-Math.max(1,days)*86400000).toISOString(),to:d.toISOString(),days,label:"Last "+days+" days"};
+  if(p==="all")return {from:null,to:null,fromDay:null,toDay:today,days:null,label:"All available time"};
+  let fromDay=today,toDay=today,label="Today";
+  switch(p){
+   case "today": label="Today";break;
+   case "yesterday": fromDay=addDhakaDays(today,-1);toDay=fromDay;label="Yesterday";break;
+   case "7": fromDay=addDhakaDays(today,-6);label="Last 7 days";break;
+   case "30": fromDay=addDhakaDays(today,-29);label="Last 30 days";break;
+   case "90": fromDay=addDhakaDays(today,-89);label="Last 90 days";break;
+   case "365": fromDay=addDhakaDays(today,-364);label="Last 12 months";break;
+   case "this-week": fromDay=weekStart;label="This week";break;
+   case "last-week": toDay=addDhakaDays(weekStart,-1);fromDay=addDhakaDays(toDay,-6);label="Last week";break;
+   case "this-month": fromDay=monthStart;label="This month";break;
+   case "last-month": toDay=addDhakaDays(monthStart,-1);fromDay=toDay.slice(0,7)+"-01";label="Last month";break;
+   case "this-year": fromDay=today.slice(0,4)+"-01-01";label="This year";break;
+   case "last-year": fromDay=(Number(today.slice(0,4))-1)+"-01-01";toDay=(Number(today.slice(0,4))-1)+"-12-31";label="Last year";break;
+   default: fromDay=addDhakaDays(today,-29);label="Last 30 days";
+  }
+  return buildDhakaRange(fromDay,toDay,label);
  }
  function showCustomDates(){const box=$("customRangeFields");if(box)box.hidden=$("rangeSelect")?.value!=="custom";}
  function bindRangeControls(callback){
@@ -407,11 +442,24 @@ window.HFAdminReady.then(async H=>{
  async function initAnalytics(){
   async function refresh(){
    const range=selectedRange();const [events,orders,products]=await Promise.all([fetchEvents(range),fetchOrders(range,5000),fetchProducts()]);
-   const chartDays=Math.min(range.days||90,90),keys=lastDateKeys(chartDays);
-   drawChart("analyticsTrafficChart",{type:"line",data:{labels:keys.map(dateOnly),datasets:[
-    {label:"Page views",data:keys.map(k=>events.filter(e=>e.event_name==="page_view"&&String(e.occurred_at).slice(0,10)===k).length),borderColor:palette.blue,backgroundColor:"#4F7CFF20",fill:true,tension:.32,pointRadius:1.5,borderWidth:2},
-    {label:"Product views",data:keys.map(k=>events.filter(e=>e.event_name==="view_item"&&String(e.occurred_at).slice(0,10)===k).length),borderColor:palette.orange,backgroundColor:"#C97B3D15",fill:true,tension:.32,pointRadius:1.5,borderWidth:2},
-    {label:"Cart additions",data:keys.map(k=>events.filter(e=>e.event_name==="add_to_cart"&&String(e.occurred_at).slice(0,10)===k).length),borderColor:palette.green,backgroundColor:"#10B9811A",fill:false,tension:.32,pointRadius:1.5,borderWidth:2}
+   const observedDays=events.map(event=>dhakaDateKey(event.occurred_at)).filter(Boolean).sort();
+   const chartFrom=range.fromDay||(observedDays[0]||dhakaDateKey(new Date()));
+   const chartTo=range.toDay||(observedDays[observedDays.length-1]||dhakaDateKey(new Date()));
+   const chartDays=Math.max(1,Math.round((Date.parse(chartTo+"T00:00:00Z")-Date.parse(chartFrom+"T00:00:00Z"))/86400000)+1);
+   const monthly=chartDays>62,trendBuckets=[];
+   if(monthly){
+    let month=chartFrom.slice(0,7),last=chartTo.slice(0,7);
+    while(month<=last){trendBuckets.push({key:month,label:new Intl.DateTimeFormat("en-BD",{timeZone:"Asia/Dhaka",month:"short",year:"numeric"}).format(new Date(month+"-15T12:00:00+06:00"))});const [year,monthNo]=month.split("-").map(Number);const next=new Date(Date.UTC(year,monthNo,1));month=next.getUTCFullYear()+"-"+String(next.getUTCMonth()+1).padStart(2,"0");}
+   }else{
+    for(let offset=0;offset<chartDays;offset++){const day=addDhakaDays(chartFrom,offset);trendBuckets.push({key:day,label:new Intl.DateTimeFormat("en-BD",{timeZone:"Asia/Dhaka",day:"numeric",month:"short"}).format(new Date(day+"T12:00:00+06:00"))});}
+   }
+   const trendCountsByEvent=new Map();
+   events.forEach(event=>{if(!["page_view","view_item","add_to_cart"].includes(event.event_name))return;const day=dhakaDateKey(event.occurred_at);const key=monthly?day.slice(0,7):day;const mapKey=event.event_name+"|"+key;trendCountsByEvent.set(mapKey,(trendCountsByEvent.get(mapKey)||0)+1);});
+   const trendSeries=name=>trendBuckets.map(bucket=>trendCountsByEvent.get(name+"|"+bucket.key)||0);
+   drawChart("analyticsTrafficChart",{type:"line",data:{labels:trendBuckets.map(bucket=>bucket.label),datasets:[
+    {label:"Page views",data:trendSeries("page_view"),borderColor:palette.blue,backgroundColor:"#4F7CFF20",fill:true,tension:.32,pointRadius:1.5,borderWidth:2},
+    {label:"Product views",data:trendSeries("view_item"),borderColor:palette.orange,backgroundColor:"#C97B3D15",fill:true,tension:.32,pointRadius:1.5,borderWidth:2},
+    {label:"Cart additions",data:trendSeries("add_to_cart"),borderColor:palette.green,backgroundColor:"#10B9811A",fill:false,tension:.32,pointRadius:1.5,borderWidth:2}
    ]},options:{...chartAxisOptions(),plugins:{legend:{position:"bottom"}}}});
    const top=topProducts(events,products);
    drawChart("analyticsProductChart",{type:"doughnut",data:{labels:top.slice(0,7).map(x=>x.name),datasets:[{data:top.slice(0,7).map(x=>x.count),backgroundColor:colorSet,borderColor:chartTheme().surface,borderWidth:3,hoverOffset:8}]},options:{cutout:"57%",plugins:{legend:{position:"bottom"}}}});
@@ -445,7 +493,7 @@ window.HFAdminReady.then(async H=>{
    if(lowStockProducts.length)insights.push({title:"Review low-stock products",body:lowStockProducts.slice(0,3).map(p=>p.name).join(", ")+(lowStockProducts.length>3?" and "+(lowStockProducts.length-3)+" more":"")+" are at or below their configured stock alert."});
    $("analyticsDecisionCenter").innerHTML=insights.length?insights.map((item,i)=>'<div class="hf-insight-row"><span class="hf-thumb hf-thumb-empty">'+(i+1)+'</span><div><strong>'+esc(item.title)+'</strong><small>'+esc(item.body)+'</small></div><span class="hf-status hf-status-review">Review</span></div>').join(""):makeEmpty("No immediate checks suggested","Keep collecting on-site events and review this area again as more data arrives.");
 
-   $("analyticsReportHint").textContent=range.label+" · "+total.toLocaleString("en-BD")+" recorded events · "+orders.length.toLocaleString("en-BD")+" orders. "+((!range.days||range.days>90)?"Daily trend shows the last 90 days; totals use the full selected range.":"");
+   $("analyticsReportHint").textContent=range.label+" · "+total.toLocaleString("en-BD")+" recorded events · "+orders.length.toLocaleString("en-BD")+" orders. "+(monthly?"Trend grouped by month.":"Daily trend.")+(events.length>=15000?" Event query reached its 15,000-record limit.":"");
    $("analyticsTopProducts").innerHTML=top.length?top.map((x,i)=>'<div class="hf-insight-row">'+(x.product?.image_url?'<img class="hf-thumb" src="'+esc(x.product.image_url)+'" alt="">':'<span class="hf-thumb hf-thumb-empty">'+(i+1)+'</span>')+'<div><strong>'+esc(x.name)+'</strong><small>'+esc(x.product?.category||"No category match")+'</small></div><span class="hf-insight-number">'+shortNum(x.count)+'</span></div>').join(""):makeEmpty("No product-view data","Check again after the website has recorded product views.");
    $("analyticsEventBreakdown").innerHTML=groupBy(events,e=>e.event_name).slice(0,12).map(x=>'<tr><td>'+esc(x.label)+'</td><td>'+shortNum(x.count)+'</td><td>'+(total?Math.round(x.count/total*100)+"%":"—")+'</td></tr>').join("")||'<tr><td colspan="3">'+makeEmpty("No events yet","No website events were recorded in this date range.")+'</td></tr>';
   }
