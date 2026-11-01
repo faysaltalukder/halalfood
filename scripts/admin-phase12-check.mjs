@@ -314,7 +314,7 @@ const observatoryCss = read("admin/the-observatory.css").replace(/\/\*[\s\S]*?\*
 const observatoryOverview = read("admin/overview.html");
 const observatoryTranslations = read("admin/i18n.js");
 assert.ok(shared.includes('ADMIN_COLOR_THEMES["the-observatory"]') && shared.includes('name:"The Observatory"') && shared.includes('themeIds:["merchant-fieldbook","the-observatory"]'), "Theme 12 must exist in Signature.");
-assert.ok(shared.includes('link.href="./the-observatory.css?v=20261101-observatory-v1"'), "Observatory stylesheet must load on demand.");
+assert.ok(shared.includes('observatory.href="./the-observatory.css?v=20261101-observatory-v1"'), "Observatory stylesheet must load on demand.");
 assert.ok(observatoryOverview.includes("hf-theme-copy--observatory") && observatoryOverview.includes("The Observatory"), "Overview must include Observatory-specific copy.");
 assert.ok(observatoryCss.includes('html[data-hf-theme="the-observatory"]') && observatoryCss.includes('body[data-page="overview"]') && observatoryCss.includes("prefers-reduced-motion"), "Observatory CSS must be scoped and include responsive and motion safeguards.");
 const observatorySelectors=[];let observatoryStart=0;
