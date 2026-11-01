@@ -78,7 +78,7 @@ assert.ok(!read("admin/operations.html").includes('id="suppliersSection"') && re
 
 for (const file of unifiedPages) {
   const source = read(join("admin", file));
-  if (source.includes("i18n.js?v=")) assert.ok(source.includes("i18n.js?v=20261101-shell-localization-v3"), `${file}: stale language dictionary cache version.`);
+  assert.ok(source.includes("i18n.js?v=20261101-shell-localization-v3"), `${file}: missing or stale shared language dictionary.`);
   assert.ok(source.includes(`shared.css?v=${sharedCssVersion}`), `${file}: stale shared UI cache version.`);
   assert.ok(source.includes("shared.js?v="), `${file}: missing shared JS cache-busting version.`);
 
