@@ -64,13 +64,13 @@ html[data-hf-theme="the-observatory"] body[data-page] .page-heading h1,
 html[data-hf-theme="the-observatory"] body[data-page] .page-heading h2{color:#3A344A!important;font-family:"Space Grotesk",Inter,sans-serif;letter-spacing:-.045em}
 html[data-hf-theme="the-observatory"] body[data-page] .page-eyebrow{color:#6B5D83!important;font-size:9px;font-weight:800;letter-spacing:.19em;text-transform:uppercase}
 html[data-hf-theme="the-observatory"] body[data-page] .admin-main>:is(.page-heading,.hf-phase4-hero,.hf-overview-hero,.hf-orders-hero,.hf-products-hero,.hf-marketing-hero,.hf-finance-hero,.hf-incomplete-hero,.cu-hero,.cp-hero,.pos-hero,.pt-hero,.mar-hero,.hf-customer-hero,.hf-supplier-hero,.yt-publish-hero,.fb-publish-hero){
- background:linear-gradient(125deg,rgba(251,249,252,.94) 0%,rgba(240,237,244,.88) 65%,rgba(234,239,240,.84) 100%)!important;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid #D7D1E0!important;
+ background:linear-gradient(125deg,rgba(251,249,252,.90) 0%,rgba(240,237,244,.82) 65%,rgba(234,239,240,.78) 100%)!important;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid #D7D1E0!important;
  border-left:4px solid #83C8B5!important;border-radius:16px!important;box-shadow:0 12px 30px rgba(49,41,67,.055),inset 0 1px 0 rgba(255,255,255,.8)!important;
 }
 html[data-hf-theme="the-observatory"] body[data-page] .hf-card,
 html[data-hf-theme="the-observatory"] body[data-page] .hf-card-pad,
 html[data-hf-theme="the-observatory"] body[data-page] .hf-chart-card{
- background:linear-gradient(145deg,rgba(255,255,255,.94) 0%,rgba(248,246,250,.88) 100%)!important;border:1px solid #DCD6E5!important;backdrop-filter:blur(13px);-webkit-backdrop-filter:blur(13px);
+ background:linear-gradient(145deg,rgba(255,255,255,.88) 0%,rgba(248,246,250,.78) 100%)!important;border:1px solid #DCD6E5!important;backdrop-filter:blur(13px);-webkit-backdrop-filter:blur(13px);
  border-radius:14px!important;box-shadow:0 8px 22px rgba(47,39,65,.045)!important;color:#3A344A!important;
 }
 html[data-hf-theme="the-observatory"] body[data-page] .hf-card:hover,
@@ -175,12 +175,12 @@ html[data-hf-theme="the-observatory"] body[data-page] .admin-main:before{
  background-repeat:no-repeat;
 }
 html[data-hf-theme="the-observatory"] body[data-page] .admin-main:after{
- content:"";position:fixed;z-index:0;pointer-events:none;top:102px;right:24px;width:min(34vw,390px);height:min(34vw,390px);
- border:1px solid rgba(111,96,151,.24);border-radius:50%;opacity:.62;transform:rotate(-22deg);
+ content:"";position:fixed;z-index:0;pointer-events:none;top:102px;right:24px;width:min(38vw,460px);height:min(38vw,460px);
+ border:1px solid rgba(111,96,151,.24);border-radius:50%;opacity:.76;transform:rotate(-22deg);
  background:
   radial-gradient(circle at 75% 28%,rgba(190,226,217,.95) 0 2px,rgba(131,200,181,.16) 4px,transparent 12px),
-  radial-gradient(circle at 34% 31%,rgba(139,197,189,.34),rgba(119,102,153,.13) 43%,transparent 72%);
- box-shadow:0 0 0 19px rgba(131,200,181,.065),0 0 0 42px rgba(131,200,181,.045),0 0 0 70px rgba(229,141,112,.045),inset 0 0 45px rgba(105,93,144,.10);
+  radial-gradient(circle at 34% 31%,rgba(139,197,189,.44),rgba(119,102,153,.22) 43%,transparent 72%);
+ box-shadow:0 0 0 19px rgba(131,200,181,.085),0 0 0 42px rgba(131,200,181,.065),0 0 0 70px rgba(229,141,112,.06),inset 0 0 45px rgba(105,93,144,.10);
 }
 html[data-hf-theme="the-observatory"] body[data-page] #pageContent{position:relative;z-index:1}
 html[data-hf-theme="the-observatory"] body[data-page] .admin-main>:is(.page-heading,.hf-phase4-hero,.hf-overview-hero,.hf-orders-hero,.hf-products-hero,.hf-marketing-hero,.hf-finance-hero,.hf-incomplete-hero,.cu-hero,.cp-hero,.pos-hero,.pt-hero,.mar-hero,.hf-customer-hero,.hf-supplier-hero,.yt-publish-hero,.fb-publish-hero){
@@ -188,14 +188,14 @@ html[data-hf-theme="the-observatory"] body[data-page] .admin-main>:is(.page-head
   radial-gradient(circle at 88% 20%,rgba(111,96,151,.16) 0 1.3px,transparent 2px),
   radial-gradient(circle at 94% 72%,rgba(87,162,152,.22) 0 1.4px,transparent 2.2px),
   radial-gradient(circle at 76% 84%,rgba(201,135,129,.17) 0 1.2px,transparent 2px),
-  linear-gradient(125deg,rgba(251,249,252,.94) 0%,rgba(240,237,244,.88) 65%,rgba(234,239,240,.84) 100%)!important;
+  linear-gradient(125deg,rgba(251,249,252,.90) 0%,rgba(240,237,244,.82) 65%,rgba(234,239,240,.78) 100%)!important;
 }
 
 /* Overview · orbital telemetry and a luminous instrument console */
 html[data-hf-theme="the-observatory"] body[data-page="overview"] .admin-main{max-width:1740px;padding-top:29px}
 html[data-hf-theme="the-observatory"] body[data-page="overview"] #pageContent{display:flex;flex-direction:column;gap:16px}
 html[data-hf-theme="the-observatory"] body[data-page="overview"] .hf-overview-hero{
- position:relative;isolation:isolate;overflow:hidden;display:flex;align-items:center;min-height:196px;margin:0;padding:30px 32px;
+ position:relative;isolation:isolate;overflow:hidden;display:flex;align-items:center;min-height:252px;margin:0;padding:30px 32px;
  border:1px solid #D7D1E0!important;border-left:4px solid #83C8B5!important;border-radius:17px!important;
  background:radial-gradient(circle at 83% 20%,rgba(107,95,135,.19) 0 1px,transparent 1.8px),radial-gradient(circle at 91% 64%,rgba(131,200,181,.34) 0 1.4px,transparent 2px),radial-gradient(circle at 70% 82%,rgba(229,141,112,.24) 0 1px,transparent 1.8px),radial-gradient(ellipse at 92% 4%,rgba(131,200,181,.22),transparent 31%),linear-gradient(120deg,#FBF9FC 0%,#F0EDF5 58%,#E9EFF0 100%)!important;
  box-shadow:0 15px 34px rgba(48,40,67,.07)!important;
@@ -317,7 +317,7 @@ html[data-hf-theme="the-observatory"] body[data-page="overview"] .hf-overview-he
 
 @media(max-width:900px){
  html[data-hf-theme="the-observatory"] body[data-page] .admin-main:before{inset:64px 0 0 0}
- html[data-hf-theme="the-observatory"] body[data-page] .admin-main:after{top:90px;right:-82px;width:250px;height:250px;opacity:.40}
+ html[data-hf-theme="the-observatory"] body[data-page] .admin-main:after{top:90px;right:-82px;width:250px;height:250px;opacity:.52}
 }
 @media(max-width:620px){
  html[data-hf-theme="the-observatory"] body[data-page] .admin-main:before{
