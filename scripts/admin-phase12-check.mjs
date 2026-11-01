@@ -67,6 +67,7 @@ assert.ok(!/service[_-]?role|secret[_-]?key/i.test(storeConfig), "Public store c
 assert.ok(storeConfig.includes("reorderCategoriesRpc") && storeConfig.includes("reorderProductsRpc") && storeConfig.includes("reorderHomeProductsRpc"), "Each store config must be able to map its category/product ordering RPCs.");
 assert.ok(storeConfig.includes("storeName:") && storeConfig.includes("whatsappNumber:"), "Store branding and public contact should be configured per website.");
 assert.ok(categoriesLive.includes("STORE_NAME") && categoriesLive.includes("WHATSAPP_NUMBER"), "Storefront category and product views must not hard-code the Halal Food brand or contact number.");
+assert.ok(categoriesLive.includes("setPictureImage(img, product.image_url, product.name)"), "New catalog cards must normalize relative image URLs against the configured store root.");
 assert.ok(categoriesUi.includes("CATALOG_CONFIG") && categoriesUi.includes("CATEGORY_TABLE") && categoriesUi.includes("PRODUCT_TABLE"), "The Category workspace must use per-store table configuration rather than fixed table names.");
 assert.ok(categoriesUi.includes("REORDER_CATEGORY_RPC") && categoriesUi.includes("REORDER_PRODUCT_RPC") && categoriesUi.includes("REORDER_HOME_RPC"), "Category and product ordering must use the store-configured server RPCs.");
 assert.ok(categoriesUi.includes("bindTouchReorder") && categoriesUi.includes("data-touch-drag-handle"), "Category and product lists must support touch drag-and-drop.");
