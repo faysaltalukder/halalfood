@@ -480,6 +480,86 @@ const ADMIN_COLOR_THEMES={
   }
 
 };
+
+function makeExtendedAdminTheme(config){
+ const p=config.palette;
+ const lightGradient=(a,b)=>"linear-gradient(110deg,"+a+","+b+")";
+ const tokens=Object.assign({},ADMIN_COLOR_THEMES["warm-harvest"].tokens,{
+  "sidebar-bg":"radial-gradient(ellipse at 10% 8%,"+p.glow[0]+" 0%,transparent 34%),radial-gradient(ellipse at 91% 24%,"+p.glow[1]+" 0%,transparent 34%),radial-gradient(ellipse at 36% 94%,"+p.glow[2]+" 0%,transparent 38%),linear-gradient(132deg,"+p.sidebar.join(", ")+")",
+  "sidebar-pattern-filter":p.pattern,
+  "sidebar-ink":p.sideInk,"sidebar-muted":p.sideMuted,"sidebar-border":p.sideBorder,
+  "side-group-bg":"linear-gradient(145deg,"+p.group[0]+","+p.group[1]+")","side-group-border":p.groupBorder,
+  "side-menu-1":lightGradient(p.menu[0][0],p.menu[0][1]),"side-menu-2":lightGradient(p.menu[1][0],p.menu[1][1]),
+  "side-menu-3":lightGradient(p.menu[2][0],p.menu[2][1]),"side-menu-4":lightGradient(p.menu[3][0],p.menu[3][1]),
+  "side-menu-ink":p.menuInk,"side-menu-border":"rgba(255,255,255,.92)",
+  "side-menu-hover":lightGradient(p.hover[0],p.hover[1]),"side-menu-active":lightGradient(p.active[0],p.active[1]),
+  "side-menu-active-ink":p.activeInk,"side-child-bg":"linear-gradient(145deg,"+p.child[0]+","+p.child[1]+")",
+  "side-child-ink":p.childInk,"side-accent":p.accent,"side-icon-bg":p.iconBg,"side-icon-ink":p.iconInk,
+  "side-note-bg":p.note,"side-search-bg":p.search,"side-search-border":p.searchBorder,
+  "canvas-bg":"radial-gradient(ellipse at 84% 3%,"+p.glow[1]+" 0%,transparent 34%),radial-gradient(ellipse at 12% 36%,"+p.glow[0]+" 0%,transparent 36%),radial-gradient(ellipse at 88% 92%,"+p.glow[2]+" 0%,transparent 33%),linear-gradient(133deg,"+p.canvas.join(", ")+")",
+  "canvas-ink":p.text,"header-bg":p.header,"header-border":p.headerBorder,
+  "header-control-bg":p.headerControl,"header-control-ink":p.headerControlInk,"header-control-border":p.headerControlBorder,
+  "hero-bg":"linear-gradient(120deg,"+p.hero.join(", ")+")","hero-border":p.heroBorder,
+  "card-bg":"linear-gradient(145deg,"+p.card[0]+" 0%,"+p.card[1]+" 100%)","card-border":p.cardBorder,
+  "nested-bg":"linear-gradient(125deg,"+p.nested[0]+","+p.nested[1]+")","control-bg":p.control,
+  "text":p.text,"muted":p.muted,"border":p.border,"primary":p.primary,"primary-hover":p.primaryHover,
+  "secondary":p.secondary,"secondary-ink":p.secondaryInk,"secondary-hover":p.secondaryHover,
+  "accent":p.accent,"accent-alt":p.accentAlt,"focus":p.focus,
+  "kpi-1":"linear-gradient(145deg,"+p.kpi[0][0]+","+p.kpi[0][1]+")",
+  "kpi-2":"linear-gradient(145deg,"+p.kpi[1][0]+","+p.kpi[1][1]+")",
+  "kpi-3":"linear-gradient(145deg,"+p.kpi[2][0]+","+p.kpi[2][1]+")",
+  "kpi-4":"linear-gradient(145deg,"+p.kpi[3][0]+","+p.kpi[3][1]+")",
+  "table-bg":p.tableBg,"table-head":p.tableHead,"table-row":p.tableRow,"table-alt":p.tableAlt,"table-hover":p.tableHover,
+  "chart-bg":"linear-gradient(145deg,"+p.chartBg[0]+","+p.chartBg[1]+")","chart-text":p.chartText,
+  "chart-muted":p.chartMuted,"chart-grid":p.chartGrid,"chart-surface":p.chartSurface,
+  "tooltip-bg":p.sidebar[0],"leaf-filter":p.leafFilter
+ });
+ return {id:config.id,name:config.name,profile:config.profile,previewColors:config.previewColors,tokens,chartColors:config.chartColors};
+}
+const EXTENDED_ADMIN_THEME_CONFIGS=[
+ {id:"desert-clay",name:"Desert Clay",profile:"Earthy · Welcoming · Warm",previewColors:["#783D32","#A9513E","#D59B55","#F2E3D7"],chartColors:["#A9513E","#D59B55","#C4775A","#8B5948","#E2B77A","#9B6B5A","#BC866D","#6F5148","#E7C99C","#AA7181"],palette:{
+  sidebar:["#783D32","#A9513E","#BD6848","#C18147","#804A3D"],glow:["rgba(239,174,116,.22)","rgba(222,127,96,.2)","rgba(225,176,106,.17)"],pattern:"sepia(.45) saturate(.82) hue-rotate(345deg) brightness(1.24)",
+  sideInk:"#FFF5E9",sideMuted:"#F4DCC8",sideBorder:"rgba(255,226,198,.34)",group:["rgba(103,48,40,.36)","rgba(126,58,43,.25)"],groupBorder:"rgba(255,226,198,.3)",
+  menu:[["#F3E0D4","#FFF2E8"],["#F4E5D0","#FCF0DF"],["#F0DFDA","#FBF0EA"],["#EBDDD2","#F8EEE5"]],menuInk:"#704438",hover:["#EFD2C1","#F8E4D8"],active:["#E9C78D","#DDB36D"],activeInk:"#513B2B",
+  child:["rgba(253,244,236,.97)","rgba(239,222,208,.94)"],childInk:"#714A3C",accent:"#E4BC79",iconBg:"#F1DFD3",iconInk:"#A9513E",note:"rgba(94,43,35,.25)",search:"rgba(255,241,226,.13)",searchBorder:"rgba(255,226,198,.38)",
+  canvas:["#F5ECE4","#EFE0D5","#E8D8CC"],text:"#65443B",muted:"#76594F",header:"rgba(249,242,236,.96)",headerBorder:"#E1CABC",headerControl:"#F0DED2",headerControlInk:"#744839",headerControlBorder:"#D9BDAE",
+  hero:["#F8EEE5","#EEDBCF","#F3E4D8"],heroBorder:"#E0C5B4",card:["#FFFAF5","#F5E9E0"],cardBorder:"#E4CFC1",nested:["#F1E2D8","#F8EEE6"],control:"#FFFAF5",border:"#E1CBBE",
+  primary:"#A9513E",primaryHover:"#873F32",secondary:"#F0DED2",secondaryInk:"#744839",secondaryHover:"#E7CFC0",accentAlt:"#BC765B",focus:"#B65D45",
+  kpi:[["#F2DFD5","#EBD0C4"],["#F4E9D6","#EBDDBF"],["#F0E1DC","#E7D2C9"],["#F1E4D9","#E6D3C4"]],tableBg:"#FFFAF5",tableHead:"#EEDFD4",tableRow:"#FFFCF8",tableAlt:"#F5EAE2",tableHover:"#EEDACD",chartBg:["#F3E6DC","#E9D9CC"],chartText:"#6B4A3E",chartMuted:"#80665A",chartGrid:"#E2CFC2",chartSurface:"#FFFAF5",leafFilter:"sepia(.42) hue-rotate(345deg) saturate(.76)"
+ }},
+ {id:"lavender-bloom",name:"Lavender Bloom",profile:"Creative · Gentle · Elegant",previewColors:["#493D70","#67538F","#B6A0CF","#F0EAF5"],chartColors:["#67538F","#B6A0CF","#C58BA8","#8A739E","#D2AA78","#6E83A5","#9B83B5","#B77B76","#7C9B9A","#D4B7C9"],palette:{
+  sidebar:["#493D70","#67538F","#7867A0","#957BAA","#594A78"],glow:["rgba(183,160,220,.23)","rgba(143,122,195,.2)","rgba(222,191,157,.16)"],pattern:"hue-rotate(205deg) saturate(.66) brightness(1.24)",
+  sideInk:"#F7F3FC",sideMuted:"#DED5EF",sideBorder:"rgba(231,219,249,.34)",group:["rgba(63,51,104,.37)","rgba(91,70,130,.25)"],groupBorder:"rgba(231,219,249,.3)",
+  menu:[["#EAE4F3","#F7F3FA"],["#F0E4EF","#FAF2F8"],["#E5EAF4","#F3F6FB"],["#F2EADB","#FBF6E9"]],menuInk:"#55486F",hover:["#DED5EE","#EEE7F5"],active:["#E8D8A9","#D9C18A"],activeInk:"#48405A",
+  child:["rgba(249,246,253,.97)","rgba(233,226,245,.94)"],childInk:"#5A4B78",accent:"#D6C28D",iconBg:"#E8E1F3",iconInk:"#67538F",note:"rgba(56,45,93,.27)",search:"rgba(244,238,252,.13)",searchBorder:"rgba(231,219,249,.38)",
+  canvas:["#F2EEF7","#EAE5F2","#E3DDEC"],text:"#4E4667",muted:"#625A78",header:"rgba(247,244,251,.96)",headerBorder:"#D8D0E5",headerControl:"#EAE4F3",headerControlInk:"#574A78",headerControlBorder:"#D1C7E0",
+  hero:["#F7F4FA","#E7E1F1","#F0EAF6"],heroBorder:"#D7CFE4",card:["#FDFBFE","#F1ECF6"],cardBorder:"#DDD5E8",nested:["#EAE5F2","#F3EFF7"],control:"#FCFAFD",border:"#D9D1E5",
+  primary:"#67538F",primaryHover:"#514073",secondary:"#E9E3F1",secondaryInk:"#574A78",secondaryHover:"#DCD3EB",accent:"#A995C2",accentAlt:"#B67E9C",focus:"#8069A7",
+  kpi:[["#E8E1F1","#DCD3EA"],["#F1E7D9","#E9DCC8"],["#E5EAF4","#D9E2EF"],["#F0E6F0","#E6D8EA"]],tableBg:"#FDFBFE",tableHead:"#EAE4F2",tableRow:"#FEFCFF",tableAlt:"#F1ECF6",tableHover:"#E7E0F0",chartBg:["#F0EBF5","#E5DEED"],chartText:"#594D73",chartMuted:"#6E6682",chartGrid:"#DCD5E8",chartSurface:"#FCFAFD",leafFilter:"hue-rotate(205deg) saturate(.62)"
+ }},
+ {id:"citrus-grove",name:"Citrus Grove",profile:"Fresh · Balanced · Natural",previewColors:["#46542F","#6D7D3E","#C5A64F","#EEF0DF"],chartColors:["#6D7D3E","#C5A64F","#7D9A69","#B77D54","#526B4D","#A2A96E","#4E817F","#D4B476","#8A7552","#A17D91"],palette:{
+  sidebar:["#46542F","#65743A","#7B8A46","#A1924C","#53633A"],glow:["rgba(195,207,130,.22)","rgba(153,178,111,.2)","rgba(218,188,111,.16)"],pattern:"sepia(.28) hue-rotate(48deg) saturate(.8) brightness(1.2)",
+  sideInk:"#F5F7E9",sideMuted:"#DDE7C8",sideBorder:"rgba(225,238,195,.34)",group:["rgba(53,70,39,.36)","rgba(89,105,49,.25)"],groupBorder:"rgba(225,238,195,.3)",
+  menu:[["#E9EDD9","#F7F8EC"],["#F0EED8","#FBF8E9"],["#E0ECE3","#F2F8F1"],["#F2EADB","#FBF5E8"]],menuInk:"#4C5A39",hover:["#DEE7C9","#EEF2DD"],active:["#E8DBA0","#D8C57B"],activeInk:"#42462D",
+  child:["rgba(249,250,241,.97)","rgba(230,237,218,.94)"],childInk:"#52633D",accent:"#DCC879",iconBg:"#E8EDD9",iconInk:"#667B3E",note:"rgba(52,67,38,.25)",search:"rgba(241,246,224,.13)",searchBorder:"rgba(225,238,195,.38)",
+  canvas:["#F1F2E8","#E9EDDF","#E1E8D6"],text:"#455039",muted:"#626C55",header:"rgba(246,247,238,.96)",headerBorder:"#D7DEC8",headerControl:"#E7ECD9",headerControlInk:"#4E603A",headerControlBorder:"#CCD7BB",
+  hero:["#F6F7EE","#E5EBD9","#EEF2E4"],heroBorder:"#D3DDC4",card:["#FCFDF7","#EFF3E7"],cardBorder:"#D5DFC8",nested:["#E7ECD9","#F0F3E7"],control:"#FAFCF5",border:"#D5DEC9",
+  primary:"#65743A",primaryHover:"#4D5B2C",secondary:"#E7ECD9",secondaryInk:"#4E603A",secondaryHover:"#D9E2C8",accent:"#A5B27A",accentAlt:"#B19B5D",focus:"#7D8F45",
+  kpi:[["#E5ECD9","#D6E2CB"],["#F0EEDB","#E6E4C9"],["#E1ECE5","#D2E3D9"],["#F0E8D9","#E5D9C6"]],tableBg:"#FCFDF7",tableHead:"#E6ECD9",tableRow:"#FEFFF9",tableAlt:"#EFF3E7",tableHover:"#E2EBD9",chartBg:["#EEF1E4","#E1E8D6"],chartText:"#4D5C3D",chartMuted:"#66735D",chartGrid:"#D7E1CA",chartSurface:"#FAFCF5",leafFilter:"sepia(.26) hue-rotate(48deg) saturate(.78)"
+ }},
+ {id:"glacier-mist",name:"Glacier Mist",profile:"Clear · Airy · Contemporary",previewColors:["#254A61","#39758A","#82B9BF","#E8F1F3"],chartColors:["#39758A","#82B9BF","#C69E68","#527A9A","#6D9B8E","#8B83A8","#D38B76","#486579","#A4C3CA","#9A7C8E"],palette:{
+  sidebar:["#254A61","#32657B","#438397","#5B9CA5","#31596C"],glow:["rgba(137,203,214,.23)","rgba(101,169,195,.2)","rgba(219,190,143,.16)"],pattern:"hue-rotate(155deg) saturate(.68) brightness(1.25)",
+  sideInk:"#F0F8FA",sideMuted:"#D1E8EC",sideBorder:"rgba(209,237,242,.34)",group:["rgba(29,67,87,.37)","rgba(45,99,119,.25)"],groupBorder:"rgba(209,237,242,.3)",
+  menu:[["#E2EEF1","#F4F9FA"],["#E3ECF4","#F3F7FB"],["#DDEFEF","#F1F9F8"],["#F0E9DC","#FBF6EC"]],menuInk:"#315B6C",hover:["#D2E7EB","#E5F1F3"],active:["#E8D7AD","#D7BE84"],activeInk:"#2F4D59",
+  child:["rgba(247,251,252,.97)","rgba(224,239,242,.94)"],childInk:"#355F70",accent:"#D7BF89",iconBg:"#E0EEF1",iconInk:"#39758A",note:"rgba(25,64,82,.26)",search:"rgba(235,249,250,.13)",searchBorder:"rgba(209,237,242,.38)",
+  canvas:["#EFF5F6","#E5EFF2","#DBE9ED"],text:"#334F5A",muted:"#566E77",header:"rgba(243,248,249,.96)",headerBorder:"#CDDFE4",headerControl:"#E0ECEF",headerControlInk:"#315F70",headerControlBorder:"#C3D9DF",
+  hero:["#F5F9FA","#DFEBEF","#EBF3F5"],heroBorder:"#C9DDE2",card:["#FCFDFE","#ECF4F6"],cardBorder:"#D0E0E4",nested:["#E3EEF1","#EFF5F6"],control:"#FAFCFD",border:"#CDDFE3",
+  primary:"#32657B",primaryHover:"#254F63",secondary:"#DFEBEF",secondaryInk:"#315F70",secondaryHover:"#D0E3E8",accent:"#72AEB3",accentAlt:"#C69E68",focus:"#4B8A96",
+  kpi:[["#DDEBF0","#CDDFE7"],["#F1EBDD","#E6DDC9"],["#DCEFEB","#CDE3E0"],["#E2EAF1","#D4E0EA"]],tableBg:"#FCFDFE",tableHead:"#DFEBEF",tableRow:"#FEFFFF",tableAlt:"#ECF4F6",tableHover:"#DAE9EE",chartBg:["#EAF2F4","#DCE9ED"],chartText:"#395B68",chartMuted:"#5D7680",chartGrid:"#D1E0E4",chartSurface:"#FAFCFD",leafFilter:"hue-rotate(155deg) saturate(.68)"
+ }}
+];
+EXTENDED_ADMIN_THEME_CONFIGS.forEach(config=>{ADMIN_COLOR_THEMES[config.id]=makeExtendedAdminTheme(config);});
+
 const palette={navy:"#704E40",orange:"#D49537",blue:"#A94335",green:"#287A58",purple:"#9B6A8D",yellow:"#E0B45E",red:"#B24B3F",teal:"#C07A55",cream:"#FFF4E8",muted:"#8C7569"};
 const colorSet=ADMIN_COLOR_THEMES["warm-harvest"].chartColors.slice();
 const charts={};
