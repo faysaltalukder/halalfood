@@ -8,7 +8,7 @@ const root = process.cwd();
 const adminDir = join(root, "admin");
 const sharedCssVersion = "20261101-shared-erp-system-v1";
 const workspaceThemeCssVersion = "20261101-merchant-fieldbook-v1";
-const sharedJsVersion = "20261102-observatory-cosmos-v2";
+const sharedJsVersion = "20261102-observatory-visible-v3";
 const i18nVersion = "20261101-observatory-v1";
 const appJsVersion = "20261030-orders-polish-v5";
 const read = (path) => readFileSync(join(root, path), "utf8");
@@ -314,9 +314,13 @@ const observatoryCss = read("admin/the-observatory.css").replace(/\/\*[\s\S]*?\*
 const observatoryOverview = read("admin/overview.html");
 const observatoryTranslations = read("admin/i18n.js");
 assert.ok(shared.includes('ADMIN_COLOR_THEMES["the-observatory"]') && shared.includes('name:"The Observatory"') && shared.includes('themeIds:["merchant-fieldbook","the-observatory"]'), "Theme 12 must exist in Signature.");
-assert.ok(shared.includes('observatory.href="./the-observatory.css?v=20261102-observatory-cosmos-v2"'), "Observatory stylesheet must load on demand.");
+assert.ok(shared.includes('observatory.href="./the-observatory.css?v=20261102-observatory-visible-v3"'), "Observatory stylesheet must load on demand.");
 assert.ok(observatoryOverview.includes("hf-theme-copy--observatory") && observatoryOverview.includes("The Observatory"), "Overview must include Observatory-specific copy.");
 assert.ok(observatoryCss.includes('html[data-hf-theme="the-observatory"]') && observatoryCss.includes('body[data-page="overview"]') && observatoryCss.includes("prefers-reduced-motion"), "Observatory CSS must be scoped and include responsive and motion safeguards.");
+assert.ok(observatoryCss.includes(".admin-main:before") && observatoryCss.includes(".admin-main:after") && observatoryCss.includes("#pageContent{position:relative;z-index:1}"), "Every Observatory route must receive a visible starfield and orbital planet layer beneath its content.");
+assert.ok(observatoryCss.includes("rgba(255,255,255,.94)") && observatoryCss.includes("backdrop-filter:blur(13px)"), "Workspace cards must be translucent enough for the cosmic backdrop to remain visible.");
+assert.ok(observatoryCss.includes("width:clamp(390px,40vw,570px)") && observatoryCss.includes("opacity:.58"), "Overview Earth scene must be prominent on desktop and remain visible on small screens.");
+
 assert.ok(observatoryOverview.includes('class="hf-observatory-scene"') && observatoryOverview.includes('class="hf-observatory-svg"') && observatoryOverview.includes('aria-hidden="true"'), "The Observatory Overview must include a decorative inline SVG space scene.");
 assert.ok(observatoryCss.includes(".obs-satellite-orbit") && observatoryCss.includes("@keyframes obsSatelliteOrbit") && observatoryCss.includes("radial-gradient(circle at 6% 13%"), "Observatory must include satellite motion and a subtle starfield background.");
 const observatorySidebarStart = observatoryCss.indexOf('html[data-hf-theme="the-observatory"] body[data-page] .admin-sidebar{');
