@@ -2012,6 +2012,7 @@ async function refresh(){
  }
  async function initFinance(){
   let entries=[],orders=[];
+  const financeChartColors=["#345F9D","#2A918B","#E1A84C","#C87670","#8C78C5","#6F94B8"];
   function linkedIncomeTotal(orderId){
    return entries.filter(e=>e.related_order_id===orderId&&e.entry_type==="income"&&e.status==="confirmed").reduce((sum,e)=>sum+Number(e.amount||0),0);
   }
@@ -2027,11 +2028,11 @@ async function refresh(){
    const active=entries.filter(e=>e.status==="confirmed"),income=active.filter(e=>e.entry_type==="income").reduce((s,e)=>s+Number(e.amount||0),0),expense=active.filter(e=>e.entry_type==="expense").reduce((s,e)=>s+Number(e.amount||0),0);
    $("financeIncomeTotal").textContent=money(income);$("financeExpenseTotal").textContent=money(expense);$("financeNetTotal").textContent=money(income-expense);$("financePendingCount").textContent=entries.filter(e=>e.status==="draft").length.toLocaleString("en-BD");
    const cats=groupBy(active.filter(e=>e.entry_type==="expense"),e=>e.category);
-   drawChart("financeExpenseChart",{type:"doughnut",data:{labels:cats.map(x=>x.label),datasets:[{data:cats.map(x=>entries.filter(e=>e.status==="confirmed"&&e.entry_type==="expense"&&e.category===x.label).reduce((s,e)=>s+Number(e.amount||0),0)),backgroundColor:colorSet,borderColor:chartTheme().surface,borderWidth:3,hoverOffset:6}]},options:{cutout:"62%",plugins:{legend:{position:"bottom"}}}});
+   drawChart("financeExpenseChart",{type:"doughnut",data:{labels:cats.map(x=>x.label),datasets:[{data:cats.map(x=>entries.filter(e=>e.status==="confirmed"&&e.entry_type==="expense"&&e.category===x.label).reduce((s,e)=>s+Number(e.amount||0),0)),backgroundColor:financeChartColors,borderColor:chartTheme().surface,borderWidth:3,hoverOffset:6}]},options:{cutout:"62%",plugins:{legend:{position:"bottom"}}}});
    const monthKeys=[];const now=new Date();for(let i=5;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1);monthKeys.push(d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"));}
    drawChart("financeTrendChart",{type:"bar",data:{labels:monthKeys.map(k=>{const [y,m]=k.split("-");return new Date(Number(y),Number(m)-1,1).toLocaleDateString("en-BD",{month:"short",year:"2-digit"});}),datasets:[
-    {label:"Confirmed income records",data:monthKeys.map(k=>active.filter(e=>e.entry_type==="income"&&String(e.entry_date).startsWith(k)).reduce((s,e)=>s+Number(e.amount||0),0)),backgroundColor:palette.green,borderRadius:6},
-    {label:"Confirmed expense records",data:monthKeys.map(k=>active.filter(e=>e.entry_type==="expense"&&String(e.entry_date).startsWith(k)).reduce((s,e)=>s+Number(e.amount||0),0)),backgroundColor:palette.orange,borderRadius:6}
+    {label:"Confirmed income records",data:monthKeys.map(k=>active.filter(e=>e.entry_type==="income"&&String(e.entry_date).startsWith(k)).reduce((s,e)=>s+Number(e.amount||0),0)),backgroundColor:"#2A918B",borderRadius:6},
+    {label:"Confirmed expense records",data:monthKeys.map(k=>active.filter(e=>e.entry_type==="expense"&&String(e.entry_date).startsWith(k)).reduce((s,e)=>s+Number(e.amount||0),0)),backgroundColor:"#C87670",borderRadius:6}
    ]},options:{scales:{x:{ticks:{color:chartTheme().muted},grid:{display:false}},y:{beginAtZero:true,ticks:{color:chartTheme().muted,callback:v=>"৳"+Number(v).toLocaleString("en-BD")},grid:{color:chartTheme().grid}}},plugins:{legend:{position:"bottom"}}}});
   }
   function render(){
