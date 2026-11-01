@@ -8,8 +8,8 @@ const root = process.cwd();
 const adminDir = join(root, "admin");
 const sharedCssVersion = "20261101-shared-erp-system-v1";
 const workspaceThemeCssVersion = "20261101-merchant-fieldbook-v1";
-const sharedJsVersion = "20261102-glass-studio-v1";
-const i18nVersion = "20261102-glass-studio-v1";
+const sharedJsVersion = "20261102-glyph-signal-v1";
+const i18nVersion = "20261102-glyph-signal-v1";
 const appJsVersion = "20261030-orders-polish-v5";
 const read = (path) => readFileSync(join(root, path), "utf8");
 
@@ -126,14 +126,14 @@ for (const file of readdirSync(adminDir).filter((name) => name.endsWith(".js")))
 
 // The shared admin shell now uses an account-scoped, registry-driven color theme picker.
 const shared = read("admin/shared.js");
-assert.ok(shared.includes(`ADMIN_COLOR_THEMES["glass-studio"]`) && shared.includes(`name:"Glass Studio"`) && shared.includes(`profile:"Frosted · Airy · Refined"`), "Glass Studio must be registered as the twelfth Signature theme.");
+assert.ok(shared.includes(`ADMIN_COLOR_THEMES["glass-studio"]`) && shared.includes(`name:"Glass Studio"`) && shared.includes(`profile:"Frosted · Airy · Refined"`), "Glass Studio must remain registered and Glyph Signal must be the thirteenth Signature theme.");
 assert.ok(shared.includes('document.documentElement.dataset.hfTheme="warm-harvest";'), "Warm Harvest must remain the default theme.");
-assert.ok(shared.includes("const ADMIN_COLOR_THEMES={") && shared.includes('"warm-harvest":') && shared.includes('"ocean-calm":') && shared.includes('"royal-indigo":') && shared.includes('"forest-sage":') && shared.includes('"berry-rose":') && shared.includes('"coastal-blue":') && shared.includes('id":"plum-amethyst"') && shared.includes('id":"copper-espresso"') && shared.includes('id":"olive-citrus"') && shared.includes('id":"coral-peach"') && shared.includes('ADMIN_COLOR_THEMES["merchant-fieldbook"]') && shared.includes('name:"The Merchant\'s Fieldbook"'), "The registry must contain all ten existing themes plus the isolated signature theme.");
+assert.ok(shared.includes("const ADMIN_COLOR_THEMES={") && shared.includes('"warm-harvest":') && shared.includes('"ocean-calm":') && shared.includes('"royal-indigo":') && shared.includes('"forest-sage":') && shared.includes('"berry-rose":') && shared.includes('"coastal-blue":') && shared.includes('id":"plum-amethyst"') && shared.includes('id":"copper-espresso"') && shared.includes('id":"olive-citrus"') && shared.includes('id":"coral-peach"') && shared.includes('ADMIN_COLOR_THEMES["merchant-fieldbook"]') && shared.includes('name:"The Merchant\'s Fieldbook"'), "The registry must contain all thirteen approved themes.");
 assert.ok(shared.includes('profile":"Creative · Refined · Expressive"') && shared.includes('profile":"Warm · Refined · Business"') && shared.includes('profile":"Natural · Classic · Composed"') && shared.includes('profile":"Warm · Friendly · Expressive"'), "The four replacement themes need their approved business profiles.");
-assert.ok(shared.includes("const ADMIN_THEME_GROUPS=[") && shared.includes('label:"Modern"') && shared.includes('label:"Balanced"') && shared.includes('label:"Classic Comfort"') && shared.includes('label:"Signature"') && shared.includes('themeIds:["merchant-fieldbook","glass-studio"]'), "All four theme groups must remain, with only Fieldbook in Signature.");
+assert.ok(shared.includes("const ADMIN_THEME_GROUPS=[") && shared.includes('label:"Modern"') && shared.includes('label:"Balanced"') && shared.includes('label:"Classic Comfort"') && shared.includes('label:"Signature"') && shared.includes('themeIds:["merchant-fieldbook","glass-studio","glyph-signal"]'), "All four theme groups must remain, with three themes in Signature.");
 const themeGroupMatches=[...shared.matchAll(/themeIds:\[([^\]]*)\]/g)];
 const themeGroupCount=themeGroupMatches.reduce((total,match)=>total+(match[1].match(/"[^"]+"/g)||[]).length,0);
-assert.equal(themeGroupCount,12,"The picker must expose exactly twelve themes.");
+assert.equal(themeGroupCount,13,"The picker must expose exactly thirteen themes.");
 assert.ok(shared.includes("All themes are available to every administrator") && !shared.includes("of 11 themes available"), "Theme count must be registry-driven and not hard-coded.");
 assert.ok(shared.includes('aria-label="Select ') && shared.includes(' theme" aria-pressed="') && shared.includes('aria-pressed='), "Theme choices must expose accessible names and selected states.");
 assert.ok(shared.includes("function makeExtendedAdminTheme") && shared.includes("EXTENDED_ADMIN_THEME_CONFIGS.forEach"), "The four added themes must be generated through the shared dynamic theme engine.");
@@ -141,6 +141,13 @@ assert.ok(shared.includes("hfThemePickerToggle") && shared.includes("hfThemeGrid
 assert.ok(shared.includes('hf_admin_color_theme:') && shared.includes("themeStorageKey()"), "Theme choice must persist per authenticated administrator.");
 assert.ok(shared.includes('applyColorTheme(savedColorTheme,true)') && shared.includes('if(!ADMIN_COLOR_THEMES[savedColorTheme])savedColorTheme="warm-harvest";'), "The saved valid theme must load, while removed theme preferences reset to Warm Harvest.");
 assert.ok(!shared.includes('id="themeToggle"') && !shared.includes('const themeBtn=document.getElementById("themeToggle")'), "The old standalone dark/light toggle must be replaced by the color theme picker.");
+
+const glyphCss = read("admin/glyph-signal.css");
+assert.ok(shared.includes('ADMIN_COLOR_THEMES["glyph-signal"]') && shared.includes('name:"Glyph Signal"') && shared.includes('profile:"Iconic · Minimal · Visual"'), "Glyph Signal must be registered as the thirteenth Signature theme.");
+assert.ok(shared.includes("function syncGlyphSignalMode") && shared.includes("glyphSignalIconForLabel") && shared.includes("glyph-signal-control"), "Glyph Signal must provide accessible icon controls without changing action handlers.");
+assert.ok(glyphCss.includes('html[data-hf-theme="glyph-signal"]') && glyphCss.includes("prefers-reduced-motion") && glyphCss.includes("focus-visible"), "Glyph Signal styles must be scoped and include keyboard focus and reduced-motion support.");
+const glyphCssRules = glyphCss.split(/\r?\n/).map(line => line.trim()).filter(line => line && !line.startsWith("@") && !line.startsWith("}") && !line.startsWith("/*") && !line.startsWith("*/"));
+assert.ok(glyphCssRules.every(line => line.startsWith('html[data-hf-theme="glyph-signal"]')), "Every Glyph Signal CSS selector must be scoped to its theme.");
 
 
 const app = read("admin/app.js");
