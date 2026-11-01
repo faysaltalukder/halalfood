@@ -9,7 +9,7 @@ const adminDir = join(root, "admin");
 const sharedCssVersion = "20261101-shared-erp-system-v1";
 const workspaceThemeCssVersion = "20261101-merchant-fieldbook-v1";
 const sharedJsVersion = "20261102-glyph-signal-v2";
-const i18nVersion = "20261102-glyph-signal-v1";
+const i18nVersion = "20261102-glyph-signal-v2";
 const appJsVersion = "20261030-orders-polish-v5";
 const read = (path) => readFileSync(join(root, path), "utf8");
 
