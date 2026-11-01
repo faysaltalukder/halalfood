@@ -286,7 +286,7 @@ const fieldbookCss = workspaceThemeCss.slice(workspaceThemeCss.indexOf("THE MERC
 assert.ok(overview.includes("THE MERCHANT'S FIELDBOOK") && overview.includes("Today's Market") && overview.includes("A living market desk for the work that matters."), "Overview must use the Fieldbook editorial heading and description.");
 for (const id of ["kpiOrders","kpiTodayItems","kpiPending","kpiCart","kpiOrderValue","kpiLowStock","overviewFinanceStrip","overviewActionList","overviewRangeSelect","overviewTrendType","overviewTopProducts"]) assert.ok(overview.includes(`id="${id}"`), "Fieldbook Overview must preserve live data/control hook #" + id + ".");
 assert.ok(fieldbookCss.includes('html[data-hf-theme="merchant-fieldbook"]') && fieldbookCss.includes('body[data-page="overview"]') && fieldbookCss.includes("prefers-reduced-motion"), "Fieldbook styles must be uniquely scoped and include Overview and reduced-motion support.");
-for (const match of fieldbookCss.matchAll(/(^|})\\s*([^@}{][^{]+)\\{/g)) {
+for (const match of fieldbookCss.matchAll(/(^|})\s*([^@}{][^{]+)\{/g)) {
   const selectors = match[2].trim().split(",").map(value => value.trim());
   assert.ok(selectors.every(selector => selector.startsWith('html[data-hf-theme="merchant-fieldbook"]')), "Every Fieldbook CSS selector must be isolated: " + selectors.join(", "));
 }
