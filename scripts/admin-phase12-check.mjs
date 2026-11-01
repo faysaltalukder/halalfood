@@ -7,7 +7,8 @@ import vm from "node:vm";
 const root = process.cwd();
 const adminDir = join(root, "admin");
 const sharedCssVersion = "20261101-shared-erp-system-v1";
-const sharedJsVersion = "20261101-admin-theme-pack-v3";
+const workspaceThemeCssVersion = "20261101-theme-picker-groups-v2";
+const sharedJsVersion = "20261101-admin-theme-pack-v4";
 const appJsVersion = "20261030-orders-polish-v5";
 const read = (path) => readFileSync(join(root, path), "utf8");
 
@@ -81,7 +82,7 @@ for (const file of unifiedPages) {
   assert.ok(source.includes("i18n.js?v=20261101-shell-localization-v3"), `${file}: missing or stale shared language dictionary.`);
   assert.ok(source.includes(`shared.css?v=${sharedCssVersion}`), `${file}: stale shared UI cache version.`);
   assert.ok(source.includes("shared.js?v=20261101-admin-theme-pack-v3"), `${file}: missing or stale multi-theme shared JS version.`);
-  assert.ok(source.includes("workspace-global-theme.css?v=20261101-multi-theme-engine-v1"), `${file}: missing or stale shared workspace theme stylesheet.`);
+  assert.ok(source.includes(`workspace-global-theme.css?v=${workspaceThemeCssVersion}`), `${file}: missing or stale shared workspace theme stylesheet.`);
 
   if (source.includes("./app.js")) {
     assert.ok(source.includes("app.js?v="), `${file}: missing app.js cache-busting version.`);
@@ -125,8 +126,11 @@ for (const file of readdirSync(adminDir).filter((name) => name.endsWith(".js")))
 // The shared admin shell now uses an account-scoped, registry-driven color theme picker.
 const shared = read("admin/shared.js");
 assert.ok(shared.includes('document.documentElement.dataset.hfTheme="warm-harvest";'), "Warm Harvest must remain the default theme.");
-assert.ok(shared.includes("const ADMIN_COLOR_THEMES={") && shared.includes('"warm-harvest":') && shared.includes('"ocean-calm":') && shared.includes('"royal-indigo":') && shared.includes('"forest-sage":') && shared.includes('"berry-rose":') && shared.includes('"coastal-blue":') && shared.includes('id:"desert-clay"') && shared.includes('id:"lavender-bloom"') && shared.includes('id:"citrus-grove"') && shared.includes('id:"glacier-mist"'), "The theme registry must include all ten available themes.");
-assert.ok(shared.includes('profile:"Earthy · Welcoming · Warm"') && shared.includes('profile:"Creative · Gentle · Elegant"') && shared.includes('profile:"Fresh · Balanced · Natural"') && shared.includes('profile:"Clear · Airy · Contemporary"'), "Each newly added theme needs its distinct design profile.");
+assert.ok(shared.includes("const ADMIN_COLOR_THEMES={") && shared.includes('"warm-harvest":') && shared.includes('"ocean-calm":') && shared.includes('"royal-indigo":') && shared.includes('"forest-sage":') && shared.includes('"berry-rose":') && shared.includes('"coastal-blue":') && shared.includes('id":"plum-amethyst"') && shared.includes('id":"copper-espresso"') && shared.includes('id":"olive-citrus"') && shared.includes('id":"coral-peach"'), "The registry must contain the ten approved business themes.");
+assert.ok(shared.includes('profile":"Creative · Refined · Expressive"') && shared.includes('profile":"Warm · Refined · Business"') && shared.includes('profile":"Natural · Classic · Composed"') && shared.includes('profile":"Warm · Friendly · Expressive"'), "The four replacement themes need their approved business profiles.");
+assert.ok(shared.includes("const ADMIN_THEME_GROUPS=[") && shared.includes('label:"Modern"') && shared.includes('label:"Balanced"') && shared.includes('label:"Classic Comfort"'), "All themes must be discoverable in the three picker groups.");
+assert.ok(shared.includes("All themes are available to every administrator") && !shared.includes("of 11 themes available"), "Theme count must be registry-driven and not hard-coded.");
+assert.ok(shared.includes('aria-label="Select '+esc(theme.name)+' theme"') && shared.includes('aria-pressed='), "Theme choices must expose accessible names and selected states.");
 assert.ok(shared.includes("function makeExtendedAdminTheme") && shared.includes("EXTENDED_ADMIN_THEME_CONFIGS.forEach"), "The four added themes must be generated through the shared dynamic theme engine.");
 assert.ok(shared.includes("hfThemePickerToggle") && shared.includes("hfThemeGrid") && shared.includes("renderThemePicker"), "The shared header must expose the accessible theme picker.");
 assert.ok(shared.includes('hf_admin_color_theme:') && shared.includes("themeStorageKey()"), "Theme choice must persist per authenticated administrator.");
@@ -382,6 +386,11 @@ assert.ok(contrastRatio("#F2F7E9", "#294B3A") >= 4.5 && contrastRatio("#FFFFFF",
 assert.ok(contrastRatio("#FFF2F6", "#6F2D4B") >= 4.5 && contrastRatio("#FFFFFF", "#923E62") >= 4.5 && contrastRatio("#713D56", "#F4E0E8") >= 4.5 && contrastRatio("#5B3740", "#F0C8A7") >= 4.5, "Berry Rose sidebar, buttons and menu states must meet AA contrast.");
 assert.ok(contrastRatio("#F0F7FC", "#1F4B73") >= 4.5 && contrastRatio("#FFFFFF", "#265E8D") >= 4.5 && contrastRatio("#2F5778", "#DFEBF5") >= 4.5 && contrastRatio("#29445C", "#E9D7A9") >= 4.5, "Coastal Blue sidebar, buttons and menu states must meet AA contrast.");
 assert.ok(contrastRatio("#606C8B", "#FBFBFE") >= 4.5 && contrastRatio("#5F705D", "#FAFCF6") >= 4.5 && contrastRatio("#8B6B7A", "#FFFAFC") >= 4.5 && contrastRatio("#596F82", "#FAFCFD") >= 4.5, "New theme muted text must remain readable on its card surface.");
+assert.ok(contrastRatio("#F8F4FB", "#4B315D") >= 4.5 && contrastRatio("#4B3C55", "#EAE2F0") >= 4.5 && contrastRatio("#403044", "#E5C99F") >= 4.5 && contrastRatio("#FFFFFF", "#674476") >= 4.5 && contrastRatio("#6B5B75", "#FCF9FD") >= 4.5 && contrastRatio("#80649A", "#ECE4F0") >= 3, "Plum Amethyst primary text, menus, buttons and focus must meet contrast targets.");
+assert.ok(contrastRatio("#FFF5EA", "#633A29") >= 4.5 && contrastRatio("#5B3D2C", "#F3E4D7") >= 4.5 && contrastRatio("#553722", "#E7C27C") >= 4.5 && contrastRatio("#FFFFFF", "#98542F") >= 4.5 && contrastRatio("#765F52", "#FFF9F2") >= 4.5 && contrastRatio("#A9663F", "#F1E1D1") >= 3, "Copper Espresso primary text, menus, buttons and focus must meet contrast targets.");
+assert.ok(contrastRatio("#F9FAEE", "#48522B") >= 4.5 && contrastRatio("#495236", "#E7E9D5") >= 4.5 && contrastRatio("#3D4228", "#E3D27E") >= 4.5 && contrastRatio("#FFFFFF", "#66713B") >= 4.5 && contrastRatio("#68704F", "#FCFCF4") >= 4.5 && contrastRatio("#68743B", "#ECEBDD") >= 3, "Olive Citrus primary text, menus, buttons and focus must meet contrast targets.");
+assert.ok(contrastRatio("#FFF5F0", "#8A3F39") >= 4.5 && contrastRatio("#713F3A", "#F4E0D8") >= 4.5 && contrastRatio("#563833", "#F5C77D") >= 4.5 && contrastRatio("#FFFFFF", "#B95248") >= 4.5 && contrastRatio("#7F615B", "#FFFAF6") >= 4.5 && contrastRatio("#A54E43", "#F5E1D6") >= 3, "Coral Peach primary text, menus, buttons and focus must meet contrast targets.");
+assert.ok(shared.includes('"tooltip-bg":"#FCF9FD"') && shared.includes('"tooltip-bg":"#FFF9F2"') && shared.includes('"tooltip-bg":"#FCFCF4"') && shared.includes('"tooltip-bg":"#FFFAF6"') && shared.includes('"tooltip-bg":p.chartSurface'), "Chart tooltips must use their light chart surface behind dark labels.");
 
 for (const file of unifiedPages) {
   const source = read(join("admin", file));
