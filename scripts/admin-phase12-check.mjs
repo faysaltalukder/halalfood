@@ -318,7 +318,7 @@ assert.ok(shared.includes('observatory.href="./the-observatory.css?v=20261102-ob
 assert.ok(observatoryOverview.includes("hf-theme-copy--observatory") && observatoryOverview.includes("The Observatory"), "Overview must include Observatory-specific copy.");
 assert.ok(observatoryCss.includes('html[data-hf-theme="the-observatory"]') && observatoryCss.includes('body[data-page="overview"]') && observatoryCss.includes("prefers-reduced-motion"), "Observatory CSS must be scoped and include responsive and motion safeguards.");
 assert.ok(observatoryCss.includes(".admin-main:before") && observatoryCss.includes(".admin-main:after") && observatoryCss.includes("#pageContent{position:relative;z-index:1}"), "Every Observatory route must receive a visible starfield and orbital planet layer beneath its content.");
-assert.ok(observatoryCss.includes("rgba(255,255,255,.94)") && observatoryCss.includes("backdrop-filter:blur(13px)"), "Workspace cards must be translucent enough for the cosmic backdrop to remain visible.");
+assert.ok(observatoryCss.includes("rgba(255,255,255,.88)") && observatoryCss.includes("backdrop-filter:blur(13px)"), "Workspace cards must be translucent enough for the cosmic backdrop to remain visible.");
 assert.ok(observatoryCss.includes("width:clamp(390px,40vw,570px)") && observatoryCss.includes("opacity:.58"), "Overview Earth scene must be prominent on desktop and remain visible on small screens.");
 
 assert.ok(observatoryOverview.includes('class="hf-observatory-scene"') && observatoryOverview.includes('class="hf-observatory-svg"') && observatoryOverview.includes('aria-hidden="true"'), "The Observatory Overview must include a decorative inline SVG space scene.");
