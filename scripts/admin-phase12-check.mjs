@@ -251,6 +251,8 @@ const couponsWorkspace = read("admin/coupons.html");
 assert.ok(posWorkspace.includes('class="hf-table-wrap pos-cart-table-wrap"') && posWorkspace.includes('class="hf-table-wrap pos-history-scroll"'), "POS cart and history tables must use the shared responsive table wrapper.");
 assert.ok(couponUsageWorkspace.includes('class="hf-table-wrap cu-table-wrap"'), "Coupon Usage must use the shared responsive table wrapper.");
 assert.ok((couponsWorkspace.match(/class="hf-table-wrap cp-table-wrap/g)||[]).length>=2, "Coupon list and redemption tables must use the shared responsive table wrapper.");
+assert.ok(posWorkspace.includes('aria-label="Current POS cart items"') && posWorkspace.includes('class="hf-table-wrap pos-history-scroll" tabindex="0"'), "POS scrollable tables must have keyboard focus and accessible region labels.");
+assert.ok(couponsWorkspace.includes('aria-label="Coupon redemption history"'), "Coupon redemption history must have an accessible scrollable region label.");
 const marketingWorkspace = read("admin/marketing-center.html");
 const trackingWorkspace = read("admin/tracking.html");
 assert.ok(marketingWorkspace.includes('class="hf-table-wrap hf-marketing-table-wrap"') && marketingWorkspace.includes('class="hf-table hf-marketing-table"'), "Marketing Center tables must use the shared table wrapper and table base classes.");
