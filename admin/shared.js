@@ -481,6 +481,29 @@ const ADMIN_COLOR_THEMES={
 
 };
 
+
+ADMIN_COLOR_THEMES["merchant-fieldbook"]={
+ id:"merchant-fieldbook",
+ name:"The Merchant's Fieldbook",
+ profile:"Editorial · Tactile · Distinctive",
+ previewColors:["#263B35","#D4A34E","#C96F58","#F0EBDD"],
+ tokens:Object.assign({},ADMIN_COLOR_THEMES["warm-harvest"].tokens,{
+  "sidebar-bg":"#263B35","sidebar-pattern-filter":"none","sidebar-ink":"#F0EBDD","sidebar-muted":"#C3CBBE","sidebar-border":"rgba(240,235,221,.18)",
+  "side-group-bg":"rgba(240,235,221,.07)","side-group-border":"rgba(240,235,221,.12)",
+  "side-menu-1":"#E8E1D1","side-menu-2":"#EEE8DB","side-menu-3":"#E4E8DB","side-menu-4":"#F0E2D9",
+  "side-menu-ink":"#31443A","side-menu-border":"rgba(255,253,247,.72)","side-menu-hover":"#FFFDF7","side-menu-active":"#D4A34E","side-menu-active-ink":"#263B35",
+  "side-child-bg":"#F7F2E7","side-child-ink":"#3C5144","side-accent":"#E8BD70","side-icon-bg":"#E8E1D1","side-icon-ink":"#395347",
+  "side-note-bg":"rgba(240,235,221,.08)","side-search-bg":"rgba(255,253,247,.08)","side-search-border":"rgba(240,235,221,.2)",
+  "canvas-bg":"#F0EBDD","canvas-ink":"#263B35","header-bg":"rgba(248,245,235,.97)","header-border":"#D8D0BD","header-control-bg":"#EEE8DB","header-control-ink":"#33483D","header-control-border":"#D5CCB8",
+  "hero-bg":"#FFFDF7","hero-border":"#D8D0BD","card-bg":"#FFFDF7","card-border":"#DED6C5","nested-bg":"#F0EBDD","control-bg":"#FFFDF7",
+  "text":"#263B35","muted":"#6F756B","border":"#D8D0BD","primary":"#263B35","primary-hover":"#1D302A",
+  "secondary":"#E9E3D4","secondary-ink":"#33483D","secondary-hover":"#DED5C1","accent":"#D4A34E","accent-alt":"#C96F58","focus":"#A9772C",
+  "kpi-1":"#E5EADF","kpi-2":"#F5EBD5","kpi-3":"#F3E1D9","kpi-4":"#E8E3EC",
+  "table-bg":"#FFFDF7","table-head":"#E8E1D1","table-row":"#FFFDF7","table-alt":"#F5F1E7","table-hover":"#EEE8DB",
+  "chart-bg":"#F0EBDD","chart-text":"#35483D","chart-muted":"#74796E","chart-grid":"#D9D2C2","chart-surface":"#FFFDF7","tooltip-bg":"#FFFDF7","leaf-filter":"none"
+ }),
+ chartColors:["#263B35","#D4A34E","#C96F58","#81916C","#82758E","#567C84","#B28A59","#A65F51","#66806B","#B7A58B"]
+};
 function makeExtendedAdminTheme(config){
  const p=config.palette;
  const lightGradient=(a,b)=>"linear-gradient(110deg,"+a+","+b+")";
@@ -521,7 +544,8 @@ EXTENDED_ADMIN_THEME_CONFIGS.forEach(config=>{ADMIN_COLOR_THEMES[config.id]=make
 const ADMIN_THEME_GROUPS=[
  {id:"modern",label:"Modern",description:"Expressive · contemporary",themeIds:["ocean-calm","berry-rose","plum-amethyst","coral-peach"]},
  {id:"balanced",label:"Balanced",description:"Premium · versatile · business",themeIds:["warm-harvest","royal-indigo","coastal-blue","copper-espresso"]},
- {id:"classic-comfort",label:"Classic Comfort",description:"Calm · familiar · easy on the eyes",themeIds:["forest-sage","olive-citrus"]}
+ {id:"classic-comfort",label:"Classic Comfort",description:"Calm · familiar · easy on the eyes",themeIds:["forest-sage","olive-citrus"]},
+ {id:"signature",label:"Signature",description:"Editorial · tactile · unmistakable",themeIds:["merchant-fieldbook"]}
 ];
 const ADMIN_THEME_CATEGORY_BY_ID=Object.fromEntries(ADMIN_THEME_GROUPS.flatMap(group=>group.themeIds.map(id=>[id,group.id])));
 Object.values(ADMIN_COLOR_THEMES).forEach(theme=>{theme.category=ADMIN_THEME_CATEGORY_BY_ID[theme.id]||"balanced";});
