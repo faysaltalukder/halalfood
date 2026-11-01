@@ -626,7 +626,7 @@ function syncThemeStyles(themeId){
  const themeStyles=[
   {theme:"merchant-fieldbook",id:"hfMerchantFieldbookStylesheet",href:"./merchant-fieldbook.css?v=20261101-merchant-fieldbook-v1"},
   {theme:"glass-studio",id:"hfGlassStudioStylesheet",href:"./glass-studio.css?v=20261102-glass-studio-v1"},
-   {theme:"glyph-signal",id:"hfGlyphSignalStylesheet",href:"./glyph-signal.css?v=20261102-glyph-signal-v1"}
+   {theme:"glyph-signal",id:"hfGlyphSignalStylesheet",href:"./glyph-signal.css?v=20261102-glyph-signal-v2"}
  ];
  themeStyles.forEach(item=>{
   let link=document.getElementById(item.id);
@@ -837,7 +837,25 @@ function navPictureIcon(name){
 
 let glyphSignalObserver=null;
 function glyphSignalIconForLabel(value){
- const label=String(value||"").toLowerCase().replace(/[＋+↻×✓→←]/g," ").replace(/[^a-z0-9৳\s&/-]/g," ").replace(/\s+/g," ").trim();
+ const raw=String(value||"").toLowerCase().trim();
+ const banglaRules=[
+  [/অর্ডার|অর্ডারসমূহ/,"orders"],[/পণ্য|প্রোডাক্ট|ইনভেন্টরি|স্টক/,"products"],[/গ্রাহক|কাস্টমার|ব্যবহারকারী/,"customers"],
+  [/ক্যাটাগরি|বিভাগ|ক্যাটালগ/,"layers"],[/অর্থ|ফাইন্যান্স|আয়|ব্যয়|ব্যালেন্স|বিক্রয়|বিক্রি/,"wallet"],
+  [/রিপোর্ট|বিশ্লেষণ|অ্যানালিটিক্স|চার্ট|ভিজিট/,"chart"],[/মেসেজ|বার্তা|হোয়াটসঅ্যাপ|মেসেঞ্জার|চ্যাট/,"messages"],
+  [/সেটিংস|নিরাপত্তা|কনফিগারেশন/,"settings"],[/সাহায্য|গাইড|সহায়তা/,"help"],
+  [/খুঁজুন|সার্চ|অনুসন্ধান/,"search"],[/যোগ|নতুন|তৈরি|সংযোজন/,"plus"],[/সম্পাদনা|এডিট|পরিবর্তন|আপডেট/,"edit"],
+  [/মুছুন|ডিলিট|অপসারণ|বাদ দিন/,"trash"],[/সংরক্ষণ|সেভ|জমা|নিশ্চিত|অনুমোদন/,"save"],
+  [/বাতিল|বন্ধ|বের হোন/,"close"],[/রিফ্রেশ|পুনরায় লোড|সিঙ্ক/,"refresh"],[/ফিল্টার|ছাঁকনি|সাজান/,"filter"],
+  [/ডাউনলোড|এক্সপোর্ট|রপ্তানি/,"download"],[/আপলোড|ইমপোর্ট|আমদানি/,"upload"],[/প্রিন্ট|মুদ্রণ|ইনভয়েস/,"printer"],
+  [/কপি|অনুলিপি/,"copy"],[/দেখুন|প্রিভিউ|খুলুন|বিস্তারিত/,"eye"],[/পাঠান|প্রকাশ|শেয়ার/,"send"],
+  [/কুরিয়ার|ডেলিভারি|শিপমেন্ট/,"truck"],[/তারিখ|ক্যালেন্ডার|সময়সূচি/,"calendar"],[/ফোন|মোবাইল|কল/,"phone"],
+  [/ইমেইল|মেইল/,"mail"],[/ঠিকানা|এলাকা|অবস্থান/,"map"],[/অবস্থা|স্ট্যাটাস|সক্রিয়|অপেক্ষমাণ|পেন্ডিং/,"badge"],
+  [/পরিমাণ|সংখ্যা|কাউন্ট/,"hash"],[/স্টক|ইনভেন্টরি|প্যাকেজ/,"box"],[/আরও|অ্যাকশন|অপশন/,"more"],
+  [/পরবর্তী|সামনে|আগে|পেছনে/,"chevron"]
+ ];
+ const banglaMatch=banglaRules.find(rule=>rule[0].test(raw));
+ if(banglaMatch)return banglaMatch[1];
+ const label=raw.replace(/[＋+↻×✓→←]/g," ").replace(/[^a-z0-9৳\s&/-]/g," ").replace(/\s+/g," ").trim();
  const rules=[
   [/favorite|favourite|star/,"star"],[/\b(add|new|create)\b/,"plus"],[/\b(edit|change|update|modify)\b/,"edit"],
   [/\b(delete|remove|discard|archive)\b/,"trash"],[/\b(save|submit|confirm|approve|complete)\b/,"save"],

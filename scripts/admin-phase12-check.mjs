@@ -8,8 +8,8 @@ const root = process.cwd();
 const adminDir = join(root, "admin");
 const sharedCssVersion = "20261101-shared-erp-system-v1";
 const workspaceThemeCssVersion = "20261101-merchant-fieldbook-v1";
-const sharedJsVersion = "20261102-glyph-signal-v1";
-const i18nVersion = "20261102-glyph-signal-v1";
+const sharedJsVersion = "20261102-glyph-signal-v2";
+const i18nVersion = "20261102-glyph-signal-v2";
 const appJsVersion = "20261030-orders-polish-v5";
 const read = (path) => readFileSync(join(root, path), "utf8");
 
@@ -145,6 +145,7 @@ assert.ok(!shared.includes('id="themeToggle"') && !shared.includes('const themeB
 const glyphCss = read("admin/glyph-signal.css");
 assert.ok(shared.includes('ADMIN_COLOR_THEMES["glyph-signal"]') && shared.includes('name:"Glyph Signal"') && shared.includes('profile:"Iconic · Minimal · Visual"'), "Glyph Signal must be registered as the thirteenth Signature theme.");
 assert.ok(shared.includes("function syncGlyphSignalMode") && shared.includes("glyphSignalIconForLabel") && shared.includes("glyph-signal-control"), "Glyph Signal must provide accessible icon controls without changing action handlers.");
+assert.ok(shared.includes("অর্ডারসমূহ") && shared.includes("গ্রাহক") && shared.includes("ক্যাটাগরি"), "Glyph Signal must map Bengali labels to their matching action icons.");
 assert.ok(glyphCss.includes('html[data-hf-theme="glyph-signal"]') && glyphCss.includes("prefers-reduced-motion") && glyphCss.includes("focus-visible"), "Glyph Signal styles must be scoped and include keyboard focus and reduced-motion support.");
 const glyphCssRules = glyphCss.split(/\r?\n/).map(line => line.trim()).filter(line => line && !line.startsWith("@") && !line.startsWith("}") && !line.startsWith("/*") && !line.startsWith("*/"));
 assert.ok(glyphCssRules.every(line => line.startsWith('html[data-hf-theme="glyph-signal"]')), "Every Glyph Signal CSS selector must be scoped to its theme.");
