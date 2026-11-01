@@ -5,7 +5,7 @@ window.HFAdminReady.then(async H => {
  const {client,esc,money,toast,audit,slugify}=H;
  const page=document.body.dataset.page||"categories";
  const $=id=>document.getElementById(id);
- const state={categories:[],products:[],loading:false,categoryDrag:null,productDrag:null,lastUndo:null};
+ const state={categories:[],products:[],loading:false,categoryDrag:null,productDrag:null,selectedCategoryId:null,lastUndo:null};
  const orderOf=row=>Number(row?.sort_order??0);
  const byOrder=(a,b)=>orderOf(a)-orderOf(b)||String(a.name||"").localeCompare(String(b.name||""));
  const categoryById=id=>state.categories.find(c=>c.id===id);
@@ -92,9 +92,9 @@ window.HFAdminReady.then(async H => {
   const canReorder=!query&&filter==="all";
   const childButton=depth<3?'<button class="catalog-mini-button" type="button" data-cat-add-child="'+esc(category.id)+'" title="Add child category">＋ Child</button>':"";
   return '<article class="catalog-tree-node" data-node-id="'+esc(category.id)+'">'+
-   '<div class="catalog-tree-row" draggable="'+String(canReorder)+'" data-category-id="'+esc(category.id)+'" data-parent-id="'+esc(category.parent_id||"")+'">'+
-    '<span class="catalog-tree-grip" aria-hidden="true" title="Drag to reorder">⠿</span>'+
-    '<div class="catalog-tree-info"><div class="catalog-tree-title"><strong>'+esc(category.name)+'</strong><span class="catalog-tree-level">'+(depth===1?"Category":depth===2?"Subcategory":"Child category")+'</span></div><small>/'+esc(category.slug)+' · '+categoryProductCount(category)+' products</small></div>'+
+   '<div class="catalog-tree-row" draggable="'+false+'" data-category-id="'+esc(category.id)+'" data-parent-id="'+esc(category.parent_id||"")+'">'+
+    '<span class="catalog-tree-grip" data-category-drag-handle="true" role="button" tabindex="0" aria-label="Drag '+esc(category.name)+' to reorder" title="Drag to reorder">⠿</span>'+
+    '<div class="catalog-tree-info"><div class="catalog-tree-title"><button class="catalog-category-open" type="button" data-cat-open="'+esc(category.id)+'" aria-label="Open '+esc(category.name)+'">'+esc(category.name)+' <span aria-hidden="true">›</span></button><span class="catalog-tree-level">'+(depth===1?"Category":depth===2?"Subcategory":"Child category")+'</span></div><small>/'+esc(category.slug)+' · '+categoryProductCount(category)+' products</small></div>'+
     '<span class="catalog-tree-product-count">'+(effectiveActive(category)?'<span class="hf-status hf-status-active">Visible</span>':'<span class="hf-status hf-status-hidden">Hidden</span>')+'</span>'+
     '<div class="catalog-tree-actions">'+
      '<button class="catalog-mini-button" type="button" data-cat-up="'+esc(category.id)+'" '+(!canReorder?"disabled":"")+' aria-label="Move '+esc(category.name)+' up">↑</button>'+
@@ -119,7 +119,23 @@ window.HFAdminReady.then(async H => {
   if($("catalogNestedCount"))$("catalogNestedCount").textContent=String(nested);
   if($("catalogHiddenCount"))$("catalogHiddenCount").textContent=String(hidden);
   const search=$("categoryTreeSearch")?.value||"",filter=$("categoryTreeVisibility")?.value||"all";
-  tree.innerHTML=childrenOf(null).map(c=>categoryNodeMarkup(c,search,filter)).join("");
+  const selected=state.selectedCategoryId?categoryById(state.selectedCategoryId):null;
+  if(state.selectedCategoryId&&!selected)state.selectedCategoryId=null;
+  const active=selected||null;
+  const nav=$("categoryTreeNav");
+  if(active){
+   const chain=ancestorsOf(active);
+   if(nav){nav.hidden=false;nav.innerHTML='<button class="hf-button hf-button-secondary hf-button-small" type="button" data-cat-back="'+esc(active.parent_id||"")+'">← Back</button><div class="catalog-drill-title"><strong>'+esc(active.name)+'</strong><small>'+esc(chain.map(c=>c.name).join(" / "))+' · '+categoryProductCount(active)+' products</small></div>';}
+   tree.innerHTML=childrenOf(active.id).map(c=>categoryNodeMarkup(c,search,filter)).join("");
+   const sortSelect=$("sortCategory");if(sortSelect)sortSelect.value=active.slug;
+   const modeSelect=$("sortMode");if(modeSelect)modeSelect.value="category";
+   renderSorting();
+   $("categoryTreeEmpty").textContent="No subcategories here. Products in this category are listed in Product Display Order below.";
+  }else{
+   if(nav){nav.hidden=true;nav.innerHTML="";}
+   tree.innerHTML=childrenOf(null).map(c=>categoryNodeMarkup(c,search,filter)).join("");
+   $("categoryTreeEmpty").textContent="No categories match your search.";
+  }
   const categoryCountNode=$("categoryTreeCount");if(categoryCountNode)categoryCountNode.textContent=state.categories.length+" categories · "+state.categories.filter(c=>!c.parent_id).length+" top-level categories";
   $("categoryTreeEmpty").hidden=!!tree.children.length;
  }
@@ -131,8 +147,8 @@ window.HFAdminReady.then(async H => {
   else select.value=childrenOf(null)[0]?.slug||"";
  }
  function productRowMarkup(product,index,total,canDrag){
-  return '<article class="product-sort-item" draggable="'+String(canDrag)+'" data-product-id="'+esc(product.id)+'">'+
-   '<span class="product-sort-grip" aria-hidden="true" title="Drag to reorder">⠿</span>'+
+  return '<article class="product-sort-item" draggable="'+false+'" data-product-id="'+esc(product.id)+'">'+
+   '<span class="product-sort-grip" data-product-drag-handle="true" role="button" tabindex="0" aria-label="Drag '+esc(product.name)+' to reorder" title="Drag to reorder">⠿</span>'+
    (product.image_url?'<img class="product-sort-image" src="'+esc(product.image_url)+'" alt="" loading="lazy">':'<span class="product-sort-image product-sort-image-empty">No image</span>')+
    '<div class="product-sort-main"><strong>'+esc(product.name)+'</strong><small>'+esc(product.sku||product.slug)+' · '+esc(categoryPath(categoryBySlug(product.category_slug)||{name:product.category||"Unassigned"}))+'</small><div class="product-sort-meta"><span class="product-sort-price">'+esc(product.display_price||money(product.price))+'</span><span class="hf-status '+(product.is_active?"hf-status-active":"hf-status-hidden")+'">'+(product.is_active?"Visible":"Hidden")+'</span>'+(product.is_featured?'<span class="hf-status hf-status-review">Featured</span>':"")+'</div></div>'+
    '<div class="product-sort-actions"><button type="button" class="catalog-mini-button" data-product-up="'+esc(product.id)+'" '+(index===0||!canDrag?"disabled":"")+' aria-label="Move '+esc(product.name)+' up">↑</button><button type="button" class="catalog-mini-button" data-product-down="'+esc(product.id)+'" '+(index===total-1||!canDrag?"disabled":"")+' aria-label="Move '+esc(product.name)+' down">↓</button><button type="button" class="catalog-mini-button" data-product-edit="'+esc(product.id)+'">Quick edit</button></div></article>';
@@ -348,46 +364,40 @@ window.HFAdminReady.then(async H => {
   }catch(error){setStatus("quickProductFormError",error.message||"Could not save product.",true);}
   finally{button.disabled=false;}
  }
- function bindTreeDrag(){
-  const tree=$("categoryTree");if(!tree)return;
-  tree.addEventListener("dragstart",event=>{
-   const row=event.target.closest("[data-category-id]");if(!row||row.draggable===false)return;
-   state.categoryDrag=row.dataset.categoryId;row.classList.add("is-dragging");
-   event.dataTransfer.effectAllowed="move";event.dataTransfer.setData("text/plain",state.categoryDrag);
+ function bindPointerReorder(containerId,kind){
+  const container=$(containerId);if(!container)return;
+  const isCategory=kind==="category";
+  const handleSelector=isCategory?"[data-category-drag-handle]":"[data-product-drag-handle]";
+  const rowSelector=isCategory?"[data-category-id]":"[data-product-id]";
+  let active=null,targetId=null,pointerId=null;
+  function clear(){
+   container.querySelectorAll(".is-dragging,.is-drop-target").forEach(node=>node.classList.remove("is-dragging","is-drop-target"));
+   active=null;targetId=null;pointerId=null;
+  }
+  container.addEventListener("pointerdown",event=>{
+   const handle=event.target.closest(handleSelector);if(!handle||event.button!==0)return;
+   if(!isCategory&&String($("productSortSearch")?.value||"").trim())return;
+   const row=handle.closest(rowSelector);if(!row)return;
+   event.preventDefault();active=row.dataset[isCategory?"categoryId":"productId"];targetId=active;pointerId=event.pointerId;row.classList.add("is-dragging");
+   try{handle.setPointerCapture(pointerId);}catch(_){}
   });
-  tree.addEventListener("dragover",event=>{
-   const target=event.target.closest("[data-category-id]");if(!target||!state.categoryDrag)return;
-   const source=categoryById(state.categoryDrag),dest=categoryById(target.dataset.categoryId);
-   if(!source||!dest||String(source.parent_id||"")!==String(dest.parent_id||""))return;
-   event.preventDefault();tree.querySelectorAll(".is-drop-target").forEach(x=>x.classList.remove("is-drop-target"));target.classList.add("is-drop-target");
+  container.addEventListener("pointermove",event=>{
+   if(!active||event.pointerId!==pointerId)return;
+   const under=document.elementFromPoint(event.clientX,event.clientY),row=under?.closest(rowSelector);if(!row)return;
+   const id=row.dataset[isCategory?"categoryId":"productId"];
+   if(isCategory){const source=categoryById(active),dest=categoryById(id);if(!source||!dest||String(source.parent_id||"")!==String(dest.parent_id||""))return;}
+   targetId=id;container.querySelectorAll(".is-drop-target").forEach(node=>node.classList.remove("is-drop-target"));row.classList.add("is-drop-target");
   });
-  tree.addEventListener("drop",async event=>{
-   const target=event.target.closest("[data-category-id]");if(!target||!state.categoryDrag)return;
-   event.preventDefault();const dragged=state.categoryDrag;state.categoryDrag=null;tree.querySelectorAll(".is-dragging,.is-drop-target").forEach(x=>x.classList.remove("is-dragging","is-drop-target"));
-   const source=categoryById(dragged),dest=categoryById(target.dataset.categoryId);
-   if(!source||!dest||String(source.parent_id||"")!==String(dest.parent_id||"")){toast("Reorder within the same level. Use Edit to move a category to another parent.","error");return;}
-   await reorderCategory(dragged,dest.id);
+  container.addEventListener("pointerup",async event=>{
+   if(!active||event.pointerId!==pointerId)return;
+   event.preventDefault();const dragged=active,destination=targetId;clear();
+   if(!destination||dragged===destination)return;
+   if(isCategory)await reorderCategory(dragged,destination);else await reorderProduct(dragged,destination);
   });
-  tree.addEventListener("dragend",()=>{state.categoryDrag=null;tree.querySelectorAll(".is-dragging,.is-drop-target").forEach(x=>x.classList.remove("is-dragging","is-drop-target"));});
+  container.addEventListener("pointercancel",clear);
  }
- function bindProductDrag(){
-  const list=$("productSortList");if(!list)return;
-  list.addEventListener("dragstart",event=>{
-   if(String($("productSortSearch")?.value||"").trim())return;
-   const row=event.target.closest("[data-product-id]");if(!row)return;
-   state.productDrag=row.dataset.productId;row.classList.add("is-dragging");event.dataTransfer.effectAllowed="move";event.dataTransfer.setData("text/plain",state.productDrag);
-  });
-  list.addEventListener("dragover",event=>{
-   const row=event.target.closest("[data-product-id]");if(!row||!state.productDrag)return;
-   event.preventDefault();list.querySelectorAll(".is-drop-target").forEach(x=>x.classList.remove("is-drop-target"));row.classList.add("is-drop-target");
-  });
-  list.addEventListener("drop",async event=>{
-   const row=event.target.closest("[data-product-id]");if(!row||!state.productDrag)return;
-   event.preventDefault();const dragged=state.productDrag;state.productDrag=null;list.querySelectorAll(".is-dragging,.is-drop-target").forEach(x=>x.classList.remove("is-dragging","is-drop-target"));
-   await reorderProduct(dragged,row.dataset.productId);
-  });
-  list.addEventListener("dragend",()=>{state.productDrag=null;list.querySelectorAll(".is-dragging,.is-drop-target").forEach(x=>x.classList.remove("is-dragging","is-drop-target"));});
- }
+ function bindTreeDrag(){bindPointerReorder("categoryTree","category");}
+ function bindProductDrag(){bindPointerReorder("productSortList","product");}
  function setupEvents(){
   document.querySelectorAll("[data-catalog-refresh]").forEach(btn=>btn.addEventListener("click",()=>reload(true)));
   $("categoryTreeSearch")?.addEventListener("input",renderTree);$("categoryTreeVisibility")?.addEventListener("change",renderTree);
@@ -402,6 +412,8 @@ window.HFAdminReady.then(async H => {
   $("categoryName")?.addEventListener("input",()=>{if(!$("categorySlug").readOnly)$("categorySlug").value=slugify($("categoryName").value);});
   document.addEventListener("click",event=>{
    const close=event.target.closest("[data-close-catalog-dialog]");if(close){document.querySelectorAll("dialog[open]").forEach(d=>d.close());return;}
+   const back=event.target.closest("[data-cat-back]");if(back){state.selectedCategoryId=back.dataset.catBack||null;renderTree();renderSorting();return;}
+   const open=event.target.closest("[data-cat-open]");if(open){state.selectedCategoryId=open.dataset.catOpen;const item=categoryById(state.selectedCategoryId);if(item){$("sortMode").value="category";$("sortCategory").value=item.slug;}renderTree();renderSorting();return;}
    const edit=event.target.closest("[data-cat-edit]");if(edit){openCategoryEditor(edit.dataset.catEdit);return;}
    const toggle=event.target.closest("[data-cat-toggle]");if(toggle){toggleCategory(toggle.dataset.catToggle);return;}
    const addChild=event.target.closest("[data-cat-add-child]");if(addChild){openCategoryEditor(null,addChild.dataset.catAddChild);return;}
