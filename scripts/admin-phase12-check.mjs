@@ -7,8 +7,9 @@ import vm from "node:vm";
 const root = process.cwd();
 const adminDir = join(root, "admin");
 const sharedCssVersion = "20261101-shared-erp-system-v1";
-const workspaceThemeCssVersion = "20261101-theme-picker-groups-v2";
-const sharedJsVersion = "20261101-admin-theme-pack-v4";
+const workspaceThemeCssVersion = "20261101-merchant-fieldbook-v1";
+const sharedJsVersion = "20261101-merchant-fieldbook-v1";
+const i18nVersion = "20261101-merchant-fieldbook-v1";
 const appJsVersion = "20261030-orders-polish-v5";
 const read = (path) => readFileSync(join(root, path), "utf8");
 
@@ -79,7 +80,7 @@ assert.ok(!read("admin/operations.html").includes('id="suppliersSection"') && re
 
 for (const file of unifiedPages) {
   const source = read(join("admin", file));
-  assert.ok(source.includes("i18n.js?v=20261101-shell-localization-v3"), `${file}: missing or stale shared language dictionary.`);
+  assert.ok(source.includes(`i18n.js?v=${i18nVersion}`), `${file}: missing or stale shared language dictionary.`);
   assert.ok(source.includes(`shared.css?v=${sharedCssVersion}`), `${file}: stale shared UI cache version.`);
   assert.ok(source.includes(`shared.js?v=${sharedJsVersion}`), `${file}: missing or stale multi-theme shared JS version.`);
   assert.ok(source.includes(`workspace-global-theme.css?v=${workspaceThemeCssVersion}`), `${file}: missing or stale shared workspace theme stylesheet.`);
@@ -126,9 +127,9 @@ for (const file of readdirSync(adminDir).filter((name) => name.endsWith(".js")))
 // The shared admin shell now uses an account-scoped, registry-driven color theme picker.
 const shared = read("admin/shared.js");
 assert.ok(shared.includes('document.documentElement.dataset.hfTheme="warm-harvest";'), "Warm Harvest must remain the default theme.");
-assert.ok(shared.includes("const ADMIN_COLOR_THEMES={") && shared.includes('"warm-harvest":') && shared.includes('"ocean-calm":') && shared.includes('"royal-indigo":') && shared.includes('"forest-sage":') && shared.includes('"berry-rose":') && shared.includes('"coastal-blue":') && shared.includes('id":"plum-amethyst"') && shared.includes('id":"copper-espresso"') && shared.includes('id":"olive-citrus"') && shared.includes('id":"coral-peach"'), "The registry must contain the ten approved business themes.");
+assert.ok(shared.includes("const ADMIN_COLOR_THEMES={") && shared.includes('"warm-harvest":') && shared.includes('"ocean-calm":') && shared.includes('"royal-indigo":') && shared.includes('"forest-sage":') && shared.includes('"berry-rose":') && shared.includes('"coastal-blue":') && shared.includes('id":"plum-amethyst"') && shared.includes('id":"copper-espresso"') && shared.includes('id":"olive-citrus"') && shared.includes('id":"coral-peach"') && shared.includes('ADMIN_COLOR_THEMES["merchant-fieldbook"]') && shared.includes('name:"The Merchant\'s Fieldbook"'), "The registry must contain all ten existing themes plus the isolated signature theme.");
 assert.ok(shared.includes('profile":"Creative · Refined · Expressive"') && shared.includes('profile":"Warm · Refined · Business"') && shared.includes('profile":"Natural · Classic · Composed"') && shared.includes('profile":"Warm · Friendly · Expressive"'), "The four replacement themes need their approved business profiles.");
-assert.ok(shared.includes("const ADMIN_THEME_GROUPS=[") && shared.includes('label:"Modern"') && shared.includes('label:"Balanced"') && shared.includes('label:"Classic Comfort"'), "All themes must be discoverable in the three picker groups.");
+assert.ok(shared.includes("const ADMIN_THEME_GROUPS=[") && shared.includes('label:"Modern"') && shared.includes('label:"Balanced"') && shared.includes('label:"Classic Comfort"') && shared.includes('label:"Signature"') && shared.includes('themeIds:["merchant-fieldbook"]'), "The signature theme must appear in its own fourth picker group while all previous groups remain.");
 assert.ok(shared.includes("All themes are available to every administrator") && !shared.includes("of 11 themes available"), "Theme count must be registry-driven and not hard-coded.");
 assert.ok(shared.includes('aria-label="Select ') && shared.includes(' theme" aria-pressed="') && shared.includes('aria-pressed='), "Theme choices must expose accessible names and selected states.");
 assert.ok(shared.includes("function makeExtendedAdminTheme") && shared.includes("EXTENDED_ADMIN_THEME_CONFIGS.forEach"), "The four added themes must be generated through the shared dynamic theme engine.");
@@ -280,6 +281,17 @@ assert.ok(trackingWorkspace.includes('class="hf-table-wrap hf-tracking-table-wra
 const overview = read("admin/overview.html");
 const overviewApp = read("admin/app.js");
 const overviewCss = read("admin/overview.css");
+const workspaceThemeCss = read("admin/workspace-global-theme.css");
+const fieldbookCss = workspaceThemeCss.slice(workspaceThemeCss.indexOf("THE MERCHANT'S FIELDBOOK — isolated signature theme")).replace(/\/\*[\s\S]*?\*\//g, "");
+assert.ok(overview.includes("THE MERCHANT'S FIELDBOOK") && overview.includes("Today's Market") && overview.includes("A living market desk for the work that matters."), "Overview must use the Fieldbook editorial heading and description.");
+for (const id of ["kpiOrders","kpiTodayItems","kpiPending","kpiCart","kpiOrderValue","kpiLowStock","overviewFinanceStrip","overviewActionList","overviewRangeSelect","overviewTrendType","overviewTopProducts"]) assert.ok(overview.includes(`id="${id}"`), "Fieldbook Overview must preserve live data/control hook #" + id + ".");
+assert.ok(fieldbookCss.includes('html[data-hf-theme="merchant-fieldbook"]') && fieldbookCss.includes('body[data-page="overview"]') && fieldbookCss.includes("prefers-reduced-motion"), "Fieldbook styles must be uniquely scoped and include Overview and reduced-motion support.");
+for (const match of fieldbookCss.matchAll(/(^|})\\s*([^@}{][^{]+)\\{/g)) {
+  const selectors = match[2].trim().split(",").map(value => value.trim());
+  assert.ok(selectors.every(selector => selector.startsWith('html[data-hf-theme="merchant-fieldbook"]')), "Every Fieldbook CSS selector must be isolated: " + selectors.join(", "));
+}
+const fieldbookTranslations = read("admin/i18n.js");
+assert.ok(fieldbookTranslations.includes('"Today\'s Market": "আজকের বাজার"') && fieldbookTranslations.includes('"THE MERCHANT\'S FIELDBOOK": "মার্চেন্টস ফিল্ডবুক"'), "Fieldbook Overview headings must have Bengali translations.");
 assert.ok(overview.includes('id="overviewRangeSelect"') && overview.includes('id="overviewCustomRange"') && overview.includes('id="overviewApplyRange"'), "Overview must provide a selectable date range and custom date controls.");
 assert.ok(overview.includes('id="overviewTrendType"') && overviewApp.includes("renderOverviewOperationsTrend") && overviewApp.includes('trendTypeSelect?.addEventListener("change",renderOverviewOperationsTrend)'), "Overview trend must support in-place Area, Line and Bar chart selection without refetching data.");
 assert.ok(overviewCss.includes(".hf-overview-chart-controls"), "Overview chart type selector must use responsive chart controls.");
