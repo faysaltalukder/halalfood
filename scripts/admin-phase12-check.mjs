@@ -8,8 +8,8 @@ const root = process.cwd();
 const adminDir = join(root, "admin");
 const sharedCssVersion = "20261101-shared-erp-system-v1";
 const workspaceThemeCssVersion = "20261101-merchant-fieldbook-v1";
-const sharedJsVersion = "20261102-theme-registry-v1";
-const i18nVersion = "20261102-theme-registry-v1";
+const sharedJsVersion = "20261102-glass-studio-v1";
+const i18nVersion = "20261102-glass-studio-v1";
 const appJsVersion = "20261030-orders-polish-v5";
 const read = (path) => readFileSync(join(root, path), "utf8");
 
@@ -126,13 +126,14 @@ for (const file of readdirSync(adminDir).filter((name) => name.endsWith(".js")))
 
 // The shared admin shell now uses an account-scoped, registry-driven color theme picker.
 const shared = read("admin/shared.js");
+assert.ok(shared.includes(`ADMIN_COLOR_THEMES["glass-studio"]`) && shared.includes(`name:"Glass Studio"`) && shared.includes(`profile:"Frosted · Airy · Refined"`), "Glass Studio must be registered as the twelfth Signature theme.");
 assert.ok(shared.includes('document.documentElement.dataset.hfTheme="warm-harvest";'), "Warm Harvest must remain the default theme.");
 assert.ok(shared.includes("const ADMIN_COLOR_THEMES={") && shared.includes('"warm-harvest":') && shared.includes('"ocean-calm":') && shared.includes('"royal-indigo":') && shared.includes('"forest-sage":') && shared.includes('"berry-rose":') && shared.includes('"coastal-blue":') && shared.includes('id":"plum-amethyst"') && shared.includes('id":"copper-espresso"') && shared.includes('id":"olive-citrus"') && shared.includes('id":"coral-peach"') && shared.includes('ADMIN_COLOR_THEMES["merchant-fieldbook"]') && shared.includes('name:"The Merchant\'s Fieldbook"'), "The registry must contain all ten existing themes plus the isolated signature theme.");
 assert.ok(shared.includes('profile":"Creative · Refined · Expressive"') && shared.includes('profile":"Warm · Refined · Business"') && shared.includes('profile":"Natural · Classic · Composed"') && shared.includes('profile":"Warm · Friendly · Expressive"'), "The four replacement themes need their approved business profiles.");
-assert.ok(shared.includes("const ADMIN_THEME_GROUPS=[") && shared.includes('label:"Modern"') && shared.includes('label:"Balanced"') && shared.includes('label:"Classic Comfort"') && shared.includes('label:"Signature"') && shared.includes('themeIds:["merchant-fieldbook"]'), "All four theme groups must remain, with only Fieldbook in Signature.");
+assert.ok(shared.includes("const ADMIN_THEME_GROUPS=[") && shared.includes('label:"Modern"') && shared.includes('label:"Balanced"') && shared.includes('label:"Classic Comfort"') && shared.includes('label:"Signature"') && shared.includes('themeIds:["merchant-fieldbook","glass-studio"]'), "All four theme groups must remain, with only Fieldbook in Signature.");
 const themeGroupMatches=[...shared.matchAll(/themeIds:\[([^\]]*)\]/g)];
 const themeGroupCount=themeGroupMatches.reduce((total,match)=>total+(match[1].match(/"[^"]+"/g)||[]).length,0);
-assert.equal(themeGroupCount,11,"The picker must expose exactly eleven remaining themes.");
+assert.equal(themeGroupCount,12,"The picker must expose exactly twelve themes.");
 assert.ok(shared.includes("All themes are available to every administrator") && !shared.includes("of 11 themes available"), "Theme count must be registry-driven and not hard-coded.");
 assert.ok(shared.includes('aria-label="Select ') && shared.includes(' theme" aria-pressed="') && shared.includes('aria-pressed='), "Theme choices must expose accessible names and selected states.");
 assert.ok(shared.includes("function makeExtendedAdminTheme") && shared.includes("EXTENDED_ADMIN_THEME_CONFIGS.forEach"), "The four added themes must be generated through the shared dynamic theme engine.");
@@ -285,7 +286,7 @@ const overview = read("admin/overview.html");
 const overviewApp = read("admin/app.js");
 const overviewCss = read("admin/overview.css");
 const fieldbookCss = read("admin/merchant-fieldbook.css").replace(/\/\*[\s\S]*?\*\//g, "");
-assert.ok(shared.includes("function syncSignatureThemeStyles(themeId)") && shared.includes("link.href=\"./merchant-fieldbook.css?v=20261101-merchant-fieldbook-v1\"") && shared.includes("syncSignatureThemeStyles(theme.id)") && shared.includes("link.remove()"), "The Fieldbook stylesheet must load only while its own theme is active and unload when switching away.");
+assert.ok(shared.includes("function syncThemeStyles(themeId)") && shared.includes("glass-studio.css?v=20261102-glass-studio-v1") && shared.includes("syncThemeStyles(theme.id)") && shared.includes("link.remove()"), "Fieldbook and Glass theme stylesheets must load only for the active theme.");
 assert.ok(overview.includes("THE MERCHANT'S FIELDBOOK") && overview.includes("Today's Market") && overview.includes("A living market desk for the work that matters."), "Overview must use the Fieldbook editorial heading and description.");
 for (const id of ["kpiOrders","kpiTodayItems","kpiPending","kpiCart","kpiOrderValue","kpiLowStock","overviewFinanceStrip","overviewActionList","overviewRangeSelect","overviewTrendType","overviewTopProducts"]) assert.ok(overview.includes(`id="${id}"`), "Fieldbook Overview must preserve live data/control hook #" + id + ".");
 assert.ok(fieldbookCss.includes('html[data-hf-theme="merchant-fieldbook"]') && fieldbookCss.includes('body[data-page="overview"]') && fieldbookCss.includes("prefers-reduced-motion"), "Fieldbook styles must be uniquely scoped and include Overview and reduced-motion support.");
@@ -312,6 +313,22 @@ assert.ok(fieldbookSelectors.length > 100, "Fieldbook stylesheet should contain 
 for (const selector of fieldbookSelectors) {
   assert.ok(selector.startsWith('html[data-hf-theme="merchant-fieldbook"]'), "Every Fieldbook CSS selector must be isolated: " + selector);
 }
+
+const glassCss = read("admin/glass-studio.css").replace(/\/\*[\s\S]*?\*\//g, "");
+assert.ok(glassCss.includes('html[data-hf-theme="glass-studio"]') && glassCss.includes("@supports (backdrop-filter:blur(1px))") && glassCss.includes("prefers-reduced-motion"), "Glass stylesheet must be isolated and include browser fallback and reduced-motion support.");
+const glassSelectors = [];
+let glassSelectorStart = 0;
+for (let index = 0; index < glassCss.length; index += 1) {
+  if (glassCss[index] === "{") {
+    const selectorText = glassCss.slice(glassSelectorStart, index).trim();
+    if (selectorText && !selectorText.startsWith("@")) glassSelectors.push(...splitFieldbookSelectorList(selectorText));
+    glassSelectorStart = index + 1;
+  } else if (glassCss[index] === "}") glassSelectorStart = index + 1;
+}
+assert.ok(glassSelectors.length > 50, "Glass Studio must include a broad admin workspace stylesheet.");
+for (const selector of glassSelectors) assert.ok(selector.startsWith('html[data-hf-theme="glass-studio"]'), "Glass CSS rule leaks into another theme: " + selector);
+assert.ok(read("admin/i18n.js").includes('"Glass Studio": "গ্লাস স্টুডিও"') && read("admin/i18n.js").includes('"Frosted · Airy · Refined": "ফ্রস্টেড · হালকা · পরিশীলিত"'), "Glass theme labels and profile must be translated.");
+
 const fieldbookTranslations = read("admin/i18n.js");
 const retiredThemeId=["the","observatory"].join("-");
 assert.ok(!shared.includes(retiredThemeId) && !overview.includes(retiredThemeId) && !overviewCss.includes(retiredThemeId) && !fieldbookTranslations.includes("The "+"Observatory"), "The retired theme must be absent from all active theme surfaces.");
@@ -451,13 +468,15 @@ assert.ok(contrastRatio("#F0F7FC", "#1F4B73") >= 4.5 && contrastRatio("#FFFFFF",
 assert.ok(contrastRatio("#606C8B", "#FBFBFE") >= 4.5 && contrastRatio("#5F705D", "#FAFCF6") >= 4.5 && contrastRatio("#8B6B7A", "#FFFAFC") >= 4.5 && contrastRatio("#596F82", "#FAFCFD") >= 4.5, "New theme muted text must remain readable on its card surface.");
 assertSidebarStops("The Merchant's Fieldbook", "#D9DFD2", ["#263B35"]);
 assert.ok(contrastRatio("#263B35", "#D4A34E") >= 4.5 && contrastRatio("#596157", "#FFFDF7") >= 4.5 && contrastRatio("#596157", "#F0EBDD") >= 4.5 && contrastRatio("#596157", "#E9E3D4") >= 4.5, "Fieldbook sidebar selection and muted copy must retain accessible contrast.");
+assertSidebarStops("Glass Studio", "#F4F7FA", ["#2B2A3D","#34455C","#40546D"]);
+assert.ok(contrastRatio("#2B3A4D","#EAF0F4") >= 4.5 && contrastRatio("#58697C","#EAF0F4") >= 4.5 && contrastRatio("#FFFFFF","#385D80") >= 4.5 && contrastRatio("#FFFFFF","#2B4866") >= 4.5 && contrastRatio("#567FA4","#EAF0F4") >= 3, "Glass Studio text, buttons and focus indicator must meet contrast requirements.");
 assert.ok(read("admin/merchant-fieldbook.css").includes("--hf-muted:#596157"), "Fieldbook theme must use the contrast-checked muted text token.");
 assert.ok(contrastRatio("#4B3C55", "#F7F2FA") >= 4.5 && contrastRatio("#4B3C55", "#FCF7FB") >= 4.5 && contrastRatio("#4B3C55", "#F4F2F9") >= 4.5 && contrastRatio("#4B3C55", "#FBF6EC") >= 4.5 && contrastRatio("#403044", "#D6B584") >= 4.5 && contrastRatio("#FFFFFF", "#4D335B") >= 4.5 && contrastRatio("#4D3A61", "#E9E2F0") >= 4.5 && contrastRatio("#514260", "#E8E0EF") >= 4.5 && contrastRatio("#6B5B75", "#F1EBF6") >= 4.5 && contrastRatio("#80649A", "#ECE4F0") >= 3, "Plum Amethyst all menu, active, primary/hover, secondary, header, card and focus states must meet contrast targets.");
 assert.ok(contrastRatio("#5B3D2C", "#FFF6EC") >= 4.5 && contrastRatio("#5B3D2C", "#FFF9F1") >= 4.5 && contrastRatio("#5B3D2C", "#FAF0E6") >= 4.5 && contrastRatio("#5B3D2C", "#FCF5EA") >= 4.5 && contrastRatio("#553722", "#D6AA62") >= 4.5 && contrastRatio("#FFFFFF", "#91512F") >= 4.5 && contrastRatio("#FFFFFF", "#783F25") >= 4.5 && contrastRatio("#74462F", "#F0DED1") >= 4.5 && contrastRatio("#75492F", "#F2E3D5") >= 4.5 && contrastRatio("#765F52", "#F6EBDD") >= 4.5 && contrastRatio("#A9663F", "#F1E1D1") >= 3, "Copper Espresso all menu, active, primary/hover, secondary, header, card and focus states must meet contrast targets.");
 assert.ok(contrastRatio("#495236", "#F7F7EA") >= 4.5 && contrastRatio("#495236", "#FBF9EA") >= 4.5 && contrastRatio("#495236", "#F2F7ED") >= 4.5 && contrastRatio("#495236", "#FAF4E6") >= 4.5 && contrastRatio("#3D4228", "#D1BC66") >= 4.5 && contrastRatio("#FFFFFF", "#66713B") >= 4.5 && contrastRatio("#FFFFFF", "#4D582B") >= 4.5 && contrastRatio("#4A5630", "#E8E9D7") >= 4.5 && contrastRatio("#515B34", "#E4E5D1") >= 4.5 && contrastRatio("#68704F", "#F1F1E3") >= 4.5 && contrastRatio("#68743B", "#ECEBDD") >= 3, "Olive Citrus all menu, active, primary/hover, secondary, header, card and focus states must meet contrast targets.");
 assert.ok(contrastRatio("#713F3A", "#FFF3EC") >= 4.5 && contrastRatio("#713F3A", "#FFF9F5") >= 4.5 && contrastRatio("#713F3A", "#FAF1EF") >= 4.5 && contrastRatio("#713F3A", "#FBF5ED") >= 4.5 && contrastRatio("#563833", "#E9AE67") >= 4.5 && contrastRatio("#FFFFFF", "#B95248") >= 4.5 && contrastRatio("#FFFFFF", "#963E37") >= 4.5 && contrastRatio("#6A3935", "#F3DBD3") >= 4.5 && contrastRatio("#71443D", "#F2DDD4") >= 4.5 && contrastRatio("#7F615B", "#F8ECE6") >= 4.5 && contrastRatio("#A54E43", "#F5E1D6") >= 3, "Coral Peach all menu, active, primary/hover, secondary, header, card and focus states must meet contrast targets.");
 const readableTooltipPairs=[...shared.matchAll(/"chart-surface"\s*:\s*"(#[0-9A-Fa-f]{6})"\s*,\s*"tooltip-bg"\s*:\s*"\1"/g)];
-assert.ok(readableTooltipPairs.length>=6 && shared.includes('"tooltip-bg":p.chartSurface'), "All ten themes must use readable light chart surfaces behind dark tooltip labels.");
+assert.ok(readableTooltipPairs.length>=6 && shared.includes('"tooltip-bg":p.chartSurface'), "All registered themes must use readable light chart surfaces behind dark tooltip labels.");
 
 for (const file of unifiedPages) {
   const source = read(join("admin", file));
