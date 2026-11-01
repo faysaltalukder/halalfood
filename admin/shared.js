@@ -77,12 +77,12 @@ function lastDateKeys(days){
  for(let i=Math.max(1,days)-1;i>=0;i--){const d=new Date(today);d.setDate(d.getDate()-i);keys.push(d.toISOString().slice(0,10));}
  return keys;
 }
-const palette={navy:"#C9D5E6",orange:"#F59E0B",blue:"#4F7CFF",green:"#10B981",purple:"#9B6DFF",yellow:"#FBBF24",red:"#F05274",teal:"#06B6D4",cream:"#111C2E",muted:"#96A6BE"};
-const colorSet=[palette.purple,palette.blue,palette.teal,palette.green,palette.yellow,palette.red,"#E879F9","#818CF8","#F97316","#38BDF8"];
+const palette={navy:"#D9E5F2",orange:"#D5A04A",blue:"#527EB8",green:"#368E82",purple:"#8974BC",yellow:"#C79B4A",red:"#C46E68",teal:"#32979B",cream:"#223750",muted:"#AFC0D3"};
+const colorSet=["#527EB8","#368E82","#C79B4A","#C46E68","#8974BC","#32979B","#6A9CC1","#B77B91","#7E8FC8","#6E9A7D"];
 const charts={};
 function chartTheme(){
  const light=document.documentElement.dataset.adminTheme==="light";
- return {text:light?"#2B2A3D":"#C9D5E6",muted:light?"#737487":"#A6B4C8",grid:light?"#E5E0D6":"#2A3A52",surface:light?"#FFFDF8":"#111C2E",border:light?"#DED8CD":"#2D405A"};
+ return {text:light?"#30445F":"#D9E5F2",muted:light?"#687D96":"#AFC0D3",grid:light?"#CFDAE8":"#3A506A",surface:light?"#EAF1F9":"#263B53",border:light?"#C2D1E2":"#405873"};
 }
 if(window.Chart){
  Chart.defaults.color=palette.navy;
