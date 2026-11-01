@@ -78,10 +78,10 @@ function lastDateKeys(days){
 
 const ADMIN_COLOR_THEMES={
  "warm-harvest":{
-  id:"warm-harvest",name:"Warm Harvest",profile:"Warm · Classic · Premium",
+  id:"warm-harvest",name:"Warm Harvest",profile:"Warm · Classic · Premium",previewColors:["#7E2D26","#A94335","#D49537","#F0E1D5"],
   tokens:{
    "sidebar-bg":"radial-gradient(ellipse at 10% 8%,rgba(255,210,105,.24) 0%,transparent 34%),radial-gradient(ellipse at 91% 24%,rgba(255,112,77,.22) 0%,transparent 34%),radial-gradient(ellipse at 36% 94%,rgba(255,176,72,.18) 0%,transparent 38%),linear-gradient(132deg,#7E2D26 0%,#A94335 27%,#BD5A32 58%,#A96A2F 82%,#7E3D37 100%)",
-   "sidebar-ink":"#FFF2D8","sidebar-muted":"#FFE0B0","sidebar-border":"rgba(255,225,176,.34)",
+   "sidebar-pattern-filter":"sepia(.72) saturate(.82) hue-rotate(345deg) brightness(1.34)","sidebar-ink":"#FFF2D8","sidebar-muted":"#FFE0B0","sidebar-border":"rgba(255,225,176,.34)",
    "side-group-bg":"linear-gradient(145deg,rgba(116,43,35,.34),rgba(88,37,35,.24))","side-group-border":"rgba(255,231,188,.32)",
    "side-menu-1":"linear-gradient(110deg,#F8E7D8,#FFF1E6)","side-menu-2":"linear-gradient(110deg,#F4E0C3,#FBECD5)","side-menu-3":"linear-gradient(110deg,#F6D8CD,#FCE9DF)","side-menu-4":"linear-gradient(110deg,#EAD9CB,#F6E9DD)",
    "side-menu-ink":"#704536","side-menu-border":"rgba(255,255,255,.88)","side-menu-hover":"linear-gradient(110deg,#FFE5D1,#F7DCC5)","side-menu-active":"linear-gradient(115deg,#F4C66F,#E5A94D)","side-menu-active-ink":"#573B26",
@@ -97,10 +97,10 @@ const ADMIN_COLOR_THEMES={
   chartColors:["#A94335","#D49537","#BE6E4B","#8D604B","#DBA85E","#A85E58","#C18A67","#785649","#E0B77A","#B77B91"]
  },
  "ocean-calm":{
-  id:"ocean-calm",name:"Ocean Calm",profile:"Cool · Calm · Contemporary",
+  id:"ocean-calm",name:"Ocean Calm",profile:"Cool · Calm · Contemporary",previewColors:["#124F50","#176B68","#62AFA5","#E2EFEC"],
   tokens:{
    "sidebar-bg":"radial-gradient(ellipse at 10% 8%,rgba(120,218,203,.24) 0%,transparent 34%),radial-gradient(ellipse at 91% 24%,rgba(95,184,185,.2) 0%,transparent 34%),radial-gradient(ellipse at 36% 94%,rgba(126,177,210,.18) 0%,transparent 38%),linear-gradient(132deg,#124F50 0%,#176B68 29%,#247D79 58%,#347F91 83%,#1C566B 100%)",
-   "sidebar-ink":"#E9FAF5","sidebar-muted":"#C3E8E0","sidebar-border":"rgba(190,239,229,.34)",
+   "sidebar-pattern-filter":"hue-rotate(105deg) saturate(.72) brightness(1.24)","sidebar-ink":"#E9FAF5","sidebar-muted":"#C3E8E0","sidebar-border":"rgba(190,239,229,.34)",
    "side-group-bg":"linear-gradient(145deg,rgba(14,65,67,.34),rgba(25,83,90,.25))","side-group-border":"rgba(194,238,229,.32)",
    "side-menu-1":"linear-gradient(110deg,#DCEFE9,#F0F8F4)","side-menu-2":"linear-gradient(110deg,#D8EBEA,#EDF7F5)","side-menu-3":"linear-gradient(110deg,#E5EFED,#F5F9F7)","side-menu-4":"linear-gradient(110deg,#E2EDF4,#F1F7FA)",
    "side-menu-ink":"#245A56","side-menu-border":"rgba(255,255,255,.9)","side-menu-hover":"linear-gradient(110deg,#C8E5DD,#DCEFEB)","side-menu-active":"linear-gradient(115deg,#B9E0D4,#91C9BE)","side-menu-active-ink":"#164D4A",
@@ -379,7 +379,7 @@ function makeShell(){
    '<div class="admin-global-search" role="search"><span class="admin-global-search-icon" aria-hidden="true">'+shellIcon("search")+'</span><input id="globalSearch" type="search" autocomplete="off" placeholder="Search this page’s records…" aria-label="Search records on this page"></div>'+
    '<span class="admin-topbar-spacer" aria-hidden="true"></span>'+
    '<div class="admin-topbar-actions">'+
-    '<div class="hf-theme-control" id="hfThemeControl"><button class="admin-top-button hf-theme-picker-trigger" id="hfThemePickerToggle" type="button" aria-haspopup="dialog" aria-controls="hfThemePicker" aria-expanded="false" aria-label="Choose workspace color theme" title="Choose workspace color theme"><span class="topbar-button-icon" aria-hidden="true">◈</span><span class="topbar-label">Theme</span><span class="hf-theme-current-name" id="hfThemeCurrentName">Warm Harvest</span><span class="hf-theme-chevron" aria-hidden="true">⌄</span></button><section class="hf-theme-picker" id="hfThemePicker" role="dialog" aria-label="Choose workspace color theme" hidden><div class="hf-theme-picker-heading"><div><strong>Choose your theme</strong><p>Sidebar and workspace change together</p></div><button type="button" class="hf-theme-picker-close" id="hfThemePickerClose" aria-label="Close theme picker">×</button></div><div class="hf-theme-grid" id="hfThemeGrid"></div><p class="hf-theme-picker-footnote">Your choice is saved for this administrator account.</p></section></div>'+
+    '<div class="hf-theme-control" id="hfThemeControl"><button class="admin-top-button hf-theme-picker-trigger" id="hfThemePickerToggle" type="button" aria-haspopup="dialog" aria-controls="hfThemePicker" aria-expanded="false" aria-label="Choose workspace color theme" title="Choose workspace color theme"><span class="topbar-button-icon" aria-hidden="true">◈</span><span class="topbar-label">Theme</span><span class="hf-theme-current-name" id="hfThemeCurrentName">Warm Harvest</span><span class="hf-theme-chevron" aria-hidden="true">⌄</span></button><section class="hf-theme-picker" id="hfThemePicker" role="dialog" aria-label="Choose workspace color theme" hidden><div class="hf-theme-picker-heading"><div><strong>Choose your theme</strong><p>Sidebar and workspace change together</p></div><button type="button" class="hf-theme-picker-close" id="hfThemePickerClose" aria-label="Close theme picker">×</button></div><div class="hf-theme-grid" id="hfThemeGrid"></div><p class="hf-theme-picker-footnote" id="hfThemePickerFootnote"></p></section></div>'+
     '<button class="admin-top-button admin-mode-toggle" id="modeToggle" type="button" title="Switch to advanced view"><span class="topbar-button-icon">'+shellIcon("sliders")+'</span><span class="topbar-label">Advanced view</span></button>'+
     '<button class="admin-top-button admin-help-toggle" id="helpBtn" type="button" title="Open quick guide"><span class="topbar-button-icon">'+shellIcon("help")+'</span><span class="topbar-label">Help</span></button>'+
    '</div>'+
@@ -564,9 +564,12 @@ function makeShell(){
  const renderThemePicker=()=>{
   if(!themeGrid)return;
   themeGrid.innerHTML=Object.values(ADMIN_COLOR_THEMES).map(theme=>{
-   const t=theme.tokens;const selected=theme.id===currentThemeId;
-   return '<button type="button" class="hf-theme-option'+(selected?' is-selected':'')+'" data-theme-choice="'+esc(theme.id)+'" aria-pressed="'+String(selected)+'"><span class="hf-theme-option-swatches"><i style="background:'+esc(t["sidebar-bg"]?theme.id==="warm-harvest"?"#A94335":"#176B68":"#A94335")+'"></i><i style="background:'+esc(t.primary)+'"></i><i style="background:'+esc(t.accent)+'"></i><i style="background:'+esc(t["canvas-bg"]?theme.id==="warm-harvest"?"#F0E1D5":"#E2EFEC":"#F0E1D5")+'"></i></span><span class="hf-theme-option-copy"><strong>'+esc(theme.name)+'</strong><small>'+esc(theme.profile)+'</small></span><span class="hf-theme-option-check" aria-hidden="true">✓</span></button>';
+   const selected=theme.id===currentThemeId;
+   const swatches=theme.previewColors.map(color=>'<i style="background:'+esc(color)+'"></i>').join("");
+   return '<button type="button" class="hf-theme-option'+(selected?' is-selected':'')+'" data-theme-choice="'+esc(theme.id)+'" aria-pressed="'+String(selected)+'"><span class="hf-theme-option-swatches">'+swatches+'</span><span class="hf-theme-option-copy"><strong>'+esc(theme.name)+'</strong><small>'+esc(theme.profile)+'</small></span><span class="hf-theme-option-check" aria-hidden="true">✓</span></button>';
   }).join("");
+  const footnote=document.getElementById("hfThemePickerFootnote");
+  if(footnote)footnote.textContent=Object.keys(ADMIN_COLOR_THEMES).length+" of 11 themes available · Your choice is saved for this administrator account.";
  };
  let savedColorTheme="warm-harvest";try{savedColorTheme=localStorage.getItem(themeStorageKey())||"warm-harvest";}catch(_themeReadError){}
  applyColorTheme(savedColorTheme,false);renderThemePicker();
