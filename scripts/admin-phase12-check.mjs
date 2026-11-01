@@ -281,8 +281,8 @@ assert.ok(trackingWorkspace.includes('class="hf-table-wrap hf-tracking-table-wra
 const overview = read("admin/overview.html");
 const overviewApp = read("admin/app.js");
 const overviewCss = read("admin/overview.css");
-const workspaceThemeCss = read("admin/workspace-global-theme.css");
-const fieldbookCss = workspaceThemeCss.slice(workspaceThemeCss.indexOf("THE MERCHANT'S FIELDBOOK — isolated signature theme")).replace(/\/\*[\s\S]*?\*\//g, "");
+const fieldbookCss = read("admin/merchant-fieldbook.css").replace(/\/\*[\s\S]*?\*\//g, "");
+assert.ok(shared.includes("function syncSignatureThemeStyles(themeId)") && shared.includes("link.href=\"./merchant-fieldbook.css?v=20261101-merchant-fieldbook-v1\"") && shared.includes("syncSignatureThemeStyles(theme.id)") && shared.includes("link.remove()"), "The Fieldbook stylesheet must load only while its own theme is active and unload when switching away.");
 assert.ok(overview.includes("THE MERCHANT'S FIELDBOOK") && overview.includes("Today's Market") && overview.includes("A living market desk for the work that matters."), "Overview must use the Fieldbook editorial heading and description.");
 for (const id of ["kpiOrders","kpiTodayItems","kpiPending","kpiCart","kpiOrderValue","kpiLowStock","overviewFinanceStrip","overviewActionList","overviewRangeSelect","overviewTrendType","overviewTopProducts"]) assert.ok(overview.includes(`id="${id}"`), "Fieldbook Overview must preserve live data/control hook #" + id + ".");
 assert.ok(fieldbookCss.includes('html[data-hf-theme="merchant-fieldbook"]') && fieldbookCss.includes('body[data-page="overview"]') && fieldbookCss.includes("prefers-reduced-motion"), "Fieldbook styles must be uniquely scoped and include Overview and reduced-motion support.");
