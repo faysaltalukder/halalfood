@@ -27,6 +27,7 @@ const categoriesPage = read("admin/categories.html");
 const categoriesLive = read("js/live-catalog.js");
 
 const adminSignInPage = read("admin/index.html");
+const storeConfig = read("js/store-config.js");
 assert.ok(adminSignInPage.includes("store-config.js") && adminSignInPage.indexOf("store-config.js") < adminSignInPage.indexOf("<script>"), "Admin sign-in must load store config before its Supabase client initialization.");
 assert.ok(adminSignInPage.includes("STORE_CONFIG.adminEmail") && adminSignInPage.includes("if(email!==ADMIN_EMAIL)"), "Admin sign-in authorization must use the configured admin identity.");
 assert.ok(adminSignInPage.includes("STORE_CONFIG.supabase?.url") && adminSignInPage.includes("STORE_CONFIG.supabase?.publishableKey"), "Admin sign-in must use the configured Supabase project.");
@@ -40,7 +41,6 @@ for (const page of htmlFiles.filter(file => read(join("admin", file)).includes("
 
 const categoriesMigration = read("supabase/migrations/20261031165140_add_reusable_three_level_catalog_management.sql");
 
-const storeConfig = read("js/store-config.js");
 const publicHome = read("index.html");
 
 function listPublicHtml(directory) {
