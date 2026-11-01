@@ -77,12 +77,12 @@ function lastDateKeys(days){
  for(let i=Math.max(1,days)-1;i>=0;i--){const d=new Date(today);d.setDate(d.getDate()-i);keys.push(d.toISOString().slice(0,10));}
  return keys;
 }
-const palette={navy:"#D9E5F2",orange:"#D5A04A",blue:"#527EB8",green:"#368E82",purple:"#8974BC",yellow:"#C79B4A",red:"#C46E68",teal:"#32979B",cream:"#223750",muted:"#AFC0D3"};
-const colorSet=["#527EB8","#368E82","#C79B4A","#C46E68","#8974BC","#32979B","#6A9CC1","#B77B91","#7E8FC8","#6E9A7D"];
+const palette={navy:"#6D493A",orange:"#D49537",blue:"#A94335",green:"#287A58",purple:"#9B6A8D",yellow:"#E0B45C",red:"#B24B3F",teal:"#C07A55",cream:"#FFF4E8",muted:"#8C7569"};
+const colorSet=["#A94335","#D49537","#BE6E4B","#8D604B","#DBA85E","#A85E58","#C18A67","#785649","#E0B77A","#B77B91"];
 const charts={};
 function chartTheme(){
  const light=document.documentElement.dataset.adminTheme==="light";
- return {text:light?"#30445F":"#D9E5F2",muted:light?"#687D96":"#AFC0D3",grid:light?"#CFDAE8":"#3A506A",surface:light?"#EAF1F9":"#263B53",border:light?"#C2D1E2":"#405873"};
+ return {text:light?"#704E40":"#F6E6D9",muted:light?"#8F776A":"#CBB4A3",grid:light?"#E5CBBB":"#5D4437",surface:light?"#FFF4E8":"#3A2B25",border:light?"#D8B9A4":"#6A4C3D"};
 }
 if(window.Chart){
  Chart.defaults.color=palette.navy;
@@ -96,7 +96,7 @@ function drawChart(id,config){
  const t=chartTheme();
  const base={responsive:true,maintainAspectRatio:false,animation:{duration:380},plugins:{
   legend:{labels:{color:t.text,usePointStyle:true,boxWidth:9,boxHeight:9,padding:18,font:{family:'Inter, "Segoe UI Variable", "Segoe UI", system-ui, sans-serif',size:11,weight:600}}},
-  tooltip:{backgroundColor:"#07101F",titleColor:"#F2F6FF",bodyColor:"#CFD9E8",borderColor:"#344966",borderWidth:1,cornerRadius:10,padding:12,displayColors:true,titleFont:{family:'Inter, "Segoe UI Variable", "Segoe UI", system-ui, sans-serif',weight:700},bodyFont:{family:'Inter, "Segoe UI Variable", "Segoe UI", system-ui, sans-serif'}}
+  tooltip:{backgroundColor:"#3B2922",titleColor:"#FFF4E8",bodyColor:"#EAD6C7",borderColor:"#805B49",borderWidth:1,cornerRadius:10,padding:12,displayColors:true,titleFont:{family:'Inter, "Segoe UI Variable", "Segoe UI", system-ui, sans-serif',weight:700},bodyFont:{family:'Inter, "Segoe UI Variable", "Segoe UI", system-ui, sans-serif'}}
  }};
  const opts={...base,...config.options,plugins:{...base.plugins,...(config.options?.plugins||{})}};
  charts[id]=new Chart(canvas,{...config,options:opts});
