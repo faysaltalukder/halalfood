@@ -8,7 +8,7 @@ const root = process.cwd();
 const adminDir = join(root, "admin");
 const sharedCssVersion = "20261101-shared-erp-system-v1";
 const workspaceThemeCssVersion = "20261101-merchant-fieldbook-v1";
-const sharedJsVersion = "20261101-observatory-v1";
+const sharedJsVersion = "20261102-observatory-cosmos-v2";
 const i18nVersion = "20261101-observatory-v1";
 const appJsVersion = "20261030-orders-polish-v5";
 const read = (path) => readFileSync(join(root, path), "utf8");
@@ -314,11 +314,21 @@ const observatoryCss = read("admin/the-observatory.css").replace(/\/\*[\s\S]*?\*
 const observatoryOverview = read("admin/overview.html");
 const observatoryTranslations = read("admin/i18n.js");
 assert.ok(shared.includes('ADMIN_COLOR_THEMES["the-observatory"]') && shared.includes('name:"The Observatory"') && shared.includes('themeIds:["merchant-fieldbook","the-observatory"]'), "Theme 12 must exist in Signature.");
-assert.ok(shared.includes('observatory.href="./the-observatory.css?v=20261101-observatory-v1"'), "Observatory stylesheet must load on demand.");
+assert.ok(shared.includes('observatory.href="./the-observatory.css?v=20261102-observatory-cosmos-v2"'), "Observatory stylesheet must load on demand.");
 assert.ok(observatoryOverview.includes("hf-theme-copy--observatory") && observatoryOverview.includes("The Observatory"), "Overview must include Observatory-specific copy.");
 assert.ok(observatoryCss.includes('html[data-hf-theme="the-observatory"]') && observatoryCss.includes('body[data-page="overview"]') && observatoryCss.includes("prefers-reduced-motion"), "Observatory CSS must be scoped and include responsive and motion safeguards.");
+assert.ok(observatoryOverview.includes('class="hf-observatory-scene"') && observatoryOverview.includes('class="hf-observatory-svg"') && observatoryOverview.includes('aria-hidden="true"'), "The Observatory Overview must include a decorative inline SVG space scene.");
+assert.ok(observatoryCss.includes(".obs-satellite-orbit") && observatoryCss.includes("@keyframes obsSatelliteOrbit") && observatoryCss.includes("radial-gradient(circle at 6% 13%"), "Observatory must include satellite motion and a subtle starfield background.");
+const observatorySidebarRule = observatoryCss.match(/html\\[data-hf-theme="the-observatory"\\] body\\[data-page\\] \\.admin-sidebar\\{([^}]*)\\}/)?.[1] || "";
+assert.ok(!/\\bposition\\s*:/.test(observatorySidebarRule) && !/\\boverflow\\s*:\\s*hidden/.test(observatorySidebarRule), "The Observatory skin must not override shared Sidebar positioning or scroll behavior.");
+const sharedLayoutCss = read("admin/shared.css");
+const desktopSidebarRule = sharedLayoutCss.match(/\\.admin-sidebar\\{([^}]*)\\}/)?.[1] || "";
+assert.ok(desktopSidebarRule.includes("position:sticky") && desktopSidebarRule.includes("overflow:auto"), "Desktop Sidebar must remain sticky and independently scrollable.");
+const mobileSidebarRule = sharedLayoutCss.match(/@media\\(max-width:900px\\)\\{[\\s\\S]*?\\.admin-sidebar\\{([^}]*)\\}/)?.[1] || "";
+assert.ok(mobileSidebarRule.includes("position:fixed") && mobileSidebarRule.includes("transform:translateX(-102%)"), "Mobile Sidebar must remain a fixed off-canvas drawer.");
+const observatorySelectorSource=observatoryCss.replace(/@keyframes obsSatelliteOrbit\\{from\\{[^}]*\\}to\\{[^}]*\\}\\}/g,"");
 const observatorySelectors=[];let observatoryStart=0;
-for(let index=0;index<observatoryCss.length;index++){if(observatoryCss[index]==="{"){const selectorText=observatoryCss.slice(observatoryStart,index).trim();if(selectorText&&!selectorText.startsWith("@"))observatorySelectors.push(...splitFieldbookSelectorList(selectorText));observatoryStart=index+1;}else if(observatoryCss[index]==="}")observatoryStart=index+1;}
+for(let index=0;index<observatorySelectorSource.length;index++){if(observatorySelectorSource[index]==="{"){const selectorText=observatorySelectorSource.slice(observatoryStart,index).trim();if(selectorText&&!selectorText.startsWith("@"))observatorySelectors.push(...splitFieldbookSelectorList(selectorText));observatoryStart=index+1;}else if(observatorySelectorSource[index]==="}")observatoryStart=index+1;}
 assert.ok(observatorySelectors.length>100,"Observatory must cover the workspace UI.");
 for(const selector of observatorySelectors)assert.ok(selector.startsWith('html[data-hf-theme="the-observatory"]'),"Unscoped Observatory selector: "+selector);
 assertSidebarStops("The Observatory","#F4F0F8",["#242235","#302B43","#3D3650","#29263B"]);
