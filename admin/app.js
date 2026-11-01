@@ -12,20 +12,55 @@ window.HFAdminReady.then(async H=>{
  const {client,ADMIN_EMAIL,esc,money,shortNum,dateTime,dateOnly,toast,audit,signedQuery,downloadFile,csvText,slugify,rangeQuery,fetchOrders,fetchEvents,fetchProducts,fetchCategories,fetchPosts,fetchFinance,palette,colorSet,chartTheme,drawChart,groupBy,lastDateKeys,makeStatus,makeEmpty,showTableMessage,statusClass,charts}=H;
  const $=id=>document.getElementById(id);
  const page=document.body.dataset.page||"overview";
- const todayISO=()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
+ const todayISO=()=>{const parts=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Dhaka",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date());const part=type=>parts.find(item=>item.type===type)?.value||"";return part("year")+"-"+part("month")+"-"+part("day")};
  const fileBase=s=>String(s||"halal-food-report").toLowerCase().replace(/[^a-z0-9-]+/g,"-").replace(/^-|-$/g,"")||"halal-food-report";
  const statusOptions=["pending","processing","shipped","delivered","cancelled"];
+ const dhakaDateKey=value=>{
+  const date=value instanceof Date?value:new Date(value);
+  if(Number.isNaN(date.getTime()))return "";
+  const parts=new Intl.DateTimeFormat("en-US",{timeZone:"Asia/Dhaka",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(date);
+  const part=type=>parts.find(item=>item.type===type)?.value||"";
+  return part("year")+"-"+part("month")+"-"+part("day");
+ };
+ const addDhakaDays=(key,amount)=>{
+  const [year,month,day]=String(key).split("-").map(Number);
+  const date=new Date(Date.UTC(year,month-1,day+amount));
+  return date.getUTCFullYear()+"-"+String(date.getUTCMonth()+1).padStart(2,"0")+"-"+String(date.getUTCDate()).padStart(2,"0");
+ };
+ const buildDhakaRange=(fromDay,toDay,label)=>{
+  if(!fromDay||!toDay||fromDay>toDay)throw new Error("Choose a valid start and end date.");
+  const days=Math.max(1,Math.round((Date.parse(toDay+"T00:00:00Z")-Date.parse(fromDay+"T00:00:00Z"))/86400000)+1);
+  return {from:new Date(fromDay+"T00:00:00+06:00").toISOString(),to:new Date(toDay+"T23:59:59.999+06:00").toISOString(),fromDay,toDay,days,label};
+ };
  function selectedRange(){
   const p=$("rangeSelect")?.value||"30";
+  const today=dhakaDateKey(new Date());
+  const monthStart=today.slice(0,7)+"-01";
+  const weekday=new Date(today+"T12:00:00+06:00").getUTCDay();
+  const weekStart=addDhakaDays(today,-((weekday+1)%7));
   if(p==="custom"){
    const from=$("dateFrom")?.value,to=$("dateTo")?.value;
    if(!from||!to||from>to)throw new Error("Choose a valid start and end date.");
-   const start=new Date(from+"T00:00:00"),end=new Date(to+"T23:59:59.999");
-   return {from:start.toISOString(),to:end.toISOString(),days:Math.max(1,Math.ceil((end-start)/86400000)+1),label:from+" to "+to};
+   return buildDhakaRange(from,to,from+" to "+to);
   }
-  if(p==="all")return {from:null,to:null,days:null,label:"All available time"};
-  const days=Number(p)||30;const d=new Date();d.setHours(23,59,59,999);
-  return {from:new Date(Date.now()-Math.max(1,days)*86400000).toISOString(),to:d.toISOString(),days,label:"Last "+days+" days"};
+  if(p==="all")return {from:null,to:null,fromDay:null,toDay:today,days:null,label:"All available time"};
+  let fromDay=today,toDay=today,label="Today";
+  switch(p){
+   case "today": label="Today";break;
+   case "yesterday": fromDay=addDhakaDays(today,-1);toDay=fromDay;label="Yesterday";break;
+   case "7": fromDay=addDhakaDays(today,-6);label="Last 7 days";break;
+   case "30": fromDay=addDhakaDays(today,-29);label="Last 30 days";break;
+   case "90": fromDay=addDhakaDays(today,-89);label="Last 90 days";break;
+   case "365": fromDay=addDhakaDays(today,-364);label="Last 12 months";break;
+   case "this-week": fromDay=weekStart;label="This week";break;
+   case "last-week": toDay=addDhakaDays(weekStart,-1);fromDay=addDhakaDays(toDay,-6);label="Last week";break;
+   case "this-month": fromDay=monthStart;label="This month";break;
+   case "last-month": toDay=addDhakaDays(monthStart,-1);fromDay=toDay.slice(0,7)+"-01";label="Last month";break;
+   case "this-year": fromDay=today.slice(0,4)+"-01-01";label="This year";break;
+   case "last-year": fromDay=(Number(today.slice(0,4))-1)+"-01-01";toDay=(Number(today.slice(0,4))-1)+"-12-31";label="Last year";break;
+   default: fromDay=addDhakaDays(today,-29);label="Last 30 days";
+  }
+  return buildDhakaRange(fromDay,toDay,label);
  }
  function showCustomDates(){const box=$("customRangeFields");if(box)box.hidden=$("rangeSelect")?.value!=="custom";}
  function bindRangeControls(callback){
@@ -124,6 +159,12 @@ window.HFAdminReady.then(async H=>{
    try{overviewDateLabel.textContent=new Intl.DateTimeFormat("en-BD",{timeZone:"Asia/Dhaka",day:"numeric",month:"short",year:"numeric"}).format(new Date());}
    catch(_dateError){overviewDateLabel.textContent=new Date().toDateString();}
   }
+  const rangeSelect=$("overviewRangeSelect");
+  const customRange=$("overviewCustomRange");
+  const fromInput=$("overviewDateFrom");
+  const toInput=$("overviewDateTo");
+  const trendTypeSelect=$("overviewTrendType");
+  let overviewTrendSnapshot=null;
   const financeStrip=$("overviewFinanceStrip");
   const financeToggle=$("overviewFinanceToggle");
   if(financeStrip&&financeToggle){
@@ -139,21 +180,106 @@ window.HFAdminReady.then(async H=>{
    financeToggle.addEventListener("click",()=>setFinanceMasked(!financeStrip.classList.contains("is-masked")));
   }
   const localDateKey=value=>{
+   if(typeof value==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(value))return value;
    const d=value instanceof Date?value:new Date(value);
    if(Number.isNaN(d.getTime()))return "";
-   return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+   const parts=new Intl.DateTimeFormat("en-US",{timeZone:"Asia/Dhaka",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(d);
+   const part=type=>parts.find(item=>item.type===type)?.value||"";
+   return part("year")+"-"+part("month")+"-"+part("day");
   };
-  const dateKeys=days=>{
-   const keys=[],base=new Date();base.setHours(12,0,0,0);
-   for(let i=Math.max(1,days)-1;i>=0;i--){const d=new Date(base);d.setDate(d.getDate()-i);keys.push(localDateKey(d));}
-   return keys;
+  const addDateDays=(key,amount)=>{
+   const [year,month,day]=String(key).split("-").map(Number);
+   const d=new Date(Date.UTC(year,month-1,day+amount));
+   return d.getUTCFullYear()+"-"+String(d.getUTCMonth()+1).padStart(2,"0")+"-"+String(d.getUTCDate()).padStart(2,"0");
   };
-  async function fetchOverviewOrderSummary(range,maxRows=5000){
+  const buildRange=(fromDay,toDay,label)=>{
+   if(!fromDay||!toDay||fromDay>toDay)throw new Error("Choose a valid start and end date.");
+   const days=Math.max(1,Math.round((Date.parse(toDay+"T00:00:00Z")-Date.parse(fromDay+"T00:00:00Z"))/86400000)+1);
+   return {
+    from:new Date(fromDay+"T00:00:00+06:00").toISOString(),
+    to:new Date(toDay+"T23:59:59.999+06:00").toISOString(),
+    fromDay,toDay,days,label
+   };
+  };
+  const readOverviewRange=()=>{
+   const today=localDateKey(new Date());
+   const selected=rangeSelect?.value||"30";
+   let fromDay=today,toDay=today,label="Today";
+   const currentMonthStart=today.slice(0,7)+"-01";
+   const weekday=new Date(today+"T12:00:00+06:00").getUTCDay();
+   const thisWeekStart=addDateDays(today,-((weekday+1)%7));
+   switch(selected){
+    case "today": label="Today";break;
+    case "yesterday": fromDay=addDateDays(today,-1);toDay=fromDay;label="Yesterday";break;
+    case "7": fromDay=addDateDays(today,-6);label="Last 7 days";break;
+    case "30": fromDay=addDateDays(today,-29);label="Last 30 days";break;
+    case "90": fromDay=addDateDays(today,-89);label="Last 90 days";break;
+    case "this-week": fromDay=thisWeekStart;label="This week";break;
+    case "last-week": toDay=addDateDays(thisWeekStart,-1);fromDay=addDateDays(toDay,-6);label="Last week";break;
+    case "this-month": fromDay=currentMonthStart;label="This month";break;
+    case "last-month": toDay=addDateDays(currentMonthStart,-1);fromDay=toDay.slice(0,7)+"-01";label="Last month";break;
+    case "this-year": fromDay=today.slice(0,4)+"-01-01";label="This year";break;
+    case "last-year": fromDay=(Number(today.slice(0,4))-1)+"-01-01";toDay=(Number(today.slice(0,4))-1)+"-12-31";label="Last year";break;
+    case "custom":
+     fromDay=String(fromInput?.value||"");
+     toDay=String(toInput?.value||"");
+     label="Custom range";
+     if(!fromDay||!toDay||fromDay>toDay)throw new Error("Choose a valid start and end date.");
+     break;
+    default: fromDay=addDateDays(today,-29);label="Last 30 days";
+   }
+   if(selected==="custom")label=fromDay+" to "+toDay;
+   return buildRange(fromDay,toDay,label);
+  };
+  const formatDayLabel=key=>new Intl.DateTimeFormat("en-BD",{timeZone:"Asia/Dhaka",day:"numeric",month:"short"}).format(new Date(key+"T12:00:00+06:00"));
+  const formatMonthLabel=key=>new Intl.DateTimeFormat("en-BD",{timeZone:"Asia/Dhaka",month:"short",year:"numeric"}).format(new Date(key+"-01T12:00:00+06:00"));
+  const nextMonthKey=key=>{
+   const [year,month]=key.split("-").map(Number);
+   return month===12?(year+1)+"-01":year+"-"+String(month+1).padStart(2,"0");
+  };
+  const buildChartBuckets=range=>{
+   const monthly=range.days>62,items=[];
+   if(monthly){
+    let month=range.fromDay.slice(0,7);
+    const last=range.toDay.slice(0,7);
+    while(month<=last){items.push({key:month,label:formatMonthLabel(month)});month=nextMonthKey(month);}
+   }else{
+    for(let offset=0;offset<range.days;offset++){
+     const day=addDateDays(range.fromDay,offset);
+     items.push({key:day,label:formatDayLabel(day)});
+    }
+   }
+   return {monthly,items};
+  };
+  const renderOverviewOperationsTrend=()=>{
+   if(!overviewTrendSnapshot)return;
+   const selected=trendTypeSelect?.value||"area";
+   const useBars=selected==="bar";
+   drawChart("overviewOperationsChart",{type:useBars?"bar":"line",data:{labels:overviewTrendSnapshot.labels,datasets:[
+    {label:"Order item lines",data:overviewTrendSnapshot.orderLineCounts,borderColor:palette.orange,backgroundColor:"#F59E0B22",fill:selected==="area",tension:.32,pointRadius:2,borderWidth:2,borderRadius:useBars?5:0,maxBarThickness:useBars?24:undefined},
+    {label:"Add-to-cart events",data:overviewTrendSnapshot.cartEventCounts,borderColor:palette.blue,backgroundColor:"#4F7CFF20",fill:false,tension:.32,pointRadius:2,borderWidth:2,borderRadius:useBars?5:0,maxBarThickness:useBars?24:undefined}
+   ]},options:{...chartAxisOptions(),plugins:{legend:{position:"bottom"}},onClick:(ev,items)=>{if(items.length)location.href=items[0].datasetIndex===0?"./orders.html":"./analytics.html";}}});
+  };
+  async function fetchOverviewOrderLines(range,maxRows=5000){
    const rows=[],pageSize=1000;
    for(let offset=0;offset<maxRows;offset+=pageSize){
     const size=Math.min(pageSize,maxRows-offset);
-    let query=client.from("orders").select("id,order_number,customer_name,customer_phone,total,status,ordered_at").order("ordered_at",{ascending:false}).order("id",{ascending:true});
+    let query=client.from("orders").select("id,total,ordered_at,status,order_items(id)").order("ordered_at",{ascending:false}).order("id",{ascending:true});
     query=rangeQuery(query,"ordered_at",range);
+    const page=await signedQuery(query.range(offset,offset+size-1));
+    rows.push(...page);
+    if(page.length<size)break;
+   }
+   return rows;
+  }
+  async function fetchOverviewEvents(range,maxRows=15000){
+   const rows=[],pageSize=1000;
+   const fields="id,event_name,occurred_at,page_path,page_title,session_id,anonymous_id,item_id,item_name,item_category,value,quantity,search_term,source,medium,campaign,metadata";
+   const eventNames=["page_view","view_item","add_to_cart"];
+   for(let offset=0;offset<maxRows;offset+=pageSize){
+    const size=Math.min(pageSize,maxRows-offset);
+    let query=client.from("analytics_events").select(fields).in("event_name",eventNames).order("occurred_at",{ascending:false}).order("id",{ascending:false});
+    query=rangeQuery(query,"occurred_at",range);
     const page=await signedQuery(query.range(offset,offset+size-1));
     rows.push(...page);
     if(page.length<size)break;
@@ -184,38 +310,61 @@ window.HFAdminReady.then(async H=>{
    $("overviewActionNote").textContent="Based on saved orders and stock.";
   }
   async function refresh(){
-   const now=new Date();
-   const range30={from:new Date(now.getTime()-30*86400000).toISOString(),to:now.toISOString(),days:30,label:"Last 30 days"};
-   const range14={from:new Date(now.getTime()-14*86400000).toISOString(),to:now.toISOString(),days:14,label:"Last 14 days"};
-   const [summaryOrders,chartOrders,events,products,pendingResult,recentOrders]=await Promise.all([
-    fetchOverviewOrderSummary(range30,5000),
-    fetchOrders(range14,1000),
-    fetchEvents(range14,5000),
+   try{
+   const range=readOverviewRange();
+   const today=localDateKey(new Date());
+   const todayRange=buildRange(today,today,"Today");
+   const buckets=buildChartBuckets(range);
+   const rangeIncludesToday=!!(range.fromDay&&range.toDay&&range.fromDay<=today&&range.toDay>=today);
+   const [chartOrders,events,separateTodayOrders,separateTodayEvents,products,pendingResult,recentOrders]=await Promise.all([
+    fetchOverviewOrderLines(range,5000),
+    fetchOverviewEvents(range,15000),
+    rangeIncludesToday?Promise.resolve(null):fetchOverviewOrderLines(todayRange,1000),
+    rangeIncludesToday?Promise.resolve(null):fetchOverviewEvents(todayRange,15000),
     fetchProducts(1000),
     client.from("orders").select("id",{count:"exact",head:true}).eq("status","pending"),
     signedQuery(client.from("orders").select("id,order_number,customer_name,total,status,ordered_at").order("ordered_at",{ascending:false}).order("id",{ascending:true}).limit(7))
    ]);
-   const today=localDateKey(now);
-   const ordersLast30=summaryOrders.filter(o=>o.ordered_at&&new Date(o.ordered_at)>=new Date(range30.from)&&new Date(o.ordered_at)<=now);
-   const todayOrders=chartOrders.filter(o=>localDateKey(o.ordered_at)===today);
+   const summaryOrders=chartOrders;
+   const todayOrders=rangeIncludesToday?chartOrders.filter(o=>localDateKey(o.ordered_at)===today):separateTodayOrders;
+   const todayEvents=rangeIncludesToday?events.filter(e=>localDateKey(e.occurred_at)===today):separateTodayEvents;
+   const bucketKey=value=>{
+    const day=localDateKey(value);
+    return buckets.monthly?day.slice(0,7):day;
+   };
    const todayItemLines=todayOrders.filter(o=>o.status!=="cancelled").reduce((sum,o)=>sum+(o.order_items||[]).length,0);
-   const todayCartEvents=events.filter(e=>e.event_name==="add_to_cart"&&localDateKey(e.occurred_at)===today).length;
+   const todayCartEvents=todayEvents.filter(e=>e.event_name==="add_to_cart").length;
    const pendingVerified=!pendingResult.error&&pendingResult.count!==null&&pendingResult.count!==undefined&&Number.isFinite(Number(pendingResult.count));
-   const pendingCount=pendingVerified?Number(pendingResult.count):summaryOrders.filter(o=>o.status==="pending").length;
-   const orderValue=ordersLast30.filter(o=>o.status!=="cancelled").reduce((sum,o)=>sum+Number(o.total||0),0);
+   const pendingCount=pendingVerified?Number(pendingResult.count):0;
+   const orderValue=summaryOrders.filter(o=>o.status!=="cancelled").reduce((sum,o)=>sum+Number(o.total||0),0);
    const lowStock=products.filter(p=>p.is_active&&p.stock_quantity!==null&&p.stock_quantity!==undefined&&p.stock_quantity!==""&&Number.isFinite(Number(p.stock_quantity))&&Number(p.stock_quantity)>0&&Number(p.stock_quantity)<=Number(p.low_stock_threshold??5)).length;
-   $("kpiOrders").textContent=shortNum(ordersLast30.length);
+   $("kpiOrders").textContent=shortNum(summaryOrders.length);
+   if($("kpiOrdersNote"))$("kpiOrdersNote").textContent=range.label;
    $("kpiTodayItems").textContent=shortNum(todayItemLines);
-   $("kpiPending").textContent=shortNum(pendingCount);
+   $("kpiPending").textContent=pendingVerified?shortNum(pendingCount):"—";
    $("kpiCart").textContent=shortNum(todayCartEvents);
    $("kpiOrderValue").textContent=money(orderValue);
-   $("kpiNote").textContent=range30.label+" · recorded order value is not verified cash income.";
+   $("kpiNote").textContent=range.label+" · recorded order value is not verified cash income.";
    $("kpiLowStock").textContent=shortNum(lowStock);
+   const rangeSummary=$("overviewRangeSummary");
+   if(rangeSummary)rangeSummary.textContent=range.label+" · "+range.fromDay+" → "+range.toDay;
+   ["overviewOperationsRangeLabel","overviewFinanceRangeLabel","overviewTrafficRangeLabel","overviewStatusRangeLabel","overviewProductsRangeLabel"].forEach(id=>{
+    const node=$(id);if(node)node.textContent=range.label;
+   });
+   const statusNote=$("overviewStatusRangeNote");
+   if(statusNote)statusNote.textContent=range.label+" · not payment/delivery confirmation.";
    renderActionCenter(products,pendingCount,pendingVerified);
-   let finance=[],financeAvailable=true;
-   try{finance=await fetchFinance(null,3000);}
-   catch(err){financeAvailable=false;console.warn("Overview finance summary is unavailable for this session.",err);}
+   let finance=[],financeRange=[],financeAvailable=false,financeRangeAvailable=false;
+   const [financeAllResult,financeRangeResult]=await Promise.allSettled([
+    fetchFinance(null,3000),
+    fetchFinance(range,3000)
+   ]);
+   if(financeAllResult.status==="fulfilled"){finance=financeAllResult.value;financeAvailable=true;}
+   else console.warn("Overview all-time finance summary is unavailable.",financeAllResult.reason);
+   if(financeRangeResult.status==="fulfilled"){financeRange=financeRangeResult.value;financeRangeAvailable=true;}
+   else console.warn("Overview selected-period finance chart is unavailable.",financeRangeResult.reason);
    const confirmedFinance=finance.filter(e=>e.status==="confirmed");
+   const confirmedFinanceRange=financeRange.filter(e=>e.status==="confirmed");
    const income=confirmedFinance.filter(e=>e.entry_type==="income").reduce((sum,e)=>sum+Number(e.amount||0),0);
    const expenses=confirmedFinance.filter(e=>e.entry_type==="expense").reduce((sum,e)=>sum+Number(e.amount||0),0);
    $("financeSummaryIncome").textContent=financeAvailable?money(income):"Unavailable";
@@ -224,47 +373,84 @@ window.HFAdminReady.then(async H=>{
    $("financeSummaryNote").textContent=financeAvailable
     ?"Confirmed manual entries only. COD settlement is not reconciled here."
     :"Finance unavailable. Refresh after signing in and completing MFA.";
-   const labels=dateKeys(14);
-   drawChart("overviewOperationsChart",{type:"line",data:{labels:labels.map(dateOnly),datasets:[
-    {label:"Order item lines",data:labels.map(day=>chartOrders.filter(o=>localDateKey(o.ordered_at)===day&&o.status!=="cancelled").reduce((sum,o)=>sum+(o.order_items||[]).length,0)),borderColor:palette.orange,backgroundColor:"#F59E0B22",fill:true,tension:.32,pointRadius:2,borderWidth:2},
-    {label:"Add-to-cart events",data:labels.map(day=>events.filter(e=>e.event_name==="add_to_cart"&&localDateKey(e.occurred_at)===day).length),borderColor:palette.blue,backgroundColor:"#4F7CFF20",fill:false,tension:.32,pointRadius:2,borderWidth:2}
-   ]},options:{...chartAxisOptions(),plugins:{legend:{position:"bottom"}},onClick:(ev,items)=>{if(items.length)location.href=items[0].datasetIndex===0?"./orders.html":"./analytics.html";}}});
+   const labels=buckets.items.map(item=>item.label);
+   overviewTrendSnapshot={
+    labels,
+    orderLineCounts:buckets.items.map(bucket=>chartOrders.filter(o=>bucketKey(o.ordered_at)===bucket.key&&o.status!=="cancelled").reduce((sum,o)=>sum+(o.order_items||[]).length,0)),
+    cartEventCounts:buckets.items.map(bucket=>events.filter(e=>e.event_name==="add_to_cart"&&bucketKey(e.occurred_at)===bucket.key).length)
+   };
+   renderOverviewOperationsTrend();
    const financeCanvas=$("overviewFinanceChart");
-   if(financeAvailable){
+   if(financeRangeAvailable){
     if(financeCanvas)financeCanvas.hidden=false;
-    $("overviewFinanceChartNote").textContent="Manual ledger entries only · not a bank/COD balance.";
-    drawChart("overviewFinanceChart",{type:"bar",data:{labels:labels.map(dateOnly),datasets:[
-     {label:"Recorded income",data:labels.map(day=>confirmedFinance.filter(e=>e.entry_type==="income"&&String(e.entry_date||"").slice(0,10)===day).reduce((sum,e)=>sum+Number(e.amount||0),0)),backgroundColor:palette.green,borderRadius:5,maxBarThickness:24},
-     {label:"Recorded expenses",data:labels.map(day=>confirmedFinance.filter(e=>e.entry_type==="expense"&&String(e.entry_date||"").slice(0,10)===day).reduce((sum,e)=>sum+Number(e.amount||0),0)),backgroundColor:palette.orange,borderRadius:5,maxBarThickness:24}
+    $("overviewFinanceChartNote").textContent="Confirmed ledger entries in the selected period · not a bank/COD balance.";
+    drawChart("overviewFinanceChart",{type:"bar",data:{labels,datasets:[
+     {label:"Recorded income",data:buckets.items.map(bucket=>confirmedFinanceRange.filter(e=>e.entry_type==="income"&&bucketKey(e.entry_date)===bucket.key).reduce((sum,e)=>sum+Number(e.amount||0),0)),backgroundColor:palette.green,borderRadius:5,maxBarThickness:24},
+     {label:"Recorded expenses",data:buckets.items.map(bucket=>confirmedFinanceRange.filter(e=>e.entry_type==="expense"&&bucketKey(e.entry_date)===bucket.key).reduce((sum,e)=>sum+Number(e.amount||0),0)),backgroundColor:palette.orange,borderRadius:5,maxBarThickness:24}
     ]},options:{...chartAxisOptions(),plugins:{legend:{position:"bottom"}},onClick:()=>{location.href="./finance.html";}}});
    }else{
     if(financeCanvas)financeCanvas.hidden=true;
-    $("overviewFinanceChartNote").textContent="Finance unavailable for this session.";
+    $("overviewFinanceChartNote").textContent="Finance chart unavailable for the selected period. The all-time summary is reported separately.";
    }
-   drawChart("overviewTrafficChart",{type:"line",data:{labels:labels.map(dateOnly),datasets:[
-    {label:"Page views",data:labels.map(day=>events.filter(e=>e.event_name==="page_view"&&localDateKey(e.occurred_at)===day).length),borderColor:palette.blue,backgroundColor:"#4F7CFF20",fill:true,tension:.35,pointRadius:2,borderWidth:2},
-    {label:"Product views",data:labels.map(day=>events.filter(e=>e.event_name==="view_item"&&localDateKey(e.occurred_at)===day).length),borderColor:palette.orange,backgroundColor:"#C97B3D18",fill:true,tension:.35,pointRadius:2,borderWidth:2}
+   drawChart("overviewTrafficChart",{type:"line",data:{labels,datasets:[
+    {label:"Page views",data:buckets.items.map(bucket=>events.filter(e=>e.event_name==="page_view"&&bucketKey(e.occurred_at)===bucket.key).length),borderColor:palette.blue,backgroundColor:"#4F7CFF20",fill:true,tension:.35,pointRadius:2,borderWidth:2},
+    {label:"Product views",data:buckets.items.map(bucket=>events.filter(e=>e.event_name==="view_item"&&bucketKey(e.occurred_at)===bucket.key).length),borderColor:palette.orange,backgroundColor:"#C97B3D18",fill:true,tension:.35,pointRadius:2,borderWidth:2}
    ]},options:{...chartAxisOptions(),plugins:{legend:{position:"bottom"}}}});
    drawChart("overviewStatusChart",{type:"doughnut",data:orderStatusCounts(summaryOrders),options:{cutout:"67%",plugins:{legend:{position:"bottom"}},onClick:(ev,items)=>{if(items.length)location.href="./orders.html?status="+encodeURIComponent(["pending","processing","shipped","delivered","cancelled"][items[0].index]);}}});
    renderTopProducts($("overviewTopProducts"),topProducts(events,products).slice(0,5));
    renderRecentOrders(recentOrders);
    $("overviewUpdated").textContent="Updated "+new Date().toLocaleTimeString("en-BD",{hour:"2-digit",minute:"2-digit"});
    const limits=[];
-   if(summaryOrders.length>=5000)limits.push("Order totals may be incomplete (5,000-row limit).");
-   if(chartOrders.length>=1000)limits.push("Daily chart reached its 1,000-order limit.");
-   if(events.length>=5000)limits.push("Events reached the 5,000-row limit.");
-   $("overviewDataNote").textContent=events.length+" events/14d · "+ordersLast30.length+" orders/30d. Order lines are product rows, not quantities; cart additions are events, not current cart. "+(pendingVerified?"Pending count verified.":"Pending count is an estimate.")+" Records do not confirm payment or delivery."+(limits.length?" "+limits.join(" "):"");
+   if(summaryOrders.length>=5000)limits.push("Order summary reached the 5,000-row limit.");
+   if(chartOrders.length>=5000)limits.push("Order trend reached the 5,000-row limit.");
+   if(events.length>=15000)limits.push("Website activity reached the 15,000-event limit.");
+   if(todayOrders.length>=1000)limits.push("Today's order-line count reached its 1,000-order limit.");
+   if(todayEvents.length>=15000)limits.push("Today's cart-event count reached its 15,000-event limit.");
+   if(products.length>=1000)limits.push("Stock alerts reached the 1,000-product retrieval limit.");
+   if(finance.length>=3000)limits.push("All-time Finance Snapshot reached its 3,000-entry retrieval limit.");
+   if(financeRange.length>=3000)limits.push("Selected-period Finance Chart reached its 3,000-entry retrieval limit.");
+   $("overviewDataNote").textContent=events.length+" page, product and cart events · "+range.label+" · "+summaryOrders.length+" orders. Order lines are product rows, not quantities; cart additions are events, not current cart. "+(pendingVerified?"Pending count verified.":"Pending count unavailable; shown as —.")+" Records do not confirm payment or delivery."+(limits.length?" "+limits.join(" "):"");
+   }catch(error){
+    const note=$("overviewDataNote");
+    if(note)note.textContent="Overview data could not be refreshed. Any values still visible are from the last successful load; please retry.";
+    console.error("Overview refresh failed.",error);
+    throw new Error("Overview could not be refreshed. Please try again.");
+   }
   }
-  await refresh();attachRefresh(refresh);
+  const toggleCustomRange=()=>{if(customRange)customRange.hidden=rangeSelect?.value!=="custom";};
+  if(fromInput&&!fromInput.value)fromInput.value=localDateKey(new Date());
+  if(toInput&&!toInput.value)toInput.value=localDateKey(new Date());
+  rangeSelect?.addEventListener("change",()=>{
+   toggleCustomRange();
+   if(rangeSelect.value!=="custom")refresh().catch(()=>toast("Overview could not be refreshed. Please try again.","error"));
+  });
+  $("overviewApplyRange")?.addEventListener("click",()=>refresh().catch(()=>toast("Overview could not be refreshed. Please try again.","error")));
+  trendTypeSelect?.addEventListener("change",renderOverviewOperationsTrend);
+  toggleCustomRange();
+  try{await refresh();}catch(_overviewError){toast("Overview could not be loaded. Please check the connection and refresh.","error");}
+  attachRefresh(refresh);
  }
  async function initAnalytics(){
   async function refresh(){
    const range=selectedRange();const [events,orders,products]=await Promise.all([fetchEvents(range),fetchOrders(range,5000),fetchProducts()]);
-   const chartDays=Math.min(range.days||90,90),keys=lastDateKeys(chartDays);
-   drawChart("analyticsTrafficChart",{type:"line",data:{labels:keys.map(dateOnly),datasets:[
-    {label:"Page views",data:keys.map(k=>events.filter(e=>e.event_name==="page_view"&&String(e.occurred_at).slice(0,10)===k).length),borderColor:palette.blue,backgroundColor:"#4F7CFF20",fill:true,tension:.32,pointRadius:1.5,borderWidth:2},
-    {label:"Product views",data:keys.map(k=>events.filter(e=>e.event_name==="view_item"&&String(e.occurred_at).slice(0,10)===k).length),borderColor:palette.orange,backgroundColor:"#C97B3D15",fill:true,tension:.32,pointRadius:1.5,borderWidth:2},
-    {label:"Cart additions",data:keys.map(k=>events.filter(e=>e.event_name==="add_to_cart"&&String(e.occurred_at).slice(0,10)===k).length),borderColor:palette.green,backgroundColor:"#10B9811A",fill:false,tension:.32,pointRadius:1.5,borderWidth:2}
+   const observedDays=events.map(event=>dhakaDateKey(event.occurred_at)).filter(Boolean).sort();
+   const chartFrom=range.fromDay||(observedDays[0]||dhakaDateKey(new Date()));
+   const chartTo=range.toDay||(observedDays[observedDays.length-1]||dhakaDateKey(new Date()));
+   const chartDays=Math.max(1,Math.round((Date.parse(chartTo+"T00:00:00Z")-Date.parse(chartFrom+"T00:00:00Z"))/86400000)+1);
+   const monthly=chartDays>62,trendBuckets=[];
+   if(monthly){
+    let month=chartFrom.slice(0,7),last=chartTo.slice(0,7);
+    while(month<=last){trendBuckets.push({key:month,label:new Intl.DateTimeFormat("en-BD",{timeZone:"Asia/Dhaka",month:"short",year:"numeric"}).format(new Date(month+"-15T12:00:00+06:00"))});const [year,monthNo]=month.split("-").map(Number);const next=new Date(Date.UTC(year,monthNo,1));month=next.getUTCFullYear()+"-"+String(next.getUTCMonth()+1).padStart(2,"0");}
+   }else{
+    for(let offset=0;offset<chartDays;offset++){const day=addDhakaDays(chartFrom,offset);trendBuckets.push({key:day,label:new Intl.DateTimeFormat("en-BD",{timeZone:"Asia/Dhaka",day:"numeric",month:"short"}).format(new Date(day+"T12:00:00+06:00"))});}
+   }
+   const trendCountsByEvent=new Map();
+   events.forEach(event=>{if(!["page_view","view_item","add_to_cart"].includes(event.event_name))return;const day=dhakaDateKey(event.occurred_at);const key=monthly?day.slice(0,7):day;const mapKey=event.event_name+"|"+key;trendCountsByEvent.set(mapKey,(trendCountsByEvent.get(mapKey)||0)+1);});
+   const trendSeries=name=>trendBuckets.map(bucket=>trendCountsByEvent.get(name+"|"+bucket.key)||0);
+   drawChart("analyticsTrafficChart",{type:"line",data:{labels:trendBuckets.map(bucket=>bucket.label),datasets:[
+    {label:"Page views",data:trendSeries("page_view"),borderColor:palette.blue,backgroundColor:"#4F7CFF20",fill:true,tension:.32,pointRadius:1.5,borderWidth:2},
+    {label:"Product views",data:trendSeries("view_item"),borderColor:palette.orange,backgroundColor:"#C97B3D15",fill:true,tension:.32,pointRadius:1.5,borderWidth:2},
+    {label:"Cart additions",data:trendSeries("add_to_cart"),borderColor:palette.green,backgroundColor:"#10B9811A",fill:false,tension:.32,pointRadius:1.5,borderWidth:2}
    ]},options:{...chartAxisOptions(),plugins:{legend:{position:"bottom"}}}});
    const top=topProducts(events,products);
    drawChart("analyticsProductChart",{type:"doughnut",data:{labels:top.slice(0,7).map(x=>x.name),datasets:[{data:top.slice(0,7).map(x=>x.count),backgroundColor:colorSet,borderColor:chartTheme().surface,borderWidth:3,hoverOffset:8}]},options:{cutout:"57%",plugins:{legend:{position:"bottom"}}}});
@@ -298,7 +484,7 @@ window.HFAdminReady.then(async H=>{
    if(lowStockProducts.length)insights.push({title:"Review low-stock products",body:lowStockProducts.slice(0,3).map(p=>p.name).join(", ")+(lowStockProducts.length>3?" and "+(lowStockProducts.length-3)+" more":"")+" are at or below their configured stock alert."});
    $("analyticsDecisionCenter").innerHTML=insights.length?insights.map((item,i)=>'<div class="hf-insight-row"><span class="hf-thumb hf-thumb-empty">'+(i+1)+'</span><div><strong>'+esc(item.title)+'</strong><small>'+esc(item.body)+'</small></div><span class="hf-status hf-status-review">Review</span></div>').join(""):makeEmpty("No immediate checks suggested","Keep collecting on-site events and review this area again as more data arrives.");
 
-   $("analyticsReportHint").textContent=range.label+" · "+total.toLocaleString("en-BD")+" recorded events · "+orders.length.toLocaleString("en-BD")+" orders. "+((!range.days||range.days>90)?"Daily trend shows the last 90 days; totals use the full selected range.":"");
+   $("analyticsReportHint").textContent=range.label+" · "+total.toLocaleString("en-BD")+" recorded events · "+orders.length.toLocaleString("en-BD")+" orders. "+(monthly?"Trend grouped by month.":"Daily trend.")+(events.length>=15000?" Event query reached its 15,000-record limit.":"");
    $("analyticsTopProducts").innerHTML=top.length?top.map((x,i)=>'<div class="hf-insight-row">'+(x.product?.image_url?'<img class="hf-thumb" src="'+esc(x.product.image_url)+'" alt="">':'<span class="hf-thumb hf-thumb-empty">'+(i+1)+'</span>')+'<div><strong>'+esc(x.name)+'</strong><small>'+esc(x.product?.category||"No category match")+'</small></div><span class="hf-insight-number">'+shortNum(x.count)+'</span></div>').join(""):makeEmpty("No product-view data","Check again after the website has recorded product views.");
    $("analyticsEventBreakdown").innerHTML=groupBy(events,e=>e.event_name).slice(0,12).map(x=>'<tr><td>'+esc(x.label)+'</td><td>'+shortNum(x.count)+'</td><td>'+(total?Math.round(x.count/total*100)+"%":"—")+'</td></tr>').join("")||'<tr><td colspan="3">'+makeEmpty("No events yet","No website events were recorded in this date range.")+'</td></tr>';
   }
@@ -1909,15 +2095,18 @@ async function refresh(){
    const range=selectedRange(),type=$("reportType").value;let rows=[],title="",notes="";
    if(type==="orders"){
     const orders=await fetchOrders(range,5000);
+    if(orders.length>=5000)notes="The report reached the 5,000-order retrieval cap. It contains the newest matching orders returned by the query, not necessarily every order in the selected period. ";
     rows=orders.map(o=>({order_number:o.order_number||String(o.id).slice(0,8),ordered_at:o.ordered_at,customer_name:$("includePersonalData").checked?o.customer_name:"",customer_phone:$("includePersonalData").checked?o.customer_phone:"",customer_email:$("includePersonalData").checked?o.customer_email:"",status:o.status,subtotal:Number(o.subtotal||0),delivery_charge:Number(o.delivery_charge||0),total:Number(o.total||0),payment_method:o.payment_method,items:(o.order_items||[]).map(i=>i.product_name+" x "+i.quantity+" "+(i.unit||"")).join("; ")}));
     if(!$("includePersonalData").checked)rows=rows.map(({customer_name,customer_phone,customer_email,...rest})=>rest);
     title="Orders Report";notes="Recorded order values are not proof of payment collection. Cancelled orders remain listed with their status.";
    }else if(type==="analytics"){
     const events=await fetchEvents(range,15000);
+    if(events.length>=15000)notes="The report reached the 15,000-event retrieval cap. It contains the newest matching events returned by the query, not necessarily every event in the selected period. ";
     rows=events.map(e=>({occurred_at:e.occurred_at,event_name:e.event_name,page_path:e.page_path,page_title:e.page_title,session_id:e.session_id,item_id:e.item_id,item_name:e.item_name,item_category:e.item_category,value:e.event_name==="page_engagement"?null:e.value,visible_seconds:e.event_name==="page_engagement"?Number(e.value||0):null,quantity:e.quantity}));
     title="Website Analytics Report";notes="Website events measure recorded interaction. They do not by themselves establish unique people, paid sales, or collected revenue.";
    }else if(type==="products"){
-    const products=await fetchProducts();
+    const products=await fetchProducts(10000);
+    if(products.length>=10000)notes="The catalogue snapshot reached the 10,000-product retrieval cap. It may not include every product. ";
     rows=products.map(p=>({name:p.name,slug:p.slug,category:p.category,price:Number(p.price||0),display_price:p.display_price,unit_type:p.unit_type,stock_quantity:p.stock_quantity,is_active:p.is_active?"visible":"hidden",is_featured:p.is_featured?"yes":"no",updated_at:p.updated_at||p.created_at}));
     title="Products & Inventory Snapshot";notes="This is the current catalog state; the selected time range does not apply to inventory.";
    }else if(type==="content"){
@@ -1925,7 +2114,8 @@ async function refresh(){
     rows=blocks.map(b=>({placement:b.block_type,key:b.block_key,title:b.title,image_url:b.image_url,destination_url:b.link_url,alt_text:b.alt_text,active:b.is_active?"yes":"no",sort_order:b.sort_order,updated_by:b.updated_by,updated_at:b.updated_at}));
     title="Homepage Content Settings";notes="This report contains the banner and promotion configuration used by the public homepage. Hero slides remain enabled to preserve carousel behavior; side banner and popup active flags can be changed from Website Content.";
    }else{
-    const entries=await fetchFinance(range);
+    const entries=await fetchFinance(range,3000);
+    if(entries.length>=3000)notes="The report reached the 3,000-entry finance retrieval cap. It contains the newest matching ledger entries returned by the query, not necessarily every entry in the selected period. ";
     rows=entries.map(e=>({entry_date:e.entry_date,entry_type:e.entry_type,category:e.category,amount:Number(e.amount||0),status:e.status,description:e.description,reference:e.reference,related_order_id:e.related_order_id||""}));
     title="Finance Entries Report";notes="Only Confirmed entries contribute to recorded income/expense totals. Entries are manual records and are not independently verified by a payment provider.";
    }
@@ -1950,7 +2140,7 @@ async function refresh(){
     await audit("report_downloaded","report",null,report.title+" XLSX downloaded",{rows:report.rows.length,type:report.type});toast("Excel file is being downloaded.");
    }catch(err){toast(err.message||"Excel export failed.","error");}
   });
-  $("downloadPdfBtn")?.addEventListener("click",async()=>{try{if(!report.rows.length)await buildReport();$("printReportTitle").textContent=report.title;$("printReportDetails").textContent=report.rangeLabel+" · "+report.rows.length+" records · "+new Date().toLocaleString("en-BD");await audit("report_printed","report",null,report.title+" opened for PDF/printing",{rows:report.rows.length,type:report.type});window.print();}catch(err){toast(err.message||"Could not prepare print report.","error");}});
+  $("downloadPdfBtn")?.addEventListener("click",async()=>{try{if(!report.rows.length)await buildReport();$("printReportTitle").textContent=report.title;$("printReportDetails").textContent=report.rangeLabel+" · "+report.rows.length+" records · "+new Intl.DateTimeFormat("en-BD",{timeZone:"Asia/Dhaka",dateStyle:"medium",timeStyle:"short"}).format(new Date());await audit("report_printed","report",null,report.title+" opened for PDF/printing",{rows:report.rows.length,type:report.type});window.print();}catch(err){toast(err.message||"Could not prepare print report.","error");}});
   $("includePersonalData")?.addEventListener("change",()=>{if($("reportType")?.value==="orders")buildReport().catch(err=>toast(err.message||"Could not refresh the report preview.","error"));});
   bindRangeControls(()=>buildReport());await buildReport();attachRefresh(buildReport);
  }

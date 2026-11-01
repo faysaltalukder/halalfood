@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <title>Coupon Usage · Halal Food Admin</title>
-<link rel="stylesheet" href="./shared.css?v=20261031-coupon-nav-v2">
+<link rel="stylesheet" href="./shared.css?v=20261101-shared-erp-system-v1">
 <link rel="stylesheet" href="./coupon-usage.css?v=20261031-coupon-usage-v1">
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
 </head>
@@ -56,7 +56,7 @@
         <option value="unlinked">Needs reconciliation</option>
       </select>
     </div>
-    <div class="cu-table-wrap" tabindex="0" role="region" aria-label="Coupon orders and customers">
+    <div class="hf-table-wrap cu-table-wrap" tabindex="0" role="region" aria-label="Coupon orders and customers">
       <table class="hf-table cu-table">
         <thead><tr><th>Customer</th><th>Order</th><th>Coupon</th><th>Discount</th><th>Subtotal</th><th>Order total</th><th>Order / usage status</th><th>Used at</th></tr></thead>
         <tbody id="couponUsageTableBody"><tr><td colspan="8" class="hf-loading">Loading coupon usage…</td></tr></tbody>
@@ -67,7 +67,7 @@
   <p class="cu-footnote">Order value is the recorded order total after discount, not proof of money received. The storefront is currently a COD/testing project; this dashboard reports order records and does not verify cash collection.</p>
 </main>
 </div>
-<script defer src="./i18n.js?v=20261031-customer-messages-nav-v1"></script>
+<script defer src="./i18n.js?v=20261101-shell-localization-v3"></script>
 <script defer src="./shared.js?v=20261031-catalog-workspace-v1"></script>
 <script defer src="./coupon-usage.js?v=20261031-coupon-usage-v1"></script>
 <script defer src="./app.js?v=20261031-coupon-usage-v1"></script>

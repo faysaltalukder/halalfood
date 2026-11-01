@@ -6,7 +6,7 @@ import vm from "node:vm";
 
 const root = process.cwd();
 const adminDir = join(root, "admin");
-const sharedCssVersion = "20261030-admin-theme-v2";
+const sharedCssVersion = "20261101-shared-erp-system-v1";
 const sharedJsVersion = "20261030-illustrated-nav-v1";
 const appJsVersion = "20261030-orders-polish-v5";
 const read = (path) => readFileSync(join(root, path), "utf8");
@@ -78,7 +78,8 @@ assert.ok(!read("admin/operations.html").includes('id="suppliersSection"') && re
 
 for (const file of unifiedPages) {
   const source = read(join("admin", file));
-  assert.ok(source.includes("shared.css?v="), `${file}: missing shared CSS cache-busting version.`);
+  assert.ok(source.includes("i18n.js?v=20261101-shell-localization-v3"), `${file}: missing or stale shared language dictionary.`);
+  assert.ok(source.includes(`shared.css?v=${sharedCssVersion}`), `${file}: stale shared UI cache version.`);
   assert.ok(source.includes("shared.js?v="), `${file}: missing shared JS cache-busting version.`);
 
   if (source.includes("./app.js")) {
@@ -89,6 +90,14 @@ for (const file of unifiedPages) {
   assert.ok(mainTag, `${file}: missing main#pageContent landmark.`);
   assert.ok(/\btabindex=["']-1["']/.test(mainTag), `${file}: main content must be programmatically focusable for the skip link.`);
   assert.equal((source.match(/<main\b/gi) || []).length, 1, `${file}: expected one main landmark in the source page.`);
+
+  const tableTags = [...source.matchAll(/<table\b([^>]*)>/gi)];
+  const tableWrappers = [...source.matchAll(/class="[^"]*\bhf-table-wrap\b[^"]*"/gi)];
+  for (const table of tableTags) {
+    const tableClass = (table[1].match(/\bclass="([^"]+)"/i) || [])[1] || "";
+    assert.ok(tableClass.split(/\s+/).includes("hf-table"), "Every admin data table must use the shared hf-table base class.");
+  }
+  assert.ok(tableWrappers.length >= tableTags.length, "Every admin data table must have a shared responsive hf-table-wrap container.");
 
   const ids = [...source.matchAll(/\bid\s*=\s*["']([^"']+)["']/g)].map((match) => match[1]);
   const seen = new Set();
@@ -244,11 +253,50 @@ assert.equal(inferShippingWeightFromUnit("500ml"), "", "Volume must not be silen
 
 assert.ok(customerIdentityMigration.includes("sync_my_customer_identity"), "Customer identity migration must include the safe login sync function.");
 
+const posWorkspace = read("admin/pos.html");
+const couponUsageWorkspace = read("admin/coupon-usage.html");
+const couponsWorkspace = read("admin/coupons.html");
+assert.ok(posWorkspace.includes('class="hf-table-wrap pos-cart-table-wrap"') && posWorkspace.includes('class="hf-table-wrap pos-history-scroll"'), "POS cart and history tables must use the shared responsive table wrapper.");
+assert.ok(couponUsageWorkspace.includes('class="hf-table-wrap cu-table-wrap"'), "Coupon Usage must use the shared responsive table wrapper.");
+assert.ok((couponsWorkspace.match(/class="hf-table-wrap cp-table-wrap/g)||[]).length>=2, "Coupon list and redemption tables must use the shared responsive table wrapper.");
+assert.ok(posWorkspace.includes('aria-label="Current POS cart items"') && posWorkspace.includes('class="hf-table-wrap pos-history-scroll" tabindex="0"'), "POS scrollable tables must have keyboard focus and accessible region labels.");
+assert.ok(couponsWorkspace.includes('aria-label="Coupon redemption history"'), "Coupon redemption history must have an accessible scrollable region label.");
+const marketingWorkspace = read("admin/marketing-center.html");
+const trackingWorkspace = read("admin/tracking.html");
+assert.ok(marketingWorkspace.includes('class="hf-table-wrap hf-marketing-table-wrap"') && marketingWorkspace.includes('class="hf-table hf-marketing-table"'), "Marketing Center tables must use the shared table wrapper and table base classes.");
+assert.ok(trackingWorkspace.includes('class="hf-table-wrap hf-tracking-table-wrap"') && trackingWorkspace.includes('class="hf-table hf-tracking-table"'), "Tracking Controls must use the shared table wrapper and table base classes.");
 const overview = read("admin/overview.html");
+const overviewApp = read("admin/app.js");
+const overviewCss = read("admin/overview.css");
+assert.ok(overview.includes('id="overviewRangeSelect"') && overview.includes('id="overviewCustomRange"') && overview.includes('id="overviewApplyRange"'), "Overview must provide a selectable date range and custom date controls.");
+assert.ok(overview.includes('id="overviewTrendType"') && overviewApp.includes("renderOverviewOperationsTrend") && overviewApp.includes('trendTypeSelect?.addEventListener("change",renderOverviewOperationsTrend)'), "Overview trend must support in-place Area, Line and Bar chart selection without refetching data.");
+assert.ok(overviewCss.includes(".hf-overview-chart-controls"), "Overview chart type selector must use responsive chart controls.");
+const analyticsRangePage=read("admin/analytics.html");
+const reportsRangePage=read("admin/reports.html");
+assert.ok(analyticsRangePage.includes('<option value="today">Today</option>') && analyticsRangePage.includes('<option value="last-year">Last year</option>'), "Analytics must expose consistent calendar date presets.");
+assert.ok(reportsRangePage.includes('<option value="this-month">This month</option>') && reportsRangePage.includes('id="customRangeFields"'), "Reports must expose the same date presets and hide custom dates until selected.");
+assert.ok(app.includes('timeZone:"Asia/Dhaka"') && app.includes("buildDhakaRange") && app.includes("const trendCountsByEvent=new Map()"), "Analytics and reports must use Bangladesh-local date boundaries and grouped trend aggregation.");
+assert.ok(app.includes("Trend grouped by month.") && !app.includes("Daily trend shows the last 90 days"), "Analytics trend labels must match the selected reporting period.");
+assert.ok(read("admin/i18n.js").includes('"Chart type": "চার্টের ধরন"') && read("admin/i18n.js").includes('"Line": "লাইন"') && read("admin/i18n.js").includes('"Bar": "বার"'), "Overview chart types must have Bengali translations.");
+assert.ok(overviewApp.includes("const readOverviewRange=()=>") && overviewApp.includes('timeZone:"Asia/Dhaka"'), "Overview date filters must use explicit Bangladesh-local date handling.");
+assert.ok(overviewApp.includes("fetchOverviewEvents(range,maxRows=15000)") && overviewApp.includes('.in("event_name",eventNames)'), "Overview event queries should load only the event types used by its charts.");
+assert.ok(overviewApp.includes("fetchOverviewOrderLines(range,maxRows=5000)") && overviewApp.includes('order_items(id)') && overviewApp.includes('select("id,total,ordered_at,status,order_items(id)")'), "Overview should use one lightweight order query for summary and trend calculations.");
+assert.ok(!overviewApp.includes("fetchOverviewOrderSummary(") && overviewApp.includes("const summaryOrders=chartOrders;"), "Overview must not refetch the same selected-period orders for its KPI summary.");
+assert.ok(overviewApp.includes("rangeIncludesToday?Promise.resolve(null)") && overviewApp.includes("separateTodayEvents"), "Overview should reuse selected-range orders/events for Today metrics and fetch Today separately only when needed.");
+assert.ok(overviewApp.includes("Promise.allSettled") && overviewApp.includes("fetchFinance(range,3000)") && overviewApp.includes("confirmedFinanceRange"), "Overview finance chart must use selected-period confirmed ledger entries separately from the all-time summary.");
+assert.ok(read("admin/shared.js").includes("const from=range.fromDay??") && read("admin/shared.js").includes("const to=range.toDay??"), "Date-only finance ledger filters must use Dhaka calendar dates rather than UTC ISO date slices.");
+assert.ok(overviewApp.includes("Overview refresh failed.") && overviewApp.includes("last successful load"), "Overview must report refresh failures instead of silently leaving stale or loading figures.");
+assert.ok(overviewApp.includes("All-time Finance Snapshot reached its 3,000-entry retrieval limit.") && overviewApp.includes("Stock alerts reached the 1,000-product retrieval limit."), "Overview must disclose when dashboard snapshots reach retrieval caps.");
+const reportSource = read("admin/app.js");
+assert.ok(reportSource.includes("5,000-order retrieval cap") && reportSource.includes("15,000-event retrieval cap") && reportSource.includes("10,000-product retrieval cap") && reportSource.includes("3,000-entry finance retrieval cap"), "Reports must disclose when the selected dataset reaches its retrieval cap.");
+assert.ok(reportSource.includes('timeZone:"Asia/Dhaka",dateStyle:"medium",timeStyle:"short"') && reportSource.includes('timeZone:"Asia/Dhaka",year:"numeric",month:"2-digit",day:"2-digit"'), "Report filenames and print timestamps must use the Bangladesh business timezone.");
+assert.ok(overviewCss.includes(".hf-overview-range-toolbar"), "Overview date-range controls must use the responsive shared visual style.");
+assert.ok(overviewCss.includes("HF Overview restrained surface v1") && overviewCss.includes("background-image:none!important"), "Overview surfaces should use the restrained brand palette without decorative gradients.");
+assert.ok(read("admin/shared.css").includes("HF ERP shared surfaces v1") && read("admin/shared.css").includes("--hf-table-head"), "Shared tables, forms and cards must use the common theme-aware surface tokens.");
 assert.ok(!overview.includes("চতুর্থ ডিপ্লয়মেন্ট"), "Overview should not show the obsolete deployment marker.");
 assert.ok(!overview.includes('class="hf-deployment-marker"'), "Obsolete deployment marker component should be removed.");
 assert.ok(!overview.includes("Test project") && !overview.includes("Testing project"), "Overview should not show the removed testing notice.");
-assert.ok(overview.includes("overview.css?v=20261030-admin-theme-v3"), "Overview polish stylesheet must be cache-busted.");
+assert.ok(overview.includes("overview.css?v=20261101-overview-erp-polish-v1"), "Overview polish stylesheet must be cache-busted.");
 
 const facebookPage = read("admin/facebook-publishing.html");
 assert.ok(facebookPage.includes("facebook-publishing.js?v=20261026-phase3-automation-queue"), "Facebook publishing script cache key must include the queue UI update.");

@@ -1427,3 +1427,46 @@ html[data-admin-theme="dark"] .admin-nav-parent-toggle[aria-expanded="true"]{
 @media(prefers-reduced-motion:reduce){
  .admin-nav-parent-toggle .admin-nav-expand-icon{transition:none!important}
 }
+
+/* HF ERP shared surfaces v1 — restrained, reusable light/dark presentation */
+:root{
+ --hf-table-head:#F8F6F1;
+ --hf-table-hover:#FFF8EF;
+ --hf-control-surface:#FFFDF8;
+ --hf-surface-subtle:#F2F0EA;
+ --hf-shadow:0 4px 16px rgba(43,42,61,.045);
+}
+html[data-admin-theme="dark"]{
+ --hf-table-head:#393849;
+ --hf-table-hover:#393748;
+ --hf-control-surface:#302F40;
+ --hf-surface-subtle:#393849;
+ --hf-shadow:0 6px 18px rgba(0,0,0,.14);
+}
+html[data-admin-theme="light"] body{background:#F2F0EA}
+html[data-admin-theme="dark"] body{background:#222130}
+html[data-admin-theme="light"] .admin-sidebar{background:#FFFDF8;box-shadow:4px 0 18px rgba(43,42,61,.025)}
+html[data-admin-theme="dark"] .admin-sidebar{background:#2B2A3D;box-shadow:4px 0 18px rgba(0,0,0,.12)}
+html[data-admin-theme="light"] .admin-topbar{background:rgba(255,253,248,.96);box-shadow:0 3px 12px rgba(43,42,61,.025)}
+html[data-admin-theme="dark"] .admin-topbar{background:rgba(43,42,61,.96);box-shadow:0 3px 12px rgba(0,0,0,.10)}
+.hf-card{background:var(--hf-paper);box-shadow:var(--hf-shadow)}
+.hf-table th{background:var(--hf-table-head)}
+.hf-table tbody tr:hover td{background:var(--hf-table-hover)}
+.hf-input,.hf-select,.hf-textarea{background:var(--hf-control-surface)}
+.hf-table-wrap{overscroll-behavior-x:contain;scrollbar-width:thin}
+.hf-table-wrap:focus-visible{outline:3px solid var(--hf-focus);outline-offset:3px}
+.hf-input[aria-invalid="true"],.hf-select[aria-invalid="true"],.hf-textarea[aria-invalid="true"]{border-color:var(--hf-red);box-shadow:0 0 0 3px #B4453A22}
+.hf-data-note.hf-error{color:var(--hf-red)}
+.hf-table tbody tr:focus-within td{background:var(--hf-table-hover)}
+@media(prefers-reduced-motion:reduce){
+ .hf-card,.hf-table tbody tr,.hf-button,.admin-nav-link,.admin-top-button{transition:none!important}
+}
+
+/* Theme-specific ERP surface overrides */
+html[data-admin-theme="light"] .hf-card{background:#FFFDF8;box-shadow:var(--hf-shadow)}
+html[data-admin-theme="dark"] .hf-card{background:#302F40;box-shadow:var(--hf-shadow)}
+html[data-admin-theme="dark"] .hf-input,
+html[data-admin-theme="dark"] .hf-select,
+html[data-admin-theme="dark"] .hf-textarea{background:var(--hf-control-surface)}
+html[data-admin-theme="dark"] .admin-nav-link.active{background:rgba(201,123,61,.15);background-image:none}
+html[data-admin-theme="light"] .admin-nav-link.active{background:#F2E9DF;background-image:none}

@@ -157,7 +157,11 @@ async function fetchPosts(limit=1000){
 async function fetchFinance(range=null,limit=3000){
  return paginateQuery(()=>{
   let q=client.from("admin_finance_entries").select("id,entry_type,category,amount,entry_date,description,reference,status,related_order_id,created_by,created_at,updated_at").order("entry_date",{ascending:false}).order("created_at",{ascending:false});
-  if(range)q=rangeQuery(q,"entry_date",{from:range.from?range.from.slice(0,10):null,to:range.to?range.to.slice(0,10):null});
+  if(range){
+   const from=range.fromDay??(range.from?range.from.slice(0,10):null);
+   const to=range.toDay??(range.to?range.to.slice(0,10):null);
+   q=rangeQuery(q,"entry_date",{from,to});
+  }
   return q;
  },limit);
 }
