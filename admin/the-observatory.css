@@ -10,14 +10,14 @@ html[data-hf-theme="the-observatory"] body[data-page]{
  --ws-control:#FFFFFF;--ws-border:#D8D2E1;--ws-ink:#3A344A;--ws-muted:#625C70;
  --ws-blue:#657E9F;--ws-teal:#4F897D;--ws-coral:#C57968;--ws-indigo:#746595;
  --ws-amber:#A87C3F;--ws-violet:#8172A6;
- background:radial-gradient(ellipse at 86% 4%,rgba(131,200,181,.12),transparent 32%),radial-gradient(ellipse at 11% 34%,rgba(140,130,172,.11),transparent 34%),radial-gradient(ellipse at 88% 94%,rgba(229,141,112,.075),transparent 32%),linear-gradient(135deg,#F0EDF4 0%,#EAE7F0 48%,#E3E1EB 100%) fixed!important;
+ background:radial-gradient(circle at 6% 13%,rgba(107,95,135,.22) 0 1px,transparent 1.7px),radial-gradient(circle at 15% 63%,rgba(107,95,135,.16) 0 1px,transparent 1.6px),radial-gradient(circle at 29% 23%,rgba(131,200,181,.22) 0 1px,transparent 1.8px),radial-gradient(circle at 47% 82%,rgba(107,95,135,.16) 0 1px,transparent 1.6px),radial-gradient(circle at 66% 18%,rgba(131,200,181,.18) 0 1px,transparent 1.7px),radial-gradient(circle at 83% 56%,rgba(107,95,135,.17) 0 1px,transparent 1.7px),radial-gradient(circle at 94% 87%,rgba(229,141,112,.20) 0 1px,transparent 1.8px),radial-gradient(ellipse at 86% 4%,rgba(131,200,181,.15),transparent 32%),radial-gradient(ellipse at 11% 34%,rgba(140,130,172,.12),transparent 34%),radial-gradient(ellipse at 88% 94%,rgba(229,141,112,.09),transparent 32%),linear-gradient(135deg,#F0EDF4 0%,#EAE7F0 48%,#E3E1EB 100%) fixed!important;
  color:#3A344A!important;font-family:Inter,"Segoe UI",system-ui,sans-serif;
 }
 html[data-hf-theme="the-observatory"] body[data-page] .admin-frame,
 html[data-hf-theme="the-observatory"] body[data-page] .admin-main{background:transparent!important;color:#3A344A!important}
 html[data-hf-theme="the-observatory"] body[data-page] .admin-sidebar{
- position:relative;isolation:isolate;overflow:hidden;
- background:radial-gradient(ellipse at 15% 3%,rgba(131,200,181,.14),transparent 36%),linear-gradient(150deg,#242235 0%,#302B43 46%,#3D3650 100%)!important;
+ isolation:isolate;scrollbar-width:thin;scrollbar-color:rgba(169,224,208,.38) rgba(255,255,255,.04);overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
+ background:radial-gradient(circle at 14% 12%,rgba(169,224,208,.56) 0 1px,transparent 1.8px),radial-gradient(circle at 76% 26%,rgba(199,185,225,.48) 0 1px,transparent 1.7px),radial-gradient(circle at 31% 61%,rgba(169,224,208,.28) 0 1px,transparent 1.6px),radial-gradient(ellipse at 15% 3%,rgba(131,200,181,.17),transparent 36%),radial-gradient(ellipse at 90% 88%,rgba(151,132,190,.14),transparent 35%),linear-gradient(150deg,#242235 0%,#302B43 46%,#3D3650 100%)!important;
  color:#F4F0F8!important;border-right:1px solid rgba(233,230,239,.17)!important;box-shadow:10px 0 34px rgba(36,34,53,.12)!important;
 }
 html[data-hf-theme="the-observatory"] body[data-page] .admin-sidebar:before{
@@ -160,7 +160,7 @@ html[data-hf-theme="the-observatory"] body[data-page="overview"] #pageContent{di
 html[data-hf-theme="the-observatory"] body[data-page="overview"] .hf-overview-hero{
  position:relative;isolation:isolate;overflow:hidden;display:flex;align-items:center;min-height:196px;margin:0;padding:30px 32px;
  border:1px solid #D7D1E0!important;border-left:4px solid #83C8B5!important;border-radius:17px!important;
- background:radial-gradient(ellipse at 92% 4%,rgba(131,200,181,.18),transparent 31%),linear-gradient(120deg,#FBF9FC 0%,#F0EDF5 58%,#E9EFF0 100%)!important;
+ background:radial-gradient(circle at 83% 20%,rgba(107,95,135,.19) 0 1px,transparent 1.8px),radial-gradient(circle at 91% 64%,rgba(131,200,181,.34) 0 1.4px,transparent 2px),radial-gradient(circle at 70% 82%,rgba(229,141,112,.24) 0 1px,transparent 1.8px),radial-gradient(ellipse at 92% 4%,rgba(131,200,181,.22),transparent 31%),linear-gradient(120deg,#FBF9FC 0%,#F0EDF5 58%,#E9EFF0 100%)!important;
  box-shadow:0 15px 34px rgba(48,40,67,.07)!important;
 }
 html[data-hf-theme="the-observatory"] body[data-page="overview"] .hf-overview-hero:before{content:"SIGNAL ROOM  /  COMMERCE OBSERVATORY";position:absolute;right:30px;top:23px;color:#6B5D83;font-family:"IBM Plex Mono",monospace;font-size:9px;font-weight:600;letter-spacing:.13em}
@@ -229,11 +229,16 @@ html[data-hf-theme="the-observatory"] body[data-page="overview"] .hf-overview-da
 html[data-hf-theme="the-observatory"] body[data-page="overview"] .hf-table-wrap{border-radius:12px!important}
 html[data-hf-theme="the-observatory"] body[data-page="overview"] .hf-chart-wrap{min-height:224px}
 @media(max-width:1180px){
+ html[data-hf-theme="the-observatory"] body[data-page="overview"] .hf-observatory-scene{right:8px;width:340px;height:214px;opacity:.60}
+ html[data-hf-theme="the-observatory"] body[data-page="overview"] .hf-overview-hero-main{max-width:48%}
  html[data-hf-theme="the-observatory"] body[data-page="overview"] .hf-overview-primary-grid{grid-template-columns:minmax(0,1fr)}
  html[data-hf-theme="the-observatory"] body[data-page="overview"] .hf-overview-tool-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
 }
 @media(max-width:900px){html[data-hf-theme="the-observatory"] body[data-page] .admin-main{padding-top:20px}}
 @media(max-width:740px){
+ html[data-hf-theme="the-observatory"] body[data-page="overview"] .hf-observatory-scene{right:-78px;top:45%;width:272px;height:176px;opacity:.30;transform:translateY(-50%)}
+ html[data-hf-theme="the-observatory"] body[data-page="overview"] .hf-overview-hero-main{max-width:100%;padding-right:12px}
+ html[data-hf-theme="the-observatory"] body[data-page="overview"] .hf-overview-hero-actions{position:relative;z-index:3}
  html[data-hf-theme="the-observatory"] body[data-page="overview"] .hf-overview-hero{display:block;min-height:0;padding:21px 19px}
  html[data-hf-theme="the-observatory"] body[data-page="overview"] .hf-overview-hero:before{right:16px;top:14px;font-size:7px}
  html[data-hf-theme="the-observatory"] body[data-page="overview"] .hf-overview-hero:after{right:-110px;top:-65px;width:240px;height:240px}
@@ -255,6 +260,23 @@ html[data-hf-theme="the-observatory"] body[data-page="overview"] .hf-chart-wrap{
  html[data-hf-theme="the-observatory"] body[data-page="overview"] .hf-overview-finance-actions{justify-content:flex-start;margin-top:10px}
  html[data-hf-theme="the-observatory"] body[data-page="overview"] .hf-overview-insights-head{display:block}
 }
+
+/* Observatory visual identity · layered starfield, orbital instrument and satellite scene */
+html[data-hf-theme="the-observatory"] body[data-page] .admin-sidebar::-webkit-scrollbar{width:7px}
+html[data-hf-theme="the-observatory"] body[data-page] .admin-sidebar::-webkit-scrollbar-track{background:rgba(255,255,255,.035);border-radius:9px}
+html[data-hf-theme="the-observatory"] body[data-page] .admin-sidebar::-webkit-scrollbar-thumb{background:rgba(169,224,208,.32);border:2px solid #302B43;border-radius:9px}
+html[data-hf-theme="the-observatory"] body[data-page] .admin-sidebar::-webkit-scrollbar-thumb:hover{background:rgba(169,224,208,.58)}
+html[data-hf-theme="the-observatory"] body[data-page="overview"] .hf-overview-hero{background-color:#F0EDF4}
+html[data-hf-theme="the-observatory"] body[data-page="overview"] .hf-observatory-scene{position:absolute;z-index:0;right:clamp(190px,18%,300px);top:50%;width:clamp(300px,36vw,510px);height:254px;transform:translateY(-48%);pointer-events:none;opacity:.98;filter:drop-shadow(0 12px 24px rgba(70,58,94,.10))}
+html[data-hf-theme="the-observatory"] body[data-page="overview"] .hf-observatory-svg{display:block;width:100%;height:100%;overflow:visible}
+html[data-hf-theme="the-observatory"] body[data-page="overview"] .obs-orbit-track{transform-box:view-box;transform-origin:365px 160px;animation:obsSatelliteOrbit 64s linear infinite}
+html[data-hf-theme="the-observatory"] body[data-page="overview"] .obs-satellite-orbit{transform-box:view-box;transform-origin:365px 160px;animation:obsSatelliteOrbit 48s linear infinite}
+html[data-hf-theme="the-observatory"] body[data-page="overview"] .obs-distant-planet{transform-origin:142px 81px;animation:obsSatelliteOrbit 120s linear infinite}
+html[data-hf-theme="the-observatory"] body[data-page="overview"] .hf-overview-hero-main{max-width:43%;z-index:2}
+html[data-hf-theme="the-observatory"] body[data-page="overview"] .hf-overview-hero-actions{z-index:3;max-width:360px}
+html[data-hf-theme="the-observatory"] body[data-page="overview"] .hf-overview-hero-actions .hf-button{position:relative;z-index:3}
+@keyframes obsSatelliteOrbit{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+
 @media(prefers-reduced-motion:reduce){
  html[data-hf-theme="the-observatory"] body[data-page] *,
  html[data-hf-theme="the-observatory"] body[data-page] *:before,
