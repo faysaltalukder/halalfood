@@ -287,6 +287,7 @@ window.HFAdminReady.then(async H=>{
    $("overviewActionNote").textContent="Based on saved orders and stock.";
   }
   async function refresh(){
+   try{
    const range=readOverviewRange();
    const today=localDateKey(new Date());
    const todayRange=buildRange(today,today,"Today");
@@ -327,10 +328,17 @@ window.HFAdminReady.then(async H=>{
    const statusNote=$("overviewStatusRangeNote");
    if(statusNote)statusNote.textContent=range.label+" · not payment/delivery confirmation.";
    renderActionCenter(products,pendingCount,pendingVerified);
-   let finance=[],financeAvailable=true;
-   try{finance=await fetchFinance(null,3000);}
-   catch(err){financeAvailable=false;console.warn("Overview finance summary is unavailable for this session.",err);}
+   let finance=[],financeRange=[],financeAvailable=false,financeRangeAvailable=false;
+   const [financeAllResult,financeRangeResult]=await Promise.allSettled([
+    fetchFinance(null,3000),
+    fetchFinance(range,3000)
+   ]);
+   if(financeAllResult.status==="fulfilled"){finance=financeAllResult.value;financeAvailable=true;}
+   else console.warn("Overview all-time finance summary is unavailable.",financeAllResult.reason);
+   if(financeRangeResult.status==="fulfilled"){financeRange=financeRangeResult.value;financeRangeAvailable=true;}
+   else console.warn("Overview selected-period finance chart is unavailable.",financeRangeResult.reason);
    const confirmedFinance=finance.filter(e=>e.status==="confirmed");
+   const confirmedFinanceRange=financeRange.filter(e=>e.status==="confirmed");
    const income=confirmedFinance.filter(e=>e.entry_type==="income").reduce((sum,e)=>sum+Number(e.amount||0),0);
    const expenses=confirmedFinance.filter(e=>e.entry_type==="expense").reduce((sum,e)=>sum+Number(e.amount||0),0);
    $("financeSummaryIncome").textContent=financeAvailable?money(income):"Unavailable";
@@ -347,16 +355,16 @@ window.HFAdminReady.then(async H=>{
    };
    renderOverviewOperationsTrend();
    const financeCanvas=$("overviewFinanceChart");
-   if(financeAvailable){
+   if(financeRangeAvailable){
     if(financeCanvas)financeCanvas.hidden=false;
-    $("overviewFinanceChartNote").textContent="Manual ledger entries only · not a bank/COD balance.";
+    $("overviewFinanceChartNote").textContent="Confirmed ledger entries in the selected period · not a bank/COD balance.";
     drawChart("overviewFinanceChart",{type:"bar",data:{labels,datasets:[
-     {label:"Recorded income",data:buckets.items.map(bucket=>confirmedFinance.filter(e=>e.entry_type==="income"&&bucketKey(e.entry_date)===bucket.key).reduce((sum,e)=>sum+Number(e.amount||0),0)),backgroundColor:palette.green,borderRadius:5,maxBarThickness:24},
-     {label:"Recorded expenses",data:buckets.items.map(bucket=>confirmedFinance.filter(e=>e.entry_type==="expense"&&bucketKey(e.entry_date)===bucket.key).reduce((sum,e)=>sum+Number(e.amount||0),0)),backgroundColor:palette.orange,borderRadius:5,maxBarThickness:24}
+     {label:"Recorded income",data:buckets.items.map(bucket=>confirmedFinanceRange.filter(e=>e.entry_type==="income"&&bucketKey(e.entry_date)===bucket.key).reduce((sum,e)=>sum+Number(e.amount||0),0)),backgroundColor:palette.green,borderRadius:5,maxBarThickness:24},
+     {label:"Recorded expenses",data:buckets.items.map(bucket=>confirmedFinanceRange.filter(e=>e.entry_type==="expense"&&bucketKey(e.entry_date)===bucket.key).reduce((sum,e)=>sum+Number(e.amount||0),0)),backgroundColor:palette.orange,borderRadius:5,maxBarThickness:24}
     ]},options:{...chartAxisOptions(),plugins:{legend:{position:"bottom"}},onClick:()=>{location.href="./finance.html";}}});
    }else{
     if(financeCanvas)financeCanvas.hidden=true;
-    $("overviewFinanceChartNote").textContent="Finance unavailable for this session.";
+    $("overviewFinanceChartNote").textContent="Finance chart unavailable for the selected period. The all-time summary is reported separately.";
    }
    drawChart("overviewTrafficChart",{type:"line",data:{labels,datasets:[
     {label:"Page views",data:buckets.items.map(bucket=>events.filter(e=>e.event_name==="page_view"&&bucketKey(e.occurred_at)===bucket.key).length),borderColor:palette.blue,backgroundColor:"#4F7CFF20",fill:true,tension:.35,pointRadius:2,borderWidth:2},
@@ -372,19 +380,29 @@ window.HFAdminReady.then(async H=>{
    if(events.length>=15000)limits.push("Website activity reached the 15,000-event limit.");
    if(todayOrders.length>=1000)limits.push("Today's order-line count reached its 1,000-order limit.");
    if(todayEvents.length>=15000)limits.push("Today's cart-event count reached its 15,000-event limit.");
+   if(products.length>=1000)limits.push("Stock alerts reached the 1,000-product retrieval limit.");
+   if(finance.length>=3000)limits.push("All-time Finance Snapshot reached its 3,000-entry retrieval limit.");
+   if(financeRange.length>=3000)limits.push("Selected-period Finance Chart reached its 3,000-entry retrieval limit.");
    $("overviewDataNote").textContent=events.length+" page, product and cart events · "+range.label+" · "+summaryOrders.length+" orders. Order lines are product rows, not quantities; cart additions are events, not current cart. "+(pendingVerified?"Pending count verified.":"Pending count unavailable; shown as —.")+" Records do not confirm payment or delivery."+(limits.length?" "+limits.join(" "):"");
+   }catch(error){
+    const note=$("overviewDataNote");
+    if(note)note.textContent="Overview data could not be refreshed. Any values still visible are from the last successful load; please retry.";
+    console.error("Overview refresh failed.",error);
+    throw new Error("Overview could not be refreshed. Please try again.");
+   }
   }
   const toggleCustomRange=()=>{if(customRange)customRange.hidden=rangeSelect?.value!=="custom";};
   if(fromInput&&!fromInput.value)fromInput.value=localDateKey(new Date());
   if(toInput&&!toInput.value)toInput.value=localDateKey(new Date());
   rangeSelect?.addEventListener("change",()=>{
    toggleCustomRange();
-   if(rangeSelect.value!=="custom")refresh().catch(error=>toast(error.message||"Could not refresh this overview.","error"));
+   if(rangeSelect.value!=="custom")refresh().catch(()=>toast("Overview could not be refreshed. Please try again.","error"));
   });
-  $("overviewApplyRange")?.addEventListener("click",()=>refresh().catch(error=>toast(error.message||"Choose a valid date range.","error")));
+  $("overviewApplyRange")?.addEventListener("click",()=>refresh().catch(()=>toast("Overview could not be refreshed. Please try again.","error")));
   trendTypeSelect?.addEventListener("change",renderOverviewOperationsTrend);
   toggleCustomRange();
-  await refresh();attachRefresh(refresh);
+  try{await refresh();}catch(_overviewError){toast("Overview could not be loaded. Please check the connection and refresh.","error");}
+  attachRefresh(refresh);
  }
  async function initAnalytics(){
   async function refresh(){
