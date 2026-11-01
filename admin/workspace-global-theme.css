@@ -602,3 +602,4 @@ html[data-hf-theme="warm-harvest"] body[data-page]::before{filter:var(--hf-theme
  .hf-theme-group-heading{align-items:flex-start;flex-direction:column;gap:1px}
  .hf-theme-group-heading small{text-align:left}
 }
+
