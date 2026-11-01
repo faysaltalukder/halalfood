@@ -6,7 +6,7 @@ import vm from "node:vm";
 
 const root = process.cwd();
 const adminDir = join(root, "admin");
-const sharedCssVersion = "20261030-admin-theme-v2";
+const sharedCssVersion = "20261101-shared-erp-system-v1";
 const sharedJsVersion = "20261030-illustrated-nav-v1";
 const appJsVersion = "20261030-orders-polish-v5";
 const read = (path) => readFileSync(join(root, path), "utf8");
@@ -79,7 +79,7 @@ assert.ok(!read("admin/operations.html").includes('id="suppliersSection"') && re
 for (const file of unifiedPages) {
   const source = read(join("admin", file));
   if (source.includes("i18n.js?v=")) assert.ok(source.includes("i18n.js?v=20261101-shell-localization-v3"), `${file}: stale language dictionary cache version.`);
-  assert.ok(source.includes("shared.css?v="), `${file}: missing shared CSS cache-busting version.`);
+  assert.ok(source.includes(`shared.css?v=${sharedCssVersion}`), `${file}: stale shared UI cache version.`);
   assert.ok(source.includes("shared.js?v="), `${file}: missing shared JS cache-busting version.`);
 
   if (source.includes("./app.js")) {
@@ -256,10 +256,12 @@ assert.ok(overviewApp.includes("const readOverviewRange=()=>") && overviewApp.in
 assert.ok(overviewApp.includes("fetchOverviewEvents(range,maxRows=15000)") && overviewApp.includes('.in("event_name",eventNames)'), "Overview event queries should load only the event types used by its charts.");
 assert.ok(overviewApp.includes("fetchOverviewOrderLines(range,maxRows=5000)") && overviewApp.includes('order_items(id)'), "Overview order-line trend should fetch only lightweight order-item identifiers.");
 assert.ok(overviewCss.includes(".hf-overview-range-toolbar"), "Overview date-range controls must use the responsive shared visual style.");
+assert.ok(overviewCss.includes("HF Overview restrained surface v1") && overviewCss.includes("background-image:none!important"), "Overview surfaces should use the restrained brand palette without decorative gradients.");
+assert.ok(read("admin/shared.css").includes("HF ERP shared surfaces v1") && read("admin/shared.css").includes("--hf-table-head"), "Shared tables, forms and cards must use the common theme-aware surface tokens.");
 assert.ok(!overview.includes("চতুর্থ ডিপ্লয়মেন্ট"), "Overview should not show the obsolete deployment marker.");
 assert.ok(!overview.includes('class="hf-deployment-marker"'), "Obsolete deployment marker component should be removed.");
 assert.ok(!overview.includes("Test project") && !overview.includes("Testing project"), "Overview should not show the removed testing notice.");
-assert.ok(overview.includes("overview.css?v=20261101-overview-range-v1"), "Overview polish stylesheet must be cache-busted.");
+assert.ok(overview.includes("overview.css?v=20261101-overview-erp-polish-v1"), "Overview polish stylesheet must be cache-busted.");
 
 const facebookPage = read("admin/facebook-publishing.html");
 assert.ok(facebookPage.includes("facebook-publishing.js?v=20261026-phase3-automation-queue"), "Facebook publishing script cache key must include the queue UI update.");

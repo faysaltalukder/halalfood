@@ -392,3 +392,58 @@ html[data-admin-theme="dark"] .hf-overview-tool:nth-child(5){background:#4A4028!
 .hf-overview-chart-type{display:inline-flex;align-items:center;gap:7px;color:var(--hf-muted);font-size:10px;font-weight:750}
 .hf-overview-chart-type select{width:104px;min-height:34px;padding:5px 27px 5px 9px}
 @media(max-width:560px){.hf-overview-chart-controls{justify-content:flex-start}.hf-overview-chart-type{flex:1 1 100%;justify-content:space-between}.hf-overview-chart-type select{width:120px}}
+
+/* HF Overview restrained surface v1 — remove decorative gradients and keep the brand palette */
+.hf-overview-hero,
+.hf-overview-primary-grid>.hf-card,
+.hf-overview-shortcuts,
+.hf-overview-tools,
+.hf-overview-tool,
+.hf-quick-action,
+.hf-card-grid>.hf-card,
+.hf-overview-range-toolbar,
+.hf-overview-finance-card .hf-summary-pill{
+ background:var(--hf-paper)!important;
+ background-image:none!important;
+ box-shadow:var(--hf-shadow)!important;
+ border-color:var(--hf-border)!important;
+}
+.hf-overview-hero:after{display:none!important}
+.hf-overview-hero h1{font-size:clamp(25px,2.1vw,31px);letter-spacing:-.035em}
+.hf-kpi{
+ background:var(--hf-paper)!important;
+ background-image:none!important;
+ border:1px solid var(--hf-border)!important;
+ border-left:3px solid var(--hf-orange)!important;
+ box-shadow:var(--hf-shadow)!important;
+ transform:none!important;
+}
+.hf-kpi:before{display:none!important}
+.hf-kpi:after{display:none!important}
+.hf-kpi:hover,.hf-kpi:focus-within{transform:translateY(-1px)!important;border-color:var(--hf-orange)!important;box-shadow:0 7px 18px rgba(43,42,61,.07)!important}
+.hf-overview-primary-grid>.hf-card{border-top:1px solid var(--hf-border)!important}
+.hf-overview-finance-card,.hf-action-center{border-top-color:var(--hf-border)!important}
+.hf-overview-shortcuts,.hf-overview-tools{box-shadow:none!important}
+.hf-quick-action,.hf-overview-tool{box-shadow:none!important;transform:none!important}
+.hf-quick-action:hover,.hf-overview-tool:hover{border-color:var(--hf-orange)!important;box-shadow:0 4px 12px rgba(43,42,61,.045)!important;transform:translateY(-1px)!important}
+.hf-card-grid>.hf-card:hover{box-shadow:var(--hf-shadow)!important;transform:none!important}
+.hf-overview-data-note{background:var(--hf-surface-subtle)!important;border-color:var(--hf-border)!important}
+html[data-admin-theme="dark"] .hf-overview-hero,
+html[data-admin-theme="dark"] .hf-overview-primary-grid>.hf-card,
+html[data-admin-theme="dark"] .hf-overview-shortcuts,
+html[data-admin-theme="dark"] .hf-overview-tools,
+html[data-admin-theme="dark"] .hf-overview-tool,
+html[data-admin-theme="dark"] .hf-quick-action,
+html[data-admin-theme="dark"] .hf-card-grid>.hf-card,
+html[data-admin-theme="dark"] .hf-overview-range-toolbar,
+html[data-admin-theme="dark"] .hf-kpi,
+html[data-admin-theme="dark"] .hf-overview-finance-card .hf-summary-pill{
+ background:var(--hf-paper)!important;
+ background-image:none!important;
+}
+
+html[data-admin-theme="dark"] .hf-kpi:before,
+html[data-admin-theme="dark"] .hf-kpi:after,
+html[data-admin-theme="light"] .hf-kpi:after{display:none!important}
+html[data-admin-theme="dark"] .hf-kpi:hover,
+html[data-admin-theme="dark"] .hf-kpi:focus-within{transform:translateY(-1px)!important;box-shadow:0 7px 18px rgba(0,0,0,.16)!important}
