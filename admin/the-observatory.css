@@ -336,3 +336,316 @@ html[data-hf-theme="the-observatory"] body[data-page="overview"] .hf-overview-he
  html[data-hf-theme="the-observatory"] body[data-page] *:before,
  html[data-hf-theme="the-observatory"] body[data-page] *:after{transition:none!important;animation:none!important;scroll-behavior:auto!important}
 }
+
+
+/* THE OBSERVATORY · fixed, page-specific celestial backdrops.
+   The scene is a viewport decoration, not a content section: it never
+   participates in layout, reserves space, captures input or moves with scroll. */
+html[data-hf-theme="the-observatory"] body[data-page] .admin-main:after{
+ content:none!important;display:none!important;
+}
+html[data-hf-theme="the-observatory"] body[data-page] .admin-main #hfObservatoryBackground{
+ position:fixed;z-index:0;top:82px;right:0;width:clamp(330px,47vw,610px);
+ height:clamp(290px,44vw,455px);min-height:0;overflow:visible;
+ pointer-events:none;user-select:none;isolation:isolate;contain:layout style paint;
+ opacity:.82;filter:drop-shadow(0 12px 26px rgba(65,53,88,.10));
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground>*{
+ position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground i,
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground b,
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground em{display:block;position:absolute}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-solar-core{
+ width:58px;height:58px;border-radius:50%;
+ background:radial-gradient(circle at 32% 28%,#FFF9D8 0 8%,#FFE6A1 23%,#F4B95C 54%,#D8794B 100%);
+ box-shadow:0 0 16px 5px rgba(249,195,111,.42),0 0 54px 17px rgba(239,160,91,.24),0 0 125px 40px rgba(229,141,112,.13),inset -8px -7px 13px rgba(157,78,49,.22);
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-orbit{
+ left:50%;top:50%;border:1px solid rgba(175,165,198,.42);border-radius:50%;
+ transform:translate(-50%,-50%);animation:hfObsOrbitSpin var(--orbit-duration,36s) linear infinite;
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-orbit>i{
+ left:50%;top:-5px;width:var(--planet-size,9px);height:var(--planet-size,9px);border-radius:50%;
+ transform:translateX(-50%);box-shadow:0 0 9px rgba(255,255,255,.25),0 0 13px currentColor;
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-orbit--1{width:19%;height:20%;--orbit-duration:8s;--planet-size:5px}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-orbit--2{width:29%;height:30%;--orbit-duration:13s;--planet-size:7px}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-orbit--3{width:39%;height:40%;--orbit-duration:19s;--planet-size:8px}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-orbit--4{width:49%;height:50%;--orbit-duration:25s;--planet-size:7px}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-orbit--5{width:62%;height:63%;--orbit-duration:37s;--planet-size:14px}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-orbit--6{width:75%;height:76%;--orbit-duration:49s;--planet-size:12px}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-orbit--7{width:88%;height:89%;--orbit-duration:66s;--planet-size:10px}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-orbit--8{width:99%;height:100%;--orbit-duration:84s;--planet-size:10px}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-planet-mercury{background:radial-gradient(circle at 30% 24%,#E8DDD4,#A89BA0 58%,#5A5665)}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-planet-venus{background:radial-gradient(circle at 30% 24%,#FFF0C7,#D9AB76 65%,#94624F)}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-planet-earth{background:radial-gradient(circle at 30% 22%,#C8F1E5,#4F9FB1 55%,#263B68)}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-planet-mars{background:radial-gradient(circle at 30% 24%,#F4B28B,#C76855 60%,#6F3C48)}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-planet-jupiter{background:repeating-linear-gradient(0deg,#A97967 0 2px,#E7D1B4 3px 5px,#C3987E 6px 8px)}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-planet-saturn{background:radial-gradient(circle at 30% 24%,#F5E4BB,#C2A078 65%,#806C76)}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-planet-uranus{background:radial-gradient(circle at 30% 24%,#E0F8F5,#8EC9CD 60%,#4A7A92)}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-planet-neptune{background:radial-gradient(circle at 30% 24%,#B5DDF2,#4C82C0 60%,#253A70)}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-planet-jupiter:after{
+ content:"";position:absolute;width:4px;height:2px;border-radius:50%;right:2px;top:4px;background:#B95F52;
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-stage--jupiter .hf-obs-jupiter-core{
+ width:152px;height:152px;border-radius:50%;
+ background:radial-gradient(ellipse at 30% 22%,rgba(255,255,255,.55),transparent 22%),repeating-linear-gradient(0deg,#9A766B 0 7px,#E8D5B8 8px 15px,#C29C81 16px 23px,#F0E0C8 24px 31px,#9E766D 32px 38px);
+ box-shadow:inset -23px -13px 35px rgba(55,38,54,.34),0 0 50px rgba(201,153,119,.18);
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-jupiter-moon-track{
+ width:var(--track-size);height:var(--track-size);border:1px solid rgba(186,176,201,.52);border-radius:50%;animation:hfObsOrbitSpin var(--track-speed) linear infinite;
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-jupiter-moon-track>i{
+ width:var(--moon-size);height:var(--moon-size);left:50%;top:-4px;transform:translateX(-50%);
+ border-radius:50%;background:radial-gradient(circle at 30% 25%,#F7E5CF,#B89B83 70%,#6B6574);box-shadow:0 0 8px rgba(232,219,200,.48);
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-jupiter-moon-track--1{--track-size:190px;--track-speed:13s;--moon-size:8px}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-jupiter-moon-track--2{--track-size:230px;--track-speed:21s;--moon-size:6px}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-jupiter-moon-track--3{--track-size:275px;--track-speed:31s;--moon-size:11px}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-jupiter-moon-track--4{--track-size:320px;--track-speed:43s;--moon-size:7px}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-saturn-core{
+ width:125px;height:125px;border-radius:50%;
+ background:radial-gradient(ellipse at 30% 21%,rgba(255,255,255,.54),transparent 23%),repeating-linear-gradient(0deg,#A88B76 0 8px,#E8D8B6 9px 17px,#B99875 18px 25px,#EADBBE 26px 34px);
+ box-shadow:inset -18px -15px 30px rgba(55,41,61,.34),0 0 44px rgba(210,174,123,.16);
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-saturn-ring{
+ width:285px;height:91px;border:13px solid rgba(198,176,151,.78);border-left-color:rgba(132,114,143,.72);border-right-color:rgba(229,211,182,.84);border-radius:50%;transform:translate(-50%,-50%) rotate(-22deg);
+ box-shadow:0 0 0 4px rgba(158,137,164,.18),inset 0 0 9px rgba(95,78,104,.2);
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-saturn-ring--back{z-index:-1;opacity:.78}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-saturn-ring--front{z-index:1;clip-path:inset(52% 0 0 0)}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-saturn-moon-track{
+ width:350px;height:250px;border:1px solid rgba(180,170,194,.38);border-radius:50%;animation:hfObsOrbitSpin 39s linear infinite;
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-saturn-moon-track i{
+ width:8px;height:8px;left:50%;top:0;transform:translateX(-50%);border-radius:50%;background:#DCD4CF;box-shadow:0 0 8px #DCD4CF;
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-mars-core{
+ width:132px;height:132px;border-radius:50%;
+ background:radial-gradient(circle at 27% 22%,rgba(255,227,201,.7),transparent 20%),radial-gradient(ellipse at 63% 64%,#854C4D 0 8%,transparent 9%),radial-gradient(circle at 43% 45%,#E69B75 0 13%,transparent 14%),repeating-linear-gradient(165deg,#C96E55 0 16px,#AE5B52 17px 23px,#E0A17A 24px 31px);
+ box-shadow:inset -20px -16px 32px rgba(52,32,50,.4),0 0 45px rgba(207,116,85,.16);
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-mars-moon-track{
+ width:var(--track-size);height:var(--track-size);border:1px solid rgba(188,163,158,.46);border-radius:50%;animation:hfObsOrbitSpin var(--track-speed) linear infinite;
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-mars-moon-track i{
+ width:var(--moon-size);height:var(--moon-size);left:50%;top:-4px;transform:translateX(-50%);border-radius:50%;background:#B8B2AD;box-shadow:0 0 8px rgba(255,255,255,.45);
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-mars-moon-track--1{--track-size:180px;--track-speed:11s;--moon-size:6px}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-mars-moon-track--2{--track-size:218px;--track-speed:17s;--moon-size:4px}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-mars-rover{
+ left:calc(50% + 32px);top:calc(50% + 25px);width:10px;height:6px;border-radius:2px;background:#E3C18B;
+ box-shadow:-4px 4px 0 -1px #6B6674,5px 4px 0 -1px #6B6674,0 -3px 0 -1px #FFF0D5;
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-venus-core{
+ width:145px;height:145px;border-radius:50%;
+ background:radial-gradient(circle at 30% 23%,rgba(255,246,219,.82),transparent 22%),repeating-linear-gradient(155deg,transparent 0 10px,rgba(255,241,205,.46) 11px 18px,rgba(179,125,85,.18) 19px 25px),radial-gradient(circle at 40% 40%,#F2D7A4 0%,#D9B27C 64%,#A56E59 100%);
+ box-shadow:inset -18px -12px 30px rgba(108,71,61,.25),0 0 45px rgba(228,187,127,.22);
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-venus-cloud{
+ width:194px;height:42px;border-radius:50%;border:5px solid rgba(255,242,211,.22);border-left-color:transparent;border-right-color:rgba(193,145,99,.3);animation:hfObsCloudDrift 19s ease-in-out infinite;
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-venus-cloud--1{transform:translate(-50%,-50%) rotate(-25deg)}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-venus-cloud--2{width:160px;height:29px;transform:translate(-50%,-50%) rotate(31deg);animation-duration:27s}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-venus-probe-track{
+ width:235px;height:190px;border:1px solid rgba(201,157,112,.42);border-radius:50%;animation:hfObsOrbitSpin 28s linear infinite;
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-venus-probe-track i{
+ width:7px;height:7px;left:50%;top:0;transform:translateX(-50%);border-radius:50%;background:#B8D3D7;box-shadow:0 0 8px #B8D3D7;
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-galaxy-core{
+ width:280px;height:205px;border-radius:50%;transform:translate(-50%,-50%) rotate(-22deg);
+ background:radial-gradient(ellipse at 50% 50%,#FFF2D4 0 2%,#F4CFA5 6%,rgba(185,150,196,.65) 19%,rgba(132,125,184,.25) 40%,transparent 70%),conic-gradient(from 22deg,transparent 0 9%,rgba(139,129,190,.72) 13%,transparent 20% 34%,rgba(216,181,163,.7) 40%,transparent 47% 62%,rgba(115,171,186,.5) 68%,transparent 78% 90%,rgba(167,143,192,.58) 96%,transparent 100%);
+ filter:drop-shadow(0 0 32px rgba(159,139,190,.27));animation:hfObsGalaxyRotate 72s linear infinite;
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-galaxy-core:before{
+ content:"";position:absolute;inset:16% 10%;border:2px solid rgba(226,199,202,.45);border-left-color:transparent;border-right-color:transparent;border-radius:50%;transform:rotate(24deg);
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-galaxy-core:after{
+ content:"";position:absolute;left:calc(50% - 10px);top:calc(50% - 10px);width:20px;height:20px;border-radius:50%;background:#FFF3D6;box-shadow:0 0 24px 12px rgba(246,209,169,.42),0 0 70px 28px rgba(159,139,190,.25);
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-galaxy-star{
+ width:4px;height:4px;border-radius:50%;background:#FFF7DF;box-shadow:0 0 12px 4px rgba(210,195,226,.55);
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-galaxy-star--1{left:18%;top:24%}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-galaxy-star--2{left:82%;top:29%;width:3px;height:3px}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-galaxy-star--3{left:76%;top:77%;width:2px;height:2px}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-neptune-core{
+ width:145px;height:145px;border-radius:50%;
+ background:radial-gradient(circle at 30% 22%,rgba(227,246,255,.8),transparent 22%),repeating-linear-gradient(170deg,transparent 0 18px,rgba(194,230,244,.28) 19px 23px,transparent 24px 34px),radial-gradient(circle at 38% 40%,#74B5DD 0%,#417AB9 61%,#243B72 100%);
+ box-shadow:inset -21px -17px 34px rgba(20,35,88,.52),0 0 48px rgba(80,139,203,.24);
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-neptune-ring{
+ width:230px;height:70px;border:2px solid rgba(145,183,217,.5);border-radius:50%;transform:translate(-50%,-50%) rotate(-19deg);animation:hfObsOrbitSpin 74s linear infinite;
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-neptune-moon-track{
+ width:205px;height:190px;border:1px solid rgba(151,190,218,.42);border-radius:50%;animation:hfObsOrbitSpin 29s linear infinite;
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-neptune-moon-track i{
+ width:8px;height:8px;left:50%;top:0;transform:translateX(-50%);border-radius:50%;background:#D5DEE8;box-shadow:0 0 8px rgba(213,222,232,.6);
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-mercury-core{
+ width:128px;height:128px;border-radius:50%;
+ background:radial-gradient(circle at 30% 23%,rgba(247,235,222,.6),transparent 22%),radial-gradient(circle at 64% 62%,#5E5968 0 8%,transparent 9%),radial-gradient(circle at 36% 68%,#6D6672 0 6%,transparent 7%),radial-gradient(circle at 68% 31%,#7C7380 0 9%,transparent 10%),radial-gradient(circle at 35% 38%,#D3C3B9 0%,#9D9098 60%,#5B5665 100%);
+ box-shadow:inset -20px -16px 30px rgba(43,36,53,.4),0 0 38px rgba(168,154,158,.18);
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-mercury-crater{
+ width:20px;height:12px;border:2px solid rgba(74,67,80,.4);border-radius:50%;box-shadow:inset 0 2px 4px rgba(52,44,60,.34);
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-mercury-crater--1{left:39%;top:42%}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-mercury-crater--2{left:58%;top:58%;width:13px;height:9px}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-mercury-crater--3{left:45%;top:64%;width:9px;height:7px}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-mercury-orbit{
+ width:245px;height:175px;border:1px solid rgba(170,155,174,.4);border-radius:50%;animation:hfObsOrbitSpin 34s linear infinite;
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-mercury-orbit i{
+ left:50%;top:0;width:7px;height:7px;transform:translateX(-50%);border-radius:50%;background:#C7B6A0;
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-uranus-core,
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-ice-core{
+ width:135px;height:135px;border-radius:50%;
+ background:radial-gradient(circle at 30% 22%,rgba(239,255,252,.82),transparent 22%),repeating-linear-gradient(175deg,transparent 0 18px,rgba(224,255,250,.2) 19px 22px,transparent 23px 32px),radial-gradient(circle at 40% 40%,#B1E4DE 0%,#76B9C5 61%,#456D89 100%);
+ box-shadow:inset -20px -15px 30px rgba(35,58,83,.36),0 0 44px rgba(120,194,197,.2);
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-uranus-ring,
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-ice-ring{
+ width:220px;height:285px;border:5px solid rgba(171,211,213,.66);border-radius:50%;transform:translate(-50%,-50%) rotate(67deg);box-shadow:0 0 0 8px rgba(162,204,207,.09);
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-uranus-moon-track,
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-ice-moon-track{
+ width:270px;height:185px;border:1px solid rgba(163,201,209,.42);border-radius:50%;animation:hfObsOrbitSpin 41s linear infinite;
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-uranus-moon-track i,
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-ice-moon-track i{
+ width:8px;height:8px;left:50%;top:0;transform:translateX(-50%);border-radius:50%;background:#D9E6E7;
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-comet-tail{
+ width:310px;height:130px;left:38%;top:48%;border-radius:50%;
+ background:linear-gradient(100deg,transparent 0%,rgba(171,205,220,.04) 22%,rgba(173,198,221,.28) 60%,rgba(208,177,199,.12) 100%);
+ transform:translate(-50%,-50%) rotate(-24deg);filter:blur(8px);
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-comet-core{
+ width:63px;height:63px;left:66%;top:43%;border-radius:50%;
+ background:radial-gradient(circle at 28% 22%,#FFF8E4,#D8C9B5 50%,#756D7B 100%);
+ box-shadow:0 0 17px 8px rgba(238,226,203,.32),0 0 60px 25px rgba(158,186,204,.16);
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-comet-dust{
+ width:5px;height:5px;left:26%;top:29%;border-radius:50%;background:#D4C8DF;box-shadow:42px 37px 0 -1px #A7C6CF,112px 105px 0 #DAB998,185px 49px 0 -1px #D4C8DF;
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-moon-core{
+ width:126px;height:126px;border-radius:50%;
+ background:radial-gradient(circle at 28% 22%,#F7F3EA 0%,#C9C3C8 48%,#777483 100%);
+ box-shadow:inset -19px -14px 29px rgba(50,45,62,.4),0 0 40px rgba(183,178,190,.18);
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-moon-crater{
+ width:22px;height:16px;border-radius:50%;border:2px solid rgba(89,84,100,.28);box-shadow:inset 0 2px 4px rgba(75,70,86,.24);
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-moon-crater--1{left:41%;top:42%}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-moon-crater--2{left:58%;top:59%;width:13px;height:10px}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-moon-track{
+ width:220px;height:190px;border:1px solid rgba(171,164,184,.4);border-radius:50%;animation:hfObsOrbitSpin 32s linear infinite;
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-moon-track i{
+ left:50%;top:0;width:7px;height:7px;transform:translateX(-50%);border-radius:50%;background:#D4C9C2;
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-satellite-planet{
+ width:118px;height:118px;border-radius:50%;background:radial-gradient(circle at 28% 22%,#DCE8EA,#75A8B7 54%,#344768 100%);
+ box-shadow:inset -18px -13px 26px rgba(40,45,72,.45),0 0 40px rgba(119,174,193,.2);
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-satellite-orbit{
+ width:275px;height:180px;border:1px solid rgba(148,176,199,.58);border-radius:50%;transform:translate(-50%,-50%) rotate(-20deg);animation:hfObsOrbitSpin 24s linear infinite;
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-satellite-orbit>i{
+ width:35px;height:20px;left:50%;top:-10px;transform:translateX(-50%);border-radius:4px;
+ background:linear-gradient(90deg,#7B9DBB 0 28%,#D4B47F 28% 72%,#7B9DBB 72% 100%);
+ box-shadow:0 0 10px rgba(187,211,225,.45);
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-satellite-star{
+ width:3px;height:3px;border-radius:50%;background:#F8EBD6;box-shadow:80px -75px 0 #C5B5D8,-90px 88px 0 #A8CDD0,120px 110px 0 #D9B58E;
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-nebula-core{
+ width:330px;height:235px;border-radius:50%;
+ background:radial-gradient(ellipse at 36% 47%,rgba(228,176,164,.58),transparent 42%),radial-gradient(ellipse at 64% 38%,rgba(150,134,190,.55),transparent 48%),radial-gradient(ellipse at 58% 68%,rgba(119,177,184,.42),transparent 50%);
+ filter:blur(15px);animation:hfObsNebulaPulse 23s ease-in-out infinite;
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-nebula-cloud{
+ width:250px;height:100px;border-radius:50%;border:17px solid rgba(147,133,183,.24);filter:blur(9px);transform:translate(-50%,-50%) rotate(-28deg);
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-nebula-cloud--2{
+ width:210px;height:76px;border-color:rgba(117,178,185,.25);transform:translate(-50%,-50%) rotate(34deg);
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-nebula-star{
+ width:5px;height:5px;border-radius:50%;background:#FFF0D4;box-shadow:0 0 18px 7px rgba(207,189,224,.36),90px -70px 0 -1px #C9BDD9,-110px 72px 0 #A5C8CE;
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-asteroid-core{
+ width:60px;height:60px;border-radius:50%;background:radial-gradient(circle at 28% 24%,#DDC9B1,#847989 68%,#514B65);
+ box-shadow:inset -11px -9px 17px rgba(42,36,57,.36),0 0 32px rgba(182,153,140,.15);
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-asteroid-orbit{
+ width:280px;height:185px;border:1px dashed rgba(184,164,184,.42);border-radius:50%;animation:hfObsOrbitSpin 34s linear infinite;
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-asteroid-orbit--2{width:350px;height:245px;animation-duration:49s;transform:translate(-50%,-50%) rotate(24deg)}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-asteroid-orbit i,
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-asteroid-orbit b,
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-asteroid-orbit em{
+ width:9px;height:7px;left:50%;top:0;border-radius:45%;background:#BBA38F;box-shadow:0 0 7px rgba(207,190,169,.3);
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-asteroid-orbit b{left:22%;top:22%;width:6px;height:6px;background:#898496}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-asteroid-orbit em{left:77%;top:72%;width:11px;height:8px;background:#D1B99D}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-constellation-stars{
+ width:260px;height:200px;border-radius:50%;
+ background:radial-gradient(circle at 12% 28%,#F4E3C5 0 2px,transparent 3px),radial-gradient(circle at 42% 11%,#D8D0E8 0 2px,transparent 3px),radial-gradient(circle at 70% 31%,#F4E3C5 0 2px,transparent 3px),radial-gradient(circle at 88% 70%,#B9DCE0 0 2px,transparent 3px),radial-gradient(circle at 34% 83%,#E8C7B1 0 2px,transparent 3px),radial-gradient(circle at 55% 58%,#FFF0D4 0 3px,transparent 4px);
+ filter:drop-shadow(0 0 12px rgba(190,180,214,.4));animation:hfObsConstellationPulse 12s ease-in-out infinite;
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-constellation-glow{
+ width:310px;height:230px;border:1px solid rgba(151,145,184,.36);border-radius:50%;transform:translate(-50%,-50%) rotate(-28deg);box-shadow:0 0 0 22px rgba(151,145,184,.025),0 0 0 48px rgba(131,200,181,.025);
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-sun-core{
+ width:98px;height:98px;background:radial-gradient(circle at 32% 26%,#FFF6D7 0 10%,#FFD876 37%,#F0A04F 72%,#B85C48 100%);
+ box-shadow:0 0 25px 10px rgba(245,187,105,.4),0 0 95px 36px rgba(229,141,112,.23),0 0 170px 70px rgba(229,141,112,.08);
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-sun-corona{
+ width:142px;height:142px;border:1px solid rgba(245,205,133,.46);border-radius:50%;box-shadow:0 0 0 8px rgba(239,175,100,.06),0 0 0 25px rgba(229,141,112,.045);animation:hfObsSunPulse 12s ease-in-out infinite;
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-sun-orbit{
+ width:240px;height:200px;border:1px solid rgba(201,174,155,.4);border-radius:50%;animation:hfObsOrbitSpin 32s linear infinite;
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-sun-orbit i{
+ width:13px;height:13px;left:50%;top:0;transform:translateX(-50%);border-radius:50%;background:radial-gradient(circle at 28% 20%,#FFF1CE,#C99466 72%,#7B6171);
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-ice-core{
+ background:radial-gradient(circle at 30% 22%,#E6FAF8,#94C7D3 57%,#4A7088 100%);
+}
+html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .hf-obs-stage--solar .hf-obs-orbit{box-shadow:0 0 7px rgba(151,139,179,.025)}
+@keyframes hfObsOrbitSpin{from{rotate:0deg}to{rotate:360deg}}
+@keyframes hfObsGalaxyRotate{from{rotate:-10deg}to{rotate:350deg}}
+@keyframes hfObsCloudDrift{0%,100%{translate:0 0}50%{translate:7px -4px}}
+@keyframes hfObsNebulaPulse{0%,100%{scale:.96;opacity:.8}50%{scale:1.04;opacity:1}}
+@keyframes hfObsConstellationPulse{0%,100%{opacity:.62}50%{opacity:1}}
+@keyframes hfObsSunPulse{0%,100%{scale:1;opacity:.62}50%{scale:1.07;opacity:.95}}
+/* The illustration sits behind existing heading copy; no padding, margin or
+   content width is changed. Keep the heading surface translucent for visibility. */
+html[data-hf-theme="the-observatory"] body[data-page]:not([data-page="overview"]) .admin-main>:is(.page-heading,.hf-phase4-hero,.hf-orders-hero,.hf-products-hero,.hf-marketing-hero,.hf-finance-hero,.hf-incomplete-hero,.cu-hero,.cp-hero,.pos-hero,.pt-hero,.mar-hero,.hf-customer-hero,.hf-supplier-hero,.yt-publish-hero,.fb-publish-hero){
+ background:linear-gradient(125deg,rgba(251,249,252,.78) 0%,rgba(240,237,244,.68) 65%,rgba(234,239,240,.66) 100%)!important;
+ backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);
+}
+@media(max-width:900px){
+ html[data-hf-theme="the-observatory"] body[data-page] .admin-main #hfObservatoryBackground{
+  top:78px;right:-56px;width:min(94vw,390px);height:320px;opacity:.58;
+ }
+ html[data-hf-theme="the-observatory"] body[data-page="orders"] #hfObservatoryBackground{opacity:.52}
+}
+@media(max-width:560px){
+ html[data-hf-theme="the-observatory"] body[data-page] .admin-main #hfObservatoryBackground{
+  top:82px;right:-82px;width:340px;height:290px;opacity:.42;
+ }
+ html[data-hf-theme="the-observatory"] body[data-page] .admin-main:before{opacity:.78}
+}
+@media(prefers-reduced-motion:reduce){
+ html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground *,
+ html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground *:before,
+ html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground *:after{
+  animation:none!important;transition:none!important;
+ }
+}
