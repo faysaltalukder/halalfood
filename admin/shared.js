@@ -589,7 +589,7 @@ function syncSignatureThemeStyles(themeId){
   if(!link){link=document.createElement("link");link.id=fieldbookId;link.rel="stylesheet";link.href="./merchant-fieldbook.css?v=20261101-merchant-fieldbook-v1";document.head.appendChild(link);}
  }else if(themeId==="the-observatory"){
   if(link)link.remove();let observatory=document.getElementById(observatoryId);
-  if(!observatory){observatory=document.createElement("link");observatory.id=observatoryId;observatory.rel="stylesheet";observatory.href="./the-observatory.css?v=20261102-observatory-cosmos-v2";document.head.appendChild(observatory);}
+  if(!observatory){observatory=document.createElement("link");observatory.id=observatoryId;observatory.rel="stylesheet";observatory.href="./the-observatory.css?v=20261102-observatory-visible-v3";document.head.appendChild(observatory);}
  }else{if(link)link.remove();const inactiveObservatory=document.getElementById(observatoryId);if(inactiveObservatory)inactiveObservatory.remove();}
 }
 function applyColorTheme(themeId,persist=true){
