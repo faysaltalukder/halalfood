@@ -359,6 +359,7 @@ html[data-hf-theme] body[data-page] .admin-sidebar{
  background-size:180% 180%!important;
  animation:hfWarmJewelGradientShift 34s ease-in-out infinite alternate!important;
 }
+html[data-hf-theme] body[data-page] .admin-sidebar::before{filter:var(--hf-theme-sidebar-pattern-filter)!important}
 html[data-hf-theme] body[data-page] .admin-sidebar .admin-brand{border-bottom-color:var(--hf-theme-sidebar-border)!important}
 html[data-hf-theme] body[data-page] .admin-sidebar .admin-brand strong{color:var(--hf-theme-sidebar-ink)!important;text-shadow:0 1px 7px rgba(0,0,0,.12)!important}
 html[data-hf-theme] body[data-page] .admin-sidebar .admin-brand small,
