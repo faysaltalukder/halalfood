@@ -345,9 +345,7 @@ const mobileSidebarMedia = sharedLayoutCss.indexOf("@media(max-width:900px)");
 const mobileSidebarStart = sharedLayoutCss.indexOf(".admin-sidebar{",mobileSidebarMedia);
 const mobileSidebarRule = sharedLayoutCss.slice(mobileSidebarStart,sharedLayoutCss.indexOf("}",mobileSidebarStart));
 assert.ok(mobileSidebarRule.includes("position:fixed") && mobileSidebarRule.includes("transform:translateX(-102%)"), "Mobile Sidebar must remain a fixed off-canvas drawer.");
-const keyframesStart = observatoryCss.indexOf("@keyframes obsSatelliteOrbit{");
-const keyframesEnd = keyframesStart>=0 ? observatoryCss.indexOf("}}",keyframesStart)+2 : -1;
-const observatorySelectorSource = keyframesStart>=0 && keyframesEnd>keyframesStart ? observatoryCss.slice(0,keyframesStart)+observatoryCss.slice(keyframesEnd) : observatoryCss;
+const observatorySelectorSource = observatoryCss.replace(/@keyframes\\s+[^\\{]+\\{(?:[^{}]*\\{[^{}]*\\})*[^{}]*\\}/g,"");
 const observatorySelectors=[];let observatoryStart=0;
 for(let index=0;index<observatorySelectorSource.length;index++){if(observatorySelectorSource[index]==="{"){const selectorText=observatorySelectorSource.slice(observatoryStart,index).trim();if(selectorText&&!selectorText.startsWith("@"))observatorySelectors.push(...splitFieldbookSelectorList(selectorText));observatoryStart=index+1;}else if(observatorySelectorSource[index]==="}")observatoryStart=index+1;}
 assert.ok(observatorySelectors.length>100,"Observatory must cover the workspace UI.");
