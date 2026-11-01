@@ -138,7 +138,7 @@ assert.ok(shared.includes('aria-label="Select ') && shared.includes(' theme" ari
 assert.ok(shared.includes("function makeExtendedAdminTheme") && shared.includes("EXTENDED_ADMIN_THEME_CONFIGS.forEach"), "The four added themes must be generated through the shared dynamic theme engine.");
 assert.ok(shared.includes("hfThemePickerToggle") && shared.includes("hfThemeGrid") && shared.includes("renderThemePicker"), "The shared header must expose the accessible theme picker.");
 assert.ok(shared.includes('hf_admin_color_theme:') && shared.includes("themeStorageKey()"), "Theme choice must persist per authenticated administrator.");
-assert.ok(shared.includes('applyColorTheme(savedColorTheme,false)'), "The saved color theme must be applied when each admin page initializes.");
+assert.ok(shared.includes('applyColorTheme(savedColorTheme,true)') && shared.includes('if(!ADMIN_COLOR_THEMES[savedColorTheme])savedColorTheme="warm-harvest";'), "The saved valid theme must load, while removed theme preferences reset to Warm Harvest.");
 assert.ok(!shared.includes('id="themeToggle"') && !shared.includes('const themeBtn=document.getElementById("themeToggle")'), "The old standalone dark/light toggle must be replaced by the color theme picker.");
 
 
