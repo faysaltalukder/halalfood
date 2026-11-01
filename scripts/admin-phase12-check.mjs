@@ -129,7 +129,7 @@ assert.ok(shared.includes("const ADMIN_COLOR_THEMES={") && shared.includes('"war
 assert.ok(shared.includes("hfThemePickerToggle") && shared.includes("hfThemeGrid") && shared.includes("renderThemePicker"), "The shared header must expose the accessible theme picker.");
 assert.ok(shared.includes('hf_admin_color_theme:') && shared.includes("themeStorageKey()"), "Theme choice must persist per authenticated administrator.");
 assert.ok(shared.includes('applyColorTheme(savedColorTheme,false)'), "The saved color theme must be applied when each admin page initializes.");
-assert.ok(!shared.includes('id="themeToggle"') && !shared.includes('id="themeToggle"'), "The old standalone dark/light toggle must be replaced by the color theme picker.");
+assert.ok(!shared.includes('id="themeToggle"') && !shared.includes('const themeBtn=document.getElementById("themeToggle")'), "The old standalone dark/light toggle must be replaced by the color theme picker.");
 
 
 const app = read("admin/app.js");
