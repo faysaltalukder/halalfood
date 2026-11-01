@@ -132,7 +132,7 @@ function applyColorTheme(themeId,persist=true){
  document.documentElement.dataset.hfTheme=theme.id;
  document.documentElement.dataset.adminTheme="light";
  Object.entries(theme.tokens).forEach(([key,value])=>document.documentElement.style.setProperty("--hf-theme-"+key,value));
- palette.navy=theme.tokens.text;palette.orange=theme.tokens.accent;palette.blue=theme.tokens.primary;palette.green="#287A58";palette.purple=theme.tokens["accent-alt"];palette.yellow=theme.tokens.accent;palette.red="#B24B3F";palette.teal=theme.tokens["accent-alt"];palette.cream=theme.tokens.card;palette.muted=theme.tokens.muted;
+ palette.navy=theme.tokens.text;palette.orange=theme.tokens.accent;palette.blue=theme.tokens.primary;palette.green="#287A58";palette.purple=theme.tokens["accent-alt"];palette.yellow=theme.tokens.accent;palette.red="#B24B3F";palette.teal=theme.tokens["accent-alt"];palette.cream=theme.tokens["control-bg"];palette.muted=theme.tokens.muted;
  colorSet.splice(0,colorSet.length,...theme.chartColors);
  if(persist){try{localStorage.setItem(themeStorageKey(),theme.id);}catch(_themeSaveError){}}
  syncChartsForTheme();
