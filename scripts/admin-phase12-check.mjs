@@ -8,7 +8,7 @@ const root = process.cwd();
 const adminDir = join(root, "admin");
 const sharedCssVersion = "20261101-shared-erp-system-v1";
 const workspaceThemeCssVersion = "20261101-merchant-fieldbook-v1";
-const sharedJsVersion = "20261102-observatory-visible-v3";
+const sharedJsVersion = "20261102-observatory-fixed-scenes-v4";
 const i18nVersion = "20261101-observatory-v1";
 const appJsVersion = "20261030-orders-polish-v5";
 const read = (path) => readFileSync(join(root, path), "utf8");
@@ -312,14 +312,14 @@ for (const selector of fieldbookSelectors) {
 const fieldbookTranslations = read("admin/i18n.js");
 const observatoryCss = read("admin/the-observatory.css").replace(/\/\*[\s\S]*?\*\//g, "");
 const observatoryOverview = read("admin/overview.html");
-const observatorySolarSystemCss = read("admin/observatory-solar-system.css").replace(/\/\*[\s\S]*?\*\//g, "");
-assert.ok(observatoryOverview.includes("observatory-solar-system.css?v=20261102-solar-system-v1"), "The Observatory Overview must load its separately cache-busted Solar System illustration layer.");
-for (const world of ["sun","mercury","venus","mars","jupiter","saturn","uranus","neptune","moon","galaxy","comet"]) {
-  assert.ok(observatoryOverview.includes("hf-obs-" + world), "The Observatory Overview is missing its unique celestial illustration: " + world);
-}
-assert.equal((observatoryOverview.match(/class="hf-observatory-object/g) || []).length, 11, "Overview must include eleven independent decorative vector objects after Earth.");
-assert.ok(observatorySolarSystemCss.includes('html[data-hf-theme="the-observatory"] body[data-page="overview"]') && observatorySolarSystemCss.includes("prefers-reduced-motion") && observatorySolarSystemCss.includes("pointer-events:none"), "Solar System art must be theme-scoped, non-interactive and motion-accessible.");
-assert.ok(observatorySolarSystemCss.includes(".hf-obs-operations") && observatorySolarSystemCss.includes(".hf-obs-income") && observatorySolarSystemCss.includes(".hf-obs-traffic") && observatorySolarSystemCss.includes(".hf-obs-status") && observatorySolarSystemCss.includes(".hf-obs-products") && observatorySolarSystemCss.includes(".hf-obs-latest-orders"), "Each large analytics and records card must have its own artwork treatment.");
+assert.ok(!observatoryOverview.includes("observatory-solar-system.css") && !observatoryOverview.includes("hf-observatory-art-card") && !observatoryOverview.includes('class="hf-observatory-object'), "Overview must not contain extra planet art or card-level decorative scenes; Earth remains the only hero planet.");
+assert.ok(observatoryOverview.includes('class="hf-observatory-scene"') && observatoryOverview.includes('class="hf-observatory-svg"'), "The original Overview Earth and Satellite hero must remain intact.");
+assert.ok(shared.includes('observatory.href="./the-observatory.css?v=20261102-observatory-fixed-scenes-v4"'), "The updated fixed-scenes Observatory stylesheet must load with a fresh cache version.");
+assert.ok(shared.includes("function syncObservatoryBackground(themeId)") && shared.includes("const pageScene={") && shared.includes('orders:"solar"') && shared.includes('operations:"jupiter"') && shared.includes('"incomplete-orders":"saturn"') && shared.includes('customers:"galaxy"'), "Every admin route must receive a page-specific celestial background without adding content sections.");
+assert.ok(observatoryCss.includes("#hfObservatoryBackground") && observatoryCss.includes("position:fixed") && observatoryCss.includes("pointer-events:none") && observatoryCss.includes("@keyframes hfObsOrbitSpin"), "Page-specific artwork must be fixed behind page content and animate independently of scroll.");
+assert.ok(observatoryCss.includes("hf-obs-orbit--8") && observatoryCss.includes("hf-obs-jupiter-moon-track--4") && observatoryCss.includes("hf-obs-galaxy-core") && observatoryCss.includes("hf-obs-neptune-core"), "Solar System, Jupiter moons, Galaxy and Neptune scenes must be available.");
+assert.ok(observatoryCss.includes("prefers-reduced-motion") && observatoryCss.includes("hfObservatoryBackground *"), "Background animation must respect reduced-motion settings.");
+assert.ok(!observatoryCss.includes(".hf-observatory-art-card") && !observatoryCss.includes(".hf-obs-finance"), "Observatory must not create or restyle extra decorative cards inside Overview.");
 const observatoryTranslations = read("admin/i18n.js");
 assert.ok(shared.includes('ADMIN_COLOR_THEMES["the-observatory"]') && shared.includes('name:"The Observatory"') && shared.includes('themeIds:["merchant-fieldbook","the-observatory"]'), "Theme 12 must exist in Signature.");
 assert.ok(shared.includes('observatory.href="./the-observatory.css?v=20261102-observatory-visible-v3"'), "Observatory stylesheet must load on demand.");
