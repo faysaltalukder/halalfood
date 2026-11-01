@@ -91,6 +91,14 @@ for (const file of unifiedPages) {
   assert.ok(/\btabindex=["']-1["']/.test(mainTag), `${file}: main content must be programmatically focusable for the skip link.`);
   assert.equal((source.match(/<main\b/gi) || []).length, 1, `${file}: expected one main landmark in the source page.`);
 
+  const tableTags = [...source.matchAll(/<table\b([^>]*)>/gi)];
+  const tableWrappers = [...source.matchAll(/class="[^"]*\bhf-table-wrap\b[^"]*"/gi)];
+  for (const table of tableTags) {
+    const tableClass = (table[1].match(/\bclass="([^"]+)"/i) || [])[1] || "";
+    assert.ok(tableClass.split(/\s+/).includes("hf-table"), "Every admin data table must use the shared hf-table base class.");
+  }
+  assert.ok(tableWrappers.length >= tableTags.length, "Every admin data table must have a shared responsive hf-table-wrap container.");
+
   const ids = [...source.matchAll(/\bid\s*=\s*["']([^"']+)["']/g)].map((match) => match[1]);
   const seen = new Set();
   const duplicates = new Set();
