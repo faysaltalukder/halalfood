@@ -7,7 +7,7 @@ import vm from "node:vm";
 const root = process.cwd();
 const adminDir = join(root, "admin");
 const sharedCssVersion = "20261101-shared-erp-system-v1";
-const sharedJsVersion = "20261030-illustrated-nav-v1";
+const sharedJsVersion = "20261101-admin-theme-pack-v3";
 const appJsVersion = "20261030-orders-polish-v5";
 const read = (path) => readFileSync(join(root, path), "utf8");
 
@@ -80,7 +80,7 @@ for (const file of unifiedPages) {
   const source = read(join("admin", file));
   assert.ok(source.includes("i18n.js?v=20261101-shell-localization-v3"), `${file}: missing or stale shared language dictionary.`);
   assert.ok(source.includes(`shared.css?v=${sharedCssVersion}`), `${file}: stale shared UI cache version.`);
-  assert.ok(source.includes("shared.js?v=20261101-multi-theme-engine-v2"), `${file}: missing or stale multi-theme shared JS version.`);
+  assert.ok(source.includes("shared.js?v=20261101-admin-theme-pack-v3"), `${file}: missing or stale multi-theme shared JS version.`);
   assert.ok(source.includes("workspace-global-theme.css?v=20261101-multi-theme-engine-v1"), `${file}: missing or stale shared workspace theme stylesheet.`);
 
   if (source.includes("./app.js")) {
@@ -125,8 +125,9 @@ for (const file of readdirSync(adminDir).filter((name) => name.endsWith(".js")))
 // The shared admin shell now uses an account-scoped, registry-driven color theme picker.
 const shared = read("admin/shared.js");
 assert.ok(shared.includes('document.documentElement.dataset.hfTheme="warm-harvest";'), "Warm Harvest must remain the default theme.");
-assert.ok(shared.includes("const ADMIN_COLOR_THEMES={") && shared.includes('"warm-harvest":') && shared.includes('"ocean-calm":') && shared.includes('"royal-indigo":') && shared.includes('"forest-sage":') && shared.includes('"berry-rose":') && shared.includes('"coastal-blue":'), "The theme registry must include all six currently available themes.");
-assert.ok(shared.includes('"profile": "Indigo · Refined · Confident"') && shared.includes('"profile": "Natural · Grounded · Quiet"') && shared.includes('"profile": "Expressive · Soft · Sophisticated"') && shared.includes('"profile": "Clear · Trustworthy · Coastal"'), "Each added theme needs its distinct design profile.");
+assert.ok(shared.includes("const ADMIN_COLOR_THEMES={") && shared.includes('"warm-harvest":') && shared.includes('"ocean-calm":') && shared.includes('"royal-indigo":') && shared.includes('"forest-sage":') && shared.includes('"berry-rose":') && shared.includes('"coastal-blue":') && shared.includes('id:"desert-clay"') && shared.includes('id:"lavender-bloom"') && shared.includes('id:"citrus-grove"') && shared.includes('id:"glacier-mist"'), "The theme registry must include all ten available themes.");
+assert.ok(shared.includes('profile:"Earthy · Welcoming · Warm"') && shared.includes('profile:"Creative · Gentle · Elegant"') && shared.includes('profile:"Fresh · Balanced · Natural"') && shared.includes('profile:"Clear · Airy · Contemporary"'), "Each newly added theme needs its distinct design profile.");
+assert.ok(shared.includes("function makeExtendedAdminTheme") && shared.includes("EXTENDED_ADMIN_THEME_CONFIGS.forEach"), "The four added themes must be generated through the shared dynamic theme engine.");
 assert.ok(shared.includes("hfThemePickerToggle") && shared.includes("hfThemeGrid") && shared.includes("renderThemePicker"), "The shared header must expose the accessible theme picker.");
 assert.ok(shared.includes('hf_admin_color_theme:') && shared.includes("themeStorageKey()"), "Theme choice must persist per authenticated administrator.");
 assert.ok(shared.includes('applyColorTheme(savedColorTheme,false)'), "The saved color theme must be applied when each admin page initializes.");
