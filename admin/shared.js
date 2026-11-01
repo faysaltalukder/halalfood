@@ -1,9 +1,7 @@
 (() => {
 "use strict";
-try{
- const savedTheme=localStorage.getItem("hf_admin_theme");
- document.documentElement.dataset.adminTheme=savedTheme==="dark"?"dark":"light";
-}catch(_themeError){document.documentElement.dataset.adminTheme="light";}
+document.documentElement.dataset.adminTheme="light";
+document.documentElement.dataset.hfTheme="warm-harvest";
 const STORE_CONFIG=window.HALAL_STORE_CONFIG||{};
 const SUPABASE_URL=String(STORE_CONFIG.supabase?.url||"https://qfwvrcfkrsydycbfjsxf.supabase.co").replace(/\/$/,"");
 const SUPABASE_KEY=STORE_CONFIG.supabase?.publishableKey||"sb_publishable_X32Rb8W-axGIfgFuppdfZQ_jbc38pcL";
@@ -77,13 +75,77 @@ function lastDateKeys(days){
  for(let i=Math.max(1,days)-1;i>=0;i--){const d=new Date(today);d.setDate(d.getDate()-i);keys.push(d.toISOString().slice(0,10));}
  return keys;
 }
-const palette={navy:"#6D493A",orange:"#D49537",blue:"#A94335",green:"#287A58",purple:"#9B6A8D",yellow:"#E0B45C",red:"#B24B3F",teal:"#C07A55",cream:"#FFF4E8",muted:"#8C7569"};
-const colorSet=["#A94335","#D49537","#BE6E4B","#8D604B","#DBA85E","#A85E58","#C18A67","#785649","#E0B77A","#B77B91"];
+
+const ADMIN_COLOR_THEMES={
+ "warm-harvest":{
+  id:"warm-harvest",name:"Warm Harvest",profile:"Warm · Classic · Premium",
+  tokens:{
+   "sidebar-bg":"radial-gradient(ellipse at 10% 8%,rgba(255,210,105,.24) 0%,transparent 34%),radial-gradient(ellipse at 91% 24%,rgba(255,112,77,.22) 0%,transparent 34%),radial-gradient(ellipse at 36% 94%,rgba(255,176,72,.18) 0%,transparent 38%),linear-gradient(132deg,#7E2D26 0%,#A94335 27%,#BD5A32 58%,#A96A2F 82%,#7E3D37 100%)",
+   "sidebar-ink":"#FFF2D8","sidebar-muted":"#FFE0B0","sidebar-border":"rgba(255,225,176,.34)",
+   "side-group-bg":"linear-gradient(145deg,rgba(116,43,35,.34),rgba(88,37,35,.24))","side-group-border":"rgba(255,231,188,.32)",
+   "side-menu-1":"linear-gradient(110deg,#F8E7D8,#FFF1E6)","side-menu-2":"linear-gradient(110deg,#F4E0C3,#FBECD5)","side-menu-3":"linear-gradient(110deg,#F6D8CD,#FCE9DF)","side-menu-4":"linear-gradient(110deg,#EAD9CB,#F6E9DD)",
+   "side-menu-ink":"#704536","side-menu-border":"rgba(255,255,255,.88)","side-menu-hover":"linear-gradient(110deg,#FFE5D1,#F7DCC5)","side-menu-active":"linear-gradient(115deg,#F4C66F,#E5A94D)","side-menu-active-ink":"#573B26",
+   "side-child-bg":"linear-gradient(145deg,rgba(255,244,232,.96),rgba(244,222,204,.94))","side-child-ink":"#754B3A","side-accent":"#FFD27D","side-icon-bg":"#F8E4D2","side-icon-ink":"#A34D37",
+   "side-note-bg":"rgba(93,42,34,.25)","side-search-bg":"rgba(255,242,224,.14)","side-search-border":"rgba(255,230,190,.38)",
+   "canvas-bg":"radial-gradient(ellipse at 84% 3%,rgba(190,103,70,.16),transparent 34%),radial-gradient(ellipse at 12% 36%,rgba(212,149,55,.12),transparent 36%),radial-gradient(ellipse at 88% 92%,rgba(169,67,53,.08),transparent 33%),linear-gradient(133deg,#F4E7DC 0%,#F0E1D5 48%,#EAD8C9 100%)",
+   "canvas-ink":"#654536","header-bg":"rgba(246,234,222,.96)","header-border":"#DFC4AF","header-control-bg":"#F1DDCB","header-control-ink":"#89513E","header-control-border":"#D9B79D",
+   "hero-bg":"linear-gradient(120deg,#F7E9DE 0%,#EED8C8 56%,#F3E3D4 100%)","hero-border":"#DDBFA8","card-bg":"linear-gradient(145deg,#FFF7EF 0%,#F7E8DC 100%)","card-border":"#E2C7B3","nested-bg":"linear-gradient(125deg,#F0DFD2,#F6E9DE)","control-bg":"#FFF8F1",
+   "text":"#654536","muted":"#8B7062","border":"#E3C6B1","primary":"#A94335","primary-hover":"#853329","secondary":"#EED7C3","secondary-ink":"#824B38","secondary-hover":"#E5C8AF","accent":"#D49537","accent-alt":"#B96C54","focus":"#B75A43",
+   "kpi-1":"linear-gradient(145deg,#F4DFD5,#EED3C7)","kpi-2":"linear-gradient(145deg,#F6EBD5,#EEDDBB)","kpi-3":"linear-gradient(145deg,#F4E4DD,#EAD4C9)","kpi-4":"linear-gradient(145deg,#F1E3D7,#E7D3C1)",
+   "table-bg":"#FFF6ED","table-head":"#EBD8C8","table-row":"#FFF8F1","table-alt":"#F5E9DE","table-hover":"#F1DDCC","chart-bg":"linear-gradient(145deg,#F3E4D8,#EBD8C9)","chart-text":"#704E40","chart-muted":"#8F776A","chart-grid":"#E5CBBB","chart-surface":"#FFF4E8","tooltip-bg":"#3B2922","leaf-filter":"none"
+  },
+  chartColors:["#A94335","#D49537","#BE6E4B","#8D604B","#DBA85E","#A85E58","#C18A67","#785649","#E0B77A","#B77B91"]
+ },
+ "ocean-calm":{
+  id:"ocean-calm",name:"Ocean Calm",profile:"Cool · Calm · Contemporary",
+  tokens:{
+   "sidebar-bg":"radial-gradient(ellipse at 10% 8%,rgba(120,218,203,.24) 0%,transparent 34%),radial-gradient(ellipse at 91% 24%,rgba(95,184,185,.2) 0%,transparent 34%),radial-gradient(ellipse at 36% 94%,rgba(126,177,210,.18) 0%,transparent 38%),linear-gradient(132deg,#124F50 0%,#176B68 29%,#247D79 58%,#347F91 83%,#1C566B 100%)",
+   "sidebar-ink":"#E9FAF5","sidebar-muted":"#C3E8E0","sidebar-border":"rgba(190,239,229,.34)",
+   "side-group-bg":"linear-gradient(145deg,rgba(14,65,67,.34),rgba(25,83,90,.25))","side-group-border":"rgba(194,238,229,.32)",
+   "side-menu-1":"linear-gradient(110deg,#DCEFE9,#F0F8F4)","side-menu-2":"linear-gradient(110deg,#D8EBEA,#EDF7F5)","side-menu-3":"linear-gradient(110deg,#E5EFED,#F5F9F7)","side-menu-4":"linear-gradient(110deg,#E2EDF4,#F1F7FA)",
+   "side-menu-ink":"#245A56","side-menu-border":"rgba(255,255,255,.9)","side-menu-hover":"linear-gradient(110deg,#C8E5DD,#DCEFEB)","side-menu-active":"linear-gradient(115deg,#B9E0D4,#91C9BE)","side-menu-active-ink":"#164D4A",
+   "side-child-bg":"linear-gradient(145deg,rgba(237,249,245,.97),rgba(215,237,232,.94))","side-child-ink":"#285F5A","side-accent":"#A8DED2","side-icon-bg":"#D8EEE8","side-icon-ink":"#176B68",
+   "side-note-bg":"rgba(11,62,66,.25)","side-search-bg":"rgba(230,250,246,.13)","side-search-border":"rgba(190,239,229,.38)",
+   "canvas-bg":"radial-gradient(ellipse at 84% 3%,rgba(88,164,161,.16),transparent 34%),radial-gradient(ellipse at 12% 36%,rgba(119,189,177,.13),transparent 36%),radial-gradient(ellipse at 88% 92%,rgba(87,143,174,.08),transparent 33%),linear-gradient(133deg,#E8F2EF 0%,#E2EFEC 48%,#D8E9E5 100%)",
+   "canvas-ink":"#294F4B","header-bg":"rgba(235,246,242,.96)","header-border":"#C4DED7","header-control-bg":"#D9ECE6","header-control-ink":"#245F59","header-control-border":"#B8D8CF",
+   "hero-bg":"linear-gradient(120deg,#F0F7F4 0%,#D9EBE6 56%,#E5F1ED 100%)","hero-border":"#BFDCD4","card-bg":"linear-gradient(145deg,#F8FCFA 0%,#EAF4F0 100%)","card-border":"#C9E0D9","nested-bg":"linear-gradient(125deg,#DDEFEA,#EAF5F1)","control-bg":"#F7FBF9",
+   "text":"#294F4B","muted":"#66827D","border":"#C7DDD6","primary":"#176B68","primary-hover":"#105653","secondary":"#D8EBE6","secondary-ink":"#245F59","secondary-hover":"#C6E2DB","accent":"#62AFA5","accent-alt":"#4F8C9A","focus":"#398F88",
+   "kpi-1":"linear-gradient(145deg,#D7ECE6,#C7E2D9)","kpi-2":"linear-gradient(145deg,#E0EFEC,#D0E6E1)","kpi-3":"linear-gradient(145deg,#DFEBF2,#CEE0E9)","kpi-4":"linear-gradient(145deg,#F1EBDD,#E7DEC8)",
+   "table-bg":"#F8FCFA","table-head":"#D8EAE5","table-row":"#FBFDFC","table-alt":"#EAF3F0","table-hover":"#DCECE7","chart-bg":"linear-gradient(145deg,#E9F3EF,#DCEBE6)","chart-text":"#315C57","chart-muted":"#6C8983","chart-grid":"#CFE1DA","chart-surface":"#F7FBF9","tooltip-bg":"#173F3E","leaf-filter":"hue-rotate(115deg) saturate(.62)"
+  },
+  chartColors:["#176B68","#62AFA5","#D18B70","#507E9A","#9AC9BC","#DDB45D","#719A8E","#3D5F76","#A9BBB1","#CE8C91"]
+ }
+};
+const palette={navy:"#704E40",orange:"#D49537",blue:"#A94335",green:"#287A58",purple:"#9B6A8D",yellow:"#E0B45E",red:"#B24B3F",teal:"#C07A55",cream:"#FFF4E8",muted:"#8C7569"};
+const colorSet=ADMIN_COLOR_THEMES["warm-harvest"].chartColors.slice();
 const charts={};
+let currentThemeId="warm-harvest";
+function getCurrentColorTheme(){return ADMIN_COLOR_THEMES[currentThemeId]||ADMIN_COLOR_THEMES["warm-harvest"];}
 function chartTheme(){
- const light=document.documentElement.dataset.adminTheme==="light";
- return {text:light?"#704E40":"#F6E6D9",muted:light?"#8F776A":"#CBB4A3",grid:light?"#E5CBBB":"#5D4437",surface:light?"#FFF4E8":"#3A2B25",border:light?"#D8B9A4":"#6A4C3D"};
+ const t=getCurrentColorTheme().tokens;
+ return {text:t["chart-text"],muted:t["chart-muted"],grid:t["chart-grid"],surface:t["chart-surface"]};
 }
+function themeStorageKey(){return "hf_admin_color_theme:"+(String(currentUser?.id||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"").slice(0,100)||"anonymous");}
+function applyColorTheme(themeId,persist=true){
+ const theme=ADMIN_COLOR_THEMES[themeId]||ADMIN_COLOR_THEMES["warm-harvest"];
+ currentThemeId=theme.id;
+ document.documentElement.dataset.hfTheme=theme.id;
+ document.documentElement.dataset.adminTheme="light";
+ Object.entries(theme.tokens).forEach(([key,value])=>document.documentElement.style.setProperty("--hf-theme-"+key,value));
+ palette.navy=theme.tokens.text;palette.orange=theme.tokens.accent;palette.blue=theme.tokens.primary;palette.green="#287A58";palette.purple=theme.tokens["accent-alt"];palette.yellow=theme.tokens.accent;palette.red="#B24B3F";palette.teal=theme.tokens["accent-alt"];palette.cream=theme.tokens.card;palette.muted=theme.tokens.muted;
+ colorSet.splice(0,colorSet.length,...theme.chartColors);
+ if(persist){try{localStorage.setItem(themeStorageKey(),theme.id);}catch(_themeSaveError){}}
+ syncChartsForTheme();
+ const currentName=document.getElementById("hfThemeCurrentName");
+ if(currentName)currentName.textContent=theme.name;
+ const picker=document.getElementById("hfThemeGrid");
+ if(picker)picker.querySelectorAll("[data-theme-choice]").forEach(button=>{
+  const selected=button.dataset.themeChoice===theme.id;
+  button.classList.toggle("is-selected",selected);button.setAttribute("aria-pressed",String(selected));
+ });
+ return theme;
+}
+
 if(window.Chart){
  Chart.defaults.color=palette.navy;
  Chart.defaults.font.family='Inter, "Segoe UI Variable", "Segoe UI", system-ui, sans-serif';
@@ -96,7 +158,7 @@ function drawChart(id,config){
  const t=chartTheme();
  const base={responsive:true,maintainAspectRatio:false,animation:{duration:380},plugins:{
   legend:{labels:{color:t.text,usePointStyle:true,boxWidth:9,boxHeight:9,padding:18,font:{family:'Inter, "Segoe UI Variable", "Segoe UI", system-ui, sans-serif',size:11,weight:600}}},
-  tooltip:{backgroundColor:"#3B2922",titleColor:"#FFF4E8",bodyColor:"#EAD6C7",borderColor:"#805B49",borderWidth:1,cornerRadius:10,padding:12,displayColors:true,titleFont:{family:'Inter, "Segoe UI Variable", "Segoe UI", system-ui, sans-serif',weight:700},bodyFont:{family:'Inter, "Segoe UI Variable", "Segoe UI", system-ui, sans-serif'}}
+  tooltip:{backgroundColor:getCurrentColorTheme().tokens["tooltip-bg"],titleColor:t.text,bodyColor:t.muted,borderColor:t.grid,borderWidth:1,cornerRadius:10,padding:12,displayColors:true,titleFont:{family:'Inter, "Segoe UI Variable", "Segoe UI", system-ui, sans-serif',weight:700},bodyFont:{family:'Inter, "Segoe UI Variable", "Segoe UI", system-ui, sans-serif'}}
  }};
  const opts={...base,...config.options,plugins:{...base.plugins,...(config.options?.plugins||{})}};
  charts[id]=new Chart(canvas,{...config,options:opts});
@@ -104,17 +166,28 @@ function drawChart(id,config){
  return charts[id];
 }
 function syncChartsForTheme(){
- const t=chartTheme();
+ const t=chartTheme();const theme=getCurrentColorTheme();const tooltip=theme.tokens["tooltip-bg"];
  Object.values(charts).forEach(chart=>{
   if(chart.options.plugins?.legend?.labels)chart.options.plugins.legend.labels.color=t.text;
+  if(chart.options.plugins?.tooltip){chart.options.plugins.tooltip.backgroundColor=tooltip;chart.options.plugins.tooltip.titleColor=t.text;chart.options.plugins.tooltip.bodyColor=t.muted;chart.options.plugins.tooltip.borderColor=t.grid;}
   if(chart.options.scales)Object.values(chart.options.scales).forEach(scale=>{
    if(scale.ticks)scale.ticks.color=t.muted;
    if(scale.grid&&scale.grid.display!==false)scale.grid.color=t.grid;
-   if(scale.border)scale.border.color=t.border;
+   if(scale.border)scale.border.color=t.grid;
   });
-  if(["pie","doughnut"].includes(chart.config.type))chart.data.datasets.forEach(dataset=>{dataset.borderColor=t.surface;});
+  const type=String(chart.config.type||"").toLowerCase();
+  const multiColor=["pie","doughnut","polararea"].includes(type);
+  chart.data.datasets.forEach((dataset,index)=>{
+   const color=theme.chartColors[index%theme.chartColors.length];
+   dataset.backgroundColor=multiColor?theme.chartColors:color;
+   dataset.borderColor=multiColor?t.surface:color;
+   if(dataset.pointBackgroundColor!==undefined)dataset.pointBackgroundColor=color;
+   if(dataset.pointBorderColor!==undefined)dataset.pointBorderColor=t.surface;
+   if(dataset.hoverBackgroundColor!==undefined)dataset.hoverBackgroundColor=multiColor?theme.chartColors:color;
+  });
   chart.update("none");
  });
+ if(window.Chart){Chart.defaults.color=t.text;Chart.defaults.plugins.tooltip.backgroundColor=tooltip;Chart.defaults.plugins.tooltip.titleColor=t.text;Chart.defaults.plugins.tooltip.bodyColor=t.muted;Chart.defaults.plugins.tooltip.borderColor=t.grid;}
 }
 async function paginateQuery(buildQuery,limit=1000){
  const rows=[],pageSize=1000;
@@ -306,7 +379,7 @@ function makeShell(){
    '<div class="admin-global-search" role="search"><span class="admin-global-search-icon" aria-hidden="true">'+shellIcon("search")+'</span><input id="globalSearch" type="search" autocomplete="off" placeholder="Search this page’s records…" aria-label="Search records on this page"></div>'+
    '<span class="admin-topbar-spacer" aria-hidden="true"></span>'+
    '<div class="admin-topbar-actions">'+
-    '<button class="admin-top-button theme-toggle" id="themeToggle" type="button" aria-label="Switch to light theme" title="Switch to light theme" aria-pressed="false"><span class="topbar-button-icon theme-toggle-icon" aria-hidden="true">'+shellIcon("sun")+'</span><span class="topbar-label theme-toggle-label">Light theme</span></button>'+
+    '<div class="hf-theme-control" id="hfThemeControl"><button class="admin-top-button hf-theme-picker-trigger" id="hfThemePickerToggle" type="button" aria-haspopup="dialog" aria-controls="hfThemePicker" aria-expanded="false" aria-label="Choose workspace color theme" title="Choose workspace color theme"><span class="topbar-button-icon" aria-hidden="true">◈</span><span class="topbar-label">Theme</span><span class="hf-theme-current-name" id="hfThemeCurrentName">Warm Harvest</span><span class="hf-theme-chevron" aria-hidden="true">⌄</span></button><section class="hf-theme-picker" id="hfThemePicker" role="dialog" aria-label="Choose workspace color theme" hidden><div class="hf-theme-picker-heading"><div><strong>Choose your theme</strong><p>Sidebar and workspace change together</p></div><button type="button" class="hf-theme-picker-close" id="hfThemePickerClose" aria-label="Close theme picker">×</button></div><div class="hf-theme-grid" id="hfThemeGrid"></div><p class="hf-theme-picker-footnote">Your choice is saved for this administrator account.</p></section></div>'+
     '<button class="admin-top-button admin-mode-toggle" id="modeToggle" type="button" title="Switch to advanced view"><span class="topbar-button-icon">'+shellIcon("sliders")+'</span><span class="topbar-label">Advanced view</span></button>'+
     '<button class="admin-top-button admin-help-toggle" id="helpBtn" type="button" title="Open quick guide"><span class="topbar-button-icon">'+shellIcon("help")+'</span><span class="topbar-label">Help</span></button>'+
    '</div>'+
@@ -483,24 +556,27 @@ function makeShell(){
  document.addEventListener("click",event=>{if(accountMenu?.open&&!accountMenu.contains(event.target))accountMenu.open=false;});
 
  const modeKey="hf_admin_display_mode";
- const themeKey="hf_admin_theme";
- const themeBtn=document.getElementById("themeToggle");
- const applyTheme=theme=>{
-  const active=theme==="light"?"light":"dark";
-  document.documentElement.dataset.adminTheme=active;
-  palette.navy=active==="light"?"#2B2A3D":"#C9D5E6";
-  palette.muted=active==="light"?"#737487":"#96A6BE";
-  palette.cream=active==="light"?"#FFFDF8":"#111C2E";
-  if(themeBtn){
-   const toLight=active==="dark";const label=toLight?"Light theme":"Dark theme";
-   themeBtn.innerHTML='<span class="topbar-button-icon theme-toggle-icon" aria-hidden="true">'+shellIcon(toLight?"sun":"moon")+'</span><span class="topbar-label theme-toggle-label">'+label+'</span>';
-   themeBtn.setAttribute("aria-label","Toggle color theme");themeBtn.setAttribute("title","Switch to "+(toLight?"light":"dark")+" theme");themeBtn.setAttribute("aria-pressed",String(active==="light"));
-  }
-  syncChartsForTheme();
+ const themeControl=document.getElementById("hfThemeControl");
+ const themePicker=document.getElementById("hfThemePicker");
+ const themePickerToggle=document.getElementById("hfThemePickerToggle");
+ const themeGrid=document.getElementById("hfThemeGrid");
+ const themePickerClose=document.getElementById("hfThemePickerClose");
+ const renderThemePicker=()=>{
+  if(!themeGrid)return;
+  themeGrid.innerHTML=Object.values(ADMIN_COLOR_THEMES).map(theme=>{
+   const t=theme.tokens;const selected=theme.id===currentThemeId;
+   return '<button type="button" class="hf-theme-option'+(selected?' is-selected':'')+'" data-theme-choice="'+esc(theme.id)+'" aria-pressed="'+String(selected)+'"><span class="hf-theme-option-swatches"><i style="background:'+esc(t["sidebar-bg"]?theme.id==="warm-harvest"?"#A94335":"#176B68":"#A94335")+'"></i><i style="background:'+esc(t.primary)+'"></i><i style="background:'+esc(t.accent)+'"></i><i style="background:'+esc(t["canvas-bg"]?theme.id==="warm-harvest"?"#F0E1D5":"#E2EFEC":"#F0E1D5")+'"></i></span><span class="hf-theme-option-copy"><strong>'+esc(theme.name)+'</strong><small>'+esc(theme.profile)+'</small></span><span class="hf-theme-option-check" aria-hidden="true">✓</span></button>';
+  }).join("");
  };
- let savedTheme="light";try{savedTheme=localStorage.getItem(themeKey)||"light";}catch(_themeReadError){}
- applyTheme(savedTheme);
- themeBtn?.addEventListener("click",()=>{const next=document.documentElement.dataset.adminTheme==="light"?"dark":"light";try{localStorage.setItem(themeKey,next);}catch(_themeWriteError){}applyTheme(next);});
+ let savedColorTheme="warm-harvest";try{savedColorTheme=localStorage.getItem(themeStorageKey())||"warm-harvest";}catch(_themeReadError){}
+ applyColorTheme(savedColorTheme,false);renderThemePicker();
+ const closeThemePicker=()=>{if(themePicker)themePicker.hidden=true;themePickerToggle?.setAttribute("aria-expanded","false");};
+ const openThemePicker=()=>{if(!themePicker)return;themePicker.hidden=false;themePickerToggle?.setAttribute("aria-expanded","true");themePicker.querySelector("[data-theme-choice]")?.focus({preventScroll:true});};
+ themePickerToggle?.addEventListener("click",()=>themePicker?.hidden?openThemePicker():closeThemePicker());
+ themePickerClose?.addEventListener("click",closeThemePicker);
+ themeGrid?.addEventListener("click",event=>{const choice=event.target.closest("[data-theme-choice]");if(!choice)return;applyColorTheme(choice.dataset.themeChoice,true);renderThemePicker();closeThemePicker();});
+ document.addEventListener("click",event=>{if(themePicker&&!themePicker.hidden&&!themeControl?.contains(event.target))closeThemePicker();});
+ document.addEventListener("keydown",event=>{if(event.key==="Escape"&&themePicker&&!themePicker.hidden){closeThemePicker();themePickerToggle?.focus({preventScroll:true});}});
  const modeBtn=document.getElementById("modeToggle");
  const applyMode=()=>{
   let advanced=false;try{advanced=localStorage.getItem(modeKey)==="advanced";}catch(_modeReadError){}
@@ -533,7 +609,7 @@ window.HFAdminReady=(async()=>{
   if(aal.error||aal.data?.currentLevel!=="aal2"){location.replace("./index.html");return null;}
   const user=await client.auth.getUser();currentUser=user.data?.user||data.session.user;
   makeShell();
-  window.HFAdmin={client,ADMIN_EMAIL,esc,money,shortNum,dateTime,dateOnly,toast,audit,signedQuery,downloadFile,csvText,slugify,dayISO,dateRangeFromControls,rangeQuery,showTableMessage,statusClass,makeStatus,makeEmpty,groupBy,dateKey,lastDateKeys,fetchOrders,fetchEvents,fetchProducts,fetchCategories,fetchPosts,fetchFinance,palette,colorSet,chartTheme,drawChart,charts};
+  window.HFAdmin={client,ADMIN_EMAIL,esc,money,shortNum,dateTime,dateOnly,toast,audit,signedQuery,downloadFile,csvText,slugify,dayISO,dateRangeFromControls,rangeQuery,showTableMessage,statusClass,makeStatus,makeEmpty,groupBy,dateKey,lastDateKeys,fetchOrders,fetchEvents,fetchProducts,fetchCategories,fetchPosts,fetchFinance,palette,colorSet,chartTheme,drawChart,charts,colorThemes:ADMIN_COLOR_THEMES,applyColorTheme,getCurrentColorTheme};
   return window.HFAdmin;
  }catch(err){console.error("Admin access check failed",err);gate.innerHTML='<div class="auth-gate-card"><strong>Secure sign-in could not be verified</strong><p>Please refresh and sign in again. No admin data was loaded.</p><p style="margin-top:14px"><a href="./index.html" class="hf-button hf-button-primary">Return to sign-in</a></p></div>';return null;}
 })();
