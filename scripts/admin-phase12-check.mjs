@@ -8,8 +8,8 @@ const root = process.cwd();
 const adminDir = join(root, "admin");
 const sharedCssVersion = "20261101-shared-erp-system-v1";
 const workspaceThemeCssVersion = "20261101-merchant-fieldbook-v1";
-const sharedJsVersion = "20261101-merchant-fieldbook-v1";
-const i18nVersion = "20261101-merchant-fieldbook-v1";
+const sharedJsVersion = "20261101-observatory-v1";
+const i18nVersion = "20261101-observatory-v1";
 const appJsVersion = "20261030-orders-polish-v5";
 const read = (path) => readFileSync(join(root, path), "utf8");
 
@@ -129,7 +129,7 @@ const shared = read("admin/shared.js");
 assert.ok(shared.includes('document.documentElement.dataset.hfTheme="warm-harvest";'), "Warm Harvest must remain the default theme.");
 assert.ok(shared.includes("const ADMIN_COLOR_THEMES={") && shared.includes('"warm-harvest":') && shared.includes('"ocean-calm":') && shared.includes('"royal-indigo":') && shared.includes('"forest-sage":') && shared.includes('"berry-rose":') && shared.includes('"coastal-blue":') && shared.includes('id":"plum-amethyst"') && shared.includes('id":"copper-espresso"') && shared.includes('id":"olive-citrus"') && shared.includes('id":"coral-peach"') && shared.includes('ADMIN_COLOR_THEMES["merchant-fieldbook"]') && shared.includes('name:"The Merchant\'s Fieldbook"'), "The registry must contain all ten existing themes plus the isolated signature theme.");
 assert.ok(shared.includes('profile":"Creative · Refined · Expressive"') && shared.includes('profile":"Warm · Refined · Business"') && shared.includes('profile":"Natural · Classic · Composed"') && shared.includes('profile":"Warm · Friendly · Expressive"'), "The four replacement themes need their approved business profiles.");
-assert.ok(shared.includes("const ADMIN_THEME_GROUPS=[") && shared.includes('label:"Modern"') && shared.includes('label:"Balanced"') && shared.includes('label:"Classic Comfort"') && shared.includes('label:"Signature"') && shared.includes('themeIds:["merchant-fieldbook"]'), "The signature theme must appear in its own fourth picker group while all previous groups remain.");
+assert.ok(shared.includes("const ADMIN_THEME_GROUPS=[") && shared.includes('label:"Modern"') && shared.includes('label:"Balanced"') && shared.includes('label:"Classic Comfort"') && shared.includes('label:"Signature"') && shared.includes('themeIds:["merchant-fieldbook","the-observatory"]'), "The signature theme must appear in its own fourth picker group while all previous groups remain.");
 assert.ok(shared.includes("All themes are available to every administrator") && !shared.includes("of 11 themes available"), "Theme count must be registry-driven and not hard-coded.");
 assert.ok(shared.includes('aria-label="Select ') && shared.includes(' theme" aria-pressed="') && shared.includes('aria-pressed='), "Theme choices must expose accessible names and selected states.");
 assert.ok(shared.includes("function makeExtendedAdminTheme") && shared.includes("EXTENDED_ADMIN_THEME_CONFIGS.forEach"), "The four added themes must be generated through the shared dynamic theme engine.");
@@ -310,6 +310,20 @@ for (const selector of fieldbookSelectors) {
   assert.ok(selector.startsWith('html[data-hf-theme="merchant-fieldbook"]'), "Every Fieldbook CSS selector must be isolated: " + selector);
 }
 const fieldbookTranslations = read("admin/i18n.js");
+const observatoryCss = read("admin/the-observatory.css").replace(/\/\*[\s\S]*?\*\//g, "");
+const observatoryOverview = read("admin/overview.html");
+const observatoryTranslations = read("admin/i18n.js");
+assert.ok(shared.includes('ADMIN_COLOR_THEMES["the-observatory"]') && shared.includes('name:"The Observatory"') && shared.includes('themeIds:["merchant-fieldbook","the-observatory"]'), "Theme 12 must exist in Signature.");
+assert.ok(shared.includes('link.href="./the-observatory.css?v=20261101-observatory-v1"'), "Observatory stylesheet must load on demand.");
+assert.ok(observatoryOverview.includes("hf-theme-copy--observatory") && observatoryOverview.includes("The Observatory"), "Overview must include Observatory-specific copy.");
+assert.ok(observatoryCss.includes('html[data-hf-theme="the-observatory"]') && observatoryCss.includes('body[data-page="overview"]') && observatoryCss.includes("prefers-reduced-motion"), "Observatory CSS must be scoped and include responsive and motion safeguards.");
+const observatorySelectors=[];let observatoryStart=0;
+for(let index=0;index<observatoryCss.length;index++){if(observatoryCss[index]==="{"){const selectorText=observatoryCss.slice(observatoryStart,index).trim();if(selectorText&&!selectorText.startsWith("@"))observatorySelectors.push(...splitFieldbookSelectorList(selectorText));observatoryStart=index+1;}else if(observatoryCss[index]==="}")observatoryStart=index+1;}
+assert.ok(observatorySelectors.length>100,"Observatory must cover the workspace UI.");
+for(const selector of observatorySelectors)assert.ok(selector.startsWith('html[data-hf-theme="the-observatory"]'),"Unscoped Observatory selector: "+selector);
+assertSidebarStops("The Observatory","#F4F0F8",["#242235","#302B43","#3D3650","#29263B"]);
+assert.ok(contrastRatio("#FFFFFF","#51456C")>=4.5&&contrastRatio("#FFFFFF","#403654")>=4.5&&contrastRatio("#413B50","#F0EDF4")>=4.5&&contrastRatio("#382E40","#F0C29A")>=4.5&&contrastRatio("#625C70","#FFFFFF")>=4.5&&contrastRatio("#625C70","#F7F4F9")>=4.5,"Observatory text states must meet WCAG AA.");
+assert.ok(observatoryTranslations.includes('"THE OBSERVATORY": "পর্যবেক্ষণকক্ষ"')&&observatoryTranslations.includes('"The Observatory": "দ্য অবজারভেটরি"')&&observatoryTranslations.includes('"Atmospheric · Precise · Futuristic": "আবহময় · নিখুঁত · ভবিষ্যতমুখী"'),"Observatory labels need Bengali translations.");
 assert.ok(fieldbookTranslations.includes('"Today\'s Market": "আজকের বাজার"') && fieldbookTranslations.includes('"THE MERCHANT\'S FIELDBOOK": "মার্চেন্টস ফিল্ডবুক"'), "Fieldbook Overview headings must have Bengali translations.");
 assert.ok(overview.includes('id="overviewRangeSelect"') && overview.includes('id="overviewCustomRange"') && overview.includes('id="overviewApplyRange"'), "Overview must provide a selectable date range and custom date controls.");
 assert.ok(overview.includes('id="overviewTrendType"') && overviewApp.includes("renderOverviewOperationsTrend") && overviewApp.includes('trendTypeSelect?.addEventListener("change",renderOverviewOperationsTrend)'), "Overview trend must support in-place Area, Line and Bar chart selection without refetching data.");
