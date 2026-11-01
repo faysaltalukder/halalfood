@@ -245,6 +245,12 @@ assert.equal(inferShippingWeightFromUnit("500ml"), "", "Volume must not be silen
 
 assert.ok(customerIdentityMigration.includes("sync_my_customer_identity"), "Customer identity migration must include the safe login sync function.");
 
+const posWorkspace = read("admin/pos.html");
+const couponUsageWorkspace = read("admin/coupon-usage.html");
+const couponsWorkspace = read("admin/coupons.html");
+assert.ok(posWorkspace.includes('class="hf-table-wrap pos-cart-table-wrap"') && posWorkspace.includes('class="hf-table-wrap pos-history-scroll"'), "POS cart and history tables must use the shared responsive table wrapper.");
+assert.ok(couponUsageWorkspace.includes('class="hf-table-wrap cu-table-wrap"'), "Coupon Usage must use the shared responsive table wrapper.");
+assert.ok((couponsWorkspace.match(/class="hf-table-wrap cp-table-wrap/g)||[]).length>=2, "Coupon list and redemption tables must use the shared responsive table wrapper.");
 const marketingWorkspace = read("admin/marketing-center.html");
 const trackingWorkspace = read("admin/tracking.html");
 assert.ok(marketingWorkspace.includes('class="hf-table-wrap hf-marketing-table-wrap"') && marketingWorkspace.includes('class="hf-table hf-marketing-table"'), "Marketing Center tables must use the shared table wrapper and table base classes.");
