@@ -627,8 +627,8 @@ html[data-hf-theme="the-observatory"] body[data-page] #hfObservatoryBackground .
 /* The illustration sits behind existing heading copy; no padding, margin or
    content width is changed. Keep the heading surface translucent for visibility. */
 html[data-hf-theme="the-observatory"] body[data-page]:not([data-page="overview"]) .admin-main>:is(.page-heading,.hf-phase4-hero,.hf-orders-hero,.hf-products-hero,.hf-marketing-hero,.hf-finance-hero,.hf-incomplete-hero,.cu-hero,.cp-hero,.pos-hero,.pt-hero,.mar-hero,.hf-customer-hero,.hf-supplier-hero,.yt-publish-hero,.fb-publish-hero){
- background:linear-gradient(125deg,rgba(251,249,252,.78) 0%,rgba(240,237,244,.68) 65%,rgba(234,239,240,.66) 100%)!important;
- backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);
+ background:linear-gradient(125deg,rgba(251,249,252,.70) 0%,rgba(240,237,244,.62) 65%,rgba(234,239,240,.58) 100%)!important;
+ backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
 }
 @media(max-width:900px){
  html[data-hf-theme="the-observatory"] body[data-page] .admin-main #hfObservatoryBackground{
