@@ -163,8 +163,8 @@
     card.className = variant === "jfy" ? "jfy-card" : variant === "mrow" ? "mrow-card" : "product-card";
     const href = productHref(product, null);
     const img = document.createElement("img");
-    img.src = product.image_url || "";
     img.alt = product.name;
+    setPictureImage(img, product.image_url, product.name);
     img.loading = "lazy";
     img.decoding = "async";
     const imageLink = document.createElement("a");
