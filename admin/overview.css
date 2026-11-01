@@ -365,3 +365,24 @@ html[data-admin-theme="dark"] .hf-overview-tool:nth-child(5){background:#4A4028!
 @media(prefers-reduced-motion:reduce){
  .hf-kpi,.hf-overview-tool,.hf-quick-action{transition:none!important}
 }
+
+/* Unified date-range controls for the business overview */
+.hf-overview-range-toolbar{display:flex;align-items:center;justify-content:space-between;gap:18px;margin:0 0 18px;padding:13px 16px}
+.hf-overview-range-copy{display:grid;gap:3px;min-width:150px}
+.hf-overview-range-copy strong{font-size:12px;color:var(--hf-navy)}
+.hf-overview-range-copy small{font-size:11px;color:var(--hf-muted);font-variant-numeric:tabular-nums}
+.hf-overview-range-controls{display:flex;align-items:flex-end;justify-content:flex-end;gap:10px;flex:1;min-width:0}
+.hf-overview-range-field{width:min(100%,230px);margin:0}
+.hf-overview-range-field>span,.hf-overview-custom-range .hf-field>span{display:block;margin-bottom:5px;color:var(--hf-muted);font-size:10px;font-weight:750}
+.hf-overview-range-field select,.hf-overview-custom-range input{min-height:38px}
+.hf-overview-custom-range{display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap}
+.hf-overview-custom-range .hf-field{width:150px;margin:0}
+.hf-overview-custom-range .hf-button{min-height:38px}
+@media(max-width:740px){
+ .hf-overview-range-toolbar{display:grid;gap:12px;padding:13px}
+ .hf-overview-range-controls{display:grid;grid-template-columns:minmax(0,1fr);width:100%}
+ .hf-overview-range-field{width:100%}
+ .hf-overview-custom-range{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+ .hf-overview-custom-range .hf-field{width:100%;min-width:0}
+ .hf-overview-custom-range .hf-button{grid-column:1/-1;width:100%}
+}

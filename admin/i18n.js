@@ -607,6 +607,17 @@
     "Quick guide": "দ্রুত নির্দেশিকা",
     "Settings & security": "সেটিংস ও নিরাপত্তা",
     "SIGNED IN": "সাইন ইন করা আছে",
+    "Today": "আজ",
+    "Yesterday": "গতকাল",
+    "This week": "এই সপ্তাহ",
+    "Last week": "গত সপ্তাহ",
+    "This month": "এই মাস",
+    "Last month": "গত মাস",
+    "This year": "এই বছর",
+    "Custom range": "নিজস্ব সময়সীমা",
+    "Apply": "প্রয়োগ করুন",
+    "Performance period": "সময়সীমা",
+    "Last year": "গত বছর",
   };
 
   const textState = new WeakMap();

@@ -124,6 +124,10 @@ window.HFAdminReady.then(async H=>{
    try{overviewDateLabel.textContent=new Intl.DateTimeFormat("en-BD",{timeZone:"Asia/Dhaka",day:"numeric",month:"short",year:"numeric"}).format(new Date());}
    catch(_dateError){overviewDateLabel.textContent=new Date().toDateString();}
   }
+  const rangeSelect=$("overviewRangeSelect");
+  const customRange=$("overviewCustomRange");
+  const fromInput=$("overviewDateFrom");
+  const toInput=$("overviewDateTo");
   const financeStrip=$("overviewFinanceStrip");
   const financeToggle=$("overviewFinanceToggle");
   if(financeStrip&&financeToggle){
@@ -139,14 +143,76 @@ window.HFAdminReady.then(async H=>{
    financeToggle.addEventListener("click",()=>setFinanceMasked(!financeStrip.classList.contains("is-masked")));
   }
   const localDateKey=value=>{
+   if(typeof value==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(value))return value;
    const d=value instanceof Date?value:new Date(value);
    if(Number.isNaN(d.getTime()))return "";
-   return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+   const parts=new Intl.DateTimeFormat("en-US",{timeZone:"Asia/Dhaka",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(d);
+   const part=type=>parts.find(item=>item.type===type)?.value||"";
+   return part("year")+"-"+part("month")+"-"+part("day");
   };
-  const dateKeys=days=>{
-   const keys=[],base=new Date();base.setHours(12,0,0,0);
-   for(let i=Math.max(1,days)-1;i>=0;i--){const d=new Date(base);d.setDate(d.getDate()-i);keys.push(localDateKey(d));}
-   return keys;
+  const addDateDays=(key,amount)=>{
+   const [year,month,day]=String(key).split("-").map(Number);
+   const d=new Date(Date.UTC(year,month-1,day+amount));
+   return d.getUTCFullYear()+"-"+String(d.getUTCMonth()+1).padStart(2,"0")+"-"+String(d.getUTCDate()).padStart(2,"0");
+  };
+  const buildRange=(fromDay,toDay,label)=>{
+   if(!fromDay||!toDay||fromDay>toDay)throw new Error("Choose a valid start and end date.");
+   const days=Math.max(1,Math.round((Date.parse(toDay+"T00:00:00Z")-Date.parse(fromDay+"T00:00:00Z"))/86400000)+1);
+   return {
+    from:new Date(fromDay+"T00:00:00+06:00").toISOString(),
+    to:new Date(toDay+"T23:59:59.999+06:00").toISOString(),
+    fromDay,toDay,days,label
+   };
+  };
+  const readOverviewRange=()=>{
+   const today=localDateKey(new Date());
+   const selected=rangeSelect?.value||"30";
+   let fromDay=today,toDay=today,label="Today";
+   const currentMonthStart=today.slice(0,7)+"-01";
+   const weekday=new Date(today+"T12:00:00+06:00").getUTCDay();
+   const thisWeekStart=addDateDays(today,-((weekday+1)%7));
+   switch(selected){
+    case "today": label="Today";break;
+    case "yesterday": fromDay=addDateDays(today,-1);toDay=fromDay;label="Yesterday";break;
+    case "7": fromDay=addDateDays(today,-6);label="Last 7 days";break;
+    case "30": fromDay=addDateDays(today,-29);label="Last 30 days";break;
+    case "90": fromDay=addDateDays(today,-89);label="Last 90 days";break;
+    case "this-week": fromDay=thisWeekStart;label="This week";break;
+    case "last-week": toDay=addDateDays(thisWeekStart,-1);fromDay=addDateDays(toDay,-6);label="Last week";break;
+    case "this-month": fromDay=currentMonthStart;label="This month";break;
+    case "last-month": toDay=addDateDays(currentMonthStart,-1);fromDay=toDay.slice(0,7)+"-01";label="Last month";break;
+    case "this-year": fromDay=today.slice(0,4)+"-01-01";label="This year";break;
+    case "last-year": fromDay=(Number(today.slice(0,4))-1)+"-01-01";toDay=(Number(today.slice(0,4))-1)+"-12-31";label="Last year";break;
+    case "custom":
+     fromDay=String(fromInput?.value||"");
+     toDay=String(toInput?.value||"");
+     label="Custom range";
+     if(!fromDay||!toDay||fromDay>toDay)throw new Error("Choose a valid start and end date.");
+     break;
+    default: fromDay=addDateDays(today,-29);label="Last 30 days";
+   }
+   if(selected==="custom")label=fromDay+" to "+toDay;
+   return buildRange(fromDay,toDay,label);
+  };
+  const formatDayLabel=key=>new Intl.DateTimeFormat("en-BD",{timeZone:"Asia/Dhaka",day:"numeric",month:"short"}).format(new Date(key+"T12:00:00+06:00"));
+  const formatMonthLabel=key=>new Intl.DateTimeFormat("en-BD",{timeZone:"Asia/Dhaka",month:"short",year:"numeric"}).format(new Date(key+"-01T12:00:00+06:00"));
+  const nextMonthKey=key=>{
+   const [year,month]=key.split("-").map(Number);
+   return month===12?(year+1)+"-01":year+"-"+String(month+1).padStart(2,"0");
+  };
+  const buildChartBuckets=range=>{
+   const monthly=range.days>62,items=[];
+   if(monthly){
+    let month=range.fromDay.slice(0,7);
+    const last=range.toDay.slice(0,7);
+    while(month<=last){items.push({key:month,label:formatMonthLabel(month)});month=nextMonthKey(month);}
+   }else{
+    for(let offset=0;offset<range.days;offset++){
+     const day=addDateDays(range.fromDay,offset);
+     items.push({key:day,label:formatDayLabel(day)});
+    }
+   }
+   return {monthly,items};
   };
   async function fetchOverviewOrderSummary(range,maxRows=5000){
    const rows=[],pageSize=1000;
@@ -154,6 +220,20 @@ window.HFAdminReady.then(async H=>{
     const size=Math.min(pageSize,maxRows-offset);
     let query=client.from("orders").select("id,order_number,customer_name,customer_phone,total,status,ordered_at").order("ordered_at",{ascending:false}).order("id",{ascending:true});
     query=rangeQuery(query,"ordered_at",range);
+    const page=await signedQuery(query.range(offset,offset+size-1));
+    rows.push(...page);
+    if(page.length<size)break;
+   }
+   return rows;
+  }
+  async function fetchOverviewEvents(range,maxRows=15000){
+   const rows=[],pageSize=1000;
+   const fields="id,event_name,occurred_at,page_path,page_title,session_id,anonymous_id,item_id,item_name,item_category,value,quantity,search_term,source,medium,campaign,metadata";
+   const eventNames=["page_view","view_item","add_to_cart"];
+   for(let offset=0;offset<maxRows;offset+=pageSize){
+    const size=Math.min(pageSize,maxRows-offset);
+    let query=client.from("analytics_events").select(fields).in("event_name",eventNames).order("occurred_at",{ascending:false}).order("id",{ascending:false});
+    query=rangeQuery(query,"occurred_at",range);
     const page=await signedQuery(query.range(offset,offset+size-1));
     rows.push(...page);
     if(page.length<size)break;
@@ -184,33 +264,45 @@ window.HFAdminReady.then(async H=>{
    $("overviewActionNote").textContent="Based on saved orders and stock.";
   }
   async function refresh(){
-   const now=new Date();
-   const range30={from:new Date(now.getTime()-30*86400000).toISOString(),to:now.toISOString(),days:30,label:"Last 30 days"};
-   const range14={from:new Date(now.getTime()-14*86400000).toISOString(),to:now.toISOString(),days:14,label:"Last 14 days"};
-   const [summaryOrders,chartOrders,events,products,pendingResult,recentOrders]=await Promise.all([
-    fetchOverviewOrderSummary(range30,5000),
-    fetchOrders(range14,1000),
-    fetchEvents(range14,5000),
+   const range=readOverviewRange();
+   const today=localDateKey(new Date());
+   const todayRange=buildRange(today,today,"Today");
+   const buckets=buildChartBuckets(range);
+   const [summaryOrders,chartOrders,events,todayOrders,todayEvents,products,pendingResult,recentOrders]=await Promise.all([
+    fetchOverviewOrderSummary(range,5000),
+    fetchOrders(range,5000),
+    fetchOverviewEvents(range,15000),
+    fetchOrders(todayRange,1000),
+    fetchOverviewEvents(todayRange,15000),
     fetchProducts(1000),
     client.from("orders").select("id",{count:"exact",head:true}).eq("status","pending"),
     signedQuery(client.from("orders").select("id,order_number,customer_name,total,status,ordered_at").order("ordered_at",{ascending:false}).order("id",{ascending:true}).limit(7))
    ]);
-   const today=localDateKey(now);
-   const ordersLast30=summaryOrders.filter(o=>o.ordered_at&&new Date(o.ordered_at)>=new Date(range30.from)&&new Date(o.ordered_at)<=now);
-   const todayOrders=chartOrders.filter(o=>localDateKey(o.ordered_at)===today);
+   const bucketKey=value=>{
+    const day=localDateKey(value);
+    return buckets.monthly?day.slice(0,7):day;
+   };
    const todayItemLines=todayOrders.filter(o=>o.status!=="cancelled").reduce((sum,o)=>sum+(o.order_items||[]).length,0);
-   const todayCartEvents=events.filter(e=>e.event_name==="add_to_cart"&&localDateKey(e.occurred_at)===today).length;
+   const todayCartEvents=todayEvents.filter(e=>e.event_name==="add_to_cart").length;
    const pendingVerified=!pendingResult.error&&pendingResult.count!==null&&pendingResult.count!==undefined&&Number.isFinite(Number(pendingResult.count));
-   const pendingCount=pendingVerified?Number(pendingResult.count):summaryOrders.filter(o=>o.status==="pending").length;
-   const orderValue=ordersLast30.filter(o=>o.status!=="cancelled").reduce((sum,o)=>sum+Number(o.total||0),0);
+   const pendingCount=pendingVerified?Number(pendingResult.count):0;
+   const orderValue=summaryOrders.filter(o=>o.status!=="cancelled").reduce((sum,o)=>sum+Number(o.total||0),0);
    const lowStock=products.filter(p=>p.is_active&&p.stock_quantity!==null&&p.stock_quantity!==undefined&&p.stock_quantity!==""&&Number.isFinite(Number(p.stock_quantity))&&Number(p.stock_quantity)>0&&Number(p.stock_quantity)<=Number(p.low_stock_threshold??5)).length;
-   $("kpiOrders").textContent=shortNum(ordersLast30.length);
+   $("kpiOrders").textContent=shortNum(summaryOrders.length);
+   if($("kpiOrdersNote"))$("kpiOrdersNote").textContent=range.label;
    $("kpiTodayItems").textContent=shortNum(todayItemLines);
-   $("kpiPending").textContent=shortNum(pendingCount);
+   $("kpiPending").textContent=pendingVerified?shortNum(pendingCount):"—";
    $("kpiCart").textContent=shortNum(todayCartEvents);
    $("kpiOrderValue").textContent=money(orderValue);
-   $("kpiNote").textContent=range30.label+" · recorded order value is not verified cash income.";
+   $("kpiNote").textContent=range.label+" · recorded order value is not verified cash income.";
    $("kpiLowStock").textContent=shortNum(lowStock);
+   const rangeSummary=$("overviewRangeSummary");
+   if(rangeSummary)rangeSummary.textContent=range.label+" · "+range.fromDay+" → "+range.toDay;
+   ["overviewOperationsRangeLabel","overviewFinanceRangeLabel","overviewTrafficRangeLabel","overviewStatusRangeLabel","overviewProductsRangeLabel"].forEach(id=>{
+    const node=$(id);if(node)node.textContent=range.label;
+   });
+   const statusNote=$("overviewStatusRangeNote");
+   if(statusNote)statusNote.textContent=range.label+" · not payment/delivery confirmation.";
    renderActionCenter(products,pendingCount,pendingVerified);
    let finance=[],financeAvailable=true;
    try{finance=await fetchFinance(null,3000);}
@@ -224,37 +316,48 @@ window.HFAdminReady.then(async H=>{
    $("financeSummaryNote").textContent=financeAvailable
     ?"Confirmed manual entries only. COD settlement is not reconciled here."
     :"Finance unavailable. Refresh after signing in and completing MFA.";
-   const labels=dateKeys(14);
-   drawChart("overviewOperationsChart",{type:"line",data:{labels:labels.map(dateOnly),datasets:[
-    {label:"Order item lines",data:labels.map(day=>chartOrders.filter(o=>localDateKey(o.ordered_at)===day&&o.status!=="cancelled").reduce((sum,o)=>sum+(o.order_items||[]).length,0)),borderColor:palette.orange,backgroundColor:"#F59E0B22",fill:true,tension:.32,pointRadius:2,borderWidth:2},
-    {label:"Add-to-cart events",data:labels.map(day=>events.filter(e=>e.event_name==="add_to_cart"&&localDateKey(e.occurred_at)===day).length),borderColor:palette.blue,backgroundColor:"#4F7CFF20",fill:false,tension:.32,pointRadius:2,borderWidth:2}
+   const labels=buckets.items.map(item=>item.label);
+   drawChart("overviewOperationsChart",{type:"line",data:{labels,datasets:[
+    {label:"Order item lines",data:buckets.items.map(bucket=>chartOrders.filter(o=>bucketKey(o.ordered_at)===bucket.key&&o.status!=="cancelled").reduce((sum,o)=>sum+(o.order_items||[]).length,0)),borderColor:palette.orange,backgroundColor:"#F59E0B22",fill:true,tension:.32,pointRadius:2,borderWidth:2},
+    {label:"Add-to-cart events",data:buckets.items.map(bucket=>events.filter(e=>e.event_name==="add_to_cart"&&bucketKey(e.occurred_at)===bucket.key).length),borderColor:palette.blue,backgroundColor:"#4F7CFF20",fill:false,tension:.32,pointRadius:2,borderWidth:2}
    ]},options:{...chartAxisOptions(),plugins:{legend:{position:"bottom"}},onClick:(ev,items)=>{if(items.length)location.href=items[0].datasetIndex===0?"./orders.html":"./analytics.html";}}});
    const financeCanvas=$("overviewFinanceChart");
    if(financeAvailable){
     if(financeCanvas)financeCanvas.hidden=false;
     $("overviewFinanceChartNote").textContent="Manual ledger entries only · not a bank/COD balance.";
-    drawChart("overviewFinanceChart",{type:"bar",data:{labels:labels.map(dateOnly),datasets:[
-     {label:"Recorded income",data:labels.map(day=>confirmedFinance.filter(e=>e.entry_type==="income"&&String(e.entry_date||"").slice(0,10)===day).reduce((sum,e)=>sum+Number(e.amount||0),0)),backgroundColor:palette.green,borderRadius:5,maxBarThickness:24},
-     {label:"Recorded expenses",data:labels.map(day=>confirmedFinance.filter(e=>e.entry_type==="expense"&&String(e.entry_date||"").slice(0,10)===day).reduce((sum,e)=>sum+Number(e.amount||0),0)),backgroundColor:palette.orange,borderRadius:5,maxBarThickness:24}
+    drawChart("overviewFinanceChart",{type:"bar",data:{labels,datasets:[
+     {label:"Recorded income",data:buckets.items.map(bucket=>confirmedFinance.filter(e=>e.entry_type==="income"&&bucketKey(e.entry_date)===bucket.key).reduce((sum,e)=>sum+Number(e.amount||0),0)),backgroundColor:palette.green,borderRadius:5,maxBarThickness:24},
+     {label:"Recorded expenses",data:buckets.items.map(bucket=>confirmedFinance.filter(e=>e.entry_type==="expense"&&bucketKey(e.entry_date)===bucket.key).reduce((sum,e)=>sum+Number(e.amount||0),0)),backgroundColor:palette.orange,borderRadius:5,maxBarThickness:24}
     ]},options:{...chartAxisOptions(),plugins:{legend:{position:"bottom"}},onClick:()=>{location.href="./finance.html";}}});
    }else{
     if(financeCanvas)financeCanvas.hidden=true;
     $("overviewFinanceChartNote").textContent="Finance unavailable for this session.";
    }
-   drawChart("overviewTrafficChart",{type:"line",data:{labels:labels.map(dateOnly),datasets:[
-    {label:"Page views",data:labels.map(day=>events.filter(e=>e.event_name==="page_view"&&localDateKey(e.occurred_at)===day).length),borderColor:palette.blue,backgroundColor:"#4F7CFF20",fill:true,tension:.35,pointRadius:2,borderWidth:2},
-    {label:"Product views",data:labels.map(day=>events.filter(e=>e.event_name==="view_item"&&localDateKey(e.occurred_at)===day).length),borderColor:palette.orange,backgroundColor:"#C97B3D18",fill:true,tension:.35,pointRadius:2,borderWidth:2}
+   drawChart("overviewTrafficChart",{type:"line",data:{labels,datasets:[
+    {label:"Page views",data:buckets.items.map(bucket=>events.filter(e=>e.event_name==="page_view"&&bucketKey(e.occurred_at)===bucket.key).length),borderColor:palette.blue,backgroundColor:"#4F7CFF20",fill:true,tension:.35,pointRadius:2,borderWidth:2},
+    {label:"Product views",data:buckets.items.map(bucket=>events.filter(e=>e.event_name==="view_item"&&bucketKey(e.occurred_at)===bucket.key).length),borderColor:palette.orange,backgroundColor:"#C97B3D18",fill:true,tension:.35,pointRadius:2,borderWidth:2}
    ]},options:{...chartAxisOptions(),plugins:{legend:{position:"bottom"}}}});
    drawChart("overviewStatusChart",{type:"doughnut",data:orderStatusCounts(summaryOrders),options:{cutout:"67%",plugins:{legend:{position:"bottom"}},onClick:(ev,items)=>{if(items.length)location.href="./orders.html?status="+encodeURIComponent(["pending","processing","shipped","delivered","cancelled"][items[0].index]);}}});
    renderTopProducts($("overviewTopProducts"),topProducts(events,products).slice(0,5));
    renderRecentOrders(recentOrders);
    $("overviewUpdated").textContent="Updated "+new Date().toLocaleTimeString("en-BD",{hour:"2-digit",minute:"2-digit"});
    const limits=[];
-   if(summaryOrders.length>=5000)limits.push("Order totals may be incomplete (5,000-row limit).");
-   if(chartOrders.length>=1000)limits.push("Daily chart reached its 1,000-order limit.");
-   if(events.length>=5000)limits.push("Events reached the 5,000-row limit.");
-   $("overviewDataNote").textContent=events.length+" events/14d · "+ordersLast30.length+" orders/30d. Order lines are product rows, not quantities; cart additions are events, not current cart. "+(pendingVerified?"Pending count verified.":"Pending count is an estimate.")+" Records do not confirm payment or delivery."+(limits.length?" "+limits.join(" "):"");
+   if(summaryOrders.length>=5000)limits.push("Order summary reached the 5,000-row limit.");
+   if(chartOrders.length>=5000)limits.push("Order trend reached the 5,000-row limit.");
+   if(events.length>=15000)limits.push("Website activity reached the 15,000-event limit.");
+   if(todayOrders.length>=1000)limits.push("Today's order-line count reached its 1,000-order limit.");
+   if(todayEvents.length>=15000)limits.push("Today's cart-event count reached its 15,000-event limit.");
+   $("overviewDataNote").textContent=events.length+" page, product and cart events · "+range.label+" · "+summaryOrders.length+" orders. Order lines are product rows, not quantities; cart additions are events, not current cart. "+(pendingVerified?"Pending count verified.":"Pending count unavailable; shown as —.")+" Records do not confirm payment or delivery."+(limits.length?" "+limits.join(" "):"");
   }
+  const toggleCustomRange=()=>{if(customRange)customRange.hidden=rangeSelect?.value!=="custom";};
+  if(fromInput&&!fromInput.value)fromInput.value=localDateKey(new Date());
+  if(toInput&&!toInput.value)toInput.value=localDateKey(new Date());
+  rangeSelect?.addEventListener("change",()=>{
+   toggleCustomRange();
+   if(rangeSelect.value!=="custom")refresh().catch(error=>toast(error.message||"Could not refresh this overview.","error"));
+  });
+  $("overviewApplyRange")?.addEventListener("click",()=>refresh().catch(error=>toast(error.message||"Choose a valid date range.","error")));
+  toggleCustomRange();
   await refresh();attachRefresh(refresh);
  }
  async function initAnalytics(){

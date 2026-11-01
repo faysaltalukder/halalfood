@@ -245,10 +245,16 @@ assert.equal(inferShippingWeightFromUnit("500ml"), "", "Volume must not be silen
 assert.ok(customerIdentityMigration.includes("sync_my_customer_identity"), "Customer identity migration must include the safe login sync function.");
 
 const overview = read("admin/overview.html");
+const overviewApp = read("admin/app.js");
+const overviewCss = read("admin/overview.css");
+assert.ok(overview.includes('id="overviewRangeSelect"') && overview.includes('id="overviewCustomRange"') && overview.includes('id="overviewApplyRange"'), "Overview must provide a selectable date range and custom date controls.");
+assert.ok(overviewApp.includes("const readOverviewRange=()=>") && overviewApp.includes('timeZone:"Asia/Dhaka"'), "Overview date filters must use explicit Bangladesh-local date handling.");
+assert.ok(overviewApp.includes("fetchOverviewEvents(range,maxRows=15000)") && overviewApp.includes('.in("event_name",eventNames)'), "Overview event queries should load only the event types used by its charts.");
+assert.ok(overviewCss.includes(".hf-overview-range-toolbar"), "Overview date-range controls must use the responsive shared visual style.");
 assert.ok(!overview.includes("চতুর্থ ডিপ্লয়মেন্ট"), "Overview should not show the obsolete deployment marker.");
 assert.ok(!overview.includes('class="hf-deployment-marker"'), "Obsolete deployment marker component should be removed.");
 assert.ok(!overview.includes("Test project") && !overview.includes("Testing project"), "Overview should not show the removed testing notice.");
-assert.ok(overview.includes("overview.css?v=20261030-admin-theme-v3"), "Overview polish stylesheet must be cache-busted.");
+assert.ok(overview.includes("overview.css?v=20261101-overview-range-v1"), "Overview polish stylesheet must be cache-busted.");
 
 const facebookPage = read("admin/facebook-publishing.html");
 assert.ok(facebookPage.includes("facebook-publishing.js?v=20261026-phase3-automation-queue"), "Facebook publishing script cache key must include the queue UI update.");
