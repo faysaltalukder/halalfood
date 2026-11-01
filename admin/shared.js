@@ -589,14 +589,63 @@ function syncSignatureThemeStyles(themeId){
   if(!link){link=document.createElement("link");link.id=fieldbookId;link.rel="stylesheet";link.href="./merchant-fieldbook.css?v=20261101-merchant-fieldbook-v1";document.head.appendChild(link);}
  }else if(themeId==="the-observatory"){
   if(link)link.remove();let observatory=document.getElementById(observatoryId);
-  if(!observatory){observatory=document.createElement("link");observatory.id=observatoryId;observatory.rel="stylesheet";observatory.href="./the-observatory.css?v=20261102-observatory-visible-v3";document.head.appendChild(observatory);}
+  if(!observatory){observatory=document.createElement("link");observatory.id=observatoryId;observatory.rel="stylesheet";observatory.href="./the-observatory.css?v=20261102-observatory-fixed-scenes-v4";document.head.appendChild(observatory);}
  }else{if(link)link.remove();const inactiveObservatory=document.getElementById(observatoryId);if(inactiveObservatory)inactiveObservatory.remove();}
 }
+
+function syncObservatoryBackground(themeId){
+ const old=document.getElementById("hfObservatoryBackground");
+ if(old)old.remove();
+ if(themeId!=="the-observatory")return;
+ const page=String(document.body?.dataset.page||"overview");
+ if(page==="overview")return;
+ const main=document.getElementById("adminMain");
+ if(!main)return;
+ const scenes={
+  solar:'<span class="hf-obs-solar-core"></span>'+[["21","hf-obs-planet-mercury"],["31","hf-obs-planet-venus"],["41","hf-obs-planet-earth"],["51","hf-obs-planet-mars"],["62","hf-obs-planet-jupiter"],["73","hf-obs-planet-saturn"],["84","hf-obs-planet-uranus"],["95","hf-obs-planet-neptune"]].map((p,i)=>'<span class="hf-obs-orbit hf-obs-orbit--'+(i+1)+'"><i class="'+p[1]+'"></i></span>').join(""),
+  jupiter:'<span class="hf-obs-jupiter-core"></span><span class="hf-obs-jupiter-moon-track hf-obs-jupiter-moon-track--1"><i></i></span><span class="hf-obs-jupiter-moon-track hf-obs-jupiter-moon-track--2"><i></i></span><span class="hf-obs-jupiter-moon-track hf-obs-jupiter-moon-track--3"><i></i></span><span class="hf-obs-jupiter-moon-track hf-obs-jupiter-moon-track--4"><i></i></span>',
+  saturn:'<span class="hf-obs-saturn-ring hf-obs-saturn-ring--back"></span><span class="hf-obs-saturn-core"></span><span class="hf-obs-saturn-ring hf-obs-saturn-ring--front"></span><span class="hf-obs-saturn-moon-track"><i></i></span>',
+  mars:'<span class="hf-obs-mars-core"></span><span class="hf-obs-mars-moon-track hf-obs-mars-moon-track--1"><i></i></span><span class="hf-obs-mars-moon-track hf-obs-mars-moon-track--2"><i></i></span><span class="hf-obs-mars-rover"></span>',
+  venus:'<span class="hf-obs-venus-core"></span><span class="hf-obs-venus-cloud hf-obs-venus-cloud--1"></span><span class="hf-obs-venus-cloud hf-obs-venus-cloud--2"></span><span class="hf-obs-venus-probe-track"><i></i></span>',
+  galaxy:'<span class="hf-obs-galaxy-core"><i></i></span><span class="hf-obs-galaxy-star hf-obs-galaxy-star--1"></span><span class="hf-obs-galaxy-star hf-obs-galaxy-star--2"></span><span class="hf-obs-galaxy-star hf-obs-galaxy-star--3"></span>',
+  neptune:'<span class="hf-obs-neptune-ring"></span><span class="hf-obs-neptune-core"></span><span class="hf-obs-neptune-moon-track"><i></i></span>',
+  mercury:'<span class="hf-obs-mercury-core"></span><span class="hf-obs-mercury-crater hf-obs-mercury-crater--1"></span><span class="hf-obs-mercury-crater hf-obs-mercury-crater--2"></span><span class="hf-obs-mercury-crater hf-obs-mercury-crater--3"></span><span class="hf-obs-mercury-orbit"><i></i></span>',
+  uranus:'<span class="hf-obs-uranus-ring"></span><span class="hf-obs-uranus-core"></span><span class="hf-obs-uranus-moon-track"><i></i></span>',
+  comet:'<span class="hf-obs-comet-tail"></span><span class="hf-obs-comet-core"></span><span class="hf-obs-comet-dust"></span>',
+  moon:'<span class="hf-obs-moon-core"></span><span class="hf-obs-moon-crater hf-obs-moon-crater--1"></span><span class="hf-obs-moon-crater hf-obs-moon-crater--2"></span><span class="hf-obs-moon-track"><i></i></span>',
+  satellite:'<span class="hf-obs-satellite-planet"></span><span class="hf-obs-satellite-orbit"><i class="hf-obs-satellite-body"></i></span><span class="hf-obs-satellite-star"></span>',
+  nebula:'<span class="hf-obs-nebula-core"></span><span class="hf-obs-nebula-cloud hf-obs-nebula-cloud--1"></span><span class="hf-obs-nebula-cloud hf-obs-nebula-cloud--2"></span><span class="hf-obs-nebula-star"></span>',
+  asteroid:'<span class="hf-obs-asteroid-orbit hf-obs-asteroid-orbit--1"><i></i><b></b><em></em></span><span class="hf-obs-asteroid-orbit hf-obs-asteroid-orbit--2"><i></i><b></b><em></em></span><span class="hf-obs-asteroid-core"></span>',
+  constellation:'<span class="hf-obs-constellation-stars"></span><span class="hf-obs-constellation-glow"></span>',
+  sun:'<span class="hf-obs-sun-core"></span><span class="hf-obs-sun-corona"></span><span class="hf-obs-sun-orbit"><i></i></span>',
+  ice:'<span class="hf-obs-ice-ring"></span><span class="hf-obs-ice-core"></span><span class="hf-obs-ice-moon-track"><i></i></span>'
+ };
+ const pageScene={
+  orders:"solar",operations:"jupiter","incomplete-orders":"saturn",
+  products:"mars","products-add":"mars","products-barcode":"mercury","products-reviews":"venus",
+  categories:"venus",customers:"galaxy","customer-settings":"moon",
+  analytics:"neptune",finance:"sun",reports:"comet",tracking:"satellite",
+  settings:"moon",content:"nebula",coupons:"asteroid","coupon-usage":"mercury",
+  pos:"solar","supplier-add":"uranus","supplier-purchases":"saturn","supplier-payments":"ice",
+  messages:"satellite",messenger:"constellation","marketing-center":"galaxy",
+  "facebook-publishing":"satellite","meta-ads-review":"jupiter",
+  "youtube-publishing":"comet","website-publisher":"nebula"
+ };
+ const scene=pageScene[page]||"constellation";
+ const backdrop=document.createElement("div");
+ backdrop.id="hfObservatoryBackground";
+ backdrop.className="hf-obs-stage hf-obs-stage--"+scene;
+ backdrop.setAttribute("aria-hidden","true");
+ backdrop.innerHTML=scenes[scene]||scenes.constellation;
+ main.insertBefore(backdrop,main.firstChild);
+}
+
 function applyColorTheme(themeId,persist=true){
  const theme=ADMIN_COLOR_THEMES[themeId]||ADMIN_COLOR_THEMES["warm-harvest"];
  currentThemeId=theme.id;
  syncSignatureThemeStyles(theme.id);
  document.documentElement.dataset.hfTheme=theme.id;
+ syncObservatoryBackground(theme.id);
  document.documentElement.dataset.adminTheme="light";
  Object.entries(theme.tokens).forEach(([key,value])=>document.documentElement.style.setProperty("--hf-theme-"+key,value));
  palette.navy=theme.tokens.text;palette.orange=theme.tokens.accent;palette.blue=theme.tokens.primary;palette.green="#287A58";palette.purple=theme.tokens["accent-alt"];palette.yellow=theme.tokens.accent;palette.red="#B24B3F";palette.teal=theme.tokens["accent-alt"];palette.cream=theme.tokens["control-bg"];palette.muted=theme.tokens.muted;
