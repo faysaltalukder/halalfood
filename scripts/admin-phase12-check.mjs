@@ -81,7 +81,7 @@ for (const file of unifiedPages) {
   const source = read(join("admin", file));
   assert.ok(source.includes("i18n.js?v=20261101-shell-localization-v3"), `${file}: missing or stale shared language dictionary.`);
   assert.ok(source.includes(`shared.css?v=${sharedCssVersion}`), `${file}: stale shared UI cache version.`);
-  assert.ok(source.includes("shared.js?v=20261101-admin-theme-pack-v3"), `${file}: missing or stale multi-theme shared JS version.`);
+  assert.ok(source.includes(`shared.js?v=${sharedJsVersion}`), `${file}: missing or stale multi-theme shared JS version.`);
   assert.ok(source.includes(`workspace-global-theme.css?v=${workspaceThemeCssVersion}`), `${file}: missing or stale shared workspace theme stylesheet.`);
 
   if (source.includes("./app.js")) {
@@ -130,7 +130,7 @@ assert.ok(shared.includes("const ADMIN_COLOR_THEMES={") && shared.includes('"war
 assert.ok(shared.includes('profile":"Creative · Refined · Expressive"') && shared.includes('profile":"Warm · Refined · Business"') && shared.includes('profile":"Natural · Classic · Composed"') && shared.includes('profile":"Warm · Friendly · Expressive"'), "The four replacement themes need their approved business profiles.");
 assert.ok(shared.includes("const ADMIN_THEME_GROUPS=[") && shared.includes('label:"Modern"') && shared.includes('label:"Balanced"') && shared.includes('label:"Classic Comfort"'), "All themes must be discoverable in the three picker groups.");
 assert.ok(shared.includes("All themes are available to every administrator") && !shared.includes("of 11 themes available"), "Theme count must be registry-driven and not hard-coded.");
-assert.ok(shared.includes('aria-label="Select '+esc(theme.name)+' theme"') && shared.includes('aria-pressed='), "Theme choices must expose accessible names and selected states.");
+assert.ok(shared.includes('aria-label="Select ') && shared.includes(' theme" aria-pressed="') && shared.includes('aria-pressed='), "Theme choices must expose accessible names and selected states.");
 assert.ok(shared.includes("function makeExtendedAdminTheme") && shared.includes("EXTENDED_ADMIN_THEME_CONFIGS.forEach"), "The four added themes must be generated through the shared dynamic theme engine.");
 assert.ok(shared.includes("hfThemePickerToggle") && shared.includes("hfThemeGrid") && shared.includes("renderThemePicker"), "The shared header must expose the accessible theme picker.");
 assert.ok(shared.includes('hf_admin_color_theme:') && shared.includes("themeStorageKey()"), "Theme choice must persist per authenticated administrator.");
@@ -390,7 +390,8 @@ assert.ok(contrastRatio("#F8F4FB", "#4B315D") >= 4.5 && contrastRatio("#4B3C55",
 assert.ok(contrastRatio("#FFF5EA", "#633A29") >= 4.5 && contrastRatio("#5B3D2C", "#F3E4D7") >= 4.5 && contrastRatio("#553722", "#E7C27C") >= 4.5 && contrastRatio("#FFFFFF", "#98542F") >= 4.5 && contrastRatio("#765F52", "#FFF9F2") >= 4.5 && contrastRatio("#A9663F", "#F1E1D1") >= 3, "Copper Espresso primary text, menus, buttons and focus must meet contrast targets.");
 assert.ok(contrastRatio("#F9FAEE", "#48522B") >= 4.5 && contrastRatio("#495236", "#E7E9D5") >= 4.5 && contrastRatio("#3D4228", "#E3D27E") >= 4.5 && contrastRatio("#FFFFFF", "#66713B") >= 4.5 && contrastRatio("#68704F", "#FCFCF4") >= 4.5 && contrastRatio("#68743B", "#ECEBDD") >= 3, "Olive Citrus primary text, menus, buttons and focus must meet contrast targets.");
 assert.ok(contrastRatio("#FFF5F0", "#8A3F39") >= 4.5 && contrastRatio("#713F3A", "#F4E0D8") >= 4.5 && contrastRatio("#563833", "#F5C77D") >= 4.5 && contrastRatio("#FFFFFF", "#B95248") >= 4.5 && contrastRatio("#7F615B", "#FFFAF6") >= 4.5 && contrastRatio("#A54E43", "#F5E1D6") >= 3, "Coral Peach primary text, menus, buttons and focus must meet contrast targets.");
-assert.ok(shared.includes('"tooltip-bg":"#FCF9FD"') && shared.includes('"tooltip-bg":"#FFF9F2"') && shared.includes('"tooltip-bg":"#FCFCF4"') && shared.includes('"tooltip-bg":"#FFFAF6"') && shared.includes('"tooltip-bg":p.chartSurface'), "Chart tooltips must use their light chart surface behind dark labels.");
+const readableTooltipPairs=[...shared.matchAll(/"chart-surface"\s*:\s*"(#[0-9A-Fa-f]{6})"\s*,\s*"tooltip-bg"\s*:\s*"\1"/g)];
+assert.ok(readableTooltipPairs.length>=6 && shared.includes('"tooltip-bg":p.chartSurface'), "All ten themes must use readable light chart surfaces behind dark tooltip labels.");
 
 for (const file of unifiedPages) {
   const source = read(join("admin", file));

@@ -189,7 +189,7 @@ const ADMIN_COLOR_THEMES={
       "chart-muted": "#6A7694",
       "chart-grid": "#D4D9EB",
       "chart-surface": "#FBFBFE",
-      "tooltip-bg": "#28335F",
+      "tooltip-bg": "#FBFBFE",
       "leaf-filter": "hue-rotate(175deg) saturate(.68)"
     },
     "chartColors": [
@@ -280,7 +280,7 @@ const ADMIN_COLOR_THEMES={
       "chart-muted": "#657762",
       "chart-grid": "#D5E0CD",
       "chart-surface": "#FAFCF6",
-      "tooltip-bg": "#2B4936",
+      "tooltip-bg": "#FAFCF6",
       "leaf-filter": "sepia(.22) hue-rotate(42deg) saturate(.72)"
     },
     "chartColors": [
@@ -371,7 +371,7 @@ const ADMIN_COLOR_THEMES={
       "chart-muted": "#927483",
       "chart-grid": "#E7D3DE",
       "chart-surface": "#FFFAFC",
-      "tooltip-bg": "#55283F",
+      "tooltip-bg": "#FFFAFC",
       "leaf-filter": "hue-rotate(285deg) saturate(.68)"
     },
     "chartColors": [
@@ -462,7 +462,7 @@ const ADMIN_COLOR_THEMES={
       "chart-muted": "#60798D",
       "chart-grid": "#D1DFE9",
       "chart-surface": "#FAFCFD",
-      "tooltip-bg": "#1F4666",
+      "tooltip-bg": "#FAFCFD",
       "leaf-filter": "hue-rotate(190deg) saturate(.68)"
     },
     "chartColors": [
