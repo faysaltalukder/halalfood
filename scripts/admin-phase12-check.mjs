@@ -286,9 +286,28 @@ assert.ok(shared.includes("function syncSignatureThemeStyles(themeId)") && share
 assert.ok(overview.includes("THE MERCHANT'S FIELDBOOK") && overview.includes("Today's Market") && overview.includes("A living market desk for the work that matters."), "Overview must use the Fieldbook editorial heading and description.");
 for (const id of ["kpiOrders","kpiTodayItems","kpiPending","kpiCart","kpiOrderValue","kpiLowStock","overviewFinanceStrip","overviewActionList","overviewRangeSelect","overviewTrendType","overviewTopProducts"]) assert.ok(overview.includes(`id="${id}"`), "Fieldbook Overview must preserve live data/control hook #" + id + ".");
 assert.ok(fieldbookCss.includes('html[data-hf-theme="merchant-fieldbook"]') && fieldbookCss.includes('body[data-page="overview"]') && fieldbookCss.includes("prefers-reduced-motion"), "Fieldbook styles must be uniquely scoped and include Overview and reduced-motion support.");
-for (const match of fieldbookCss.matchAll(/(^|})\s*([^@}{][^{]+)\{/g)) {
-  const selectors = match[2].trim().split(",").map(value => value.trim());
-  assert.ok(selectors.every(selector => selector.startsWith('html[data-hf-theme="merchant-fieldbook"]')), "Every Fieldbook CSS selector must be isolated: " + selectors.join(", "));
+const splitFieldbookSelectorList = (source) => {
+  const selectors = []; let depth = 0, start = 0;
+  for (let index = 0; index < source.length; index += 1) {
+    if (source[index] === "(" || source[index] === "[") depth += 1;
+    else if (source[index] === ")" || source[index] === "]") depth -= 1;
+    else if (source[index] === "," && depth === 0) { selectors.push(source.slice(start, index).trim()); start = index + 1; }
+  }
+  selectors.push(source.slice(start).trim());
+  return selectors;
+};
+const fieldbookSelectors = [];
+let fieldbookSelectorStart = 0;
+for (let index = 0; index < fieldbookCss.length; index += 1) {
+  if (fieldbookCss[index] === "{") {
+    const selectorText = fieldbookCss.slice(fieldbookSelectorStart, index).trim();
+    if (selectorText && !selectorText.startsWith("@")) fieldbookSelectors.push(...splitFieldbookSelectorList(selectorText));
+    fieldbookSelectorStart = index + 1;
+  } else if (fieldbookCss[index] === "}") fieldbookSelectorStart = index + 1;
+}
+assert.ok(fieldbookSelectors.length > 100, "Fieldbook stylesheet should contain a complete responsive workspace style set.");
+for (const selector of fieldbookSelectors) {
+  assert.ok(selector.startsWith('html[data-hf-theme="merchant-fieldbook"]'), "Every Fieldbook CSS selector must be isolated: " + selector);
 }
 const fieldbookTranslations = read("admin/i18n.js");
 assert.ok(fieldbookTranslations.includes('"Today\'s Market": "আজকের বাজার"') && fieldbookTranslations.includes('"THE MERCHANT\'S FIELDBOOK": "মার্চেন্টস ফিল্ডবুক"'), "Fieldbook Overview headings must have Bengali translations.");
