@@ -64,13 +64,13 @@ html[data-hf-theme="the-observatory"] body[data-page] .page-heading h1,
 html[data-hf-theme="the-observatory"] body[data-page] .page-heading h2{color:#3A344A!important;font-family:"Space Grotesk",Inter,sans-serif;letter-spacing:-.045em}
 html[data-hf-theme="the-observatory"] body[data-page] .page-eyebrow{color:#6B5D83!important;font-size:9px;font-weight:800;letter-spacing:.19em;text-transform:uppercase}
 html[data-hf-theme="the-observatory"] body[data-page] .admin-main>:is(.page-heading,.hf-phase4-hero,.hf-overview-hero,.hf-orders-hero,.hf-products-hero,.hf-marketing-hero,.hf-finance-hero,.hf-incomplete-hero,.cu-hero,.cp-hero,.pos-hero,.pt-hero,.mar-hero,.hf-customer-hero,.hf-supplier-hero,.yt-publish-hero,.fb-publish-hero){
- background:linear-gradient(125deg,#FBF9FC 0%,#F0EDF4 65%,#EAEFF0 100%)!important;border:1px solid #D7D1E0!important;
+ background:linear-gradient(125deg,rgba(251,249,252,.90) 0%,rgba(240,237,244,.82) 65%,rgba(234,239,240,.78) 100%)!important;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid #D7D1E0!important;
  border-left:4px solid #83C8B5!important;border-radius:16px!important;box-shadow:0 12px 30px rgba(49,41,67,.055),inset 0 1px 0 rgba(255,255,255,.8)!important;
 }
 html[data-hf-theme="the-observatory"] body[data-page] .hf-card,
 html[data-hf-theme="the-observatory"] body[data-page] .hf-card-pad,
 html[data-hf-theme="the-observatory"] body[data-page] .hf-chart-card{
- background:linear-gradient(145deg,#FFFFFF 0%,#F8F6FA 100%)!important;border:1px solid #DCD6E5!important;
+ background:linear-gradient(145deg,rgba(255,255,255,.88) 0%,rgba(248,246,250,.78) 100%)!important;border:1px solid #DCD6E5!important;backdrop-filter:blur(13px);-webkit-backdrop-filter:blur(13px);
  border-radius:14px!important;box-shadow:0 8px 22px rgba(47,39,65,.045)!important;color:#3A344A!important;
 }
 html[data-hf-theme="the-observatory"] body[data-page] .hf-card:hover,
@@ -154,11 +154,48 @@ html[data-hf-theme="the-observatory"] body[data-page] .hf-toolbar .hf-input,
 html[data-hf-theme="the-observatory"] body[data-page] .hf-toolbar .hf-select{background:#FFFFFF!important}
 html[data-hf-theme="the-observatory"] body[data-page] .admin-sidebar :is(a,button):focus-visible{outline:2px solid #A9E0D0!important;outline-offset:2px!important}
 
+
+/* ALWAYS-VISIBLE SPACE CANVAS · shared by every Observatory workspace route */
+html[data-hf-theme="the-observatory"] body[data-page] .admin-main{position:relative;isolation:isolate;background:transparent!important}
+html[data-hf-theme="the-observatory"] body[data-page] .admin-main:before{
+ content:"";position:fixed;z-index:0;pointer-events:none;inset:74px 0 0 250px;opacity:1;
+ background:
+  radial-gradient(circle at 7% 12%,rgba(117,101,157,.78) 0 1.35px,transparent 2.1px),
+  radial-gradient(circle at 18% 33%,rgba(94,154,157,.82) 0 1.25px,transparent 2px),
+  radial-gradient(circle at 31% 17%,rgba(117,101,157,.68) 0 1.1px,transparent 1.9px),
+  radial-gradient(circle at 43% 72%,rgba(94,154,157,.72) 0 1.25px,transparent 2px),
+  radial-gradient(circle at 57% 27%,rgba(117,101,157,.74) 0 1.3px,transparent 2px),
+  radial-gradient(circle at 68% 84%,rgba(94,154,157,.68) 0 1.1px,transparent 1.9px),
+  radial-gradient(circle at 81% 17%,rgba(117,101,157,.78) 0 1.4px,transparent 2.1px),
+  radial-gradient(circle at 93% 61%,rgba(94,154,157,.78) 0 1.3px,transparent 2px),
+  radial-gradient(ellipse 510px 390px at 88% 13%,rgba(128,110,171,.23),transparent 72%),
+  radial-gradient(ellipse 430px 340px at 8% 79%,rgba(90,169,159,.20),transparent 72%),
+  radial-gradient(ellipse 620px 430px at 64% 96%,rgba(201,135,129,.13),transparent 70%),
+  linear-gradient(135deg,rgba(238,234,244,.36),rgba(222,224,237,.28));
+ background-repeat:no-repeat;
+}
+html[data-hf-theme="the-observatory"] body[data-page] .admin-main:after{
+ content:"";position:fixed;z-index:0;pointer-events:none;top:102px;right:24px;width:min(38vw,460px);height:min(38vw,460px);
+ border:1px solid rgba(111,96,151,.24);border-radius:50%;opacity:.76;transform:rotate(-22deg);
+ background:
+  radial-gradient(circle at 75% 28%,rgba(190,226,217,.95) 0 2px,rgba(131,200,181,.16) 4px,transparent 12px),
+  radial-gradient(circle at 34% 31%,rgba(139,197,189,.44),rgba(119,102,153,.22) 43%,transparent 72%);
+ box-shadow:0 0 0 19px rgba(131,200,181,.085),0 0 0 42px rgba(131,200,181,.065),0 0 0 70px rgba(229,141,112,.06),inset 0 0 45px rgba(105,93,144,.10);
+}
+html[data-hf-theme="the-observatory"] body[data-page] #pageContent{position:relative;z-index:1}
+html[data-hf-theme="the-observatory"] body[data-page] .admin-main>:is(.page-heading,.hf-phase4-hero,.hf-overview-hero,.hf-orders-hero,.hf-products-hero,.hf-marketing-hero,.hf-finance-hero,.hf-incomplete-hero,.cu-hero,.cp-hero,.pos-hero,.pt-hero,.mar-hero,.hf-customer-hero,.hf-supplier-hero,.yt-publish-hero,.fb-publish-hero){
+ background-image:
+  radial-gradient(circle at 88% 20%,rgba(111,96,151,.16) 0 1.3px,transparent 2px),
+  radial-gradient(circle at 94% 72%,rgba(87,162,152,.22) 0 1.4px,transparent 2.2px),
+  radial-gradient(circle at 76% 84%,rgba(201,135,129,.17) 0 1.2px,transparent 2px),
+  linear-gradient(125deg,rgba(251,249,252,.90) 0%,rgba(240,237,244,.82) 65%,rgba(234,239,240,.78) 100%)!important;
+}
+
 /* Overview · orbital telemetry and a luminous instrument console */
 html[data-hf-theme="the-observatory"] body[data-page="overview"] .admin-main{max-width:1740px;padding-top:29px}
 html[data-hf-theme="the-observatory"] body[data-page="overview"] #pageContent{display:flex;flex-direction:column;gap:16px}
 html[data-hf-theme="the-observatory"] body[data-page="overview"] .hf-overview-hero{
- position:relative;isolation:isolate;overflow:hidden;display:flex;align-items:center;min-height:196px;margin:0;padding:30px 32px;
+ position:relative;isolation:isolate;overflow:hidden;display:flex;align-items:center;min-height:252px;margin:0;padding:30px 32px;
  border:1px solid #D7D1E0!important;border-left:4px solid #83C8B5!important;border-radius:17px!important;
  background:radial-gradient(circle at 83% 20%,rgba(107,95,135,.19) 0 1px,transparent 1.8px),radial-gradient(circle at 91% 64%,rgba(131,200,181,.34) 0 1.4px,transparent 2px),radial-gradient(circle at 70% 82%,rgba(229,141,112,.24) 0 1px,transparent 1.8px),radial-gradient(ellipse at 92% 4%,rgba(131,200,181,.22),transparent 31%),linear-gradient(120deg,#FBF9FC 0%,#F0EDF5 58%,#E9EFF0 100%)!important;
  box-shadow:0 15px 34px rgba(48,40,67,.07)!important;
@@ -229,14 +266,14 @@ html[data-hf-theme="the-observatory"] body[data-page="overview"] .hf-overview-da
 html[data-hf-theme="the-observatory"] body[data-page="overview"] .hf-table-wrap{border-radius:12px!important}
 html[data-hf-theme="the-observatory"] body[data-page="overview"] .hf-chart-wrap{min-height:224px}
 @media(max-width:1180px){
- html[data-hf-theme="the-observatory"] body[data-page="overview"] .hf-observatory-scene{right:8px;width:340px;height:214px;opacity:.60}
+ html[data-hf-theme="the-observatory"] body[data-page="overview"] .hf-observatory-scene{right:8px;width:clamp(350px,39vw,440px);height:258px;opacity:.9}
  html[data-hf-theme="the-observatory"] body[data-page="overview"] .hf-overview-hero-main{max-width:48%}
  html[data-hf-theme="the-observatory"] body[data-page="overview"] .hf-overview-primary-grid{grid-template-columns:minmax(0,1fr)}
  html[data-hf-theme="the-observatory"] body[data-page="overview"] .hf-overview-tool-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
 }
 @media(max-width:900px){html[data-hf-theme="the-observatory"] body[data-page] .admin-main{padding-top:20px}}
 @media(max-width:740px){
- html[data-hf-theme="the-observatory"] body[data-page="overview"] .hf-observatory-scene{right:-78px;top:45%;width:272px;height:176px;opacity:.30;transform:translateY(-50%)}
+ html[data-hf-theme="the-observatory"] body[data-page="overview"] .hf-observatory-scene{right:-48px;top:45%;width:clamp(290px,72vw,350px);height:220px;opacity:.58;transform:translateY(-50%)}
  html[data-hf-theme="the-observatory"] body[data-page="overview"] .hf-overview-hero-main{max-width:100%;padding-right:12px}
  html[data-hf-theme="the-observatory"] body[data-page="overview"] .hf-overview-hero-actions{position:relative;z-index:3}
  html[data-hf-theme="the-observatory"] body[data-page="overview"] .hf-overview-hero{display:block;min-height:0;padding:21px 19px}
@@ -267,16 +304,33 @@ html[data-hf-theme="the-observatory"] body[data-page] .admin-sidebar::-webkit-sc
 html[data-hf-theme="the-observatory"] body[data-page] .admin-sidebar::-webkit-scrollbar-thumb{background:rgba(169,224,208,.32);border:2px solid #302B43;border-radius:9px}
 html[data-hf-theme="the-observatory"] body[data-page] .admin-sidebar::-webkit-scrollbar-thumb:hover{background:rgba(169,224,208,.58)}
 html[data-hf-theme="the-observatory"] body[data-page="overview"] .hf-overview-hero{background-color:#F0EDF4}
-html[data-hf-theme="the-observatory"] body[data-page="overview"] .hf-observatory-scene{position:absolute;z-index:0;right:clamp(190px,18%,300px);top:50%;width:clamp(300px,36vw,510px);height:254px;transform:translateY(-48%);pointer-events:none;opacity:.98;filter:drop-shadow(0 12px 24px rgba(70,58,94,.10))}
+html[data-hf-theme="the-observatory"] body[data-page="overview"] .hf-observatory-scene{position:absolute;z-index:1;right:clamp(165px,16%,255px);top:50%;width:clamp(390px,40vw,570px);height:292px;transform:translateY(-48%);pointer-events:none;opacity:1;filter:drop-shadow(0 14px 34px rgba(70,58,94,.22)) drop-shadow(0 0 22px rgba(131,200,181,.24))}
 html[data-hf-theme="the-observatory"] body[data-page="overview"] .hf-observatory-svg{display:block;width:100%;height:100%;overflow:visible}
 html[data-hf-theme="the-observatory"] body[data-page="overview"] .obs-orbit-track{transform-box:view-box;transform-origin:365px 160px;animation:obsSatelliteOrbit 64s linear infinite}
 html[data-hf-theme="the-observatory"] body[data-page="overview"] .obs-satellite-orbit{transform-box:view-box;transform-origin:365px 160px;animation:obsSatelliteOrbit 48s linear infinite}
 html[data-hf-theme="the-observatory"] body[data-page="overview"] .obs-distant-planet{transform-origin:142px 81px;animation:obsSatelliteOrbit 120s linear infinite}
-html[data-hf-theme="the-observatory"] body[data-page="overview"] .hf-overview-hero-main{max-width:43%;z-index:2}
+html[data-hf-theme="the-observatory"] body[data-page="overview"] .hf-overview-hero-main{max-width:39%;z-index:2}
 html[data-hf-theme="the-observatory"] body[data-page="overview"] .hf-overview-hero-actions{z-index:3;max-width:360px}
 html[data-hf-theme="the-observatory"] body[data-page="overview"] .hf-overview-hero-actions .hf-button{position:relative;z-index:3}
 @keyframes obsSatelliteOrbit{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 
+
+@media(max-width:900px){
+ html[data-hf-theme="the-observatory"] body[data-page] .admin-main:before{inset:64px 0 0 0}
+ html[data-hf-theme="the-observatory"] body[data-page] .admin-main:after{top:90px;right:-82px;width:250px;height:250px;opacity:.52}
+}
+@media(max-width:620px){
+ html[data-hf-theme="the-observatory"] body[data-page] .admin-main:before{
+  background:
+   radial-gradient(circle at 9% 14%,rgba(117,101,157,.72) 0 1.3px,transparent 2px),
+   radial-gradient(circle at 78% 22%,rgba(94,154,157,.78) 0 1.3px,transparent 2px),
+   radial-gradient(circle at 32% 68%,rgba(117,101,157,.62) 0 1.1px,transparent 1.9px),
+   radial-gradient(circle at 90% 82%,rgba(94,154,157,.7) 0 1.2px,transparent 2px),
+   radial-gradient(ellipse 320px 260px at 94% 16%,rgba(128,110,171,.21),transparent 72%),
+   radial-gradient(ellipse 280px 240px at 8% 80%,rgba(90,169,159,.18),transparent 72%),
+   linear-gradient(135deg,rgba(238,234,244,.36),rgba(222,224,237,.28));
+ }
+}
 @media(prefers-reduced-motion:reduce){
  html[data-hf-theme="the-observatory"] body[data-page] *,
  html[data-hf-theme="the-observatory"] body[data-page] *:before,
