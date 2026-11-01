@@ -1,0 +1,32 @@
+/*
+ * Store deployment configuration.
+ *
+ * For a new website, copy this file and change only the values below.
+ * Never put privileged credentials in this public file.
+ */
+window.HALAL_STORE_CONFIG = Object.freeze({
+  configVersion: 1,
+  storeId: "halal-food",
+  storeName: "Halal Food",
+  siteRoot: "https://faysaltalukder.github.io/halalfood/",
+  adminEmail: "halalfoodbd.official@gmail.com",
+  contact: Object.freeze({ whatsappNumber: "8801842031164" }),
+  supabase: Object.freeze({
+    url: "https://qfwvrcfkrsydycbfjsxf.supabase.co",
+    publishableKey: "sb_publishable_X32Rb8W-axGIfgFuppdfZQ_jbc38pcL"
+  }),
+  catalog: Object.freeze({
+    categoriesTable: "categories",
+    productsTable: "products",
+    categoryPage: "category.html?slug={slug}",
+    legacyCategoryPage: "categories/{slug}.html",
+    maxCategories: 5000,
+    maxProducts: 10000,
+    reorderCategoriesRpc: "admin_reorder_categories",
+    reorderProductsRpc: "admin_reorder_products",
+    reorderHomeProductsRpc: "admin_reorder_home_products"
+  }),
+  storage: Object.freeze({
+    publicContentBucket: "store-content"
+  })
+});
