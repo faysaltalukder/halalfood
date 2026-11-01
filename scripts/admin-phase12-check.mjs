@@ -30,6 +30,9 @@ const adminSignInPage = read("admin/index.html");
 assert.ok(adminSignInPage.includes("store-config.js") && adminSignInPage.indexOf("store-config.js") < adminSignInPage.indexOf("<script>"), "Admin sign-in must load store config before its Supabase client initialization.");
 assert.ok(adminSignInPage.includes("STORE_CONFIG.adminEmail") && adminSignInPage.includes("if(email!==ADMIN_EMAIL)"), "Admin sign-in authorization must use the configured admin identity.");
 assert.ok(adminSignInPage.includes("STORE_CONFIG.supabase?.url") && adminSignInPage.includes("STORE_CONFIG.supabase?.publishableKey"), "Admin sign-in must use the configured Supabase project.");
+const configuredPublishableKey = storeConfig.match(/publishableKey:\\s*"([^"]+)"/)?.[1];
+const adminFallbackPublishableKey = adminSignInPage.match(/const SUPABASE_KEY=[^;]+\\|\\|"([^"]+)"/)?.[1];
+assert.ok(configuredPublishableKey && adminFallbackPublishableKey === configuredPublishableKey, "Admin sign-in fallback must match the per-store publishable key exactly.");
 for (const page of htmlFiles.filter(file => read(join("admin", file)).includes("shared.js"))) {
   const source = read(join("admin", page));
   assert.ok(source.includes("../js/store-config.js?v=20261101-store-config-v1") && source.indexOf("store-config.js") < source.indexOf("shared.js"), page + ": the shared admin shell must load the store config first.");
