@@ -505,6 +505,38 @@ ADMIN_COLOR_THEMES["merchant-fieldbook"]={
  chartColors:["#263B35","#D4A34E","#C96F58","#81916C","#82758E","#567C84","#B28A59","#A65F51","#66806B","#B7A58B"]
 };
 
+ADMIN_COLOR_THEMES["glass-studio"]={
+ id:"glass-studio",name:"Glass Studio",profile:"Frosted · Airy · Refined",
+ previewColors:["#2B2A3D","#C79A5B","#D9E4EC","#F8FBFD"],
+ tokens:Object.assign({},ADMIN_COLOR_THEMES["coastal-blue"].tokens,{
+  "sidebar-bg":"linear-gradient(145deg,#2B2A3D 0%,#34455C 54%,#40546D 100%)",
+  "sidebar-pattern-filter":"none","sidebar-ink":"#F4F7FA","sidebar-muted":"#CDD8E4","sidebar-border":"rgba(224,235,246,.28)",
+  "side-group-bg":"rgba(255,255,255,.075)","side-group-border":"rgba(224,235,246,.16)",
+  "side-menu-1":"linear-gradient(110deg,#EAF0F4,#F7FAFC)","side-menu-2":"linear-gradient(110deg,#E2EBF2,#F4F8FB)",
+  "side-menu-3":"linear-gradient(110deg,#E8EEF3,#F8FAFC)","side-menu-4":"linear-gradient(110deg,#F0E9DD,#FBF7EF)",
+  "side-menu-ink":"#2B3A4D","side-menu-border":"rgba(255,255,255,.86)","side-menu-hover":"linear-gradient(110deg,#DCE8F0,#EAF1F6)",
+  "side-menu-active":"linear-gradient(115deg,#D9E4EC,#C9D9E6)","side-menu-active-ink":"#26374A",
+  "side-child-bg":"linear-gradient(145deg,rgba(248,251,253,.98),rgba(225,235,243,.96))","side-child-ink":"#314B63",
+  "side-accent":"#D4A75F","side-icon-bg":"#E3ECF3","side-icon-ink":"#385D80",
+  "side-note-bg":"rgba(255,255,255,.07)","side-search-bg":"rgba(248,251,253,.11)","side-search-border":"rgba(224,235,246,.3)",
+  "canvas-bg":"radial-gradient(ellipse at 86% 4%,rgba(199,154,91,.12),transparent 34%),radial-gradient(ellipse at 12% 34%,rgba(103,147,180,.12),transparent 36%),linear-gradient(135deg,#EAF0F4 0%,#E4EDF3 52%,#DDE8F0 100%)",
+  "canvas-ink":"#2B3A4D","header-bg":"rgba(248,251,253,.78)","header-border":"rgba(184,201,216,.72)",
+  "header-control-bg":"rgba(255,255,255,.72)","header-control-ink":"#344C63","header-control-border":"rgba(184,201,216,.78)",
+  "hero-bg":"linear-gradient(120deg,rgba(255,255,255,.84),rgba(226,237,245,.78))","hero-border":"rgba(177,198,215,.76)",
+  "card-bg":"rgba(255,255,255,.76)","card-border":"rgba(255,255,255,.88)","nested-bg":"rgba(229,238,245,.82)","control-bg":"rgba(255,255,255,.9)",
+  "text":"#2B3A4D","muted":"#58697C","border":"#C9D7E2","primary":"#385D80","primary-hover":"#2B4866",
+  "secondary":"#DDE8F0","secondary-ink":"#2B4866","secondary-hover":"#CFDDE8","accent":"#B3843E","accent-alt":"#6F98B7","focus":"#567FA4",
+  "kpi-1":"linear-gradient(145deg,rgba(255,255,255,.84),rgba(220,233,242,.78))",
+  "kpi-2":"linear-gradient(145deg,rgba(255,255,255,.84),rgba(241,231,214,.8))",
+  "kpi-3":"linear-gradient(145deg,rgba(255,255,255,.84),rgba(221,235,239,.8))",
+  "kpi-4":"linear-gradient(145deg,rgba(255,255,255,.84),rgba(229,231,242,.8))",
+  "table-bg":"#F8FBFD","table-head":"#DFE9F0","table-row":"#FFFFFF","table-alt":"#F2F6F9","table-hover":"#E7EFF5",
+  "chart-bg":"linear-gradient(145deg,#EAF1F6,#DCE7EF)","chart-text":"#364B60","chart-muted":"#586F83","chart-grid":"#CFDCE6",
+  "chart-surface":"#F8FBFD","tooltip-bg":"#F8FBFD","leaf-filter":"none"
+ }),
+ chartColors:["#385D80","#C79A5B","#6F98B7","#5D8C91","#8A83A7","#C47D69","#6480A0","#9AABBA","#B18B5C","#708F83"]
+};
+
 function makeExtendedAdminTheme(config){
  const p=config.palette;
  const lightGradient=(a,b)=>"linear-gradient(110deg,"+a+","+b+")";
@@ -546,7 +578,7 @@ const ADMIN_THEME_GROUPS=[
  {id:"modern",label:"Modern",description:"Expressive · contemporary",themeIds:["ocean-calm","berry-rose","plum-amethyst","coral-peach"]},
  {id:"balanced",label:"Balanced",description:"Premium · versatile · business",themeIds:["warm-harvest","royal-indigo","coastal-blue","copper-espresso"]},
  {id:"classic-comfort",label:"Classic Comfort",description:"Calm · familiar · easy on the eyes",themeIds:["forest-sage","olive-citrus"]},
- {id:"signature",label:"Signature",description:"Editorial · tactile · unmistakable",themeIds:["merchant-fieldbook"]}
+ {id:"signature",label:"Signature",description:"Editorial · tactile · unmistakable",themeIds:["merchant-fieldbook","glass-studio"]}
 ];
 const ADMIN_THEME_CATEGORY_BY_ID=Object.fromEntries(ADMIN_THEME_GROUPS.flatMap(group=>group.themeIds.map(id=>[id,group.id])));
 Object.values(ADMIN_COLOR_THEMES).forEach(theme=>{theme.category=ADMIN_THEME_CATEGORY_BY_ID[theme.id]||"balanced";});
@@ -561,18 +593,24 @@ function chartTheme(){
  return {text:t["chart-text"],muted:t["chart-muted"],grid:t["chart-grid"],surface:t["chart-surface"]};
 }
 function themeStorageKey(){return "hf_admin_color_theme:"+(String(currentUser?.id||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"").slice(0,100)||"anonymous");}
-function syncSignatureThemeStyles(themeId){
- const fieldbookId="hfMerchantFieldbookStylesheet";
- let link=document.getElementById(fieldbookId);
- if(themeId==="merchant-fieldbook"){
-  if(!link){link=document.createElement("link");link.id=fieldbookId;link.rel="stylesheet";link.href="./merchant-fieldbook.css?v=20261101-merchant-fieldbook-v1";document.head.appendChild(link);}
- }else if(link){link.remove();}
+function syncThemeStyles(themeId){
+ const themeStyles=[
+  {theme:"merchant-fieldbook",id:"hfMerchantFieldbookStylesheet",href:"./merchant-fieldbook.css?v=20261101-merchant-fieldbook-v1"},
+  {theme:"glass-studio",id:"hfGlassStudioStylesheet",href:"./glass-studio.css?v=20261102-glass-studio-v1"}
+ ];
+ themeStyles.forEach(item=>{
+  let link=document.getElementById(item.id);
+  if(themeId===item.theme){
+   if(!link){link=document.createElement("link");link.id=item.id;link.rel="stylesheet";document.head.appendChild(link);}
+   if(link.getAttribute("href")!==item.href)link.setAttribute("href",item.href);
+  }else if(link){link.remove();}
+ });
 }
 
 function applyColorTheme(themeId,persist=true){
  const theme=ADMIN_COLOR_THEMES[themeId]||ADMIN_COLOR_THEMES["warm-harvest"];
  currentThemeId=theme.id;
- syncSignatureThemeStyles(theme.id);
+ syncThemeStyles(theme.id);
  document.documentElement.dataset.hfTheme=theme.id;
  document.documentElement.dataset.adminTheme="light";
  Object.entries(theme.tokens).forEach(([key,value])=>document.documentElement.style.setProperty("--hf-theme-"+key,value));
