@@ -504,6 +504,27 @@ ADMIN_COLOR_THEMES["merchant-fieldbook"]={
  }),
  chartColors:["#263B35","#D4A34E","#C96F58","#81916C","#82758E","#567C84","#B28A59","#A65F51","#66806B","#B7A58B"]
 };
+
+/* Theme 12 — The Observatory. */
+ADMIN_COLOR_THEMES["the-observatory"]={
+ id:"the-observatory",name:"The Observatory",profile:"Atmospheric · Precise · Futuristic",previewColors:["#242235","#83C8B5","#E58D70","#E9E6EF"],
+ tokens:Object.assign({},ADMIN_COLOR_THEMES["warm-harvest"].tokens,{
+  "sidebar-bg":"radial-gradient(ellipse at 14% 7%,rgba(131,200,181,.15),transparent 34%),radial-gradient(ellipse at 90% 23%,rgba(229,141,112,.12),transparent 32%),linear-gradient(138deg,#242235 0%,#302B43 42%,#3D3650 76%,#29263B 100%)",
+  "sidebar-pattern-filter":"none","sidebar-ink":"#F4F0F8","sidebar-muted":"#C8C2D4","sidebar-border":"rgba(233,230,239,.18)",
+  "side-group-bg":"rgba(233,230,239,.06)","side-group-border":"rgba(233,230,239,.15)",
+  "side-menu-1":"linear-gradient(110deg,#F0EDF4,#FAF8FB)","side-menu-2":"linear-gradient(110deg,#EDEAF3,#F8F6FA)","side-menu-3":"linear-gradient(110deg,#EAF0F1,#F6F9F8)","side-menu-4":"linear-gradient(110deg,#F5EAE6,#FBF5F2)",
+  "side-menu-ink":"#413B50","side-menu-border":"rgba(255,255,255,.88)","side-menu-hover":"linear-gradient(110deg,#E1DCEB,#F1EDF5)","side-menu-active":"linear-gradient(112deg,#F0C29A,#E5A982)","side-menu-active-ink":"#382E40",
+  "side-child-bg":"linear-gradient(145deg,#F8F5FA,#EDE9F2)","side-child-ink":"#463E55","side-accent":"#83C8B5","side-icon-bg":"#E8EAF0","side-icon-ink":"#51456C","side-note-bg":"rgba(233,230,239,.07)","side-search-bg":"rgba(249,247,251,.09)","side-search-border":"rgba(233,230,239,.2)",
+  "canvas-bg":"radial-gradient(ellipse at 84% 4%,rgba(131,200,181,.13),transparent 33%),radial-gradient(ellipse at 12% 36%,rgba(169,158,203,.12),transparent 36%),linear-gradient(135deg,#F0EDF4 0%,#EAE7F0 50%,#E3E1EB 100%)",
+  "canvas-ink":"#3A344A","header-bg":"rgba(249,247,251,.96)","header-border":"#D9D3E2","header-control-bg":"#EEEAF3","header-control-ink":"#4C435F","header-control-border":"#D7D0E1",
+  "hero-bg":"linear-gradient(120deg,#FBF9FC,#EEEAF4 58%,#F4F0F5)","hero-border":"#D8D2E1","card-bg":"linear-gradient(145deg,#FFFFFF,#F7F4F9)","card-border":"#DCD6E5","nested-bg":"linear-gradient(125deg,#EDE9F2,#F6F3F8)","control-bg":"#FFFFFF",
+  "text":"#3A344A","muted":"#625C70","border":"#D8D2E1","primary":"#51456C","primary-hover":"#403654","secondary":"#ECE8F1","secondary-ink":"#443D55","secondary-hover":"#E0DBE9","accent":"#83C8B5","accent-alt":"#E58D70","focus":"#76609A",
+  "kpi-1":"linear-gradient(145deg,#E8F2EF,#F8FBFA)","kpi-2":"linear-gradient(145deg,#EEEAF4,#FAF8FC)","kpi-3":"linear-gradient(145deg,#F7EAE5,#FDF8F6)","kpi-4":"linear-gradient(145deg,#E9EDF4,#F8FAFC)",
+  "table-bg":"#FCFBFD","table-head":"#EAE6EF","table-row":"#FFFFFF","table-alt":"#F5F2F7","table-hover":"#ECE8F2","chart-bg":"linear-gradient(145deg,#F0EDF4,#E6E2ED)","chart-text":"#40394F","chart-muted":"#6A6377","chart-grid":"#DAD4E3","chart-surface":"#FFFFFF","tooltip-bg":"#FFFFFF","leaf-filter":"none"
+ }),
+ chartColors:["#51456C","#83C8B5","#E58D70","#8C82AC","#577B86","#C2A16D","#A8B7C7","#9A6F8C","#657A70","#D0A28C"]
+};
+
 function makeExtendedAdminTheme(config){
  const p=config.palette;
  const lightGradient=(a,b)=>"linear-gradient(110deg,"+a+","+b+")";
@@ -545,7 +566,7 @@ const ADMIN_THEME_GROUPS=[
  {id:"modern",label:"Modern",description:"Expressive · contemporary",themeIds:["ocean-calm","berry-rose","plum-amethyst","coral-peach"]},
  {id:"balanced",label:"Balanced",description:"Premium · versatile · business",themeIds:["warm-harvest","royal-indigo","coastal-blue","copper-espresso"]},
  {id:"classic-comfort",label:"Classic Comfort",description:"Calm · familiar · easy on the eyes",themeIds:["forest-sage","olive-citrus"]},
- {id:"signature",label:"Signature",description:"Editorial · tactile · unmistakable",themeIds:["merchant-fieldbook"]}
+ {id:"signature",label:"Signature",description:"Atmospheric · editorial · unmistakable",themeIds:["merchant-fieldbook","the-observatory"]}
 ];
 const ADMIN_THEME_CATEGORY_BY_ID=Object.fromEntries(ADMIN_THEME_GROUPS.flatMap(group=>group.themeIds.map(id=>[id,group.id])));
 Object.values(ADMIN_COLOR_THEMES).forEach(theme=>{theme.category=ADMIN_THEME_CATEGORY_BY_ID[theme.id]||"balanced";});
@@ -561,17 +582,15 @@ function chartTheme(){
 }
 function themeStorageKey(){return "hf_admin_color_theme:"+(String(currentUser?.id||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"").slice(0,100)||"anonymous");}
 function syncSignatureThemeStyles(themeId){
- const linkId="hfMerchantFieldbookStylesheet";
- let link=document.getElementById(linkId);
+ const fieldbookId="hfMerchantFieldbookStylesheet",observatoryId="hfObservatoryStylesheet";
+ let link=document.getElementById(fieldbookId);
  if(themeId==="merchant-fieldbook"){
-  if(link)return;
-  link=document.createElement("link");
-  link.id=linkId;link.rel="stylesheet";
-  link.href="./merchant-fieldbook.css?v=20261101-merchant-fieldbook-v1";
-  document.head.appendChild(link);
- }else if(link){
-  link.remove();
- }
+  document.getElementById(observatoryId)?.remove();
+  if(!link){link=document.createElement("link");link.id=fieldbookId;link.rel="stylesheet";link.href="./merchant-fieldbook.css?v=20261101-merchant-fieldbook-v1";document.head.appendChild(link);}
+ }else if(themeId==="the-observatory"){
+  if(link)link.remove();let observatory=document.getElementById(observatoryId);
+  if(!observatory){observatory=document.createElement("link");observatory.id=observatoryId;observatory.rel="stylesheet";observatory.href="./the-observatory.css?v=20261101-observatory-v1";document.head.appendChild(observatory);}
+ }else{if(link)link.remove();const inactiveObservatory=document.getElementById(observatoryId);if(inactiveObservatory)inactiveObservatory.remove();}
 }
 function applyColorTheme(themeId,persist=true){
  const theme=ADMIN_COLOR_THEMES[themeId]||ADMIN_COLOR_THEMES["warm-harvest"];
