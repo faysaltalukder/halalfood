@@ -245,6 +245,10 @@ assert.equal(inferShippingWeightFromUnit("500ml"), "", "Volume must not be silen
 
 assert.ok(customerIdentityMigration.includes("sync_my_customer_identity"), "Customer identity migration must include the safe login sync function.");
 
+const marketingWorkspace = read("admin/marketing-center.html");
+const trackingWorkspace = read("admin/tracking.html");
+assert.ok(marketingWorkspace.includes('class="hf-table-wrap hf-marketing-table-wrap"') && marketingWorkspace.includes('class="hf-table hf-marketing-table"'), "Marketing Center tables must use the shared table wrapper and table base classes.");
+assert.ok(trackingWorkspace.includes('class="hf-table-wrap hf-tracking-table-wrap"') && trackingWorkspace.includes('class="hf-table hf-tracking-table"'), "Tracking Controls must use the shared table wrapper and table base classes.");
 const overview = read("admin/overview.html");
 const overviewApp = read("admin/app.js");
 const overviewCss = read("admin/overview.css");
