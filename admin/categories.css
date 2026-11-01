@@ -115,3 +115,9 @@
  .catalog-product-sort-head-actions{justify-content:flex-start}
  .catalog-breadcrumb{font-size:10px}
 }
+
+/* Pointer Events reorder handles: keep drag gestures reliable on mouse, pen and touch. */
+.catalog-tree-grip,.product-sort-grip{touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}
+.catalog-tree-grip:active,.product-sort-grip:active{cursor:grabbing}
+.catalog-tree-row.is-dragging,.product-sort-item.is-dragging{opacity:.42}
+.catalog-tree-row.is-drop-target,.product-sort-item.is-drop-target{outline:2px dashed var(--hf-orange);outline-offset:-3px;background:#fff5e9}
