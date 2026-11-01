@@ -260,23 +260,11 @@ window.HFAdminReady.then(async H=>{
     {label:"Add-to-cart events",data:overviewTrendSnapshot.cartEventCounts,borderColor:palette.blue,backgroundColor:"#4F7CFF20",fill:false,tension:.32,pointRadius:2,borderWidth:2,borderRadius:useBars?5:0,maxBarThickness:useBars?24:undefined}
    ]},options:{...chartAxisOptions(),plugins:{legend:{position:"bottom"}},onClick:(ev,items)=>{if(items.length)location.href=items[0].datasetIndex===0?"./orders.html":"./analytics.html";}}});
   };
-  async function fetchOverviewOrderSummary(range,maxRows=5000){
-   const rows=[],pageSize=1000;
-   for(let offset=0;offset<maxRows;offset+=pageSize){
-    const size=Math.min(pageSize,maxRows-offset);
-    let query=client.from("orders").select("id,order_number,customer_name,customer_phone,total,status,ordered_at").order("ordered_at",{ascending:false}).order("id",{ascending:true});
-    query=rangeQuery(query,"ordered_at",range);
-    const page=await signedQuery(query.range(offset,offset+size-1));
-    rows.push(...page);
-    if(page.length<size)break;
-   }
-   return rows;
-  }
   async function fetchOverviewOrderLines(range,maxRows=5000){
    const rows=[],pageSize=1000;
    for(let offset=0;offset<maxRows;offset+=pageSize){
     const size=Math.min(pageSize,maxRows-offset);
-    let query=client.from("orders").select("id,ordered_at,status,order_items(id)").order("ordered_at",{ascending:false}).order("id",{ascending:true});
+    let query=client.from("orders").select("id,total,ordered_at,status,order_items(id)").order("ordered_at",{ascending:false}).order("id",{ascending:true});
     query=rangeQuery(query,"ordered_at",range);
     const page=await signedQuery(query.range(offset,offset+size-1));
     rows.push(...page);
@@ -327,16 +315,19 @@ window.HFAdminReady.then(async H=>{
    const today=localDateKey(new Date());
    const todayRange=buildRange(today,today,"Today");
    const buckets=buildChartBuckets(range);
-   const [summaryOrders,chartOrders,events,todayOrders,todayEvents,products,pendingResult,recentOrders]=await Promise.all([
-    fetchOverviewOrderSummary(range,5000),
+   const rangeIncludesToday=!!(range.fromDay&&range.toDay&&range.fromDay<=today&&range.toDay>=today);
+   const [chartOrders,events,separateTodayOrders,separateTodayEvents,products,pendingResult,recentOrders]=await Promise.all([
     fetchOverviewOrderLines(range,5000),
     fetchOverviewEvents(range,15000),
-    fetchOverviewOrderLines(todayRange,1000),
-    fetchOverviewEvents(todayRange,15000),
+    rangeIncludesToday?Promise.resolve(null):fetchOverviewOrderLines(todayRange,1000),
+    rangeIncludesToday?Promise.resolve(null):fetchOverviewEvents(todayRange,15000),
     fetchProducts(1000),
     client.from("orders").select("id",{count:"exact",head:true}).eq("status","pending"),
     signedQuery(client.from("orders").select("id,order_number,customer_name,total,status,ordered_at").order("ordered_at",{ascending:false}).order("id",{ascending:true}).limit(7))
    ]);
+   const summaryOrders=chartOrders;
+   const todayOrders=rangeIncludesToday?chartOrders.filter(o=>localDateKey(o.ordered_at)===today):separateTodayOrders;
+   const todayEvents=rangeIncludesToday?events.filter(e=>localDateKey(e.occurred_at)===today):separateTodayEvents;
    const bucketKey=value=>{
     const day=localDateKey(value);
     return buckets.monthly?day.slice(0,7):day;
