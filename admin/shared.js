@@ -505,26 +505,6 @@ ADMIN_COLOR_THEMES["merchant-fieldbook"]={
  chartColors:["#263B35","#D4A34E","#C96F58","#81916C","#82758E","#567C84","#B28A59","#A65F51","#66806B","#B7A58B"]
 };
 
-/* Theme 12 — The Observatory. */
-ADMIN_COLOR_THEMES["the-observatory"]={
- id:"the-observatory",name:"The Observatory",profile:"Atmospheric · Precise · Futuristic",previewColors:["#242235","#83C8B5","#E58D70","#E9E6EF"],
- tokens:Object.assign({},ADMIN_COLOR_THEMES["warm-harvest"].tokens,{
-  "sidebar-bg":"radial-gradient(ellipse at 14% 7%,rgba(131,200,181,.15),transparent 34%),radial-gradient(ellipse at 90% 23%,rgba(229,141,112,.12),transparent 32%),linear-gradient(138deg,#242235 0%,#302B43 42%,#3D3650 76%,#29263B 100%)",
-  "sidebar-pattern-filter":"none","sidebar-ink":"#F4F0F8","sidebar-muted":"#C8C2D4","sidebar-border":"rgba(233,230,239,.18)",
-  "side-group-bg":"rgba(233,230,239,.06)","side-group-border":"rgba(233,230,239,.15)",
-  "side-menu-1":"linear-gradient(110deg,#F0EDF4,#FAF8FB)","side-menu-2":"linear-gradient(110deg,#EDEAF3,#F8F6FA)","side-menu-3":"linear-gradient(110deg,#EAF0F1,#F6F9F8)","side-menu-4":"linear-gradient(110deg,#F5EAE6,#FBF5F2)",
-  "side-menu-ink":"#413B50","side-menu-border":"rgba(255,255,255,.88)","side-menu-hover":"linear-gradient(110deg,#E1DCEB,#F1EDF5)","side-menu-active":"linear-gradient(112deg,#F0C29A,#E5A982)","side-menu-active-ink":"#382E40",
-  "side-child-bg":"linear-gradient(145deg,#F8F5FA,#EDE9F2)","side-child-ink":"#463E55","side-accent":"#83C8B5","side-icon-bg":"#E8EAF0","side-icon-ink":"#51456C","side-note-bg":"rgba(233,230,239,.07)","side-search-bg":"rgba(249,247,251,.09)","side-search-border":"rgba(233,230,239,.2)",
-  "canvas-bg":"radial-gradient(ellipse at 84% 4%,rgba(131,200,181,.13),transparent 33%),radial-gradient(ellipse at 12% 36%,rgba(169,158,203,.12),transparent 36%),linear-gradient(135deg,#F0EDF4 0%,#EAE7F0 50%,#E3E1EB 100%)",
-  "canvas-ink":"#3A344A","header-bg":"rgba(249,247,251,.96)","header-border":"#D9D3E2","header-control-bg":"#EEEAF3","header-control-ink":"#4C435F","header-control-border":"#D7D0E1",
-  "hero-bg":"linear-gradient(120deg,#FBF9FC,#EEEAF4 58%,#F4F0F5)","hero-border":"#D8D2E1","card-bg":"linear-gradient(145deg,#FFFFFF,#F7F4F9)","card-border":"#DCD6E5","nested-bg":"linear-gradient(125deg,#EDE9F2,#F6F3F8)","control-bg":"#FFFFFF",
-  "text":"#3A344A","muted":"#625C70","border":"#D8D2E1","primary":"#51456C","primary-hover":"#403654","secondary":"#ECE8F1","secondary-ink":"#443D55","secondary-hover":"#E0DBE9","accent":"#83C8B5","accent-alt":"#E58D70","focus":"#76609A",
-  "kpi-1":"linear-gradient(145deg,#E8F2EF,#F8FBFA)","kpi-2":"linear-gradient(145deg,#EEEAF4,#FAF8FC)","kpi-3":"linear-gradient(145deg,#F7EAE5,#FDF8F6)","kpi-4":"linear-gradient(145deg,#E9EDF4,#F8FAFC)",
-  "table-bg":"#FCFBFD","table-head":"#EAE6EF","table-row":"#FFFFFF","table-alt":"#F5F2F7","table-hover":"#ECE8F2","chart-bg":"linear-gradient(145deg,#F0EDF4,#E6E2ED)","chart-text":"#40394F","chart-muted":"#6A6377","chart-grid":"#DAD4E3","chart-surface":"#FFFFFF","tooltip-bg":"#FFFFFF","leaf-filter":"none"
- }),
- chartColors:["#51456C","#83C8B5","#E58D70","#8C82AC","#577B86","#C2A16D","#A8B7C7","#9A6F8C","#657A70","#D0A28C"]
-};
-
 function makeExtendedAdminTheme(config){
  const p=config.palette;
  const lightGradient=(a,b)=>"linear-gradient(110deg,"+a+","+b+")";
@@ -566,7 +546,7 @@ const ADMIN_THEME_GROUPS=[
  {id:"modern",label:"Modern",description:"Expressive · contemporary",themeIds:["ocean-calm","berry-rose","plum-amethyst","coral-peach"]},
  {id:"balanced",label:"Balanced",description:"Premium · versatile · business",themeIds:["warm-harvest","royal-indigo","coastal-blue","copper-espresso"]},
  {id:"classic-comfort",label:"Classic Comfort",description:"Calm · familiar · easy on the eyes",themeIds:["forest-sage","olive-citrus"]},
- {id:"signature",label:"Signature",description:"Atmospheric · editorial · unmistakable",themeIds:["merchant-fieldbook","the-observatory"]}
+ {id:"signature",label:"Signature",description:"Editorial · tactile · unmistakable",themeIds:["merchant-fieldbook"]}
 ];
 const ADMIN_THEME_CATEGORY_BY_ID=Object.fromEntries(ADMIN_THEME_GROUPS.flatMap(group=>group.themeIds.map(id=>[id,group.id])));
 Object.values(ADMIN_COLOR_THEMES).forEach(theme=>{theme.category=ADMIN_THEME_CATEGORY_BY_ID[theme.id]||"balanced";});
@@ -582,62 +562,11 @@ function chartTheme(){
 }
 function themeStorageKey(){return "hf_admin_color_theme:"+(String(currentUser?.id||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"").slice(0,100)||"anonymous");}
 function syncSignatureThemeStyles(themeId){
- const fieldbookId="hfMerchantFieldbookStylesheet",observatoryId="hfObservatoryStylesheet";
+ const fieldbookId="hfMerchantFieldbookStylesheet";
  let link=document.getElementById(fieldbookId);
  if(themeId==="merchant-fieldbook"){
-  document.getElementById(observatoryId)?.remove();
   if(!link){link=document.createElement("link");link.id=fieldbookId;link.rel="stylesheet";link.href="./merchant-fieldbook.css?v=20261101-merchant-fieldbook-v1";document.head.appendChild(link);}
- }else if(themeId==="the-observatory"){
-  if(link)link.remove();let observatory=document.getElementById(observatoryId);
-  if(!observatory){observatory=document.createElement("link");observatory.id=observatoryId;observatory.rel="stylesheet";observatory.href="./the-observatory.css?v=20261102-observatory-fixed-scenes-v4";document.head.appendChild(observatory);}
- }else{if(link)link.remove();const inactiveObservatory=document.getElementById(observatoryId);if(inactiveObservatory)inactiveObservatory.remove();}
-}
-
-function syncObservatoryBackground(themeId){
- const old=document.getElementById("hfObservatoryBackground");
- if(old)old.remove();
- if(themeId!=="the-observatory")return;
- const page=String(document.body?.dataset.page||"overview");
- if(page==="overview")return;
- const main=document.getElementById("adminMain");
- if(!main)return;
- const scenes={
-  solar:'<span class="hf-obs-solar-core"></span>'+[["21","hf-obs-planet-mercury"],["31","hf-obs-planet-venus"],["41","hf-obs-planet-earth"],["51","hf-obs-planet-mars"],["62","hf-obs-planet-jupiter"],["73","hf-obs-planet-saturn"],["84","hf-obs-planet-uranus"],["95","hf-obs-planet-neptune"]].map((p,i)=>'<span class="hf-obs-orbit hf-obs-orbit--'+(i+1)+'"><i class="'+p[1]+'"></i></span>').join(""),
-  jupiter:'<span class="hf-obs-jupiter-core"></span><span class="hf-obs-jupiter-moon-track hf-obs-jupiter-moon-track--1"><i></i></span><span class="hf-obs-jupiter-moon-track hf-obs-jupiter-moon-track--2"><i></i></span><span class="hf-obs-jupiter-moon-track hf-obs-jupiter-moon-track--3"><i></i></span><span class="hf-obs-jupiter-moon-track hf-obs-jupiter-moon-track--4"><i></i></span>',
-  saturn:'<span class="hf-obs-saturn-ring hf-obs-saturn-ring--back"></span><span class="hf-obs-saturn-core"></span><span class="hf-obs-saturn-ring hf-obs-saturn-ring--front"></span><span class="hf-obs-saturn-moon-track"><i></i></span>',
-  mars:'<span class="hf-obs-mars-core"></span><span class="hf-obs-mars-moon-track hf-obs-mars-moon-track--1"><i></i></span><span class="hf-obs-mars-moon-track hf-obs-mars-moon-track--2"><i></i></span><span class="hf-obs-mars-rover"></span>',
-  venus:'<span class="hf-obs-venus-core"></span><span class="hf-obs-venus-cloud hf-obs-venus-cloud--1"></span><span class="hf-obs-venus-cloud hf-obs-venus-cloud--2"></span><span class="hf-obs-venus-probe-track"><i></i></span>',
-  galaxy:'<span class="hf-obs-galaxy-core"><i></i></span><span class="hf-obs-galaxy-star hf-obs-galaxy-star--1"></span><span class="hf-obs-galaxy-star hf-obs-galaxy-star--2"></span><span class="hf-obs-galaxy-star hf-obs-galaxy-star--3"></span>',
-  neptune:'<span class="hf-obs-neptune-ring"></span><span class="hf-obs-neptune-core"></span><span class="hf-obs-neptune-moon-track"><i></i></span>',
-  mercury:'<span class="hf-obs-mercury-core"></span><span class="hf-obs-mercury-crater hf-obs-mercury-crater--1"></span><span class="hf-obs-mercury-crater hf-obs-mercury-crater--2"></span><span class="hf-obs-mercury-crater hf-obs-mercury-crater--3"></span><span class="hf-obs-mercury-orbit"><i></i></span>',
-  uranus:'<span class="hf-obs-uranus-ring"></span><span class="hf-obs-uranus-core"></span><span class="hf-obs-uranus-moon-track"><i></i></span>',
-  comet:'<span class="hf-obs-comet-tail"></span><span class="hf-obs-comet-core"></span><span class="hf-obs-comet-dust"></span>',
-  moon:'<span class="hf-obs-moon-core"></span><span class="hf-obs-moon-crater hf-obs-moon-crater--1"></span><span class="hf-obs-moon-crater hf-obs-moon-crater--2"></span><span class="hf-obs-moon-track"><i></i></span>',
-  satellite:'<span class="hf-obs-satellite-planet"></span><span class="hf-obs-satellite-orbit"><i class="hf-obs-satellite-body"></i></span><span class="hf-obs-satellite-star"></span>',
-  nebula:'<span class="hf-obs-nebula-core"></span><span class="hf-obs-nebula-cloud hf-obs-nebula-cloud--1"></span><span class="hf-obs-nebula-cloud hf-obs-nebula-cloud--2"></span><span class="hf-obs-nebula-star"></span>',
-  asteroid:'<span class="hf-obs-asteroid-orbit hf-obs-asteroid-orbit--1"><i></i><b></b><em></em></span><span class="hf-obs-asteroid-orbit hf-obs-asteroid-orbit--2"><i></i><b></b><em></em></span><span class="hf-obs-asteroid-core"></span>',
-  constellation:'<span class="hf-obs-constellation-stars"></span><span class="hf-obs-constellation-glow"></span>',
-  sun:'<span class="hf-obs-sun-core"></span><span class="hf-obs-sun-corona"></span><span class="hf-obs-sun-orbit"><i></i></span>',
-  ice:'<span class="hf-obs-ice-ring"></span><span class="hf-obs-ice-core"></span><span class="hf-obs-ice-moon-track"><i></i></span>'
- };
- const pageScene={
-  orders:"solar",operations:"jupiter","incomplete-orders":"saturn",
-  products:"mars","products-add":"mars","products-barcode":"mercury","products-reviews":"venus",
-  categories:"venus",customers:"galaxy","customer-settings":"moon",
-  analytics:"neptune",finance:"sun",reports:"comet",tracking:"satellite",
-  settings:"moon",content:"nebula",coupons:"asteroid","coupon-usage":"mercury",
-  pos:"solar","supplier-add":"uranus","supplier-purchases":"saturn","supplier-payments":"ice",
-  messages:"satellite",messenger:"constellation","marketing-center":"galaxy",
-  "facebook-publishing":"satellite","meta-ads-review":"jupiter",
-  "youtube-publishing":"comet","website-publisher":"nebula"
- };
- const scene=pageScene[page]||"constellation";
- const backdrop=document.createElement("div");
- backdrop.id="hfObservatoryBackground";
- backdrop.className="hf-obs-stage hf-obs-stage--"+scene;
- backdrop.setAttribute("aria-hidden","true");
- backdrop.innerHTML=scenes[scene]||scenes.constellation;
- main.insertBefore(backdrop,main.firstChild);
+ }else if(link){link.remove();}
 }
 
 function applyColorTheme(themeId,persist=true){
@@ -645,7 +574,6 @@ function applyColorTheme(themeId,persist=true){
  currentThemeId=theme.id;
  syncSignatureThemeStyles(theme.id);
  document.documentElement.dataset.hfTheme=theme.id;
- syncObservatoryBackground(theme.id);
  document.documentElement.dataset.adminTheme="light";
  Object.entries(theme.tokens).forEach(([key,value])=>document.documentElement.style.setProperty("--hf-theme-"+key,value));
  palette.navy=theme.tokens.text;palette.orange=theme.tokens.accent;palette.blue=theme.tokens.primary;palette.green="#287A58";palette.purple=theme.tokens["accent-alt"];palette.yellow=theme.tokens.accent;palette.red="#B24B3F";palette.teal=theme.tokens["accent-alt"];palette.cream=theme.tokens["control-bg"];palette.muted=theme.tokens.muted;
@@ -1094,7 +1022,8 @@ function makeShell(){
   if(footnote)footnote.textContent=total+" of "+total+" themes available · All themes are available to every administrator; your choice is saved to this browser for this account.";
  };
  let savedColorTheme="warm-harvest";try{savedColorTheme=localStorage.getItem(themeStorageKey())||"warm-harvest";}catch(_themeReadError){}
- applyColorTheme(savedColorTheme,false);renderThemePicker();
+ if(!ADMIN_COLOR_THEMES[savedColorTheme])savedColorTheme="warm-harvest";
+ applyColorTheme(savedColorTheme,true);renderThemePicker();
  const closeThemePicker=()=>{if(themePicker)themePicker.hidden=true;themePickerToggle?.setAttribute("aria-expanded","false");};
  const openThemePicker=()=>{if(!themePicker)return;themePicker.hidden=false;themePickerToggle?.setAttribute("aria-expanded","true");themePicker.querySelector("[data-theme-choice]")?.focus({preventScroll:true});};
  themePickerToggle?.addEventListener("click",()=>themePicker?.hidden?openThemePicker():closeThemePicker());
