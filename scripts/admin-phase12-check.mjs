@@ -70,6 +70,8 @@ assert.ok(categoriesLive.includes("STORE_NAME") && categoriesLive.includes("WHAT
 assert.ok(categoriesUi.includes("CATALOG_CONFIG") && categoriesUi.includes("CATEGORY_TABLE") && categoriesUi.includes("PRODUCT_TABLE"), "The Category workspace must use per-store table configuration rather than fixed table names.");
 assert.ok(categoriesUi.includes("REORDER_CATEGORY_RPC") && categoriesUi.includes("REORDER_PRODUCT_RPC") && categoriesUi.includes("REORDER_HOME_RPC"), "Category and product ordering must use the store-configured server RPCs.");
 assert.ok(categoriesUi.includes("bindTouchReorder") && categoriesUi.includes("data-touch-drag-handle"), "Category and product lists must support touch drag-and-drop.");
+assert.ok(categoriesUi.includes('addEventListener("pointerdown"') && categoriesUi.includes("setPointerCapture") && categoriesUi.includes("addEventListener(\"pointerup\""), "Category and product reordering must use pointer capture and handle desktop, pen and touch input consistently.");
+assert.ok(categoriesUi.includes("data-category-drag-handle") && categoriesUi.includes("data-product-drag-handle"), "Both category and product reorder handles must be explicitly marked for pointer interaction.");
 
 const moveOrderedIdMatch = categoriesUi.match(/function moveOrderedId\(ids,id,directionOrTarget\)\s*\{[\s\S]*?\n \}/);
 assert.ok(moveOrderedIdMatch, "The shared category/product ordering helper must exist.");
