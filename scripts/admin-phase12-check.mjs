@@ -80,7 +80,8 @@ for (const file of unifiedPages) {
   const source = read(join("admin", file));
   assert.ok(source.includes("i18n.js?v=20261101-shell-localization-v3"), `${file}: missing or stale shared language dictionary.`);
   assert.ok(source.includes(`shared.css?v=${sharedCssVersion}`), `${file}: stale shared UI cache version.`);
-  assert.ok(source.includes("shared.js?v="), `${file}: missing shared JS cache-busting version.`);
+  assert.ok(source.includes("shared.js?v=20261101-multi-theme-engine-v1"), `${file}: missing or stale multi-theme shared JS version.`);
+  assert.ok(source.includes("workspace-global-theme.css?v=20261101-multi-theme-engine-v1"), `${file}: missing or stale shared workspace theme stylesheet.`);
 
   if (source.includes("./app.js")) {
     assert.ok(source.includes("app.js?v="), `${file}: missing app.js cache-busting version.`);
@@ -121,10 +122,15 @@ for (const file of readdirSync(adminDir).filter((name) => name.endsWith(".js")))
   execFileSync(process.execPath, ["--check", join(adminDir, file)], { cwd: root, stdio: "pipe" });
 }
 
-// Keep the default theme light while honoring an explicitly saved dark preference.
+// The shared admin shell now uses an account-scoped, registry-driven color theme picker.
 const shared = read("admin/shared.js");
-assert.ok(shared.includes('document.documentElement.dataset.adminTheme=savedTheme==="dark"?"dark":"light";'));
-assert.ok(shared.includes('let savedTheme="light";try{savedTheme=localStorage.getItem(themeKey)||"light";}'));
+assert.ok(shared.includes('document.documentElement.dataset.hfTheme="warm-harvest";'), "Warm Harvest must remain the default theme.");
+assert.ok(shared.includes("const ADMIN_COLOR_THEMES={") && shared.includes('"warm-harvest":') && shared.includes('"ocean-calm":'), "The theme registry must include Warm Harvest and Ocean Calm.");
+assert.ok(shared.includes("hfThemePickerToggle") && shared.includes("hfThemeGrid") && shared.includes("renderThemePicker"), "The shared header must expose the accessible theme picker.");
+assert.ok(shared.includes('hf_admin_color_theme:') && shared.includes("themeStorageKey()"), "Theme choice must persist per authenticated administrator.");
+assert.ok(shared.includes('applyColorTheme(savedColorTheme,false)'), "The saved color theme must be applied when each admin page initializes.");
+assert.ok(!shared.includes('id="themeToggle"') && !shared.includes('id="themeToggle"'), "The old standalone dark/light toggle must be replaced by the color theme picker.");
+
 
 const app = read("admin/app.js");
 assert.ok(app.includes('order_items(id,product_id,product_name,quantity,unit,unit_price,line_total,product_image_url,shipping_weight_kg)'), "Courier booking must load relational order_items.");
@@ -359,10 +365,16 @@ function contrastRatio(foreground, background) {
   const a = relativeLuminance(foreground), b = relativeLuminance(background);
   return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
 }
-assert.ok(contrastRatio("#FFFFFF", "#9F5726") >= 4.5, "Primary button foreground/background must meet AA contrast for normal text.");
-assert.ok(contrastRatio("#8B4A1F", "#FFFDF8") >= 4.5, "Light-theme eyebrow text must meet AA contrast.");
-assert.ok(contrastRatio("#E7B083", "#111C2E") >= 4.5, "Dark-theme eyebrow text must meet AA contrast.");
-assert.ok(contrastRatio("#8B4A1F", "#FFFDF8") >= 3, "Focus outline must remain visible against the light paper surface.");
+assert.ok(contrastRatio("#FFF2D8", "#7E2D26") >= 4.5, "Warm Harvest sidebar text must meet AA contrast.");
+assert.ok(contrastRatio("#FFFFFF", "#A94335") >= 4.5, "Warm Harvest primary button must meet AA contrast.");
+assert.ok(contrastRatio("#704536", "#F8E7D8") >= 4.5, "Warm Harvest menu text must meet AA contrast.");
+assert.ok(contrastRatio("#573B26", "#F4C66F") >= 4.5, "Warm Harvest active menu text must meet AA contrast.");
+assert.ok(contrastRatio("#E9FAF5", "#124F50") >= 4.5, "Ocean Calm sidebar text must meet AA contrast.");
+assert.ok(contrastRatio("#FFFFFF", "#176B68") >= 4.5, "Ocean Calm primary button must meet AA contrast.");
+assert.ok(contrastRatio("#245A56", "#DCEFE9") >= 4.5, "Ocean Calm menu text must meet AA contrast.");
+assert.ok(contrastRatio("#164D4A", "#B9E0D4") >= 4.5, "Ocean Calm active menu text must meet AA contrast.");
+assert.ok(contrastRatio("#B75A43", "#F0E1D5") >= 3, "Warm Harvest focus outline must remain visible.");
+assert.ok(contrastRatio("#398F88", "#E2EFEC") >= 3, "Ocean Calm focus outline must remain visible.");
 
 for (const file of unifiedPages) {
   const source = read(join("admin", file));
