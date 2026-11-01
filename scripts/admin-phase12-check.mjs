@@ -371,6 +371,23 @@ function contrastRatio(foreground, background) {
   const a = relativeLuminance(foreground), b = relativeLuminance(background);
   return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
 }
+function assertSidebarStops(themeName, foreground, backgrounds) {
+  for (const background of backgrounds) {
+    assert.ok(contrastRatio(foreground, background) >= 4.5,
+      themeName + " sidebar text fails 4.5:1 contrast on " + background + ".");
+  }
+}
+assertSidebarStops("Warm Harvest", "#FFF2D8", ["#7E2D26","#A94335","#A34A2F","#8F552F","#7E3D37"]);
+assertSidebarStops("Ocean Calm", "#E9FAF5", ["#124F50","#176B68","#247D79","#2D7085","#1C566B"]);
+assertSidebarStops("Royal Indigo", "#F4F5FF", ["#28336B","#3F4D8A","#4B5CA0","#5E66A3","#354278"]);
+assertSidebarStops("Forest Sage", "#F2F7E9", ["#294B3A","#3F6B50","#456D51","#536F47","#365B45"]);
+assertSidebarStops("Berry Rose", "#FFF2F6", ["#6F2D4B","#923E62","#A94D75","#995B70","#71384F"]);
+assertSidebarStops("Coastal Blue", "#F0F7FC", ["#1F4B73","#265E8D","#3477A2","#3D708C","#244F70"]);
+assertSidebarStops("Plum Amethyst", "#F8F4FB", ["#4B315D","#5A3B70","#674476","#76538A","#523763"]);
+assertSidebarStops("Copper Espresso", "#FFF5EA", ["#633A29","#7A452E","#98542F","#91512F","#70442F"]);
+assertSidebarStops("Olive Citrus", "#F9FAEE", ["#48522B","#596233","#66713B","#6B763E","#545B31"]);
+assertSidebarStops("Coral Peach", "#FFF5F0", ["#8A3F39","#99463E","#A34A40","#A34A40","#92463F"]);
+
 assert.ok(contrastRatio("#FFF2D8", "#7E2D26") >= 4.5, "Warm Harvest sidebar text must meet AA contrast.");
 assert.ok(contrastRatio("#FFFFFF", "#A94335") >= 4.5, "Warm Harvest primary button must meet AA contrast.");
 assert.ok(contrastRatio("#704536", "#F8E7D8") >= 4.5, "Warm Harvest menu text must meet AA contrast.");
@@ -386,10 +403,10 @@ assert.ok(contrastRatio("#F2F7E9", "#294B3A") >= 4.5 && contrastRatio("#FFFFFF",
 assert.ok(contrastRatio("#FFF2F6", "#6F2D4B") >= 4.5 && contrastRatio("#FFFFFF", "#923E62") >= 4.5 && contrastRatio("#713D56", "#F4E0E8") >= 4.5 && contrastRatio("#5B3740", "#F0C8A7") >= 4.5, "Berry Rose sidebar, buttons and menu states must meet AA contrast.");
 assert.ok(contrastRatio("#F0F7FC", "#1F4B73") >= 4.5 && contrastRatio("#FFFFFF", "#265E8D") >= 4.5 && contrastRatio("#2F5778", "#DFEBF5") >= 4.5 && contrastRatio("#29445C", "#E9D7A9") >= 4.5, "Coastal Blue sidebar, buttons and menu states must meet AA contrast.");
 assert.ok(contrastRatio("#606C8B", "#FBFBFE") >= 4.5 && contrastRatio("#5F705D", "#FAFCF6") >= 4.5 && contrastRatio("#8B6B7A", "#FFFAFC") >= 4.5 && contrastRatio("#596F82", "#FAFCFD") >= 4.5, "New theme muted text must remain readable on its card surface.");
-assert.ok(contrastRatio("#F8F4FB", "#4B315D") >= 4.5 && contrastRatio("#4B3C55", "#EAE2F0") >= 4.5 && contrastRatio("#403044", "#E5C99F") >= 4.5 && contrastRatio("#FFFFFF", "#674476") >= 4.5 && contrastRatio("#6B5B75", "#FCF9FD") >= 4.5 && contrastRatio("#80649A", "#ECE4F0") >= 3, "Plum Amethyst primary text, menus, buttons and focus must meet contrast targets.");
-assert.ok(contrastRatio("#FFF5EA", "#633A29") >= 4.5 && contrastRatio("#5B3D2C", "#F3E4D7") >= 4.5 && contrastRatio("#553722", "#E7C27C") >= 4.5 && contrastRatio("#FFFFFF", "#98542F") >= 4.5 && contrastRatio("#765F52", "#FFF9F2") >= 4.5 && contrastRatio("#A9663F", "#F1E1D1") >= 3, "Copper Espresso primary text, menus, buttons and focus must meet contrast targets.");
-assert.ok(contrastRatio("#F9FAEE", "#48522B") >= 4.5 && contrastRatio("#495236", "#E7E9D5") >= 4.5 && contrastRatio("#3D4228", "#E3D27E") >= 4.5 && contrastRatio("#FFFFFF", "#66713B") >= 4.5 && contrastRatio("#68704F", "#FCFCF4") >= 4.5 && contrastRatio("#68743B", "#ECEBDD") >= 3, "Olive Citrus primary text, menus, buttons and focus must meet contrast targets.");
-assert.ok(contrastRatio("#FFF5F0", "#8A3F39") >= 4.5 && contrastRatio("#713F3A", "#F4E0D8") >= 4.5 && contrastRatio("#563833", "#F5C77D") >= 4.5 && contrastRatio("#FFFFFF", "#B95248") >= 4.5 && contrastRatio("#7F615B", "#FFFAF6") >= 4.5 && contrastRatio("#A54E43", "#F5E1D6") >= 3, "Coral Peach primary text, menus, buttons and focus must meet contrast targets.");
+assert.ok(contrastRatio("#4B3C55", "#F7F2FA") >= 4.5 && contrastRatio("#4B3C55", "#FCF7FB") >= 4.5 && contrastRatio("#4B3C55", "#F4F2F9") >= 4.5 && contrastRatio("#4B3C55", "#FBF6EC") >= 4.5 && contrastRatio("#403044", "#D6B584") >= 4.5 && contrastRatio("#FFFFFF", "#4D335B") >= 4.5 && contrastRatio("#4D3A61", "#E9E2F0") >= 4.5 && contrastRatio("#514260", "#E8E0EF") >= 4.5 && contrastRatio("#6B5B75", "#F1EBF6") >= 4.5 && contrastRatio("#80649A", "#ECE4F0") >= 3, "Plum Amethyst all menu, active, primary/hover, secondary, header, card and focus states must meet contrast targets.");
+assert.ok(contrastRatio("#5B3D2C", "#FFF6EC") >= 4.5 && contrastRatio("#5B3D2C", "#FFF9F1") >= 4.5 && contrastRatio("#5B3D2C", "#FAF0E6") >= 4.5 && contrastRatio("#5B3D2C", "#FCF5EA") >= 4.5 && contrastRatio("#553722", "#D6AA62") >= 4.5 && contrastRatio("#FFFFFF", "#91512F") >= 4.5 && contrastRatio("#FFFFFF", "#783F25") >= 4.5 && contrastRatio("#74462F", "#F0DED1") >= 4.5 && contrastRatio("#75492F", "#F2E3D5") >= 4.5 && contrastRatio("#765F52", "#F6EBDD") >= 4.5 && contrastRatio("#A9663F", "#F1E1D1") >= 3, "Copper Espresso all menu, active, primary/hover, secondary, header, card and focus states must meet contrast targets.");
+assert.ok(contrastRatio("#495236", "#F7F7EA") >= 4.5 && contrastRatio("#495236", "#FBF9EA") >= 4.5 && contrastRatio("#495236", "#F2F7ED") >= 4.5 && contrastRatio("#495236", "#FAF4E6") >= 4.5 && contrastRatio("#3D4228", "#D1BC66") >= 4.5 && contrastRatio("#FFFFFF", "#66713B") >= 4.5 && contrastRatio("#FFFFFF", "#4D582B") >= 4.5 && contrastRatio("#4A5630", "#E8E9D7") >= 4.5 && contrastRatio("#515B34", "#E4E5D1") >= 4.5 && contrastRatio("#68704F", "#F1F1E3") >= 4.5 && contrastRatio("#68743B", "#ECEBDD") >= 3, "Olive Citrus all menu, active, primary/hover, secondary, header, card and focus states must meet contrast targets.");
+assert.ok(contrastRatio("#713F3A", "#FFF3EC") >= 4.5 && contrastRatio("#713F3A", "#FFF9F5") >= 4.5 && contrastRatio("#713F3A", "#FAF1EF") >= 4.5 && contrastRatio("#713F3A", "#FBF5ED") >= 4.5 && contrastRatio("#563833", "#E9AE67") >= 4.5 && contrastRatio("#FFFFFF", "#B95248") >= 4.5 && contrastRatio("#FFFFFF", "#963E37") >= 4.5 && contrastRatio("#6A3935", "#F3DBD3") >= 4.5 && contrastRatio("#71443D", "#F2DDD4") >= 4.5 && contrastRatio("#7F615B", "#F8ECE6") >= 4.5 && contrastRatio("#A54E43", "#F5E1D6") >= 3, "Coral Peach all menu, active, primary/hover, secondary, header, card and focus states must meet contrast targets.");
 const readableTooltipPairs=[...shared.matchAll(/"chart-surface"\s*:\s*"(#[0-9A-Fa-f]{6})"\s*,\s*"tooltip-bg"\s*:\s*"\1"/g)];
 assert.ok(readableTooltipPairs.length>=6 && shared.includes('"tooltip-bg":p.chartSurface'), "All ten themes must use readable light chart surfaces behind dark tooltip labels.");
 
