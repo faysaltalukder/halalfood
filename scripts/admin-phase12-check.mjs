@@ -312,6 +312,14 @@ for (const selector of fieldbookSelectors) {
 const fieldbookTranslations = read("admin/i18n.js");
 const observatoryCss = read("admin/the-observatory.css").replace(/\/\*[\s\S]*?\*\//g, "");
 const observatoryOverview = read("admin/overview.html");
+const observatorySolarSystemCss = read("admin/observatory-solar-system.css").replace(/\/\*[\s\S]*?\*\//g, "");
+assert.ok(observatoryOverview.includes("observatory-solar-system.css?v=20261102-solar-system-v1"), "The Observatory Overview must load its separately cache-busted Solar System illustration layer.");
+for (const world of ["sun","mercury","venus","mars","jupiter","saturn","uranus","neptune","moon","galaxy","comet"]) {
+  assert.ok(observatoryOverview.includes("hf-obs-" + world), "The Observatory Overview is missing its unique celestial illustration: " + world);
+}
+assert.equal((observatoryOverview.match(/class="hf-observatory-object/g) || []).length, 11, "Overview must include eleven independent decorative vector objects after Earth.");
+assert.ok(observatorySolarSystemCss.includes('html[data-hf-theme="the-observatory"] body[data-page="overview"]') && observatorySolarSystemCss.includes("prefers-reduced-motion") && observatorySolarSystemCss.includes("pointer-events:none"), "Solar System art must be theme-scoped, non-interactive and motion-accessible.");
+assert.ok(observatorySolarSystemCss.includes(".hf-obs-operations") && observatorySolarSystemCss.includes(".hf-obs-income") && observatorySolarSystemCss.includes(".hf-obs-traffic") && observatorySolarSystemCss.includes(".hf-obs-status") && observatorySolarSystemCss.includes(".hf-obs-products") && observatorySolarSystemCss.includes(".hf-obs-latest-orders"), "Each large analytics and records card must have its own artwork treatment.");
 const observatoryTranslations = read("admin/i18n.js");
 assert.ok(shared.includes('ADMIN_COLOR_THEMES["the-observatory"]') && shared.includes('name:"The Observatory"') && shared.includes('themeIds:["merchant-fieldbook","the-observatory"]'), "Theme 12 must exist in Signature.");
 assert.ok(shared.includes('observatory.href="./the-observatory.css?v=20261102-observatory-visible-v3"'), "Observatory stylesheet must load on demand.");
