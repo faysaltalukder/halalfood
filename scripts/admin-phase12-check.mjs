@@ -282,6 +282,7 @@ assert.ok(overviewApp.includes("const readOverviewRange=()=>") && overviewApp.in
 assert.ok(overviewApp.includes("fetchOverviewEvents(range,maxRows=15000)") && overviewApp.includes('.in("event_name",eventNames)'), "Overview event queries should load only the event types used by its charts.");
 assert.ok(overviewApp.includes("fetchOverviewOrderLines(range,maxRows=5000)") && overviewApp.includes('order_items(id)'), "Overview order-line trend should fetch only lightweight order-item identifiers.");
 assert.ok(overviewApp.includes("Promise.allSettled") && overviewApp.includes("fetchFinance(range,3000)") && overviewApp.includes("confirmedFinanceRange"), "Overview finance chart must use selected-period confirmed ledger entries separately from the all-time summary.");
+assert.ok(read("admin/shared.js").includes("const from=range.fromDay??") && read("admin/shared.js").includes("const to=range.toDay??"), "Date-only finance ledger filters must use Dhaka calendar dates rather than UTC ISO date slices.");
 assert.ok(overviewApp.includes("Overview refresh failed.") && overviewApp.includes("last successful load"), "Overview must report refresh failures instead of silently leaving stale or loading figures.");
 assert.ok(overviewApp.includes("All-time Finance Snapshot reached its 3,000-entry retrieval limit.") && overviewApp.includes("Stock alerts reached the 1,000-product retrieval limit."), "Overview must disclose when dashboard snapshots reach retrieval caps.");
 const reportSource = read("admin/app.js");
