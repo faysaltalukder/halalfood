@@ -560,9 +560,23 @@ function chartTheme(){
  return {text:t["chart-text"],muted:t["chart-muted"],grid:t["chart-grid"],surface:t["chart-surface"]};
 }
 function themeStorageKey(){return "hf_admin_color_theme:"+(String(currentUser?.id||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"").slice(0,100)||"anonymous");}
+function syncSignatureThemeStyles(themeId){
+ const linkId="hfMerchantFieldbookStylesheet";
+ let link=document.getElementById(linkId);
+ if(themeId==="merchant-fieldbook"){
+  if(link)return;
+  link=document.createElement("link");
+  link.id=linkId;link.rel="stylesheet";
+  link.href="./merchant-fieldbook.css?v=20261101-merchant-fieldbook-v1";
+  document.head.appendChild(link);
+ }else if(link){
+  link.remove();
+ }
+}
 function applyColorTheme(themeId,persist=true){
  const theme=ADMIN_COLOR_THEMES[themeId]||ADMIN_COLOR_THEMES["warm-harvest"];
  currentThemeId=theme.id;
+ syncSignatureThemeStyles(theme.id);
  document.documentElement.dataset.hfTheme=theme.id;
  document.documentElement.dataset.adminTheme="light";
  Object.entries(theme.tokens).forEach(([key,value])=>document.documentElement.style.setProperty("--hf-theme-"+key,value));
