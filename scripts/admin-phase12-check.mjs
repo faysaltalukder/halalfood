@@ -436,3 +436,82 @@ assert.ok(ordersCss.includes("border-top:1px solid #cbd5e1"), "Grand total must 
 assert.ok(ordersApp.includes('class="hf-order-location-heading"') && ordersApp.includes('class="hf-order-location-meta"'), "Delivery heading, zone label and address must be distinct visual levels.");
 
 
+
+
+// PR #38 — per-store configuration, hierarchical category workspace and live catalog synchronization.
+const catalogStoreConfigSource = read("js/store-config.js");
+const catalogSignInSource = read("admin/index.html");
+const catalogWorkspaceSource = read("admin/categories.html");
+const catalogWorkspaceScript = read("admin/categories.js");
+const catalogLiveBridge = read("js/live-catalog.js");
+const catalogMainScript = read("js/main.js");
+assert.ok(catalogSignInSource.includes("../js/store-config.js?v=20261101-store-config-v1") &&
+  catalogSignInSource.indexOf("../js/store-config.js") < catalogSignInSource.indexOf("const STORE_CONFIG"),
+  "Admin sign-in must load the public store configuration before creating the Supabase client.");
+assert.ok(catalogSignInSource.includes("STORE_CONFIG.supabase?.url") &&
+  catalogSignInSource.includes("STORE_CONFIG.supabase?.publishableKey") &&
+  catalogSignInSource.includes("if(email!==ADMIN_EMAIL)"),
+  "Admin sign-in must use the configured store Supabase connection and authorized admin identity.");
+assert.ok(catalogStoreConfigSource.includes("storeId:") && catalogStoreConfigSource.includes("siteRoot:") &&
+  catalogStoreConfigSource.includes("publishableKey:") && catalogStoreConfigSource.includes("reorderCategoriesRpc") &&
+  catalogStoreConfigSource.includes("reorderProductsRpc") && catalogStoreConfigSource.includes("reorderHomeProductsRpc"),
+  "The public store config must define store identity, site root, publishable connection and catalog ordering RPCs.");
+assert.ok(!/service[_-]?role|secret[_-]?key/i.test(catalogStoreConfigSource),
+  "The browser-facing store configuration must not contain privileged credentials.");
+for (const catalogPageFile of readdirSync(adminDir).filter(file => file.endsWith(".html") && file !== "index.html")) {
+  const catalogPageSource = read(join("admin", catalogPageFile));
+  if (catalogPageSource.includes("./shared.js")) {
+    assert.ok(catalogPageSource.includes("../js/store-config.js?v=20261101-store-config-v1") &&
+      catalogPageSource.indexOf("../js/store-config.js") < catalogPageSource.indexOf("./shared.js"),
+      catalogPageFile + ": store configuration must load before the shared Admin shell.");
+  }
+}
+assert.ok(catalogWorkspaceSource.includes('id="categoryExplorerSection"') &&
+  catalogWorkspaceSource.includes('id="categoryBreadcrumb"') &&
+  catalogWorkspaceSource.includes('id="productSortSection"'),
+  "The Categories workspace must expose progressive drill-down, breadcrumbs and scoped product ordering.");
+assert.ok(catalogWorkspaceScript.includes("CATEGORY_TABLE") && catalogWorkspaceScript.includes("PRODUCT_TABLE") &&
+  catalogWorkspaceScript.includes("REORDER_CATEGORY_RPC") && catalogWorkspaceScript.includes("REORDER_PRODUCT_RPC") &&
+  catalogWorkspaceScript.includes("REORDER_HOME_RPC"),
+  "The Categories workspace must use the configured catalog tables and atomic ordering RPCs.");
+assert.ok(catalogWorkspaceScript.includes("validateCategoryMove") && catalogWorkspaceScript.includes("descendantsOf") &&
+  catalogWorkspaceScript.includes("maximum of three category levels"),
+  "Category parent moves must prevent cycles and enforce the three-level hierarchy.");
+assert.ok(catalogWorkspaceScript.includes('addEventListener("pointerdown"') &&
+  catalogWorkspaceScript.includes("setPointerCapture") &&
+  catalogWorkspaceScript.includes('addEventListener("pointerup"') &&
+  catalogWorkspaceScript.includes("pointercancel"),
+  "Category and product drag ordering must handle pointer capture, completion and cancellation.");
+assert.ok(catalogWorkspaceScript.includes("data-cat-enter") && catalogWorkspaceScript.includes("categoryBreadcrumb") &&
+  catalogWorkspaceScript.includes("quickProductForm") && catalogWorkspaceScript.includes("undoLastOrder"),
+  "Category navigation, quick product editing and one-step ordering undo must be wired.");
+const catalogMoveFunction = catalogWorkspaceScript.match(/function moveOrderedId\(ids,id,directionOrTarget\)\s*\{[\s\S]*?\n \}/);
+assert.ok(catalogMoveFunction, "The shared category/product ordering helper must exist.");
+const catalogMoveOrderedId = vm.runInNewContext("(" + catalogMoveFunction[0] + ")");
+assert.deepEqual(Array.from(catalogMoveOrderedId(["a","b","c","d"],"a","d")), ["b","c","a","d"],
+  "Dragging an earlier item onto a later item must insert immediately before the target.");
+assert.deepEqual(Array.from(catalogMoveOrderedId(["a","b","c","d"],"d","a")), ["d","a","b","c"],
+  "Dragging a later item onto an earlier item must insert before the target.");
+assert.deepEqual(Array.from(catalogMoveOrderedId(["a","b","c","d"],"b",-1)), ["b","a","c","d"],
+  "The Up control must move an item exactly one position up.");
+assert.deepEqual(Array.from(catalogMoveOrderedId(["a","b","c","d"],"b",1)), ["a","c","b","d"],
+  "The Down control must move an item exactly one position down.");
+assert.deepEqual(Array.from(catalogMoveOrderedId(["a","b","c","d"],"a",-1)), ["a","b","c","d"],
+  "Moving the first item up must not change its position.");
+assert.ok(catalogLiveBridge.includes("halalstore:config-ready") &&
+  catalogLiveBridge.includes("HALAL_STORE_CONFIG") &&
+  catalogLiveBridge.includes("menu.replaceChildren") &&
+  catalogLiveBridge.includes("mobileLinks.replaceChildren") &&
+  catalogLiveBridge.includes("footerList.replaceChildren") &&
+  catalogLiveBridge.includes("rail.replaceChildren"),
+  "Desktop, mobile, footer and featured-category navigation must synchronize from the live category tree.");
+assert.ok(catalogLiveBridge.includes("setPictureImage(img, product.image_url, product.name)") &&
+  catalogLiveBridge.includes("effectiveCategoryActive") &&
+  catalogLiveBridge.includes("home_sort_order"),
+  "Live product cards must normalize image URLs and respect category visibility and independent home ordering.");
+assert.ok(catalogMainScript.includes("store-config.js") && catalogMainScript.includes("HALAL_STORE_CONFIG"),
+  "The storefront bootstrap must wait for and use its store configuration.");
+const catalogHomepage = read("index.html");
+assert.ok(catalogHomepage.includes("js/store-config.js?v=20261101-store-config-v1") &&
+  catalogHomepage.indexOf("store-config.js") < catalogHomepage.indexOf("js/main.js?v=20261101-catalog-sync-v2"),
+  "The homepage must load the per-store configuration before the shared storefront bootstrap.");
