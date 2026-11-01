@@ -80,7 +80,7 @@ for (const file of unifiedPages) {
   const source = read(join("admin", file));
   assert.ok(source.includes("i18n.js?v=20261101-shell-localization-v3"), `${file}: missing or stale shared language dictionary.`);
   assert.ok(source.includes(`shared.css?v=${sharedCssVersion}`), `${file}: stale shared UI cache version.`);
-  assert.ok(source.includes("shared.js?v=20261101-multi-theme-engine-v1"), `${file}: missing or stale multi-theme shared JS version.`);
+  assert.ok(source.includes("shared.js?v=20261101-multi-theme-engine-v2"), `${file}: missing or stale multi-theme shared JS version.`);
   assert.ok(source.includes("workspace-global-theme.css?v=20261101-multi-theme-engine-v1"), `${file}: missing or stale shared workspace theme stylesheet.`);
 
   if (source.includes("./app.js")) {
@@ -125,7 +125,8 @@ for (const file of readdirSync(adminDir).filter((name) => name.endsWith(".js")))
 // The shared admin shell now uses an account-scoped, registry-driven color theme picker.
 const shared = read("admin/shared.js");
 assert.ok(shared.includes('document.documentElement.dataset.hfTheme="warm-harvest";'), "Warm Harvest must remain the default theme.");
-assert.ok(shared.includes("const ADMIN_COLOR_THEMES={") && shared.includes('"warm-harvest":') && shared.includes('"ocean-calm":'), "The theme registry must include Warm Harvest and Ocean Calm.");
+assert.ok(shared.includes("const ADMIN_COLOR_THEMES={") && shared.includes('"warm-harvest":') && shared.includes('"ocean-calm":') && shared.includes('"royal-indigo":') && shared.includes('"forest-sage":') && shared.includes('"berry-rose":') && shared.includes('"coastal-blue":'), "The theme registry must include all six currently available themes.");
+assert.ok(shared.includes('"profile": "Indigo · Refined · Confident"') && shared.includes('"profile": "Natural · Grounded · Quiet"') && shared.includes('"profile": "Expressive · Soft · Sophisticated"') && shared.includes('"profile": "Clear · Trustworthy · Coastal"'), "Each added theme needs its distinct design profile.");
 assert.ok(shared.includes("hfThemePickerToggle") && shared.includes("hfThemeGrid") && shared.includes("renderThemePicker"), "The shared header must expose the accessible theme picker.");
 assert.ok(shared.includes('hf_admin_color_theme:') && shared.includes("themeStorageKey()"), "Theme choice must persist per authenticated administrator.");
 assert.ok(shared.includes('applyColorTheme(savedColorTheme,false)'), "The saved color theme must be applied when each admin page initializes.");
@@ -375,6 +376,11 @@ assert.ok(contrastRatio("#245A56", "#DCEFE9") >= 4.5, "Ocean Calm menu text must
 assert.ok(contrastRatio("#164D4A", "#B9E0D4") >= 4.5, "Ocean Calm active menu text must meet AA contrast.");
 assert.ok(contrastRatio("#B75A43", "#F0E1D5") >= 3, "Warm Harvest focus outline must remain visible.");
 assert.ok(contrastRatio("#398F88", "#E2EFEC") >= 3, "Ocean Calm focus outline must remain visible.");
+assert.ok(contrastRatio("#F4F5FF", "#28336B") >= 4.5 && contrastRatio("#FFFFFF", "#3F4D8A") >= 4.5 && contrastRatio("#364271", "#E6EAF8") >= 4.5 && contrastRatio("#3C3760", "#E8D49A") >= 4.5, "Royal Indigo sidebar, buttons and menu states must meet AA contrast.");
+assert.ok(contrastRatio("#F2F7E9", "#294B3A") >= 4.5 && contrastRatio("#FFFFFF", "#3F6B50") >= 4.5 && contrastRatio("#355943", "#E4ECDD") >= 4.5 && contrastRatio("#38452F", "#E7D9A9") >= 4.5, "Forest Sage sidebar, buttons and menu states must meet AA contrast.");
+assert.ok(contrastRatio("#FFF2F6", "#6F2D4B") >= 4.5 && contrastRatio("#FFFFFF", "#923E62") >= 4.5 && contrastRatio("#713D56", "#F4E0E8") >= 4.5 && contrastRatio("#5B3740", "#F0C8A7") >= 4.5, "Berry Rose sidebar, buttons and menu states must meet AA contrast.");
+assert.ok(contrastRatio("#F0F7FC", "#1F4B73") >= 4.5 && contrastRatio("#FFFFFF", "#265E8D") >= 4.5 && contrastRatio("#2F5778", "#DFEBF5") >= 4.5 && contrastRatio("#29445C", "#E9D7A9") >= 4.5, "Coastal Blue sidebar, buttons and menu states must meet AA contrast.");
+assert.ok(contrastRatio("#606C8B", "#FBFBFE") >= 4.5 && contrastRatio("#5F705D", "#FAFCF6") >= 4.5 && contrastRatio("#8B6B7A", "#FFFAFC") >= 4.5 && contrastRatio("#596F82", "#FAFCFD") >= 4.5, "New theme muted text must remain readable on its card surface.");
 
 for (const file of unifiedPages) {
   const source = read(join("admin", file));
