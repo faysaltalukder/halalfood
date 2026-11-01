@@ -512,6 +512,8 @@ assert.ok(catalogLiveBridge.includes("setPictureImage(img, product.image_url, pr
 assert.ok(catalogMainScript.includes("store-config.js") && catalogMainScript.includes("HALAL_STORE_CONFIG"),
   "The storefront bootstrap must wait for and use its store configuration.");
 const catalogHomepage = read("index.html");
-assert.ok(catalogHomepage.includes("js/store-config.js?v=20261101-store-config-v1") &&
-  catalogHomepage.indexOf("store-config.js") < catalogHomepage.indexOf("js/main.js?v=20261101-catalog-sync-v2"),
-  "The homepage must load the per-store configuration before the shared storefront bootstrap.");
+const catalogHomeConfigVersion = catalogHomepage.match(/js\/store-config\.js\?v=([^"']+)/)?.[1];
+const catalogHomeMainVersion = catalogHomepage.match(/js\/main\.js\?v=([^"']+)/)?.[1];
+assert.ok(catalogHomeConfigVersion && catalogHomeConfigVersion === catalogHomeMainVersion &&
+  catalogHomepage.indexOf("store-config.js") < catalogHomepage.indexOf("js/main.js"),
+  "The homepage must load the matching per-store configuration before the shared storefront bootstrap.");
