@@ -627,12 +627,31 @@ ADMIN_COLOR_THEMES["corporate-standard"]={
  },
  chartColors:["#376A9B","#6B8299","#27815D","#B7791F","#7A6E9A","#D08A57","#527DA6","#667085","#4C9A8A","#A65A5A"]
 };
+
+ADMIN_COLOR_THEMES["golden-prestige"]={
+ id:"golden-prestige",name:"Golden Prestige",profile:"Royal Gold · Refined · Premium",
+ previewColors:["#303344","#8A642D","#D9BC82","#FFFDF8"],
+ tokens:Object.assign({},ADMIN_COLOR_THEMES["warm-harvest"].tokens,{
+ "sidebar-bg":"linear-gradient(145deg,#292B3B 0%,#303344 58%,#3B3C4D 100%)","sidebar-pattern-filter":"none","sidebar-ink":"#FFF9ED","sidebar-muted":"#E6D8BA","sidebar-border":"rgba(217,188,130,.28)",
+ "side-group-bg":"rgba(255,249,237,.055)","side-group-border":"rgba(217,188,130,.18)","side-menu-1":"#F8F3E9","side-menu-2":"#F5EBD8","side-menu-3":"#F8F1E4","side-menu-4":"#F1E8D8",
+ "side-menu-ink":"#4C4438","side-menu-border":"rgba(255,255,255,.92)","side-menu-hover":"#EFE3CC","side-menu-active":"linear-gradient(110deg,#E6D0A1,#D9BC82)","side-menu-active-ink":"#3B3020",
+ "side-child-bg":"#FFFDF8","side-child-ink":"#554A39","side-accent":"#E6C98F","side-icon-bg":"#F2E8D4","side-icon-ink":"#805C27","side-note-bg":"rgba(255,249,237,.07)","side-search-bg":"rgba(255,249,237,.09)","side-search-border":"rgba(217,188,130,.3)",
+ "canvas-bg":"linear-gradient(135deg,#F3F0E9 0%,#F7F4ED 54%,#EEE9DF 100%)","canvas-ink":"#303344","header-bg":"rgba(255,253,248,.97)","header-border":"#E5DCCB","header-control-bg":"#F5EBD8","header-control-ink":"#59472A","header-control-border":"#E2D2B2",
+ "hero-bg":"linear-gradient(120deg,#FFFDF8 0%,#F5EBD8 100%)","hero-border":"#E5D8BE","card-bg":"#FFFDF8","card-border":"#E8E0D2","nested-bg":"#F6F1E7","control-bg":"#FFFFFF",
+ "text":"#303344","muted":"#625F59","border":"#E3DCCF","primary":"#8A642D","primary-hover":"#705020","secondary":"#F2E8D5","secondary-ink":"#59472A","secondary-hover":"#E8D9BC","accent":"#B68A45","accent-alt":"#64758A","focus":"#9A702F",
+ "kpi-1":"linear-gradient(145deg,#F7EEDB,#EFE0C1)","kpi-2":"linear-gradient(145deg,#F8F4EA,#EEE6D5)","kpi-3":"linear-gradient(145deg,#F3EBDD,#EADCC4)","kpi-4":"linear-gradient(145deg,#F0EEE8,#E6E2D8)",
+ "table-bg":"#FFFDF8","table-head":"#F3EAD8","table-row":"#FFFDF8","table-alt":"#FAF6EE","table-hover":"#F1E7D4","chart-bg":"linear-gradient(145deg,#F6F0E5,#EEE6D7)","chart-text":"#3B3B46","chart-muted":"#68645D","chart-grid":"#E3DCCF","chart-surface":"#FFFDF8","tooltip-bg":"#FFFDF8","leaf-filter":"none"
+ }),
+ chartColors:["#8A642D","#B68A45","#64758A","#C5A66D","#52677C","#A77C43","#8794A1","#D0B77F","#6F6251","#B18C69"]
+};
+
 const ADMIN_THEME_GROUPS=[
  {id:"standard",label:"Standard",description:"Traditional · familiar · straightforward",themeIds:["corporate-standard"]},
  {id:"modern",label:"Modern",description:"Expressive · contemporary",themeIds:["ocean-calm","berry-rose","plum-amethyst","coral-peach"]},
  {id:"balanced",label:"Balanced",description:"Premium · versatile · business",themeIds:["warm-harvest","royal-indigo","coastal-blue","copper-espresso"]},
  {id:"classic-comfort",label:"Classic Comfort",description:"Calm · familiar · easy on the eyes",themeIds:["forest-sage","olive-citrus"]},
- {id:"signature",label:"Signature",description:"Editorial · tactile · unmistakable",themeIds:["merchant-fieldbook","glass-studio","glyph-signal"]}
+ {id:"signature",label:"Signature",description:"Editorial · tactile · unmistakable",themeIds:["merchant-fieldbook","glass-studio","glyph-signal"]},
+ {id:"premium",label:"Premium",description:"Royal · polished · prestigious",themeIds:["golden-prestige"]}
 ];
 const ADMIN_THEME_CATEGORY_BY_ID=Object.fromEntries(ADMIN_THEME_GROUPS.flatMap(group=>group.themeIds.map(id=>[id,group.id])));
 Object.values(ADMIN_COLOR_THEMES).forEach(theme=>{theme.category=ADMIN_THEME_CATEGORY_BY_ID[theme.id]||"balanced";});
@@ -652,7 +671,8 @@ function syncThemeStyles(themeId){
   {theme:"merchant-fieldbook",id:"hfMerchantFieldbookStylesheet",href:"./merchant-fieldbook.css?v=20261101-merchant-fieldbook-v1"},
   {theme:"glass-studio",id:"hfGlassStudioStylesheet",href:"./glass-studio.css?v=20261102-glass-studio-v1"},
    {theme:"glyph-signal",id:"hfGlyphSignalStylesheet",href:"./glyph-signal.css?v=20261102-glyph-signal-v3"},
-  {theme:"corporate-standard",id:"hfCorporateStandardStylesheet",href:"./corporate-standard.css?v=20261102-corporate-standard-v1"}
+  {theme:"corporate-standard",id:"hfCorporateStandardStylesheet",href:"./corporate-standard.css?v=20261102-corporate-standard-v1"},
+  {theme:"golden-prestige",id:"hfGoldenPrestigeStylesheet",href:"./golden-prestige.css?v=20261102-golden-prestige-v1"}
  ];
  themeStyles.forEach(item=>{
   let link=document.getElementById(item.id);
