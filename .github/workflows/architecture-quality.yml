@@ -35,6 +35,8 @@ jobs:
         run: node scripts/finance-workspace-check.mjs
       - name: Run Part 1 Financial Reports checks
         run: node scripts/report-financial-part1-check.mjs
+      - name: Run Part 2 Operational Reports checks
+        run: node scripts/report-operational-part2-check.mjs
       - name: Run Analytics workspace checks
         run: node scripts/analytics-workspace-check.mjs
 
