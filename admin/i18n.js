@@ -2,6 +2,181 @@
   "use strict";
 
   const translations = {
+    "POS Management": "কাউন্টার বিক্রয় (POS) ব্যবস্থাপনা",
+    "Incomplete Orders": "অসম্পূর্ণ অর্ডার",
+    "Add Supplier": "সরবরাহকারী যোগ করুন",
+    "Purchase List": "ক্রয় তালিকা",
+    "Payment History": "অর্থ পরিশোধের ইতিহাস",
+    "Add Product": "পণ্য যোগ করুন",
+    "All Products": "সব পণ্য",
+    "Barcode Generation": "বারকোড তৈরি",
+    "Product Reviews": "পণ্যের পর্যালোচনা",
+    "WhatsApp Inbox": "হোয়াটসঅ্যাপ বার্তা",
+    "Messenger Inbox": "মেসেঞ্জার বার্তা",
+    "Facebook Publishing": "ফেসবুকে প্রকাশনা",
+    "Meta Ads Review": "মেটা বিজ্ঞাপন পর্যালোচনা",
+    "YouTube Publishing": "ইউটিউবে প্রকাশনা",
+    "Pricing & Profit Calculator": "মূল্য ও মুনাফা গণক",
+    "Website Publisher": "ওয়েবসাইট প্রকাশনা",
+    "Tracking Controls": "তথ্য অনুসরণ নিয়ন্ত্রণ",
+    "Choose your theme": "আপনার পছন্দের রং-সজ্জা বেছে নিন",
+    "Sidebar and workspace change together": "পাশের মেনু ও কর্মক্ষেত্রের রং একসঙ্গে বদলাবে",
+    "Choose workspace color theme": "কর্মক্ষেত্রের রং-সজ্জা বেছে নিন",
+    "Close theme picker": "রং-সজ্জা নির্বাচন বন্ধ করুন",
+    "Theme": "রং-সজ্জা",
+    "Help": "সহায়তা",
+    "Night": "রাত",
+    "Standard": "সাধারণ",
+    "Modern": "আধুনিক",
+    "Balanced": "ভারসাম্যপূর্ণ",
+    "Classic Comfort": "চিরচেনা স্বস্তি",
+    "Celestial": "আকাশমণ্ডল",
+    "Premium": "আভিজাত্যপূর্ণ",
+    "Corporate Standard": "করপোরেট মানদণ্ড",
+    "Ocean Calm": "সমুদ্রের শান্তি",
+    "Berry Rose": "বেরি গোলাপি",
+    "Plum Amethyst": "প্লাম অ্যামেথিস্ট",
+    "Coral Peach": "প্রবাল-পীচ",
+    "Warm Harvest": "উষ্ণ ফসল",
+    "Royal Indigo": "রাজকীয় নীল",
+    "Coastal Blue": "উপকূলীয় নীল",
+    "Copper Espresso": "তামাটে কফি",
+    "Forest Sage": "বন-ঋষি",
+    "Olive Citrus": "জলপাই-সাইট্রাস",
+    "Golden Prestige": "সোনালি আভিজাত্য",
+    "Solar Journey": "সূর্যযাত্রা",
+    "Lunar Journey": "চন্দ্রযাত্রা",
+    "Traditional · familiar · straightforward": "ঐতিহ্যবাহী · পরিচিত · সহজবোধ্য",
+    "Expressive · contemporary": "প্রকাশভঙ্গিমায় সমসাময়িক",
+    "Cool · Calm · Contemporary": "শীতল · শান্ত · সমসাময়িক",
+    "Expressive · Soft · Sophisticated": "স্নিগ্ধ · কোমল · পরিশীলিত",
+    "Creative · Refined · Expressive": "সৃজনশীল · পরিশীলিত · প্রকাশময়",
+    "Warm · Friendly · Expressive": "উষ্ণ · বন্ধুত্বপূর্ণ · প্রাণবন্ত",
+    "Warm · Classic · Premium": "উষ্ণ · চিরায়ত · আভিজাত্যপূর্ণ",
+    "Indigo · Refined · Confident": "নীলাভ · পরিশীলিত · আত্মবিশ্বাসী",
+    "Clear · Trustworthy · Coastal": "স্বচ্ছ · নির্ভরযোগ্য · উপকূলীয়",
+    "Warm · Refined · Business": "উষ্ণ · পরিশীলিত · ব্যবসায়িক",
+    "Natural · Grounded · Quiet": "প্রাকৃতিক · স্থির · শান্ত",
+    "Natural · Classic · Composed": "প্রাকৃতিক · চিরায়ত · সংযত",
+    "Royal Gold · Refined · Premium": "রাজকীয় সোনা · পরিশীলিত · আভিজাত্যপূর্ণ",
+    "Dynamic Day · Sunrise · Golden Hour": "দিনের পরিবর্তন · সূর্যোদয় · সোনালি সময়",
+    "Dynamic Night · Moonlight · Midnight": "রাতের পরিবর্তন · চাঁদের আলো · মধ্যরাত",
+    "Time-aware · atmospheric · living sky": "সময়নির্ভর · আবহময় · পরিবর্তনশীল আকাশ",
+    "17 of 17 themes available · All themes are available to every administrator; your choice is saved to this browser for this account.": "১৭টির মধ্যে ১৭টি রং-সজ্জা उपलब्ध। সব প্রশাসকই সব রং-সজ্জা ব্যবহার করতে পারবেন; আপনার পছন্দ এই ব্রাউজারে সংরক্ষিত থাকবে।",
+    "Incomplete Orders · Halal Food Admin": "অসম্পূর্ণ অর্ডার · হালাল ফুড অ্যাডমিন",
+    "CHECKOUT RECOVERY": "অসম্পূর্ণ চেকআউট পুনরুদ্ধার",
+    "Review checkout sessions where shoppers entered a valid mobile number after the privacy notice but did not complete the order. These are leads, not confirmed orders.": "যেসব ক্রেতা গোপনীয়তার বিজ্ঞপ্তি দেখার পর বৈধ মোবাইল নম্বর দিয়ে চেকআউট শুরু করেছেন, কিন্তু অর্ডার সম্পন্ন করেননি—সেসব সেশন পর্যালোচনা করুন। এগুলো সম্ভাব্য অর্ডার-আগ্রহ, নিশ্চিত অর্ডার নয়।",
+    "Privacy-notice records": "গোপনীয়তার বিজ্ঞপ্তির পর সংরক্ষিত রেকর্ড",
+    "30-day automatic retention": "৩০ দিন পর স্বয়ংক্রিয়ভাবে মুছে ফেলা হবে",
+    "Order Management": "অর্ডার ব্যবস্থাপনা",
+    "Not confirmed orders": "এগুলো নিশ্চিত অর্ডার নয়",
+    "These records are separate from Orders and Google Sheets. A record is saved after the shopper enters a valid mobile number following the checkout privacy notice. Contact is limited to that specific unfinished order; promotional messages are not permitted without a separate marketing opt-in.": "এই রেকর্ডগুলো অর্ডার তালিকা ও Google Sheets থেকে আলাদা। চেকআউটের গোপনীয়তার বিজ্ঞপ্তি দেখার পর ক্রেতা বৈধ মোবাইল নম্বর দিলে একটি রেকর্ড সংরক্ষিত হয়। শুধু ওই অসম্পূর্ণ অর্ডার সম্পর্কে যোগাযোগ করা যাবে; আলাদা বিপণন-সম্মতি ছাড়া প্রচারমূলক বার্তা পাঠানো যাবে না।",
+    "Incomplete checkouts": "অসম্পূর্ণ চেকআউট",
+    "Not yet matched to a saved order": "এখনো সংরক্ষিত অর্ডারের সঙ্গে মেলেনি",
+    "Phone numbers available": "যোগাযোগের মোবাইল নম্বর",
+    "Can be used for order recovery": "নির্দিষ্ট অসম্পূর্ণ অর্ডার সম্পর্কে যোগাযোগ করা যাবে",
+    "Marketing consent": "বিপণন বার্তার সম্মতি",
+    "Not inferred from checkout entry": "চেকআউট শুরু করাকে বিপণনের সম্মতি ধরা হয় না",
+    "Converted sessions": "সম্পন্ন অর্ডারে রূপান্তরিত সেশন",
+    "Matched to a confirmed order": "নিশ্চিত অর্ডারের সঙ্গে মিলে গেছে",
+    "Checkout records": "চেকআউটের রেকর্ড",
+    "Review the date, customer contact details, selected products and the collection method.": "তারিখ, গ্রাহকের যোগাযোগের তথ্য, নির্বাচিত পণ্য এবং তথ্য সংগ্রহের পদ্ধতি পর্যালোচনা করুন।",
+    "Search name, mobile, email or product…": "নাম, মোবাইল, ইমেইল বা পণ্য খুঁজুন…",
+    "Search incomplete checkouts": "অসম্পূর্ণ চেকআউট খুঁজুন",
+    "Filter checkout status": "চেকআউটের অবস্থা বাছাই করুন",
+    "Incomplete only": "শুধু অসম্পূর্ণ",
+    "All recent records": "সাম্প্রতিক সব রেকর্ড",
+    "Converted": "অর্ডারে রূপান্তরিত",
+    "Started": "শুরু হয়েছে",
+    "Progress": "অগ্রগতি",
+    "Last activity": "সর্বশেষ কার্যকলাপ",
+    "Collection basis": "তথ্য সংগ্রহের ভিত্তি",
+    "Loading incomplete checkout records…": "অসম্পূর্ণ চেকআউটের রেকর্ড লোড হচ্ছে…",
+    "The list shows recent, unexpired records only. No messages are sent automatically from this page.": "তালিকায় কেবল সাম্প্রতিক ও মেয়াদোত্তীর্ণ নয় এমন রেকর্ড দেখানো হয়। এই পৃষ্ঠা থেকে স্বয়ংক্রিয়ভাবে কোনো বার্তা পাঠানো হয় না।",
+    "CHECKOUT DETAILS": "চেকআউটের বিস্তারিত",
+    "Incomplete checkout": "অসম্পূর্ণ চেকআউট",
+    "Contact and cart details": "যোগাযোগ ও কার্টের তথ্য",
+    "No product details": "পণ্যের কোনো বিবরণ নেই",
+    "Name not entered": "নাম দেওয়া হয়নি",
+    "No mobile entered": "মোবাইল নম্বর দেওয়া হয়নি",
+    "No email entered": "ইমেইল দেওয়া হয়নি",
+    "Single product": "একটি পণ্য",
+    "Cart checkout": "কার্ট থেকে চেকআউট",
+    "Selected product": "নির্বাচিত পণ্য",
+    "estimated checkout total": "আনুমানিক অর্ডারের মোট মূল্য",
+    "Progress saved": "অগ্রগতি সংরক্ষিত",
+    "After privacy notice": "গোপনীয়তার বিজ্ঞপ্তি দেখানোর পর",
+    "Legacy checkbox": "পুরোনো সম্মতি-বাক্স",
+    "Marketing consent recorded": "বিপণন বার্তার সম্মতি নথিভুক্ত হয়েছে",
+    "No promotional permission": "প্রচারমূলক বার্তা পাঠানোর অনুমতি নেই",
+    "Mobile number": "মোবাইল নম্বর",
+    "Email address": "ইমেইল ঠিকানা",
+    "Inside Dhaka": "ঢাকার ভেতরে",
+    "Outside Dhaka": "ঢাকার বাইরে",
+    "Not selected": "নির্বাচন করা হয়নি",
+    "Estimated total": "আনুমানিক মোট",
+    "Checkout progress": "চেকআউটের অগ্রগতি",
+    "Order linked": "অর্ডারের সঙ্গে যুক্ত",
+    "Selected products": "নির্বাচিত পণ্য",
+    "Quantity": "পরিমাণ",
+    "Unit price": "একক মূল্য",
+    "No product details were captured.": "পণ্যের কোনো তথ্য সংরক্ষিত হয়নি।",
+    "Address and notes": "ঠিকানা ও নোট",
+    "Delivery address": "ডেলিভারির ঠিকানা",
+    "Order notes": "অর্ডার-সংক্রান্ত নোট",
+    "Data collection and permissions": "তথ্য সংগ্রহ ও অনুমতি",
+    "Valid mobile number entered after checkout privacy notice": "চেকআউটের গোপনীয়তার বিজ্ঞপ্তি দেখার পর বৈধ মোবাইল নম্বর দেওয়া হয়েছে",
+    "Legacy explicit checkbox": "পুরোনো স্পষ্ট সম্মতি-বাক্স",
+    "Legacy recovery checkbox recorded": "পুরোনো অর্ডার-পুনরুদ্ধার সম্মতি নথিভুক্ত হয়েছে",
+    "No separate recovery checkbox": "আলাদা অর্ডার-পুনরুদ্ধার সম্মতি নেই",
+    "Collection method:": "তথ্য সংগ্রহের পদ্ধতি:",
+    "Notice / consent version:": "বিজ্ঞপ্তি / সম্মতির সংস্করণ:",
+    "Marketing not permitted": "বিপণন বার্তা পাঠানোর অনুমতি নেই",
+    "New records are saved after the shopper enters a valid mobile number following the checkout privacy notice. Use is limited to helping with that specific unfinished checkout. Promotional messages are not permitted unless a separate marketing opt-in exists.": "চেকআউটের গোপনীয়তার বিজ্ঞপ্তি দেখানোর পর ক্রেতা বৈধ মোবাইল নম্বর দিলে নতুন রেকর্ড সংরক্ষিত হয়। তথ্যটি শুধু ওই নির্দিষ্ট অসম্পূর্ণ চেকআউটে সহায়তার জন্য ব্যবহার করা যাবে। আলাদা বিপণন-সম্মতি না থাকলে প্রচারমূলক বার্তা পাঠানো যাবে না।",
+    "This record does not contain a valid Bangladeshi mobile number.": "এই রেকর্ডে বৈধ বাংলাদেশি মোবাইল নম্বর নেই।",
+    "Permanently delete this incomplete checkout record? This cannot be undone.": "এই অসম্পূর্ণ চেকআউটের রেকর্ড স্থায়ীভাবে মুছে ফেলবেন? এটি আর ফিরিয়ে আনা যাবে না।",
+    "Incomplete checkout record deleted.": "অসম্পূর্ণ চেকআউটের রেকর্ড মুছে ফেলা হয়েছে।",
+    "Incomplete checkout records refreshed.": "অসম্পূর্ণ চেকআউটের রেকর্ড হালনাগাদ হয়েছে।",
+    "Record could not be deleted.": "রেকর্ডটি মুছে ফেলা যায়নি।",
+    "Could not refresh records.": "রেকর্ড হালনাগাদ করা যায়নি।",
+    "Could not load incomplete checkouts": "অসম্পূর্ণ চেকআউটের তথ্য লোড করা যায়নি",
+    "Verify that your admin session is MFA-verified and the new table is available.": "আপনার অ্যাডমিন সেশনে দুই-ধাপ যাচাই সম্পন্ন হয়েছে কি না এবং নতুন টেবিলটি উপলভ্য কি না যাচাই করুন।",
+    "recent records": "সাম্প্রতিক রেকর্ড",
+    "Automatically deleted after 30 days": "৩০ দিন পর স্বয়ংক্রিয়ভাবে মুছে ফেলা হয়",
+    "No messages are sent automatically": "স্বয়ংক্রিয়ভাবে কোনো বার্তা পাঠানো হয় না",
+    "Last field:": "সর্বশেষ তথ্য:",
+    "Remove from favorites": "প্রিয় বিভাগ থেকে সরান",
+    "Add to favorites": "প্রিয় বিভাগে যোগ করুন",
+    "Choose a section": "একটি বিভাগ বেছে নিন",
+    "Select": "নির্বাচন করুন",
+    "Previous": "পূর্ববর্তী",
+    "Next": "পরবর্তী",
+    "Save": "সংরক্ষণ করুন",
+    "Close": "বন্ধ করুন",
+    "Delete": "মুছে ফেলুন",
+    "View": "দেখুন",
+    "Open": "খুলুন",
+    "Search": "খুঁজুন",
+    "No records found": "কোনো রেকর্ড পাওয়া যায়নি",
+    "No matching records found": "মিলে যাওয়া কোনো রেকর্ড পাওয়া যায়নি",
+    "Loading...": "লোড হচ্ছে...",
+    "Something went wrong": "কিছু একটা সমস্যা হয়েছে",
+    "Success": "সফল",
+    "Error": "ত্রুটি",
+    "Confirm": "নিশ্চিত করুন",
+    "Enabled": "চালু",
+    "Disabled": "বন্ধ",
+    "Completed": "সম্পন্ন",
+    "Failed": "ব্যর্থ",
+    "Unavailable": "পাওয়া যাচ্ছে না",
+    "Sales & Orders": "বিক্রয় ও অর্ডার",
+    "Money & Profit": "অর্থ ও মুনাফা",
+    "Stock & Inventory": "মজুত ও পণ্যভান্ডার",
+    "Purchasing & Control": "ক্রয় ও নিয়ন্ত্রণ",
+    "Connections": "সংযোগ",
+    "Order report": "অর্ডার প্রতিবেদন",
+    "Any activity": "যেকোনো কার্যকলাপ",
+    "No contact detail": "যোগাযোগের তথ্য নেই",
     "Language": "ভাষা",
     "Customer Information": "গ্রাহক তথ্য", "Customer Settings": "গ্রাহক সেটিংস", "Customer Messages": "কাস্টমার মেসেজ",
     "Overview": "সারসংক্ষেপ", "Today's Market": "আজকের বাজার", "THE MERCHANT'S FIELDBOOK": "মার্চেন্টস ফিল্ডবুক", "The Merchant's Fieldbook": "মার্চেন্টস ফিল্ডবুক", "Glass Studio": "গ্লাস স্টুডিও", "Frosted · Airy · Refined": "ফ্রস্টেড · হালকা · পরিশীলিত", "Glyph Signal": "গ্লিফ সিগন্যাল", "Iconic · Minimal · Visual": "আইকননির্ভর · ন্যূনতম · দৃশ্যনির্ভর", "Signature": "স্বাক্ষরধর্মী", "Editorial · tactile · unmistakable": "সম্পাদনাধর্মী · স্পর্শগুণযুক্ত · স্বতন্ত্র", "Editorial · Tactile · Distinctive": "সম্পাদনাধর্মী · স্পর্শগুণযুক্ত · স্বতন্ত্র", "A living market desk for the work that matters.": "ব্যবসার গুরুত্বপূর্ণ কাজ ও তথ্যের জন্য একটি জীবন্ত কর্মখাতা।", "Analytics": "অ্যানালিটিক্স", "Orders": "অর্ডারসমূহ",
@@ -662,7 +837,31 @@
     if (lang !== "bn") return value;
     if (translations[value]) return translations[value];
     const titleCase = value ? value.charAt(0).toUpperCase() + value.slice(1) : value;
-    return translations[titleCase] || value;
+    if (translations[titleCase]) return translations[titleCase];
+    const favorite = String(value).match(/^(Add|Remove)\\s+(.+?)\\s+from favorites$/i);
+    if (favorite) {
+      const label = translated(favorite[2], lang);
+      return (favorite[1].toLowerCase() === "add" ? "প্রিয় বিভাগে যোগ করুন: " : "প্রিয় বিভাগ থেকে সরান: ") + label;
+    }
+    const theme = String(value).match(/^Select (.+) theme$/i);
+    if (theme) return "রং-সজ্জা বেছে নিন: " + translated(theme[1], lang);
+    return translatePhrases(value);
+  }
+
+  function translatePhrases(value) {
+    let output = String(value ?? "");
+    const phrases = Object.entries(translations)
+      .filter(([source]) => /\\s/.test(source.trim()) && source.trim().length > 2)
+      .sort((a, b) => b[0].length - a[0].length);
+    for (const [source, target] of phrases) {
+      const escaped = source.trim().replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\    return translations[titleCase] || value;
+  }
+
+  function translateChart");
+      const pattern = new RegExp("(^|[^A-Za-z0-9])(" + escaped + ")(?=$|[^A-Za-z0-9])", "gi");
+      output = output.replace(pattern, (_match, prefix) => prefix + target);
+    }
+    return output;
   }
 
   function translateChart(chart, lang = language()) {
@@ -826,5 +1025,5 @@
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot, { once: true });
   else boot();
-  window.HFAdminLanguage = { language, applyLanguage, translateTree, translateChart, translateCharts, dictionary: translations };
+  window.HFAdminLanguage = { language, applyLanguage, translateTree, translateChart, translateCharts, t: (value) => translated(String(value ?? \"\"), language()), dictionary: translations };
 })();
