@@ -47,7 +47,7 @@ for (const action of ["financeForm","financeAccountForm","financeTransferForm","
 }
 assert.ok(financeApp.includes("filteredLedgerEntries") && financeApp.includes("financeDateFrom") && financeApp.includes("financeDateTo"), "Ledger filters and CSV export must share the selected date range.");
 assert.ok(financeApp.includes("related_supplier_payment_id") && financeApp.includes("related_cod_settlement_id"), "Source-managed finance entries must be protected from generic ledger edits.");
-assert.ok(financeApp.includes("financial_class") && financeApp.includes("capital") && financeApp.includes("loan") && financeApp.includes("refund"), "Capital, loans and refunds must remain distinguishable from ordinary operating activity.");
+assert.ok(financeApp.includes("financial_class") && html.includes('value="capital"') && html.includes('value="loan"') && html.includes('value="refund"') && html.includes('value="adjustment"'), "Capital, loans and refunds must remain distinguishable from ordinary operating activity.");
 assert.ok(financeApp.includes('status==="reconciled"') && financeApp.includes("remitted_account_id") && financeApp.includes("remitted_at"), "COD reconciliation must require verified remittance fields.");
 assert.ok(financeApp.includes("Confirm this transfer only after the money has actually moved"), "Transfers must require a human verification step before affecting balances.");
 assert.ok(financeApp.includes("admin_supplier_balances"), "Supplier payables should reuse the Supplier workspace balance source.");
