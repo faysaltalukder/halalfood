@@ -28,7 +28,7 @@ assert.ok(performanceI18n.includes("NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TE
 
 const languageEngine = read("admin/i18n.js");
 assert.ok(languageEngine.includes("label.textContent !== labelText"), "Language picker label updates must be idempotent to prevent mutation-observer loops.");
-assert.ok(languageEngine.includes("if (pickerMissing) ensurePicker();"), "The language picker must only be re-created when missing.");
+assert.ok(languageEngine.includes('if (!document.querySelector(".hf-language-segment, .hf-language-picker")) ensurePicker();'), "The language picker must only be re-created when missing.");
 assert.ok(languageEngine.includes("if (!isPickerOption(record.target)) translateText(record.target, lang);"), "Language picker DOM mutations must be excluded from recursive translation work.");
 
 const themeRegistry = read("admin/shared.js");
