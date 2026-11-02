@@ -3570,10 +3570,11 @@ async function refresh(){
   function analysisFor(type,rows,source){
    const block=(title,description,columns,data,bars)=>({title,description,columns,rows:data,bars:bars||"records"});
    const grouped=(title,description,data,key,metrics)=>block(title,description,[key,"records",...(metrics||[])],groupRows(data,key,metrics||[]),metrics?.[0]||"records");
+   const orders=source.orders||[];
    if(type==="payable"){
     const suppliers=source.supplierBalances||[];
     return {blocks:[
-     block("সরবরাহকারীভিত্তিক বর্তমান দায়","Supplier ledger-এর current outstanding balance; opening balance, confirmed bills, payments ও credits অন্তর্ভুক্ত।",["supplier_name","total_bills","total_paid","total_credits","opening_balance","outstanding_balance"],suppliers,"outstanding_balance"),
+     block("সরবরাহকারীভিত্তিক বর্তমান দায়","Supplier ledger-এর current outstanding balance; opening balance, confirmed bills, payments, credits ও adjustments অন্তর্ভুক্ত।",["supplier_name","total_bills","total_paid","total_credits","opening_balance","outstanding_balance"],suppliers,"outstanding_balance"),
      grouped("বিলভিত্তিক অবস্থা","নির্বাচিত invoice date range-এর bill; paid amount শুধু confirmed allocation থেকে।",rows,"due_state",["bill_total","paid","confirmed_credit","balance"]),
      grouped("সরবরাহকারীভিত্তিক নির্বাচিত বিল","Invoice date অনুযায়ী selected bill total ও due amount.",rows,"supplier",["bill_total","paid","balance"])
     ]};
@@ -3599,7 +3600,7 @@ async function refresh(){
     const budgets=(source.budgets||[]).map(b=>{const key=String(b.period_start||"").slice(0,7)+"|"+String(b.category||"");const actual=actualByMonthCategory.get(key)||0;return {month:String(b.period_start||"").slice(0,7),category:b.category,budget_amount:num(b.budget_amount),confirmed_expense:actual,remaining_budget:num(b.budget_amount)-actual,status:b.status,variance:actual-num(b.budget_amount)};});
     return {blocks:[
      grouped("ক্যাটাগরি অনুযায়ী নিশ্চিত Operating Expense","Budget utilization uses confirmed operating expense only.",operating,"category",["amount"]),
-     block("মাসিক বাজেট বনাম নিশ্চিত খরচ","একই মাস ও category-এর budget-এর সঙ্গে confirmed operating expense তুলনা।",["month","category","budget_amount","confirmed_expense","remaining_budget","variance","status"],budgets,"confirmed_expense"),
+     block("মাসিক বাজেট বনাম নিশ্চিত খরচ","একই calendar month ও category-এর budget-এর সঙ্গে সেই পূর্ণ মাসের confirmed operating expense তুলনা।",["month","category","budget_amount","confirmed_expense","remaining_budget","variance","status"],budgets,"confirmed_expense"),
      grouped("Financial Class অনুযায়ী খরচ","Operating, Capital, Loan, Refund ও Adjustment আলাদা শ্রেণিতে।",confirmed,"financial_class",["amount"]),
      grouped("খরচের স্ট্যাটাস","Draft, Confirmed ও Void expense আলাদা করে।",rows,"status",["amount"])
     ]};
@@ -3609,6 +3610,44 @@ async function refresh(){
     grouped("আর্থিক শ্রেণি","Operating, Capital, Loan, Refund, Adjustment ও Internal transfer আলাদা।",rows,"financial_class",["amount"]),
     grouped("লেনদেনের অবস্থা","Draft, Confirmed, Void বা সংরক্ষিত status।",rows,"status",["amount"]),
     grouped("ক্যাটাগরি অনুযায়ী লেনদেন","Finance ledger category ও transfer category অনুযায়ী amount.",rows,"category",["amount"])
+   ]};
+   if(type==="business"||type==="sales"){
+    const statusRows=groupRows(orders.map(o=>({status:o.status||"unknown",order_value:num(o.total)})),"status",["order_value"]);
+    const paymentRows=groupRows(orders.filter(o=>String(o.status||"").toLowerCase()!=="cancelled").map(o=>({payment_method:o.payment_method||"not recorded",order_value:num(o.total)})),"payment_method",["order_value"]);
+    return {blocks:[
+     block("অর্ডার স্ট্যাটাস অনুযায়ী","প্রতিটি status-এ order count ও recorded order value.",["status","records","order_value"],statusRows,"order_value"),
+     block("পেমেন্ট পদ্ধতি অনুযায়ী","Order snapshot-এ সংরক্ষিত payment method; এটি payment confirmation নয়.",["payment_method","records","order_value"],paymentRows,"order_value"),
+     block("দিনভিত্তিক বিক্রয়","Selected date range-এর non-cancelled order value.",["date","orders","order_value","delivery_charge"],rows.slice().sort((a,b)=>String(b.date||"").localeCompare(String(a.date||""))),"order_value")
+    ]};
+   }
+   if(type==="daily")return {blocks:[
+    block("দিনভিত্তিক ব্যবসায়িক সারাংশ","Order, cancelled order, order value, confirmed expense, COD collection ও remittance একই timeline-এ।",["date","orders","cancelled_orders","order_value","delivery_charge","confirmed_expenses","cod_collected","cod_remitted"],rows.slice().sort((a,b)=>String(b.date||"").localeCompare(String(a.date||""))),"order_value")
+   ]};
+   if(["product-sales","top-products"].includes(type))return {blocks:[
+    block("পণ্যভিত্তিক বিক্রয়","Units sold এবং order line value; cancelled order বাদ.",["rank","product","sku","category","quantity_sold","sales","order_lines"],rows.slice(0,12),"sales"),
+    grouped("ক্যাটাগরি অনুযায়ী বিক্রয়","Current catalogue category match যেখানে পাওয়া গেছে.",rows,"category",["quantity_sold","sales"])
+   ]};
+   if(type==="customer-wise-products")return {blocks:[
+    block("গ্রাহক-পণ্য অনুযায়ী ক্রয়","প্রতি row একটি customer/product pair.",["customer","product","quantity","total","order_lines"],rows.slice(0,50),"total"),
+    grouped("গ্রাহকভিত্তিক মোট ক্রয়","প্রতিটি customer-এর units এবং item value.",rows,"customer",["quantity","total"])
+   ]};
+   if(["customer-products","top-customers","customers"].includes(type))return {blocks:[
+    block("গ্রাহকভিত্তিক সারাংশ","Order count, total spend, product variety ও last order.",["rank","customer","orders","unique_products","units","total_spent","average_order","last_order","top_product"],rows.slice(0,20),"total_spent"),
+    grouped("অর্ডার কার্যক্রমের ধরন","Customer order count অনুযায়ী তুলনা.",rows,"orders",["total_spent"])
+   ]};
+   if(type==="purchase")return {blocks:[
+    grouped("সরবরাহকারীভিত্তিক ক্রয়","Selected purchase orders-এর recorded total.",rows,"supplier",["total_amount"]),
+    grouped("Purchase Order Status","Draft, confirmed, received/completed ও void status পৃথক.",rows,"status",["total_amount"]),
+    block("ক্রয় অর্ডারের গ্রহণ অবস্থা","Ordered vs received units.",["purchase_number","supplier","ordered_units","received_units","total_amount","status"],rows.slice(0,40),"received_units")
+   ]};
+   if(type==="product-purchase")return {blocks:[
+    grouped("পণ্যভিত্তিক ক্রয়","Ordered quantity, received quantity, pending quantity এবং cost.",rows,"product",["quantity","received_quantity","pending_quantity","total"]),
+    grouped("সরবরাহকারীভিত্তিক ক্রয়","Supplier-wise purchase line count and value.",rows,"supplier",["quantity","total"])
+   ]};
+   if(["low-stock","alert-products","stock","stock-list"].includes(type))return {blocks:[
+    grouped("ক্যাটাগরি অনুযায়ী স্টক","Current available units এবং saved cost valuation.",rows,"category",["stock","stock_value"]),
+    grouped("স্টক সতর্কতার ধরন","Out of stock, low stock ও normal threshold.",rows,"alert",["stock","stock_value"]),
+    block("পণ্যভিত্তিক স্টক অবস্থান","Current catalogue snapshot; missing cost values are not estimated.",["product","sku","category","stock","minimum_stock","unit_cost","stock_value","alert"],rows.slice(0,50),"stock_value")
    ]};
    return {blocks:[block("রিপোর্ট বিশ্লেষণ","নির্বাচিত রেকর্ডের সারাংশ।",rows.length?Object.keys(rows[0]).slice(0,8):["record"],rows.slice(0,20),"records")]};
   }
@@ -3676,13 +3715,13 @@ async function refresh(){
   }
   function renderWorkspace(){
    if(!reportGroup||!workspace)return;
-   const def=definitions[report.type]||definitions.business,metrics=kpisFor(report.type,report.rows,report.source||{}),analysis=analysisFor(report.type,report.rows,report.source||{});
+   const def=definitions[report.type]||definitions.business,metrics=kpisFor(report.type,report.rows,report.source||{}),analysis=analysisFor(report.type,report.rows,report.source||{}),analysisBlocks=analysis.blocks||[analysis],firstAnalysisBlock=analysisBlocks[0]||{title:def[3],description:def[2],columns:[],rows:[],bars:"records"};
    $("reportWorkspaceTitle").textContent=def[0];$("reportWorkspaceDescription").textContent=def[2];$("reportWorkspaceCode").textContent=report.type.toUpperCase();$("reportWorkspaceRange").textContent=report.rangeLabel+" · "+report.rows.length+" records";
    $("reportWorkspaceKpis").innerHTML=metrics.map(m=>'<article class="hf-report-kpi"><small>'+esc(m.label)+'</small><strong>'+esc(m.value)+'</strong><span>'+esc(m.note)+'</span></article>').join("");
    $("reportWorkspaceTabs").innerHTML='<button type="button" role="tab" data-report-segment="overview" aria-selected="true" class="active">সারসংক্ষেপ</button><button type="button" role="tab" data-report-segment="analysis" aria-selected="false">'+esc(def[3])+'</button><button type="button" role="tab" data-report-segment="records" aria-selected="false">'+esc(def[4])+'</button>'+(["account-payments","collections","expenses","transactions","payable","receivable"].includes(report.type)?'<button type="button" role="tab" data-report-segment="insights" aria-selected="false">ব্যবসায়িক ইনসাইটস</button>':'');
    const metricRows=metrics.map(m=>({বিষয়:m.label,মান:m.value,বিবরণ:m.note}));
-   $("reportWorkspaceOverview").innerHTML='<div class="hf-report-overview-grid"><section class="hf-report-subsection"><div class="hf-report-subsection-head"><div><h3>মূল সূচক</h3><p>নির্বাচিত সময়ের রেকর্ড ও ডেটা সোর্স</p></div><span>'+metrics.length+' indicators</span></div>'+tableMarkup(metricRows,Object.keys(metricRows[0]||{বিষয়:"",মান:"",বিবরণ:""}),"সারাংশ নেই")+'</section><section class="hf-report-subsection"><div class="hf-report-subsection-head"><div><h3>'+esc(def[3])+'</h3><p>'+esc(def[2])+'</p></div></div>'+tableMarkup(analysis.rows,analysis.columns,"বিশ্লেষণের ডেটা নেই")+'</section></div><div class="hf-report-source-note">'+esc(report.notes||"রিপোর্টটি সংযুক্ত ডেটা সোর্স থেকে তৈরি।")+'</div>';
-   $("reportWorkspaceAnalysis").innerHTML='<section class="hf-report-subsection"><div class="hf-report-subsection-head"><div><h3>'+esc(def[3])+'</h3><p>বিভাগ/ধরন অনুযায়ী সমষ্টি; মূল রেকর্ডের বিকল্প নয়।</p></div><span>'+analysis.rows.length+' groups</span></div>'+renderBars(analysis.rows,analysis.bars||"records")+tableMarkup(analysis.rows,analysis.columns,"এই রিপোর্টে বিশ্লেষণ ডেটা নেই")+'</section>';
+   $("reportWorkspaceOverview").innerHTML='<div class="hf-report-overview-grid"><section class="hf-report-subsection"><div class="hf-report-subsection-head"><div><h3>মূল সূচক</h3><p>নির্বাচিত সময়ের রেকর্ড ও ডেটা সোর্স</p></div><span>'+metrics.length+' indicators</span></div>'+tableMarkup(metricRows,Object.keys(metricRows[0]||{বিষয়:"",মান:"",বিবরণ:""}),"সারাংশ নেই")+'</section><section class="hf-report-subsection"><div class="hf-report-subsection-head"><div><h3>'+esc(firstAnalysisBlock.title||def[3])+'</h3><p>'+esc(firstAnalysisBlock.description||def[2])+'</p></div></div>'+tableMarkup(firstAnalysisBlock.rows||[],firstAnalysisBlock.columns||[],"বিশ্লেষণের ডেটা নেই")+'</section></div><div class="hf-report-source-note">'+esc(report.notes||"রিপোর্টটি সংযুক্ত ডেটা সোর্স থেকে তৈরি।")+'</div>';
+   $("reportWorkspaceAnalysis").innerHTML=analysisBlocks.map(block=>'<section class="hf-report-subsection" style="margin-bottom:12px"><div class="hf-report-subsection-head"><div><h3>'+esc(block.title||def[3])+'</h3><p>'+esc(block.description||"বিভাগ/ধরন অনুযায়ী সমষ্টি; মূল রেকর্ডের বিকল্প নয়।")+'</p></div><span>'+(block.rows||[]).length+' groups</span></div>'+renderBars(block.rows||[],block.bars||"records")+tableMarkup(block.rows||[],block.columns||[],"এই উপ-বিশ্লেষণে কোনো রেকর্ড নেই")+'</section>').join("");
    $("reportWorkspaceInsights").innerHTML=insightsFor(report.type,report.rows,report.source||{}).map(item=>'<article class="hf-report-insight-card is-'+esc(item.level)+'"><div><span class="hf-report-insight-level">'+esc(item.level.toUpperCase())+'</span><h3>'+esc(item.title)+'</h3></div><p>'+esc(item.detail)+'</p>'+(item.action?'<small>'+esc(item.action)+'</small>':'')+'</article>').join("")||'<div class="hf-report-empty"><strong>এই রিপোর্টে উল্লেখযোগ্য ব্যবসায়িক সতর্কতা নেই</strong><p>যাচাইকৃত রেকর্ড থেকে কোনো নির্দিষ্ট action item পাওয়া যায়নি।</p></div>';
    $("reportWorkspaceRecordsTitle").textContent=def[4];$("reportWorkspaceRecordsNote").textContent="মূল সোর্স রেকর্ড; সার্চ, ফিল্টার এবং CSV/Excel/PDF এক্সপোর্ট ব্যবহার করুন।";
    const preferred=({business:"date",sales:"date","product-sales":"product","top-products":"product","customer-wise-products":"customer","customer-products":"customer","top-customers":"customer",customers:"customer",purchase:"supplier","product-purchase":"product",payable:"supplier",receivable:"courier",collections:"courier","low-stock":"category","alert-products":"alert",stock:"category","stock-list":"category","account-payments":"account_name",expenses:"category",transactions:"entry_type",daily:"date"})[report.type]||"";
