@@ -43,7 +43,7 @@ assert.ok(celestialEngine.includes("setInterval(update,60000)") && solarJourneyC
 
 const htmlFiles = readdirSync(adminDir).filter((file) => file.endsWith(".html"));
 const unifiedPages = htmlFiles.filter((file) => /<body[^>]*\bdata-page=/.test(read(join("admin", file))));
-assert.equal(unifiedPages.length, 30, `Expected 30 unified admin pages after consolidating Categories Management, found ${unifiedPages.length}.`);
+assert.equal(unifiedPages.length, 31, `Expected 31 unified admin pages after adding Business Health, found ${unifiedPages.length}.`);
 assert.ok(unifiedPages.includes("pos.html"), "POS import must use the unified admin shell.");
 assert.ok(unifiedPages.includes("coupons.html"), "Coupon Promotions must use the unified admin shell.");
 assert.ok(unifiedPages.includes("coupon-usage.html"), "Coupon Usage must use the unified admin shell.");
