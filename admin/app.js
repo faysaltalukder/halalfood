@@ -3214,7 +3214,7 @@ async function refresh(){
       signedQuery(client.from("admin_finance_budgets").select("category,period_start,budget_amount,status,notes").order("period_start",{ascending:false}).order("category",{ascending:true}).limit(3000)),
       fetchReportFinance(null)
      ]);
-     source.budgets=budgets.filter(b=>(!range?.fromDay||String(b.period_start).slice(0,7)>=String(range.fromDay||range.from).slice(0,7))&&(!range?.toDay||String(b.period_start).slice(0,7)<=String(range.toDay||range).slice(0,7)));
+     source.budgets=budgets.filter(b=>(!range?.fromDay||String(b.period_start).slice(0,7)>=String(range.fromDay||range.from).slice(0,7))&&(!range?.toDay||String(b.period_start).slice(0,7)<=String(range.toDay||range.to).slice(0,7)));
      source.budgetFinance=budgetFinance.filter(e=>String(e.entry_type||"").toLowerCase()==="expense"&&e.status==="confirmed"&&(e.financial_class||"operating")==="operating");
      notes="Expense records follow the selected date range. Budget utilization compares each listed calendar month with that full month’s confirmed operating expenses; budget is a planning limit, not paid cash.";
     }else{
@@ -3251,7 +3251,16 @@ async function refresh(){
     expenses:["entry_date","category","party_name","amount","status","financial_class","payment_method","reference","description"],
     transactions:["entry_date","entry_type","category","party_name","amount","financial_class","status","payment_method","reference","related_order_id","description"]
    })[type]||["entry_date","entry_type","category","amount","status"];
-   const displayRange=["low-stock","alert-products","stock","stock-list","products","content"].includes(type)?"Current snapshot":range.label;
+   const capNotices=[];
+   if(source.orders?.length>=5000)capNotices.push("The report reached the 5,000-order retrieval cap.");
+   if(source.events?.length>=15000)capNotices.push("The report reached the 15,000-event retrieval cap.");
+   if(source.products?.length>=10000)capNotices.push("The report reached the 10,000-product retrieval cap.");
+   if(source.finance?.length>=10000||source.allFinanceCount>=10000||source.budgetFinance?.length>=10000)capNotices.push("The report reached the 10,000-entry finance retrieval cap; figures may be incomplete.");
+   if(source.settlements?.length>=10000)capNotices.push("The report reached the 10,000-settlement retrieval cap.");
+   if(source.bills?.length>=5000)capNotices.push("The report reached the 5,000-bill retrieval cap.");
+   if(source.credits?.length>=10000||source.payments?.length>=10000||source.allocations?.length>=20000)capNotices.push("A supplier payment or credit source reached its retrieval cap; check the full Supplier Ledger for a complete statement.");
+   if(capNotices.length)notes=(notes?notes+" ":"")+capNotices.join(" ");
+   const displayRange=["low-stock","alert-products","stock","stock-list","products","content","receivable"].includes(type)?"Current snapshot":range.label;
    report={title,columns:rows.length?Object.keys(rows[0]):defaultColumns,rows,notes,rangeLabel:displayRange,type,source};
    $("reportTitle").textContent=title;$("reportRangeLabel").textContent=displayRange;$("reportRowsCount").textContent=rows.length.toLocaleString("en-BD")+" records";$("reportNote").textContent=notes;
    $("reportSummary").innerHTML='<div class="hf-summary-pill"><small>Records</small><strong>'+rows.length.toLocaleString("en-BD")+'</strong></div><div class="hf-summary-pill"><small>Report</small><strong style="font-size:14px">'+esc(title)+'</strong></div><div class="hf-summary-pill"><small>Period</small><strong style="font-size:13px">'+esc(displayRange)+'</strong></div>';
