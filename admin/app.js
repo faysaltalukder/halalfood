@@ -2130,15 +2130,22 @@ async function refresh(){
     return '<tr><td>'+esc(String(b.period_start).slice(0,7))+'</td><td><strong>'+esc(b.category)+'</strong><small>'+esc(b.notes||"")+'</small></td><td>'+money(limit)+'</td><td>'+money(actual)+'</td><td><div class="hf-finance-budget-progress"><span style="width:'+Math.min(100,pct)+'%"></span></div><small>'+pct+'%</small></td><td>'+statusBadge(actual>limit&&b.status==="active"?"exception":b.status)+'</td><td>'+(b.status==="active"?'<button class="hf-button hf-button-secondary hf-button-small" data-archive-budget="'+esc(b.id)+'">Archive</button>':'')+'</td></tr>';
    }).join(""):'<tr><td colspan="7">'+makeEmpty("No budgets configured","Set a monthly limit for marketing, delivery, packaging or another expense category.")+'</td></tr>';
   }
-  function renderLedger(){
+  function filteredLedgerEntries(){
    const search=String($("financeSearch")?.value||$("globalSearch")?.value||"").toLowerCase().trim();
    const type=$("financeTypeFilter")?.value||"",klass=$("financeClassFilter")?.value||"",status=$("financeStatusFilter")?.value||"",account=$("financeAccountFilter")?.value||"";
-   const rows=entries.filter(e=>(!type||e.entry_type===type)&&(!klass||financialClass(e)===klass)&&(!status||e.status===status)&&(!account||e.account_id===account)&&(!search||[e.category,e.description,e.reference,e.status,e.party_name,e.payment_method].join(" ").toLowerCase().includes(search)));
+   const from=$("financeDateFrom")?.value||"",to=$("financeDateTo")?.value||"";
+   if(from&&to&&from>to)return [];
+   return entries.filter(e=>(!type||e.entry_type===type)&&(!klass||financialClass(e)===klass)&&(!status||e.status===status)&&(!account||e.account_id===account)&&(!from||String(e.entry_date)>=from)&&(!to||String(e.entry_date)<=to)&&(!search||[e.category,e.description,e.reference,e.status,e.party_name,e.payment_method].join(" ").toLowerCase().includes(search)));
+  }
+  function renderLedger(){
+   const rows=filteredLedgerEntries(),from=$("financeDateFrom")?.value||"",to=$("financeDateTo")?.value||"";
+   const emptyTitle=from&&to&&from>to?"Date range is invalid":"No matching transactions";
+   const emptyMessage=from&&to&&from>to?"The start date must be on or before the end date.":"Change the filters or record a new transaction.";
    $("financeTableBody").innerHTML=rows.length?rows.map(e=>{
     const locked=Boolean(e.related_supplier_payment_id||e.related_cod_settlement_id);
     const source=e.related_supplier_payment_id?"Supplier payment history":e.related_cod_settlement_id?"COD settlement register":"";
     return '<tr><td>'+dateOnly(e.entry_date)+'</td><td>'+makeStatus(e.entry_type)+'</td><td><strong>'+esc(e.category)+'</strong><small>'+esc(e.description||"No description")+'</small></td><td>'+esc(e.party_name||"—")+'</td><td>'+esc(accountName(e.account_id))+'</td><td><strong>'+money(e.amount)+'</strong></td><td>'+esc(financialClass(e))+'</td><td>'+statusBadge(e.status)+'</td><td><div class="hf-table-actions">'+(locked?'<small class="hf-finance-managed-source">'+esc(source)+'</small>':'<button class="hf-button hf-button-secondary hf-button-small" data-edit-finance="'+esc(e.id)+'">Edit</button>')+(!locked&&e.status!=="void"?'<button class="hf-button hf-button-danger hf-button-small" data-void-finance="'+esc(e.id)+'">Void</button>':"")+'</div></td></tr>';
-   }).join(""):'<tr><td colspan="9">'+makeEmpty("No matching transactions","Change the filters or record a new transaction.")+'</td></tr>';
+   }).join(""):'<tr><td colspan="9">'+makeEmpty(emptyTitle,emptyMessage)+'</td></tr>';
   }
   function renderRecent(){
    const rows=[...entries].sort((a,b)=>String(b.entry_date).localeCompare(String(a.entry_date))||String(b.created_at).localeCompare(String(a.created_at))).slice(0,8);
@@ -2366,8 +2373,8 @@ async function refresh(){
    catch(err){toast(err.message||"Budget could not be archived.","error");}
   });
   const exportEntries=()=>{
-   const rows=entries.map(e=>({date:e.entry_date,type:e.entry_type,classification:financialClass(e),category:e.category,party:e.party_name||"",description:e.description||"",amount:Number(e.amount||0),account:accountName(e.account_id),payment_method:e.payment_method||"",status:e.status,reference:e.reference||"",order_id:e.related_order_id||"",source:e.related_supplier_payment_id?"supplier_payment":e.related_cod_settlement_id?"cod_settlement":"manual"}));
-   downloadFile("halal-food-finance-ledger-"+todayISO()+".csv",csvText(rows),"text/csv;charset=utf-8");toast(rows.length+" ledger record(s) exported.");
+   const rows=filteredLedgerEntries().map(e=>({date:e.entry_date,type:e.entry_type,classification:financialClass(e),category:e.category,party:e.party_name||"",description:e.description||"",amount:Number(e.amount||0),account:accountName(e.account_id),payment_method:e.payment_method||"",status:e.status,reference:e.reference||"",order_id:e.related_order_id||"",source:e.related_supplier_payment_id?"supplier_payment":e.related_cod_settlement_id?"cod_settlement":"manual"}));
+   downloadFile("halal-food-finance-ledger-"+todayISO()+".csv",csvText(rows),"text/csv;charset=utf-8");toast(rows.length+" filtered ledger record(s) exported.");
   };
   $("financeExportBtn")?.addEventListener("click",exportEntries);
   $("financeReportExportBtn")?.addEventListener("click",exportEntries);
@@ -2380,6 +2387,8 @@ async function refresh(){
   $("financeClassFilter")?.addEventListener("change",renderLedger);
   $("financeStatusFilter")?.addEventListener("change",renderLedger);
   $("financeAccountFilter")?.addEventListener("change",renderLedger);
+  $("financeDateFrom")?.addEventListener("change",renderLedger);
+  $("financeDateTo")?.addEventListener("change",renderLedger);
   $("globalSearch")?.addEventListener("input",renderLedger);
   $("financeBudgetMonth").value=todayISO().slice(0,7);
   document.querySelectorAll("[data-close-dialog]").forEach(button=>button.addEventListener("click",()=>$(button.dataset.closeDialog)?.close()));
