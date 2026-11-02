@@ -25,7 +25,7 @@ for (const [id, label] of sections) {
 assert.equal((html.match(/class="hf-workspace-nav-item"/g) || []).length, 5, "Finance must retain exactly five primary workspaces.");
 assert.ok(html.includes('id="financeDateFrom"') && html.includes('id="financeDateTo"'), "Ledger date filters must be available.");
 assert.ok(html.includes('finance-cashflow-workspace.css?v=20261102-finance-cashflow-v1'), "Finance CSS must load with a cache-busted URL.");
-assert.ok(html.includes('shared.js?v=20261102-solar-lunar-v1'), "Shared Admin shell cache key must remain consistent with the rest of the dashboard.");
+assert.ok(html.includes('shared.js?v=20261102-dashboard-speed-v2'), "Shared Admin shell cache key must remain consistent with the rest of the dashboard.");
 assert.ok(html.includes("manual records only") || html.includes("Manual records only"), "Finance must disclose its manual testing-mode data limits.");
 
 const staticIds = [...html.matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]);
