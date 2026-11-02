@@ -2956,6 +2956,13 @@ async function refresh(){
     "marketing-center":()=>{if(typeof window.HFMarketingInit==="function")return window.HFMarketingInit();throw new Error("Customer Messages module did not load.");},
    finance:initFinance,
    reports:initReports,
+   "reports-business":initReports,
+   "reports-purchase":initReports,
+   "reports-customers":initReports,
+   "reports-payables":initReports,
+   "reports-inventory":initReports,
+   "reports-finance":initReports,
+   "reports-daily":initReports,
    settings:initSettings,
    "website-publisher":()=>{if(typeof window.HFWebsitePublisherInit==="function")return window.HFWebsitePublisherInit();throw new Error("Website Publisher module did not load.");}
   };
