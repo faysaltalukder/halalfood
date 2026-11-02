@@ -89,6 +89,57 @@ window.HFAdminReady.then(async H=>{
   const rows=events.filter(e=>e.event_name===name);
   return new Set(rows.map(e=>e.session_id||e.anonymous_id||("event-"+e.id))).size;
  }
+
+ function normalizeAnalyticsPath(value){
+  let path=String(value||"/").trim();
+  if(/^https?:\/\//i.test(path)){try{path=new URL(path).pathname;}catch(_urlError){}}
+  path=path.split(/[?#]/,1)[0]||"/";
+  path=path.replace(/\/{2,}/g,"/");
+  if(/^\/halalfood\/?$/.test(path))path="/halalfood/index.html";
+  if(path.length>1&&path.endsWith("/"))path=path.slice(0,-1);
+  return path||"/";
+ }
+ function prepareAnalyticsEvents(rows){
+  const ids=new Set(),events=[];
+  let duplicateIds=0,missingIds=0,cleanedPaths=0,identified=0,attributed=0;
+  (rows||[]).forEach(raw=>{
+   const eventId=String(raw.event_id||"").trim();
+   if(eventId){if(ids.has(eventId)){duplicateIds++;return;}ids.add(eventId);}
+   else missingIds++;
+   if(raw.session_id||raw.anonymous_id)identified++;
+   if(raw.source||raw.medium||raw.campaign)attributed++;
+   const original=String(raw.page_path||"");
+   const pagePath=normalizeAnalyticsPath(original);
+   if(original&&pagePath!==original)cleanedPaths++;
+   events.push({...raw,page_path:pagePath});
+  });
+  return {events,duplicateIds,missingIds,eventIds:ids.size,cleanedPaths,identified,attributed,rawCount:(rows||[]).length};
+ }
+ function buildSequentialFunnel(events){
+  const groups=new Map();
+  let missingSessionEvents=0;
+  const relevant=new Set(["page_view","view_item","add_to_cart","begin_checkout","order_submit"]);
+  events.forEach(event=>{
+   const key=visitorSessionKey(event);
+   if(!key){if(relevant.has(event.event_name))missingSessionEvents++;return;}
+   if(!groups.has(key))groups.set(key,[]);
+   groups.get(key).push(event);
+  });
+  const counts={page:0,product:0,cart:0,checkout:0,submit:0};
+  groups.forEach(rows=>{
+   rows.sort((a,b)=>Date.parse(a.occurred_at||"")-Date.parse(b.occurred_at||""));
+   const firstPage=rows.find(event=>event.event_name==="page_view"&&Number.isFinite(Date.parse(event.occurred_at||"")));
+   if(!firstPage)return;
+   counts.page++;
+   let after=Date.parse(firstPage.occurred_at||"");
+   const next=(name,minimum)=>rows.find(event=>event.event_name===name&&Number.isFinite(Date.parse(event.occurred_at||""))&&Date.parse(event.occurred_at||"")>=minimum);
+   const product=next("view_item",after);if(!product)return;counts.product++;after=Date.parse(product.occurred_at||"");
+   const cart=next("add_to_cart",after);if(!cart)return;counts.cart++;after=Date.parse(cart.occurred_at||"");
+   const checkout=next("begin_checkout",after);if(!checkout)return;counts.checkout++;after=Date.parse(checkout.occurred_at||"");
+   if(next("order_submit",after))counts.submit++;
+  });
+  return {counts,identifiedSessions:groups.size,missingSessionEvents};
+ }
  function topProducts(events,products,field="item_name",eventName="view_item"){
   const rows=events.filter(e=>e.event_name===eventName&&String(e[field]||"").trim());
   const by=new Map();rows.forEach(e=>{const name=String(e[field]).trim();by.set(name,(by.get(name)||0)+1);});
@@ -141,13 +192,23 @@ window.HFAdminReady.then(async H=>{
  }
  function renderFunnel(events){
   const body=$("funnelStages");if(!body)return;
-  const view=Math.max(stageActors(events,"page_view"),stageActors(events,"view_item"),1);
-  const product=stageActors(events,"view_item"),cart=stageActors(events,"add_to_cart"),checkout=stageActors(events,"begin_checkout");
-  const completed=stageActors(events,"order_success"),submits=stageActors(events,"order_submit");
-  const finalCount=completed||submits;
-  const stages=[["Page activity",view,"People/sessions with page activity"],["Product viewed",product,"Viewed at least one product"],["Added to cart",cart,"Added a product to cart"],["Checkout started",checkout,"Started checkout"],[completed?"Order success event":"Order submitted event",finalCount,completed?"Recorded order-success events":"Submission is not proof of payment"]];
-  const max=Math.max(...stages.map(s=>s[1]),1);
-  body.innerHTML=stages.map(s=>'<div class="hf-funnel-row"><div class="hf-funnel-label"><span>'+esc(s[0])+'</span><strong>'+shortNum(s[1])+'</strong></div><div class="hf-funnel-track"><div class="hf-funnel-fill" style="width:'+Math.max(s[1]===0?0:3,s[1]/max*100)+'%"></div></div><div class="hf-progress-note">'+esc(s[2])+' · '+(max?Math.round(s[1]/max*100):0)+'% of highest step</div></div>').join("");
+  const funnel=buildSequentialFunnel(events);
+  const stages=[
+   ["Page viewed",funnel.counts.page,"Unique identified sessions with a page_view"],
+   ["Product viewed",funnel.counts.product,"A product view happened after the page view"],
+   ["Added to cart",funnel.counts.cart,"A cart add happened after a product view"],
+   ["Checkout started",funnel.counts.checkout,"Checkout started after the cart action"],
+   ["Order submitted",funnel.counts.submit,"Submission happened after checkout; not proof of payment"]
+  ];
+  const baseline=Math.max(funnel.counts.page,1);
+  body.innerHTML=stages.map((stage,index)=>{
+   const previous=index?stages[index-1][1]:stage[1];
+   const overall=stage[1]/baseline*100;
+   const stepRate=index&&previous?stage[1]/previous*100:(index?0:100);
+   return '<div class="hf-funnel-row"><div class="hf-funnel-label"><span>'+esc(stage[0])+'</span><strong>'+shortNum(stage[1])+'</strong></div><div class="hf-funnel-track"><div class="hf-funnel-fill" style="width:'+Math.max(stage[1]===0?0:2,overall)+'%"></div></div><div class="hf-progress-note">'+esc(stage[2])+' · '+Math.round(overall)+'% of page-view sessions'+(index?' · '+(previous?Math.round(stepRate):0)+'% advanced from prior step':'')+'</div></div>';
+  }).join("");
+  const note=$("analyticsFunnelNote");
+  if(note)note.textContent="Sequential session funnel. Each stage must occur after the preceding stage in the same identified browser session. "+funnel.missingSessionEvents.toLocaleString("en-BD")+" funnel events without a session/anonymous ID are excluded. Order submission is not confirmed payment.";
  }
  function renderRecentOrders(orders){
   const body=$("recentOrdersBody");if(!body)return;
@@ -431,12 +492,72 @@ window.HFAdminReady.then(async H=>{
   attachRefresh(refresh);
  }
  async function initAnalytics(){
+  let plotlyLoadPromise=null,latest3DModel=null,threeDInView=false;
+  function loadAnalytics3D(){
+   if(window.Plotly)return Promise.resolve(window.Plotly);
+   if(plotlyLoadPromise)return plotlyLoadPromise;
+   plotlyLoadPromise=new Promise((resolve,reject)=>{
+    const script=document.createElement("script");
+    script.src="https://cdn.plot.ly/plotly-gl3d-4.1.2.min.js";
+    script.async=true;
+    script.onload=()=>window.Plotly?resolve(window.Plotly):reject(new Error("3D chart library did not initialise."));
+    script.onerror=()=>reject(new Error("3D chart library could not be loaded."));
+    document.head.appendChild(script);
+   });
+   return plotlyLoadPromise;
+  }
+  async function renderAnalytics3D(){
+   const target=$("analytics3DChart");if(!target||!latest3DModel||!threeDInView)return;
+   target.dataset.state="loading";
+   try{
+    const Plotly=await loadAnalytics3D(),model=latest3DModel,theme=chartTheme();
+    const traces=model.series.map((item,index)=>({
+     type:"scatter3d",mode:"lines+markers",name:item.label,
+     x:model.labels.map((_,position)=>position),y:model.labels.map(()=>index),z:item.values,
+     customdata:model.labels.map(label=>[label,item.label]),
+     line:{color:item.color,width:5},marker:{size:4,color:item.color,opacity:.92,line:{color:theme.surface,width:1}},
+     hovertemplate:"<b>%{customdata[0]}</b><br>%{customdata[1]}<br>%{z} events<extra></extra>"
+    }));
+    const allTicks=model.labels.map((_,index)=>index),maxTicks=8,step=Math.max(1,Math.ceil(allTicks.length/maxTicks));
+    const visibleTicks=allTicks.filter((value,index)=>index%step===0||index===allTicks.length-1);
+    await Plotly.react(target,traces,{
+     autosize:true,height:410,margin:{l:8,r:12,t:12,b:12},paper_bgcolor:"rgba(0,0,0,0)",plot_bgcolor:"rgba(0,0,0,0)",
+     font:{family:'Inter, "Segoe UI", system-ui, sans-serif',size:11,color:theme.text},legend:{orientation:"h",y:-.12,x:0},
+     scene:{
+      bgcolor:"rgba(0,0,0,0)",aspectmode:"manual",aspectratio:{x:2.1,y:1.1,z:.85},camera:{eye:{x:1.55,y:1.55,z:1.12}},
+      xaxis:{title:{text:"Date"},tickmode:"array",tickvals:visibleTicks,ticktext:visibleTicks.map(i=>model.labels[i]),gridcolor:theme.grid,color:theme.muted,zerolinecolor:theme.grid},
+      yaxis:{title:{text:"Action"},tickmode:"array",tickvals:model.series.map((_,i)=>i),ticktext:model.series.map(item=>item.label),range:[-.45,model.series.length-.55],gridcolor:theme.grid,color:theme.muted,zerolinecolor:theme.grid},
+      zaxis:{title:{text:"Event count"},rangemode:"tozero",gridcolor:theme.grid,color:theme.muted,zerolinecolor:theme.grid}
+     }
+    },{responsive:true,displaylogo:false,scrollZoom:false,modeBarButtonsToRemove:["toImage","sendDataToCloud"]});
+    target.dataset.state="ready";
+   }catch(error){
+    target.dataset.state="unavailable";
+    target.innerHTML='<div class="hf-analytics-3d-fallback"><strong>3D view is unavailable in this browser.</strong><span>The interactive 2D charts and comparisons remain available. Check WebGL support or your network connection.</span></div>';
+   }
+  }
+  const threeDTarget=$("analytics3DChart");
+  if(threeDTarget){
+   if("IntersectionObserver" in window){
+    const observer=new IntersectionObserver(entries=>{if(entries.some(entry=>entry.isIntersecting)){threeDInView=true;observer.disconnect();renderAnalytics3D();}},{rootMargin:"160px"});
+    observer.observe(threeDTarget);
+   }else threeDInView=true;
+  }
   async function refresh(){
-   const range=selectedRange();const [events,orders,products]=await Promise.all([fetchEvents(range),fetchOrders(range,5000),fetchProducts()]);
+   const range=selectedRange();
+   const historyPromise=range.fromDay?fetchEvents(null,15000):Promise.resolve(null);
+   const [rawEvents,orders,products,historyRows]=await Promise.all([fetchEvents(range,15000),fetchOrders(range,5000),fetchProducts(),historyPromise]);
+   const historyEvents=historyRows||rawEvents;
+   const historyDays=historyEvents.map(event=>dhakaDateKey(event.occurred_at)).filter(Boolean).sort();
+   const firstTrackedDay=historyDays[0]||null,historyComplete=historyEvents.length<15000;
+   const prepared=prepareAnalyticsEvents(rawEvents),events=prepared.events;
    const observedDays=events.map(event=>dhakaDateKey(event.occurred_at)).filter(Boolean).sort();
-   const chartFrom=range.fromDay||(observedDays[0]||dhakaDateKey(new Date()));
-   const chartTo=range.toDay||(observedDays[observedDays.length-1]||dhakaDateKey(new Date()));
-   const chartDays=Math.max(1,Math.round((Date.parse(chartTo+"T00:00:00Z")-Date.parse(chartFrom+"T00:00:00Z"))/86400000)+1);
+   const requestedFrom=range.fromDay||(observedDays[0]||firstTrackedDay||dhakaDateKey(new Date()));
+   const requestedTo=range.toDay||(observedDays[observedDays.length-1]||dhakaDateKey(new Date()));
+   const noTrackedData=Boolean(firstTrackedDay&&requestedTo<firstTrackedDay);
+   const chartFrom=firstTrackedDay&&requestedFrom<firstTrackedDay&&!noTrackedData?firstTrackedDay:requestedFrom;
+   const chartTo=requestedTo;
+   const chartDays=noTrackedData?0:Math.max(1,Math.round((Date.parse(chartTo+"T00:00:00Z")-Date.parse(chartFrom+"T00:00:00Z"))/86400000)+1);
    const monthly=chartDays>62,trendBuckets=[];
    if(monthly){
     let month=chartFrom.slice(0,7),last=chartTo.slice(0,7);
@@ -448,19 +569,87 @@ window.HFAdminReady.then(async H=>{
    events.forEach(event=>{if(!["page_view","view_item","add_to_cart"].includes(event.event_name))return;const day=dhakaDateKey(event.occurred_at);const key=monthly?day.slice(0,7):day;const mapKey=event.event_name+"|"+key;trendCountsByEvent.set(mapKey,(trendCountsByEvent.get(mapKey)||0)+1);});
    const trendSeries=name=>trendBuckets.map(bucket=>trendCountsByEvent.get(name+"|"+bucket.key)||0);
    drawChart("analyticsTrafficChart",{type:"line",data:{labels:trendBuckets.map(bucket=>bucket.label),datasets:[
-    {label:"Page views",data:trendSeries("page_view"),borderColor:palette.blue,backgroundColor:"#4F7CFF20",fill:true,tension:.32,pointRadius:1.5,borderWidth:2},
-    {label:"Product views",data:trendSeries("view_item"),borderColor:palette.orange,backgroundColor:"#C97B3D15",fill:true,tension:.32,pointRadius:1.5,borderWidth:2},
-    {label:"Cart additions",data:trendSeries("add_to_cart"),borderColor:palette.green,backgroundColor:"#10B9811A",fill:false,tension:.32,pointRadius:1.5,borderWidth:2}
-   ]},options:{...chartAxisOptions(),plugins:{legend:{position:"bottom"}}}});
+    {label:"Page views",data:trendSeries("page_view"),borderColor:palette.blue,backgroundColor:palette.blue+"24",fill:true,tension:.38,pointRadius:2.2,pointHoverRadius:6,pointBorderWidth:2,pointBackgroundColor:chartTheme().surface,borderWidth:2.8},
+    {label:"Product views",data:trendSeries("view_item"),borderColor:palette.orange,backgroundColor:palette.orange+"22",fill:true,tension:.38,pointRadius:2.2,pointHoverRadius:6,pointBorderWidth:2,pointBackgroundColor:chartTheme().surface,borderWidth:2.8},
+    {label:"Cart additions",data:trendSeries("add_to_cart"),borderColor:palette.green,backgroundColor:palette.green+"20",fill:false,tension:.38,pointRadius:2.2,pointHoverRadius:6,pointBorderWidth:2,pointBackgroundColor:chartTheme().surface,borderWidth:2.8}
+   ]},options:{...chartAxisOptions(),animation:{duration:850,easing:"easeOutQuart"},interaction:{mode:"index",intersect:false},plugins:{legend:{position:"bottom"},tooltip:{usePointStyle:true}}}});
+   const comparisonNote=$("analyticsComparisonNote"),comparisonCanvas=$("analyticsComparisonChart");
+   let comparisonMessage="Select a fixed date range to compare it with the immediately preceding period of the same length.";
+   if(range.fromDay&&range.toDay&&range.days&&historyComplete&&firstTrackedDay){
+    const previousFrom=addDhakaDays(range.fromDay,-range.days),previousTo=addDhakaDays(range.toDay,-range.days);
+    if(previousFrom>=firstTrackedDay){
+     const previousRange=buildDhakaRange(previousFrom,previousTo,"Previous period");
+     const previousRaw=await fetchEvents(previousRange,15000);
+     const previousEvents=prepareAnalyticsEvents(previousRaw).events;
+     const metrics=[{key:"page_view",label:"Page views"},{key:"view_item",label:"Product views"},{key:"add_to_cart",label:"Cart adds"},{key:"begin_checkout",label:"Checkout starts"},{key:"order_submit",label:"Order submits"}];
+     const currentValues=metrics.map(item=>events.filter(event=>event.event_name===item.key).length);
+     const previousValues=metrics.map(item=>previousEvents.filter(event=>event.event_name===item.key).length);
+     if(comparisonCanvas)comparisonCanvas.hidden=false;
+     drawChart("analyticsComparisonChart",{type:"bar",data:{labels:metrics.map(item=>item.label),datasets:[
+      {label:"Previous period",data:previousValues,backgroundColor:palette.navy+"B8",borderColor:palette.navy,borderWidth:1,borderRadius:8,borderSkipped:false,maxBarThickness:38},
+      {label:"Selected period",data:currentValues,backgroundColor:palette.orange+"D8",borderColor:palette.orange,borderWidth:1,borderRadius:8,borderSkipped:false,maxBarThickness:38}
+     ]},options:{...chartAxisOptions(),animation:{duration:850,easing:"easeOutQuart"},plugins:{legend:{position:"bottom"},tooltip:{callbacks:{label:context=>context.dataset.label+": "+shortNum(context.raw)+" events"}}}}});
+     comparisonMessage="Selected "+range.fromDay+" to "+range.toDay+" compared with "+previousFrom+" to "+previousTo+". Event counts are shown; this is not a conversion-rate comparison.";
+    }else{
+     comparisonMessage="Comparison unavailable: the previous period begins before tracking coverage (first recorded event "+firstTrackedDay+"). Missing tracking history is not treated as zero activity.";
+     if(comparisonCanvas)comparisonCanvas.hidden=true;
+    }
+   }else{
+    if(!range.fromDay)comparisonMessage="Comparison unavailable for All available time. Choose a finite date range.";
+    else if(!firstTrackedDay)comparisonMessage="Comparison unavailable: no tracking history is available.";
+    else if(!historyComplete)comparisonMessage="Comparison unavailable: event history reached the 15,000-record retrieval limit, so the earliest coverage date cannot be verified.";
+    if(comparisonCanvas)comparisonCanvas.hidden=true;
+   }
+   if(comparisonNote)comparisonNote.textContent=comparisonMessage;
+   latest3DModel={labels:trendBuckets.map(bucket=>bucket.label),series:[
+    {label:"Page views",values:trendSeries("page_view"),color:palette.blue},
+    {label:"Product views",values:trendSeries("view_item"),color:palette.orange},
+    {label:"Cart adds",values:trendSeries("add_to_cart"),color:palette.green},
+    {label:"Checkout starts",values:trendSeries("begin_checkout"),color:palette.purple},
+    {label:"Order submits",values:trendSeries("order_submit"),color:palette.red}
+   ]};
+   renderAnalytics3D();
    const top=topProducts(events,products);
-   drawChart("analyticsProductChart",{type:"doughnut",data:{labels:top.slice(0,7).map(x=>x.name),datasets:[{data:top.slice(0,7).map(x=>x.count),backgroundColor:colorSet,borderColor:chartTheme().surface,borderWidth:3,hoverOffset:8}]},options:{cutout:"57%",plugins:{legend:{position:"bottom"}}}});
+   drawChart("analyticsProductChart",{type:"polarArea",data:{labels:top.slice(0,7).map(x=>x.name),datasets:[{data:top.slice(0,7).map(x=>x.count),backgroundColor:colorSet,borderColor:chartTheme().surface,borderWidth:2,hoverOffset:9}]},options:{animation:{duration:850,easing:"easeOutQuart"},scales:{r:{ticks:{display:false,color:chartTheme().muted},grid:{color:chartTheme().grid}}},plugins:{legend:{position:"bottom"}}}});
    const pageStats=buildPageExperience(events);
+   const heatmap=$("analyticsActivityHeatmap");
+   if(heatmap){
+    const days=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],hourFormatter=new Intl.DateTimeFormat("en-US",{timeZone:"Asia/Dhaka",weekday:"short",hour:"2-digit",hourCycle:"h23"});
+    const cells=Array.from({length:7},()=>Array(24).fill(0));
+    events.filter(event=>event.event_name==="page_view").forEach(event=>{
+     const parts=hourFormatter.formatToParts(new Date(event.occurred_at||""));
+     const weekday=parts.find(part=>part.type==="weekday")?.value||"",hour=Number(parts.find(part=>part.type==="hour")?.value),dayIndex=days.indexOf(weekday);
+     if(dayIndex>=0&&Number.isInteger(hour)&&hour>=0&&hour<24)cells[dayIndex][hour]++;
+    });
+    const maximum=Math.max(1,...cells.flat());
+    const header='<div class="hf-analytics-heatmap-label">Day</div><div class="hf-analytics-heatmap-hours">'+Array.from({length:24},(_,hour)=>'<span>'+([0,6,12,18].includes(hour)?hour:"")+'</span>').join("")+'</div>';
+    heatmap.innerHTML=header+cells.map((row,dayIndex)=>'<div class="hf-analytics-heatmap-label">'+days[dayIndex]+'</div><div class="hf-analytics-heatmap-hours">'+row.map((count,hour)=>'<span class="hf-analytics-heatmap-cell" style="--level:'+(count/maximum).toFixed(3)+'" title="'+days[dayIndex]+' '+String(hour).padStart(2,"0")+':00 · '+count+' page views" aria-label="'+days[dayIndex]+' '+hour+':00 '+count+' page views"></span>').join("")+'</div>').join("");
+   }
+   const health=$("analyticsDataHealth"),rawTotal=prepared.rawCount;
+   if(health){
+    const idCoverage=rawTotal?Math.round(prepared.eventIds/rawTotal*100):0,sessionCoverage=rawTotal?Math.round(prepared.identified/rawTotal*100):0,attributionCoverage=rawTotal?Math.round(prepared.attributed/rawTotal*100):0;
+    const healthItems=[
+     ["Canonical page paths",shortNum(prepared.cleanedPaths)+" normalized","Duplicate slashes and home-page aliases are grouped for analytics; source rows remain unchanged."],
+     ["Event ID coverage",idCoverage+"% present",Math.round(prepared.missingIds/Math.max(1,rawTotal)*100)+"% of fetched events have no event_id. Missing IDs are not assumed to be duplicates."],
+     ["Session coverage",sessionCoverage+"% identified",shortNum(rawTotal-prepared.identified)+" events lack a session/anonymous ID and are excluded from the sequential funnel."],
+     ["Attribution tags",attributionCoverage+"% tagged","Source, medium or campaign metadata is not yet complete enough for channel-level conclusions."],
+     ["Duplicate event IDs",shortNum(prepared.duplicateIds)+" suppressed","Only repeated non-empty event_id values are de-duplicated; records without IDs are preserved."]
+    ];
+    health.innerHTML=healthItems.map((item,index)=>'<div class="hf-analytics-health-item"><span>'+esc(item[0])+'</span><strong class="'+(index===1&&idCoverage<70||index===3&&attributionCoverage<20?"is-warning":"")+'">'+esc(item[1])+'</strong><small>'+esc(item[2])+'</small></div>').join("");
+   }
+   const healthNote=$("analyticsDataHealthNote");
+   if(healthNote){
+    const purchaseCount=events.filter(event=>event.event_name==="purchase").length,successCount=events.filter(event=>event.event_name==="order_success").length;
+    healthNote.textContent="Purchase events ("+purchaseCount+") and order_success events ("+successCount+") remain separate because their identity coverage and event meanings differ. Neither is treated as verified payment or real revenue.";
+   }
    const timedPages=pageStats.filter(p=>p.timingCount>0).sort((a,b)=>b.visibleSeconds-a.visibleSeconds).slice(0,8);
    drawChart("analyticsSourceChart",{type:"bar",data:{labels:timedPages.map(p=>p.path.length>24?p.path.slice(0,21)+"…":p.path),datasets:[{label:"Visible time",data:timedPages.map(p=>p.visibleSeconds),backgroundColor:colorSet,borderRadius:7,maxBarThickness:34}]},options:{indexAxis:"y",plugins:{legend:{display:false},tooltip:{callbacks:{label:context=>formatSeconds(context.raw)}}},scales:{x:{beginAtZero:true,ticks:{color:chartTheme().muted,callback:value=>value+"s"},grid:{color:chartTheme().grid}},y:{ticks:{color:palette.navy},grid:{display:false}}}}});
    const funnelEvents=events.map(e=>e);renderFunnel(funnelEvents);
    drawChart("analyticsOrdersChart",{type:"doughnut",data:orderStatusCounts(orders),options:{cutout:"60%",plugins:{legend:{position:"bottom"}},onClick:(ev,items)=>{if(items.length)location.href="./orders.html?status="+encodeURIComponent(["pending","processing","shipped","delivered","cancelled"][items[0].index]);}}});
    const total=events.length,views=events.filter(e=>e.event_name==="page_view").length,pv=events.filter(e=>e.event_name==="view_item").length,carts=events.filter(e=>e.event_name==="add_to_cart").length,wa=events.filter(e=>e.event_name==="whatsapp_click").length;
    $("analyticsEventsCount").textContent=shortNum(total);$("analyticsPageViews").textContent=shortNum(views);$("analyticsProductViews").textContent=shortNum(pv);$("analyticsCartAdds").textContent=shortNum(carts);$("analyticsWhatsApp").textContent=shortNum(wa);
+   const coverageNote=firstTrackedDay&&range.fromDay&&range.fromDay<firstTrackedDay?" Tracking coverage in the selected range begins "+firstTrackedDay+". Earlier dates are untracked, not zero activity.":"";
+   $("analyticsReportHint").textContent=range.label+" · "+total.toLocaleString("en-BD")+" de-duplicated events · "+orders.length.toLocaleString("en-BD")+" orders. "+(monthly?"Trend grouped by month.":"Daily trend.")+coverageNote+(rawEvents.length>=15000?" Event query reached its 15,000-record limit.":"");
    const engagementEvents=events.filter(e=>e.event_name==="page_engagement");
    const totalVisibleSeconds=engagementEvents.reduce((sum,e)=>sum+Math.max(0,Number(e.value)||0),0);
    const measuredPages=pageStats.filter(p=>p.timingCount>0);
@@ -472,6 +661,16 @@ window.HFAdminReady.then(async H=>{
    const journeys=buildSessionJourneys(events).slice(0,15);
    $("analyticsSessionJourneyBody").innerHTML=journeys.length?journeys.map(s=>'<tr><td><strong>'+esc(s.sessionId.slice(0,8))+'…</strong><small>Anonymous session ID</small></td><td title="'+esc(s.pathSteps.join(" → "))+'">'+esc(s.pathSteps.length?s.pathSteps.slice(-6).join(" → "):s.lastPage)+'</td><td>'+shortNum(s.steps)+'</td><td>'+(s.rows.some(e=>e.event_name==="page_engagement")?formatSeconds(s.visibleSeconds):"Not measured")+'</td><td>'+esc(dateTime(s.lastSeen))+'<small>'+esc(s.lastPage)+'</small></td><td>Cart '+s.cartAdds+' · Checkout '+s.checkouts+' · Submit '+s.orderSubmits+'</td></tr>').join(""):'<tr><td colspan="6">'+makeEmpty("No session journeys yet","Journeys require a recorded session ID. This table never displays customer names or contact details.")+'</td></tr>';
    const productRows=buildProductPerformance(events,orders,products);
+   const matrixRows=productRows.filter(row=>row.viewSessions.size>0&&row.viewToCartRate!=null).slice(0,60);
+   const matrixCanvas=$("analyticsProductMatrixChart"),matrixNote=$("analyticsProductMatrixNote");
+   if(matrixCanvas){
+    matrixCanvas.hidden=!matrixRows.length;
+    if(matrixRows.length){
+     const matrixPoints=matrixRows.map(row=>({x:row.viewSessions.size,y:row.viewToCartRate,r:Math.max(5,Math.min(18,5+Math.sqrt(row.cartAdds)*2)),productName:row.product.name,views:row.views,cartAdds:row.cartAdds,viewSessions:row.viewSessions.size,cartSessions:row.cartAfterViewSessions.size}));
+     drawChart("analyticsProductMatrixChart",{type:"bubble",data:{datasets:[{label:"Products",data:matrixPoints,backgroundColor:palette.orange+"8A",borderColor:palette.navy,borderWidth:1.4,hoverRadius:4}]},options:{...chartAxisOptions(),animation:{duration:750},plugins:{legend:{display:false},tooltip:{callbacks:{label:context=>{const point=context.raw;return [point.productName,point.viewSessions+" unique product-view sessions",Math.round(point.y)+"% viewed-to-cart session rate",point.cartAdds+" cart-add events"];}}}},scales:{x:{type:"linear",beginAtZero:true,title:{display:true,text:"Unique product-view sessions",color:chartTheme().muted},ticks:{color:chartTheme().muted,precision:0},grid:{color:chartTheme().grid}},y:{min:0,max:100,title:{display:true,text:"View-to-cart session rate (%)",color:chartTheme().muted},ticks:{color:chartTheme().muted,callback:value=>value+"%"},grid:{color:chartTheme().grid}}}}});
+     if(matrixNote)matrixNote.textContent="Each bubble is one product. Horizontal position = unique sessions that viewed it; vertical position = sessions that later added it to cart; bubble size reflects cart-add event volume. Small samples can produce volatile rates.";
+    }else if(matrixNote)matrixNote.textContent="No matched product-view sessions are available for this period.";
+   }
    const listedProducts=productRows.filter(p=>p.views||p.cartAdds||p.orderCount).slice(0,20);
    $("analyticsProductPerformanceBody").innerHTML=listedProducts.length?listedProducts.map(p=>'<tr><td><strong>'+esc(p.product.name)+'</strong><small>'+esc(p.product.category||"Uncategorised")+'</small></td><td>'+shortNum(p.views)+'</td><td>'+shortNum(p.cartAdds)+'</td><td>'+(p.viewToCartRate==null?"—":Math.round(p.viewToCartRate)+"%")+'</td><td>'+shortNum(p.orderCount)+'<small>'+shortNum(p.orderLines)+' item lines</small></td><td>'+money(p.orderValue)+'</td><td>'+(p.product.stock_quantity==null?"Not set":esc(p.product.stock_quantity))+'</td></tr>').join(""):'<tr><td colspan="7">'+makeEmpty("No matched product activity","Product events or recorded test-order items will appear when matching product data is available.")+'</td></tr>';
    const insights=[];
@@ -484,7 +683,6 @@ window.HFAdminReady.then(async H=>{
    if(lowStockProducts.length)insights.push({title:"Review low-stock products",body:lowStockProducts.slice(0,3).map(p=>p.name).join(", ")+(lowStockProducts.length>3?" and "+(lowStockProducts.length-3)+" more":"")+" are at or below their configured stock alert."});
    $("analyticsDecisionCenter").innerHTML=insights.length?insights.map((item,i)=>'<div class="hf-insight-row"><span class="hf-thumb hf-thumb-empty">'+(i+1)+'</span><div><strong>'+esc(item.title)+'</strong><small>'+esc(item.body)+'</small></div><span class="hf-status hf-status-review">Review</span></div>').join(""):makeEmpty("No immediate checks suggested","Keep collecting on-site events and review this area again as more data arrives.");
 
-   $("analyticsReportHint").textContent=range.label+" · "+total.toLocaleString("en-BD")+" recorded events · "+orders.length.toLocaleString("en-BD")+" orders. "+(monthly?"Trend grouped by month.":"Daily trend.")+(events.length>=15000?" Event query reached its 15,000-record limit.":"");
    $("analyticsTopProducts").innerHTML=top.length?top.map((x,i)=>'<div class="hf-insight-row">'+(x.product?.image_url?'<img class="hf-thumb" src="'+esc(x.product.image_url)+'" alt="">':'<span class="hf-thumb hf-thumb-empty">'+(i+1)+'</span>')+'<div><strong>'+esc(x.name)+'</strong><small>'+esc(x.product?.category||"No category match")+'</small></div><span class="hf-insight-number">'+shortNum(x.count)+'</span></div>').join(""):makeEmpty("No product-view data","Check again after the website has recorded product views.");
    $("analyticsEventBreakdown").innerHTML=groupBy(events,e=>e.event_name).slice(0,12).map(x=>'<tr><td>'+esc(x.label)+'</td><td>'+shortNum(x.count)+'</td><td>'+(total?Math.round(x.count/total*100)+"%":"—")+'</td></tr>').join("")||'<tr><td colspan="3">'+makeEmpty("No events yet","No website events were recorded in this date range.")+'</td></tr>';
   }
