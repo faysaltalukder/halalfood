@@ -81,7 +81,7 @@ const reportPages = [
 ];
 for (const path of reportPages) {
   const html = read(path);
-  assert.ok(html.includes("app.js?v=20261103-financial-reports-v3"), path + " must load the updated report app.");
+  assert.ok(html.includes("app.js?v=20261103-operational-reports-v1"), path + " must load the updated report app.");
   assert.ok(html.includes("reports-settings.css?v=20261103-financial-reports-v2"), path + " must load the theme-aware report CSS.");
 }
 
