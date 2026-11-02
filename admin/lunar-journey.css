@@ -1,0 +1,42 @@
+
+/* Theme #19 · Lunar Journey: twilight, moonrise, midnight and pre-dawn */
+html[data-hf-theme="lunar-journey"]{color-scheme:dark}
+html[data-hf-theme="lunar-journey"] body{background:var(--hf-theme-canvas-bg);color:var(--hf-theme-text);transition:background-color 8s ease,color 2s ease}
+html[data-hf-theme="lunar-journey"] .admin-frame{position:relative;background:var(--hf-theme-canvas-bg)}
+html[data-hf-theme="lunar-journey"] .admin-sidebar{background:var(--hf-theme-sidebar-bg)!important;color:var(--hf-theme-sidebar-ink)!important;border-color:var(--hf-theme-sidebar-border)}
+html[data-hf-theme="lunar-journey"] .admin-sidebar :is(.admin-brand small,.admin-nav-label,.admin-sidebar-note){color:var(--hf-theme-sidebar-muted)}
+html[data-hf-theme="lunar-journey"] .admin-nav-link{color:var(--hf-theme-sidebar-muted);transition:background 2s ease,color 2s ease}
+html[data-hf-theme="lunar-journey"] .admin-nav-link:hover,html[data-hf-theme="lunar-journey"] .admin-nav-link.active{color:#FFFFFF;background:rgba(209,219,245,.13)}
+html[data-hf-theme="lunar-journey"] .admin-topbar{background:var(--hf-theme-header-bg)!important;border-color:var(--hf-theme-border)!important;color:var(--hf-theme-text)}
+html[data-hf-theme="lunar-journey"] .admin-top-button,html[data-hf-theme="lunar-journey"] .admin-menu-toggle{background:var(--hf-theme-control-bg);border-color:var(--hf-theme-border);color:var(--hf-theme-text)}
+html[data-hf-theme="lunar-journey"] .admin-global-search input{background:var(--hf-theme-control-bg);border-color:var(--hf-theme-border);color:var(--hf-theme-text)}
+html[data-hf-theme="lunar-journey"] .admin-main{position:relative;z-index:1;background:transparent!important;color:var(--hf-theme-text)}
+html[data-hf-theme="lunar-journey"] .admin-main :is(h1,h2,h3,h4){color:var(--hf-theme-text)}
+html[data-hf-theme="lunar-journey"] .admin-main :is(p,small,.hf-muted,.hf-data-note,.page-heading p,.hf-kpi-label,.hf-kpi-note){color:var(--hf-theme-muted)}
+html[data-hf-theme="lunar-journey"] .admin-main :is(.hf-card,.hf-panel,.hf-section,.hf-kpi,.hf-summary-card,.hf-overview-range-toolbar,.hf-overview-shortcuts,.hf-orders-hero,.hf-products-toolbar,.hf-table-wrap){background:var(--hf-theme-card-bg);border-color:var(--hf-theme-border);color:var(--hf-theme-text);box-shadow:0 10px 30px rgba(13,20,39,.14);transition:background 8s ease,border-color 8s ease,color 2s ease}
+html[data-hf-theme="lunar-journey"] .admin-main :is(.hf-card-pad,.hf-summary-strip,.hf-summary-pill,.hf-table-toolbar,.hf-filter-panel){background:var(--hf-theme-nested-bg);border-color:var(--hf-theme-border);color:var(--hf-theme-text)}
+html[data-hf-theme="lunar-journey"] .admin-main :is(.hf-input,.hf-select,.hf-textarea,input,select,textarea){background:var(--hf-theme-control-bg);border-color:var(--hf-theme-border);color:var(--hf-theme-text);color-scheme:dark}
+html[data-hf-theme="lunar-journey"] .admin-main :is(.hf-button-primary,.btn-primary){background:var(--hf-theme-primary);border-color:var(--hf-theme-primary);color:#202A43}
+html[data-hf-theme="lunar-journey"] .admin-main :is(.hf-button-secondary,.btn-secondary){background:var(--hf-theme-secondary);border-color:var(--hf-theme-border);color:var(--hf-theme-secondary-ink)}
+html[data-hf-theme="lunar-journey"] .hf-table{background:var(--hf-theme-table-bg);color:var(--hf-theme-text)}
+html[data-hf-theme="lunar-journey"] .hf-table thead th{background:var(--hf-theme-table-head);color:var(--hf-theme-text);border-color:var(--hf-theme-border)}
+html[data-hf-theme="lunar-journey"] .hf-table tbody tr{background:var(--hf-theme-table-row);border-color:var(--hf-theme-border);color:var(--hf-theme-text)}
+html[data-hf-theme="lunar-journey"] .hf-table tbody tr:nth-child(even){background:var(--hf-theme-table-alt)}
+html[data-hf-theme="lunar-journey"] .hf-table tbody tr:hover{background:var(--hf-theme-table-hover)}
+html[data-hf-theme="lunar-journey"] .hf-table td,html[data-hf-theme="lunar-journey"] .hf-table th{color:var(--hf-theme-text)}
+html[data-hf-theme="lunar-journey"] .hf-theme-mode-control{background:linear-gradient(120deg,#394563,#303C59);border-color:#566285}
+html[data-hf-theme="lunar-journey"] .hf-theme-mode-heading strong{color:#F2F4FB}
+html[data-hf-theme="lunar-journey"] .hf-theme-mode-heading small{color:#C4CBE0}
+html[data-hf-theme="lunar-journey"] .hf-theme-mode-actions button{background:#465273;border-color:#5B688B;color:#F0F2FB}
+html[data-hf-theme="lunar-journey"] .hf-theme-mode-actions button.is-active{background:#7182AC;border-color:#B5C2E3;color:#FFFFFF}
+html[data-hf-theme="lunar-journey"] .hf-celestial-scene{background:linear-gradient(180deg,rgba(28,38,66,.12),rgba(28,38,66,.32))}
+.hf-celestial-stars{position:absolute;inset:0;opacity:0;transition:opacity 2s ease;background-image:radial-gradient(1.5px 1.5px at 12% 22%,rgba(255,255,255,.9) 48%,transparent 52%),radial-gradient(1px 1px at 28% 55%,rgba(220,231,255,.85) 48%,transparent 52%),radial-gradient(1.5px 1.5px at 52% 20%,rgba(255,255,255,.9) 48%,transparent 52%),radial-gradient(1px 1px at 72% 48%,rgba(220,231,255,.8) 48%,transparent 52%),radial-gradient(1.5px 1.5px at 88% 18%,rgba(255,255,255,.85) 48%,transparent 52%),radial-gradient(1px 1px at 93% 68%,rgba(220,231,255,.8) 48%,transparent 52%)}
+html[data-hf-celestial="lunar"] .hf-celestial-stars{opacity:.95;animation:hfStarsBreath 8s ease-in-out infinite}
+.hf-celestial-orb .hf-sun-disc,.hf-celestial-orb .hf-sun-glow{display:none}
+.hf-celestial-orb .hf-moon-disc{display:block;fill:#E5DCC0;stroke:#F7F0DA;stroke-width:1.4;filter:drop-shadow(0 0 10px rgba(220,218,192,.26))}
+.hf-celestial-orb .hf-moon-shadow{display:block;fill:#34405E;opacity:.98}
+.hf-celestial-track path{stroke:rgba(220,228,250,.35)}
+.hf-celestial-horizon{background:linear-gradient(180deg,transparent,rgba(17,25,48,.22))}
+@keyframes hfStarsBreath{0%,100%{opacity:.7}50%{opacity:1}}
+@media(max-width:760px){.hf-celestial-scene{top:64px;height:150px}.hf-celestial-orb{width:44px;height:44px}.hf-theme-mode-control{margin:10px;padding:11px}.hf-theme-mode-actions{gap:5px}}
+@media(prefers-reduced-motion:reduce){.hf-celestial-scene,.hf-celestial-orb,.hf-celestial-stars,.hf-theme-mode-actions button{transition:none!important;animation:none!important}}
