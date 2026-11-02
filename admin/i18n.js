@@ -964,21 +964,25 @@
     if (!root) return;
     if (root.nodeType === 3) { translateText(root, lang); return; }
     if (root.nodeType !== 1 && root.nodeType !== 9 && root.nodeType !== 11) return;
-    if (root.nodeType === 1) translateElement(root, lang);
-    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    if (root.nodeType === 1) {
+      if (ignoredTags.has(root.tagName) || isPickerOption(root)) return;
+      translateElement(root, lang);
+    }
+    // One traversal handles both elements and text nodes; avoid two full DOM passes.
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT, {
       acceptNode(node) {
-        if (isPickerOption(node)) return NodeFilter.FILTER_REJECT;
-        let p = node.parentElement;
-        while (p && p !== root) {
-          if (ignoredTags.has(p.tagName)) return NodeFilter.FILTER_REJECT;
-          p = p.parentElement;
+        if (node.nodeType === 1) {
+          if (ignoredTags.has(node.tagName) || isPickerOption(node)) return NodeFilter.FILTER_REJECT;
+          return NodeFilter.FILTER_ACCEPT;
         }
-        return NodeFilter.FILTER_ACCEPT;
+        return isPickerOption(node) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT;
       }
     });
     let node;
-    while ((node = walker.nextNode())) translateText(node, lang);
-    if (root.querySelectorAll) root.querySelectorAll("*").forEach(el => translateElement(el, lang));
+    while ((node = walker.nextNode())) {
+      if (node.nodeType === 1) translateElement(node, lang);
+      else translateText(node, lang);
+    }
   }
 
   function injectStyles() {
@@ -1060,7 +1064,7 @@
     applyLanguage();
     const observer = new MutationObserver(records => {
       const lang = language();
-      let pickerMissing = !document.querySelector(".hf-language-segment, .hf-language-picker");
+      const addedNodes = new Set();
       for (const record of records) {
         if (record.type === "characterData") {
           if (!isPickerOption(record.target)) translateText(record.target, lang);
@@ -1072,14 +1076,21 @@
         }
         if (record.type !== "childList") continue;
         for (const node of record.addedNodes || []) {
-          if (isPickerOption(node)) continue;
-          translateTree(node, lang);
+          if (!isPickerOption(node)) addedNodes.add(node);
         }
-        if (!document.querySelector(".hf-language-segment, .hf-language-picker")) pickerMissing = true;
       }
-      // Recreate the picker only when it is actually absent. Calling this on
-      // every mutation used to rewrite the same label and retrigger this observer.
-      if (pickerMissing) ensurePicker();
+      // Translate only outermost roots to avoid scanning nested subtrees repeatedly.
+      const roots = [];
+      addedNodes.forEach(node => {
+        let parent = node.parentNode, nested = false;
+        while (parent && parent !== document.body) {
+          if (addedNodes.has(parent)) { nested = true; break; }
+          parent = parent.parentNode;
+        }
+        if (!nested) roots.push(node);
+      });
+      roots.forEach(node => translateTree(node, lang));
+      if (!document.querySelector(".hf-language-segment, .hf-language-picker")) ensurePicker();
     });
     observer.observe(document.body, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: attrNames });
   }

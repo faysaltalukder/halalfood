@@ -8,10 +8,24 @@ const root = process.cwd();
 const adminDir = join(root, "admin");
 const sharedCssVersion = "20261101-shared-erp-system-v1";
 const workspaceThemeCssVersion = "20261101-merchant-fieldbook-v1";
-const sharedJsVersion = "20261102-solar-lunar-v1";
-const i18nVersion = "20261102-bilingual-loop-fix-v4";
-const appJsVersion = "20261030-orders-polish-v5";
+const sharedJsVersion = "20261102-dashboard-speed-v2";
+const i18nVersion = "20261102-dashboard-speed-v2";
+const appJsVersion = "20261102-dashboard-speed-v2";
 const read = (path) => readFileSync(join(root, path), "utf8");
+const performanceApp = read("admin/app.js");
+const performanceShared = read("admin/shared.js");
+const performanceI18n = read("admin/i18n.js");
+assert.ok(performanceShared.includes("concurrency=3") && performanceShared.includes("await Promise.all(offsets.map"), "Database pagination must use bounded parallel batches.");
+assert.ok(performanceShared.includes("const [products,costs]=await Promise.all"), "Products and product-cost records must load concurrently.");
+assert.ok(performanceApp.includes("async function fetchOverviewPages") && performanceApp.includes("const bucketIndexes=new Map("), "Overview data loads must batch pages and aggregate metrics by bucket in one pass.");
+assert.ok(performanceApp.includes("data:financeIncomeCounts") && performanceApp.includes("data:pageViewCounts") && performanceApp.includes("data:productViewCounts"), "Overview charts must reuse pre-aggregated data instead of refiltering all events for each bucket.");
+assert.ok(performanceApp.includes("const byId=new Map(),bySlug=new Map(),byName=new Map()"), "Product performance must use indexed product lookups instead of scanning the full product list for each event.");
+assert.ok(performanceApp.includes("const dhakaDateFormatter=new Intl.DateTimeFormat"), "Analytics must reuse one Dhaka date formatter instead of constructing one per event.");
+assert.ok(performanceApp.includes("let visibleSeconds=0,cartAdds=0,checkouts=0,orderSubmits=0"), "Session journey summaries must aggregate event metrics in one pass.");
+
+assert.ok(performanceApp.includes("const tableChanged=records.some") && performanceApp.includes("globalSearchFilteredRows"), "Global table search must ignore irrelevant DOM updates and avoid rescanning when search is empty.");
+assert.ok(performanceI18n.includes("NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT") && performanceI18n.includes("const addedNodes = new Set()"), "Language updates must use a single batched DOM traversal.");
+
 const languageEngine = read("admin/i18n.js");
 assert.ok(languageEngine.includes("label.textContent !== labelText"), "Language picker label updates must be idempotent to prevent mutation-observer loops.");
 assert.ok(languageEngine.includes("if (pickerMissing) ensurePicker();"), "The language picker must only be re-created when missing.");

@@ -751,7 +751,7 @@ function drawChart(id,config){
  const canvas=document.getElementById(id);if(!canvas||!window.Chart)return;
  if(charts[id])charts[id].destroy();
  const t=chartTheme();
- const base={responsive:true,maintainAspectRatio:false,animation:{duration:380},plugins:{
+ const base={responsive:true,maintainAspectRatio:false,animation:{duration:160},plugins:{
   legend:{labels:{color:t.text,usePointStyle:true,boxWidth:9,boxHeight:9,padding:18,font:{family:'Inter, "Segoe UI Variable", "Segoe UI", system-ui, sans-serif',size:11,weight:600}}},
   tooltip:{backgroundColor:getCurrentColorTheme().tokens["tooltip-bg"],titleColor:t.text,bodyColor:t.muted,borderColor:t.grid,borderWidth:1,cornerRadius:10,padding:12,displayColors:true,titleFont:{family:'Inter, "Segoe UI Variable", "Segoe UI", system-ui, sans-serif',weight:700},bodyFont:{family:'Inter, "Segoe UI Variable", "Segoe UI", system-ui, sans-serif'}}
  }};
@@ -785,12 +785,26 @@ function syncChartsForTheme(){
  if(window.Chart){Chart.defaults.color=t.text;Chart.defaults.plugins.tooltip.backgroundColor=tooltip;Chart.defaults.plugins.tooltip.titleColor=t.text;Chart.defaults.plugins.tooltip.bodyColor=t.muted;Chart.defaults.plugins.tooltip.borderColor=t.grid;}
 }
 async function paginateQuery(buildQuery,limit=1000){
- const rows=[],pageSize=1000;
- for(let offset=0;offset<limit;offset+=pageSize){
-  const requested=Math.min(pageSize,limit-offset);
-  const page=await signedQuery(buildQuery().range(offset,offset+requested-1));
-  rows.push(...page);
-  if(page.length<requested)break;
+ const rows=[],pageSize=1000,concurrency=3;
+ const firstSize=Math.min(pageSize,limit);
+ if(firstSize<=0)return rows;
+ const first=await signedQuery(buildQuery().range(0,firstSize-1));
+ rows.push(...first);
+ if(first.length<firstSize)return rows;
+ // Keep row order deterministic while avoiding one network round-trip per page.
+ for(let base=pageSize;base<limit;base+=pageSize*concurrency){
+  const offsets=[];
+  for(let offset=base;offset<Math.min(limit,base+pageSize*concurrency);offset+=pageSize){
+   offsets.push({offset,requested:Math.min(pageSize,limit-offset)});
+  }
+  const pages=await Promise.all(offsets.map(({offset,requested})=>
+   signedQuery(buildQuery().range(offset,offset+requested-1))
+  ));
+  for(let index=0;index<pages.length;index++){
+   const page=pages[index],requested=offsets[index].requested;
+   rows.push(...page);
+   if(page.length<requested)return rows;
+  }
  }
  return rows;
 }
@@ -809,8 +823,10 @@ async function fetchEvents(range=null,limit=15000){
  },limit);
 }
 async function fetchProducts(limit=10000){
- const products=await paginateQuery(()=>client.from("products").select("id,name,slug,sku,category,category_slug,price,display_price,unit_type,image_url,stock_quantity,is_active,is_featured,sort_order,home_sort_order,short_description,full_description,seo_title,seo_description,cms_created,cms_managed,created_at,updated_at").order("sort_order",{ascending:true}).order("name",{ascending:true}).order("id",{ascending:true}),limit);
- const costs=await paginateQuery(()=>client.from("admin_product_costs").select("product_id,cost_price,packaging_cost,low_stock_threshold,updated_by,updated_at").order("product_id",{ascending:true}),Math.max(limit,1000));
+ const [products,costs]=await Promise.all([
+  paginateQuery(()=>client.from("products").select("id,name,slug,sku,category,category_slug,price,display_price,unit_type,image_url,stock_quantity,is_active,is_featured,sort_order,home_sort_order,short_description,full_description,seo_title,seo_description,cms_created,cms_managed,created_at,updated_at").order("sort_order",{ascending:true}).order("name",{ascending:true}).order("id",{ascending:true}),limit),
+  paginateQuery(()=>client.from("admin_product_costs").select("product_id,cost_price,packaging_cost,low_stock_threshold,updated_by,updated_at").order("product_id",{ascending:true}),Math.max(limit,1000))
+ ]);
  const costById=new Map(costs.map(row=>[row.product_id,row]));
  return products.map(product=>{
   const cost=costById.get(product.id);
@@ -1389,9 +1405,12 @@ window.HFAdminReady=(async()=>{
   if(error||!data?.session){location.replace("./index.html");return null;}
   const email=String(data.session.user?.email||"").toLowerCase();
   if(email!==ADMIN_EMAIL){await client.auth.signOut();location.replace("./index.html");return null;}
-  const aal=await client.auth.mfa.getAuthenticatorAssuranceLevel();
+  const [aal,user]=await Promise.all([
+   client.auth.mfa.getAuthenticatorAssuranceLevel(),
+   client.auth.getUser()
+  ]);
   if(aal.error||aal.data?.currentLevel!=="aal2"){location.replace("./index.html");return null;}
-  const user=await client.auth.getUser();currentUser=user.data?.user||data.session.user;
+  currentUser=user.data?.user||data.session.user;
   makeShell();
   window.HFAdmin={client,ADMIN_EMAIL,esc,money,shortNum,dateTime,dateOnly,toast,audit,signedQuery,downloadFile,csvText,slugify,dayISO,dateRangeFromControls,rangeQuery,showTableMessage,statusClass,makeStatus,makeEmpty,groupBy,dateKey,lastDateKeys,fetchOrders,fetchEvents,fetchProducts,fetchCategories,fetchPosts,fetchFinance,palette,colorSet,chartTheme,drawChart,charts,colorThemes:ADMIN_COLOR_THEMES,applyColorTheme,getCurrentColorTheme,syncChartsForTheme};
   return window.HFAdmin;

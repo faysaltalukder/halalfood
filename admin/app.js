@@ -15,12 +15,18 @@ window.HFAdminReady.then(async H=>{
  const todayISO=()=>{const parts=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Dhaka",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date());const part=type=>parts.find(item=>item.type===type)?.value||"";return part("year")+"-"+part("month")+"-"+part("day")};
  const fileBase=s=>String(s||"halal-food-report").toLowerCase().replace(/[^a-z0-9-]+/g,"-").replace(/^-|-$/g,"")||"halal-food-report";
  const statusOptions=["pending","processing","shipped","delivered","cancelled"];
+ const dhakaDateFormatter=new Intl.DateTimeFormat("en-US",{timeZone:"Asia/Dhaka",year:"numeric",month:"2-digit",day:"2-digit"});
  const dhakaDateKey=value=>{
   const date=value instanceof Date?value:new Date(value);
   if(Number.isNaN(date.getTime()))return "";
-  const parts=new Intl.DateTimeFormat("en-US",{timeZone:"Asia/Dhaka",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(date);
-  const part=type=>parts.find(item=>item.type===type)?.value||"";
-  return part("year")+"-"+part("month")+"-"+part("day");
+  const parts=dhakaDateFormatter.formatToParts(date);
+  let year="",month="",day="";
+  for(const part of parts){
+   if(part.type==="year")year=part.value;
+   else if(part.type==="month")month=part.value;
+   else if(part.type==="day")day=part.value;
+  }
+  return year+"-"+month+"-"+day;
  };
  const addDhakaDays=(key,amount)=>{
   const [year,month,day]=String(key).split("-").map(Number);
@@ -75,8 +81,12 @@ window.HFAdminReady.then(async H=>{
  }
  function renderRangeHint(range,id){if($(id))$(id).textContent=range.label+" · refreshed "+new Date().toLocaleTimeString("en-BD",{hour:"2-digit",minute:"2-digit"});}
  function trendCounts(events,days,evtNames){
-  const keys=lastDateKeys(days);
-  return {labels:keys.map(k=>dateOnly(k)),datasets:evtNames.map((name,i)=>({label:name.label,data:keys.map(k=>events.filter(e=>e.event_name===name.key&&String(e.occurred_at||"").slice(0,10)===k).length),borderColor:name.color||colorSet[i],backgroundColor:(name.color||colorSet[i])+"24",pointRadius:2,pointHoverRadius:5,borderWidth:2,tension:.32,fill:name.fill===true}))};
+  const keys=lastDateKeys(days),keySet=new Set(keys),counts=new Map(evtNames.map(item=>[item.key,new Map()]));
+  events.forEach(event=>{
+   const key=String(event.occurred_at||"").slice(0,10),byDay=counts.get(event.event_name);
+   if(byDay&&keySet.has(key))byDay.set(key,(byDay.get(key)||0)+1);
+  });
+  return {labels:keys.map(k=>dateOnly(k)),datasets:evtNames.map((name,i)=>({label:name.label,data:keys.map(k=>counts.get(name.key)?.get(k)||0),borderColor:name.color||colorSet[i],backgroundColor:(name.color||colorSet[i])+"24",pointRadius:2,pointHoverRadius:5,borderWidth:2,tension:.32,fill:name.fill===true}))};
  }
  function chartAxisOptions(){
   return {scales:{x:{ticks:{color:chartTheme().muted,maxRotation:0,autoSkip:true,maxTicksLimit:12},grid:{display:false}},y:{beginAtZero:true,ticks:{color:chartTheme().muted,precision:0},grid:{color:chartTheme().grid}}}};
@@ -141,11 +151,20 @@ window.HFAdminReady.then(async H=>{
   return {counts,identifiedSessions:groups.size,missingSessionEvents};
  }
  function topProducts(events,products,field="item_name",eventName="view_item"){
-  const rows=events.filter(e=>e.event_name===eventName&&String(e[field]||"").trim());
-  const by=new Map();rows.forEach(e=>{const name=String(e[field]).trim();by.set(name,(by.get(name)||0)+1);});
-  return [...by.entries()].map(([name,count])=>({name,count,product:products.find(p=>p.name===name||p.slug===name)})).sort((a,b)=>b.count-a.count).slice(0,8);
+  const by=new Map(),productByName=new Map();
+  products.forEach(product=>{
+   const name=String(product.name||"").trim().toLowerCase();
+   const slug=String(product.slug||"").trim().toLowerCase();
+   if(name&&!productByName.has(name))productByName.set(name,product);
+   if(slug&&!productByName.has(slug))productByName.set(slug,product);
+  });
+  events.forEach(event=>{
+   if(event.event_name!==eventName)return;
+   const name=String(event[field]||"").trim();
+   if(name)by.set(name,(by.get(name)||0)+1);
+  });
+  return [...by.entries()].map(([name,count])=>({name,count,product:productByName.get(name.toLowerCase())})).sort((a,b)=>b.count-a.count).slice(0,8);
  }
-
  function visitorSessionKey(event){return String(event.session_id||event.anonymous_id||"");}
  function formatSeconds(seconds){const value=Math.max(0,Math.round(Number(seconds)||0));if(value<60)return value+" sec";const minutes=Math.floor(value/60),remaining=value%60;return remaining?minutes+"m "+remaining+"s":minutes+"m";}
  function buildPageExperience(events){
@@ -155,17 +174,47 @@ window.HFAdminReady.then(async H=>{
   latestBySession.forEach(event=>getPage(event.page_path).lastSeenSessions++);return [...pages.values()].sort((a,b)=>b.views-a.views||b.visibleSeconds-a.visibleSeconds);
  }
  function buildSessionJourneys(events){
-  const groups=new Map();events.forEach(event=>{const key=visitorSessionKey(event);if(!key)return;if(!groups.has(key))groups.set(key,[]);groups.get(key).push(event);});
-  return [...groups.entries()].map(([sessionId,rows])=>{rows.sort((a,b)=>Date.parse(a.occurred_at||0)-Date.parse(b.occurred_at||0));const pageViews=rows.filter(e=>e.event_name==="page_view"),pathSteps=[];pageViews.forEach(e=>{const path=String(e.page_path||"/");if(pathSteps[pathSteps.length-1]!==path)pathSteps.push(path);});
-   const last=rows[rows.length-1]||{},visibleSeconds=rows.filter(e=>e.event_name==="page_engagement").reduce((sum,e)=>sum+Math.max(0,Number(e.value)||0),0),count=name=>rows.filter(e=>e.event_name===name).length;
-   return {sessionId,rows,pathSteps,steps:pageViews.length,lastSeen:last.occurred_at||"",lastPage:last.page_path||"/",visibleSeconds,cartAdds:count("add_to_cart"),checkouts:count("begin_checkout"),orderSubmits:count("order_submit")};
+  const groups=new Map();
+  events.forEach(event=>{
+   const key=visitorSessionKey(event);
+   if(!key)return;
+   if(!groups.has(key))groups.set(key,[]);
+   groups.get(key).push(event);
+  });
+  return [...groups.entries()].map(([sessionId,rows])=>{
+   rows.sort((a,b)=>Date.parse(a.occurred_at||0)-Date.parse(b.occurred_at||0));
+   const pageViews=[],pathSteps=[];
+   let visibleSeconds=0,cartAdds=0,checkouts=0,orderSubmits=0;
+   rows.forEach(event=>{
+    if(event.event_name==="page_view"){
+     pageViews.push(event);
+     const path=String(event.page_path||"/");
+     if(pathSteps[pathSteps.length-1]!==path)pathSteps.push(path);
+    }else if(event.event_name==="page_engagement"){
+     visibleSeconds+=Math.max(0,Number(event.value)||0);
+    }else if(event.event_name==="add_to_cart")cartAdds++;
+    else if(event.event_name==="begin_checkout")checkouts++;
+    else if(event.event_name==="order_submit")orderSubmits++;
+   });
+   const last=rows[rows.length-1]||{};
+   return {sessionId,rows,pathSteps,steps:pageViews.length,lastSeen:last.occurred_at||"",lastPage:last.page_path||"/",visibleSeconds,cartAdds,checkouts,orderSubmits};
   }).sort((a,b)=>Date.parse(b.lastSeen||0)-Date.parse(a.lastSeen||0));
  }
  function buildProductPerformance(events,orders,products){
   const rows=products.map(product=>({product,views:0,cartAdds:0,viewSessions:new Set(),viewTimeBySession:new Map(),cartAfterViewSessions:new Set(),orderIds:new Set(),orderLines:0,units:0,orderValue:0}));
-  const eventProduct=event=>{const id=String(event.item_id||"").toLowerCase(),name=String(event.item_name||"").trim().toLowerCase();return rows.find(row=>(id&&(String(row.product.slug||"").toLowerCase()===id||String(row.product.id||"").toLowerCase()===id))||(name&&String(row.product.name||"").trim().toLowerCase()===name));};
+  const byId=new Map(),bySlug=new Map(),byName=new Map();
+  rows.forEach(row=>{
+   const id=String(row.product.id||"").toLowerCase(),slug=String(row.product.slug||"").toLowerCase(),name=String(row.product.name||"").trim().toLowerCase();
+   if(id&&!byId.has(id))byId.set(id,row);
+   if(slug&&!bySlug.has(slug))bySlug.set(slug,row);
+   if(name&&!byName.has(name))byName.set(name,row);
+  });
+  const findEventProduct=event=>{
+   const id=String(event.item_id||"").toLowerCase(),name=String(event.item_name||"").trim().toLowerCase();
+   return (id&&(bySlug.get(id)||byId.get(id)))||(name&&byName.get(name))||null;
+  };
   events.filter(event=>event.event_name==="view_item"||event.event_name==="add_to_cart").slice().sort((a,b)=>Date.parse(a.occurred_at||0)-Date.parse(b.occurred_at||0)).forEach(event=>{
-   const row=eventProduct(event);if(!row)return;
+   const row=findEventProduct(event);if(!row)return;
    const actor=visitorSessionKey(event),stamp=Date.parse(event.occurred_at||"");
    if(event.event_name==="view_item"){
     row.views++;
@@ -175,14 +224,17 @@ window.HFAdminReady.then(async H=>{
     if(actor&&row.viewTimeBySession.has(actor)&&stamp>row.viewTimeBySession.get(actor))row.cartAfterViewSessions.add(actor);
    }
   });
-  orders.filter(order=>order.status!=="cancelled").forEach(order=>(order.order_items||[]).forEach(item=>{
-   const id=String(item.product_id||"").toLowerCase(),name=String(item.product_name||"").trim().toLowerCase();
-   const row=rows.find(candidate=>(id&&String(candidate.product.id||"").toLowerCase()===id)||(name&&String(candidate.product.name||"").trim().toLowerCase()===name));
-   if(!row)return;
-   row.orderIds.add(String(order.id));row.orderLines++;row.units+=Math.max(0,Number(item.quantity)||0);
-   const value=item.line_total!=null?Number(item.line_total):Number(item.unit_price||0)*Number(item.quantity||0);
-   row.orderValue+=Number.isFinite(value)?Math.max(0,value):0;
-  }));
+  orders.forEach(order=>{
+   if(order.status==="cancelled")return;
+   (order.order_items||[]).forEach(item=>{
+    const id=String(item.product_id||"").toLowerCase(),name=String(item.product_name||"").trim().toLowerCase();
+    const row=(id&&byId.get(id))||(name&&byName.get(name));
+    if(!row)return;
+    row.orderIds.add(String(order.id));row.orderLines++;row.units+=Math.max(0,Number(item.quantity)||0);
+    const value=item.line_total!=null?Number(item.line_total):Number(item.unit_price||0)*Number(item.quantity||0);
+    row.orderValue+=Number.isFinite(value)?Math.max(0,value):0;
+   });
+  });
   return rows.map(row=>({...row,orderCount:row.orderIds.size,viewToCartRate:row.viewSessions.size?row.cartAfterViewSessions.size/row.viewSessions.size*100:null})).sort((a,b)=>b.orderCount-a.orderCount||b.units-a.units||b.views-a.views||b.cartAdds-a.cartAdds);
  }
  function renderTopProducts(list,rows){
@@ -240,15 +292,21 @@ window.HFAdminReady.then(async H=>{
    setFinanceMasked(true);
    financeToggle.addEventListener("click",()=>setFinanceMasked(!financeStrip.classList.contains("is-masked")));
   }
+  const localDateFormatter=new Intl.DateTimeFormat("en-US",{timeZone:"Asia/Dhaka",year:"numeric",month:"2-digit",day:"2-digit"});
   const localDateKey=value=>{
    if(typeof value==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(value))return value;
    const d=value instanceof Date?value:new Date(value);
    if(Number.isNaN(d.getTime()))return "";
-   const parts=new Intl.DateTimeFormat("en-US",{timeZone:"Asia/Dhaka",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(d);
-   const part=type=>parts.find(item=>item.type===type)?.value||"";
-   return part("year")+"-"+part("month")+"-"+part("day");
+   const parts=localDateFormatter.formatToParts(d);
+   let year="",month="",day="";
+   for(const part of parts){
+    if(part.type==="year")year=part.value;
+    else if(part.type==="month")month=part.value;
+    else if(part.type==="day")day=part.value;
+   }
+   return year+"-"+month+"-"+day;
   };
-  const addDateDays=(key,amount)=>{
+    const addDateDays=(key,amount)=>{
    const [year,month,day]=String(key).split("-").map(Number);
    const d=new Date(Date.UTC(year,month-1,day+amount));
    return d.getUTCFullYear()+"-"+String(d.getUTCMonth()+1).padStart(2,"0")+"-"+String(d.getUTCDate()).padStart(2,"0");
@@ -292,9 +350,11 @@ window.HFAdminReady.then(async H=>{
    if(selected==="custom")label=fromDay+" to "+toDay;
    return buildRange(fromDay,toDay,label);
   };
-  const formatDayLabel=key=>new Intl.DateTimeFormat("en-BD",{timeZone:"Asia/Dhaka",day:"numeric",month:"short"}).format(new Date(key+"T12:00:00+06:00"));
-  const formatMonthLabel=key=>new Intl.DateTimeFormat("en-BD",{timeZone:"Asia/Dhaka",month:"short",year:"numeric"}).format(new Date(key+"-01T12:00:00+06:00"));
-  const nextMonthKey=key=>{
+  const dayLabelFormatter=new Intl.DateTimeFormat("en-BD",{timeZone:"Asia/Dhaka",day:"numeric",month:"short"});
+  const monthLabelFormatter=new Intl.DateTimeFormat("en-BD",{timeZone:"Asia/Dhaka",month:"short",year:"numeric"});
+  const formatDayLabel=key=>dayLabelFormatter.format(new Date(key+"T12:00:00+06:00"));
+  const formatMonthLabel=key=>monthLabelFormatter.format(new Date(key+"-01T12:00:00+06:00"));
+    const nextMonthKey=key=>{
    const [year,month]=key.split("-").map(Number);
    return month===12?(year+1)+"-01":year+"-"+String(month+1).padStart(2,"0");
   };
@@ -321,31 +381,38 @@ window.HFAdminReady.then(async H=>{
     {label:"Add-to-cart events",data:overviewTrendSnapshot.cartEventCounts,borderColor:palette.blue,backgroundColor:"#4F7CFF20",fill:false,tension:.32,pointRadius:2,borderWidth:2,borderRadius:useBars?5:0,maxBarThickness:useBars?24:undefined}
    ]},options:{...chartAxisOptions(),plugins:{legend:{position:"bottom"}},onClick:(ev,items)=>{if(items.length)location.href=items[0].datasetIndex===0?"./orders.html":"./analytics.html";}}});
   };
-  async function fetchOverviewOrderLines(range,maxRows=5000){
-   const rows=[],pageSize=1000;
-   for(let offset=0;offset<maxRows;offset+=pageSize){
-    const size=Math.min(pageSize,maxRows-offset);
-    let query=client.from("orders").select("id,total,ordered_at,status,order_items(id)").order("ordered_at",{ascending:false}).order("id",{ascending:true});
-    query=rangeQuery(query,"ordered_at",range);
-    const page=await signedQuery(query.range(offset,offset+size-1));
-    rows.push(...page);
-    if(page.length<size)break;
+  async function fetchOverviewPages(buildQuery,maxRows){
+   const rows=[],pageSize=1000,concurrency=3;
+   const firstSize=Math.min(pageSize,maxRows);
+   if(firstSize<=0)return rows;
+   const first=await signedQuery(buildQuery().range(0,firstSize-1));
+   rows.push(...first);
+   if(first.length<firstSize)return rows;
+   for(let base=pageSize;base<maxRows;base+=pageSize*concurrency){
+    const offsets=[];
+    for(let offset=base;offset<Math.min(maxRows,base+pageSize*concurrency);offset+=pageSize){
+     offsets.push({offset,size:Math.min(pageSize,maxRows-offset)});
+    }
+    const pages=await Promise.all(offsets.map(({offset,size})=>signedQuery(buildQuery().range(offset,offset+size-1))));
+    for(let index=0;index<pages.length;index++){
+     rows.push(...pages[index]);
+     if(pages[index].length<offsets[index].size)return rows;
+    }
    }
    return rows;
   }
+  async function fetchOverviewOrderLines(range,maxRows=5000){
+   return fetchOverviewPages(()=>{
+    const query=client.from("orders").select("id,total,ordered_at,status,order_items(id)").order("ordered_at",{ascending:false}).order("id",{ascending:true});
+    return rangeQuery(query,"ordered_at",range);
+   },maxRows);
+  }
   async function fetchOverviewEvents(range,maxRows=15000){
-   const rows=[],pageSize=1000;
-   const fields="id,event_name,occurred_at,page_path,page_title,session_id,anonymous_id,item_id,item_name,item_category,value,quantity,search_term,source,medium,campaign,metadata";
    const eventNames=["page_view","view_item","add_to_cart"];
-   for(let offset=0;offset<maxRows;offset+=pageSize){
-    const size=Math.min(pageSize,maxRows-offset);
-    let query=client.from("analytics_events").select(fields).in("event_name",eventNames).order("occurred_at",{ascending:false}).order("id",{ascending:false});
-    query=rangeQuery(query,"occurred_at",range);
-    const page=await signedQuery(query.range(offset,offset+size-1));
-    rows.push(...page);
-    if(page.length<size)break;
-   }
-   return rows;
+   return fetchOverviewPages(()=>{
+    const query=client.from("analytics_events").select("event_name,occurred_at,item_name").in("event_name",eventNames).order("occurred_at",{ascending:false}).order("id",{ascending:false});
+    return rangeQuery(query,"occurred_at",range);
+   },maxRows);
   }
   function renderActionCenter(products,pendingCount,pendingVerified){
    const list=$("overviewActionList");if(!list)return;
@@ -377,33 +444,63 @@ window.HFAdminReady.then(async H=>{
    const todayRange=buildRange(today,today,"Today");
    const buckets=buildChartBuckets(range);
    const rangeIncludesToday=!!(range.fromDay&&range.toDay&&range.fromDay<=today&&range.toDay>=today);
-   const [chartOrders,events,separateTodayOrders,separateTodayEvents,products,pendingResult,recentOrders]=await Promise.all([
-    fetchOverviewOrderLines(range,5000),
-    fetchOverviewEvents(range,15000),
-    rangeIncludesToday?Promise.resolve(null):fetchOverviewOrderLines(todayRange,1000),
-    rangeIncludesToday?Promise.resolve(null):fetchOverviewEvents(todayRange,15000),
-    fetchProducts(1000),
-    client.from("orders").select("id",{count:"exact",head:true}).eq("status","pending"),
-    signedQuery(client.from("orders").select("id,order_number,customer_name,total,status,ordered_at").order("ordered_at",{ascending:false}).order("id",{ascending:true}).limit(7))
-   ]);
-   const summaryOrders=chartOrders;
-   const todayOrders=rangeIncludesToday?chartOrders.filter(o=>localDateKey(o.ordered_at)===today):separateTodayOrders;
-   const todayEvents=rangeIncludesToday?events.filter(e=>localDateKey(e.occurred_at)===today):separateTodayEvents;
-   const bucketKey=value=>{
-    const day=localDateKey(value);
-    return buckets.monthly?day.slice(0,7):day;
-   };
-   const todayItemLines=todayOrders.filter(o=>o.status!=="cancelled").reduce((sum,o)=>sum+(o.order_items||[]).length,0);
-   const todayCartEvents=todayEvents.filter(e=>e.event_name==="add_to_cart").length;
-   const pendingVerified=!pendingResult.error&&pendingResult.count!==null&&pendingResult.count!==undefined&&Number.isFinite(Number(pendingResult.count));
-   const pendingCount=pendingVerified?Number(pendingResult.count):0;
-   const orderValue=summaryOrders.filter(o=>o.status!=="cancelled").reduce((sum,o)=>sum+Number(o.total||0),0);
-   const lowStock=products.filter(p=>p.is_active&&p.stock_quantity!==null&&p.stock_quantity!==undefined&&p.stock_quantity!==""&&Number.isFinite(Number(p.stock_quantity))&&Number(p.stock_quantity)>0&&Number(p.stock_quantity)<=Number(p.low_stock_threshold??5)).length;
-   $("kpiOrders").textContent=shortNum(summaryOrders.length);
+   const [chartOrders,events,separateTodayOrders,separateTodayEvents,products,pendingResult,recentOrders,financeAllResult,financeRangeResult]=await Promise.all([
+   fetchOverviewOrderLines(range,5000),
+   fetchOverviewEvents(range,15000),
+   rangeIncludesToday?Promise.resolve(null):fetchOverviewOrderLines(todayRange,1000),
+   rangeIncludesToday?Promise.resolve(null):fetchOverviewEvents(todayRange,15000),
+   fetchProducts(1000),
+   client.from("orders").select("id",{count:"exact",head:true}).eq("status","pending"),
+   signedQuery(client.from("orders").select("id,order_number,customer_name,total,status,ordered_at").order("ordered_at",{ascending:false}).order("id",{ascending:true}).limit(7)),
+   fetchFinance(null,3000).then(value=>({status:"fulfilled",value}),reason=>({status:"rejected",reason})),
+   fetchFinance(range,3000).then(value=>({status:"fulfilled",value}),reason=>({status:"rejected",reason}))
+  ]);
+  const summaryOrders=chartOrders;
+  const bucketIndexes=new Map(buckets.items.map((bucket,index)=>[bucket.key,index]));
+  const bucketKeyFromDay=day=>buckets.monthly?day.slice(0,7):day;
+  const orderLineCounts=buckets.items.map(()=>0);
+  const cartEventCounts=buckets.items.map(()=>0);
+  const pageViewCounts=buckets.items.map(()=>0);
+  const productViewCounts=buckets.items.map(()=>0);
+  let todayItemLines=0,todayCartEvents=0,todayOrderCount=0,todayEventCount=0,orderValue=0;
+  chartOrders.forEach(order=>{
+   const active=order.status!=="cancelled";
+   const day=localDateKey(order.ordered_at);
+   const lineCount=Array.isArray(order.order_items)?order.order_items.length:0;
+   if(day===today){todayOrderCount++;if(active)todayItemLines+=lineCount;}
+   if(active)orderValue+=Number(order.total||0);
+   const index=bucketIndexes.get(bucketKeyFromDay(day));
+   if(active&&index!==undefined)orderLineCounts[index]+=lineCount;
+  });
+  if(!rangeIncludesToday){
+   todayOrderCount=separateTodayOrders.length;
+   separateTodayOrders.forEach(order=>{if(order.status!=="cancelled")todayItemLines+=(order.order_items||[]).length;});
+  }
+  events.forEach(event=>{
+   const day=localDateKey(event.occurred_at);
+   if(day===today)todayEventCount++;
+   if(event.event_name==="add_to_cart"&&day===today)todayCartEvents++;
+   const index=bucketIndexes.get(bucketKeyFromDay(day));
+   if(index===undefined)return;
+   if(event.event_name==="add_to_cart")cartEventCounts[index]++;
+   else if(event.event_name==="page_view")pageViewCounts[index]++;
+   else if(event.event_name==="view_item")productViewCounts[index]++;
+  });
+  if(!rangeIncludesToday){
+   todayEventCount=separateTodayEvents.length;
+   todayCartEvents=separateTodayEvents.reduce((sum,event)=>sum+(event.event_name==="add_to_cart"?1:0),0);
+  }
+  const todayOrdersCount=todayOrderCount;
+  const todayEventsCount=todayEventCount;
+  const todayCartCount=todayCartEvents;
+  const pendingVerified=!pendingResult.error&&pendingResult.count!==null&&pendingResult.count!==undefined&&Number.isFinite(Number(pendingResult.count));
+  const pendingCount=pendingVerified?Number(pendingResult.count):0;
+  const lowStock=products.filter(p=>p.is_active&&p.stock_quantity!==null&&p.stock_quantity!==undefined&&p.stock_quantity!==""&&Number.isFinite(Number(p.stock_quantity))&&Number(p.stock_quantity)>0&&Number(p.stock_quantity)<=Number(p.low_stock_threshold??5)).length;
+  $("kpiOrders").textContent=shortNum(summaryOrders.length);
    if($("kpiOrdersNote"))$("kpiOrdersNote").textContent=range.label;
    $("kpiTodayItems").textContent=shortNum(todayItemLines);
    $("kpiPending").textContent=pendingVerified?shortNum(pendingCount):"—";
-   $("kpiCart").textContent=shortNum(todayCartEvents);
+   $("kpiCart").textContent=shortNum(todayCartCount);
    $("kpiOrderValue").textContent=money(orderValue);
    $("kpiNote").textContent=range.label+" · recorded order value is not verified cash income.";
    $("kpiLowStock").textContent=shortNum(lowStock);
@@ -416,46 +513,52 @@ window.HFAdminReady.then(async H=>{
    if(statusNote)statusNote.textContent=range.label+" · not payment/delivery confirmation.";
    renderActionCenter(products,pendingCount,pendingVerified);
    let finance=[],financeRange=[],financeAvailable=false,financeRangeAvailable=false;
-   const [financeAllResult,financeRangeResult]=await Promise.allSettled([
-    fetchFinance(null,3000),
-    fetchFinance(range,3000)
-   ]);
-   if(financeAllResult.status==="fulfilled"){finance=financeAllResult.value;financeAvailable=true;}
-   else console.warn("Overview all-time finance summary is unavailable.",financeAllResult.reason);
-   if(financeRangeResult.status==="fulfilled"){financeRange=financeRangeResult.value;financeRangeAvailable=true;}
-   else console.warn("Overview selected-period finance chart is unavailable.",financeRangeResult.reason);
-   const confirmedFinance=finance.filter(e=>e.status==="confirmed");
-   const confirmedFinanceRange=financeRange.filter(e=>e.status==="confirmed");
-   const income=confirmedFinance.filter(e=>e.entry_type==="income").reduce((sum,e)=>sum+Number(e.amount||0),0);
-   const expenses=confirmedFinance.filter(e=>e.entry_type==="expense").reduce((sum,e)=>sum+Number(e.amount||0),0);
-   $("financeSummaryIncome").textContent=financeAvailable?money(income):"Unavailable";
+  if(financeAllResult.status==="fulfilled"){finance=financeAllResult.value;financeAvailable=true;}
+  else console.warn("Overview all-time finance summary is unavailable.",financeAllResult.reason);
+  if(financeRangeResult.status==="fulfilled"){financeRange=financeRangeResult.value;financeRangeAvailable=true;}
+  else console.warn("Overview selected-period finance chart is unavailable.",financeRangeResult.reason);
+  let income=0,expenses=0;
+  finance.forEach(entry=>{
+   if(entry.status!=="confirmed")return;
+   const amount=Number(entry.amount||0);
+   if(entry.entry_type==="income")income+=amount;
+   else if(entry.entry_type==="expense")expenses+=amount;
+  });
+  const confirmedFinanceRange=financeRange.filter(entry=>entry.status==="confirmed");
+  $("financeSummaryIncome").textContent=financeAvailable?money(income):"Unavailable";
    $("financeSummaryExpenses").textContent=financeAvailable?money(expenses):"Unavailable";
    $("financeSummaryNet").textContent=financeAvailable?money(income-expenses):"Unavailable";
    $("financeSummaryNote").textContent=financeAvailable
     ?"Confirmed manual entries only. COD settlement is not reconciled here."
     :"Finance unavailable. Refresh after signing in and completing MFA.";
    const labels=buckets.items.map(item=>item.label);
-   overviewTrendSnapshot={
-    labels,
-    orderLineCounts:buckets.items.map(bucket=>chartOrders.filter(o=>bucketKey(o.ordered_at)===bucket.key&&o.status!=="cancelled").reduce((sum,o)=>sum+(o.order_items||[]).length,0)),
-    cartEventCounts:buckets.items.map(bucket=>events.filter(e=>e.event_name==="add_to_cart"&&bucketKey(e.occurred_at)===bucket.key).length)
-   };
-   renderOverviewOperationsTrend();
-   const financeCanvas=$("overviewFinanceChart");
+   overviewTrendSnapshot={labels,orderLineCounts,cartEventCounts};
+    renderOverviewOperationsTrend();
+   const financeIncomeCounts=buckets.items.map(()=>0),financeExpenseCounts=buckets.items.map(()=>0);
+  const financeBucketIndexes=new Map(buckets.items.map((bucket,index)=>[bucket.key,index]));
+  confirmedFinanceRange.forEach(entry=>{
+   const day=String(entry.entry_date||"").slice(0,10);
+   const index=financeBucketIndexes.get(bucketKeyFromDay(day));
+   if(index===undefined)return;
+   const amount=Number(entry.amount||0);
+   if(entry.entry_type==="income")financeIncomeCounts[index]+=amount;
+   else if(entry.entry_type==="expense")financeExpenseCounts[index]+=amount;
+  });
+  const financeCanvas=$("overviewFinanceChart");
    if(financeRangeAvailable){
     if(financeCanvas)financeCanvas.hidden=false;
     $("overviewFinanceChartNote").textContent="Confirmed ledger entries in the selected period · not a bank/COD balance.";
     drawChart("overviewFinanceChart",{type:"bar",data:{labels,datasets:[
-     {label:"Recorded income",data:buckets.items.map(bucket=>confirmedFinanceRange.filter(e=>e.entry_type==="income"&&bucketKey(e.entry_date)===bucket.key).reduce((sum,e)=>sum+Number(e.amount||0),0)),backgroundColor:palette.green,borderRadius:5,maxBarThickness:24},
-     {label:"Recorded expenses",data:buckets.items.map(bucket=>confirmedFinanceRange.filter(e=>e.entry_type==="expense"&&bucketKey(e.entry_date)===bucket.key).reduce((sum,e)=>sum+Number(e.amount||0),0)),backgroundColor:palette.orange,borderRadius:5,maxBarThickness:24}
+     {label:"Recorded income",data:financeIncomeCounts,backgroundColor:palette.green,borderRadius:5,maxBarThickness:24},
+     {label:"Recorded expenses",data:financeExpenseCounts,backgroundColor:palette.orange,borderRadius:5,maxBarThickness:24}
     ]},options:{...chartAxisOptions(),plugins:{legend:{position:"bottom"}},onClick:()=>{location.href="./finance.html";}}});
    }else{
     if(financeCanvas)financeCanvas.hidden=true;
     $("overviewFinanceChartNote").textContent="Finance chart unavailable for the selected period. The all-time summary is reported separately.";
    }
    drawChart("overviewTrafficChart",{type:"line",data:{labels,datasets:[
-    {label:"Page views",data:buckets.items.map(bucket=>events.filter(e=>e.event_name==="page_view"&&bucketKey(e.occurred_at)===bucket.key).length),borderColor:palette.blue,backgroundColor:"#4F7CFF20",fill:true,tension:.35,pointRadius:2,borderWidth:2},
-    {label:"Product views",data:buckets.items.map(bucket=>events.filter(e=>e.event_name==="view_item"&&bucketKey(e.occurred_at)===bucket.key).length),borderColor:palette.orange,backgroundColor:"#C97B3D18",fill:true,tension:.35,pointRadius:2,borderWidth:2}
+    {label:"Page views",data:pageViewCounts,borderColor:palette.blue,backgroundColor:"#4F7CFF20",fill:true,tension:.35,pointRadius:2,borderWidth:2},
+    {label:"Product views",data:productViewCounts,borderColor:palette.orange,backgroundColor:"#C97B3D18",fill:true,tension:.35,pointRadius:2,borderWidth:2}
    ]},options:{...chartAxisOptions(),plugins:{legend:{position:"bottom"}}}});
    drawChart("overviewStatusChart",{type:"doughnut",data:orderStatusCounts(summaryOrders),options:{cutout:"67%",plugins:{legend:{position:"bottom"}},onClick:(ev,items)=>{if(items.length)location.href="./orders.html?status="+encodeURIComponent(["pending","processing","shipped","delivered","cancelled"][items[0].index]);}}});
    renderTopProducts($("overviewTopProducts"),topProducts(events,products).slice(0,5));
@@ -465,8 +568,8 @@ window.HFAdminReady.then(async H=>{
    if(summaryOrders.length>=5000)limits.push("Order summary reached the 5,000-row limit.");
    if(chartOrders.length>=5000)limits.push("Order trend reached the 5,000-row limit.");
    if(events.length>=15000)limits.push("Website activity reached the 15,000-event limit.");
-   if(todayOrders.length>=1000)limits.push("Today's order-line count reached its 1,000-order limit.");
-   if(todayEvents.length>=15000)limits.push("Today's cart-event count reached its 15,000-event limit.");
+   if(todayOrdersCount>=1000)limits.push("Today's order-line count reached its 1,000-order limit.");
+   if(todayEventsCount>=15000)limits.push("Today's cart-event count reached its 15,000-event limit.");
    if(products.length>=1000)limits.push("Stock alerts reached the 1,000-product retrieval limit.");
    if(finance.length>=3000)limits.push("All-time Finance Snapshot reached its 3,000-entry retrieval limit.");
    if(financeRange.length>=3000)limits.push("Selected-period Finance Chart reached its 3,000-entry retrieval limit.");
@@ -2846,24 +2949,42 @@ async function refresh(){
   actions[page]().catch(err=>{console.error("Admin page failed",page,err);toast("The page could not load its data. "+(err?.message||"Please refresh and try again."),"error");});
  }
  const globalSearchInput=$("globalSearch");
- const adminMain=$("adminMain");
- let globalSearchFrame=0;
- function applyGlobalTableSearch(){
-  if(!adminMain)return;
-  if(["customers","customer-settings"].includes(document.body.dataset.page))return; // Customer pages apply search server-side.
-  const q=String(globalSearchInput?.value||"").toLowerCase().trim();
-  adminMain.querySelectorAll(".hf-table tbody tr").forEach(row=>{
-   row.hidden=!!q&&!row.textContent.toLowerCase().includes(q);
-  });
- }
- globalSearchInput?.addEventListener("input",applyGlobalTableSearch);
- if(adminMain&&window.MutationObserver){
-  const globalSearchObserver=new MutationObserver(()=>{
-   if(globalSearchFrame)return;
-   globalSearchFrame=window.requestAnimationFrame(()=>{globalSearchFrame=0;applyGlobalTableSearch();});
-  });
-  globalSearchObserver.observe(adminMain,{subtree:true,childList:true,characterData:true});
- }
+  const adminMain=$("adminMain");
+  let globalSearchFrame=0;
+  const globalSearchFilteredRows=new Set();
+  function applyGlobalTableSearch(){
+   if(!adminMain)return;
+   if(["customers","customer-settings"].includes(document.body.dataset.page))return; // Customer pages apply search server-side.
+   const q=String(globalSearchInput?.value||"").toLowerCase().trim();
+   if(!q){
+    globalSearchFilteredRows.forEach(row=>{if(row.isConnected)row.hidden=false;});
+    globalSearchFilteredRows.clear();
+    return;
+   }
+   const rows=adminMain.querySelectorAll(".hf-table tbody tr");
+   const liveRows=new Set(rows);
+   globalSearchFilteredRows.forEach(row=>{if(!liveRows.has(row))globalSearchFilteredRows.delete(row);});
+   rows.forEach(row=>{
+    const hidden=!row.textContent.toLowerCase().includes(q);
+    if(row.hidden!==hidden)row.hidden=hidden;
+    if(hidden)globalSearchFilteredRows.add(row);else globalSearchFilteredRows.delete(row);
+   });
+  }
+  globalSearchInput?.addEventListener("input",applyGlobalTableSearch);
+  if(adminMain&&window.MutationObserver){
+   const globalSearchObserver=new MutationObserver(records=>{
+    if(!String(globalSearchInput?.value||"").trim())return;
+    const tableChanged=records.some(record=>{
+     const target=record.target.nodeType===1?record.target:record.target.parentElement;
+     if(target?.closest?.(".hf-table tbody"))return true;
+     return [...(record.addedNodes||[])].some(node=>node.nodeType===1&&
+      (node.matches?.(".hf-table tbody")||node.querySelector?.(".hf-table tbody")));
+    });
+    if(!tableChanged||globalSearchFrame)return;
+    globalSearchFrame=window.requestAnimationFrame(()=>{globalSearchFrame=0;applyGlobalTableSearch();});
+   });
+   globalSearchObserver.observe(adminMain,{subtree:true,childList:true,characterData:true});
+  }
  doInit();
 });
 })();
