@@ -1,5 +1,5 @@
 
-/* Theme #19 · Lunar Journey: twilight, moonrise, midnight and pre-dawn */
+/* Theme #17 · Lunar Journey: twilight, moonrise, midnight and pre-dawn */
 
 /* Shared scene and picker foundations are repeated here because only the active theme stylesheet is loaded. */
 .hf-celestial-scene{position:absolute;z-index:0;top:74px;left:0;right:0;height:190px;overflow:hidden;pointer-events:none;opacity:0;transition:opacity 1.8s ease}
