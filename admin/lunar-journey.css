@@ -1,5 +1,22 @@
 
 /* Theme #19 · Lunar Journey: twilight, moonrise, midnight and pre-dawn */
+
+/* Shared scene and picker foundations are repeated here because only the active theme stylesheet is loaded. */
+.hf-celestial-scene{position:absolute;z-index:0;top:74px;left:0;right:0;height:190px;overflow:hidden;pointer-events:none;opacity:0;transition:opacity 1.8s ease}
+.hf-celestial-scene.is-visible{opacity:.94}
+.hf-celestial-track{position:absolute;inset:0;width:100%;height:100%;opacity:.35}
+.hf-celestial-track path{fill:none;stroke:rgba(220,228,250,.35);stroke-width:1.5;stroke-dasharray:4 9}
+.hf-celestial-orb{position:absolute;width:56px;height:56px;transform:translate(-50%,-50%);transition:left 1.2s ease,top 1.2s ease}
+.hf-celestial-orb svg{width:100%;height:100%;overflow:visible}
+.hf-celestial-horizon{position:absolute;bottom:0;left:0;right:0;height:26px;background:linear-gradient(180deg,transparent,rgba(17,25,48,.22))}
+.hf-theme-mode-control{margin:12px 16px 4px;padding:13px 14px;border:1px solid #566285;border-radius:14px;background:#394563}
+.hf-theme-mode-heading{display:flex;flex-direction:column;gap:3px;margin-bottom:10px}
+.hf-theme-mode-heading strong{font-size:12px;color:#F2F4FB}
+.hf-theme-mode-heading small{font-size:10px;line-height:1.45;color:#C4CBE0}
+.hf-theme-mode-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.hf-theme-mode-actions button{min-height:35px;border:1px solid #5B688B;border-radius:9px;background:#465273;color:#F0F2FB;font:650 11px inherit;cursor:pointer;transition:background .2s,border-color .2s,transform .2s}
+.hf-theme-mode-actions button.is-active{background:#7182AC;border-color:#B5C2E3;color:#FFFFFF}
+
 html[data-hf-theme="lunar-journey"]{color-scheme:dark}
 html[data-hf-theme="lunar-journey"] body{background:var(--hf-theme-canvas-bg);color:var(--hf-theme-text);transition:background-color 8s ease,color 2s ease}
 html[data-hf-theme="lunar-journey"] .admin-frame{position:relative;background:var(--hf-theme-canvas-bg)}
