@@ -894,13 +894,6 @@
     return output;
   }
 
-  function translateChart");
-      const pattern = new RegExp("(^|[^A-Za-z0-9])(" + escaped + ")(?=$|[^A-Za-z0-9])", "gi");
-      output = output.replace(pattern, (_match, prefix) => prefix + target);
-    }
-    return output;
-  }
-
   function translateChart(chart, lang = language()) {
     if (!chart?.data) return;
     let state = chartState.get(chart);
