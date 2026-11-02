@@ -6,9 +6,9 @@ import vm from "node:vm";
 
 const root = process.cwd();
 const adminDir = join(root, "admin");
-const sharedCssVersion = "20261101-shared-erp-system-v1";
+const sharedCssVersion = "20261102-reports-navigation-v3";
 const workspaceThemeCssVersion = "20261101-merchant-fieldbook-v1";
-const sharedJsVersion = "20261102-dashboard-speed-v2";
+const sharedJsVersion = "20261102-reports-navigation-v3";
 const i18nVersion = "20261102-dashboard-speed-v2";
 const appJsVersion = "20261102-dashboard-speed-v2";
 const read = (path) => readFileSync(join(root, path), "utf8");
@@ -173,6 +173,13 @@ for (const file of readdirSync(adminDir).filter((name) => name.endsWith(".js")))
 
 // The shared admin shell now uses an account-scoped, registry-driven color theme picker.
 const shared = read("admin/shared.js");
+const reportNavTypes=["business","sales","product-sales","top-products","customer-wise-products","customer-products","purchase","product-purchase","top-customers","customers","receivable","payable","low-stock","alert-products","stock","stock-list","account-payments","collections","expenses","transactions","daily"];
+assert.ok(shared.includes('["reports","reports","Reports"') && shared.includes('label:"Business & Sales"') && shared.includes('label:"Daily Reports"'), "Reports navigation must be grouped by the seven report categories.");
+for(const type of reportNavTypes)assert.ok(shared.includes('["'+type+'"'), "Reports navigation is missing report type: "+type);
+assert.ok(shared.includes("data-report-nav-type") && shared.includes("data-nav-report-group") && shared.includes("admin-nav-report-copy"), "Each report must have its own navigable, searchable sidebar link.");
+assert.ok(performanceApp.includes('const reportGroup=page.startsWith("reports-")') && performanceApp.includes('new URLSearchParams(window.location.search).get("report")') && !performanceApp.includes('pageName.startsWith("reports-")'), "Report workspaces must safely initialize from the page dataset and selected report query.");
+const reportsLanding=read("admin/reports.html");
+assert.equal(new Set([...reportsLanding.matchAll(/data-report-type="([^"]+)"/g)].map(match=>match[1])).size,21,"Reports landing page must expose all 21 report types.");
 assert.ok(shared.includes(`ADMIN_COLOR_THEMES["glass-studio"]`) && shared.includes(`name:"Glass Studio"`) && shared.includes(`profile:"Frosted · Airy · Refined"`), "Glass Studio must remain registered and Glyph Signal must be the thirteenth Signature theme.");
 assert.ok(shared.includes('document.documentElement.dataset.hfTheme="warm-harvest";'), "Warm Harvest must remain the default theme.");
 assert.ok(shared.includes("const ADMIN_COLOR_THEMES={") && shared.includes('"warm-harvest":') && shared.includes('"ocean-calm":') && shared.includes('"royal-indigo":') && shared.includes('"forest-sage":') && shared.includes('"berry-rose":') && shared.includes('"coastal-blue":') && shared.includes('id":"plum-amethyst"') && shared.includes('id":"copper-espresso"') && shared.includes('id":"olive-citrus"') && shared.includes('id":"coral-peach"') && shared.includes('ADMIN_COLOR_THEMES["merchant-fieldbook"]') && shared.includes('name:"The Merchant\'s Fieldbook"'), "The registry must contain all thirteen approved themes.");
