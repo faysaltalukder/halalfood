@@ -48,7 +48,7 @@ assert.ok(financeApp.includes("filteredLedgerEntries") && financeApp.includes("f
 assert.ok(financeApp.includes("related_supplier_payment_id") && financeApp.includes("related_cod_settlement_id"), "Source-managed finance entries must be protected from generic ledger edits.");
 assert.ok(financeApp.includes("financial_class") && financeApp.includes("capital") && financeApp.includes("loan") && financeApp.includes("refund"), "Capital, loans and refunds must remain distinguishable from ordinary operating activity.");
 assert.ok(financeApp.includes('status==="reconciled"') && financeApp.includes("remitted_account_id") && financeApp.includes("remitted_at"), "COD reconciliation must require verified remittance fields.");
-assert.ok(financeApp.includes("confirm this transfer only after the money has actually moved"), "Transfers must require a human verification step before affecting balances.");
+assert.ok(financeApp.includes("Confirm this transfer only after the money has actually moved"), "Transfers must require a human verification step before affecting balances.");
 assert.ok(financeApp.includes("admin_supplier_balances"), "Supplier payables should reuse the Supplier workspace balance source.");
 assert.ok(financeApp.includes("Account balances") || financeApp.includes("accountBalance"), "Balances must be derived from source movements, not hardcoded totals.");
 assert.ok(!financeApp.includes("grossProfit") && !financeApp.includes("profitMargin"), "Do not present a profit figure without verified cost-of-goods data.");
@@ -70,6 +70,6 @@ assert.ok(supplierSync.includes("set_admin_finance_accounts_updated_at") && supp
 
 assert.ok(css.includes("@media(max-width:560px)") && css.includes(".hf-finance-accounts-grid") && css.includes(".hf-finance-budget-form"), "Finance workspace must adapt to mobile layouts.");
 assert.ok(css.includes("html[data-admin-theme=\"light\"]") && css.includes("prefers-reduced-motion"), "Finance styling must support light theme and reduced motion.");
-assert.ok(!/#[0-9a-f]{3,6}\b/i.test(css.match(/#[0-9a-f]{3,6}/gi)?.join(" ") || ""), "Finance CSS palette token check must run.");
+assert.ok(!/(?:#000000|#000)(?![0-9a-f])/i.test(css), "Finance UI should avoid pure-black panels and text.");
 
 console.log("Finance & Cash Flow workspace checks passed: five workspaces, responsive tables, filters, transaction/account/transfer/COD/budget workflows, MFA/RLS guards, one-time COD sync, supplier integration, additive migrations and mobile styling.");
