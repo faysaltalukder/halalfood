@@ -1,0 +1,58 @@
+/* Theme #15 — Golden Prestige / Royal Gold. Scoped to this theme only. */
+html[data-hf-theme="golden-prestige"] body[data-page]{background:#F3F0E9!important;color:#303344!important;color-scheme:light}
+html[data-hf-theme="golden-prestige"] body[data-page] .admin-app{background:transparent!important}
+html[data-hf-theme="golden-prestige"] body[data-page] .admin-sidebar{background:linear-gradient(145deg,#292B3B 0%,#303344 58%,#3B3C4D 100%)!important;border-right:1px solid rgba(217,188,130,.28)!important;box-shadow:8px 0 28px rgba(48,51,68,.08)!important;color:#FFF9ED!important}
+html[data-hf-theme="golden-prestige"] body[data-page] .admin-sidebar :is(.admin-brand strong,.admin-nav-label,.admin-favorites-heading){color:#FFF9ED!important}
+html[data-hf-theme="golden-prestige"] body[data-page] .admin-sidebar :is(.admin-brand small,.admin-sidebar-note,.admin-nav-group-label){color:#E6D8BA!important}
+html[data-hf-theme="golden-prestige"] body[data-page] .admin-sidebar :is(.admin-nav-link,.admin-nav-parent-toggle,.admin-nav-child-link,.admin-favorite-link){color:#F7F0E3!important;border-color:transparent!important;background:transparent!important}
+html[data-hf-theme="golden-prestige"] body[data-page] .admin-sidebar :is(.admin-nav-link,.admin-nav-parent-toggle,.admin-nav-child-link,.admin-favorite-link):hover{background:rgba(217,188,130,.13)!important;color:#FFFFFF!important;border-color:rgba(217,188,130,.18)!important}
+html[data-hf-theme="golden-prestige"] body[data-page] .admin-sidebar :is(.admin-nav-link.active,.admin-nav-parent-toggle.active,.admin-nav-child-link.active){background:linear-gradient(110deg,#E6D0A1,#D9BC82)!important;color:#3B3020!important;border-color:#EAD7AD!important;box-shadow:inset 3px 0 #8A642D,0 4px 12px rgba(15,17,27,.12)!important}
+html[data-hf-theme="golden-prestige"] body[data-page] .admin-sidebar :is(.admin-nav-link.active,.admin-nav-parent-toggle.active,.admin-nav-child-link.active) :is(.nav-icon,.admin-nav-text,.admin-nav-expand-icon){color:#3B3020!important}
+html[data-hf-theme="golden-prestige"] body[data-page] .admin-sidebar .admin-nav-children{background:rgba(255,249,237,.055)!important;border:1px solid rgba(217,188,130,.18)!important;border-left:2px solid #B68A45!important;border-radius:12px!important}
+html[data-hf-theme="golden-prestige"] body[data-page] .admin-sidebar .admin-navsearch{background:rgba(255,249,237,.09)!important;border:1px solid rgba(217,188,130,.3)!important;border-radius:11px!important}
+html[data-hf-theme="golden-prestige"] body[data-page] .admin-sidebar .admin-navsearch :is(input,.admin-navsearch-icon){color:#FFF9ED!important}
+html[data-hf-theme="golden-prestige"] body[data-page] .admin-sidebar .admin-navsearch input::placeholder{color:#E6D8BA!important}
+html[data-hf-theme="golden-prestige"] body[data-page] .admin-sidebar .admin-navsearch:focus-within{border-color:#D9BC82!important;box-shadow:0 0 0 3px rgba(217,188,130,.16)!important}
+html[data-hf-theme="golden-prestige"] body[data-page] .admin-sidebar .admin-nav-fav-toggle{color:#E6C98F!important}
+html[data-hf-theme="golden-prestige"] body[data-page] .admin-topbar{background:rgba(255,253,248,.97)!important;border-bottom:1px solid #E5DCCB!important;box-shadow:0 3px 14px rgba(48,51,68,.035)!important}
+html[data-hf-theme="golden-prestige"] body[data-page] .admin-topbar :is(.admin-top-button,.topbar-button,.hf-button-secondary){background:#F5EBD8!important;border-color:#E2D2B2!important;color:#59472A!important}
+html[data-hf-theme="golden-prestige"] body[data-page] .admin-topbar :is(.admin-top-button,.topbar-button,.hf-button-secondary):hover{background:#EFE1C5!important;border-color:#D9BC82!important}
+html[data-hf-theme="golden-prestige"] body[data-page] .admin-main{color:#303344!important}
+html[data-hf-theme="golden-prestige"] body[data-page] .admin-main :is(h1,h2,h3,h4,strong,.page-heading){color:#303344}
+html[data-hf-theme="golden-prestige"] body[data-page] .admin-main :is(.page-eyebrow,.hf-dialog-title-tag){color:#8A642D!important;letter-spacing:.09em}
+html[data-hf-theme="golden-prestige"] body[data-page] .admin-main :is(.hf-card,.hf-chart-card,.hf-orders-workspace,.cp-panel,.ops-section,.hf-dialog-inner){background:#FFFDF8!important;border-color:#E8E0D2!important;box-shadow:0 5px 18px rgba(48,51,68,.045)!important}
+html[data-hf-theme="golden-prestige"] body[data-page] .admin-main :is(.page-heading,.hf-hero,.hf-overview-hero){background:linear-gradient(120deg,#FFFDF8 0%,#F5EBD8 100%)!important;border-color:#E5D8BE!important}
+html[data-hf-theme="golden-prestige"] body[data-page] .admin-main :is(.hf-kpi,.cu-kpi,.cp-kpi,.hf-orders-stat,.hf-supplier-kpi,.hf-marketing-stat){background:linear-gradient(145deg,#FFFDF8,#F7F1E6)!important;border:1px solid #E8E0D2!important}
+html[data-hf-theme="golden-prestige"] body[data-page] .admin-main :is(.hf-kpi-icon,.hf-stat-icon,.hf-orders-stat-icon,.cp-kpi-icon){background:#F2E8D4!important;color:#805C27!important;border-color:#E8D9BC!important}
+html[data-hf-theme="golden-prestige"] body[data-page] .admin-main :is(.hf-button-primary,.hf-button.primary,.hf-button.is-primary){background:#8A642D!important;border-color:#8A642D!important;color:#FFFFFF!important;box-shadow:0 4px 10px rgba(138,100,45,.16)!important}
+html[data-hf-theme="golden-prestige"] body[data-page] .admin-main :is(.hf-button-primary,.hf-button.primary,.hf-button.is-primary):hover{background:#705020!important;border-color:#705020!important}
+html[data-hf-theme="golden-prestige"] body[data-page] .admin-main :is(.hf-button-secondary,.hf-button-quiet){background:#F2E8D5!important;border-color:#E3D5BB!important;color:#59472A!important}
+html[data-hf-theme="golden-prestige"] body[data-page] .admin-main :is(.hf-button-secondary,.hf-button-quiet):hover{background:#E8D9BC!important;border-color:#D9BC82!important}
+html[data-hf-theme="golden-prestige"] body[data-page] .admin-main :is(input:not([type="checkbox"]):not([type="radio"]),select,textarea){background:#FFFFFF!important;color:#303344!important;border:1px solid #DCD5C9!important;border-radius:10px!important;box-shadow:none!important}
+html[data-hf-theme="golden-prestige"] body[data-page] .admin-main :is(input,select,textarea):focus{border-color:#9A702F!important;box-shadow:0 0 0 3px rgba(182,138,69,.16)!important;outline:none!important}
+html[data-hf-theme="golden-prestige"] body[data-page] .admin-main :is(input[type="checkbox"],input[type="radio"]){accent-color:#8A642D}
+html[data-hf-theme="golden-prestige"] body[data-page] .admin-main .hf-table-wrap{border:1px solid #E8E0D2!important;border-radius:12px!important;overflow-x:auto}
+html[data-hf-theme="golden-prestige"] body[data-page] .admin-main .hf-table{background:#FFFDF8!important;color:#303344!important}
+html[data-hf-theme="golden-prestige"] body[data-page] .admin-main .hf-table thead th{background:#F3EAD8!important;color:#4C4438!important;border-bottom:1px solid #E3D7C3!important}
+html[data-hf-theme="golden-prestige"] body[data-page] .admin-main .hf-table tbody tr{background:#FFFDF8!important}
+html[data-hf-theme="golden-prestige"] body[data-page] .admin-main .hf-table tbody tr:nth-child(even){background:#FAF6EE!important}
+html[data-hf-theme="golden-prestige"] body[data-page] .admin-main .hf-table tbody tr:hover{background:#F1E7D4!important}
+html[data-hf-theme="golden-prestige"] body[data-page] .admin-main .hf-table :is(td,th){border-color:#E8E0D2!important}
+html[data-hf-theme="golden-prestige"] body[data-page] .admin-main :is(.hf-data-note,.hf-help,.hf-muted,.muted){color:#625F59!important}
+html[data-hf-theme="golden-prestige"] body[data-page] .admin-main :is(.hf-banner-info,.hf-summary-strip,.hf-filter-bar,.hf-toolbar){background:#F7F2E8!important;border-color:#E8DECC!important;color:#4C4438!important}
+html[data-hf-theme="golden-prestige"] body[data-page] .admin-main :is(.hf-tabs,.hf-tab-list,.ops-subnav,.hf-workspace-tabs){background:#F5F0E6!important;border:1px solid #E5DCCB!important;border-radius:12px!important}
+html[data-hf-theme="golden-prestige"] body[data-page] .admin-main :is(.hf-tab,.hf-workspace-tab,.ops-subnav a){color:#625F59!important}
+html[data-hf-theme="golden-prestige"] body[data-page] .admin-main :is(.hf-tab[aria-selected="true"],.hf-workspace-tab.active,.ops-subnav a.active){background:#FFFDF8!important;color:#805C27!important;border:1px solid #E1D3B7!important;box-shadow:0 2px 7px rgba(48,51,68,.06)!important}
+html[data-hf-theme="golden-prestige"] body[data-page] :is(button,a,input,select,textarea):focus-visible{outline:2px solid #9A702F!important;outline-offset:3px!important}
+html[data-hf-theme="golden-prestige"] body[data-page] .admin-main dialog::backdrop{background:rgba(35,37,51,.42);backdrop-filter:blur(3px)}
+html[data-hf-theme="golden-prestige"] .hf-theme-picker,html[data-hf-theme="golden-prestige"] #hfThemePicker{background:#FFFDF8!important;border:1px solid #E5DCCB!important;border-radius:16px!important;box-shadow:0 22px 60px rgba(48,51,68,.18)!important}
+html[data-hf-theme="golden-prestige"] .hf-theme-group{background:#F7F2E8!important;border:1px solid #E5DCCB!important;border-left:3px solid #B68A45!important;border-radius:12px!important;padding:12px!important}
+html[data-hf-theme="golden-prestige"] .hf-theme-option{background:#FFFDF8!important;border:1px solid #E5DCCB!important;border-radius:10px!important}
+html[data-hf-theme="golden-prestige"] .hf-theme-option:hover{background:#F5EBD8!important;border-color:#D9BC82!important}
+html[data-hf-theme="golden-prestige"] .hf-theme-option.is-selected{border-color:#8A642D!important;box-shadow:inset 3px 0 #8A642D!important;background:#F7F0E2!important}
+html[data-hf-theme="golden-prestige"] .hf-theme-option-copy strong{color:#303344!important}
+html[data-hf-theme="golden-prestige"] .hf-theme-option-copy small{color:#625F59!important}
+html[data-hf-theme="golden-prestige"] body[data-page] ::selection{background:rgba(182,138,69,.22);color:#303344}
+@media(max-width:900px){html[data-hf-theme="golden-prestige"] body[data-page] .admin-main{padding-left:14px!important;padding-right:14px!important}}
+@media(max-width:620px){html[data-hf-theme="golden-prestige"] body[data-page] .admin-main{padding-left:11px!important;padding-right:11px!important}html[data-hf-theme="golden-prestige"] .hf-theme-picker{left:50%!important;right:auto!important;transform:translateX(-50%);width:calc(100vw - 20px);max-height:82vh;overflow:auto}}
+@media(prefers-reduced-motion:reduce){html[data-hf-theme="golden-prestige"] body[data-page] *,html[data-hf-theme="golden-prestige"] body[data-page] *::before,html[data-hf-theme="golden-prestige"] body[data-page] *::after{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
