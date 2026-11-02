@@ -18,11 +18,11 @@
 .hf-theme-mode-actions button.is-active{background:#7182AC;border-color:#B5C2E3;color:#FFFFFF}
 
 html[data-hf-theme="lunar-journey"]{color-scheme:dark}
-html[data-hf-theme="lunar-journey"] body{background:var(--hf-theme-canvas-bg);color:var(--hf-theme-text);transition:background-color 8s ease,color 2s ease}
+html[data-hf-theme="lunar-journey"] body{background:var(--hf-theme-canvas-bg);color:var(--hf-theme-text);transition:background-color 45s ease,color 45s ease}
 html[data-hf-theme="lunar-journey"] .admin-frame{position:relative;background:var(--hf-theme-canvas-bg)}
 html[data-hf-theme="lunar-journey"] .admin-sidebar{background:var(--hf-theme-sidebar-bg)!important;color:var(--hf-theme-sidebar-ink)!important;border-color:var(--hf-theme-sidebar-border)}
 html[data-hf-theme="lunar-journey"] .admin-sidebar :is(.admin-brand small,.admin-nav-label,.admin-sidebar-note){color:var(--hf-theme-sidebar-muted)}
-html[data-hf-theme="lunar-journey"] .admin-nav-link{color:var(--hf-theme-sidebar-muted);transition:background 2s ease,color 2s ease}
+html[data-hf-theme="lunar-journey"] .admin-nav-link{color:var(--hf-theme-sidebar-muted);transition:background 2s ease,color 45s ease}
 html[data-hf-theme="lunar-journey"] .admin-nav-link:hover,html[data-hf-theme="lunar-journey"] .admin-nav-link.active{color:#FFFFFF;background:rgba(209,219,245,.13)}
 html[data-hf-theme="lunar-journey"] .admin-topbar{background:var(--hf-theme-header-bg)!important;border-color:var(--hf-theme-border)!important;color:var(--hf-theme-text)}
 html[data-hf-theme="lunar-journey"] .admin-top-button,html[data-hf-theme="lunar-journey"] .admin-menu-toggle{background:var(--hf-theme-control-bg);border-color:var(--hf-theme-border);color:var(--hf-theme-text)}
@@ -30,7 +30,7 @@ html[data-hf-theme="lunar-journey"] .admin-global-search input{background:var(--
 html[data-hf-theme="lunar-journey"] .admin-main{position:relative;z-index:1;background:transparent!important;color:var(--hf-theme-text)}
 html[data-hf-theme="lunar-journey"] .admin-main :is(h1,h2,h3,h4){color:var(--hf-theme-text)}
 html[data-hf-theme="lunar-journey"] .admin-main :is(p,small,.hf-muted,.hf-data-note,.page-heading p,.hf-kpi-label,.hf-kpi-note){color:var(--hf-theme-muted)}
-html[data-hf-theme="lunar-journey"] .admin-main :is(.hf-card,.hf-panel,.hf-section,.hf-kpi,.hf-summary-card,.hf-overview-range-toolbar,.hf-overview-shortcuts,.hf-orders-hero,.hf-products-toolbar,.hf-table-wrap){background:var(--hf-theme-card-bg);border-color:var(--hf-theme-border);color:var(--hf-theme-text);box-shadow:0 10px 30px rgba(13,20,39,.14);transition:background 8s ease,border-color 8s ease,color 2s ease}
+html[data-hf-theme="lunar-journey"] .admin-main :is(.hf-card,.hf-panel,.hf-section,.hf-kpi,.hf-summary-card,.hf-overview-range-toolbar,.hf-overview-shortcuts,.hf-orders-hero,.hf-products-toolbar,.hf-table-wrap){background:var(--hf-theme-card-bg);border-color:var(--hf-theme-border);color:var(--hf-theme-text);box-shadow:0 10px 30px rgba(13,20,39,.14);transition:background 45s ease,border-color 45s ease,color 45s ease}
 html[data-hf-theme="lunar-journey"] .admin-main :is(.hf-card-pad,.hf-summary-strip,.hf-summary-pill,.hf-table-toolbar,.hf-filter-panel){background:var(--hf-theme-nested-bg);border-color:var(--hf-theme-border);color:var(--hf-theme-text)}
 html[data-hf-theme="lunar-journey"] .admin-main :is(.hf-input,.hf-select,.hf-textarea,input,select,textarea){background:var(--hf-theme-control-bg);border-color:var(--hf-theme-border);color:var(--hf-theme-text);color-scheme:dark}
 html[data-hf-theme="lunar-journey"] .admin-main :is(.hf-button-primary,.btn-primary){background:var(--hf-theme-primary);border-color:var(--hf-theme-primary);color:#202A43}
