@@ -803,7 +803,7 @@ async function fetchOrders(range=null,limit=5000){
 }
 async function fetchEvents(range=null,limit=15000){
  return paginateQuery(()=>{
-  let q=client.from("analytics_events").select("id,event_name,occurred_at,page_path,page_title,session_id,anonymous_id,item_id,item_name,item_category,value,quantity,search_term,source,medium,campaign,metadata").order("occurred_at",{ascending:false}).order("id",{ascending:false});
+  let q=client.from("analytics_events").select("id,event_id,event_name,occurred_at,page_path,page_title,session_id,anonymous_id,item_id,item_name,item_category,value,quantity,search_term,source,medium,campaign,metadata").order("occurred_at",{ascending:false}).order("id",{ascending:false});
   if(range)q=rangeQuery(q,"occurred_at",range);
   return q;
  },limit);

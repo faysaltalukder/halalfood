@@ -11,7 +11,7 @@ The file is one IIFE that waits for `window.HFAdminReady`, receives shared servi
 |---|---|---|
 | Shared bootstrap | `doInit()` | `normalizeCourierMobile`, `selectedRange`, `showCustomDates`, `bindRangeControls`, `attachRefresh`, `renderRangeHint` |
 | Business overview | `initOverview()` | `trendCounts`, `chartAxisOptions`, `orderStatusCounts`, `stageActors`, `topProducts`, `visitorSessionKey`, `formatSeconds`, `buildPageExperience`, `buildSessionJourneys`, `buildProductPerformance`, `renderTopProducts`, `renderFunnel`, `renderRecentOrders`, `fetchOverviewOrderSummary`, `renderActionCenter` |
-| Website analytics | `initAnalytics()` | Page-level analytics refresh and chart rendering; shares event and chart helpers with overview |
+| Website analytics | `initAnalytics()` | Coverage-aware period comparisons, lazy WebGL 3D activity view, product opportunity bubble chart, Dhaka-local activity heatmap, read-time path normalization, event-ID de-duplication and sequential session funnel |
 | Orders and order security | `initOrders()` | `refreshSecuritySignals`, `refreshSecurityReviewQueue`, `render`, `refresh`, order detail/fulfilment handlers |
 | Offline POS import | `window.HFPosInit()` in `admin/pos.js` | `parseCsv`, `buildGroups`, `validatePreview`, `runImport`; calls the atomic `create_offline_pos_sale` RPC |
 | Single courier booking | Order action in `initOrders()` | `inferRedxDistrict`, `orderPackedWeightKg`, `updateConfirmBookProviderFields`, `loadConfirmBookRedxAreas`, `renderConfirmBookItems`, `refreshConfirmBookItems`, `openConfirmBook`, `normalizePhone`, `whatsappUrl`, `courierLookupPhone`, `courierHistoryPercent`, `courierHistoryHumanize`, `showCourierHistory` |

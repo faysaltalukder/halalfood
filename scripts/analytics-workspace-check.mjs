@@ -1,0 +1,15 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+const html=readFileSync("admin/analytics.html","utf8"),app=readFileSync("admin/app.js","utf8"),shared=readFileSync("admin/shared.js","utf8"),css=readFileSync("admin/analytics-finance.css","utf8");
+for(const id of ["analyticsComparisonChart","analytics3DChart","analyticsProductMatrixChart","analyticsActivityHeatmap","analyticsDataHealth","analyticsFunnelNote"])assert.ok(html.includes('id="'+id+'"'),"Missing analytics surface: "+id);
+assert.ok(!html.includes("plotly-gl3d-4.1.2.min.js"),"3D library must be lazy-loaded.");
+assert.ok(app.includes("function buildSequentialFunnel")&&app.includes('next("order_submit",after)'),"Funnel must follow ordered stages within one identified session.");
+assert.ok(app.includes("normalizeAnalyticsPath")&&app.includes('path.replace(/\\/{2,}/g,"/")'),"Analytics paths must normalize duplicate slashes at read time.");
+assert.ok(app.includes("prepareAnalyticsEvents")&&app.includes("duplicateIds++"),"Only duplicate non-empty event IDs may be suppressed.");
+assert.ok(app.includes("previousFrom>=firstTrackedDay")&&app.includes("Missing tracking history is not treated as zero activity."),"Do not compare before tracking coverage.");
+assert.ok(app.includes('type:"scatter3d"')&&app.includes("IntersectionObserver"),"3D chart must use lazy-loaded WebGL.");
+assert.ok(app.includes('type:"bubble"')&&app.includes("viewSessions.size"),"Product bubble uses unique-session denominators.");
+assert.ok(app.includes("Asia/Dhaka")&&app.includes("hourFormatter"),"Activity heatmap must use Dhaka-local hours.");
+assert.ok(shared.includes("event_id,event_name"),"Event retrieval must include event_id.");
+assert.ok(css.includes(".hf-analytics-3d-chart")&&css.includes(".hf-analytics-heatmap")&&css.includes(".hf-analytics-health-grid"),"Responsive analytics styles are required.");
+console.log("Analytics workspace checks passed.");
