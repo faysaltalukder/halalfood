@@ -825,7 +825,7 @@ async function fetchPosts(limit=1000){
 }
 async function fetchFinance(range=null,limit=3000){
  return paginateQuery(()=>{
-  let q=client.from("admin_finance_entries").select("id,entry_type,category,amount,entry_date,description,reference,status,related_order_id,related_supplier_payment_id,related_cod_settlement_id,account_id,payment_method,party_name,financial_class,created_by,created_at,updated_at").order("entry_date",{ascending:false}).order("created_at",{ascending:false});
+  let q=client.from("admin_finance_entries").select("id,entry_type,category,amount,entry_date,description,reference,status,related_order_id,created_by,created_at,updated_at").order("entry_date",{ascending:false}).order("created_at",{ascending:false});
   if(range){
    const from=range.fromDay??(range.from?range.from.slice(0,10):null);
    const to=range.toDay??(range.to?range.to.slice(0,10):null);
