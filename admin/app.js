@@ -3492,18 +3492,49 @@ async function refresh(){
    if(reportGroup)renderWorkspace();return report;
   }
   function analysisFor(type,rows,source){
-   if(type==="business"||type==="sales")return {columns:["status","records","order_value"],rows:groupRows((source.orders||[]).map(o=>({status:o.status,order_value:num(o.total)})),"status",["order_value"]),bars:"order_value"};
-   if(type==="daily")return {columns:["date","orders","order_value","confirmed_expenses","cod_collected","cod_remitted"],rows:rows.slice().sort((a,b)=>b.date.localeCompare(a.date)),bars:"order_value"};
-   if(["product-sales","top-products","product-purchase","low-stock","alert-products","stock","stock-list"].includes(type))return {columns:rows.length?Object.keys(rows[0]).slice(0,8):["product","records"],rows:rows.slice(0,12),bars:type==="product-purchase"?"total":["low-stock","alert-products"].includes(type)?"stock":type==="stock"||type==="stock-list"?"stock_value":"sales"};
-   if(type==="customer-wise-products")return {columns:["customer","records","quantity","total"],rows:groupRows(rows,"customer",["quantity","total"]),bars:"total"};
-   if(["customer-products","top-customers","customers"].includes(type))return {columns:["customer","orders","unique_products","total_spent","last_order"],rows:rows.slice(0,12),bars:"total_spent"};
-   if(type==="purchase")return {columns:["supplier","records","total_amount"],rows:groupRows(rows,"supplier",["total_amount"]),bars:"total_amount"};
-   if(type==="payable")return {columns:["supplier","records","bill_total","paid","balance"],rows:groupRows(rows,"supplier",["bill_total","paid","balance"]),bars:"balance"};
-   if(type==="receivable"||type==="collections")return {columns:["courier","records","cod_amount","collected","remitted","pending_remittance"],rows:groupRows(rows,"courier",["cod_amount","collected","remitted","pending_remittance"]),bars:"collected"};
-   if(type==="account-payments")return {columns:["account_name","records","amount"],rows:groupRows(rows,"account_name",["amount"]),bars:"amount"};
-   if(type==="expenses")return {columns:["category","records","amount"],rows:groupRows(rows,"category",["amount"]),bars:"amount"};
-   if(type==="transactions")return {columns:["entry_type","records","amount"],rows:groupRows(rows,"entry_type",["amount"]),bars:"amount"};
-   return {columns:rows.length?Object.keys(rows[0]).slice(0,8):["category","records"],rows:rows.slice(0,12),bars:"records"};
+   const block=(title,description,columns,data,bars)=>({title,description,columns,rows:data,bars:bars||"records"});
+   const grouped=(title,description,data,key,metrics)=>block(title,description,[key,"records",...(metrics||[])],groupRows(data,key,metrics||[]),metrics?.[0]||"records");
+   if(type==="payable"){
+    const suppliers=source.supplierBalances||[];
+    return {blocks:[
+     block("সরবরাহকারীভিত্তিক বর্তমান দায়","Supplier ledger-এর current outstanding balance; opening balance, confirmed bills, payments ও credits অন্তর্ভুক্ত।",["supplier_name","total_bills","total_paid","total_credits","opening_balance","outstanding_balance"],suppliers,"outstanding_balance"),
+     grouped("বিলভিত্তিক অবস্থা","নির্বাচিত invoice date range-এর bill; paid amount শুধু confirmed allocation থেকে।",rows,"due_state",["bill_total","paid","confirmed_credit","balance"]),
+     grouped("সরবরাহকারীভিত্তিক নির্বাচিত বিল","Invoice date অনুযায়ী selected bill total ও due amount.",rows,"supplier",["bill_total","paid","balance"])
+    ]};
+   }
+   if(type==="receivable"||type==="collections")return {blocks:[
+    grouped("কুরিয়ারভিত্তিক COD অবস্থান","Collected amount থেকে courier fee ও adjustment বাদ দিয়ে net remittance obligation; linked confirmed Finance income counts as verified remittance.",rows,"courier",["cod_amount","collected","expected_net_remittance","verified_remitted","pending_collection","pending_remittance"]),
+    grouped("সেটেলমেন্ট স্ট্যাটাস ও ঝুঁকি","Pending, exception ও reconciled status আলাদা; recorded remittance is not automatically verified cash.",rows,"status",["cod_amount","collected","recorded_remitted","verified_remitted","pending_remittance"]),
+    block("Remittance Variance","Verified remittance compared with expected net remittance after courier fee and adjustment.",["order_number","courier","collected","courier_fee","adjustment_amount","expected_net_remittance","verified_remitted","remittance_variance"],rows.filter(r=>r.verified_remitted>0||r.status==="reconciled"),"remittance_variance")
+   ]};
+   if(type==="account-payments"){
+    const accounts=source.accountBalances||[],transfers=source.transfers||[];
+    return {blocks:[
+     block("বর্তমান Account Balance","Opening balance ও confirmed ledger/transfer movement থেকে প্রতিটি account-এর বর্তমান অবস্থান।",["account_name","account_type","opening_balance","current_balance","is_active"],accounts,"current_balance"),
+     block("নির্বাচিত সময়ে Account Movement","Confirmed income/expense এবং transfer in/out আলাদা দেখানো হয়েছে।",["account_name","period_income","period_expense","period_transfer_in","period_transfer_out","period_net_movement"],accounts,"period_net_movement"),
+     grouped("পেমেন্ট পদ্ধতি অনুযায়ী রেকর্ড","Cash, Bank, bKash, Nagad, Rocket ও অন্যান্য সংরক্ষিত payment method.",rows.filter(r=>r.record_kind==="Finance entry"),"payment_method",["amount"]),
+     block("অভ্যন্তরীণ Account Transfer","এক account থেকে অন্য account-এ স্থানান্তর; income বা expense নয়।",["transfer_date","source_account","destination_account","amount","reference","status"],transfers.map(t=>({transfer_date:t.transfer_date,source_account:t.source_account,destination_account:t.destination_account,amount:num(t.amount),reference:t.reference,status:t.status})),"amount")
+    ]};
+   }
+   if(type==="expenses"){
+    const confirmed=rows.filter(r=>r.status==="confirmed"),operating=confirmed.filter(r=>(r.financial_class||"operating")==="operating");
+    const actualByMonthCategory=new Map();
+    operating.forEach(r=>{const key=String(r.entry_date||"").slice(0,7)+"|"+String(r.category||"Uncategorised");actualByMonthCategory.set(key,(actualByMonthCategory.get(key)||0)+num(r.amount));});
+    const budgets=(source.budgets||[]).map(b=>{const key=String(b.period_start||"").slice(0,7)+"|"+String(b.category||"");const actual=actualByMonthCategory.get(key)||0;return {month:String(b.period_start||"").slice(0,7),category:b.category,budget_amount:num(b.budget_amount),confirmed_expense:actual,remaining_budget:num(b.budget_amount)-actual,status:b.status,variance:actual-num(b.budget_amount)};});
+    return {blocks:[
+     grouped("ক্যাটাগরি অনুযায়ী নিশ্চিত Operating Expense","Budget utilization uses confirmed operating expense only.",operating,"category",["amount"]),
+     block("মাসিক বাজেট বনাম নিশ্চিত খরচ","একই মাস ও category-এর budget-এর সঙ্গে confirmed operating expense তুলনা।",["month","category","budget_amount","confirmed_expense","remaining_budget","variance","status"],budgets,"confirmed_expense"),
+     grouped("Financial Class অনুযায়ী খরচ","Operating, Capital, Loan, Refund ও Adjustment আলাদা শ্রেণিতে।",confirmed,"financial_class",["amount"]),
+     grouped("খরচের স্ট্যাটাস","Draft, Confirmed ও Void expense আলাদা করে।",rows,"status",["amount"])
+    ]};
+   }
+   if(type==="transactions")return {blocks:[
+    grouped("লেনদেনের ধরন","Income, Expense ও Internal transfer আলাদা record type.",rows,"entry_type",["amount"]),
+    grouped("আর্থিক শ্রেণি","Operating, Capital, Loan, Refund, Adjustment ও Internal transfer আলাদা।",rows,"financial_class",["amount"]),
+    grouped("লেনদেনের অবস্থা","Draft, Confirmed, Void বা সংরক্ষিত status।",rows,"status",["amount"]),
+    grouped("ক্যাটাগরি অনুযায়ী লেনদেন","Finance ledger category ও transfer category অনুযায়ী amount.",rows,"category",["amount"])
+   ]};
+   return {blocks:[block("রিপোর্ট বিশ্লেষণ","নির্বাচিত রেকর্ডের সারাংশ।",rows.length?Object.keys(rows[0]).slice(0,8):["record"],rows.slice(0,20),"records")]};
   }
   function renderBars(rows,key){
    if(!rows.length)return '<div class="hf-report-empty"><strong>বিশ্লেষণের জন্য রেকর্ড নেই</strong><p>সোর্স মডিউলে ডেটা যুক্ত হলে এই অংশ পূরণ হবে।</p></div>';
