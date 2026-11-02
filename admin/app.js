@@ -2270,7 +2270,7 @@ async function refresh(){
     if(!Number.isFinite(payload.opening_balance)||payload.opening_balance<0)throw new Error("Opening balance cannot be negative.");
     if(!payload.opening_date)throw new Error("Choose the opening balance date.");
     if(!id)payload.created_by=H.ADMIN_EMAIL;
-    if(id){const {error}=await client.from("admin_finance_accounts").update(payload).eq("id",id);if(error)throw error;await audit("finance_account_updated","finance_account",id,"Finance account updated",{account_type:payload.account_type});}
+    if(id){payload.updated_at=new Date().toISOString();const {error}=await client.from("admin_finance_accounts").update(payload).eq("id",id);if(error)throw error;await audit("finance_account_updated","finance_account",id,"Finance account updated",{account_type:payload.account_type});}
     else{const {data,error}=await client.from("admin_finance_accounts").insert(payload).select("id").single();if(error)throw error;await audit("finance_account_created","finance_account",data.id,"Finance account added",{account_type:payload.account_type});}
     $("financeAccountDialog").close();toast("Account saved.");await refresh();
    }catch(err){$("financeAccountFormError").textContent=err.message||"Account could not be saved.";}
@@ -2295,7 +2295,7 @@ async function refresh(){
   $("financeCodForm")?.addEventListener("submit",async event=>{
    event.preventDefault();const id=$("financeCodId").value,button=$("financeCodForm").querySelector('[type="submit"]');button.disabled=true;$("financeCodFormError").textContent="";
    try{
-    const order=orders.find(o=>o.id===$("financeCodOrderId").value),payload={order_id:$("financeCodOrderId").value||null,order_number:order?.order_number||"",customer_name:order?.customer_name||"",
+    const order=orders.find(o=>o.id===$("financeCodOrderId").value),payload={order_id:$("financeCodOrderId").value||null,order_number:order?.order_number||String(order?.id||"").slice(0,8),customer_name:order?.customer_name||"",
      courier_name:$("financeCodCourier").value.trim(),tracking_reference:$("financeCodTracking").value.trim(),
      cod_amount:Number($("financeCodAmount").value),collected_amount:Number($("financeCodCollected").value),courier_fee:Number($("financeCodFee").value),
      adjustment_amount:Number($("financeCodAdjustment").value),remitted_amount:Number($("financeCodRemitted").value),remitted_account_id:$("financeCodAccount").value||null,
@@ -2310,7 +2310,7 @@ async function refresh(){
      if(!confirm("This will create or update one linked Confirmed Income record for the verified remittance. Have you verified the money reached this account?"))throw new Error("Reconciliation cancelled. No changes were saved.");
     }
     if(!id)payload.created_by=H.ADMIN_EMAIL;
-    if(id){const {error}=await client.from("admin_cod_settlements").update(payload).eq("id",id);if(error)throw error;await audit("finance_cod_settlement_updated","cod_settlement",id,"COD settlement updated",{status:payload.status,remitted_amount:payload.remitted_amount});}
+    if(id){payload.updated_at=new Date().toISOString();const {error}=await client.from("admin_cod_settlements").update(payload).eq("id",id);if(error)throw error;await audit("finance_cod_settlement_updated","cod_settlement",id,"COD settlement updated",{status:payload.status,remitted_amount:payload.remitted_amount});}
     else{const {data,error}=await client.from("admin_cod_settlements").insert(payload).select("id").single();if(error)throw error;await audit("finance_cod_settlement_created","cod_settlement",data.id,"COD settlement added",{status:payload.status,remitted_amount:payload.remitted_amount});}
     $("financeCodDialog").close();toast(payload.status==="reconciled"?"Settlement reconciled and linked to the Finance Ledger.":"COD settlement saved.");await refresh();
    }catch(err){$("financeCodFormError").textContent=err.message||"COD settlement could not be saved.";}
@@ -2324,7 +2324,7 @@ async function refresh(){
     const periodStart=month+"-01";
     const existing=budgets.find(b=>String(b.period_start).slice(0,10)===periodStart&&b.category.toLowerCase()===category.toLowerCase());
     const payload={category,period_start:periodStart,budget_amount:amount,notes:$("financeBudgetNotes").value.trim(),status:"active"};
-    if(existing){const {error}=await client.from("admin_finance_budgets").update(payload).eq("id",existing.id);if(error)throw error;await audit("finance_budget_updated","finance_budget",existing.id,"Monthly finance budget updated",{category,period_start:periodStart});}
+    if(existing){payload.updated_at=new Date().toISOString();const {error}=await client.from("admin_finance_budgets").update(payload).eq("id",existing.id);if(error)throw error;await audit("finance_budget_updated","finance_budget",existing.id,"Monthly finance budget updated",{category,period_start:periodStart});}
     else{payload.created_by=H.ADMIN_EMAIL;const {data,error}=await client.from("admin_finance_budgets").insert(payload).select("id").single();if(error)throw error;await audit("finance_budget_created","finance_budget",data.id,"Monthly finance budget added",{category,period_start:periodStart});}
     $("financeBudgetForm").reset();$("financeBudgetMonth").value=todayISO().slice(0,7);toast("Monthly budget saved.");await refresh();
    }catch(err){toast(err.message||"Budget could not be saved.","error");}
@@ -2352,7 +2352,7 @@ async function refresh(){
    const next=confirmBtn?"confirmed":"void";
    if(next==="confirmed"&&!confirm("Confirm this transfer only after the money has actually moved between the two accounts. It will update both account balances but not Income or Expenses."))return;
    if(next==="void"&&!confirm("Void this transfer? It will remain in history but stop affecting account balances."))return;
-   try{const {error}=await client.from("admin_finance_transfers").update({status:next}).eq("id",item.id);if(error)throw error;await audit("finance_transfer_status_changed","finance_transfer",item.id,"Internal transfer "+next,{amount:item.amount});toast("Transfer "+next+".");await refresh();}
+   try{const {error}=await client.from("admin_finance_transfers").update({status:next,updated_at:new Date().toISOString()}).eq("id",item.id);if(error)throw error;await audit("finance_transfer_status_changed","finance_transfer",item.id,"Internal transfer "+next,{amount:item.amount});toast("Transfer "+next+".");await refresh();}
    catch(err){toast(err.message||"Transfer could not be updated.","error");}
   });
   $("financeCodTableBody")?.addEventListener("click",event=>{const btn=event.target.closest("[data-edit-cod]");if(!btn)return;const item=settlements.find(s=>s.id===btn.dataset.editCod);if(item)openCod(item);});
@@ -2360,7 +2360,7 @@ async function refresh(){
    const btn=event.target.closest("[data-archive-budget]");if(!btn)return;
    const item=budgets.find(b=>b.id===btn.dataset.archiveBudget);if(!item)return;
    if(!confirm("Archive this budget? Historical actuals and budget values remain available."))return;
-   try{const {error}=await client.from("admin_finance_budgets").update({status:"archived"}).eq("id",item.id);if(error)throw error;await audit("finance_budget_archived","finance_budget",item.id,"Finance budget archived",{category:item.category});toast("Budget archived.");await refresh();}
+   try{const {error}=await client.from("admin_finance_budgets").update({status:"archived",updated_at:new Date().toISOString()}).eq("id",item.id);if(error)throw error;await audit("finance_budget_archived","finance_budget",item.id,"Finance budget archived",{category:item.category});toast("Budget archived.");await refresh();}
    catch(err){toast(err.message||"Budget could not be archived.","error");}
   });
   const exportEntries=()=>{
