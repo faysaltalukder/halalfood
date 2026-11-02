@@ -2938,12 +2938,12 @@ async function refresh(){
    if(["customer-products","top-customers","customers"].includes(type))return [k("গ্রাহক",rows.length,"স্বতন্ত্র গ্রাহক"),k("অর্ডার",sum(rows,"orders"),"রেকর্ডকৃত"),k("মোট ব্যয়",money(sum(rows,"total_spent")),"অর্ডার মূল্য"),k("গড় ব্যয়",money(rows.length?sum(rows,"total_spent")/rows.length:0),"প্রতি গ্রাহক")];
    if(type==="purchase")return [k("ক্রয় অর্ডার",purchases.length,"Purchase Orders"),k("ক্রয়ের মোট",money(sum(purchases,"total_amount")),"অর্ডার মোট"),k("ক্রয় লাইন",purchases.reduce((n,p)=>n+(p.admin_purchase_order_items||[]).length,0),"অর্ডার আইটেম"),k("সম্পন্ন",purchases.filter(p=>["received","completed"].includes(String(p.status||"").toLowerCase())).length,"Status অনুযায়ী")];
    if(type==="product-purchase")return [k("পণ্য লাইন",rows.length,"ক্রয় আইটেম"),k("ক্রয় ইউনিট",sum(rows,"quantity"),"অর্ডারকৃত"),k("গৃহীত ইউনিট",sum(rows,"received_quantity"),"GRN অনুযায়ী"),k("ক্রয় মূল্য",money(sum(rows,"total")),"লাইন কস্ট")];
-   if(type==="payable")return [k("সরবরাহকারী বিল",rows.length,"রেকর্ডকৃত"),k("মোট বিল",money(sum(rows,"bill_total")),"স্ট্যাটাস আলাদা"),k("বরাদ্দ পেমেন্ট",money(sum(rows,"paid")),"Allocation অনুযায়ী"),k("অবশিষ্ট দায়",money(sum(rows,"balance")),"বিল কম পেমেন্ট")];
-   if(type==="receivable"||type==="collections")return [k("COD রেকর্ড",settlements.length,"Courier settlement"),k("COD মূল্য",money(sum(rows,"cod_amount")),"অর্ডার COD"),k("সংগ্রহ",money(sum(rows,"collected")),"রেকর্ডকৃত"),k("রেমিট্যান্স",money(sum(rows,"remitted")),"রেকর্ডকৃত"),k("সংগ্রহ বাকি",money(sum(rows,"pending_collection")),"COD - collected"),k("রেমিট্যান্স বাকি",money(sum(rows,"pending_remittance")),"collected - remitted")];
+   if(type==="payable"){const confirmed=rows.filter(r=>String(r.status||"").toLowerCase()==="confirmed");return [k("নিশ্চিত বিল",confirmed.length,"Invoice-date range"),k("নিশ্চিত বিলের মূল্য",money(sum(confirmed,"bill_total")),"Draft/Void বাদ"),k("নিশ্চিত পেমেন্ট",money(sum(confirmed,"paid")),"Confirmed payment allocations"),k("নিশ্চিত ক্রেডিট",money(sum(confirmed,"confirmed_credit")),"Confirmed credit notes"),k("বর্তমান Supplier Payables",money(sum(source.supplierBalances||[],"outstanding_balance")),"Supplier ledger current balance")];}
+   if(type==="receivable"||type==="collections")return [k("COD রেকর্ড",rows.length,type==="receivable"?"Current outstanding snapshot":"Selected-period settlement activity"),k("COD মূল্য",money(sum(rows,"cod_amount")),"Settlement records"),k("সংগ্রহ",money(sum(rows,"collected")),"Current recorded collection"),k("যাচাইকৃত রেমিট্যান্স",money(sum(rows,"verified_remitted")),"Linked confirmed Finance income"),k("সংগ্রহ বাকি",money(sum(rows,"pending_collection")),"COD less collected"),k("নেট রেমিট্যান্স বাকি",money(sum(rows,"pending_remittance")),"After courier fee and adjustment")];
    if(["low-stock","alert-products","stock","stock-list"].includes(type))return [k("পণ্য",rows.length,"বর্তমান স্ন্যাপশট"),k("মোট ইউনিট",sum(rows,"stock"),"বর্তমান স্টক"),k("স্টক মূল্য",money(sum(rows,"stock_value")),"সংরক্ষিত কস্ট থাকলে"),k("শূন্য স্টক",rows.filter(r=>num(r.stock)===0).length,"স্টক নেই"),k("সীমার নিচে",rows.filter(r=>num(r.stock)<=num(r.minimum_stock)).length,"Low threshold")];
-   if(type==="account-payments")return [k("পেমেন্ট রেকর্ড",rows.length,"অ্যাকাউন্ট/পদ্ধতি সংযুক্ত"),k("মোট পেমেন্ট",money(sum(rows,"amount")),"Finance ledger"),k("অ্যাকাউন্ট",unique(rows,"account_name"),"ব্যবহৃত অ্যাকাউন্ট"),k("ট্রান্সফার",source.transfers?.length||0,"আলাদা তালিকা")];
-   if(type==="expenses")return [k("ব্যয় রেকর্ড",rows.length,"Expense ledger"),k("মোট ব্যয়",money(sum(rows,"amount")),"সব status"),k("নিশ্চিত ব্যয়",money(sum(rows.filter(r=>String(r.status).toLowerCase()==="confirmed"),"amount")),"Confirmed only"),k("বাজেট লাইন",source.budgets?.length||0,"পরিকল্পনা বাজেট")];
-   if(type==="transactions")return [k("লেনদেন",rows.length,"সব status"),k("Confirmed",rows.filter(r=>String(r.status).toLowerCase()==="confirmed").length,"নিশ্চিত এন্ট্রি"),k("Income",money(sum(rows.filter(r=>String(r.entry_type).toLowerCase()==="income"&&String(r.status).toLowerCase()==="confirmed"),"amount")),"Confirmed only"),k("Expense",money(sum(rows.filter(r=>String(r.entry_type).toLowerCase()==="expense"&&String(r.status).toLowerCase()==="confirmed"),"amount")),"Confirmed only")];
+   if(type==="account-payments"){const entries=rows.filter(r=>r.record_kind==="Finance entry"&&r.status==="confirmed"),transfers=rows.filter(r=>r.record_kind==="Internal transfer"&&r.status==="confirmed");const cashIn=sum(entries.filter(r=>r.entry_type==="income"),"amount"),cashOut=sum(entries.filter(r=>r.entry_type==="expense"),"amount");return [k("সক্রিয় অ্যাকাউন্ট",(source.accountBalances||[]).filter(a=>a.is_active).length,"Configured accounts"),k("বর্তমান অ্যাকাউন্ট ব্যালেন্স",money(sum((source.accountBalances||[]).filter(a=>a.is_active),"current_balance")),"Opening + confirmed entries + transfers"),k("সময়ে Cash In",money(cashIn),"Confirmed income only"),k("সময়ে Cash Out",money(cashOut),"Confirmed expense only"),k("নেট অ্যাকাউন্ট মুভমেন্ট",money(sum((source.accountBalances||[]).filter(a=>a.is_active),"period_net_movement")),"Transfers included separately"),k("Internal Transfers",transfers.length,"Not income or expense")];}
+   if(type==="expenses"){const confirmed=rows.filter(r=>r.status==="confirmed"),operating=confirmed.filter(r=>(r.financial_class||"operating")==="operating"),draft=rows.filter(r=>r.status==="draft");return [k("খরচের রেকর্ড",rows.length,"Draft/Confirmed/Void"),k("Confirmed Operating Expense",money(sum(operating,"amount")),"Operating only"),k("Confirmed Non-operating",money(sum(confirmed.filter(r=>(r.financial_class||"operating")!=="operating"),"amount")),"Capital/Loan/Refund/Adjustment etc."),k("Draft খরচ",draft.length,"Needs review"),k("নির্বাচিত বাজেট",money(sum((source.budgets||[]).filter(b=>b.status==="active"),"budget_amount")),"Active budgets")];}
+   if(type==="transactions"){const confirmed=rows.filter(r=>r.status==="confirmed"),transfers=confirmed.filter(r=>r.entry_type==="transfer");return [k("মোট রেকর্ড",rows.length,"Ledger + internal transfers"),k("নিশ্চিত Income",money(sum(confirmed.filter(r=>r.entry_type==="income"),"amount")),"Confirmed ledger income"),k("নিশ্চিত Expense",money(sum(confirmed.filter(r=>r.entry_type==="expense"),"amount")),"Confirmed ledger expense"),k("Internal Transfers",transfers.length,"Separate from income/expense"),k("Transfer Amount",money(sum(transfers,"amount")),"Account-to-account movement"),k("Draft / Void",rows.filter(r=>["draft","void"].includes(String(r.status||"").toLowerCase())).length,"Not in confirmed totals")];}
    return [k("রেকর্ড",rows.length,"নির্বাচিত সময়"),k("মোট পরিমাণ",money(sum(rows,"amount")),"রেকর্ডকৃত"),k("Confirmed",rows.filter(r=>String(r.status).toLowerCase()==="confirmed").length,"নিশ্চিত অবস্থা")];
   }
   function analysisFor(type,rows,source){
@@ -3141,14 +3141,40 @@ async function refresh(){
     else rows=purchases.flatMap(p=>(p.admin_purchase_order_items||[]).map(i=>({purchase_number:p.purchase_number,purchase_date:p.order_date,status:p.status,supplier:p.admin_suppliers?.name||"—",product:i.product_name,quantity:num(i.quantity),received_quantity:num(i.received_quantity),pending_quantity:Math.max(0,num(i.quantity)-num(i.received_quantity)),unit:i.unit,unit_cost:num(i.unit_cost),total:num(i.line_total)})));
     title=type==="purchase"?"Purchase Report":"Product Purchase Report";notes="Only recorded Purchase Orders and saved purchase-order item snapshots are included; order creation does not prove payment.";
    }else if(type==="payable"){
-    const [bills,allocations]=await Promise.all([signedQuery(rangeQuery(client.from("admin_supplier_bills").select("id,bill_number,supplier_invoice_number,invoice_date,due_date,total_amount,status,admin_suppliers(name)").order("invoice_date",{ascending:false}).limit(5000),"invoice_date",range)),signedQuery(client.from("admin_supplier_payment_allocations").select("supplier_bill_id,allocated_amount").limit(10000))]);
-    const paid=new Map();allocations.forEach(a=>paid.set(a.supplier_bill_id,(paid.get(a.supplier_bill_id)||0)+num(a.allocated_amount)));
-    rows=bills.map(b=>({bill_number:b.bill_number,supplier:b.admin_suppliers?.name||"—",supplier_invoice_number:b.supplier_invoice_number,invoice_date:b.invoice_date,due_date:b.due_date,status:b.status,bill_total:num(b.total_amount),paid:paid.get(b.id)||0,balance:Math.max(0,num(b.total_amount)-(paid.get(b.id)||0)),due_state:String(b.status||"").toLowerCase()==="void"?"Void":String(b.status||"").toLowerCase()==="draft"?"Draft":b.due_date&&b.due_date<todayISO()&&num(b.total_amount)-(paid.get(b.id)||0)>0?"Overdue":num(b.total_amount)-(paid.get(b.id)||0)<=0?"Paid":"Open"}));source.bills=bills;title="Supplier Payables Report";notes="Bill balance = total amount less the sum of all payment allocations. Draft and Void bills remain separately identified.";
+    const [bills,allocations,payments,credits,supplierBalances]=await Promise.all([
+     signedQuery(rangeQuery(client.from("admin_supplier_bills").select("id,supplier_id,bill_number,supplier_invoice_number,invoice_date,due_date,total_amount,status,admin_suppliers(name)").order("invoice_date",{ascending:false}).order("id",{ascending:true}).limit(5000),"invoice_date",range)),
+     signedQuery(client.from("admin_supplier_payment_allocations").select("payment_id,supplier_bill_id,allocated_amount").limit(20000)),
+     signedQuery(client.from("admin_supplier_payments").select("id,supplier_id,status,payment_date,amount").limit(10000)),
+     signedQuery(client.from("admin_supplier_credit_notes").select("id,supplier_id,supplier_bill_id,credit_date,amount,status").limit(10000)),
+     signedQuery(client.from("admin_supplier_balances").select("supplier_id,supplier_name,outstanding_balance,total_bills,total_paid,total_credits,opening_balance,last_purchase_date,last_payment_date").order("supplier_name",{ascending:true}).limit(2000))
+    ]);
+    const confirmedPaymentIds=new Set(payments.filter(p=>String(p.status||"").toLowerCase()==="confirmed").map(p=>p.id));
+    const paidByBill=new Map();allocations.forEach(a=>{if(confirmedPaymentIds.has(a.payment_id))paidByBill.set(a.supplier_bill_id,(paidByBill.get(a.supplier_bill_id)||0)+num(a.allocated_amount));});
+    const creditByBill=new Map();credits.forEach(c=>{if(String(c.status||"").toLowerCase()==="confirmed"&&c.supplier_bill_id)creditByBill.set(c.supplier_bill_id,(creditByBill.get(c.supplier_bill_id)||0)+num(c.amount));});
+    const supplierBalanceById=new Map(supplierBalances.map(v=>[v.supplier_id,v]));
+    rows=bills.map(bill=>{
+     const st=String(bill.status||"").toLowerCase(),total=num(bill.total_amount),paid=paidByBill.get(bill.id)||0,credit=creditByBill.get(bill.id)||0;
+     const balance=st==="confirmed"?Math.max(0,total-paid-credit):0,supplier=supplierBalanceById.get(bill.supplier_id);
+     const due=st==="void"?"Void":st==="draft"?"Draft":bill.due_date&&bill.due_date<todayISO()&&balance>0?"Overdue":balance<=0&&paid+credit>0?"Paid / Credited":paid+credit>0?"Partially paid":"Open";
+     return {bill_number:bill.bill_number,supplier:bill.admin_suppliers?.name||supplier?.supplier_name||"—",supplier_invoice_number:bill.supplier_invoice_number,invoice_date:bill.invoice_date,due_date:bill.due_date,status:bill.status,bill_total:total,paid,confirmed_credit:credit,balance,due_state:due,supplier_current_balance:num(supplier?.outstanding_balance)};
+    });
+    source.bills=bills;source.payments=payments;source.allocations=allocations;source.credits=credits;source.supplierBalances=supplierBalances;
+    title="Supplier Payables Report";
+    notes="Bills are selected by invoice date. Bill-level payments include allocations from confirmed supplier payments only; confirmed credit notes are deducted. Supplier balances show the latest ledger position, not a historical as-of balance.";
    }else if(type==="receivable"||type==="collections"){
-    const settlements=await fetchReportSettlements(range);source.settlements=settlements;
-    rows=settlements.map(s=>({order_number:s.order_number,customer:s.customer_name,courier:s.courier_name,tracking_reference:s.tracking_reference,cod_amount:num(s.cod_amount),collected:num(s.collected_amount),courier_fee:num(s.courier_fee),remitted:num(s.remitted_amount),pending_collection:Math.max(0,num(s.cod_amount)-num(s.collected_amount)),pending_remittance:Math.max(0,num(s.collected_amount)-num(s.remitted_amount)),status:s.status,collected_at:s.collected_at,remitted_at:s.remitted_at}));
+    const [settlements,codFinance]=await Promise.all([fetchReportSettlements(null),fetchReportFinance(null)]);
+    source.settlements=settlements;source.codFinance=codFinance.filter(e=>e.entry_type==="income"&&e.status==="confirmed"&&e.related_cod_settlement_id);
+    const verifiedBySettlement=new Map();source.codFinance.forEach(e=>verifiedBySettlement.set(e.related_cod_settlement_id,(verifiedBySettlement.get(e.related_cod_settlement_id)||0)+num(e.amount)));
+    const inRange=value=>{const day=String(value||"").slice(0,10);if(!day)return false;const from=range.fromDay??(range.from?String(range.from).slice(0,10):"0000-01-01");const to=range.toDay??(range.to?String(range.to).slice(0,10):todayISO());return day>=from&&day<=to;};
+    rows=settlements.filter(settlement=>String(settlement.status||"").toLowerCase()!=="cancelled").map(settlement=>{
+     const cod=num(settlement.cod_amount),collected=num(settlement.collected_amount),fee=num(settlement.courier_fee),adjustment=num(settlement.adjustment_amount);
+     const expected=Math.max(0,collected-fee+adjustment),verified=verifiedBySettlement.get(settlement.id)||0;
+     return {settlement_id:settlement.id,order_number:settlement.order_number,customer:settlement.customer_name,courier:settlement.courier_name,tracking_reference:settlement.tracking_reference,cod_amount:cod,collected,courier_fee:fee,adjustment_amount:adjustment,expected_net_remittance:expected,recorded_remitted:num(settlement.remitted_amount),verified_remitted:verified,pending_collection:Math.max(0,cod-collected),pending_remittance:Math.max(0,expected-verified),remittance_variance:verified-expected,status:settlement.status,collected_at:settlement.collected_at,remitted_at:settlement.remitted_at,created_at:settlement.created_at,remitted_account_id:settlement.remitted_account_id};
+    });
     if(type==="receivable")rows=rows.filter(r=>r.pending_collection>0||r.pending_remittance>0||["pending","exception"].includes(String(r.status).toLowerCase()));
-    title=type==="receivable"?"COD Receivable Report":"COD Collections Report";notes="This is courier COD collection/remittance tracking, not customer credit sales. Pending collection and pending remittance are calculated separately.";
+    else rows=rows.filter(r=>inRange(r.collected_at)||inRange(r.remitted_at)||inRange(r.created_at));
+    title=type==="receivable"?"Courier / COD Receivable Report":"COD Collections Report";
+    notes=type==="receivable"?"Current exposure snapshot. Uncollected COD and net courier remittance not yet verified in Finance are shown separately. This is not customer credit debt.":"Selected by collection/remittance/creation date; linked confirmed Finance income is the verified remittance source. Settlement rows show the latest saved state, not a full event-by-event history.";
    }else if(["low-stock","alert-products","stock","stock-list"].includes(type)){
     const products=await fetchProducts(10000);source.products=products;
     const active=products.filter(p=>p.is_active!==false).map(p=>({product:p.name,sku:p.sku,category:p.category||"Uncategorised",price:num(p.price),stock:num(p.stock_quantity),minimum_stock:num(p.low_stock_threshold??5),unit_cost:p.cost_price===null?null:num(p.cost_price),stock_value:p.cost_price===null?null:num(p.stock_quantity)*num(p.cost_price),alert:num(p.stock_quantity)<=0?"OUT OF STOCK":num(p.stock_quantity)<=num(p.low_stock_threshold??5)?"LOW":"OK",updated_at:p.updated_at||p.created_at}));
@@ -3157,19 +3183,49 @@ async function refresh(){
    }else if(["account-payments","expenses","transactions"].includes(type)){
     const finance=await fetchReportFinance(range);source.finance=finance;
     if(type==="account-payments"){
-     const accounts=await signedQuery(client.from("admin_finance_accounts").select("id,name,account_type,provider,account_reference,is_active").order("name",{ascending:true}).limit(1000));const map=new Map(accounts.map(a=>[a.id,a]));source.accounts=accounts;
-     rows=finance.filter(e=>e.account_id||String(e.payment_method||"").trim()).map(e=>({entry_date:e.entry_date,entry_type:e.entry_type,party_name:e.party_name,account_name:map.get(e.account_id)?.name||"—",account_type:map.get(e.account_id)?.account_type||"",payment_method:e.payment_method,category:e.category,financial_class:e.financial_class,amount:num(e.amount),status:e.status,reference:e.reference,related_order_id:e.related_order_id||""}));
-     const transfers=await signedQuery(rangeQuery(client.from("admin_finance_transfers").select("id,source_account_id,destination_account_id,transfer_date,amount,reference,description,status").order("transfer_date",{ascending:false}).limit(3000),"transfer_date",range));
-     source.transfers=transfers.map(t=>({...t,source_account:map.get(t.source_account_id)?.name||"—",destination_account:map.get(t.destination_account_id)?.name||"—"}));notes="Account-linked/payment-method Finance entries are listed here. Internal transfers are separate and are not income or expense.";
+     const [allFinance,accounts,periodTransfers,allTransfers]=await Promise.all([
+      fetchReportFinance(null),
+      signedQuery(client.from("admin_finance_accounts").select("id,name,account_type,provider,account_reference,opening_balance,opening_date,is_active").order("name",{ascending:true}).limit(1000)),
+      fetchReportTransfers(range),
+      fetchReportTransfers(null)
+     ]);
+     const accountMap=new Map(accounts.map(account=>[account.id,account]));
+     source.accountBalances=accounts.map(account=>{
+      const openingDate=String(account.opening_date||"0000-01-01").slice(0,10);
+      const ledger=allFinance.filter(e=>e.account_id===account.id&&e.status==="confirmed"&&String(e.entry_date||"")>=openingDate).reduce((total,e)=>total+(e.entry_type==="income"?num(e.amount):e.entry_type==="expense"?-num(e.amount):0),0);
+      const transferIn=allTransfers.filter(t=>t.destination_account_id===account.id&&t.status==="confirmed"&&String(t.transfer_date||"")>=openingDate).reduce((total,t)=>total+num(t.amount),0);
+      const transferOut=allTransfers.filter(t=>t.source_account_id===account.id&&t.status==="confirmed"&&String(t.transfer_date||"")>=openingDate).reduce((total,t)=>total+num(t.amount),0);
+      const periodEntries=finance.filter(e=>e.account_id===account.id&&e.status==="confirmed");
+      const periodIn=periodEntries.filter(e=>e.entry_type==="income").reduce((total,e)=>total+num(e.amount),0);
+      const periodOut=periodEntries.filter(e=>e.entry_type==="expense").reduce((total,e)=>total+num(e.amount),0);
+      const periodTransferIn=periodTransfers.filter(t=>t.status==="confirmed"&&t.destination_account_id===account.id).reduce((total,t)=>total+num(t.amount),0);
+      const periodTransferOut=periodTransfers.filter(t=>t.status==="confirmed"&&t.source_account_id===account.id).reduce((total,t)=>total+num(t.amount),0);
+      return {account_id:account.id,account_name:account.name,account_type:account.account_type,provider:account.provider,account_reference:account.account_reference,is_active:account.is_active,opening_balance:num(account.opening_balance),opening_date:openingDate,current_balance:num(account.opening_balance)+ledger+transferIn-transferOut,period_income:periodIn,period_expense:periodOut,period_transfer_in:periodTransferIn,period_transfer_out:periodTransferOut,period_net_movement:periodIn-periodOut+periodTransferIn-periodTransferOut};
+     });
+     source.transfers=periodTransfers.map(t=>({...t,source_account:accountMap.get(t.source_account_id)?.name||"—",destination_account:accountMap.get(t.destination_account_id)?.name||"—"}));
+     const entries=finance.map(e=>({record_kind:"Finance entry",record_id:e.id,entry_date:e.entry_date,entry_type:e.entry_type,party_name:e.party_name,account_name:accountMap.get(e.account_id)?.name||"Unassigned",account_type:accountMap.get(e.account_id)?.account_type||"",source_account:"",destination_account:"",payment_method:e.payment_method,category:e.category,financial_class:e.financial_class,amount:num(e.amount),status:e.status,reference:e.reference,related_order_id:e.related_order_id||"",description:e.description}));
+     const transfers=periodTransfers.map(t=>({record_kind:"Internal transfer",record_id:t.id,entry_date:t.transfer_date,entry_type:"transfer",party_name:"",account_name:"",account_type:"",source_account:accountMap.get(t.source_account_id)?.name||"—",destination_account:accountMap.get(t.destination_account_id)?.name||"—",payment_method:"Internal transfer",category:"Internal transfer",financial_class:"internal_transfer",amount:num(t.amount),status:t.status,reference:t.reference||"",related_order_id:"",description:t.description||""}));
+     rows=[...entries,...transfers].sort((a,b)=>String(b.entry_date||"").localeCompare(String(a.entry_date||"")));
+     source.allFinanceCount=allFinance.length;source.allTransfersCount=allTransfers.length;
+     notes="Current balance = opening balance + confirmed account-linked income − confirmed expenses + confirmed transfers in − transfers out. Period movement uses selected-period records. Internal transfers are not income or expense.";
     }else if(type==="expenses"){
      rows=finance.filter(e=>String(e.entry_type||"").toLowerCase()==="expense").map(e=>({entry_date:e.entry_date,category:e.category,party_name:e.party_name,amount:num(e.amount),status:e.status,financial_class:e.financial_class,payment_method:e.payment_method,reference:e.reference,description:e.description}));
-     const budgets=await signedQuery(client.from("admin_finance_budgets").select("category,period_start,budget_amount,status,notes").order("period_start",{ascending:false}).limit(3000));source.budgets=budgets.filter(b=>(!range?.fromDay||String(b.period_start).slice(0,7)>=range.fromDay.slice(0,7))&&(!range?.toDay||String(b.period_start).slice(0,7)<=range.toDay.slice(0,7)));
-     notes="Expense rows come from Finance entry_type=expense. Confirmed expenses are separated in the KPI; monthly budget rows are planning limits, not actual transactions.";
+     const [budgets,budgetFinance]=await Promise.all([
+      signedQuery(client.from("admin_finance_budgets").select("category,period_start,budget_amount,status,notes").order("period_start",{ascending:false}).order("category",{ascending:true}).limit(3000)),
+      fetchReportFinance(null)
+     ]);
+     source.budgets=budgets.filter(b=>(!range?.fromDay||String(b.period_start).slice(0,7)>=String(range.fromDay||range.from).slice(0,7))&&(!range?.toDay||String(b.period_start).slice(0,7)<=String(range.toDay||range.to).slice(0,7)));
+     source.budgetFinance=budgetFinance.filter(e=>String(e.entry_type||"").toLowerCase()==="expense"&&e.status==="confirmed"&&(e.financial_class||"operating")==="operating");
+     notes="Expense records follow the selected date range. Budget utilization compares each listed calendar month with that full month’s confirmed operating expenses; budget is a planning limit, not paid cash.";
     }else{
-     rows=finance.map(e=>({entry_date:e.entry_date,entry_type:e.entry_type,category:e.category,party_name:e.party_name,amount:num(e.amount),financial_class:e.financial_class,status:e.status,payment_method:e.payment_method,account_id:e.account_id,reference:e.reference,related_order_id:e.related_order_id,related_supplier_payment_id:e.related_supplier_payment_id,related_cod_settlement_id:e.related_cod_settlement_id,description:e.description}));
-     notes="All Finance ledger entries are listed. Confirmed income and expenses are calculated separately; capital, loans, refunds and adjustments are not treated as ordinary operating income/expense.";
+     const [transfers,accounts]=await Promise.all([fetchReportTransfers(range),signedQuery(client.from("admin_finance_accounts").select("id,name,account_type").order("name",{ascending:true}).limit(1000))]);
+     const accountMap=new Map(accounts.map(account=>[account.id,account]));source.transfers=transfers;source.accounts=accounts;
+     const entries=finance.map(e=>({record_kind:"Finance entry",record_id:e.id,entry_date:e.entry_date,entry_type:e.entry_type,category:e.category,party_name:e.party_name,amount:num(e.amount),financial_class:e.financial_class,status:e.status,payment_method:e.payment_method,account_name:accountMap.get(e.account_id)?.name||"Unassigned",source_account:"",destination_account:"",reference:e.reference,related_order_id:e.related_order_id,related_supplier_payment_id:e.related_supplier_payment_id,related_cod_settlement_id:e.related_cod_settlement_id,description:e.description}));
+     const transferRows=transfers.map(t=>({record_kind:"Internal transfer",record_id:t.id,entry_date:t.transfer_date,entry_type:"transfer",category:"Internal transfer",party_name:"",amount:num(t.amount),financial_class:"internal_transfer",status:t.status,payment_method:"Internal transfer",account_name:"",source_account:accountMap.get(t.source_account_id)?.name||"—",destination_account:accountMap.get(t.destination_account_id)?.name||"—",reference:t.reference||"",related_order_id:"",related_supplier_payment_id:"",related_cod_settlement_id:"",description:t.description||""}));
+     rows=[...entries,...transferRows].sort((a,b)=>String(b.entry_date||"").localeCompare(String(a.entry_date||"")));
+     notes="Finance ledger entries and internal account transfers are shown as distinct record types. Transfers do not count as income or expense. Capital, loan, refund and adjustment classes are not ordinary operating income/expense.";
     }
-    title=type==="account-payments"?"Account Payment Report":type==="expenses"?"Expense Report":"Finance Transaction Report";
+    title=type==="account-payments"?"Account Payments & Balances":type==="expenses"?"Expense & Budget Report":"Financial Transactions Ledger";
    }else if(type==="finance"){
     const finance=await fetchReportFinance(range);source.finance=finance;rows=finance.map(e=>({entry_date:e.entry_date,entry_type:e.entry_type,category:e.category,amount:num(e.amount),status:e.status,financial_class:e.financial_class,reference:e.reference,description:e.description}));title="Finance Entries Report";notes="Source: Finance ledger.";
    }else{
@@ -3195,7 +3251,16 @@ async function refresh(){
     expenses:["entry_date","category","party_name","amount","status","financial_class","payment_method","reference","description"],
     transactions:["entry_date","entry_type","category","party_name","amount","financial_class","status","payment_method","reference","related_order_id","description"]
    })[type]||["entry_date","entry_type","category","amount","status"];
-   const displayRange=["low-stock","alert-products","stock","stock-list","products","content"].includes(type)?"Current snapshot":range.label;
+   const capNotices=[];
+   if(source.orders?.length>=5000)capNotices.push("The report reached the 5,000-order retrieval cap.");
+   if(source.events?.length>=15000)capNotices.push("The report reached the 15,000-event retrieval cap.");
+   if(source.products?.length>=10000)capNotices.push("The report reached the 10,000-product retrieval cap.");
+   if(source.finance?.length>=10000||source.allFinanceCount>=10000||source.budgetFinance?.length>=10000)capNotices.push("The report reached the 10,000-entry finance retrieval cap; figures may be incomplete.");
+   if(source.settlements?.length>=10000)capNotices.push("The report reached the 10,000-settlement retrieval cap.");
+   if(source.bills?.length>=5000)capNotices.push("The report reached the 5,000-bill retrieval cap.");
+   if(source.credits?.length>=10000||source.payments?.length>=10000||source.allocations?.length>=20000)capNotices.push("A supplier payment or credit source reached its retrieval cap; check the full Supplier Ledger for a complete statement.");
+   if(capNotices.length)notes=(notes?notes+" ":"")+capNotices.join(" ");
+   const displayRange=["low-stock","alert-products","stock","stock-list","products","content","receivable"].includes(type)?"Current snapshot":range.label;
    report={title,columns:rows.length?Object.keys(rows[0]):defaultColumns,rows,notes,rangeLabel:displayRange,type,source};
    $("reportTitle").textContent=title;$("reportRangeLabel").textContent=displayRange;$("reportRowsCount").textContent=rows.length.toLocaleString("en-BD")+" records";$("reportNote").textContent=notes;
    $("reportSummary").innerHTML='<div class="hf-summary-pill"><small>Records</small><strong>'+rows.length.toLocaleString("en-BD")+'</strong></div><div class="hf-summary-pill"><small>Report</small><strong style="font-size:14px">'+esc(title)+'</strong></div><div class="hf-summary-pill"><small>Period</small><strong style="font-size:13px">'+esc(displayRange)+'</strong></div>';
@@ -3246,12 +3311,12 @@ async function refresh(){
    if(["customer-products","top-customers","customers"].includes(type))return [k("গ্রাহক",rows.length,"স্বতন্ত্র গ্রাহক"),k("অর্ডার",sum(rows,"orders"),"রেকর্ডকৃত"),k("মোট ব্যয়",money(sum(rows,"total_spent")),"অর্ডার মূল্য"),k("গড় ব্যয়",money(rows.length?sum(rows,"total_spent")/rows.length:0),"প্রতি গ্রাহক")];
    if(type==="purchase")return [k("ক্রয় অর্ডার",purchases.length,"Purchase Orders"),k("ক্রয়ের মোট",money(sum(purchases,"total_amount")),"অর্ডার মোট"),k("ক্রয় লাইন",purchases.reduce((n,p)=>n+(p.admin_purchase_order_items||[]).length,0),"অর্ডার আইটেম"),k("সম্পন্ন",purchases.filter(p=>["received","completed"].includes(String(p.status||"").toLowerCase())).length,"Status অনুযায়ী")];
    if(type==="product-purchase")return [k("পণ্য লাইন",rows.length,"ক্রয় আইটেম"),k("ক্রয় ইউনিট",sum(rows,"quantity"),"অর্ডারকৃত"),k("গৃহীত ইউনিট",sum(rows,"received_quantity"),"GRN অনুযায়ী"),k("ক্রয় মূল্য",money(sum(rows,"total")),"লাইন কস্ট")];
-   if(type==="payable")return [k("সরবরাহকারী বিল",rows.length,"রেকর্ডকৃত"),k("মোট বিল",money(sum(rows,"bill_total")),"স্ট্যাটাস আলাদা"),k("বরাদ্দ পেমেন্ট",money(sum(rows,"paid")),"Allocation অনুযায়ী"),k("অবশিষ্ট দায়",money(sum(rows,"balance")),"বিল কম পেমেন্ট")];
-   if(type==="receivable"||type==="collections")return [k("COD রেকর্ড",settlements.length,"Courier settlement"),k("COD মূল্য",money(sum(rows,"cod_amount")),"অর্ডার COD"),k("সংগ্রহ",money(sum(rows,"collected")),"রেকর্ডকৃত"),k("রেমিট্যান্স",money(sum(rows,"remitted")),"রেকর্ডকৃত"),k("সংগ্রহ বাকি",money(sum(rows,"pending_collection")),"COD - collected"),k("রেমিট্যান্স বাকি",money(sum(rows,"pending_remittance")),"collected - remitted")];
+   if(type==="payable"){const confirmed=rows.filter(r=>String(r.status||"").toLowerCase()==="confirmed");return [k("নিশ্চিত বিল",confirmed.length,"Invoice-date range"),k("নিশ্চিত বিলের মূল্য",money(sum(confirmed,"bill_total")),"Draft/Void বাদ"),k("নিশ্চিত পেমেন্ট",money(sum(confirmed,"paid")),"Confirmed allocations"),k("নিশ্চিত ক্রেডিট",money(sum(confirmed,"confirmed_credit")),"Confirmed credit notes"),k("বর্তমান Supplier Payables",money(sum(source.supplierBalances||[],"outstanding_balance")),"Current supplier ledger balance")];}
+   if(type==="receivable"||type==="collections")return [k("COD রেকর্ড",rows.length,type==="receivable"?"Current outstanding snapshot":"Selected-period activity"),k("COD মূল্য",money(sum(rows,"cod_amount")),"Settlement records"),k("সংগ্রহ",money(sum(rows,"collected")),"Current recorded collection"),k("যাচাইকৃত রেমিট্যান্স",money(sum(rows,"verified_remitted")),"Linked confirmed Finance income"),k("সংগ্রহ বাকি",money(sum(rows,"pending_collection")),"COD less collected"),k("নেট রেমিট্যান্স বাকি",money(sum(rows,"pending_remittance")),"After courier fee and adjustment")];
    if(["low-stock","alert-products","stock","stock-list"].includes(type))return [k("পণ্য",rows.length,"বর্তমান স্ন্যাপশট"),k("মোট ইউনিট",sum(rows,"stock"),"বর্তমান স্টক"),k("স্টক মূল্য",money(sum(rows,"stock_value")),"সংরক্ষিত কস্ট থাকলে"),k("শূন্য স্টক",rows.filter(r=>num(r.stock)===0).length,"স্টক নেই"),k("সীমার নিচে",rows.filter(r=>num(r.stock)<=num(r.minimum_stock)).length,"Low threshold")];
-   if(type==="account-payments")return [k("পেমেন্ট রেকর্ড",rows.length,"অ্যাকাউন্ট/পদ্ধতি সংযুক্ত"),k("মোট পেমেন্ট",money(sum(rows,"amount")),"Finance ledger"),k("অ্যাকাউন্ট",unique(rows,"account_name"),"ব্যবহৃত অ্যাকাউন্ট"),k("ট্রান্সফার",source.transfers?.length||0,"আলাদা তালিকা")];
-   if(type==="expenses")return [k("ব্যয় রেকর্ড",rows.length,"Expense ledger"),k("মোট ব্যয়",money(sum(rows,"amount")),"সব status"),k("নিশ্চিত ব্যয়",money(sum(rows.filter(r=>String(r.status).toLowerCase()==="confirmed"),"amount")),"Confirmed only"),k("বাজেট লাইন",source.budgets?.length||0,"পরিকল্পনা বাজেট")];
-   if(type==="transactions")return [k("লেনদেন",rows.length,"সব status"),k("Confirmed",rows.filter(r=>String(r.status).toLowerCase()==="confirmed").length,"নিশ্চিত এন্ট্রি"),k("Income",money(sum(rows.filter(r=>String(r.entry_type).toLowerCase()==="income"&&String(r.status).toLowerCase()==="confirmed"),"amount")),"Confirmed only"),k("Expense",money(sum(rows.filter(r=>String(r.entry_type).toLowerCase()==="expense"&&String(r.status).toLowerCase()==="confirmed"),"amount")),"Confirmed only")];
+   if(type==="account-payments"){const entries=rows.filter(r=>r.record_kind==="Finance entry"&&r.status==="confirmed"),transfers=rows.filter(r=>r.record_kind==="Internal transfer"&&r.status==="confirmed");const cashIn=sum(entries.filter(r=>r.entry_type==="income"),"amount"),cashOut=sum(entries.filter(r=>r.entry_type==="expense"),"amount");return [k("অ্যাকাউন্ট", (source.accountBalances||[]).length,"Configured cash/bank/wallet accounts"),k("বর্তমান Account Balance",money(sum(source.accountBalances||[],"current_balance")),"Opening + confirmed ledger + transfers"),k("সময়ে Cash In",money(cashIn),"Confirmed income only"),k("সময়ে Cash Out",money(cashOut),"Confirmed expense only"),k("নেট Account Movement",money(sum(source.accountBalances||[],"period_net_movement")),"Transfer in/out included"),k("Internal Transfers",transfers.length,"Not income or expense")];}
+   if(type==="expenses"){const confirmed=rows.filter(r=>r.status==="confirmed"),operating=confirmed.filter(r=>(r.financial_class||"operating")==="operating"),nonOperating=confirmed.filter(r=>(r.financial_class||"operating")!=="operating");return [k("খরচের রেকর্ড",rows.length,"Draft/Confirmed/Void"),k("Confirmed Operating Expense",money(sum(operating,"amount")),"Operating only"),k("Confirmed Non-operating",money(sum(nonOperating,"amount")),"Capital/Loan/Refund/Adjustment etc."),k("Draft খরচ",rows.filter(r=>r.status==="draft").length,"Needs review"),k("নির্বাচিত বাজেট",money(sum((source.budgets||[]).filter(v=>v.status==="active"),"budget_amount")),"Active budgets")];}
+   if(type==="transactions"){const confirmed=rows.filter(r=>r.status==="confirmed"),transfers=confirmed.filter(r=>r.entry_type==="transfer");return [k("মোট রেকর্ড",rows.length,"Ledger + internal transfers"),k("নিশ্চিত Income",money(sum(confirmed.filter(r=>r.entry_type==="income"),"amount")),"Confirmed ledger income"),k("নিশ্চিত Expense",money(sum(confirmed.filter(r=>r.entry_type==="expense"),"amount")),"Confirmed ledger expense"),k("Internal Transfers",transfers.length,"Separate from income/expense"),k("Transfer Amount",money(sum(transfers,"amount")),"Account-to-account movement"),k("Draft / Void",rows.filter(r=>["draft","void"].includes(String(r.status||"").toLowerCase())).length,"Not in confirmed totals")];}
    return [k("রেকর্ড",rows.length,"নির্বাচিত সময়"),k("মোট পরিমাণ",money(sum(rows,"amount")),"রেকর্ডকৃত"),k("Confirmed",rows.filter(r=>String(r.status).toLowerCase()==="confirmed").length,"নিশ্চিত অবস্থা")];
   }
   function analysisFor(type,rows,source){
@@ -3306,13 +3371,46 @@ async function refresh(){
    if($("printReportTitle"))$("printReportTitle").textContent=def[0];if($("printReportDetails"))$("printReportDetails").textContent=report.rangeLabel+" · "+report.rows.length+" records";
    showSegment(activeSegment);
   }
-  async function fetchReportFinance(range){
-   let q=client.from("admin_finance_entries").select("id,entry_type,category,amount,entry_date,description,reference,status,related_order_id,account_id,payment_method,party_name,financial_class,related_supplier_payment_id,related_cod_settlement_id,created_by,created_at,updated_at").order("entry_date",{ascending:false}).order("created_at",{ascending:false}).limit(3000);
-   if(range)q=rangeQuery(q,"entry_date",range);return signedQuery(q);
+  async function paginateQuery(buildQuery,limit=10000){
+   const rows=[],pageSize=1000,concurrency=3,maxRows=Math.max(0,Math.min(10000,Number(limit)||0));
+   const firstSize=Math.min(pageSize,maxRows);
+   if(firstSize<=0)return rows;
+   const first=await signedQuery(buildQuery().range(0,firstSize-1));
+   rows.push(...first);
+   if(first.length<firstSize)return rows;
+   for(let base=pageSize;base<maxRows;base+=pageSize*concurrency){
+    const offsets=[];
+    for(let offset=base;offset<Math.min(maxRows,base+pageSize*concurrency);offset+=pageSize){
+     offsets.push({offset,size:Math.min(pageSize,maxRows-offset)});
+    }
+    const pages=await Promise.all(offsets.map(({offset,size})=>signedQuery(buildQuery().range(offset,offset+size-1))));
+    for(let i=0;i<pages.length;i++){
+     rows.push(...pages[i]);
+     if(pages[i].length<offsets[i].size)return rows;
+    }
+   }
+   return rows;
   }
-  async function fetchReportSettlements(range){
-   let q=client.from("admin_cod_settlements").select("id,order_id,order_number,customer_name,courier_name,tracking_reference,cod_amount,collected_amount,courier_fee,adjustment_amount,remitted_amount,status,collected_at,remitted_at,created_at,updated_at").order("created_at",{ascending:false}).limit(3000);
-   if(range)q=rangeQuery(q,"created_at",range);return signedQuery(q);
+  async function fetchReportFinance(range,limit=10000){
+   return paginateQuery(()=>{
+    let q=client.from("admin_finance_entries").select("id,entry_type,category,amount,entry_date,description,reference,status,related_order_id,account_id,payment_method,party_name,financial_class,related_supplier_payment_id,related_cod_settlement_id,created_by,created_at,updated_at").order("entry_date",{ascending:false}).order("created_at",{ascending:false}).order("id",{ascending:true});
+    if(range)q=rangeQuery(q,"entry_date",range);
+    return q;
+   },limit);
+  }
+  async function fetchReportSettlements(range,limit=10000){
+   return paginateQuery(()=>{
+    let q=client.from("admin_cod_settlements").select("id,order_id,order_number,customer_name,courier_name,tracking_reference,cod_amount,collected_amount,courier_fee,adjustment_amount,remitted_amount,remitted_account_id,status,collected_at,remitted_at,created_at,updated_at").order("created_at",{ascending:false}).order("id",{ascending:true});
+    if(range)q=rangeQuery(q,"created_at",range);
+    return q;
+   },limit);
+  }
+  async function fetchReportTransfers(range,limit=10000){
+   return paginateQuery(()=>{
+    let q=client.from("admin_finance_transfers").select("id,source_account_id,destination_account_id,transfer_date,amount,reference,description,status,created_at,updated_at").order("transfer_date",{ascending:false}).order("id",{ascending:true});
+    if(range)q=rangeQuery(q,"transfer_date",range);
+    return q;
+   },limit);
   }
   function attachReportFilters(){
    if(!reportGroup||!workspace)return;
@@ -3360,14 +3458,47 @@ async function refresh(){
     else rows=purchases.flatMap(p=>(p.admin_purchase_order_items||[]).map(i=>({purchase_number:p.purchase_number,purchase_date:p.order_date,status:p.status,supplier:p.admin_suppliers?.name||"—",product:i.product_name,quantity:num(i.quantity),received_quantity:num(i.received_quantity),pending_quantity:Math.max(0,num(i.quantity)-num(i.received_quantity)),unit:i.unit,unit_cost:num(i.unit_cost),total:num(i.line_total)})));
     title=type==="purchase"?"Purchase Report":"Product Purchase Report";notes="Source: recorded Purchase Orders and saved purchase-order item snapshots. Purchase orders do not by themselves prove payment.";
    }else if(type==="payable"){
-    const [bills,allocations]=await Promise.all([signedQuery(rangeQuery(client.from("admin_supplier_bills").select("id,bill_number,supplier_invoice_number,invoice_date,due_date,total_amount,status,admin_suppliers(name)").order("invoice_date",{ascending:false}).limit(5000),"invoice_date",range)),signedQuery(client.from("admin_supplier_payment_allocations").select("supplier_bill_id,allocated_amount").limit(10000))]);
-    const paid=new Map();allocations.forEach(a=>paid.set(a.supplier_bill_id,(paid.get(a.supplier_bill_id)||0)+num(a.allocated_amount)));
-    rows=bills.map(b=>({bill_number:b.bill_number,supplier:b.admin_suppliers?.name||"—",supplier_invoice_number:b.supplier_invoice_number,invoice_date:b.invoice_date,due_date:b.due_date,status:b.status,bill_total:num(b.total_amount),paid:paid.get(b.id)||0,balance:Math.max(0,num(b.total_amount)-(paid.get(b.id)||0)),due_state:String(b.status||"").toLowerCase()==="void"?"Void":String(b.status||"").toLowerCase()==="draft"?"Draft":b.due_date&&b.due_date<todayISO()&&num(b.total_amount)-(paid.get(b.id)||0)>0?"Overdue":num(b.total_amount)-(paid.get(b.id)||0)<=0?"Paid":"Open"}));source.bills=bills;title="Supplier Payables Report";notes="Bill balance subtracts the sum of all payment allocations. Draft/Void bills are separately identified.";
+    const [bills,allocations,payments,credits,supplierBalances]=await Promise.all([
+     signedQuery(rangeQuery(client.from("admin_supplier_bills").select("id,supplier_id,bill_number,supplier_invoice_number,invoice_date,due_date,total_amount,status,admin_suppliers(name)").order("invoice_date",{ascending:false}).order("id",{ascending:true}).limit(5000),"invoice_date",range)),
+     signedQuery(client.from("admin_supplier_payment_allocations").select("payment_id,supplier_bill_id,allocated_amount").limit(20000)),
+     signedQuery(client.from("admin_supplier_payments").select("id,supplier_id,status,payment_date,amount").limit(10000)),
+     signedQuery(client.from("admin_supplier_credit_notes").select("id,supplier_id,supplier_bill_id,credit_date,amount,status").limit(10000)),
+     signedQuery(client.from("admin_supplier_balances").select("supplier_id,supplier_name,outstanding_balance,total_bills,total_paid,total_credits,opening_balance,last_purchase_date,last_payment_date").order("supplier_name",{ascending:true}).limit(2000))
+    ]);
+    const confirmedPaymentIds=new Set(payments.filter(p=>String(p.status||"").toLowerCase()==="confirmed").map(p=>p.id));
+    const paidByBill=new Map();allocations.forEach(a=>{if(confirmedPaymentIds.has(a.payment_id))paidByBill.set(a.supplier_bill_id,(paidByBill.get(a.supplier_bill_id)||0)+num(a.allocated_amount));});
+    const creditByBill=new Map();credits.forEach(c=>{if(String(c.status||"").toLowerCase()==="confirmed"&&c.supplier_bill_id)creditByBill.set(c.supplier_bill_id,(creditByBill.get(c.supplier_bill_id)||0)+num(c.amount));});
+    const supplierBalanceById=new Map(supplierBalances.map(v=>[v.supplier_id,v]));
+    rows=bills.map(bill=>{
+     const st=String(bill.status||"").toLowerCase(),total=num(bill.total_amount),paid=paidByBill.get(bill.id)||0,credit=creditByBill.get(bill.id)||0;
+     const balance=st==="confirmed"?Math.max(0,total-paid-credit):0,supplier=supplierBalanceById.get(bill.supplier_id);
+     const due=st==="void"?"Void":st==="draft"?"Draft":bill.due_date&&bill.due_date<todayISO()&&balance>0?"Overdue":balance<=0&&paid+credit>0?"Paid / Credited":paid+credit>0?"Partially paid":"Open";
+     return {bill_number:bill.bill_number,supplier:bill.admin_suppliers?.name||supplier?.supplier_name||"—",supplier_invoice_number:bill.supplier_invoice_number,invoice_date:bill.invoice_date,due_date:bill.due_date,status:bill.status,bill_total:total,paid,confirmed_credit:credit,balance,due_state:due,supplier_current_balance:num(supplier?.outstanding_balance)};
+    });
+    source.bills=bills;source.payments=payments;source.allocations=allocations;source.credits=credits;source.supplierBalances=supplierBalances;
+    title="Supplier Payables Report";
+    notes="Bills are selected by invoice date. Bill-level payments include allocations from confirmed supplier payments only; confirmed credit notes are deducted. Supplier balances show the latest ledger position, not a historical as-of balance.";
    }else if(type==="receivable"||type==="collections"){
-    const settlements=await fetchReportSettlements(range);source.settlements=settlements;
-    rows=settlements.map(s=>({order_number:s.order_number,customer:s.customer_name,courier:s.courier_name,tracking_reference:s.tracking_reference,cod_amount:num(s.cod_amount),collected:num(s.collected_amount),courier_fee:num(s.courier_fee),remitted:num(s.remitted_amount),pending_collection:Math.max(0,num(s.cod_amount)-num(s.collected_amount)),pending_remittance:Math.max(0,num(s.collected_amount)-num(s.remitted_amount)),status:s.status,collected_at:s.collected_at,remitted_at:s.remitted_at}));
+    const [settlements,codFinance]=await Promise.all([fetchReportSettlements(null),fetchReportFinance(type==="collections"?range:null)]);
+    source.settlements=settlements;
+    source.codFinance=codFinance.filter(e=>e.entry_type==="income"&&e.status==="confirmed"&&e.related_cod_settlement_id);
+    const verifiedBySettlement=new Map();
+    source.codFinance.forEach(e=>verifiedBySettlement.set(e.related_cod_settlement_id,(verifiedBySettlement.get(e.related_cod_settlement_id)||0)+num(e.amount)));
+    const inRange=value=>{
+     const day=String(value||"").slice(0,10);if(!day)return false;
+     const from=range.fromDay??(range.from?String(range.from).slice(0,10):"0000-01-01");
+     const to=range.toDay??(range.to?String(range.to).slice(0,10):todayISO());
+     return day>=from&&day<=to;
+    };
+    rows=settlements.filter(settlement=>String(settlement.status||"").toLowerCase()!=="cancelled").map(settlement=>{
+     const cod=num(settlement.cod_amount),collected=num(settlement.collected_amount),fee=num(settlement.courier_fee),adjustment=num(settlement.adjustment_amount);
+     const expected=Math.max(0,collected-fee+adjustment),verified=verifiedBySettlement.get(settlement.id)||0;
+     return {settlement_id:settlement.id,order_number:settlement.order_number,customer:settlement.customer_name,courier:settlement.courier_name,tracking_reference:settlement.tracking_reference,cod_amount:cod,collected,courier_fee:fee,adjustment_amount:adjustment,expected_net_remittance:expected,recorded_remitted:num(settlement.remitted_amount),verified_remitted:verified,pending_collection:Math.max(0,cod-collected),pending_remittance:Math.max(0,expected-verified),remittance_variance:verified-expected,status:settlement.status,collected_at:settlement.collected_at,remitted_at:settlement.remitted_at,created_at:settlement.created_at,remitted_account_id:settlement.remitted_account_id};
+    });
     if(type==="receivable")rows=rows.filter(r=>r.pending_collection>0||r.pending_remittance>0||["pending","exception"].includes(String(r.status).toLowerCase()));
-    title=type==="receivable"?"COD Receivable Report":"COD Collections Report";notes="Courier COD tracking, not customer credit sales. Pending collection and pending remittance are separate amounts.";
+    else rows=rows.filter(r=>inRange(r.collected_at)||inRange(r.remitted_at)||inRange(r.created_at));
+    title=type==="receivable"?"Courier / COD Receivable Report":"COD Collections Report";
+    notes=type==="receivable"?"Current exposure snapshot. Uncollected COD and net courier remittance not yet verified in Finance are shown separately. This is not customer credit debt.":"Selected by collection/remittance/creation date; linked confirmed Finance income is the verified remittance source. Settlement records store current state rather than a full event history.";
    }else if(["low-stock","alert-products","stock","stock-list"].includes(type)){
     const products=await fetchProducts(10000);source.products=products;
     const active=products.filter(p=>p.is_active!==false).map(p=>({product:p.name,sku:p.sku,category:p.category||"Uncategorised",price:num(p.price),stock:num(p.stock_quantity),minimum_stock:num(p.low_stock_threshold??5),unit_cost:p.cost_price===null?null:num(p.cost_price),stock_value:p.cost_price===null?null:num(p.stock_quantity)*num(p.cost_price),alert:num(p.stock_quantity)<=0?"OUT OF STOCK":num(p.stock_quantity)<=num(p.low_stock_threshold??5)?"LOW":"OK",updated_at:p.updated_at||p.created_at}));
@@ -3376,18 +3507,46 @@ async function refresh(){
    }else if(["account-payments","expenses","transactions"].includes(type)){
     const finance=await fetchReportFinance(range);source.finance=finance;
     if(type==="account-payments"){
-     const accounts=await signedQuery(client.from("admin_finance_accounts").select("id,name,account_type,provider,account_reference,is_active").order("name",{ascending:true}).limit(1000));const map=new Map(accounts.map(a=>[a.id,a]));source.accounts=accounts;
-     rows=finance.filter(e=>e.account_id||String(e.payment_method||"").trim()).map(e=>({entry_date:e.entry_date,entry_type:e.entry_type,party_name:e.party_name,account_name:map.get(e.account_id)?.name||"—",account_type:map.get(e.account_id)?.account_type||"",payment_method:e.payment_method,category:e.category,financial_class:e.financial_class,amount:num(e.amount),status:e.status,reference:e.reference,related_order_id:e.related_order_id||""}));
-     const transfers=await signedQuery(rangeQuery(client.from("admin_finance_transfers").select("id,source_account_id,destination_account_id,transfer_date,amount,reference,description,status").order("transfer_date",{ascending:false}).limit(3000),"transfer_date",range));source.transfers=transfers.map(t=>({...t,source_account:map.get(t.source_account_id)?.name||"—",destination_account:map.get(t.destination_account_id)?.name||"—"}));notes="Account/payment-linked Finance entries shown. Internal transfers remain separate and are not income or expense.";
+     const [allFinance,accounts,periodTransfers,allTransfers]=await Promise.all([
+      fetchReportFinance(null),
+      signedQuery(client.from("admin_finance_accounts").select("id,name,account_type,provider,account_reference,opening_balance,opening_date,is_active").order("name",{ascending:true}).limit(1000)),
+      fetchReportTransfers(range),
+      fetchReportTransfers(null)
+     ]);
+     const accountMap=new Map(accounts.map(account=>[account.id,account]));
+     source.accountBalances=accounts.map(account=>{
+      const start=String(account.opening_date||"0000-01-01").slice(0,10);
+      const entries=allFinance.filter(entry=>entry.account_id===account.id&&entry.status==="confirmed"&&String(entry.entry_date||"")>=start);
+      const cashMovement=entries.reduce((sum,entry)=>sum+(entry.entry_type==="income"?1:-1)*num(entry.amount),0);
+      const transferIn=allTransfers.filter(t=>t.destination_account_id===account.id&&t.status==="confirmed"&&String(t.transfer_date||"")>=start).reduce((sum,t)=>sum+num(t.amount),0);
+      const transferOut=allTransfers.filter(t=>t.source_account_id===account.id&&t.status==="confirmed"&&String(t.transfer_date||"")>=start).reduce((sum,t)=>sum+num(t.amount),0);
+      const periodEntries=finance.filter(entry=>entry.account_id===account.id&&entry.status==="confirmed");
+      const periodIn=periodEntries.filter(entry=>entry.entry_type==="income").reduce((sum,entry)=>sum+num(entry.amount),0);
+      const periodOut=periodEntries.filter(entry=>entry.entry_type==="expense").reduce((sum,entry)=>sum+num(entry.amount),0);
+      const periodTransferIn=periodTransfers.filter(t=>t.destination_account_id===account.id&&t.status==="confirmed").reduce((sum,t)=>sum+num(t.amount),0);
+      const periodTransferOut=periodTransfers.filter(t=>t.source_account_id===account.id&&t.status==="confirmed").reduce((sum,t)=>sum+num(t.amount),0);
+      return {account_id:account.id,account_name:account.name,account_type:account.account_type,provider:account.provider,account_reference:account.account_reference,is_active:account.is_active,opening_balance:num(account.opening_balance),opening_date:start,current_balance:num(account.opening_balance)+cashMovement+transferIn-transferOut,period_income:periodIn,period_expense:periodOut,period_transfer_in:periodTransferIn,period_transfer_out:periodTransferOut,period_net_movement:periodIn-periodOut+periodTransferIn-periodTransferOut};
+     });
+     source.transfers=periodTransfers.map(t=>({...t,source_account:accountMap.get(t.source_account_id)?.name||"—",destination_account:accountMap.get(t.destination_account_id)?.name||"—"}));
+     const entryRows=finance.map(entry=>({record_kind:"Finance entry",record_id:entry.id,entry_date:entry.entry_date,entry_type:entry.entry_type,party_name:entry.party_name,account_name:accountMap.get(entry.account_id)?.name||"Unassigned",account_type:accountMap.get(entry.account_id)?.account_type||"",source_account:"",destination_account:"",payment_method:entry.payment_method,category:entry.category,financial_class:entry.financial_class,amount:num(entry.amount),status:entry.status,reference:entry.reference,related_order_id:entry.related_order_id||"",description:entry.description}));
+     const transferRows=periodTransfers.map(t=>({record_kind:"Internal transfer",record_id:t.id,entry_date:t.transfer_date,entry_type:"transfer",party_name:"",account_name:"",account_type:"",source_account:accountMap.get(t.source_account_id)?.name||"—",destination_account:accountMap.get(t.destination_account_id)?.name||"—",payment_method:"Internal transfer",category:"Internal transfer",financial_class:"internal_transfer",amount:num(t.amount),status:t.status,reference:t.reference||"",related_order_id:"",description:t.description||""}));
+     rows=[...entryRows,...transferRows].sort((a,b)=>String(b.entry_date||"").localeCompare(String(a.entry_date||"")));
+     source.allFinanceCount=allFinance.length;source.allTransfersCount=allTransfers.length;
+     notes="Current balance = opening balance + confirmed account-linked income − confirmed expenses + confirmed transfers in − transfers out. Period movement uses selected-period records. Internal transfers are not income or expense.";
     }else if(type==="expenses"){
-     rows=finance.filter(e=>String(e.entry_type||"").toLowerCase()==="expense").map(e=>({entry_date:e.entry_date,category:e.category,party_name:e.party_name,amount:num(e.amount),status:e.status,financial_class:e.financial_class,payment_method:e.payment_method,reference:e.reference,description:e.description}));
-     const budgets=await signedQuery(client.from("admin_finance_budgets").select("category,period_start,budget_amount,status,notes").order("period_start",{ascending:false}).limit(3000));source.budgets=budgets.filter(b=>(!range?.fromDay||String(b.period_start).slice(0,7)>=range.fromDay.slice(0,7))&&(!range?.toDay||String(b.period_start).slice(0,7)<=range.toDay.slice(0,7)));
-     notes="Expense rows use Finance entry_type=expense. Confirmed expenses are separated; monthly budget is a planning amount, not actual spend.";
+     rows=finance.filter(entry=>String(entry.entry_type||"").toLowerCase()==="expense").map(entry=>({entry_date:entry.entry_date,category:entry.category,party_name:entry.party_name,amount:num(entry.amount),status:entry.status,financial_class:entry.financial_class,payment_method:entry.payment_method,reference:entry.reference,description:entry.description}));
+     const budgets=await signedQuery(client.from("admin_finance_budgets").select("category,period_start,budget_amount,status,notes").order("period_start",{ascending:false}).order("category",{ascending:true}).limit(3000));
+     source.budgets=budgets.filter(b=>(!range?.fromDay||String(b.period_start).slice(0,7)>=String(range.fromDay||range.from).slice(0,7))&&(!range?.toDay||String(b.period_start).slice(0,7)<=String(range.toDay||range.to).slice(0,7)));
+     notes="Expense rows include all saved statuses. Confirmed operating expense is separated from draft, void and non-operating entries. Budgets are planning limits, not paid cash.";
     }else{
-     rows=finance.map(e=>({entry_date:e.entry_date,entry_type:e.entry_type,category:e.category,party_name:e.party_name,amount:num(e.amount),financial_class:e.financial_class,status:e.status,payment_method:e.payment_method,account_id:e.account_id,reference:e.reference,related_order_id:e.related_order_id,related_supplier_payment_id:e.related_supplier_payment_id,related_cod_settlement_id:e.related_cod_settlement_id,description:e.description}));
-     notes="All Finance ledger entries listed. Confirmed income/expense are separated; Capital, Loan, Refund and Adjustment are not treated as ordinary operating income/expense.";
+     const [transfers,accounts]=await Promise.all([fetchReportTransfers(range),signedQuery(client.from("admin_finance_accounts").select("id,name,account_type").order("name",{ascending:true}).limit(1000))]);
+     const accountMap=new Map(accounts.map(account=>[account.id,account]));source.transfers=transfers;source.accounts=accounts;
+     const entryRows=finance.map(entry=>({record_kind:"Finance entry",record_id:entry.id,entry_date:entry.entry_date,entry_type:entry.entry_type,category:entry.category,party_name:entry.party_name,amount:num(entry.amount),financial_class:entry.financial_class,status:entry.status,payment_method:entry.payment_method,account_name:accountMap.get(entry.account_id)?.name||"Unassigned",source_account:"",destination_account:"",reference:entry.reference,related_order_id:entry.related_order_id,related_supplier_payment_id:entry.related_supplier_payment_id,related_cod_settlement_id:entry.related_cod_settlement_id,description:entry.description}));
+     const transferRows=transfers.map(t=>({record_kind:"Internal transfer",record_id:t.id,entry_date:t.transfer_date,entry_type:"transfer",category:"Internal transfer",party_name:"",amount:num(t.amount),financial_class:"internal_transfer",status:t.status,payment_method:"Internal transfer",account_name:"",source_account:accountMap.get(t.source_account_id)?.name||"—",destination_account:accountMap.get(t.destination_account_id)?.name||"—",reference:t.reference||"",related_order_id:"",related_supplier_payment_id:"",related_cod_settlement_id:"",description:t.description||""}));
+     rows=[...entryRows,...transferRows].sort((a,b)=>String(b.entry_date||"").localeCompare(String(a.entry_date||"")));
+     notes="Finance ledger entries and internal account transfers are shown as distinct record types. Transfers do not count as income or expense. Capital, loan, refund and adjustment classes are not ordinary operating income/expense.";
     }
-    title=type==="account-payments"?"Account Payment Report":type==="expenses"?"Expense Report":"Finance Transaction Report";
+    title=type==="account-payments"?"Account Payments & Balances":type==="expenses"?"Expense & Budget Report":"Financial Transactions Ledger";
    }else if(type==="finance"){
     const finance=await fetchReportFinance(range);source.finance=finance;rows=finance.map(e=>({entry_date:e.entry_date,entry_type:e.entry_type,category:e.category,amount:num(e.amount),status:e.status,financial_class:e.financial_class,reference:e.reference,description:e.description}));title="Finance Entries Report";notes="Source: Finance ledger.";
    }else{
@@ -3418,18 +3577,131 @@ async function refresh(){
    if(reportGroup)renderWorkspace();return report;
   }
   function analysisFor(type,rows,source){
-   if(type==="business"||type==="sales")return {columns:["status","records","order_value"],rows:groupRows((source.orders||[]).map(o=>({status:o.status,order_value:num(o.total)})),"status",["order_value"]),bars:"order_value"};
-   if(type==="daily")return {columns:["date","orders","order_value","confirmed_expenses","cod_collected","cod_remitted"],rows:rows.slice().sort((a,b)=>b.date.localeCompare(a.date)),bars:"order_value"};
-   if(["product-sales","top-products","product-purchase","low-stock","alert-products","stock","stock-list"].includes(type))return {columns:rows.length?Object.keys(rows[0]).slice(0,8):["product","records"],rows:rows.slice(0,12),bars:type==="product-purchase"?"total":["low-stock","alert-products"].includes(type)?"stock":type==="stock"||type==="stock-list"?"stock_value":"sales"};
-   if(type==="customer-wise-products")return {columns:["customer","records","quantity","total"],rows:groupRows(rows,"customer",["quantity","total"]),bars:"total"};
-   if(["customer-products","top-customers","customers"].includes(type))return {columns:["customer","orders","unique_products","total_spent","last_order"],rows:rows.slice(0,12),bars:"total_spent"};
-   if(type==="purchase")return {columns:["supplier","records","total_amount"],rows:groupRows(rows,"supplier",["total_amount"]),bars:"total_amount"};
-   if(type==="payable")return {columns:["supplier","records","bill_total","paid","balance"],rows:groupRows(rows,"supplier",["bill_total","paid","balance"]),bars:"balance"};
-   if(type==="receivable"||type==="collections")return {columns:["courier","records","cod_amount","collected","remitted","pending_remittance"],rows:groupRows(rows,"courier",["cod_amount","collected","remitted","pending_remittance"]),bars:"collected"};
-   if(type==="account-payments")return {columns:["account_name","records","amount"],rows:groupRows(rows,"account_name",["amount"]),bars:"amount"};
-   if(type==="expenses")return {columns:["category","records","amount"],rows:groupRows(rows,"category",["amount"]),bars:"amount"};
-   if(type==="transactions")return {columns:["entry_type","records","amount"],rows:groupRows(rows,"entry_type",["amount"]),bars:"amount"};
-   return {columns:rows.length?Object.keys(rows[0]).slice(0,8):["category","records"],rows:rows.slice(0,12),bars:"records"};
+   const block=(title,description,columns,data,bars)=>({title,description,columns,rows:data,bars:bars||"records"});
+   const grouped=(title,description,data,key,metrics)=>block(title,description,[key,"records",...(metrics||[])],groupRows(data,key,metrics||[]),metrics?.[0]||"records");
+   const orders=source.orders||[];
+   if(type==="payable"){
+    const suppliers=source.supplierBalances||[];
+    return {blocks:[
+     block("সরবরাহকারীভিত্তিক বর্তমান দায়","Supplier ledger-এর current outstanding balance; opening balance, confirmed bills, payments, credits ও adjustments অন্তর্ভুক্ত।",["supplier_name","total_bills","total_paid","total_credits","opening_balance","outstanding_balance"],suppliers,"outstanding_balance"),
+     grouped("বিলভিত্তিক অবস্থা","নির্বাচিত invoice date range-এর bill; paid amount শুধু confirmed allocation থেকে।",rows,"due_state",["bill_total","paid","confirmed_credit","balance"]),
+     grouped("সরবরাহকারীভিত্তিক নির্বাচিত বিল","Invoice date অনুযায়ী selected bill total ও due amount.",rows,"supplier",["bill_total","paid","balance"])
+    ]};
+   }
+   if(type==="receivable"||type==="collections")return {blocks:[
+    grouped("কুরিয়ারভিত্তিক COD অবস্থান","Collected amount থেকে courier fee ও adjustment বাদ দিয়ে net remittance obligation; linked confirmed Finance income counts as verified remittance.",rows,"courier",["cod_amount","collected","expected_net_remittance","verified_remitted","pending_collection","pending_remittance"]),
+    grouped("সেটেলমেন্ট স্ট্যাটাস ও ঝুঁকি","Pending, exception ও reconciled status আলাদা; recorded remittance is not automatically verified cash.",rows,"status",["cod_amount","collected","recorded_remitted","verified_remitted","pending_remittance"]),
+    block("Remittance Variance","Verified remittance compared with expected net remittance after courier fee and adjustment.",["order_number","courier","collected","courier_fee","adjustment_amount","expected_net_remittance","verified_remitted","remittance_variance"],rows.filter(r=>r.verified_remitted>0||r.status==="reconciled"),"remittance_variance")
+   ]};
+   if(type==="account-payments"){
+    const accounts=source.accountBalances||[],transfers=source.transfers||[];
+    return {blocks:[
+     block("বর্তমান Account Balance","Opening balance ও confirmed ledger/transfer movement থেকে প্রতিটি account-এর বর্তমান অবস্থান।",["account_name","account_type","opening_balance","current_balance","is_active"],accounts,"current_balance"),
+     block("নির্বাচিত সময়ে Account Movement","Confirmed income/expense এবং transfer in/out আলাদা দেখানো হয়েছে।",["account_name","period_income","period_expense","period_transfer_in","period_transfer_out","period_net_movement"],accounts,"period_net_movement"),
+     grouped("পেমেন্ট পদ্ধতি অনুযায়ী রেকর্ড","Cash, Bank, bKash, Nagad, Rocket ও অন্যান্য সংরক্ষিত payment method.",rows.filter(r=>r.record_kind==="Finance entry"),"payment_method",["amount"]),
+     block("অভ্যন্তরীণ Account Transfer","এক account থেকে অন্য account-এ স্থানান্তর; income বা expense নয়।",["transfer_date","source_account","destination_account","amount","reference","status"],transfers.map(t=>({transfer_date:t.transfer_date,source_account:t.source_account,destination_account:t.destination_account,amount:num(t.amount),reference:t.reference,status:t.status})),"amount")
+    ]};
+   }
+   if(type==="expenses"){
+    const confirmed=rows.filter(r=>r.status==="confirmed"),operating=confirmed.filter(r=>(r.financial_class||"operating")==="operating");
+    const actualByMonthCategory=new Map();
+    (source.budgetFinance||operating).forEach(r=>{const key=String(r.entry_date||"").slice(0,7)+"|"+String(r.category||"Uncategorised");actualByMonthCategory.set(key,(actualByMonthCategory.get(key)||0)+num(r.amount));});
+    const budgets=(source.budgets||[]).map(b=>{const key=String(b.period_start||"").slice(0,7)+"|"+String(b.category||"");const actual=actualByMonthCategory.get(key)||0;return {month:String(b.period_start||"").slice(0,7),category:b.category,budget_amount:num(b.budget_amount),confirmed_expense:actual,remaining_budget:num(b.budget_amount)-actual,status:b.status,variance:actual-num(b.budget_amount)};});
+    return {blocks:[
+     grouped("ক্যাটাগরি অনুযায়ী নিশ্চিত Operating Expense","Budget utilization uses confirmed operating expense only.",operating,"category",["amount"]),
+     block("মাসিক বাজেট বনাম নিশ্চিত খরচ","একই calendar month ও category-এর budget-এর সঙ্গে সেই পূর্ণ মাসের confirmed operating expense তুলনা।",["month","category","budget_amount","confirmed_expense","remaining_budget","variance","status"],budgets,"confirmed_expense"),
+     grouped("Financial Class অনুযায়ী খরচ","Operating, Capital, Loan, Refund ও Adjustment আলাদা শ্রেণিতে।",confirmed,"financial_class",["amount"]),
+     grouped("খরচের স্ট্যাটাস","Draft, Confirmed ও Void expense আলাদা করে।",rows,"status",["amount"])
+    ]};
+   }
+   if(type==="transactions")return {blocks:[
+    grouped("লেনদেনের ধরন","Income, Expense ও Internal transfer আলাদা record type.",rows,"entry_type",["amount"]),
+    grouped("আর্থিক শ্রেণি","Operating, Capital, Loan, Refund, Adjustment ও Internal transfer আলাদা।",rows,"financial_class",["amount"]),
+    grouped("লেনদেনের অবস্থা","Draft, Confirmed, Void বা সংরক্ষিত status।",rows,"status",["amount"]),
+    grouped("ক্যাটাগরি অনুযায়ী লেনদেন","Finance ledger category ও transfer category অনুযায়ী amount.",rows,"category",["amount"])
+   ]};
+   if(type==="business"||type==="sales"){
+    const statusRows=groupRows(orders.map(o=>({status:o.status||"unknown",order_value:num(o.total)})),"status",["order_value"]);
+    const paymentRows=groupRows(orders.filter(o=>String(o.status||"").toLowerCase()!=="cancelled").map(o=>({payment_method:o.payment_method||"not recorded",order_value:num(o.total)})),"payment_method",["order_value"]);
+    return {blocks:[
+     block("অর্ডার স্ট্যাটাস অনুযায়ী","প্রতিটি status-এ order count ও recorded order value.",["status","records","order_value"],statusRows,"order_value"),
+     block("পেমেন্ট পদ্ধতি অনুযায়ী","Order snapshot-এ সংরক্ষিত payment method; এটি payment confirmation নয়.",["payment_method","records","order_value"],paymentRows,"order_value"),
+     block("দিনভিত্তিক বিক্রয়","Selected date range-এর non-cancelled order value.",["date","orders","order_value","delivery_charge"],rows.slice().sort((a,b)=>String(b.date||"").localeCompare(String(a.date||""))),"order_value")
+    ]};
+   }
+   if(type==="daily")return {blocks:[
+    block("দিনভিত্তিক ব্যবসায়িক সারাংশ","Order, cancelled order, order value, confirmed expense, COD collection ও remittance একই timeline-এ।",["date","orders","cancelled_orders","order_value","delivery_charge","confirmed_expenses","cod_collected","cod_remitted"],rows.slice().sort((a,b)=>String(b.date||"").localeCompare(String(a.date||""))),"order_value")
+   ]};
+   if(["product-sales","top-products"].includes(type))return {blocks:[
+    block("পণ্যভিত্তিক বিক্রয়","Units sold এবং order line value; cancelled order বাদ.",["rank","product","sku","category","quantity_sold","sales","order_lines"],rows.slice(0,12),"sales"),
+    grouped("ক্যাটাগরি অনুযায়ী বিক্রয়","Current catalogue category match যেখানে পাওয়া গেছে.",rows,"category",["quantity_sold","sales"])
+   ]};
+   if(type==="customer-wise-products")return {blocks:[
+    block("গ্রাহক-পণ্য অনুযায়ী ক্রয়","প্রতি row একটি customer/product pair.",["customer","product","quantity","total","order_lines"],rows.slice(0,50),"total"),
+    grouped("গ্রাহকভিত্তিক মোট ক্রয়","প্রতিটি customer-এর units এবং item value.",rows,"customer",["quantity","total"])
+   ]};
+   if(["customer-products","top-customers","customers"].includes(type))return {blocks:[
+    block("গ্রাহকভিত্তিক সারাংশ","Order count, total spend, product variety ও last order.",["rank","customer","orders","unique_products","units","total_spent","average_order","last_order","top_product"],rows.slice(0,20),"total_spent"),
+    grouped("অর্ডার কার্যক্রমের ধরন","Customer order count অনুযায়ী তুলনা.",rows,"orders",["total_spent"])
+   ]};
+   if(type==="purchase")return {blocks:[
+    grouped("সরবরাহকারীভিত্তিক ক্রয়","Selected purchase orders-এর recorded total.",rows,"supplier",["total_amount"]),
+    grouped("Purchase Order Status","Draft, confirmed, received/completed ও void status পৃথক.",rows,"status",["total_amount"]),
+    block("ক্রয় অর্ডারের গ্রহণ অবস্থা","Ordered vs received units.",["purchase_number","supplier","ordered_units","received_units","total_amount","status"],rows.slice(0,40),"received_units")
+   ]};
+   if(type==="product-purchase")return {blocks:[
+    grouped("পণ্যভিত্তিক ক্রয়","Ordered quantity, received quantity, pending quantity এবং cost.",rows,"product",["quantity","received_quantity","pending_quantity","total"]),
+    grouped("সরবরাহকারীভিত্তিক ক্রয়","Supplier-wise purchase line count and value.",rows,"supplier",["quantity","total"])
+   ]};
+   if(["low-stock","alert-products","stock","stock-list"].includes(type))return {blocks:[
+    grouped("ক্যাটাগরি অনুযায়ী স্টক","Current available units এবং saved cost valuation.",rows,"category",["stock","stock_value"]),
+    grouped("স্টক সতর্কতার ধরন","Out of stock, low stock ও normal threshold.",rows,"alert",["stock","stock_value"]),
+    block("পণ্যভিত্তিক স্টক অবস্থান","Current catalogue snapshot; missing cost values are not estimated.",["product","sku","category","stock","minimum_stock","unit_cost","stock_value","alert"],rows.slice(0,50),"stock_value")
+   ]};
+   return {blocks:[block("রিপোর্ট বিশ্লেষণ","নির্বাচিত রেকর্ডের সারাংশ।",rows.length?Object.keys(rows[0]).slice(0,8):["record"],rows.slice(0,20),"records")]};
+  }
+  function insightsFor(type,rows,source){
+   const items=[],add=(level,title,detail,action)=>items.push({level,title,detail,action:action||""});
+   if(type==="account-payments"){
+    const accounts=source.accountBalances||[];
+    if(!accounts.length)add("info","অ্যাকাউন্ট সেটআপ নেই","Cash, Bank বা Mobile Wallet account না থাকায় account balance নির্ভরযোগ্যভাবে দেখানো যাচ্ছে না।","Finance → Cash & Accounts");
+    const negative=accounts.filter(a=>a.current_balance<0);
+    if(negative.length)add("warning","Negative account balance",negative.map(a=>a.account_name+" · "+money(a.current_balance)).join(" | "),"Opening balance ও linked entries যাচাই করুন");
+    const unassigned=rows.filter(r=>r.record_kind==="Finance entry"&&r.status==="confirmed"&&r.account_name==="Unassigned");
+    if(unassigned.length)add("warning","Confirmed entry-তে account যুক্ত নেই",unassigned.length+"টি confirmed Finance entry কোনো account-এ বরাদ্দ নয়।","Finance ledger-এ account mapping review করুন");
+    const drafts=rows.filter(r=>r.record_kind==="Finance entry"&&r.status==="draft");
+    if(drafts.length)add("info","Draft transaction review বাকি",drafts.length+"টি draft entry confirmed balance-এ অন্তর্ভুক্ত হয়নি।","Draft entry যাচাই করে confirm বা void করুন");
+   }else if(type==="payable"){
+    const overdue=rows.filter(r=>r.due_state==="Overdue"),balance=(source.supplierBalances||[]).reduce((n,r)=>n+num(r.outstanding_balance),0);
+    if(overdue.length)add("warning","Overdue supplier bills",overdue.length+"টি নির্বাচিত bill-এর due date পার হয়েছে এবং balance বাকি আছে।","Supplier payment schedule review করুন");
+    if(balance>0)add("info","বর্তমান supplier liability",money(balance)+" supplier ledger অনুযায়ী outstanding।","Due date ও cash plan মিলিয়ে payment schedule করুন");
+    const drafts=rows.filter(r=>String(r.status||"").toLowerCase()==="draft");
+    if(drafts.length)add("info","Draft bill review",drafts.length+"টি draft bill confirmed liability নয়।","Invoice যাচাই করে confirm বা void করুন");
+   }else if(type==="receivable"||type==="collections"){
+    const pendingCollection=rows.reduce((n,r)=>n+num(r.pending_collection),0),pendingRemittance=rows.reduce((n,r)=>n+num(r.pending_remittance),0);
+    const exceptions=rows.filter(r=>String(r.status||"").toLowerCase()==="exception"),variance=rows.filter(r=>Math.abs(num(r.remittance_variance))>0.009);
+    if(pendingCollection>0)add("warning","COD collection এখনো বাকি",money(pendingCollection)+" এখনো courier collection হিসেবে রেকর্ড হয়নি।","Courier tracking ও collection status যাচাই করুন");
+    if(pendingRemittance>0)add("warning","Net remittance এখনো যাচাইকৃত নয়",money(pendingRemittance)+" courier fee/adjustment বাদ দেওয়ার পরও Finance-এ verified income হিসেবে নেই।","Courier statement ও linked reconciled settlement যাচাই করুন");
+    if(exceptions.length)add("warning","Courier settlement exception",exceptions.length+"টি settlement manual review প্রয়োজন।","Exception record ও courier statement মিলিয়ে দেখুন");
+    if(variance.length)add("warning","Remittance variance",variance.length+"টি settlement-এর verified amount expected net amount-এর সঙ্গে মেলে না।","Courier statement, fee ও adjustment যাচাই করুন");
+    if(!items.length)add("success","বর্তমান COD অবস্থায় খোলা পার্থক্য নেই","নির্বাচিত রেকর্ডে uncollected COD বা pending verified remittance পাওয়া যায়নি।");
+   }else if(type==="expenses"){
+    const budgets=(source.budgets||[]).filter(b=>b.status==="active"),actualRows=source.budgetFinance||[];
+    const actualByKey=new Map();
+    actualRows.forEach(r=>{const key=String(r.entry_date||"").slice(0,7)+"|"+String(r.category||"");actualByKey.set(key,(actualByKey.get(key)||0)+num(r.amount));});
+    const over=budgets.map(b=>({category:b.category,month:String(b.period_start||"").slice(0,7),budget:num(b.budget_amount),actual:actualByKey.get(String(b.period_start||"").slice(0,7)+"|"+b.category)||0})).filter(b=>b.actual>b.budget);
+    if(over.length)add("warning","Budget exceeded",over.map(b=>b.category+" · "+b.month+" · "+money(b.actual-b.budget)+" over").join(" | "),"Category spending ও budget review করুন");
+    const drafts=rows.filter(r=>r.status==="draft");
+    if(drafts.length)add("info","Draft expense review বাকি",drafts.length+"টি draft expense confirmed expense total-এ ধরা হয়নি।","Receipt/approval যাচাই করে status update করুন");
+    if(!items.length)add("success","নির্বাচিত expense data-তে সতর্কতা নেই","Confirmed operating expense-এ দৃশ্যমান budget overrun বা draft review item নেই।");
+   }else if(type==="transactions"){
+    const drafts=rows.filter(r=>r.status==="draft"),voids=rows.filter(r=>r.status==="void"),transfers=rows.filter(r=>r.record_kind==="Internal transfer");
+    if(drafts.length)add("info","Draft transaction review বাকি",drafts.length+"টি draft transaction confirmed cash movement-এ অন্তর্ভুক্ত নয়।","Source record যাচাই করুন");
+    if(voids.length)add("info","Void transaction আছে",voids.length+"টি void record audit trail-এ আছে, confirmed totals-এ গণনা হয়নি।");
+    if(transfers.length)add("info","Internal transfer আলাদা রাখা হয়েছে",transfers.length+"টি account transfer income/expense হিসেবে গণনা হয়নি।");
+    if(!items.length)add("success","লেনদেনের অবস্থা পরিষ্কার","নির্বাচিত সময়ে draft/void item বা internal transfer record পাওয়া যায়নি।");
+   }
+   return items;
   }
   function renderBars(rows,key){
    if(!rows.length)return '<div class="hf-report-empty"><strong>বিশ্লেষণের জন্য রেকর্ড নেই</strong><p>সোর্স মডিউলে ডেটা যুক্ত হলে এই অংশ পূরণ হবে।</p></div>';
@@ -3445,19 +3717,21 @@ async function refresh(){
    $("reportWorkspaceRecordsFoot").textContent=visibleRows.length>250?"প্রিভিউতে প্রথম ২৫০টি রেকর্ড; CSV/Excel-এ সম্পূর্ণ তালিকা।":visibleRows.length+"টি রেকর্ড দেখানো হচ্ছে।";
   }
   function showSegment(segment){
-   activeSegment=segment;["overview","analysis","records"].forEach(id=>{const panel=$("reportWorkspace"+id.charAt(0).toUpperCase()+id.slice(1));if(panel)panel.hidden=id!==segment;});
+   activeSegment=segment;
+   ["overview","analysis","records","insights"].forEach(id=>{const panel=$("reportWorkspace"+id.charAt(0).toUpperCase()+id.slice(1));if(panel)panel.hidden=id!==segment;});
    document.querySelectorAll("[data-report-segment]").forEach(b=>{const active=b.dataset.reportSegment===segment;b.classList.toggle("active",active);b.setAttribute("aria-selected",String(active));});
    if(segment==="records")renderRecordTable();
   }
   function renderWorkspace(){
    if(!reportGroup||!workspace)return;
-   const def=definitions[report.type]||definitions.business,metrics=kpisFor(report.type,report.rows,report.source||{}),analysis=analysisFor(report.type,report.rows,report.source||{});
+   const def=definitions[report.type]||definitions.business,metrics=kpisFor(report.type,report.rows,report.source||{}),analysis=analysisFor(report.type,report.rows,report.source||{}),analysisBlocks=analysis.blocks||[analysis],firstAnalysisBlock=analysisBlocks[0]||{title:def[3],description:def[2],columns:[],rows:[],bars:"records"};
    $("reportWorkspaceTitle").textContent=def[0];$("reportWorkspaceDescription").textContent=def[2];$("reportWorkspaceCode").textContent=report.type.toUpperCase();$("reportWorkspaceRange").textContent=report.rangeLabel+" · "+report.rows.length+" records";
    $("reportWorkspaceKpis").innerHTML=metrics.map(m=>'<article class="hf-report-kpi"><small>'+esc(m.label)+'</small><strong>'+esc(m.value)+'</strong><span>'+esc(m.note)+'</span></article>').join("");
-   $("reportWorkspaceTabs").innerHTML='<button type="button" role="tab" data-report-segment="overview" aria-selected="true" class="active">সারসংক্ষেপ</button><button type="button" role="tab" data-report-segment="analysis" aria-selected="false">'+esc(def[3])+'</button><button type="button" role="tab" data-report-segment="records" aria-selected="false">'+esc(def[4])+'</button>';
+   $("reportWorkspaceTabs").innerHTML='<button type="button" role="tab" data-report-segment="overview" aria-selected="true" class="active">সারসংক্ষেপ</button><button type="button" role="tab" data-report-segment="analysis" aria-selected="false">'+esc(def[3])+'</button><button type="button" role="tab" data-report-segment="records" aria-selected="false">'+esc(def[4])+'</button>'+(["account-payments","collections","expenses","transactions","payable","receivable"].includes(report.type)?'<button type="button" role="tab" data-report-segment="insights" aria-selected="false">ব্যবসায়িক ইনসাইটস</button>':'');
    const metricRows=metrics.map(m=>({বিষয়:m.label,মান:m.value,বিবরণ:m.note}));
-   $("reportWorkspaceOverview").innerHTML='<div class="hf-report-overview-grid"><section class="hf-report-subsection"><div class="hf-report-subsection-head"><div><h3>মূল সূচক</h3><p>নির্বাচিত সময়ের রেকর্ড ও ডেটা সোর্স</p></div><span>'+metrics.length+' indicators</span></div>'+tableMarkup(metricRows,Object.keys(metricRows[0]||{বিষয়:"",মান:"",বিবরণ:""}),"সারাংশ নেই")+'</section><section class="hf-report-subsection"><div class="hf-report-subsection-head"><div><h3>'+esc(def[3])+'</h3><p>'+esc(def[2])+'</p></div></div>'+tableMarkup(analysis.rows,analysis.columns,"বিশ্লেষণের ডেটা নেই")+'</section></div><div class="hf-report-source-note">'+esc(report.notes||"রিপোর্টটি সংযুক্ত ডেটা সোর্স থেকে তৈরি।")+'</div>';
-   $("reportWorkspaceAnalysis").innerHTML='<section class="hf-report-subsection"><div class="hf-report-subsection-head"><div><h3>'+esc(def[3])+'</h3><p>বিভাগ/ধরন অনুযায়ী সমষ্টি; মূল রেকর্ডের বিকল্প নয়।</p></div><span>'+analysis.rows.length+' groups</span></div>'+renderBars(analysis.rows,analysis.bars||"records")+tableMarkup(analysis.rows,analysis.columns,"এই রিপোর্টে বিশ্লেষণ ডেটা নেই")+'</section>';
+   $("reportWorkspaceOverview").innerHTML='<div class="hf-report-overview-grid"><section class="hf-report-subsection"><div class="hf-report-subsection-head"><div><h3>মূল সূচক</h3><p>নির্বাচিত সময়ের রেকর্ড ও ডেটা সোর্স</p></div><span>'+metrics.length+' indicators</span></div>'+tableMarkup(metricRows,Object.keys(metricRows[0]||{বিষয়:"",মান:"",বিবরণ:""}),"সারাংশ নেই")+'</section><section class="hf-report-subsection"><div class="hf-report-subsection-head"><div><h3>'+esc(firstAnalysisBlock.title||def[3])+'</h3><p>'+esc(firstAnalysisBlock.description||def[2])+'</p></div></div>'+tableMarkup(firstAnalysisBlock.rows||[],firstAnalysisBlock.columns||[],"বিশ্লেষণের ডেটা নেই")+'</section></div><div class="hf-report-source-note">'+esc(report.notes||"রিপোর্টটি সংযুক্ত ডেটা সোর্স থেকে তৈরি।")+'</div>';
+   $("reportWorkspaceAnalysis").innerHTML=analysisBlocks.map(block=>'<section class="hf-report-subsection" style="margin-bottom:12px"><div class="hf-report-subsection-head"><div><h3>'+esc(block.title||def[3])+'</h3><p>'+esc(block.description||"বিভাগ/ধরন অনুযায়ী সমষ্টি; মূল রেকর্ডের বিকল্প নয়।")+'</p></div><span>'+(block.rows||[]).length+' groups</span></div>'+renderBars(block.rows||[],block.bars||"records")+tableMarkup(block.rows||[],block.columns||[],"এই উপ-বিশ্লেষণে কোনো রেকর্ড নেই")+'</section>').join("");
+   $("reportWorkspaceInsights").innerHTML=insightsFor(report.type,report.rows,report.source||{}).map(item=>'<article class="hf-report-insight-card is-'+esc(item.level)+'"><div><span class="hf-report-insight-level">'+esc(item.level.toUpperCase())+'</span><h3>'+esc(item.title)+'</h3></div><p>'+esc(item.detail)+'</p>'+(item.action?'<small>'+esc(item.action)+'</small>':'')+'</article>').join("")||'<div class="hf-report-empty"><strong>এই রিপোর্টে উল্লেখযোগ্য ব্যবসায়িক সতর্কতা নেই</strong><p>যাচাইকৃত রেকর্ড থেকে কোনো নির্দিষ্ট action item পাওয়া যায়নি।</p></div>';
    $("reportWorkspaceRecordsTitle").textContent=def[4];$("reportWorkspaceRecordsNote").textContent="মূল সোর্স রেকর্ড; সার্চ, ফিল্টার এবং CSV/Excel/PDF এক্সপোর্ট ব্যবহার করুন।";
    const preferred=({business:"date",sales:"date","product-sales":"product","top-products":"product","customer-wise-products":"customer","customer-products":"customer","top-customers":"customer",customers:"customer",purchase:"supplier","product-purchase":"product",payable:"supplier",receivable:"courier",collections:"courier","low-stock":"category","alert-products":"alert",stock:"category","stock-list":"category","account-payments":"account_name",expenses:"category",transactions:"entry_type",daily:"date"})[report.type]||"";
    activeFilterColumn=preferred&&report.rows.some(r=>r[preferred]!==undefined)?preferred:"";
@@ -3471,10 +3745,11 @@ async function refresh(){
    if(!reportGroup)return;
    const builder=$("reportBuildSection"),preview=$("reportPreviewSection"),center=document.querySelector(".hf-report-center");
    workspace=document.createElement("section");workspace.id="reportWorkspace";workspace.className="hf-report-workspace";
-   workspace.innerHTML='<div class="hf-report-workspace-head"><div><p class="page-eyebrow">INDIVIDUAL REPORT WORKSPACE</p><h2 id="reportWorkspaceTitle"></h2><p id="reportWorkspaceDescription"></p></div><div class="hf-report-workspace-meta"><span id="reportWorkspaceCode"></span><small id="reportWorkspaceRange"></small></div></div><div class="hf-report-kpis" id="reportWorkspaceKpis"></div><div class="hf-report-workspace-toolbar"><div class="hf-report-workspace-filters" id="reportWorkspaceFilters"></div><div class="hf-report-workspace-actions" id="reportWorkspaceActions"></div></div><div class="hf-report-segment-nav" id="reportWorkspaceTabs" role="tablist"></div><section class="hf-report-segment-panel" id="reportWorkspaceOverview" role="tabpanel"></section><section class="hf-report-segment-panel" id="reportWorkspaceAnalysis" role="tabpanel" hidden></section><section class="hf-report-segment-panel" id="reportWorkspaceRecords" role="tabpanel" hidden><div class="hf-report-record-toolbar"><div><h3 id="reportWorkspaceRecordsTitle"></h3><p id="reportWorkspaceRecordsNote"></p></div><div class="hf-report-record-filters"><input id="reportWorkspaceSearch" class="hf-input" type="search" placeholder="এই রিপোর্টের রেকর্ড খুঁজুন" aria-label="Search report records"><select id="reportWorkspaceFieldFilter" class="hf-select" aria-label="Filter report records"><option value="">সব রেকর্ড</option></select></div></div><div class="hf-report-table-wrap" tabindex="0" role="region" aria-label="Report detail records"><table class="hf-table"><thead id="reportWorkspaceTableHead"></thead><tbody id="reportWorkspaceTableBody"></tbody></table></div><p class="hf-data-note" id="reportWorkspaceRecordsFoot"></p></section><div class="hf-report-workspace-foot" id="reportWorkspaceFoot"></div>';
+   workspace.innerHTML='<div class="hf-report-workspace-head"><div><p class="page-eyebrow">INDIVIDUAL REPORT WORKSPACE</p><h2 id="reportWorkspaceTitle"></h2><p id="reportWorkspaceDescription"></p></div><div class="hf-report-workspace-meta"><span id="reportWorkspaceCode"></span><small id="reportWorkspaceRange"></small></div></div><div class="hf-report-kpis" id="reportWorkspaceKpis"></div><div class="hf-report-workspace-toolbar"><div class="hf-report-workspace-filters" id="reportWorkspaceFilters"></div><div class="hf-report-workspace-actions" id="reportWorkspaceActions"></div></div><div class="hf-report-segment-nav" id="reportWorkspaceTabs" role="tablist"></div><section class="hf-report-segment-panel" id="reportWorkspaceOverview" role="tabpanel"></section><section class="hf-report-segment-panel" id="reportWorkspaceAnalysis" role="tabpanel" hidden></section><section class="hf-report-segment-panel" id="reportWorkspaceRecords" role="tabpanel" hidden><div class="hf-report-record-toolbar"><div><h3 id="reportWorkspaceRecordsTitle"></h3><p id="reportWorkspaceRecordsNote"></p></div><div class="hf-report-record-filters"><input id="reportWorkspaceSearch" class="hf-input" type="search" placeholder="এই রিপোর্টের রেকর্ড খুঁজুন" aria-label="Search report records"><select id="reportWorkspaceFieldFilter" class="hf-select" aria-label="Filter report records"><option value="">সব রেকর্ড</option></select></div></div><div class="hf-report-table-wrap" tabindex="0" role="region" aria-label="Report detail records"><table class="hf-table"><thead id="reportWorkspaceTableHead"></thead><tbody id="reportWorkspaceTableBody"></tbody></table></div><p class="hf-data-note" id="reportWorkspaceRecordsFoot"></p></section><section class="hf-report-segment-panel" id="reportWorkspaceInsights" role="tabpanel" hidden></section><div class="hf-report-workspace-foot" id="reportWorkspaceFoot"></div>';
    if(builder)builder.parentNode.insertBefore(workspace,builder);if(center)center.hidden=true;if(builder)builder.hidden=true;if(preview)preview.hidden=true;
    const filterHost=$("reportWorkspaceFilters"),actionHost=$("reportWorkspaceActions"),rangeLabel=$("rangeSelect")?.closest("label");
    if(rangeLabel)filterHost.appendChild(rangeLabel);if($("customRangeFields"))filterHost.appendChild($("customRangeFields"));
+   if(first==="receivable"){if(rangeLabel)rangeLabel.hidden=true;if($("customRangeFields"))$("customRangeFields").hidden=true;}
    if($("includePersonalData")?.closest("label"))$("includePersonalData").closest("label").hidden=true;
    if($("buildReportBtn")){ $("buildReportBtn").textContent="রিপোর্ট রিফ্রেশ";actionHost.appendChild($("buildReportBtn")); }
    ["downloadCsvBtn","downloadXlsxBtn","downloadPdfBtn"].forEach(id=>{if($(id))actionHost.appendChild($(id));});
