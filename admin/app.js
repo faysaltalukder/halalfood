@@ -3162,7 +3162,7 @@ async function refresh(){
     title="Supplier Payables Report";
     notes="Bills are selected by invoice date. Bill-level payments include allocations from confirmed supplier payments only; confirmed credit notes are deducted. Supplier balances show the latest ledger position, not a historical as-of balance.";
    }else if(type==="receivable"||type==="collections"){
-    const [settlements,codFinance]=await Promise.all([fetchReportSettlements(null),fetchReportFinance(type==="collections"?range:null)]);
+    const [settlements,codFinance]=await Promise.all([fetchReportSettlements(null),fetchReportFinance(null)]);
     source.settlements=settlements;source.codFinance=codFinance.filter(e=>e.entry_type==="income"&&e.status==="confirmed"&&e.related_cod_settlement_id);
     const verifiedBySettlement=new Map();source.codFinance.forEach(e=>verifiedBySettlement.set(e.related_cod_settlement_id,(verifiedBySettlement.get(e.related_cod_settlement_id)||0)+num(e.amount)));
     const inRange=value=>{const day=String(value||"").slice(0,10);if(!day)return false;const from=range.fromDay??(range.from?String(range.from).slice(0,10):"0000-01-01");const to=range.toDay??(range.to?String(range.to).slice(0,10):todayISO());return day>=from&&day<=to;};
@@ -3192,7 +3192,7 @@ async function refresh(){
      const accountMap=new Map(accounts.map(account=>[account.id,account]));
      source.accountBalances=accounts.map(account=>{
       const openingDate=String(account.opening_date||"0000-01-01").slice(0,10);
-      const ledger=allFinance.filter(e=>e.account_id===account.id&&e.status==="confirmed"&&String(e.entry_date||"")>=openingDate).reduce((total,e)=>total+(e.entry_type==="income"?1:-1)*num(e.amount),0);
+      const ledger=allFinance.filter(e=>e.account_id===account.id&&e.status==="confirmed"&&String(e.entry_date||"")>=openingDate).reduce((total,e)=>total+(e.entry_type==="income"?num(e.amount):e.entry_type==="expense"?-num(e.amount):0),0);
       const transferIn=allTransfers.filter(t=>t.destination_account_id===account.id&&t.status==="confirmed"&&String(t.transfer_date||"")>=openingDate).reduce((total,t)=>total+num(t.amount),0);
       const transferOut=allTransfers.filter(t=>t.source_account_id===account.id&&t.status==="confirmed"&&String(t.transfer_date||"")>=openingDate).reduce((total,t)=>total+num(t.amount),0);
       const periodEntries=finance.filter(e=>e.account_id===account.id&&e.status==="confirmed");
@@ -3210,9 +3210,13 @@ async function refresh(){
      notes="Current balance = opening balance + confirmed account-linked income − confirmed expenses + confirmed transfers in − transfers out. Period movement uses selected-period records. Internal transfers are not income or expense.";
     }else if(type==="expenses"){
      rows=finance.filter(e=>String(e.entry_type||"").toLowerCase()==="expense").map(e=>({entry_date:e.entry_date,category:e.category,party_name:e.party_name,amount:num(e.amount),status:e.status,financial_class:e.financial_class,payment_method:e.payment_method,reference:e.reference,description:e.description}));
-     const budgets=await signedQuery(client.from("admin_finance_budgets").select("category,period_start,budget_amount,status,notes").order("period_start",{ascending:false}).order("category",{ascending:true}).limit(3000));
-     source.budgets=budgets.filter(b=>(!range?.fromDay||String(b.period_start).slice(0,7)>=String(range.fromDay||range.from).slice(0,7))&&(!range?.toDay||String(b.period_start).slice(0,7)<=String(range.toDay||range.to).slice(0,7)));
-     notes="Expense rows include all saved statuses. Confirmed operating expense is separated from draft, void and non-operating entries. Budgets are planning limits, not paid cash.";
+     const [budgets,budgetFinance]=await Promise.all([
+      signedQuery(client.from("admin_finance_budgets").select("category,period_start,budget_amount,status,notes").order("period_start",{ascending:false}).order("category",{ascending:true}).limit(3000)),
+      fetchReportFinance(null)
+     ]);
+     source.budgets=budgets.filter(b=>(!range?.fromDay||String(b.period_start).slice(0,7)>=String(range.fromDay||range.from).slice(0,7))&&(!range?.toDay||String(b.period_start).slice(0,7)<=String(range.toDay||range).slice(0,7)));
+     source.budgetFinance=budgetFinance.filter(e=>String(e.entry_type||"").toLowerCase()==="expense"&&e.status==="confirmed"&&(e.financial_class||"operating")==="operating");
+     notes="Expense records follow the selected date range. Budget utilization compares each listed calendar month with that full month’s confirmed operating expenses; budget is a planning limit, not paid cash.";
     }else{
      const [transfers,accounts]=await Promise.all([fetchReportTransfers(range),signedQuery(client.from("admin_finance_accounts").select("id,name,account_type").order("name",{ascending:true}).limit(1000))]);
      const accountMap=new Map(accounts.map(account=>[account.id,account]));source.transfers=transfers;source.accounts=accounts;
