@@ -3306,13 +3306,26 @@ async function refresh(){
    if($("printReportTitle"))$("printReportTitle").textContent=def[0];if($("printReportDetails"))$("printReportDetails").textContent=report.rangeLabel+" · "+report.rows.length+" records";
    showSegment(activeSegment);
   }
-  async function fetchReportFinance(range){
-   let q=client.from("admin_finance_entries").select("id,entry_type,category,amount,entry_date,description,reference,status,related_order_id,account_id,payment_method,party_name,financial_class,related_supplier_payment_id,related_cod_settlement_id,created_by,created_at,updated_at").order("entry_date",{ascending:false}).order("created_at",{ascending:false}).limit(3000);
-   if(range)q=rangeQuery(q,"entry_date",range);return signedQuery(q);
+  async function fetchReportFinance(range,limit=10000){
+   return paginateQuery(()=>{
+    let q=client.from("admin_finance_entries").select("id,entry_type,category,amount,entry_date,description,reference,status,related_order_id,account_id,payment_method,party_name,financial_class,related_supplier_payment_id,related_cod_settlement_id,created_by,created_at,updated_at").order("entry_date",{ascending:false}).order("created_at",{ascending:false}).order("id",{ascending:true});
+    if(range)q=rangeQuery(q,"entry_date",range);
+    return q;
+   },limit);
   }
-  async function fetchReportSettlements(range){
-   let q=client.from("admin_cod_settlements").select("id,order_id,order_number,customer_name,courier_name,tracking_reference,cod_amount,collected_amount,courier_fee,adjustment_amount,remitted_amount,status,collected_at,remitted_at,created_at,updated_at").order("created_at",{ascending:false}).limit(3000);
-   if(range)q=rangeQuery(q,"created_at",range);return signedQuery(q);
+  async function fetchReportSettlements(range,limit=10000){
+   return paginateQuery(()=>{
+    let q=client.from("admin_cod_settlements").select("id,order_id,order_number,customer_name,courier_name,tracking_reference,cod_amount,collected_amount,courier_fee,adjustment_amount,remitted_amount,remitted_account_id,status,collected_at,remitted_at,created_at,updated_at").order("created_at",{ascending:false}).order("id",{ascending:true});
+    if(range)q=rangeQuery(q,"created_at",range);
+    return q;
+   },limit);
+  }
+  async function fetchReportTransfers(range,limit=10000){
+   return paginateQuery(()=>{
+    let q=client.from("admin_finance_transfers").select("id,source_account_id,destination_account_id,transfer_date,amount,reference,description,status,created_at,updated_at").order("transfer_date",{ascending:false}).order("id",{ascending:true});
+    if(range)q=rangeQuery(q,"transfer_date",range);
+    return q;
+   },limit);
   }
   function attachReportFilters(){
    if(!reportGroup||!workspace)return;
