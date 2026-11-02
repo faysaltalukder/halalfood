@@ -161,7 +161,7 @@ assert.ok(shared.includes('profile":"Creative · Refined · Expressive"') && sha
 assert.ok(shared.includes("const ADMIN_THEME_GROUPS=[") && shared.includes('label:"Modern"') && shared.includes('label:"Balanced"') && shared.includes('label:"Classic Comfort"') && shared.includes('label:"Signature"') && shared.includes('themeIds:["merchant-fieldbook","glass-studio","glyph-signal"]'), "All four theme groups must remain, with three themes in Signature.");
 const themeGroupMatches=[...shared.matchAll(/themeIds:\[([^\]]*)\]/g)];
 const themeGroupCount=themeGroupMatches.reduce((total,match)=>total+(match[1].match(/"[^"]+"/g)||[]).length,0);
-assert.equal(themeGroupCount,15,"The picker must expose exactly fifteen themes after adding Golden Prestige.");
+assert.equal(themeGroupCount,17,"The picker must expose all seventeen approved themes, including the two Celestial themes.");
 assert.ok(shared.includes("All themes are available to every administrator") && !shared.includes("of 11 themes available"), "Theme count must be registry-driven and not hard-coded.");
 assert.ok(shared.includes('aria-label="Select ') && shared.includes(' theme" aria-pressed="') && shared.includes('aria-pressed='), "Theme choices must expose accessible names and selected states.");
 assert.ok(shared.includes("function makeExtendedAdminTheme") && shared.includes("EXTENDED_ADMIN_THEME_CONFIGS.forEach"), "The four added themes must be generated through the shared dynamic theme engine.");
