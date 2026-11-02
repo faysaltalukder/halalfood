@@ -3116,15 +3116,19 @@ async function refresh(){
      const byDay=new Map();valid.forEach(o=>{const day=dhakaDateKey(o.ordered_at);if(!day)return;const r=byDay.get(day)||{date:day,orders:0,order_value:0,delivery_charge:0};r.orders++;r.order_value+=num(o.total);r.delivery_charge+=num(o.delivery_charge);byDay.set(day,r);});
      rows=[...byDay.values()].sort((a,b)=>b.date.localeCompare(a.date));title="Sales Performance Report";notes="Sales are based on non-cancelled order totals; payment method and status analysis uses source orders.";
     }else if(type==="daily"){
-     const [finance,settlements]=await Promise.all([fetchReportFinance(range),fetchReportSettlements(range)]);source.finance=finance;source.settlements=settlements;
-     const byDay=new Map();const dayRow=day=>{if(!day)return null;let r=byDay.get(day);if(!r){r={date:day,orders:0,cancelled_orders:0,order_value:0,delivery_charge:0,confirmed_expenses:0,cod_collected:0,cod_remitted:0,courier_fees:0};byDay.set(day,r);}return r;};
+     const [finance,settlements]=await Promise.all([fetchReportFinance(range),fetchReportSettlements(null)]);source.finance=finance;source.settlements=settlements;
+     const byDay=new Map();const dayRow=day=>{if(!day)return null;let r=byDay.get(day);if(!r){r={date:day,orders:0,cancelled_orders:0,order_value:0,delivery_charge:0,confirmed_expenses:0,cod_collected:0,cod_remitted:0,cod_remitted_recorded:0,cod_remitted_verified:0,courier_fees:0};byDay.set(day,r);}return r;};
      orders.forEach(o=>{const r=dayRow(dhakaDateKey(o.ordered_at));if(r){r.orders++;if(String(o.status).toLowerCase()==="cancelled")r.cancelled_orders++;else{r.order_value+=num(o.total);r.delivery_charge+=num(o.delivery_charge);}}});
      finance.filter(e=>String(e.entry_type).toLowerCase()==="expense"&&String(e.status).toLowerCase()==="confirmed").forEach(e=>{const r=dayRow(String(e.entry_date||"").slice(0,10));if(r)r.confirmed_expenses+=num(e.amount);});
-     settlements.forEach(s=>{if(s.collected_at){const r=dayRow(String(s.collected_at).slice(0,10));if(r){r.cod_collected+=num(s.collected_amount);r.courier_fees+=num(s.courier_fee);}}if(s.remitted_at){const r=dayRow(String(s.remitted_at).slice(0,10));if(r)r.cod_remitted+=num(s.remitted_amount);}});
-     rows=[...byDay.values()].sort((a,b)=>b.date.localeCompare(a.date));title="Daily Business Report";notes="অর্ডার মূল্য cancelled বাদে; ব্যয় কেবল Confirmed expense। COD collection এবং remittance তাদের নিজস্ব তারিখে দেখানো হয়েছে।";
+     settlements.forEach(s=>{if(s.collected_at){const r=dayRow(String(s.collected_at).slice(0,10));if(r){r.cod_collected+=num(s.collected_amount);r.courier_fees+=num(s.courier_fee);}}if(s.remitted_at){const r=dayRow(String(s.remitted_at).slice(0,10));if(r){r.cod_remitted+=num(s.remitted_amount);r.cod_remitted_recorded+=num(s.remitted_amount);}}});
+     finance.filter(e=>String(e.entry_type||"").toLowerCase()==="income"&&String(e.status||"").toLowerCase()==="confirmed"&&e.related_cod_settlement_id).forEach(e=>{const r=dayRow(String(e.entry_date||"").slice(0,10));if(r)r.cod_remitted_verified+=num(e.amount);});
+     rows=[...byDay.values()].sort((a,b)=>b.date.localeCompare(a.date));title="Daily Business Report";notes="অর্ডার মূল্য cancelled বাদে; ব্যয় কেবল Confirmed expense। COD collection ও settlement-এ লেখা remittance তাদের event date-এ এবং verified remittance linked confirmed Finance income-এর entry date-এ দেখানো হয়েছে। Recorded amount-কে verified cash ধরা হয় না।";
     }else if(type==="product-sales"||type==="top-products"){
      const map=new Map();valid.forEach(o=>(o.order_items||[]).forEach(i=>{const key=String(i.product_id||i.product_name||"Unknown");const r=map.get(key)||{product:i.product_name||"Unknown",quantity_sold:0,sales:0,order_lines:0};r.quantity_sold+=num(i.quantity);r.sales+=num(i.line_total)||num(i.quantity)*num(i.unit_price);r.order_lines++;map.set(key,r);}));
-     rows=[...map.values()].sort((a,b)=>type==="top-products"?b.quantity_sold-a.quantity_sold:b.sales-a.sales).map((r,i)=>({rank:i+1,...r}));title=type==="top-products"?"Top Selling Products":"Product Sales Report";notes=type==="top-products"?"Sorted by units sold; sales value appears separately.":"Built from order_items snapshots; cancelled orders excluded.";
+     const products=await fetchProducts(10000);source.products=products;
+     const productById=new Map(products.map(p=>[String(p.id),p])),productByName=new Map(products.map(p=>[String(p.name||"").trim().toLowerCase(),p]));
+     rows=[...map.entries()].map(([key,r])=>{const product=productById.get(key)||productByName.get(String(r.product||"").trim().toLowerCase());return {...r,sku:product?.sku||"",category:product?.category||"Uncategorised",current_stock:product?num(product.stock_quantity):null,minimum_stock:product?num(product.low_stock_threshold??5):null,catalogue_status:product?(product.is_active===false?"Hidden":"Active"):"Not in current catalogue"};}).sort((a,b)=>type==="top-products"?b.quantity_sold-a.quantity_sold:b.sales-a.sales).map((r,i)=>({rank:i+1,...r}));
+     title=type==="top-products"?"Top Selling Products":"Product Sales Report";notes=type==="top-products"?"Ranked by units sold. SKU, category and stock are current catalogue attributes; sales quantity/value remain order-item snapshots.":"Built from non-cancelled order_items snapshots. Current SKU/category/stock are joined from the live catalogue and may differ from historical order snapshots.";
     }else if(type==="customer-wise-products"){
      const map=new Map();valid.forEach(o=>(o.order_items||[]).forEach(i=>{const key=String(o.customer_id||o.customer_name||"Unknown")+"|"+String(i.product_id||i.product_name||"");const r=map.get(key)||{customer:o.customer_name||"Unknown",product:i.product_name||"Unknown",quantity:0,total:0,order_lines:0};r.quantity+=num(i.quantity);r.total+=num(i.line_total)||num(i.quantity)*num(i.unit_price);r.order_lines++;map.set(key,r);}));
      rows=[...map.values()].sort((a,b)=>b.total-a.total);title="Customer-wise Product Sales Report";notes="Each row represents one customer/product pair.";
@@ -3234,7 +3238,7 @@ async function refresh(){
    const defaultColumns=({
     business:["date","orders","order_value","delivery_charge","cancelled_orders"],
     sales:["date","orders","order_value","delivery_charge"],
-    daily:["date","orders","cancelled_orders","order_value","delivery_charge","confirmed_expenses","cod_collected","cod_remitted"],
+    daily:["date","orders","cancelled_orders","order_value","delivery_charge","confirmed_expenses","cod_collected","cod_remitted_recorded","cod_remitted_verified"],
     "product-sales":["rank","product","quantity_sold","sales","order_lines"],"top-products":["rank","product","quantity_sold","sales","order_lines"],
     "customer-wise-products":["customer","product","quantity","total","order_lines"],"customer-products":["customer","orders","unique_products","units","total_spent","last_order","top_product"],
     "top-customers":["rank","customer","orders","total_spent","average_order","last_order"],customers:["rank","customer","orders","total_spent","average_order","last_order"],
@@ -3305,7 +3309,7 @@ async function refresh(){
    const k=makeKpi;
    if(type==="business")return [k("মোট অর্ডার",orders.length,"নির্বাচিত সময়"),k("বিক্রয় অর্ডার মূল্য",money(sales),"বাতিল বাদে; সংগৃহীত নগদ নয়"),k("গড় অর্ডার মূল্য",money(valid.length?sales/valid.length:0),"নন-ক্যানসেলড অর্ডার"),k("বাতিল অর্ডার",orders.length-valid.length,"আলাদা করে দেখানো")];
    if(type==="sales")return [k("বিক্রয় অর্ডার",valid.length,"বাতিল বাদে"),k("অর্ডার মূল্য",money(sales),"রেকর্ডকৃত অর্ডার মোট"),k("ডেলিভারি চার্জ",money(sum(valid,"delivery_charge")),"অর্ডারে সংরক্ষিত"),k("গড় অর্ডার",money(valid.length?sales/valid.length:0),"প্রতি অর্ডার")];
-   if(type==="daily")return [k("কার্যদিবস",rows.length,"রেকর্ড থাকা দিন"),k("মোট অর্ডার",sum(rows,"orders"),"বাতিলসহ"),k("অর্ডার মূল্য",money(sum(rows,"order_value")),"বাতিল বাদে"),k("নিশ্চিত ব্যয়",money(sum(rows,"confirmed_expenses")),"Confirmed expense"),k("COD সংগ্রহ",money(sum(rows,"cod_collected")),"কুরিয়ার সংগ্রহ"),k("COD রেমিট্যান্স",money(sum(rows,"cod_remitted")),"রেকর্ডকৃত রেমিট্যান্স")];
+   if(type==="daily")return [k("কার্যদিবস",rows.length,"রেকর্ড থাকা দিন"),k("মোট অর্ডার",sum(rows,"orders"),"বাতিলসহ"),k("অর্ডার মূল্য",money(sum(rows,"order_value")),"বাতিল বাদে"),k("নিশ্চিত ব্যয়",money(sum(rows,"confirmed_expenses")),"Confirmed expense"),k("COD সংগ্রহ",money(sum(rows,"cod_collected")),"কুরিয়ার সংগ্রহ"),k("রেকর্ডকৃত রেমিট্যান্স",money(sum(rows,"cod_remitted_recorded")),"Settlement snapshot-এ সংরক্ষিত"),k("যাচাইকৃত রেমিট্যান্স",money(sum(rows,"cod_remitted_verified")),"Linked confirmed Finance income only")];
    if(["product-sales","top-products"].includes(type))return [k("পণ্য",unique(rows,"product"),"বিক্রিত পণ্য"),k("বিক্রিত ইউনিট",sum(rows,"quantity_sold"),"অর্ডার আইটেম"),k("পণ্য বিক্রয়",money(sum(rows,"sales")),"লাইন টোটাল"),k("অর্ডার লাইন",sum(rows,"order_lines"),"পণ্য লাইন")];
    if(type==="customer-wise-products")return [k("গ্রাহক",unique(rows,"customer"),"গ্রাহক-পণ্য সমন্বয়"),k("পণ্য ইউনিট",sum(rows,"quantity"),"বিক্রিত পরিমাণ"),k("পণ্য বিক্রয়",money(sum(rows,"total")),"আইটেম লাইন টোটাল"),k("সমন্বয়",rows.length,"আলাদা গ্রাহক-পণ্য")];
    if(["customer-products","top-customers","customers"].includes(type))return [k("গ্রাহক",rows.length,"স্বতন্ত্র গ্রাহক"),k("অর্ডার",sum(rows,"orders"),"রেকর্ডকৃত"),k("মোট ব্যয়",money(sum(rows,"total_spent")),"অর্ডার মূল্য"),k("গড় ব্যয়",money(rows.length?sum(rows,"total_spent")/rows.length:0),"প্রতি গ্রাহক")];
@@ -3553,7 +3557,7 @@ async function refresh(){
     const orders=await fetchOrders(range,5000);source.orders=orders;rows=orders.map(o=>({order_number:o.order_number,ordered_at:o.ordered_at,status:o.status,subtotal:num(o.subtotal),delivery_charge:num(o.delivery_charge),total:num(o.total),payment_method:o.payment_method}));title="Orders Report";notes="Recorded orders; values are not proof of payment collection.";
    }
    const fallback=({
-    business:["date","orders","order_value","delivery_charge","cancelled_orders"],sales:["date","orders","order_value","delivery_charge"],daily:["date","orders","cancelled_orders","order_value","delivery_charge","confirmed_expenses","cod_collected","cod_remitted"],
+    business:["date","orders","order_value","delivery_charge","cancelled_orders"],sales:["date","orders","order_value","delivery_charge"],daily:["date","orders","cancelled_orders","order_value","delivery_charge","confirmed_expenses","cod_collected","cod_remitted_recorded","cod_remitted_verified"],
     "product-sales":["rank","product","quantity_sold","sales","order_lines"],"top-products":["rank","product","quantity_sold","sales","order_lines"],"customer-wise-products":["customer","product","quantity","total","order_lines"],"customer-products":["customer","orders","unique_products","units","total_spent","last_order","top_product"],"top-customers":["rank","customer","orders","total_spent","average_order","last_order"],customers:["rank","customer","orders","total_spent","average_order","last_order"],
     purchase:["purchase_number","status","purchase_date","expected_date","supplier","items","ordered_units","received_units","total_amount"],"product-purchase":["purchase_number","purchase_date","supplier","product","quantity","received_quantity","pending_quantity","unit_cost","total"],
     payable:["bill_number","supplier","invoice_date","due_date","status","bill_total","paid","balance","due_state"],receivable:["order_number","customer","courier","cod_amount","collected","pending_collection","remitted","pending_remittance","status"],collections:["order_number","courier","tracking_reference","cod_amount","collected","courier_fee","remitted","status","collected_at","remitted_at"],
@@ -3630,7 +3634,7 @@ async function refresh(){
     ]};
    }
    if(type==="daily")return {blocks:[
-    block("দিনভিত্তিক ব্যবসায়িক সারাংশ","Order, cancelled order, order value, confirmed expense, COD collection ও remittance একই timeline-এ।",["date","orders","cancelled_orders","order_value","delivery_charge","confirmed_expenses","cod_collected","cod_remitted"],rows.slice().sort((a,b)=>String(b.date||"").localeCompare(String(a.date||""))),"order_value")
+    block("দিনভিত্তিক ব্যবসায়িক সারাংশ","অর্ডার, বাতিল, অর্ডার মূল্য, নিশ্চিত ব্যয়, COD সংগ্রহ, রেকর্ডকৃত ও যাচাইকৃত রেমিট্যান্স।",["date","orders","cancelled_orders","order_value","delivery_charge","confirmed_expenses","cod_collected","cod_remitted_recorded","cod_remitted_verified"],rows.slice().sort((a,b)=>String(b.date||"").localeCompare(String(a.date||""))),"order_value")
    ]};
    if(["product-sales","top-products"].includes(type))return {blocks:[
     block("পণ্যভিত্তিক বিক্রয়","Units sold এবং order line value; cancelled order বাদ.",["rank","product","sku","category","quantity_sold","sales","order_lines"],rows.slice(0,12),"sales"),
@@ -3662,6 +3666,7 @@ async function refresh(){
   }
   function insightsFor(type,rows,source){
    const items=[],add=(level,title,detail,action)=>items.push({level,title,detail,action:action||""});
+   const orders=source.orders||[],status=o=>String(o.status||"").toLowerCase(),total=(list,key)=>list.reduce((n,r)=>n+num(r[key]),0);
    if(type==="account-payments"){
     const accounts=source.accountBalances||[];
     if(!accounts.length)add("info","অ্যাকাউন্ট সেটআপ নেই","Cash, Bank বা Mobile Wallet account না থাকায় account balance নির্ভরযোগ্যভাবে দেখানো যাচ্ছে না।","Finance → Cash & Accounts");
@@ -3678,16 +3683,14 @@ async function refresh(){
     const drafts=rows.filter(r=>String(r.status||"").toLowerCase()==="draft");
     if(drafts.length)add("info","Draft bill review",drafts.length+"টি draft bill confirmed liability নয়।","Invoice যাচাই করে confirm বা void করুন");
    }else if(type==="receivable"||type==="collections"){
-    const pendingCollection=rows.reduce((n,r)=>n+num(r.pending_collection),0),pendingRemittance=rows.reduce((n,r)=>n+num(r.pending_remittance),0);
-    const exceptions=rows.filter(r=>String(r.status||"").toLowerCase()==="exception"),variance=rows.filter(r=>Math.abs(num(r.remittance_variance))>0.009);
+    const pendingCollection=total(rows,"pending_collection"),pendingRemittance=total(rows,"pending_remittance"),exceptions=rows.filter(r=>String(r.status||"").toLowerCase()==="exception"),variance=rows.filter(r=>Math.abs(num(r.remittance_variance))>0.009);
     if(pendingCollection>0)add("warning","COD collection এখনো বাকি",money(pendingCollection)+" এখনো courier collection হিসেবে রেকর্ড হয়নি।","Courier tracking ও collection status যাচাই করুন");
     if(pendingRemittance>0)add("warning","Net remittance এখনো যাচাইকৃত নয়",money(pendingRemittance)+" courier fee/adjustment বাদ দেওয়ার পরও Finance-এ verified income হিসেবে নেই।","Courier statement ও linked reconciled settlement যাচাই করুন");
     if(exceptions.length)add("warning","Courier settlement exception",exceptions.length+"টি settlement manual review প্রয়োজন।","Exception record ও courier statement মিলিয়ে দেখুন");
     if(variance.length)add("warning","Remittance variance",variance.length+"টি settlement-এর verified amount expected net amount-এর সঙ্গে মেলে না।","Courier statement, fee ও adjustment যাচাই করুন");
     if(!items.length)add("success","বর্তমান COD অবস্থায় খোলা পার্থক্য নেই","নির্বাচিত রেকর্ডে uncollected COD বা pending verified remittance পাওয়া যায়নি।");
    }else if(type==="expenses"){
-    const budgets=(source.budgets||[]).filter(b=>b.status==="active"),actualRows=source.budgetFinance||[];
-    const actualByKey=new Map();
+    const budgets=(source.budgets||[]).filter(b=>b.status==="active"),actualRows=source.budgetFinance||[],actualByKey=new Map();
     actualRows.forEach(r=>{const key=String(r.entry_date||"").slice(0,7)+"|"+String(r.category||"");actualByKey.set(key,(actualByKey.get(key)||0)+num(r.amount));});
     const over=budgets.map(b=>({category:b.category,month:String(b.period_start||"").slice(0,7),budget:num(b.budget_amount),actual:actualByKey.get(String(b.period_start||"").slice(0,7)+"|"+b.category)||0})).filter(b=>b.actual>b.budget);
     if(over.length)add("warning","Budget exceeded",over.map(b=>b.category+" · "+b.month+" · "+money(b.actual-b.budget)+" over").join(" | "),"Category spending ও budget review করুন");
@@ -3700,6 +3703,66 @@ async function refresh(){
     if(voids.length)add("info","Void transaction আছে",voids.length+"টি void record audit trail-এ আছে, confirmed totals-এ গণনা হয়নি।");
     if(transfers.length)add("info","Internal transfer আলাদা রাখা হয়েছে",transfers.length+"টি account transfer income/expense হিসেবে গণনা হয়নি।");
     if(!items.length)add("success","লেনদেনের অবস্থা পরিষ্কার","নির্বাচিত সময়ে draft/void item বা internal transfer record পাওয়া যায়নি।");
+   }else if(type==="business"||type==="sales"){
+    const cancelled=orders.filter(o=>status(o)==="cancelled"),open=orders.filter(o=>["pending","processing","shipped"].includes(status(o)));
+    if(!orders.length)add("info","নির্বাচিত সময়ে অর্ডার নেই","এই সময়সীমায় কোনো অর্ডার রেকর্ড পাওয়া যায়নি।","অন্য সময়সীমা নির্বাচন করুন");
+    if(cancelled.length)add("warning","বাতিল অর্ডার রয়েছে",cancelled.length+"টি অর্ডার বাতিল হয়েছে ("+(orders.length?(cancelled.length/orders.length*100).toFixed(1):"0")+"%)। বাতিলের কারণ ও উৎস পর্যালোচনা করুন।","Orders → Cancelled orders");
+    if(open.length)add("info","অর্ডার প্রক্রিয়াকরণ বাকি",open.length+"টি অর্ডার Pending, Processing বা Shipped অবস্থায় রয়েছে। অর্ডারমূল্যকে collected cash হিসেবে গণনা করা হয়নি।","Orders/Operations-এ fulfilment status review করুন");
+    const undated=orders.filter(o=>!o.ordered_at);
+    if(undated.length)add("warning","অর্ডারের তারিখ অনুপস্থিত",undated.length+"টি অর্ডারে ordered_at নেই; date trend-এ সেগুলো বাদ পড়েছে।","Order source data যাচাই করুন");
+    if(!items.length)add("success","অর্ডার স্ট্যাটাসে বড় সতর্কতা নেই","নির্বাচিত অর্ডার রেকর্ডে বাতিল বা খোলা fulfilment backlog নেই।");
+   }else if(type==="product-sales"||type==="top-products"){
+    if(!rows.length)add("info","পণ্য বিক্রয় রেকর্ড নেই","নির্বাচিত সময়ে non-cancelled order item পাওয়া যায়নি।","Orders ও order_items source যাচাই করুন");
+    const low=rows.filter(r=>r.current_stock!==null&&r.current_stock!==undefined&&num(r.current_stock)<=num(r.minimum_stock)),out=low.filter(r=>num(r.current_stock)<=0),lowPositive=low.filter(r=>num(r.current_stock)>0);
+    if(out.length)add("warning","বিক্রি হওয়া পণ্য বর্তমানে Out of stock",out.slice(0,8).map(r=>r.product+" · "+num(r.quantity_sold)+" sold").join(" | "),"Products → Inventory-তে replenishment review করুন");
+    if(lowPositive.length)add("warning","বিক্রিত পণ্যের স্টক Low threshold-এ",lowPositive.slice(0,8).map(r=>r.product+" · stock "+num(r.current_stock)).join(" | "),"Purchase / Inventory-তে replenishment পরিকল্পনা করুন");
+    const unmatched=rows.filter(r=>r.catalogue_status==="Not in current catalogue");
+    if(unmatched.length)add("info","বর্তমান ক্যাটালগে মেলেনি",unmatched.length+"টি sold product বর্তমান catalogue-এ মেলেনি; order-item snapshot অক্ষত রাখা হয়েছে।","Product catalogue mapping যাচাই করুন");
+    const units=total(rows,"quantity_sold"),topUnits=total(rows.slice().sort((a,b)=>num(b.quantity_sold)-num(a.quantity_sold)).slice(0,3),"quantity_sold");
+    if(units>0&&rows.length>3&&topUnits/units>=0.6)add("info","বিক্রয় শীর্ষ কয়েকটি পণ্যে কেন্দ্রীভূত","শীর্ষ ৩টি পণ্য মোট বিক্রিত ইউনিটের "+(topUnits/units*100).toFixed(1)+"%। Stock planning-এ এগুলো অগ্রাধিকার পেতে পারে।");
+    if(!items.length)add("success","পণ্য বিক্রয়ে উল্লেখযোগ্য সতর্কতা নেই","বর্তমান catalogue match করা বিক্রিত পণ্যে low-stock বা stockout signal পাওয়া যায়নি।");
+   }else if(type==="customer-wise-products"){
+    if(!rows.length)add("info","গ্রাহক-পণ্য বিক্রয় ডেটা নেই","Selected period-এ customer/product line পাওয়া যায়নি।");
+    const customers=new Set(rows.map(r=>String(r.customer||"").trim()).filter(Boolean)).size,products=new Set(rows.map(r=>String(r.product||"").trim()).filter(Boolean)).size,top=rows.slice().sort((a,b)=>num(b.total)-num(a.total))[0];
+    if(top)add("info","সবচেয়ে বড় গ্রাহক-পণ্য সমন্বয়",top.customer+" × "+top.product+" · "+money(top.total)+" · "+num(top.quantity)+" units।");
+    if(customers>0&&products>0)add("success","Customer/product coverage",customers+" জন গ্রাহক এবং "+products+"টি ভিন্ন পণ্যের ক্রয় সমন্বয় এই সময়ে পাওয়া গেছে।");
+   }else if(type==="customer-products"||type==="top-customers"||type==="customers"){
+    if(!rows.length)add("info","গ্রাহক রিপোর্টে কোনো অর্ডার নেই","এই সময়সীমায় non-cancelled order থেকে customer summary তৈরি হয়নি।");
+    const returning=rows.filter(r=>num(r.orders)>1),oneTime=rows.filter(r=>num(r.orders)===1),spend=total(rows,"total_spent");
+    if(returning.length)add("success","পুনরায় অর্ডার করা গ্রাহক",returning.length+" জন গ্রাহক একাধিক অর্ডার করেছেন; তাদের অর্ডার "+total(returning,"orders")+"টি।");
+    else if(rows.length)add("info","পুনরায় অর্ডারের সংকেত কম","এই সময়সীমায় একাধিক অর্ডার করা গ্রাহক পাওয়া যায়নি। এটি lifetime retention নয়; কেবল নির্বাচিত সময়ের order snapshot।");
+    const top=rows.slice().sort((a,b)=>num(b.total_spent)-num(a.total_spent))[0];
+    if(top&&spend>0&&num(top.total_spent)/spend>=0.4)add("info","গ্রাহক ব্যয় কেন্দ্রীভূত","শীর্ষ গ্রাহকের recorded order value মোট customer order value-এর "+(num(top.total_spent)/spend*100).toFixed(1)+"%। এটি order-value concentration, profit নয়।");
+    if(oneTime.length)add("info","একবার অর্ডার করা গ্রাহক",oneTime.length+" জন গ্রাহক নির্বাচিত সময়ে একটি non-cancelled order করেছেন। Repeat purchase follow-up বিবেচনা করা যেতে পারে।");
+   }else if(type==="purchase"){
+    const unfinished=rows.filter(r=>!["received","completed","cancelled","void"].includes(String(r.status||"").toLowerCase())),pendingUnits=rows.reduce((n,r)=>n+Math.max(0,num(r.ordered_units)-num(r.received_units)),0),late=rows.filter(r=>r.expected_date&&r.expected_date<todayISO()&&!["received","completed","cancelled","void"].includes(String(r.status||"").toLowerCase()));
+    if(!rows.length)add("info","ক্রয় অর্ডার নেই","নির্বাচিত সময়ে কোনো Purchase Order পাওয়া যায়নি।","Supplier → Purchases");
+    if(pendingUnits>0)add("warning","ক্রয়ের পণ্য গ্রহণ বাকি",pendingUnits+"টি unit এখনো Purchase Order-এ received হিসেবে রেকর্ড হয়নি।","Purchase receipt/GRN update করুন");
+    if(late.length)add("warning","Expected delivery date পার হয়েছে",late.length+"টি অসম্পূর্ণ Purchase Order-এর expected date অতীত হয়েছে।","Supplier-এর সঙ্গে delivery status যাচাই করুন");
+    if(unfinished.length)add("info","অসম্পূর্ণ Purchase Order",unfinished.length+"টি PO এখনো received/completed/cancelled/void নয়।","PO status ও receiving progress review করুন");
+    if(!items.length)add("success","Purchase Order status স্বাভাবিক","নির্বাচিত রেকর্ডে অসম্পূর্ণ receiving বা overdue expected date নেই।");
+   }else if(type==="product-purchase"){
+    const pending=total(rows,"pending_quantity"),missing=rows.filter(r=>!r.product||r.product==="—");
+    if(!rows.length)add("info","ক্রয় পণ্য লাইন নেই","নির্বাচিত সময়ে purchase order item পাওয়া যায়নি।");
+    if(pending>0)add("warning","পণ্য গ্রহণ বাকি",pending+"টি unit ordered quantity থেকে received quantity বাদ দেওয়ার পরও বাকি।","Purchase Receipts-এ GRN/received quantity যাচাই করুন");
+    if(missing.length)add("info","পণ্যের নাম অনুপস্থিত",missing.length+"টি purchase line-এ product name নেই।","Purchase order items review করুন");
+    if(!items.length)add("success","ক্রয় পণ্য receiving সম্পন্ন","এই সময়সীমার purchase lines-এ pending receiving পাওয়া যায়নি।");
+   }else if(["low-stock","alert-products","stock","stock-list"].includes(type)){
+    if(!rows.length)add("info","বর্তমান স্টক রেকর্ড নেই","বর্তমান active catalogue snapshot-এ নির্বাচিত report filter-এর জন্য কোনো পণ্য নেই।");
+    const out=rows.filter(r=>num(r.stock)<=0),low=rows.filter(r=>num(r.stock)>0&&num(r.stock)<=num(r.minimum_stock)),missingCost=rows.filter(r=>r.unit_cost===null||r.unit_cost===undefined);
+    if(out.length)add("warning","Out of stock পণ্য",out.length+"টি পণ্যের বর্তমান স্টক শূন্য বা কম।","Purchase ও Product stock records review করুন");
+    if(low.length)add("warning","Low stock পণ্য",low.length+"টি পণ্যের স্টক তাদের minimum threshold-এর সমান বা নিচে।","Replenishment quantity ও lead time পরিকল্পনা করুন");
+    if(missingCost.length)add("info","Cost data অনুপস্থিত",missingCost.length+"টি পণ্যের unit cost সংরক্ষিত নেই; valuation-এ সেগুলোর মান গণনা করা হয়নি।","Product cost settings-এ প্রকৃত ক্রয় কস্ট যোগ করুন");
+    if(!items.length)add("success","স্টক সতর্কতা পাওয়া যায়নি","এই snapshot-এ out-of-stock, low-stock বা missing-cost signal নেই।");
+   }else if(type==="daily"){
+    const recorded=total(rows,"cod_remitted_recorded"),verified=total(rows,"cod_remitted_verified"),expenses=total(rows,"confirmed_expenses"),ordersCount=total(rows,"orders"),cancelled=total(rows,"cancelled_orders");
+    if(!rows.length)add("info","দৈনিক কার্যক্রমের ডেটা নেই","Selected period-এ order, finance বা COD event পাওয়া যায়নি।");
+    if(cancelled>0)add("warning","দৈনিক অর্ডারে বাতিল রয়েছে",cancelled+"টি অর্ডার নির্বাচিত দিনগুলোতে বাতিল হয়েছে।","Order cancellation reason review করুন");
+    if(recorded>verified+0.009)add("warning","রেকর্ডকৃত বনাম যাচাইকৃত COD রেমিট্যান্সে পার্থক্য","Selected date range-এ settlement-এ "+money(recorded)+" recorded remittance আছে, কিন্তু linked confirmed Finance income "+money(verified)+"।","Courier statement এবং COD settlement-এর linked Finance entry reconcile করুন");
+    if(verified>recorded+0.009)add("info","Finance verification বেশি","Linked confirmed COD Finance income "+money(verified)+"; settlement record-এ "+money(recorded)+" remitted amount আছে। Link/date mismatch যাচাই করুন");
+    if(expenses>0)add("info","নিশ্চিত ব্যয় আলাদা গণনা হয়েছে",money(expenses)+" confirmed expense; এটি profit বা COGS নয়। Product cost/returns আলাদা reconciliation ছাড়া লাভ হিসাব করবেন না।");
+    if(ordersCount>0&&ordersCount===cancelled)add("warning","নির্বাচিত সময়ে non-cancelled order নেই","সব রেকর্ডকৃত অর্ডার cancelled; order value শূন্য দেখানো হয়েছে।");
+    if(!items.length)add("success","দৈনিক reconciliation সতর্কতা নেই","এই সময়ে recorded এবং verified COD remittance সমান এবং দৃশ্যমান cancellation/expense anomaly নেই।");
    }
    return items;
   }
@@ -3727,7 +3790,7 @@ async function refresh(){
    const def=definitions[report.type]||definitions.business,metrics=kpisFor(report.type,report.rows,report.source||{}),analysis=analysisFor(report.type,report.rows,report.source||{}),analysisBlocks=analysis.blocks||[analysis],firstAnalysisBlock=analysisBlocks[0]||{title:def[3],description:def[2],columns:[],rows:[],bars:"records"};
    $("reportWorkspaceTitle").textContent=def[0];$("reportWorkspaceDescription").textContent=def[2];$("reportWorkspaceCode").textContent=report.type.toUpperCase();$("reportWorkspaceRange").textContent=report.rangeLabel+" · "+report.rows.length+" records";
    $("reportWorkspaceKpis").innerHTML=metrics.map(m=>'<article class="hf-report-kpi"><small>'+esc(m.label)+'</small><strong>'+esc(m.value)+'</strong><span>'+esc(m.note)+'</span></article>').join("");
-   $("reportWorkspaceTabs").innerHTML='<button type="button" role="tab" data-report-segment="overview" aria-selected="true" class="active">সারসংক্ষেপ</button><button type="button" role="tab" data-report-segment="analysis" aria-selected="false">'+esc(def[3])+'</button><button type="button" role="tab" data-report-segment="records" aria-selected="false">'+esc(def[4])+'</button>'+(["account-payments","collections","expenses","transactions","payable","receivable"].includes(report.type)?'<button type="button" role="tab" data-report-segment="insights" aria-selected="false">ব্যবসায়িক ইনসাইটস</button>':'');
+   $("reportWorkspaceTabs").innerHTML='<button type="button" role="tab" data-report-segment="overview" aria-selected="true" class="active">সারসংক্ষেপ</button><button type="button" role="tab" data-report-segment="analysis" aria-selected="false">'+esc(def[3])+'</button><button type="button" role="tab" data-report-segment="records" aria-selected="false">'+esc(def[4])+'</button>'+'<button type="button" role="tab" data-report-segment="insights" aria-selected="false">ব্যবসায়িক ইনসাইটস</button>';
    const metricRows=metrics.map(m=>({বিষয়:m.label,মান:m.value,বিবরণ:m.note}));
    $("reportWorkspaceOverview").innerHTML='<div class="hf-report-overview-grid"><section class="hf-report-subsection"><div class="hf-report-subsection-head"><div><h3>মূল সূচক</h3><p>নির্বাচিত সময়ের রেকর্ড ও ডেটা সোর্স</p></div><span>'+metrics.length+' indicators</span></div>'+tableMarkup(metricRows,Object.keys(metricRows[0]||{বিষয়:"",মান:"",বিবরণ:""}),"সারাংশ নেই")+'</section><section class="hf-report-subsection"><div class="hf-report-subsection-head"><div><h3>'+esc(firstAnalysisBlock.title||def[3])+'</h3><p>'+esc(firstAnalysisBlock.description||def[2])+'</p></div></div>'+tableMarkup(firstAnalysisBlock.rows||[],firstAnalysisBlock.columns||[],"বিশ্লেষণের ডেটা নেই")+'</section></div><div class="hf-report-source-note">'+esc(report.notes||"রিপোর্টটি সংযুক্ত ডেটা সোর্স থেকে তৈরি।")+'</div>';
    $("reportWorkspaceAnalysis").innerHTML=analysisBlocks.map(block=>'<section class="hf-report-subsection" style="margin-bottom:12px"><div class="hf-report-subsection-head"><div><h3>'+esc(block.title||def[3])+'</h3><p>'+esc(block.description||"বিভাগ/ধরন অনুযায়ী সমষ্টি; মূল রেকর্ডের বিকল্প নয়।")+'</p></div><span>'+(block.rows||[]).length+' groups</span></div>'+renderBars(block.rows||[],block.bars||"records")+tableMarkup(block.rows||[],block.columns||[],"এই উপ-বিশ্লেষণে কোনো রেকর্ড নেই")+'</section>').join("");
