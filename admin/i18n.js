@@ -62,7 +62,7 @@
     "Dynamic Day · Sunrise · Golden Hour": "দিনের পরিবর্তন · সূর্যোদয় · সোনালি সময়",
     "Dynamic Night · Moonlight · Midnight": "রাতের পরিবর্তন · চাঁদের আলো · মধ্যরাত",
     "Time-aware · atmospheric · living sky": "সময়নির্ভর · আবহময় · পরিবর্তনশীল আকাশ",
-    "17 of 17 themes available · All themes are available to every administrator; your choice is saved to this browser for this account.": "১৭টির মধ্যে ১৭টি রং-সজ্জা उपलब्ध। সব প্রশাসকই সব রং-সজ্জা ব্যবহার করতে পারবেন; আপনার পছন্দ এই ব্রাউজারে সংরক্ষিত থাকবে।",
+    "17 of 17 themes available · All themes are available to every administrator; your choice is saved to this browser for this account.": "১৭টির মধ্যে ১৭টি রং-সজ্জা উপলভ্য। সব প্রশাসকই সব রং-সজ্জা ব্যবহার করতে পারবেন; আপনার পছন্দ এই ব্রাউজারে সংরক্ষিত থাকবে।",
     "Incomplete Orders · Halal Food Admin": "অসম্পূর্ণ অর্ডার · হালাল ফুড অ্যাডমিন",
     "CHECKOUT RECOVERY": "অসম্পূর্ণ চেকআউট পুনরুদ্ধার",
     "Review checkout sessions where shoppers entered a valid mobile number after the privacy notice but did not complete the order. These are leads, not confirmed orders.": "যেসব ক্রেতা গোপনীয়তার বিজ্ঞপ্তি দেখার পর বৈধ মোবাইল নম্বর দিয়ে চেকআউট শুরু করেছেন, কিন্তু অর্ডার সম্পন্ন করেননি—সেসব সেশন পর্যালোচনা করুন। এগুলো সম্ভাব্য অর্ডার-আগ্রহ, নিশ্চিত অর্ডার নয়।",
@@ -838,7 +838,7 @@
     if (translations[value]) return translations[value];
     const titleCase = value ? value.charAt(0).toUpperCase() + value.slice(1) : value;
     if (translations[titleCase]) return translations[titleCase];
-    const favorite = String(value).match(/^(Add|Remove)\\s+(.+?)\\s+from favorites$/i);
+    const favorite = String(value).match(/^(Add|Remove)\s+(.+?)\s+from favorites$/i);
     if (favorite) {
       const label = translated(favorite[2], lang);
       return (favorite[1].toLowerCase() === "add" ? "প্রিয় বিভাগে যোগ করুন: " : "প্রিয় বিভাগ থেকে সরান: ") + label;
@@ -851,10 +851,14 @@
   function translatePhrases(value) {
     let output = String(value ?? "");
     const phrases = Object.entries(translations)
-      .filter(([source]) => /\\s/.test(source.trim()) && source.trim().length > 2)
+      .filter(([source]) => /\s/.test(source.trim()) && source.trim().length > 2)
       .sort((a, b) => b[0].length - a[0].length);
     for (const [source, target] of phrases) {
-      const escaped = source.trim().replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\    return translations[titleCase] || value;
+      const escaped = source.trim().replace(/[.*+?^$()|[\]{}\\]/g, "\\$&");
+      const pattern = new RegExp("(^|[^A-Za-z0-9])(" + escaped + ")(?=$|[^A-Za-z0-9])", "gi");
+      output = output.replace(pattern, (_match, prefix) => prefix + target);
+    }
+    return output;
   }
 
   function translateChart");
@@ -1025,5 +1029,5 @@
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot, { once: true });
   else boot();
-  window.HFAdminLanguage = { language, applyLanguage, translateTree, translateChart, translateCharts, t: (value) => translated(String(value ?? \"\"), language()), dictionary: translations };
+  window.HFAdminLanguage = { language, applyLanguage, translateTree, translateChart, translateCharts, t: (value) => translated(String(value ?? ""), language()), dictionary: translations };
 })();
