@@ -2876,6 +2876,71 @@ async function refresh(){
     rows=filtered.map(e=>({entry_date:e.entry_date,entry_type:e.entry_type,category:e.category,amount:Number(e.amount||0),status:e.status,description:e.description,reference:e.reference,related_order_id:e.related_order_id||""}));
     title=({expenses:"Expense Report",transactions:"Transaction Report","account-payments":"Account Payment Report",collections:"Collection Report"})[type]||"Finance Entries Report";
     notes="Source: existing finance ledger. Only recorded entries are shown; collection/payment classifications depend on how the source entries were recorded.";
+   }else if(["business","sales","daily","product-sales","top-products","customer-wise-products","customer-products","top-customers","customers"].includes(type)){
+    const orders=await fetchOrders(range,5000);
+    const valid=orders.filter(o=>String(o.status||"").toLowerCase()!=="cancelled");
+    const totalSales=valid.reduce((sum,o)=>sum+Number(o.total||0),0);
+    if(type==="business"){
+     rows=[{metric:"Orders",value:valid.length},{metric:"Sales value (order total)",value:totalSales},{metric:"Average order value",value:valid.length?totalSales/valid.length:0},{metric:"Cancelled orders",value:orders.length-valid.length}];
+     title="Business Overview Report";notes="Order totals represent recorded orders, not verified collected cash. Cancelled orders are excluded from sales value.";
+    }else if(type==="sales"||type==="daily"){
+     const byDay=new Map();
+     valid.forEach(o=>{const day=String(o.ordered_at||"").slice(0,10);if(!day)return;const x=byDay.get(day)||{date:day,orders:0,sales:0,delivery_charge:0};x.orders++;x.sales+=Number(o.total||0);x.delivery_charge+=Number(o.delivery_charge||0);byDay.set(day,x);});
+     rows=[...byDay.values()].sort((a,b)=>b.date.localeCompare(a.date));
+     title=type==="daily"?"Daily Business Report":"Sales Performance Report";notes="Sales are based on non-cancelled order totals. This is not a payment reconciliation report.";
+    }else{
+     const map=new Map();
+     valid.forEach(o=>(o.order_items||[]).forEach(item=>{
+      const key=type==="customer-wise-products"||type==="customer-products"?String(o.customer_id||o.customer_phone||o.customer_name||"Unknown customer")+"|"+String(item.product_id||item.product_name):String(item.product_id||item.product_name);
+      const row=map.get(key)||{customer:o.customer_name||"Unknown",product:item.product_name||"Unknown",quantity:0,sales:0,orders:0};
+      row.quantity+=Number(item.quantity||0);row.sales+=Number(item.line_total||0);row.orders++;
+      if(!row.customer||row.customer==="Unknown")row.customer=o.customer_name||"Unknown";
+      map.set(key,row);
+     }));
+     const products=[...map.values()].sort((a,b)=>b.sales-a.sales);
+     if(type==="product-sales"||type==="top-products")rows=products.map((r,i)=>({rank:i+1,product:r.product,quantity_sold:r.quantity,sales:r.sales,order_lines:r.orders}));
+     else if(type==="customer-wise-products"||type==="customer-products")rows=products.map(r=>({customer:r.customer,product:r.product,quantity:r.quantity,total:r.sales,order_lines:r.orders}));
+     else{
+      const customers=new Map();valid.forEach(o=>{const key=o.customer_id||o.customer_phone||o.customer_name||"Unknown";const r=customers.get(key)||{customer:o.customer_name||"Unknown",phone:o.customer_phone||"",orders:0,total_spent:0};r.orders++;r.total_spent+=Number(o.total||0);customers.set(key,r);});
+      rows=[...customers.values()].sort((a,b)=>b.total_spent-a.total_spent).map((r,i)=>({rank:i+1,...r}));
+     }
+     title=({ "product-sales":"Product Sales Report","top-products":"Top Selling Products","customer-wise-products":"Customer-wise Product Sales","customer-products":"Customer Product Report","top-customers":"Top Customers",customers:"Customer Overview Report"})[type];
+     notes="Built from order records and their saved order_items snapshots. Customer rows are grouped by customer ID where available, otherwise by phone/name.";
+    }
+   }else if(type==="purchase"||type==="product-purchase"){
+    const purchases=await signedQuery(rangeQuery(client.from("admin_purchase_orders").select("id,purchase_number,status,order_date,expected_date,total_amount,supplier_id,admin_suppliers(name),admin_purchase_order_items(product_name,quantity,received_quantity,unit_cost,line_total,unit)").order("order_date",{ascending:false}),"order_date",range));
+    if(type==="purchase")rows=purchases.map(p=>({purchase_number:p.purchase_number,status:p.status,purchase_date:p.order_date,expected_date:p.expected_date,supplier:p.admin_suppliers?.name||"—",items:(p.admin_purchase_order_items||[]).length,total:Number(p.total_amount||0)}));
+    else rows=purchases.flatMap(p=>(p.admin_purchase_order_items||[]).map(i=>({purchase_number:p.purchase_number,purchase_date:p.order_date,supplier:p.admin_suppliers?.name||"—",product:i.product_name,quantity:Number(i.quantity||0),received_quantity:Number(i.received_quantity||0),unit_cost:Number(i.unit_cost||0),total:Number(i.line_total||0)})));
+    title=type==="purchase"?"Purchase Orders Report":"Product Purchase Report";notes="Source: admin_purchase_orders and their saved purchase-order items. Only recorded purchase orders are included.";
+   }else if(type==="payable"){
+    const bills=await signedQuery(rangeQuery(client.from("admin_supplier_bills").select("id,bill_number,supplier_invoice_number,invoice_date,due_date,total_amount,status,admin_suppliers(name)").order("invoice_date",{ascending:false}),"invoice_date",range));
+    const allocations=await signedQuery(client.from("admin_supplier_payment_allocations").select("supplier_bill_id,allocated_amount"));
+    const paid=new Map();allocations.forEach(a=>paid.set(a.supplier_bill_id,(paid.get(a.supplier_bill_id)||0)+Number(a.allocated_amount||0)));
+    rows=bills.map(b=>({bill_number:b.bill_number,supplier:b.admin_suppliers?.name||"—",invoice_date:b.invoice_date,due_date:b.due_date,status:b.status,bill_total:Number(b.total_amount||0),paid:paid.get(b.id)||0,balance:Math.max(0,Number(b.total_amount||0)-(paid.get(b.id)||0))}));
+    title="Supplier Payables Report";notes="Outstanding balance is calculated from bill totals less payment allocations. Draft/void bills remain identified by status and should not be treated as confirmed liabilities.";
+   }else if(type==="receivable"){
+    const settlements=await signedQuery(rangeQuery(client.from("admin_cod_settlements").select("order_number,customer_name,courier_name,cod_amount,collected_amount,courier_fee,remitted_amount,status,collected_at,remitted_at").order("created_at",{ascending:false}),"collected_at",range));
+    rows=settlements.map(s=>({order_number:s.order_number,customer:s.customer_name,courier:s.courier_name,cod_amount:Number(s.cod_amount||0),collected:Number(s.collected_amount||0),remitted:Number(s.remitted_amount||0),pending_remittance:Math.max(0,Number(s.collected_amount||0)-Number(s.remitted_amount||0)),status:s.status}));
+    title="COD Receivable & Remittance Report";notes="This report shows courier COD collection/remittance tracking, not customer credit sales. Amounts are based on manually recorded settlement records.";
+   }else if(["low-stock","alert-products","stock","stock-list"].includes(type)){
+    const products=await fetchProducts(10000);
+    const selected=products.filter(p=>type==="low-stock"||type==="alert-products"?Number(p.stock_quantity??0)<=Number(p.low_stock_threshold??5):true);
+    rows=selected.map(p=>({product:p.name,sku:p.sku,category:p.category,stock:Number(p.stock_quantity||0),minimum_stock:Number(p.low_stock_threshold||5),unit_cost:Number(p.cost_price||0),stock_value:Number(p.stock_quantity||0)*Number(p.cost_price||0),alert:Number(p.stock_quantity||0)<=Number(p.low_stock_threshold||5)?"LOW":"OK"}));
+    title=({ "low-stock":"Low Stock Products","alert-products":"Stock Alert Products",stock:"Inventory Valuation Report","stock-list":"Current Stock List"})[type];
+    notes="Current catalogue snapshot. Stock value uses saved product cost price where available; missing cost values are treated as zero and should not be interpreted as a verified valuation.";
+   }else if(type==="account-payments"){
+    const entries=await fetchFinance(range,3000);
+    rows=entries.filter(e=>e.account_id||e.payment_method).map(e=>({date:e.entry_date,type:e.entry_type,party:e.party_name,account_id:e.account_id,payment_method:e.payment_method,amount:Number(e.amount||0),status:e.status,reference:e.reference}));
+    title="Account Payment Report";notes="Source: finance ledger rows linked to an account or payment method.";
+   }else if(type==="collections"){
+    const settlements=await signedQuery(rangeQuery(client.from("admin_cod_settlements").select("order_number,courier_name,tracking_reference,cod_amount,collected_amount,courier_fee,remitted_amount,status,collected_at,remitted_at").order("created_at",{ascending:false}),"collected_at",range));
+    rows=settlements.map(s=>({order_number:s.order_number,courier:s.courier_name,tracking_reference:s.tracking_reference,cod_amount:Number(s.cod_amount||0),collected:Number(s.collected_amount||0),courier_fee:Number(s.courier_fee||0),remitted:Number(s.remitted_amount||0),status:s.status,collected_at:s.collected_at,remitted_at:s.remitted_at}));
+    title="COD Collections Report";notes="Source: admin_cod_settlements. Collection, courier fees and remittance are shown separately; they are not treated as the same amount.";
+   }else if(type==="transactions"||type==="expenses"||type==="finance"){
+    const entries=await fetchFinance(range,3000);
+    const filtered=type==="expenses"?entries.filter(e=>String(e.entry_type||"").toLowerCase()==="expense"):entries;
+    rows=filtered.map(e=>({entry_date:e.entry_date,entry_type:e.entry_type,category:e.category,party:e.party_name,amount:Number(e.amount||0),financial_class:e.financial_class,status:e.status,description:e.description,reference:e.reference,related_order_id:e.related_order_id||""}));
+    title=type==="expenses"?"Expense Report":"Finance Transactions Report";notes="Source: admin_finance_entries. Only recorded ledger entries are included; transfer and collection semantics depend on recorded financial class/status.";
    }else if(type==="business"||type==="sales"||type==="daily"||type==="receivable"||type==="payable"||type==="purchase"||type==="product-purchase"||type==="product-sales"||type==="top-products"||type==="customer-wise-products"||type==="customer-products"||type==="top-customers"||type==="customers"||type==="low-stock"||type==="alert-products"||type==="stock"||type==="stock-list"){
     title=({business:"Business Report",sales:"Sales Report",daily:"Daily Business Report",receivable:"Receivable Report",payable:"Payable Report",purchase:"Purchase Report","product-purchase":"Product Purchase Report","product-sales":"Product Sales Report","top-products":"Top Selling Products","customer-wise-products":"Customer-wise Product Sales","customer-products":"Customer Product Report","top-customers":"Top Customers",customers:"Customer Report","low-stock":"Low Stock Products","alert-products":"Alert Products",stock:"Stock Report","stock-list":"Stock List"})[type]||"Business Report";
     notes="এই রিপোর্টের জন্য প্রয়োজনীয় নির্দিষ্ট ডেটা সোর্স এখনো যাচাই/সংযুক্ত করা হয়নি। কোনো অনুমানভিত্তিক ফলাফল দেখানো হচ্ছে না। সংশ্লিষ্ট Purchase, Supplier, Customer balance বা Stock movement ডেটা সংযুক্ত হলে এই রিপোর্ট সক্রিয় হবে।";
