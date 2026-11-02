@@ -8,6 +8,7 @@ const html = read("admin/finance.html");
 const app = read("admin/app.js");
 const css = read("admin/finance-cashflow-workspace.css");
 const supplierSync = read("supabase/migrations/20261102053037_finance_supplier_account_link_v1.sql");
+const supplierBackfill = read("supabase/migrations/20261102053526_finance_supplier_account_backfill_v1.sql");
 const workspaceMigration = read("supabase/migrations/20261102052408_finance_cashflow_workspace_v1.sql");
 
 const sections = [
@@ -67,6 +68,7 @@ assert.ok(!/\b(drop table|truncate|delete from)\b/i.test(workspaceMigration + su
 assert.ok(supplierSync.includes("sync_supplier_payment_finance_entry") && supplierSync.includes("related_supplier_payment_id"), "Supplier payment sync must keep one source-linked finance row.");
 assert.ok(supplierSync.includes("paid_from_account") && supplierSync.includes("account_reference"), "Supplier cash outflows must map to a Finance account only through an exact account-name/reference match.");
 assert.ok(supplierSync.includes("set_admin_finance_accounts_updated_at") && supplierSync.includes("set_admin_cod_settlements_updated_at"), "Finance workspace records must keep updated_at timestamps current.");
+assert.ok(supplierBackfill.includes("assign_existing_supplier_payment_finance_account") && supplierBackfill.includes("security invoker") && supplierBackfill.includes("paid_from_account"), "Adding a Finance account must map existing Supplier Payments only through an invoker-safe exact-match trigger.");
 
 assert.ok(css.includes("@media(max-width:560px)") && css.includes(".hf-finance-accounts-grid") && css.includes(".hf-finance-budget-form"), "Finance workspace must adapt to mobile layouts.");
 assert.ok(css.includes("html[data-admin-theme=\"light\"]") && css.includes("prefers-reduced-motion"), "Finance styling must support light theme and reduced motion.");
