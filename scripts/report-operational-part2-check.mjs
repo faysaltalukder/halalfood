@@ -52,4 +52,10 @@ assert.ok(insights.includes("returning")&&insights.includes("expected_date")&&in
 assert.ok(css.includes("--hf-theme-card-bg")&&css.includes("--hf-theme-chart-bg")&&css.includes(".hf-report-insight-card"),"Insights must use theme-aware shared report styles.");
 assert.ok(workflow.includes("Run Part 2 Operational Reports checks")&&workflow.includes("scripts/report-operational-part2-check.mjs"),"Part 2 regression checks must run in CI.");
 
+const reportPages=[
+  "admin/reports.html","admin/reports-business.html","admin/reports-purchase.html","admin/reports-customers.html",
+  "admin/reports-payables.html","admin/reports-inventory.html","admin/reports-finance.html","admin/reports-daily.html"
+];
+for(const path of reportPages)assert.ok(read(path).includes("app.js?v=20261103-operational-reports-v1"),path+" must load the Part 2 cache-busted report app.");
+
 console.log("Operational Reports Part 2 checks passed: universal four-segment workspaces, verified-vs-recorded COD reconciliation, current catalogue enrichment for product sales, and evidence-based business/customer/purchase/inventory insights.");
