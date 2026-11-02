@@ -2840,149 +2840,589 @@ async function refresh(){
    finance:["account-payments","collections","expenses","transactions"],
    daily:["daily"]
   };
+  const definitions={
+   business:["ব্যবসা রিপোর্ট","Business Overview","অর্ডার, বিক্রয়, গড় অর্ডার মূল্য ও বাতিল অর্ডারের সার্বিক চিত্র","অর্ডার ও বিক্রয়ের বিশ্লেষণ","দিনভিত্তিক ব্যবসায়িক রেকর্ড"],
+   sales:["বিক্রয় রিপোর্ট","Sales Performance","অর্ডার মূল্য, বিক্রয়ের প্রবণতা, পেমেন্ট পদ্ধতি ও অর্ডার স্ট্যাটাস","পেমেন্ট ও অর্ডার স্ট্যাটাস","দিনভিত্তিক বিক্রয় রেকর্ড"],
+   "product-sales":["পণ্য বিক্রয় রিপোর্ট","Product Sales","প্রতিটি পণ্যের বিক্রিত পরিমাণ, অর্ডার লাইন ও বিক্রয় মূল্য","পণ্যভিত্তিক বিক্রয়","পণ্য বিক্রয়ের বিস্তারিত"],
+   "top-products":["সর্বাধিক বিক্রিত পণ্য","Top Selling Products","বিক্রিত ইউনিটের পরিমাণ অনুযায়ী শীর্ষ পণ্য ও বিক্রয় মূল্য","বিক্রিত ইউনিট অনুযায়ী র‍্যাংকিং","শীর্ষ পণ্যের বিস্তারিত"],
+   "customer-wise-products":["কাস্টমারভিত্তিক পণ্য বিক্রয়","Customer-wise Product Sales","কোন গ্রাহক কোন পণ্য কত ইউনিট কিনেছেন ও মোট মূল্য","গ্রাহকভিত্তিক পণ্য ক্রয়","গ্রাহক ও পণ্যের বিস্তারিত"],
+   "customer-products":["কাস্টমার পণ্য রিপোর্ট","Customer Product Report","গ্রাহকের কেনা পণ্যের সংখ্যা, ইউনিট, মোট ব্যয় ও সর্বশেষ অর্ডার","গ্রাহকভিত্তিক পণ্য বৈচিত্র্য","গ্রাহক পণ্য সারাংশ"],
+   purchase:["ক্রয় রিপোর্ট","Purchase Report","সরবরাহকারীর ক্রয় অর্ডার, স্ট্যাটাস, মোট মূল্য ও গ্রহণের অবস্থা","সরবরাহকারী ও ক্রয় স্ট্যাটাস","ক্রয় অর্ডারের বিস্তারিত"],
+   "product-purchase":["ক্রয় পণ্য রিপোর্ট","Product Purchase","প্রতিটি ক্রয় পণ্যের অর্ডারকৃত, গৃহীত ও বাকি পরিমাণ এবং ইউনিট কস্ট","পণ্যভিত্তিক ক্রয় ও গ্রহণ","ক্রয় পণ্যের বিস্তারিত"],
+   "top-customers":["শীর্ষ কাস্টমার","Top Customers","মোট অর্ডার মূল্য অনুযায়ী শীর্ষ গ্রাহক ও ক্রয় কার্যক্রম","গ্রাহক ব্যয়ের র‍্যাংকিং","শীর্ষ গ্রাহকের বিস্তারিত"],
+   customers:["কাস্টমার রিপোর্ট","Customer Report","গ্রাহকের অর্ডার সংখ্যা, মোট ব্যয়, গড় অর্ডার ও সর্বশেষ অর্ডার","গ্রাহকের কার্যক্রমের সারাংশ","গ্রাহকভিত্তিক রেকর্ড"],
+   receivable:["পাওনাদার রিপোর্ট","COD Receivable","কুরিয়ার COD-তে সংগ্রহ বাকি ও রেমিট্যান্স বাকি আলাদা হিসাব","কুরিয়ার ও সংগ্রহের অবস্থা","COD পাওনা ও রেমিট্যান্স রেকর্ড"],
+   payable:["দেনাদার রিপোর্ট","Supplier Payables","সরবরাহকারীর বিল, বরাদ্দ পেমেন্ট এবং অবশিষ্ট দায়","সরবরাহকারীভিত্তিক দায়","সরবরাহকারী বিল ও পেমেন্ট"],
+   "low-stock":["স্বল্প স্টকের পণ্য","Low Stock Products","ন্যূনতম সীমার সমান বা নিচে কিন্তু শূন্যের বেশি স্টক","ক্যাটাগরি অনুযায়ী স্বল্প স্টক","স্বল্প স্টকের পণ্যের তালিকা"],
+   "alert-products":["অ্যালার্ট পণ্য তালিকা","Alert Product List","শূন্য স্টক ও ন্যূনতম সীমায় পৌঁছানো পণ্যের সতর্কতা","স্টক সতর্কতার ধরন","অ্যালার্ট পণ্যের বিস্তারিত"],
+   stock:["স্টক রিপোর্ট","Stock Valuation","বর্তমান পণ্য স্টক, সংরক্ষিত কস্ট ও আনুমানিক স্টক মূল্য","ক্যাটাগরি অনুযায়ী স্টক মূল্যায়ন","পণ্যভিত্তিক স্টক মূল্যায়ন"],
+   "stock-list":["স্টক লিস্ট","Current Stock List","বর্তমান ক্যাটালগের SKU, ক্যাটাগরি, মজুত ও ন্যূনতম সীমা","ক্যাটাগরি অনুযায়ী পণ্য মজুত","সম্পূর্ণ বর্তমান স্টক তালিকা"],
+   "account-payments":["অ্যাকাউন্ট পেমেন্ট রিপোর্ট","Account Payments","অ্যাকাউন্ট, পেমেন্ট পদ্ধতি ও পার্টি অনুযায়ী রেকর্ডকৃত পেমেন্ট","অ্যাকাউন্ট ও পেমেন্ট পদ্ধতিভিত্তিক বিশ্লেষণ","অ্যাকাউন্ট পেমেন্ট ও ট্রান্সফার"],
+   collections:["কালেকশন তালিকা","Collections","COD অর্ডারের কালেকশন, কুরিয়ার ফি, রেমিট্যান্স ও স্ট্যাটাস","কুরিয়ারভিত্তিক কালেকশন","কালেকশন ও রেমিট্যান্স রেকর্ড"],
+   expenses:["খরচ রিপোর্ট","Expense Report","রেকর্ডকৃত ব্যয়, ক্যাটাগরি, নিশ্চিত খরচ ও মাসিক বাজেট","ক্যাটাগরি অনুযায়ী খরচ ও বাজেট","খরচের বিস্তারিত লেজার"],
+   transactions:["লেনদেন রিপোর্ট","Transaction Report","Finance লেনদেনের ধরন, ক্যাটাগরি, আর্থিক শ্রেণি, অ্যাকাউন্ট ও অবস্থা","লেনদেনের ধরন ও আর্থিক শ্রেণি","সম্পূর্ণ লেনদেন লেজার"],
+   daily:["দৈনিক ব্যবসায়িক রিপোর্ট","Daily Business Report","প্রতিদিনের অর্ডার, বিক্রয়মূল্য, ব্যয়, COD সংগ্রহ ও রেমিট্যান্সের সমন্বিত চিত্র","দিনভিত্তিক ব্যবসায়িক কার্যক্রম","প্রতিদিনের বিস্তারিত হিসাব"]
+  };
+  const allowed=reportGroups[reportGroup]||[];
+  const first=reportGroup?(allowed.includes(requestedReport)?requestedReport:allowed[0]):"";
+  if(reportGroup&&$("reportType"))$("reportType").value=first;
   if(reportGroup){
-   const allowed=reportGroups[reportGroup]||[];
-   const first=allowed.includes(requestedReport)?requestedReport:allowed[0];
-   if(first&&$("reportType"))$("reportType").value=first;
-   document.querySelectorAll("[data-report-category]").forEach(section=>{section.hidden=false;section.style.display="";});
-   document.querySelectorAll("#reportType option").forEach(option=>{option.hidden=false;option.disabled=false;});
+   document.querySelectorAll("[data-report-category]").forEach(section=>{section.hidden=true;section.style.display="none";});
+   document.querySelectorAll("#reportType option").forEach(option=>{option.hidden=true;option.disabled=!allowed.includes(option.value);});
    document.querySelectorAll("[data-report-type]").forEach(button=>button.classList.toggle("is-selected",button.dataset.reportType===first));
-   const heading=document.querySelector(".hf-reports-hero h1");if(heading)heading.textContent=({business:"Business & Sales Reports",purchase:"Purchase & Supply Reports",customers:"Customer Reports",payables:"Payables Reports",inventory:"Inventory Reports",finance:"Financial Reports",daily:"Daily Reports"})[reportGroup]||"Reports";
   }
-  let report={title:"",columns:[],rows:[],notes:"",rangeLabel:""};
+  let report={title:"",columns:[],rows:[],notes:"",rangeLabel:"",type:"",source:{}};
+  let workspace=null,activeSegment="overview",visibleRows=[],activeFilterColumn="";
+  const num=value=>{const n=Number(value??0);return Number.isFinite(n)?n:0;};
+  const sum=(rows,key)=>rows.reduce((n,row)=>n+num(row[key]),0);
+  const unique=(rows,key)=>new Set(rows.map(row=>String(row[key]??"").trim()).filter(Boolean)).size;
+  const textCell=value=>value===null||value===undefined||value===""?"—":String(value);
+  const isMoney=key=>/(amount|total|sales|spent|revenue|expense|cost|price|paid|balance|collected|remitted|cod|fee|budget|value|subtotal|delivery_charge|unit_cost|stock_value)/i.test(key);
+  function displayCell(value,key){
+   if(value===null||value===undefined||value==="")return "—";
+   if(typeof value==="number"&&isMoney(key))return money(value);
+   if(typeof value==="number")return value.toLocaleString("en-BD",{maximumFractionDigits:2});
+   if(typeof value==="string"&&/^\d{4}-\d{2}-\d{2}(T.*)?$/.test(value))return dateOnly(value);
+   return String(value);
+  }
+  function groupRows(rows,key,metricKeys){
+   const map=new Map();
+   rows.forEach(row=>{
+    const label=String(row[key]??"অনির্ধারিত").trim()||"অনির্ধারিত";
+    let value=map.get(label);
+    if(!value){value={[key]:label,records:0};(metricKeys||[]).forEach(k=>value[k]=0);map.set(label,value);}
+    value.records++;(metricKeys||[]).forEach(k=>value[k]+=num(row[k]));
+   });
+   return [...map.values()].sort((a,b)=>num(b[metricKeys?.[0]||"records"])-num(a[metricKeys?.[0]||"records"]));
+  }
+  function tableMarkup(rows,columns,emptyMessage){
+   if(!rows.length)return '<div class="hf-report-empty"><strong>'+esc(emptyMessage||"এই সময়সীমায় কোনো রেকর্ড নেই")+'</strong><p>অন্য তারিখের সীমা নির্বাচন করুন অথবা সংশ্লিষ্ট মডিউলে রেকর্ড যোগ করুন।</p></div>';
+   return '<div class="hf-report-table-wrap" tabindex="0" role="region" aria-label="Report table"><table class="hf-table"><thead><tr>'+columns.map(key=>'<th>'+esc(key.replace(/_/g," ").replace(/\b\w/g,c=>c.toUpperCase()))+'</th>').join("")+'</tr></thead><tbody>'+rows.slice(0,250).map(row=>'<tr>'+columns.map(key=>'<td>'+esc(displayCell(row[key],key))+'</td>').join("")+'</tr>').join("")+'</tbody></table></div>';
+  }
+  function ensureWorkspace(){
+   if(workspace)return workspace;
+   const builder=$("reportBuildSection"),preview=$("reportPreviewSection");
+   workspace=document.createElement("section");workspace.id="reportWorkspace";workspace.className="hf-report-workspace";
+   workspace.innerHTML='<div class="hf-report-workspace-head"><div><p class="page-eyebrow">INDIVIDUAL REPORT WORKSPACE</p><h2 id="reportWorkspaceTitle"></h2><p id="reportWorkspaceDescription"></p></div><div class="hf-report-workspace-meta"><span id="reportWorkspaceCode"></span><small id="reportWorkspaceRange"></small></div></div><div class="hf-report-kpis" id="reportWorkspaceKpis"></div><div class="hf-report-workspace-toolbar"><div class="hf-report-workspace-filters" id="reportWorkspaceFilters"></div><div class="hf-report-workspace-actions" id="reportWorkspaceActions"></div></div><div class="hf-report-segment-nav" id="reportWorkspaceTabs" role="tablist" aria-label="Report sections"></div><section class="hf-report-segment-panel" id="reportWorkspaceOverview" role="tabpanel"></section><section class="hf-report-segment-panel" id="reportWorkspaceAnalysis" role="tabpanel" hidden></section><section class="hf-report-segment-panel" id="reportWorkspaceRecords" role="tabpanel" hidden><div class="hf-report-record-toolbar"><div><h3 id="reportWorkspaceRecordsTitle"></h3><p id="reportWorkspaceRecordsNote"></p></div><div class="hf-report-record-filters"><input id="reportWorkspaceSearch" class="hf-input" type="search" placeholder="এই রিপোর্টের রেকর্ড খুঁজুন" aria-label="Search report records"><select id="reportWorkspaceFieldFilter" class="hf-select" aria-label="Filter report records"><option value="">সব রেকর্ড</option></select></div></div><div class="hf-report-table-wrap" tabindex="0" role="region" aria-label="Report detail records"><table class="hf-table"><thead id="reportWorkspaceTableHead"></thead><tbody id="reportWorkspaceTableBody"></tbody></table></div><p class="hf-data-note" id="reportWorkspaceRecordsFoot"></p></section><div class="hf-report-workspace-foot" id="reportWorkspaceFoot"></div>';
+   if(builder)builder.parentNode.insertBefore(workspace,builder);
+   if(reportGroup){
+    const center=document.querySelector(".hf-report-center");if(center)center.hidden=true;
+    if(builder)builder.hidden=true;if(preview)preview.hidden=true;
+    const filterHost=$("reportWorkspaceFilters"),actionHost=$("reportWorkspaceActions");
+    const rangeLabel=$("rangeSelect")?.closest("label");
+    if(rangeLabel&&filterHost)filterHost.appendChild(rangeLabel);
+    if($("customRangeFields")&&filterHost)filterHost.appendChild($("customRangeFields"));
+    if($("includePersonalData")?.closest("label"))$("includePersonalData").closest("label").hidden=true;
+    if($("buildReportBtn")){ $("buildReportBtn").textContent="রিপোর্ট রিফ্রেশ";actionHost?.appendChild($("buildReportBtn")); }
+    ["downloadCsvBtn","downloadXlsxBtn","downloadPdfBtn"].forEach(id=>{if($(id))actionHost?.appendChild($(id));});
+    if($("reportType")?.closest("label"))$("reportType").closest("label").hidden=true;
+    $("reportWorkspaceSearch")?.addEventListener("input",renderRecordTable);
+    $("reportWorkspaceFieldFilter")?.addEventListener("change",renderRecordTable);
+    $("reportWorkspaceTabs")?.addEventListener("click",event=>{
+     const button=event.target.closest("[data-report-segment]");if(!button)return;
+     showSegment(button.dataset.reportSegment);
+    });
+   }else workspace.hidden=true;
+   return workspace;
+  }
+  function kpisFor(type,rows,source){
+   const orders=source.orders||[],valid=orders.filter(o=>String(o.status||"").toLowerCase()!=="cancelled");
+   const finance=source.finance||[],settlements=source.settlements||[],purchases=source.purchases||[];
+   const sales=valid.reduce((n,o)=>n+num(o.total),0);
+   const k=(label,value,note)=>({label,value,note:note||""});
+   if(type==="business")return [k("মোট অর্ডার",orders.length,"নির্বাচিত সময়"),k("বিক্রয় অর্ডার মূল্য",money(sales),"বাতিল বাদে; সংগৃহীত নগদ নয়"),k("গড় অর্ডার মূল্য",money(valid.length?sales/valid.length:0),"নন-ক্যানসেলড অর্ডার"),k("বাতিল অর্ডার",orders.length-valid.length,"আলাদা করে দেখানো")];
+   if(type==="sales")return [k("বিক্রয় অর্ডার",valid.length,"বাতিল বাদে"),k("অর্ডার মূল্য",money(sales),"রেকর্ডকৃত অর্ডার মোট"),k("ডেলিভারি চার্জ",money(sum(valid,"delivery_charge")),"অর্ডারে সংরক্ষিত"),k("গড় অর্ডার",money(valid.length?sales/valid.length:0),"প্রতি অর্ডার")];
+   if(type==="daily")return [k("কার্যদিবস",rows.length,"রেকর্ড থাকা দিন"),k("মোট অর্ডার",sum(rows,"orders"),"বাতিলসহ"),k("অর্ডার মূল্য",money(sum(rows,"order_value")),"বাতিল বাদে"),k("নিশ্চিত ব্যয়",money(sum(rows,"confirmed_expenses")),"Confirmed expense"),k("COD সংগ্রহ",money(sum(rows,"cod_collected")),"কুরিয়ার সংগ্রহ"),k("COD রেমিট্যান্স",money(sum(rows,"cod_remitted")),"রেকর্ডকৃত রেমিট্যান্স")];
+   if(["product-sales","top-products"].includes(type))return [k("পণ্য",unique(rows,"product"),"বিক্রিত পণ্য"),k("বিক্রিত ইউনিট",sum(rows,"quantity_sold"),"অর্ডার আইটেম"),k("পণ্য বিক্রয়",money(sum(rows,"sales")),"লাইন টোটাল"),k("অর্ডার লাইন",sum(rows,"order_lines"),"পণ্য লাইন")];
+   if(type==="customer-wise-products")return [k("গ্রাহক",unique(rows,"customer"),"গ্রাহক-পণ্য সমন্বয়"),k("পণ্য ইউনিট",sum(rows,"quantity"),"বিক্রিত পরিমাণ"),k("পণ্য বিক্রয়",money(sum(rows,"total")),"আইটেম লাইন টোটাল"),k("সমন্বয়",rows.length,"আলাদা গ্রাহক-পণ্য")];
+   if(["customer-products","top-customers","customers"].includes(type))return [k("গ্রাহক",rows.length,"স্বতন্ত্র গ্রাহক"),k("অর্ডার",sum(rows,"orders"),"রেকর্ডকৃত"),k("মোট ব্যয়",money(sum(rows,"total_spent")),"অর্ডার মূল্য"),k("গড় ব্যয়",money(rows.length?sum(rows,"total_spent")/rows.length:0),"প্রতি গ্রাহক")];
+   if(type==="purchase")return [k("ক্রয় অর্ডার",purchases.length,"Purchase Orders"),k("ক্রয়ের মোট",money(sum(purchases,"total_amount")),"অর্ডার মোট"),k("ক্রয় লাইন",purchases.reduce((n,p)=>n+(p.admin_purchase_order_items||[]).length,0),"অর্ডার আইটেম"),k("সম্পন্ন",purchases.filter(p=>["received","completed"].includes(String(p.status||"").toLowerCase())).length,"Status অনুযায়ী")];
+   if(type==="product-purchase")return [k("পণ্য লাইন",rows.length,"ক্রয় আইটেম"),k("ক্রয় ইউনিট",sum(rows,"quantity"),"অর্ডারকৃত"),k("গৃহীত ইউনিট",sum(rows,"received_quantity"),"GRN অনুযায়ী"),k("ক্রয় মূল্য",money(sum(rows,"total")),"লাইন কস্ট")];
+   if(type==="payable")return [k("সরবরাহকারী বিল",rows.length,"রেকর্ডকৃত"),k("মোট বিল",money(sum(rows,"bill_total")),"স্ট্যাটাস আলাদা"),k("বরাদ্দ পেমেন্ট",money(sum(rows,"paid")),"Allocation অনুযায়ী"),k("অবশিষ্ট দায়",money(sum(rows,"balance")),"বিল কম পেমেন্ট")];
+   if(type==="receivable"||type==="collections")return [k("COD রেকর্ড",settlements.length,"Courier settlement"),k("COD মূল্য",money(sum(rows,"cod_amount")),"অর্ডার COD"),k("সংগ্রহ",money(sum(rows,"collected")),"রেকর্ডকৃত"),k("রেমিট্যান্স",money(sum(rows,"remitted")),"রেকর্ডকৃত"),k("সংগ্রহ বাকি",money(sum(rows,"pending_collection")),"COD - collected"),k("রেমিট্যান্স বাকি",money(sum(rows,"pending_remittance")),"collected - remitted")];
+   if(["low-stock","alert-products","stock","stock-list"].includes(type))return [k("পণ্য",rows.length,"বর্তমান স্ন্যাপশট"),k("মোট ইউনিট",sum(rows,"stock"),"বর্তমান স্টক"),k("স্টক মূল্য",money(sum(rows,"stock_value")),"সংরক্ষিত কস্ট থাকলে"),k("শূন্য স্টক",rows.filter(r=>num(r.stock)===0).length,"স্টক নেই"),k("সীমার নিচে",rows.filter(r=>num(r.stock)<=num(r.minimum_stock)).length,"Low threshold")];
+   if(type==="account-payments")return [k("পেমেন্ট রেকর্ড",rows.length,"অ্যাকাউন্ট/পদ্ধতি সংযুক্ত"),k("মোট পেমেন্ট",money(sum(rows,"amount")),"Finance ledger"),k("অ্যাকাউন্ট",unique(rows,"account_name"),"ব্যবহৃত অ্যাকাউন্ট"),k("ট্রান্সফার",source.transfers?.length||0,"আলাদা তালিকা")];
+   if(type==="expenses")return [k("ব্যয় রেকর্ড",rows.length,"Expense ledger"),k("মোট ব্যয়",money(sum(rows,"amount")),"সব status"),k("নিশ্চিত ব্যয়",money(sum(rows.filter(r=>String(r.status).toLowerCase()==="confirmed"),"amount")),"Confirmed only"),k("বাজেট লাইন",source.budgets?.length||0,"পরিকল্পনা বাজেট")];
+   if(type==="transactions")return [k("লেনদেন",rows.length,"সব status"),k("Confirmed",rows.filter(r=>String(r.status).toLowerCase()==="confirmed").length,"নিশ্চিত এন্ট্রি"),k("Income",money(sum(rows.filter(r=>String(r.entry_type).toLowerCase()==="income"&&String(r.status).toLowerCase()==="confirmed"),"amount")),"Confirmed only"),k("Expense",money(sum(rows.filter(r=>String(r.entry_type).toLowerCase()==="expense"&&String(r.status).toLowerCase()==="confirmed"),"amount")),"Confirmed only")];
+   return [k("রেকর্ড",rows.length,"নির্বাচিত সময়"),k("মোট পরিমাণ",money(sum(rows,"amount")),"রেকর্ডকৃত"),k("Confirmed",rows.filter(r=>String(r.status).toLowerCase()==="confirmed").length,"নিশ্চিত অবস্থা")];
+  }
+  function analysisFor(type,rows,source){
+   if(type==="business"||type==="sales")return {label:"status",columns:["status","records","order_value"],rows:groupRows((source.orders||[]).map(o=>({status:o.status,order_value:num(o.total)})),"status",["order_value"]),bars:"order_value"};
+   if(type==="daily")return {label:"date",columns:["date","orders","order_value","confirmed_expenses","cod_collected","cod_remitted"],rows:rows.slice().sort((a,b)=>b.date.localeCompare(a.date)),bars:"order_value"};
+   if(["product-sales","top-products","product-purchase","low-stock","alert-products","stock","stock-list"].includes(type))return {label:"product",columns:rows.length?Object.keys(rows[0]).slice(0,8):["product","records"],rows:rows.slice(0,12),bars:type==="product-purchase"?"total":["low-stock","alert-products"].includes(type)?"stock":type==="stock"||type==="stock-list"?"stock_value":"sales"};
+   if(type==="customer-wise-products")return {label:"customer",columns:["customer","records","quantity","total"],rows:groupRows(rows,"customer",["quantity","total"]),bars:"total"};
+   if(["customer-products","top-customers","customers"].includes(type))return {label:"customer",columns:["customer","orders","unique_products","total_spent","last_order"],rows:rows.slice(0,12),bars:"total_spent"};
+   if(type==="purchase")return {label:"supplier",columns:["supplier","records","total"],rows:groupRows(rows,"supplier",["total"]),bars:"total"};
+   if(type==="payable")return {label:"supplier",columns:["supplier","records","bill_total","paid","balance"],rows:groupRows(rows,"supplier",["bill_total","paid","balance"]),bars:"balance"};
+   if(type==="receivable"||type==="collections")return {label:"courier",columns:["courier","records","cod_amount","collected","remitted","pending_remittance"],rows:groupRows(rows,"courier",["cod_amount","collected","remitted","pending_remittance"]),bars:"collected"};
+   if(type==="account-payments")return {label:"account_name",columns:["account_name","records","amount"],rows:groupRows(rows,"account_name",["amount"]),bars:"amount"};
+   if(type==="expenses")return {label:"category",columns:["category","records","amount"],rows:groupRows(rows,"category",["amount"]),bars:"amount"};
+   if(type==="transactions")return {label:"entry_type",columns:["entry_type","records","amount"],rows:groupRows(rows,"entry_type",["amount"]),bars:"amount"};
+   return {label:"category",columns:rows.length?Object.keys(rows[0]).slice(0,8):["category","records"],rows:rows.slice(0,12),bars:"records"};
+  }
+  function renderBars(rows,key){
+   if(!rows.length)return '<div class="hf-report-empty"><strong>বিশ্লেষণের জন্য রেকর্ড নেই</strong><p>সংশ্লিষ্ট সোর্স মডিউলে ডেটা যুক্ত হলে এই অংশ পূরণ হবে।</p></div>';
+   const max=Math.max(1,...rows.map(r=>num(r[key])));
+   return '<div class="hf-report-bars">'+rows.slice(0,10).map(row=>{
+    const label=String(row[Object.keys(row).find(k=>typeof row[k]==="string")||"date"]??"—"),value=num(row[key]),width=Math.max(value>0?2:0,value/max*100);
+    return '<div class="hf-report-bar-row"><div class="hf-report-bar-label"><strong>'+esc(label)+'</strong><span>'+esc(displayCell(value,key))+'</span></div><div class="hf-report-bar-track"><span style="width:'+width.toFixed(1)+'%"></span></div></div>';
+   }).join("")+'</div>';
+  }
+  function renderRecordTable(){
+   if(!workspace||!report.rows)return;
+   const q=String($("reportWorkspaceSearch")?.value||"").toLowerCase().trim(),filter=String($("reportWorkspaceFieldFilter")?.value||"");
+   visibleRows=report.rows.filter(row=>(!q||Object.values(row).some(v=>String(v??"").toLowerCase().includes(q)))&&(!filter||String(row[activeFilterColumn]??"")===filter));
+   const columns=report.columns.length?report.columns:Object.keys(report.rows[0]||{record:""});
+   $("reportWorkspaceTableHead").innerHTML="<tr>"+columns.map(k=>"<th>"+esc(k.replace(/_/g," "))+"</th>").join("")+"</tr>";
+   $("reportWorkspaceTableBody").innerHTML=visibleRows.length?visibleRows.slice(0,250).map(row=>"<tr>"+columns.map(k=>"<td>"+esc(displayCell(row[k],k))+"</td>").join("")+"</tr>").join(""):'<tr><td colspan="'+columns.length+'"><div class="hf-report-empty"><strong>কোনো রেকর্ড পাওয়া যায়নি</strong><p>সার্চ বা ফিল্টার পরিবর্তন করুন।</p></div></td></tr>';
+   $("reportWorkspaceRecordsFoot").textContent=visibleRows.length>250?"প্রিভিউতে প্রথম ২৫০টি রেকর্ড দেখানো হচ্ছে; CSV/Excel-এ সব রেকর্ড থাকবে।":visibleRows.length+"টি রেকর্ড দেখানো হচ্ছে।";
+  }
+  function showSegment(segment){
+   activeSegment=segment;
+   ["overview","analysis","records"].forEach(id=>{const panel=$("reportWorkspace"+id.charAt(0).toUpperCase()+id.slice(1));if(panel)panel.hidden=id!==segment;});
+   document.querySelectorAll("[data-report-segment]").forEach(b=>{const active=b.dataset.reportSegment===segment;b.classList.toggle("active",active);b.setAttribute("aria-selected",String(active));});
+   if(segment==="records")renderRecordTable();
+  }
+  function renderWorkspace(){
+   if(!reportGroup||!workspace)return;
+   const def=definitions[report.type]||definitions.business,metrics=kpisFor(report.type,report.rows,report.source||{}),analysis=analysisFor(report.type,report.rows,report.source||{});
+   $("reportWorkspaceTitle").textContent=def[0];$("reportWorkspaceDescription").textContent=def[2];$("reportWorkspaceCode").textContent=report.type.toUpperCase();$("reportWorkspaceRange").textContent=report.rangeLabel+" · "+report.rows.length+" records";
+   $("reportWorkspaceKpis").innerHTML=metrics.map(m=>'<article class="hf-report-kpi"><small>'+esc(m.label)+'</small><strong>'+esc(m.value)+'</strong><span>'+esc(m.note)+'</span></article>').join("");
+   $("reportWorkspaceTabs").innerHTML='<button type="button" role="tab" data-report-segment="overview" aria-selected="true" class="active">সারসংক্ষেপ</button><button type="button" role="tab" data-report-segment="analysis" aria-selected="false">'+esc(def[3])+'</button><button type="button" role="tab" data-report-segment="records" aria-selected="false">'+esc(def[4])+'</button>';
+   const metricRows=metrics.map(m=>({বিষয়:m.label,মান:m.value,বিবরণ:m.note}));
+   $("reportWorkspaceOverview").innerHTML='<div class="hf-report-overview-grid"><section class="hf-report-subsection"><div class="hf-report-subsection-head"><div><h3>মূল সূচক</h3><p>নির্বাচিত সময়ের রেকর্ড ও নির্দিষ্ট ডেটা সোর্স</p></div><span>'+metrics.length+' indicators</span></div>'+tableMarkup(metricRows,Object.keys(metricRows[0]||{বিষয়:"",মান:"",বিবরণ:""}),"সারাংশ নেই")+'</section><section class="hf-report-subsection"><div class="hf-report-subsection-head"><div><h3>'+esc(def[3])+'</h3><p>'+esc(def[2])+'</p></div></div>'+tableMarkup(analysis.rows,analysis.columns,"বিশ্লেষণের ডেটা নেই")+'</section></div><div class="hf-report-source-note">'+esc(report.notes||"রিপোর্টটি সংযুক্ত ডেটা সোর্স থেকে তৈরি।")+'</div>';
+   $("reportWorkspaceAnalysis").innerHTML='<section class="hf-report-subsection"><div class="hf-report-subsection-head"><div><h3>'+esc(def[3])+'</h3><p>বিভাগ/ধরন অনুযায়ী সমষ্টি; মূল রেকর্ডের বিকল্প নয়।</p></div><span>'+analysis.rows.length+' groups</span></div>'+renderBars(analysis.rows,analysis.bars||"records")+tableMarkup(analysis.rows,analysis.columns,"এই রিপোর্টে বিশ্লেষণ ডেটা নেই")+'</section>';
+   $("reportWorkspaceRecordsTitle").textContent=def[4];$("reportWorkspaceRecordsNote").textContent="মূল সোর্স রেকর্ড; সার্চ, ফিল্টার এবং CSV/Excel/PDF এক্সপোর্ট ব্যবহার করুন।";
+   const preferred=({business:"status",sales:"payment_method","product-sales":"product","top-products":"product","customer-wise-products":"customer","customer-products":"customer","top-customers":"customer",customers:"customer",purchase:"supplier","product-purchase":"product",payable:"supplier",receivable:"courier",collections:"courier","low-stock":"category","alert-products":"alert",stock:"category","stock-list":"category","account-payments":"account_name",expenses:"category",transactions:"entry_type",daily:"date"})[report.type]||"";
+   activeFilterColumn=preferred&&report.rows.some(r=>r[preferred]!==undefined)?preferred:"";
+   const filter=$("reportWorkspaceFieldFilter"),values=activeFilterColumn?[...new Set(report.rows.map(r=>String(r[activeFilterColumn]??"")).filter(Boolean))].sort():[];
+   if(filter){filter.innerHTML='<option value="">সব '+(activeFilterColumn?esc(activeFilterColumn.replace(/_/g," ")):"রেকর্ড")+'</option>'+values.map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join("");filter.disabled=!values.length;filter.value="";}
+   $("reportWorkspaceSearch").value="";renderRecordTable();
+   $("reportTitle").textContent=def[0];$("reportRangeLabel").textContent=report.rangeLabel;
+   $("reportSummary").innerHTML=metrics.slice(0,3).map(m=>'<div class="hf-summary-pill"><small>'+esc(m.label)+'</small><strong>'+esc(m.value)+'</strong></div>').join("");
+   $("reportNote").textContent=report.notes||"";
+   $("reportCreatedAt").textContent="Generated "+dateTime(new Date().toISOString());
+   const hero=document.querySelector(".hf-reports-hero h1");if(hero)hero.textContent=def[0];
+   const eyebrow=document.querySelector(".hf-reports-hero .page-eyebrow");if(eyebrow)eyebrow.textContent="INDIVIDUAL REPORT";
+   const heroDescription=document.querySelector(".hf-reports-hero p:not(.page-eyebrow)");if(heroDescription)heroDescription.textContent=def[2];
+   if($("printReportTitle"))$("printReportTitle").textContent=def[0];
+   if($("printReportDetails"))$("printReportDetails").textContent=report.rangeLabel+" · "+report.rows.length+" records";
+   showSegment(activeSegment);
+  }
+  async function fetchReportFinance(range){
+   let q=client.from("admin_finance_entries").select("id,entry_type,category,amount,entry_date,description,reference,status,related_order_id,account_id,payment_method,party_name,financial_class,related_supplier_payment_id,related_cod_settlement_id,created_by,created_at,updated_at").order("entry_date",{ascending:false}).order("created_at",{ascending:false}).limit(3000);
+   if(range)q=rangeQuery(q,"entry_date",range);
+   return signedQuery(q);
+  }
+  async function fetchReportSettlements(range){
+   let q=client.from("admin_cod_settlements").select("id,order_id,order_number,customer_name,courier_name,tracking_reference,cod_amount,collected_amount,courier_fee,adjustment_amount,remitted_amount,status,collected_at,remitted_at,created_at,updated_at").order("created_at",{ascending:false}).limit(3000);
+   if(range)q=rangeQuery(q,"created_at",range);
+   return signedQuery(q);
+  }
   async function buildReport(){
-   const range=selectedRange(),type=$("reportType").value;let rows=[],title="",notes="";
+   const range=selectedRange(),type=$("reportType").value;
+   if(reportGroup&&!allowed.includes(type))throw new Error("এই ওয়ার্কস্পেসে নির্বাচিত রিপোর্টটি নেই।");
+   let rows=[],title="",notes="",source={};
    if(type==="orders"){
-    const orders=await fetchOrders(range,5000);
-    if(orders.length>=5000)notes="The report reached the 5,000-order retrieval cap. It contains the newest matching orders returned by the query, not necessarily every order in the selected period. ";
-    rows=orders.map(o=>({order_number:o.order_number||String(o.id).slice(0,8),ordered_at:o.ordered_at,customer_name:$("includePersonalData").checked?o.customer_name:"",customer_phone:$("includePersonalData").checked?o.customer_phone:"",customer_email:$("includePersonalData").checked?o.customer_email:"",status:o.status,subtotal:Number(o.subtotal||0),delivery_charge:Number(o.delivery_charge||0),total:Number(o.total||0),payment_method:o.payment_method,items:(o.order_items||[]).map(i=>i.product_name+" x "+i.quantity+" "+(i.unit||"")).join("; ")}));
+    const orders=await fetchOrders(range,5000);source.orders=orders;
+    rows=orders.map(o=>({order_number:o.order_number||String(o.id).slice(0,8),ordered_at:o.ordered_at,customer_name:$("includePersonalData").checked?o.customer_name:"",customer_phone:$("includePersonalData").checked?o.customer_phone:"",customer_email:$("includePersonalData").checked?o.customer_email:"",status:o.status,subtotal:num(o.subtotal),delivery_charge:num(o.delivery_charge),total:num(o.total),payment_method:o.payment_method,items:(o.order_items||[]).map(i=>i.product_name+" x "+i.quantity+" "+(i.unit||"")).join("; ")}));
     if(!$("includePersonalData").checked)rows=rows.map(({customer_name,customer_phone,customer_email,...rest})=>rest);
-    title="Orders Report";notes="Recorded order values are not proof of payment collection. Cancelled orders remain listed with their status.";
+    title="Orders Report";notes="Recorded order values are not proof of payment collection.";
    }else if(type==="analytics"){
-    const events=await fetchEvents(range,15000);
-    if(events.length>=15000)notes="The report reached the 15,000-event retrieval cap. It contains the newest matching events returned by the query, not necessarily every event in the selected period. ";
-    rows=events.map(e=>({occurred_at:e.occurred_at,event_name:e.event_name,page_path:e.page_path,page_title:e.page_title,session_id:e.session_id,item_id:e.item_id,item_name:e.item_name,item_category:e.item_category,value:e.event_name==="page_engagement"?null:e.value,visible_seconds:e.event_name==="page_engagement"?Number(e.value||0):null,quantity:e.quantity}));
-    title="Website Analytics Report";notes="Website events measure recorded interaction. They do not by themselves establish unique people, paid sales, or collected revenue.";
+    const events=await fetchEvents(range,15000);source.events=events;
+    rows=events.map(e=>({occurred_at:e.occurred_at,event_name:e.event_name,page_path:e.page_path,page_title:e.page_title,session_id:e.session_id,item_name:e.item_name,item_category:e.item_category,value:e.value,quantity:e.quantity,source:e.source,medium:e.medium,campaign:e.campaign}));
+    title="Website Analytics Report";notes="Recorded website interactions; events are not automatically verified people or paid sales.";
    }else if(type==="products"){
-    const products=await fetchProducts(10000);
-    if(products.length>=10000)notes="The catalogue snapshot reached the 10,000-product retrieval cap. It may not include every product. ";
-    rows=products.map(p=>({name:p.name,slug:p.slug,category:p.category,price:Number(p.price||0),display_price:p.display_price,unit_type:p.unit_type,stock_quantity:p.stock_quantity,is_active:p.is_active?"visible":"hidden",is_featured:p.is_featured?"yes":"no",updated_at:p.updated_at||p.created_at}));
-    title="Products & Inventory Snapshot";notes="This is the current catalog state; the selected time range does not apply to inventory.";
+    const products=await fetchProducts(10000);source.products=products;
+    rows=products.map(p=>({name:p.name,sku:p.sku,category:p.category,price:num(p.price),stock_quantity:p.stock_quantity,is_active:p.is_active?"visible":"hidden",is_featured:p.is_featured?"yes":"no",updated_at:p.updated_at||p.created_at}));
+    title="Products & Inventory Snapshot";notes="Current catalogue snapshot.";
    }else if(type==="content"){
     const blocks=await signedQuery(client.from("site_content_blocks").select("block_key,block_type,title,image_url,link_url,alt_text,is_active,sort_order,updated_by,updated_at").order("sort_order",{ascending:true}));
     rows=blocks.map(b=>({placement:b.block_type,key:b.block_key,title:b.title,image_url:b.image_url,destination_url:b.link_url,alt_text:b.alt_text,active:b.is_active?"yes":"no",sort_order:b.sort_order,updated_by:b.updated_by,updated_at:b.updated_at}));
-    title="Homepage Content Settings";notes="This report contains the banner and promotion configuration used by the public homepage. Hero slides remain enabled to preserve carousel behavior; side banner and popup active flags can be changed from Website Content.";
-   }else if(type==="finance"){
-    const entries=await fetchFinance(range,3000);
-    if(entries.length>=3000)notes="The report reached the 3,000-entry finance retrieval cap. ";
-    const filtered=type==="expenses"?entries.filter(e=>String(e.entry_type||"").toLowerCase()==="expense"):entries;
-    rows=filtered.map(e=>({entry_date:e.entry_date,entry_type:e.entry_type,category:e.category,amount:Number(e.amount||0),status:e.status,description:e.description,reference:e.reference,related_order_id:e.related_order_id||""}));
-    title=({expenses:"Expense Report",transactions:"Transaction Report","account-payments":"Account Payment Report",collections:"Collection Report"})[type]||"Finance Entries Report";
-    notes="Source: existing finance ledger. Only recorded entries are shown; collection/payment classifications depend on how the source entries were recorded.";
+    title="Homepage Content Settings";notes="Homepage banner and promotion configuration.";
    }else if(["business","sales","daily","product-sales","top-products","customer-wise-products","customer-products","top-customers","customers"].includes(type)){
-    const orders=await fetchOrders(range,5000);
+    const orders=await fetchOrders(range,5000);source.orders=orders;
     const valid=orders.filter(o=>String(o.status||"").toLowerCase()!=="cancelled");
-    const totalSales=valid.reduce((sum,o)=>sum+Number(o.total||0),0);
+    const totalSales=valid.reduce((n,o)=>n+num(o.total),0);
     if(type==="business"){
-     rows=[{metric:"Orders",value:valid.length},{metric:"Sales value (order total)",value:totalSales},{metric:"Average order value",value:valid.length?totalSales/valid.length:0},{metric:"Cancelled orders",value:orders.length-valid.length}];
-     title="Business Overview Report";notes="Order totals represent recorded orders, not verified collected cash. Cancelled orders are excluded from sales value.";
-    }else if(type==="sales"||type==="daily"){
-     const byDay=new Map();
-     valid.forEach(o=>{const day=String(o.ordered_at||"").slice(0,10);if(!day)return;const x=byDay.get(day)||{date:day,orders:0,sales:0,delivery_charge:0};x.orders++;x.sales+=Number(o.total||0);x.delivery_charge+=Number(o.delivery_charge||0);byDay.set(day,x);});
-     rows=[...byDay.values()].sort((a,b)=>b.date.localeCompare(a.date));
-     title=type==="daily"?"Daily Business Report":"Sales Performance Report";notes="Sales are based on non-cancelled order totals. This is not a payment reconciliation report.";
+     const byDay=new Map();orders.forEach(o=>{const day=dhakaDateKey(o.ordered_at);if(!day)return;const r=byDay.get(day)||{date:day,orders:0,order_value:0,delivery_charge:0,cancelled_orders:0};r.orders++;if(String(o.status).toLowerCase()==="cancelled")r.cancelled_orders++;else{r.order_value+=num(o.total);r.delivery_charge+=num(o.delivery_charge);}byDay.set(day,r);});
+     rows=[...byDay.values()].sort((a,b)=>b.date.localeCompare(a.date));title="Business Overview Report";notes="Order totals represent recorded non-cancelled orders, not verified collections.";
+    }else if(type==="sales"){
+     const byDay=new Map();valid.forEach(o=>{const day=dhakaDateKey(o.ordered_at);if(!day)return;const r=byDay.get(day)||{date:day,orders:0,order_value:0,delivery_charge:0};r.orders++;r.order_value+=num(o.total);r.delivery_charge+=num(o.delivery_charge);byDay.set(day,r);});
+     rows=[...byDay.values()].sort((a,b)=>b.date.localeCompare(a.date));title="Sales Performance Report";notes="Sales are based on non-cancelled order totals; payment method and status analysis uses source orders.";
+    }else if(type==="daily"){
+     const [finance,settlements]=await Promise.all([fetchReportFinance(range),fetchReportSettlements(range)]);source.finance=finance;source.settlements=settlements;
+     const byDay=new Map();const dayRow=day=>{if(!day)return null;let r=byDay.get(day);if(!r){r={date:day,orders:0,cancelled_orders:0,order_value:0,delivery_charge:0,confirmed_expenses:0,cod_collected:0,cod_remitted:0,courier_fees:0};byDay.set(day,r);}return r;};
+     orders.forEach(o=>{const r=dayRow(dhakaDateKey(o.ordered_at));if(r){r.orders++;if(String(o.status).toLowerCase()==="cancelled")r.cancelled_orders++;else{r.order_value+=num(o.total);r.delivery_charge+=num(o.delivery_charge);}}});
+     finance.filter(e=>String(e.entry_type).toLowerCase()==="expense"&&String(e.status).toLowerCase()==="confirmed").forEach(e=>{const r=dayRow(String(e.entry_date||"").slice(0,10));if(r)r.confirmed_expenses+=num(e.amount);});
+     settlements.forEach(s=>{if(s.collected_at){const r=dayRow(String(s.collected_at).slice(0,10));if(r){r.cod_collected+=num(s.collected_amount);r.courier_fees+=num(s.courier_fee);}}if(s.remitted_at){const r=dayRow(String(s.remitted_at).slice(0,10));if(r)r.cod_remitted+=num(s.remitted_amount);}});
+     rows=[...byDay.values()].sort((a,b)=>b.date.localeCompare(a.date));title="Daily Business Report";notes="অর্ডার মূল্য cancelled বাদে; ব্যয় কেবল Confirmed expense। COD collection এবং remittance তাদের নিজস্ব তারিখে দেখানো হয়েছে।";
+    }else if(type==="product-sales"||type==="top-products"){
+     const map=new Map();valid.forEach(o=>(o.order_items||[]).forEach(i=>{const key=String(i.product_id||i.product_name||"Unknown");const r=map.get(key)||{product:i.product_name||"Unknown",quantity_sold:0,sales:0,order_lines:0};r.quantity_sold+=num(i.quantity);r.sales+=num(i.line_total)||num(i.quantity)*num(i.unit_price);r.order_lines++;map.set(key,r);}));
+     rows=[...map.values()].sort((a,b)=>type==="top-products"?b.quantity_sold-a.quantity_sold:b.sales-a.sales).map((r,i)=>({rank:i+1,...r}));title=type==="top-products"?"Top Selling Products":"Product Sales Report";notes=type==="top-products"?"Sorted by units sold; sales value appears separately.":"Built from order_items snapshots; cancelled orders excluded.";
+    }else if(type==="customer-wise-products"){
+     const map=new Map();valid.forEach(o=>(o.order_items||[]).forEach(i=>{const key=String(o.customer_id||o.customer_name||"Unknown")+"|"+String(i.product_id||i.product_name||"");const r=map.get(key)||{customer:o.customer_name||"Unknown",product:i.product_name||"Unknown",quantity:0,total:0,order_lines:0};r.quantity+=num(i.quantity);r.total+=num(i.line_total)||num(i.quantity)*num(i.unit_price);r.order_lines++;map.set(key,r);}));
+     rows=[...map.values()].sort((a,b)=>b.total-a.total);title="Customer-wise Product Sales Report";notes="Each row represents one customer/product pair.";
+    }else if(type==="customer-products"){
+     const map=new Map();valid.forEach(o=>{const key=String(o.customer_id||o.customer_name||"Unknown");const r=map.get(key)||{customer:o.customer_name||"Unknown",orders:0,unique_products:0,units:0,total_spent:0,last_order:"",_products:new Map()};r.orders++;r.total_spent+=num(o.total);const stamp=String(o.ordered_at||"");if(stamp>r.last_order)r.last_order=stamp;(o.order_items||[]).forEach(i=>{const name=i.product_name||"Unknown";r.units+=num(i.quantity);r._products.set(name,(r._products.get(name)||0)+num(i.quantity));});map.set(key,r);});
+     rows=[...map.values()].map(r=>{r.unique_products=r._products.size;r.top_product=[...r._products.entries()].sort((a,b)=>b[1]-a[1])[0]?.[0]||"—";delete r._products;return r;}).sort((a,b)=>b.unique_products-a.unique_products||b.total_spent-a.total_spent);title="Customer Product Report";notes="One row per customer, with unique products, total units, top product and last order.";
     }else{
-     const map=new Map();
-     valid.forEach(o=>(o.order_items||[]).forEach(item=>{
-      const key=type==="customer-wise-products"||type==="customer-products"?String(o.customer_id||o.customer_phone||o.customer_name||"Unknown customer")+"|"+String(item.product_id||item.product_name):String(item.product_id||item.product_name);
-      const row=map.get(key)||{customer:o.customer_name||"Unknown",product:item.product_name||"Unknown",quantity:0,sales:0,orders:0};
-      row.quantity+=Number(item.quantity||0);row.sales+=Number(item.line_total||0);row.orders++;
-      if(!row.customer||row.customer==="Unknown")row.customer=o.customer_name||"Unknown";
-      map.set(key,row);
-     }));
-     const products=[...map.values()].sort((a,b)=>b.sales-a.sales);
-     if(type==="product-sales"||type==="top-products")rows=products.map((r,i)=>({rank:i+1,product:r.product,quantity_sold:r.quantity,sales:r.sales,order_lines:r.orders}));
-     else if(type==="customer-wise-products"||type==="customer-products")rows=products.map(r=>({customer:r.customer,product:r.product,quantity:r.quantity,total:r.sales,order_lines:r.orders}));
-     else{
-      const customers=new Map();valid.forEach(o=>{const key=o.customer_id||o.customer_phone||o.customer_name||"Unknown";const r=customers.get(key)||{customer:o.customer_name||"Unknown",phone:o.customer_phone||"",orders:0,total_spent:0};r.orders++;r.total_spent+=Number(o.total||0);customers.set(key,r);});
-      rows=[...customers.values()].sort((a,b)=>b.total_spent-a.total_spent).map((r,i)=>({rank:i+1,...r}));
-     }
-     title=({ "product-sales":"Product Sales Report","top-products":"Top Selling Products","customer-wise-products":"Customer-wise Product Sales","customer-products":"Customer Product Report","top-customers":"Top Customers",customers:"Customer Overview Report"})[type];
-     notes="Built from order records and their saved order_items snapshots. Customer rows are grouped by customer ID where available, otherwise by phone/name.";
+     const map=new Map();valid.forEach(o=>{const key=String(o.customer_id||o.customer_name||"Unknown");const r=map.get(key)||{customer:o.customer_name||"Unknown",orders:0,total_spent:0,average_order:0,last_order:"",pending_orders:0,delivered_orders:0};r.orders++;r.total_spent+=num(o.total);const stamp=String(o.ordered_at||"");if(stamp>r.last_order)r.last_order=stamp;if(String(o.status).toLowerCase()==="delivered")r.delivered_orders++;if(["pending","processing","shipped"].includes(String(o.status).toLowerCase()))r.pending_orders++;map.set(key,r);});
+     rows=[...map.values()].map(r=>({...r,average_order:r.orders?r.total_spent/r.orders:0})).sort((a,b)=>type==="top-customers"?b.total_spent-a.total_spent:b.orders-a.orders).map((r,i)=>({rank:i+1,...r}));title=type==="top-customers"?"Top Customers Report":"Customer Report";notes="Grouped by customer ID where available, otherwise customer name. Personal contact data is not included.";
     }
    }else if(type==="purchase"||type==="product-purchase"){
-    const purchases=await signedQuery(rangeQuery(client.from("admin_purchase_orders").select("id,purchase_number,status,order_date,expected_date,total_amount,supplier_id,admin_suppliers(name),admin_purchase_order_items(product_name,quantity,received_quantity,unit_cost,line_total,unit)").order("order_date",{ascending:false}),"order_date",range));
-    if(type==="purchase")rows=purchases.map(p=>({purchase_number:p.purchase_number,status:p.status,purchase_date:p.order_date,expected_date:p.expected_date,supplier:p.admin_suppliers?.name||"—",items:(p.admin_purchase_order_items||[]).length,total:Number(p.total_amount||0)}));
-    else rows=purchases.flatMap(p=>(p.admin_purchase_order_items||[]).map(i=>({purchase_number:p.purchase_number,purchase_date:p.order_date,supplier:p.admin_suppliers?.name||"—",product:i.product_name,quantity:Number(i.quantity||0),received_quantity:Number(i.received_quantity||0),unit_cost:Number(i.unit_cost||0),total:Number(i.line_total||0)})));
-    title=type==="purchase"?"Purchase Orders Report":"Product Purchase Report";notes="Source: admin_purchase_orders and their saved purchase-order items. Only recorded purchase orders are included.";
+    const purchases=await signedQuery(rangeQuery(client.from("admin_purchase_orders").select("id,purchase_number,status,order_date,expected_date,total_amount,supplier_id,admin_suppliers(name),admin_purchase_order_items(id,product_id,product_name,quantity,received_quantity,unit_cost,line_total,unit)").order("order_date",{ascending:false}).limit(5000),"order_date",range));source.purchases=purchases;
+    if(type==="purchase")rows=purchases.map(p=>({purchase_number:p.purchase_number,status:p.status,purchase_date:p.order_date,expected_date:p.expected_date,supplier:p.admin_suppliers?.name||"—",items:(p.admin_purchase_order_items||[]).length,total_amount:num(p.total_amount),ordered_units:(p.admin_purchase_order_items||[]).reduce((n,i)=>n+num(i.quantity),0),received_units:(p.admin_purchase_order_items||[]).reduce((n,i)=>n+num(i.received_quantity),0)}));
+    else rows=purchases.flatMap(p=>(p.admin_purchase_order_items||[]).map(i=>({purchase_number:p.purchase_number,purchase_date:p.order_date,status:p.status,supplier:p.admin_suppliers?.name||"—",product:i.product_name,quantity:num(i.quantity),received_quantity:num(i.received_quantity),pending_quantity:Math.max(0,num(i.quantity)-num(i.received_quantity)),unit:i.unit,unit_cost:num(i.unit_cost),total:num(i.line_total)})));
+    title=type==="purchase"?"Purchase Report":"Product Purchase Report";notes="Only recorded Purchase Orders and saved purchase-order item snapshots are included; order creation does not prove payment.";
    }else if(type==="payable"){
-    const bills=await signedQuery(rangeQuery(client.from("admin_supplier_bills").select("id,bill_number,supplier_invoice_number,invoice_date,due_date,total_amount,status,admin_suppliers(name)").order("invoice_date",{ascending:false}),"invoice_date",range));
-    const allocations=await signedQuery(client.from("admin_supplier_payment_allocations").select("supplier_bill_id,allocated_amount"));
-    const paid=new Map();allocations.forEach(a=>paid.set(a.supplier_bill_id,(paid.get(a.supplier_bill_id)||0)+Number(a.allocated_amount||0)));
-    rows=bills.map(b=>({bill_number:b.bill_number,supplier:b.admin_suppliers?.name||"—",invoice_date:b.invoice_date,due_date:b.due_date,status:b.status,bill_total:Number(b.total_amount||0),paid:paid.get(b.id)||0,balance:Math.max(0,Number(b.total_amount||0)-(paid.get(b.id)||0))}));
-    title="Supplier Payables Report";notes="Outstanding balance is calculated from bill totals less payment allocations. Draft/void bills remain identified by status and should not be treated as confirmed liabilities.";
-   }else if(type==="receivable"){
-    const settlements=await signedQuery(rangeQuery(client.from("admin_cod_settlements").select("order_number,customer_name,courier_name,cod_amount,collected_amount,courier_fee,remitted_amount,status,collected_at,remitted_at,created_at").order("created_at",{ascending:false}),"created_at",range));
-    rows=settlements.map(s=>({order_number:s.order_number,customer:s.customer_name,courier:s.courier_name,cod_amount:Number(s.cod_amount||0),collected:Number(s.collected_amount||0),remitted:Number(s.remitted_amount||0),pending_remittance:Math.max(0,Number(s.collected_amount||0)-Number(s.remitted_amount||0)),status:s.status}));
-    title="COD Receivable & Remittance Report";notes="This report shows courier COD collection/remittance tracking, not customer credit sales. Amounts are based on manually recorded settlement records.";
+    const [bills,allocations]=await Promise.all([signedQuery(rangeQuery(client.from("admin_supplier_bills").select("id,bill_number,supplier_invoice_number,invoice_date,due_date,total_amount,status,admin_suppliers(name)").order("invoice_date",{ascending:false}).limit(5000),"invoice_date",range)),signedQuery(client.from("admin_supplier_payment_allocations").select("supplier_bill_id,allocated_amount").limit(10000))]);
+    const paid=new Map();allocations.forEach(a=>paid.set(a.supplier_bill_id,(paid.get(a.supplier_bill_id)||0)+num(a.allocated_amount)));
+    rows=bills.map(b=>({bill_number:b.bill_number,supplier:b.admin_suppliers?.name||"—",supplier_invoice_number:b.supplier_invoice_number,invoice_date:b.invoice_date,due_date:b.due_date,status:b.status,bill_total:num(b.total_amount),paid:paid.get(b.id)||0,balance:Math.max(0,num(b.total_amount)-(paid.get(b.id)||0)),due_state:String(b.status||"").toLowerCase()==="void"?"Void":String(b.status||"").toLowerCase()==="draft"?"Draft":b.due_date&&b.due_date<todayISO()&&num(b.total_amount)-(paid.get(b.id)||0)>0?"Overdue":num(b.total_amount)-(paid.get(b.id)||0)<=0?"Paid":"Open"}));source.bills=bills;title="Supplier Payables Report";notes="Bill balance = total amount less the sum of all payment allocations. Draft and Void bills remain separately identified.";
+   }else if(type==="receivable"||type==="collections"){
+    const settlements=await fetchReportSettlements(range);source.settlements=settlements;
+    rows=settlements.map(s=>({order_number:s.order_number,customer:s.customer_name,courier:s.courier_name,tracking_reference:s.tracking_reference,cod_amount:num(s.cod_amount),collected:num(s.collected_amount),courier_fee:num(s.courier_fee),remitted:num(s.remitted_amount),pending_collection:Math.max(0,num(s.cod_amount)-num(s.collected_amount)),pending_remittance:Math.max(0,num(s.collected_amount)-num(s.remitted_amount)),status:s.status,collected_at:s.collected_at,remitted_at:s.remitted_at}));
+    if(type==="receivable")rows=rows.filter(r=>r.pending_collection>0||r.pending_remittance>0||["pending","exception"].includes(String(r.status).toLowerCase()));
+    title=type==="receivable"?"COD Receivable Report":"COD Collections Report";notes="This is courier COD collection/remittance tracking, not customer credit sales. Pending collection and pending remittance are calculated separately.";
    }else if(["low-stock","alert-products","stock","stock-list"].includes(type)){
-    const products=await fetchProducts(10000);
-    const selected=products.filter(p=>type==="low-stock"||type==="alert-products"?Number(p.stock_quantity??0)<=Number(p.low_stock_threshold??5):true);
-    rows=selected.map(p=>({product:p.name,sku:p.sku,category:p.category,stock:Number(p.stock_quantity||0),minimum_stock:Number(p.low_stock_threshold||5),unit_cost:Number(p.cost_price||0),stock_value:Number(p.stock_quantity||0)*Number(p.cost_price||0),alert:Number(p.stock_quantity||0)<=Number(p.low_stock_threshold||5)?"LOW":"OK"}));
-    title=({ "low-stock":"Low Stock Products","alert-products":"Stock Alert Products",stock:"Inventory Valuation Report","stock-list":"Current Stock List"})[type];
-    notes="Current catalogue snapshot. Stock value uses saved product cost price where available; missing cost values are treated as zero and should not be interpreted as a verified valuation.";
-   }else if(type==="account-payments"){
-    const entries=await fetchFinance(range,3000);
-    rows=entries.filter(e=>e.account_id||e.payment_method).map(e=>({date:e.entry_date,type:e.entry_type,party:e.party_name,account_id:e.account_id,payment_method:e.payment_method,amount:Number(e.amount||0),status:e.status,reference:e.reference}));
-    title="Account Payment Report";notes="Source: finance ledger rows linked to an account or payment method.";
-   }else if(type==="collections"){
-    const settlements=await signedQuery(rangeQuery(client.from("admin_cod_settlements").select("order_number,courier_name,tracking_reference,cod_amount,collected_amount,courier_fee,remitted_amount,status,collected_at,remitted_at").order("created_at",{ascending:false}),"collected_at",range));
-    rows=settlements.map(s=>({order_number:s.order_number,courier:s.courier_name,tracking_reference:s.tracking_reference,cod_amount:Number(s.cod_amount||0),collected:Number(s.collected_amount||0),courier_fee:Number(s.courier_fee||0),remitted:Number(s.remitted_amount||0),status:s.status,collected_at:s.collected_at,remitted_at:s.remitted_at}));
-    title="COD Collections Report";notes="Source: admin_cod_settlements. Collection, courier fees and remittance are shown separately; they are not treated as the same amount.";
-   }else if(type==="transactions"||type==="expenses"||type==="finance"){
-    const entries=await fetchFinance(range,3000);
-    const filtered=type==="expenses"?entries.filter(e=>String(e.entry_type||"").toLowerCase()==="expense"):entries;
-    rows=filtered.map(e=>({entry_date:e.entry_date,entry_type:e.entry_type,category:e.category,party:e.party_name,amount:Number(e.amount||0),financial_class:e.financial_class,status:e.status,description:e.description,reference:e.reference,related_order_id:e.related_order_id||""}));
-    title=type==="expenses"?"Expense Report":"Finance Transactions Report";notes="Source: admin_finance_entries. Only recorded ledger entries are included; transfer and collection semantics depend on recorded financial class/status.";
-   }else if(type==="business"||type==="sales"||type==="daily"||type==="receivable"||type==="payable"||type==="purchase"||type==="product-purchase"||type==="product-sales"||type==="top-products"||type==="customer-wise-products"||type==="customer-products"||type==="top-customers"||type==="customers"||type==="low-stock"||type==="alert-products"||type==="stock"||type==="stock-list"){
-    title=({business:"Business Report",sales:"Sales Report",daily:"Daily Business Report",receivable:"Receivable Report",payable:"Payable Report",purchase:"Purchase Report","product-purchase":"Product Purchase Report","product-sales":"Product Sales Report","top-products":"Top Selling Products","customer-wise-products":"Customer-wise Product Sales","customer-products":"Customer Product Report","top-customers":"Top Customers",customers:"Customer Report","low-stock":"Low Stock Products","alert-products":"Alert Products",stock:"Stock Report","stock-list":"Stock List"})[type]||"Business Report";
-    notes="এই রিপোর্টের জন্য প্রয়োজনীয় নির্দিষ্ট ডেটা সোর্স এখনো যাচাই/সংযুক্ত করা হয়নি। কোনো অনুমানভিত্তিক ফলাফল দেখানো হচ্ছে না। সংশ্লিষ্ট Purchase, Supplier, Customer balance বা Stock movement ডেটা সংযুক্ত হলে এই রিপোর্ট সক্রিয় হবে।";
-    rows=[];
+    const products=await fetchProducts(10000);source.products=products;
+    const active=products.filter(p=>p.is_active!==false).map(p=>({product:p.name,sku:p.sku,category:p.category||"Uncategorised",price:num(p.price),stock:num(p.stock_quantity),minimum_stock:num(p.low_stock_threshold??5),unit_cost:p.cost_price===null?null:num(p.cost_price),stock_value:p.cost_price===null?null:num(p.stock_quantity)*num(p.cost_price),alert:num(p.stock_quantity)<=0?"OUT OF STOCK":num(p.stock_quantity)<=num(p.low_stock_threshold??5)?"LOW":"OK",updated_at:p.updated_at||p.created_at}));
+    rows=type==="low-stock"?active.filter(p=>p.stock>0&&p.stock<=p.minimum_stock):type==="alert-products"?active.filter(p=>p.stock<=p.minimum_stock):active;
+    title=({ "low-stock":"Low Stock Products","alert-products":"Alert Product List",stock:"Stock Valuation Report","stock-list":"Current Stock List"})[type];notes="Current catalogue snapshot only; historical stock movement is not stored in this report. Missing unit cost is left blank, not estimated.";
+   }else if(["account-payments","expenses","transactions"].includes(type)){
+    const finance=await fetchReportFinance(range);source.finance=finance;
+    if(type==="account-payments"){
+     const accounts=await signedQuery(client.from("admin_finance_accounts").select("id,name,account_type,provider,account_reference,is_active").order("name",{ascending:true}).limit(1000));const map=new Map(accounts.map(a=>[a.id,a]));source.accounts=accounts;
+     rows=finance.filter(e=>e.account_id||String(e.payment_method||"").trim()).map(e=>({entry_date:e.entry_date,entry_type:e.entry_type,party_name:e.party_name,account_name:map.get(e.account_id)?.name||"—",account_type:map.get(e.account_id)?.account_type||"",payment_method:e.payment_method,category:e.category,financial_class:e.financial_class,amount:num(e.amount),status:e.status,reference:e.reference,related_order_id:e.related_order_id||""}));
+     const transfers=await signedQuery(rangeQuery(client.from("admin_finance_transfers").select("id,source_account_id,destination_account_id,transfer_date,amount,reference,description,status").order("transfer_date",{ascending:false}).limit(3000),"transfer_date",range));
+     source.transfers=transfers.map(t=>({...t,source_account:map.get(t.source_account_id)?.name||"—",destination_account:map.get(t.destination_account_id)?.name||"—"}));notes="Account-linked/payment-method Finance entries are listed here. Internal transfers are separate and are not income or expense.";
+    }else if(type==="expenses"){
+     rows=finance.filter(e=>String(e.entry_type||"").toLowerCase()==="expense").map(e=>({entry_date:e.entry_date,category:e.category,party_name:e.party_name,amount:num(e.amount),status:e.status,financial_class:e.financial_class,payment_method:e.payment_method,reference:e.reference,description:e.description}));
+     const budgets=await signedQuery(client.from("admin_finance_budgets").select("category,period_start,budget_amount,status,notes").order("period_start",{ascending:false}).limit(3000));source.budgets=budgets.filter(b=>(!range?.fromDay||String(b.period_start).slice(0,7)>=range.fromDay.slice(0,7))&&(!range?.toDay||String(b.period_start).slice(0,7)<=range.toDay.slice(0,7)));
+     notes="Expense rows come from Finance entry_type=expense. Confirmed expenses are separated in the KPI; monthly budget rows are planning limits, not actual transactions.";
+    }else{
+     rows=finance.map(e=>({entry_date:e.entry_date,entry_type:e.entry_type,category:e.category,party_name:e.party_name,amount:num(e.amount),financial_class:e.financial_class,status:e.status,payment_method:e.payment_method,account_id:e.account_id,reference:e.reference,related_order_id:e.related_order_id,related_supplier_payment_id:e.related_supplier_payment_id,related_cod_settlement_id:e.related_cod_settlement_id,description:e.description}));
+     notes="All Finance ledger entries are listed. Confirmed income and expenses are calculated separately; capital, loans, refunds and adjustments are not treated as ordinary operating income/expense.";
+    }
+    title=type==="account-payments"?"Account Payment Report":type==="expenses"?"Expense Report":"Finance Transaction Report";
+   }else if(type==="finance"){
+    const finance=await fetchReportFinance(range);source.finance=finance;rows=finance.map(e=>({entry_date:e.entry_date,entry_type:e.entry_type,category:e.category,amount:num(e.amount),status:e.status,financial_class:e.financial_class,reference:e.reference,description:e.description}));title="Finance Entries Report";notes="Source: Finance ledger.";
    }else{
-    const entries=await fetchFinance(range,3000);
-    if(entries.length>=3000)notes="The report reached the 3,000-entry finance retrieval cap. It contains the newest matching ledger entries returned by the query, not necessarily every entry in the selected period. ";
-    rows=entries.map(e=>({entry_date:e.entry_date,entry_type:e.entry_type,category:e.category,amount:Number(e.amount||0),status:e.status,description:e.description,reference:e.reference,related_order_id:e.related_order_id||""}));
-    title="Finance Entries Report";notes="Only Confirmed entries contribute to recorded income/expense totals. Entries are manual records and are not independently verified by a payment provider.";
+    const orders=await fetchOrders(range,5000);source.orders=orders;rows=orders.map(o=>({order_number:o.order_number,ordered_at:o.ordered_at,status:o.status,subtotal:num(o.subtotal),delivery_charge:num(o.delivery_charge),total:num(o.total),payment_method:o.payment_method}));title="Orders Report";notes="Recorded orders; values are not proof of payment.";
    }
-   const displayRange=(type==="products"||type==="content"||["low-stock","alert-products","stock","stock-list"].includes(type))?"Current snapshot":range.label;
-   const emptyColumns=({business:["metric","value"],sales:["date","orders","sales"],daily:["date","orders","sales","expenses"],receivable:["customer","total_due","paid","balance"],payable:["supplier","total_due","paid","balance"],purchase:["purchase_date","supplier","items","total"],"product-purchase":["product","quantity","unit_cost","total"],"product-sales":["product","quantity_sold","sales"],"top-products":["rank","product","quantity_sold","sales"],"customer-wise-products":["customer","product","quantity","total"],"customer-products":["customer","product","quantity","last_purchase"],"top-customers":["rank","customer","orders","total_spent"],customers:["customer","orders","total_spent"],"low-stock":["product","stock","minimum_stock"],"alert-products":["product","stock","alert"],stock:["product","stock","stock_value"],"stock-list":["product","category","stock","unit_cost","stock_value"]})[type]||["entry_date","entry_type","category","amount","status"];
-   report={title,columns:rows.length?Object.keys(rows[0]):(type==="orders"?["order_number","ordered_at","status","subtotal","delivery_charge","total"]:type==="analytics"?["occurred_at","event_name","page_path","item_name"]:type==="products"?["name","slug","category","price","stock_quantity","is_active"]:type==="content"?["placement","key","title","image_url","destination_url","active"]:emptyColumns),rows,notes,rangeLabel:displayRange,type};
-   $("reportTitle").textContent=title;$("reportRangeLabel").textContent=displayRange;$("reportRowsCount").textContent=rows.length.toLocaleString("en-BD");$("reportNote").textContent=notes;
-   $("reportSummary").innerHTML='<div class="hf-summary-pill"><small>Records in report</small><strong>'+rows.length.toLocaleString("en-BD")+'</strong></div><div class="hf-summary-pill"><small>Report type</small><strong style="font-size:14px">'+esc(title)+'</strong></div><div class="hf-summary-pill"><small>Time filter</small><strong style="font-size:13px">'+esc(displayRange)+'</strong></div>';
-   const sample=rows.slice(0,200);
-   $("reportTableHead").innerHTML="<tr>"+report.columns.map(c=>"<th>"+esc(c.replace(/_/g," "))+"</th>").join("")+"</tr>";
-   $("reportTableBody").innerHTML=sample.length?sample.map(row=>"<tr>"+report.columns.map(c=>"<td>"+esc(row[c]??"")+"</td>").join("")+"</tr>").join(""):'<tr><td colspan="'+report.columns.length+'">'+makeEmpty("No report records","Try a longer time range or another report type.")+'</td></tr>';
+   const defaultColumns=({
+    business:["date","orders","order_value","delivery_charge","cancelled_orders"],
+    sales:["date","orders","order_value","delivery_charge"],
+    daily:["date","orders","cancelled_orders","order_value","delivery_charge","confirmed_expenses","cod_collected","cod_remitted"],
+    "product-sales":["rank","product","quantity_sold","sales","order_lines"],"top-products":["rank","product","quantity_sold","sales","order_lines"],
+    "customer-wise-products":["customer","product","quantity","total","order_lines"],"customer-products":["customer","orders","unique_products","units","total_spent","last_order","top_product"],
+    "top-customers":["rank","customer","orders","total_spent","average_order","last_order"],customers:["rank","customer","orders","total_spent","average_order","last_order"],
+    purchase:["purchase_number","status","purchase_date","expected_date","supplier","items","ordered_units","received_units","total_amount"],
+    "product-purchase":["purchase_number","purchase_date","supplier","product","quantity","received_quantity","pending_quantity","unit_cost","total"],
+    payable:["bill_number","supplier","invoice_date","due_date","status","bill_total","paid","balance","due_state"],
+    receivable:["order_number","customer","courier","cod_amount","collected","pending_collection","remitted","pending_remittance","status"],
+    collections:["order_number","courier","tracking_reference","cod_amount","collected","courier_fee","remitted","status","collected_at","remitted_at"],
+    "low-stock":["product","sku","category","stock","minimum_stock","unit_cost","stock_value","alert"],
+    "alert-products":["product","sku","category","stock","minimum_stock","unit_cost","stock_value","alert"],
+    stock:["product","sku","category","stock","minimum_stock","unit_cost","stock_value","alert"],
+    "stock-list":["product","sku","category","stock","minimum_stock","unit_cost","stock_value","alert"],
+    "account-payments":["entry_date","entry_type","party_name","account_name","account_type","payment_method","category","financial_class","amount","status","reference"],
+    expenses:["entry_date","category","party_name","amount","status","financial_class","payment_method","reference","description"],
+    transactions:["entry_date","entry_type","category","party_name","amount","financial_class","status","payment_method","reference","related_order_id","description"]
+   })[type]||["entry_date","entry_type","category","amount","status"];
+   const displayRange=["low-stock","alert-products","stock","stock-list","products","content"].includes(type)?"Current snapshot":range.label;
+   report={title,columns:rows.length?Object.keys(rows[0]):defaultColumns,rows,notes,rangeLabel:displayRange,type,source};
+   $("reportTitle").textContent=title;$("reportRangeLabel").textContent=displayRange;$("reportRowsCount").textContent=rows.length.toLocaleString("en-BD")+" records";$("reportNote").textContent=notes;
+   $("reportSummary").innerHTML='<div class="hf-summary-pill"><small>Records</small><strong>'+rows.length.toLocaleString("en-BD")+'</strong></div><div class="hf-summary-pill"><small>Report</small><strong style="font-size:14px">'+esc(title)+'</strong></div><div class="hf-summary-pill"><small>Period</small><strong style="font-size:13px">'+esc(displayRange)+'</strong></div>';
+   const sample=rows.slice(0,200);$("reportTableHead").innerHTML="<tr>"+report.columns.map(c=>"<th>"+esc(c.replace(/_/g," "))+"</th>").join("")+"</tr>";
+   $("reportTableBody").innerHTML=sample.length?sample.map(row=>"<tr>"+report.columns.map(c=>"<td>"+esc(displayCell(row[c],c))+"</td>").join("")+"</tr>").join(""):'<tr><td colspan="'+report.columns.length+'">'+makeEmpty("No report records","Try another period or add records in the source workspace.")+'</td></tr>';
    $("reportSampleNote").textContent=rows.length>sample.length?"Preview displays the first "+sample.length+" rows. Downloads include all "+rows.length+" rows.":"Preview contains all rows in this report.";
    $("reportCreatedAt").textContent="Generated "+dateTime(new Date().toISOString());
+   if(reportGroup)renderWorkspace();
    return report;
   }
-  document.querySelectorAll("[data-report-type]").forEach(button=>button.addEventListener("click",async()=>{const type=button.dataset.reportType;if(!$("reportType"))return;$("reportType").value=type;document.querySelectorAll("[data-report-type]").forEach(item=>item.classList.toggle("is-selected",item===button));const build=$("buildReportBtn");if(build){build.disabled=true;try{await buildReport();$("reportBuildSection")?.scrollIntoView({behavior:"smooth",block:"start"});}catch(err){toast(err.message||"Could not load report.","error");}finally{build.disabled=false;}}}));
-  $("reportType")?.addEventListener("change",()=>{document.querySelectorAll("[data-report-type]").forEach(item=>item.classList.toggle("is-selected",item.dataset.reportType===$("reportType").value));});
+  function renderRecordTable(){
+   if(!workspace||!report.rows)return;
+   const query=String($("reportWorkspaceSearch")?.value||"").toLowerCase().trim(),filter=String($("reportWorkspaceFieldFilter")?.value||"");
+   visibleRows=report.rows.filter(row=>(!query||Object.values(row).some(v=>String(v??"").toLowerCase().includes(query)))&&(!filter||String(row[activeFilterColumn]??"")===filter));
+   $("reportWorkspaceTableHead").innerHTML="<tr>"+report.columns.map(k=>"<th>"+esc(k.replace(/_/g," "))+"</th>").join("")+"</tr>";
+   $("reportWorkspaceTableBody").innerHTML=visibleRows.length?visibleRows.slice(0,250).map(row=>"<tr>"+report.columns.map(k=>"<td>"+esc(displayCell(row[k],k))+"</td>").join("")+"</tr>").join(""):'<tr><td colspan="'+report.columns.length+'"><div class="hf-report-empty"><strong>কোনো রেকর্ড পাওয়া যায়নি</strong><p>সার্চ বা ফিল্টার পরিবর্তন করুন।</p></div></td></tr>';
+   $("reportWorkspaceRecordsFoot").textContent=visibleRows.length>250?"প্রিভিউতে প্রথম ২৫০টি রেকর্ড দেখানো হচ্ছে; CSV/Excel-এ সব রেকর্ড থাকবে।":visibleRows.length+"টি রেকর্ড দেখানো হচ্ছে।";
+  }
+  function renderWorkspace(){
+   if(!reportGroup||!workspace)return;
+   const def=definitions[report.type]||definitions.business,metrics=kpisFor(report.type,report.rows,report.source||{}),analysis=analysisFor(report.type,report.rows,report.source||{});
+   $("reportWorkspaceTitle").textContent=def[0];$("reportWorkspaceDescription").textContent=def[2];$("reportWorkspaceCode").textContent=report.type.toUpperCase();$("reportWorkspaceRange").textContent=report.rangeLabel+" · "+report.rows.length+" records";
+   $("reportWorkspaceKpis").innerHTML=metrics.map(m=>'<article class="hf-report-kpi"><small>'+esc(m.label)+'</small><strong>'+esc(m.value)+'</strong><span>'+esc(m.note)+'</span></article>').join("");
+   $("reportWorkspaceTabs").innerHTML='<button type="button" role="tab" data-report-segment="overview" aria-selected="true" class="active">সারসংক্ষেপ</button><button type="button" role="tab" data-report-segment="analysis" aria-selected="false">'+esc(def[3])+'</button><button type="button" role="tab" data-report-segment="records" aria-selected="false">'+esc(def[4])+'</button>';
+   const metricRows=metrics.map(m=>({বিষয়:m.label,মান:m.value,বিবরণ:m.note}));
+   $("reportWorkspaceOverview").innerHTML='<div class="hf-report-overview-grid"><section class="hf-report-subsection"><div class="hf-report-subsection-head"><div><h3>মূল সূচক</h3><p>নির্বাচিত সময়ের রেকর্ড ও নির্দিষ্ট ডেটা সোর্স</p></div><span>'+metrics.length+' indicators</span></div>'+tableMarkup(metricRows,Object.keys(metricRows[0]||{বিষয়:"",মান:"",বিবরণ:""}),"সারাংশ নেই")+'</section><section class="hf-report-subsection"><div class="hf-report-subsection-head"><div><h3>'+esc(def[3])+'</h3><p>'+esc(def[2])+'</p></div></div>'+tableMarkup(analysis.rows,analysis.columns,"বিশ্লেষণের ডেটা নেই")+'</section></div><div class="hf-report-source-note">'+esc(report.notes||"রিপোর্টটি সংযুক্ত ডেটা সোর্স থেকে তৈরি।")+'</div>';
+   $("reportWorkspaceAnalysis").innerHTML='<section class="hf-report-subsection"><div class="hf-report-subsection-head"><div><h3>'+esc(def[3])+'</h3><p>বিভাগ/ধরন অনুযায়ী সমষ্টি; মূল রেকর্ডের বিকল্প নয়।</p></div><span>'+analysis.rows.length+' groups</span></div>'+renderBars(analysis.rows,analysis.bars||"records")+tableMarkup(analysis.rows,analysis.columns,"এই রিপোর্টে বিশ্লেষণ ডেটা নেই")+'</section>';
+   $("reportWorkspaceRecordsTitle").textContent=def[4];$("reportWorkspaceRecordsNote").textContent="মূল সোর্স রেকর্ড; সার্চ, ফিল্টার এবং CSV/Excel/PDF এক্সপোর্ট ব্যবহার করুন।";
+   const preferred=({business:"date",sales:"date","product-sales":"product","top-products":"product","customer-wise-products":"customer","customer-products":"customer","top-customers":"customer",customers:"customer",purchase:"supplier","product-purchase":"product",payable:"supplier",receivable:"courier",collections:"courier","low-stock":"category","alert-products":"alert",stock:"category","stock-list":"category","account-payments":"account_name",expenses:"category",transactions:"entry_type",daily:"date"})[report.type]||"";
+   activeFilterColumn=preferred&&report.rows.some(r=>r[preferred]!==undefined)?preferred:"";
+   const filter=$("reportWorkspaceFieldFilter"),values=activeFilterColumn?[...new Set(report.rows.map(r=>String(r[activeFilterColumn]??"")).filter(Boolean))].sort():[];
+   if(filter){filter.innerHTML='<option value="">সব '+(activeFilterColumn?esc(activeFilterColumn.replace(/_/g," ")):"রেকর্ড")+'</option>'+values.map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join("");filter.disabled=!values.length;filter.value="";}
+   $("reportWorkspaceSearch").value="";renderRecordTable();
+   $("reportTitle").textContent=def[0];$("reportRangeLabel").textContent=report.rangeLabel;$("reportSummary").innerHTML=metrics.slice(0,3).map(m=>'<div class="hf-summary-pill"><small>'+esc(m.label)+'</small><strong>'+esc(m.value)+'</strong></div>').join("");$("reportNote").textContent=report.notes||"";
+   const hero=document.querySelector(".hf-reports-hero h1");if(hero)hero.textContent=def[0];const eyebrow=document.querySelector(".hf-reports-hero .page-eyebrow");if(eyebrow)eyebrow.textContent="INDIVIDUAL REPORT";const heroDescription=document.querySelector(".hf-reports-hero p:not(.page-eyebrow)");if(heroDescription)heroDescription.textContent=def[2];
+   if($("printReportTitle"))$("printReportTitle").textContent=def[0];if($("printReportDetails"))$("printReportDetails").textContent=report.rangeLabel+" · "+report.rows.length+" records";
+   showSegment(activeSegment);
+  }
+  function makeKpi(label,value,note){return {label,value,note};}
+  function kpisFor(type,rows,source){
+   const orders=source.orders||[],valid=orders.filter(o=>String(o.status||"").toLowerCase()!=="cancelled"),finance=source.finance||[],settlements=source.settlements||[],purchases=source.purchases||[],sales=valid.reduce((n,o)=>n+num(o.total),0);
+   const k=makeKpi;
+   if(type==="business")return [k("মোট অর্ডার",orders.length,"নির্বাচিত সময়"),k("বিক্রয় অর্ডার মূল্য",money(sales),"বাতিল বাদে; সংগৃহীত নগদ নয়"),k("গড় অর্ডার মূল্য",money(valid.length?sales/valid.length:0),"নন-ক্যানসেলড অর্ডার"),k("বাতিল অর্ডার",orders.length-valid.length,"আলাদা করে দেখানো")];
+   if(type==="sales")return [k("বিক্রয় অর্ডার",valid.length,"বাতিল বাদে"),k("অর্ডার মূল্য",money(sales),"রেকর্ডকৃত অর্ডার মোট"),k("ডেলিভারি চার্জ",money(sum(valid,"delivery_charge")),"অর্ডারে সংরক্ষিত"),k("গড় অর্ডার",money(valid.length?sales/valid.length:0),"প্রতি অর্ডার")];
+   if(type==="daily")return [k("কার্যদিবস",rows.length,"রেকর্ড থাকা দিন"),k("মোট অর্ডার",sum(rows,"orders"),"বাতিলসহ"),k("অর্ডার মূল্য",money(sum(rows,"order_value")),"বাতিল বাদে"),k("নিশ্চিত ব্যয়",money(sum(rows,"confirmed_expenses")),"Confirmed expense"),k("COD সংগ্রহ",money(sum(rows,"cod_collected")),"কুরিয়ার সংগ্রহ"),k("COD রেমিট্যান্স",money(sum(rows,"cod_remitted")),"রেকর্ডকৃত রেমিট্যান্স")];
+   if(["product-sales","top-products"].includes(type))return [k("পণ্য",unique(rows,"product"),"বিক্রিত পণ্য"),k("বিক্রিত ইউনিট",sum(rows,"quantity_sold"),"অর্ডার আইটেম"),k("পণ্য বিক্রয়",money(sum(rows,"sales")),"লাইন টোটাল"),k("অর্ডার লাইন",sum(rows,"order_lines"),"পণ্য লাইন")];
+   if(type==="customer-wise-products")return [k("গ্রাহক",unique(rows,"customer"),"গ্রাহক-পণ্য সমন্বয়"),k("পণ্য ইউনিট",sum(rows,"quantity"),"বিক্রিত পরিমাণ"),k("পণ্য বিক্রয়",money(sum(rows,"total")),"আইটেম লাইন টোটাল"),k("সমন্বয়",rows.length,"আলাদা গ্রাহক-পণ্য")];
+   if(["customer-products","top-customers","customers"].includes(type))return [k("গ্রাহক",rows.length,"স্বতন্ত্র গ্রাহক"),k("অর্ডার",sum(rows,"orders"),"রেকর্ডকৃত"),k("মোট ব্যয়",money(sum(rows,"total_spent")),"অর্ডার মূল্য"),k("গড় ব্যয়",money(rows.length?sum(rows,"total_spent")/rows.length:0),"প্রতি গ্রাহক")];
+   if(type==="purchase")return [k("ক্রয় অর্ডার",purchases.length,"Purchase Orders"),k("ক্রয়ের মোট",money(sum(purchases,"total_amount")),"অর্ডার মোট"),k("ক্রয় লাইন",purchases.reduce((n,p)=>n+(p.admin_purchase_order_items||[]).length,0),"অর্ডার আইটেম"),k("সম্পন্ন",purchases.filter(p=>["received","completed"].includes(String(p.status||"").toLowerCase())).length,"Status অনুযায়ী")];
+   if(type==="product-purchase")return [k("পণ্য লাইন",rows.length,"ক্রয় আইটেম"),k("ক্রয় ইউনিট",sum(rows,"quantity"),"অর্ডারকৃত"),k("গৃহীত ইউনিট",sum(rows,"received_quantity"),"GRN অনুযায়ী"),k("ক্রয় মূল্য",money(sum(rows,"total")),"লাইন কস্ট")];
+   if(type==="payable")return [k("সরবরাহকারী বিল",rows.length,"রেকর্ডকৃত"),k("মোট বিল",money(sum(rows,"bill_total")),"স্ট্যাটাস আলাদা"),k("বরাদ্দ পেমেন্ট",money(sum(rows,"paid")),"Allocation অনুযায়ী"),k("অবশিষ্ট দায়",money(sum(rows,"balance")),"বিল কম পেমেন্ট")];
+   if(type==="receivable"||type==="collections")return [k("COD রেকর্ড",settlements.length,"Courier settlement"),k("COD মূল্য",money(sum(rows,"cod_amount")),"অর্ডার COD"),k("সংগ্রহ",money(sum(rows,"collected")),"রেকর্ডকৃত"),k("রেমিট্যান্স",money(sum(rows,"remitted")),"রেকর্ডকৃত"),k("সংগ্রহ বাকি",money(sum(rows,"pending_collection")),"COD - collected"),k("রেমিট্যান্স বাকি",money(sum(rows,"pending_remittance")),"collected - remitted")];
+   if(["low-stock","alert-products","stock","stock-list"].includes(type))return [k("পণ্য",rows.length,"বর্তমান স্ন্যাপশট"),k("মোট ইউনিট",sum(rows,"stock"),"বর্তমান স্টক"),k("স্টক মূল্য",money(sum(rows,"stock_value")),"সংরক্ষিত কস্ট থাকলে"),k("শূন্য স্টক",rows.filter(r=>num(r.stock)===0).length,"স্টক নেই"),k("সীমার নিচে",rows.filter(r=>num(r.stock)<=num(r.minimum_stock)).length,"Low threshold")];
+   if(type==="account-payments")return [k("পেমেন্ট রেকর্ড",rows.length,"অ্যাকাউন্ট/পদ্ধতি সংযুক্ত"),k("মোট পেমেন্ট",money(sum(rows,"amount")),"Finance ledger"),k("অ্যাকাউন্ট",unique(rows,"account_name"),"ব্যবহৃত অ্যাকাউন্ট"),k("ট্রান্সফার",source.transfers?.length||0,"আলাদা তালিকা")];
+   if(type==="expenses")return [k("ব্যয় রেকর্ড",rows.length,"Expense ledger"),k("মোট ব্যয়",money(sum(rows,"amount")),"সব status"),k("নিশ্চিত ব্যয়",money(sum(rows.filter(r=>String(r.status).toLowerCase()==="confirmed"),"amount")),"Confirmed only"),k("বাজেট লাইন",source.budgets?.length||0,"পরিকল্পনা বাজেট")];
+   if(type==="transactions")return [k("লেনদেন",rows.length,"সব status"),k("Confirmed",rows.filter(r=>String(r.status).toLowerCase()==="confirmed").length,"নিশ্চিত এন্ট্রি"),k("Income",money(sum(rows.filter(r=>String(r.entry_type).toLowerCase()==="income"&&String(r.status).toLowerCase()==="confirmed"),"amount")),"Confirmed only"),k("Expense",money(sum(rows.filter(r=>String(r.entry_type).toLowerCase()==="expense"&&String(r.status).toLowerCase()==="confirmed"),"amount")),"Confirmed only")];
+   return [k("রেকর্ড",rows.length,"নির্বাচিত সময়"),k("মোট পরিমাণ",money(sum(rows,"amount")),"রেকর্ডকৃত"),k("Confirmed",rows.filter(r=>String(r.status).toLowerCase()==="confirmed").length,"নিশ্চিত অবস্থা")];
+  }
+  function analysisFor(type,rows,source){
+   if(type==="business"||type==="sales")return {columns:["status","records","order_value"],rows:groupRows((source.orders||[]).map(o=>({status:o.status,order_value:num(o.total)})),"status",["order_value"]),bars:"order_value"};
+   if(type==="daily")return {columns:["date","orders","order_value","confirmed_expenses","cod_collected","cod_remitted"],rows:rows.slice().sort((a,b)=>b.date.localeCompare(a.date)),bars:"order_value"};
+   if(["product-sales","top-products","product-purchase","low-stock","alert-products","stock","stock-list"].includes(type))return {columns:rows.length?Object.keys(rows[0]).slice(0,8):["product","records"],rows:rows.slice(0,12),bars:type==="product-purchase"?"total":["low-stock","alert-products"].includes(type)?"stock":type==="stock"||type==="stock-list"?"stock_value":"sales"};
+   if(type==="customer-wise-products")return {columns:["customer","records","quantity","total"],rows:groupRows(rows,"customer",["quantity","total"]),bars:"total"};
+   if(["customer-products","top-customers","customers"].includes(type))return {columns:["customer","orders","unique_products","total_spent","last_order"],rows:rows.slice(0,12),bars:"total_spent"};
+   if(type==="purchase")return {columns:["supplier","records","total"],rows:groupRows(rows,"supplier",["total"]),bars:"total"};
+   if(type==="payable")return {columns:["supplier","records","bill_total","paid","balance"],rows:groupRows(rows,"supplier",["bill_total","paid","balance"]),bars:"balance"};
+   if(type==="receivable"||type==="collections")return {columns:["courier","records","cod_amount","collected","remitted","pending_remittance"],rows:groupRows(rows,"courier",["cod_amount","collected","remitted","pending_remittance"]),bars:"collected"};
+   if(type==="account-payments")return {columns:["account_name","records","amount"],rows:groupRows(rows,"account_name",["amount"]),bars:"amount"};
+   if(type==="expenses")return {columns:["category","records","amount"],rows:groupRows(rows,"category",["amount"]),bars:"amount"};
+   if(type==="transactions")return {columns:["entry_type","records","amount"],rows:groupRows(rows,"entry_type",["amount"]),bars:"amount"};
+   return {columns:rows.length?Object.keys(rows[0]).slice(0,8):["category","records"],rows:rows.slice(0,12),bars:"records"};
+  }
+  function renderBars(rows,key){
+   if(!rows.length)return '<div class="hf-report-empty"><strong>বিশ্লেষণের জন্য রেকর্ড নেই</strong><p>সংশ্লিষ্ট সোর্স মডিউলে ডেটা যুক্ত হলে এই অংশ পূরণ হবে।</p></div>';
+   const max=Math.max(1,...rows.map(r=>num(r[key])));
+   return '<div class="hf-report-bars">'+rows.slice(0,10).map(row=>{const label=String(row[Object.keys(row).find(k=>typeof row[k]==="string")||"date"]??"—"),value=num(row[key]),width=Math.max(value>0?2:0,value/max*100);return '<div class="hf-report-bar-row"><div class="hf-report-bar-label"><strong>'+esc(label)+'</strong><span>'+esc(displayCell(value,key))+'</span></div><div class="hf-report-bar-track"><span style="width:'+width.toFixed(1)+'%"></span></div></div>';}).join("")+'</div>';
+  }
+  function renderRecordTable(){
+   if(!workspace||!report.rows)return;
+   const query=String($("reportWorkspaceSearch")?.value||"").toLowerCase().trim(),filter=String($("reportWorkspaceFieldFilter")?.value||"");
+   visibleRows=report.rows.filter(row=>(!query||Object.values(row).some(v=>String(v??"").toLowerCase().includes(query)))&&(!filter||String(row[activeFilterColumn]??"")===filter));
+   $("reportWorkspaceTableHead").innerHTML="<tr>"+report.columns.map(k=>"<th>"+esc(k.replace(/_/g," "))+"</th>").join("")+"</tr>";
+   $("reportWorkspaceTableBody").innerHTML=visibleRows.length?visibleRows.slice(0,250).map(row=>"<tr>"+report.columns.map(k=>"<td>"+esc(displayCell(row[k],k))+"</td>").join("")+"</tr>").join(""):'<tr><td colspan="'+report.columns.length+'"><div class="hf-report-empty"><strong>কোনো রেকর্ড পাওয়া যায়নি</strong><p>সার্চ বা ফিল্টার পরিবর্তন করুন।</p></div></td></tr>';
+   $("reportWorkspaceRecordsFoot").textContent=visibleRows.length>250?"প্রিভিউতে প্রথম ২৫০টি রেকর্ড দেখানো হচ্ছে; CSV/Excel-এ সব রেকর্ড থাকবে।":visibleRows.length+"টি রেকর্ড দেখানো হচ্ছে।";
+  }
+  function showSegment(segment){
+   activeSegment=segment;["overview","analysis","records"].forEach(id=>{const panel=$("reportWorkspace"+id.charAt(0).toUpperCase()+id.slice(1));if(panel)panel.hidden=id!==segment;});
+   document.querySelectorAll("[data-report-segment]").forEach(b=>{const active=b.dataset.reportSegment===segment;b.classList.toggle("active",active);b.setAttribute("aria-selected",String(active));});
+   if(segment==="records")renderRecordTable();
+  }
+  function renderWorkspace(){
+   if(!reportGroup||!workspace)return;
+   const def=definitions[report.type]||definitions.business,metrics=kpisFor(report.type,report.rows,report.source||{}),analysis=analysisFor(report.type,report.rows,report.source||{});
+   $("reportWorkspaceTitle").textContent=def[0];$("reportWorkspaceDescription").textContent=def[2];$("reportWorkspaceCode").textContent=report.type.toUpperCase();$("reportWorkspaceRange").textContent=report.rangeLabel+" · "+report.rows.length+" records";
+   $("reportWorkspaceKpis").innerHTML=metrics.map(m=>'<article class="hf-report-kpi"><small>'+esc(m.label)+'</small><strong>'+esc(m.value)+'</strong><span>'+esc(m.note)+'</span></article>').join("");
+   $("reportWorkspaceTabs").innerHTML='<button type="button" role="tab" data-report-segment="overview" aria-selected="true" class="active">সারসংক্ষেপ</button><button type="button" role="tab" data-report-segment="analysis" aria-selected="false">'+esc(def[3])+'</button><button type="button" role="tab" data-report-segment="records" aria-selected="false">'+esc(def[4])+'</button>';
+   const metricRows=metrics.map(m=>({বিষয়:m.label,মান:m.value,বিবরণ:m.note}));
+   $("reportWorkspaceOverview").innerHTML='<div class="hf-report-overview-grid"><section class="hf-report-subsection"><div class="hf-report-subsection-head"><div><h3>মূল সূচক</h3><p>নির্বাচিত সময়ের রেকর্ড ও নির্দিষ্ট ডেটা সোর্স</p></div><span>'+metrics.length+' indicators</span></div>'+tableMarkup(metricRows,Object.keys(metricRows[0]||{বিষয়:"",মান:"",বিবরণ:""}),"সারাংশ নেই")+'</section><section class="hf-report-subsection"><div class="hf-report-subsection-head"><div><h3>'+esc(def[3])+'</h3><p>'+esc(def[2])+'</p></div></div>'+tableMarkup(analysis.rows,analysis.columns,"বিশ্লেষণের ডেটা নেই")+'</section></div><div class="hf-report-source-note">'+esc(report.notes||"রিপোর্টটি সংযুক্ত ডেটা সোর্স থেকে তৈরি।")+'</div>';
+   $("reportWorkspaceAnalysis").innerHTML='<section class="hf-report-subsection"><div class="hf-report-subsection-head"><div><h3>'+esc(def[3])+'</h3><p>বিভাগ/ধরন অনুযায়ী সমষ্টি; মূল রেকর্ডের বিকল্প নয়।</p></div><span>'+analysis.rows.length+' groups</span></div>'+renderBars(analysis.rows,analysis.bars||"records")+tableMarkup(analysis.rows,analysis.columns,"এই রিপোর্টে বিশ্লেষণ ডেটা নেই")+'</section>';
+   $("reportWorkspaceRecordsTitle").textContent=def[4];$("reportWorkspaceRecordsNote").textContent="মূল সোর্স রেকর্ড; সার্চ, ফিল্টার এবং CSV/Excel/PDF এক্সপোর্ট ব্যবহার করুন।";
+   const preferred=({business:"date",sales:"date","product-sales":"product","top-products":"product","customer-wise-products":"customer","customer-products":"customer","top-customers":"customer",customers:"customer",purchase:"supplier","product-purchase":"product",payable:"supplier",receivable:"courier",collections:"courier","low-stock":"category","alert-products":"alert",stock:"category","stock-list":"category","account-payments":"account_name",expenses:"category",transactions:"entry_type",daily:"date"})[report.type]||"";
+   activeFilterColumn=preferred&&report.rows.some(r=>r[preferred]!==undefined)?preferred:"";
+   const filter=$("reportWorkspaceFieldFilter"),values=activeFilterColumn?[...new Set(report.rows.map(r=>String(r[activeFilterColumn]??"")).filter(Boolean))].sort():[];
+   if(filter){filter.innerHTML='<option value="">সব '+(activeFilterColumn?esc(activeFilterColumn.replace(/_/g," ")):"রেকর্ড")+'</option>'+values.map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join("");filter.disabled=!values.length;filter.value="";}
+   $("reportWorkspaceSearch").value="";renderRecordTable();
+   $("reportTitle").textContent=def[0];$("reportRangeLabel").textContent=report.rangeLabel;$("reportSummary").innerHTML=metrics.slice(0,3).map(m=>'<div class="hf-summary-pill"><small>'+esc(m.label)+'</small><strong>'+esc(m.value)+'</strong></div>').join("");$("reportNote").textContent=report.notes||"";
+   const hero=document.querySelector(".hf-reports-hero h1");if(hero)hero.textContent=def[0];const eyebrow=document.querySelector(".hf-reports-hero .page-eyebrow");if(eyebrow)eyebrow.textContent="INDIVIDUAL REPORT";const heroDescription=document.querySelector(".hf-reports-hero p:not(.page-eyebrow)");if(heroDescription)heroDescription.textContent=def[2];
+   if($("printReportTitle"))$("printReportTitle").textContent=def[0];if($("printReportDetails"))$("printReportDetails").textContent=report.rangeLabel+" · "+report.rows.length+" records";
+   showSegment(activeSegment);
+  }
+  async function fetchReportFinance(range){
+   let q=client.from("admin_finance_entries").select("id,entry_type,category,amount,entry_date,description,reference,status,related_order_id,account_id,payment_method,party_name,financial_class,related_supplier_payment_id,related_cod_settlement_id,created_by,created_at,updated_at").order("entry_date",{ascending:false}).order("created_at",{ascending:false}).limit(3000);
+   if(range)q=rangeQuery(q,"entry_date",range);return signedQuery(q);
+  }
+  async function fetchReportSettlements(range){
+   let q=client.from("admin_cod_settlements").select("id,order_id,order_number,customer_name,courier_name,tracking_reference,cod_amount,collected_amount,courier_fee,adjustment_amount,remitted_amount,status,collected_at,remitted_at,created_at,updated_at").order("created_at",{ascending:false}).limit(3000);
+   if(range)q=rangeQuery(q,"created_at",range);return signedQuery(q);
+  }
+  function attachReportFilters(){
+   if(!reportGroup||!workspace)return;
+   $("reportWorkspaceSearch")?.addEventListener("input",renderRecordTable);
+   $("reportWorkspaceFieldFilter")?.addEventListener("change",renderRecordTable);
+   $("reportWorkspaceTabs")?.addEventListener("click",event=>{const b=event.target.closest("[data-report-segment]");if(b)showSegment(b.dataset.reportSegment);});
+  }
+  async function loadReport(){
+   const range=selectedRange(),type=$("reportType").value;
+   if(reportGroup&&!allowed.includes(type))throw new Error("এই ওয়ার্কস্পেসে নির্বাচিত রিপোর্টটি নেই।");
+   let rows=[],title="",notes="",source={};
+   if(["business","sales","daily","product-sales","top-products","customer-wise-products","customer-products","top-customers","customers"].includes(type)){
+    const orders=await fetchOrders(range,5000);source.orders=orders;const valid=orders.filter(o=>String(o.status||"").toLowerCase()!=="cancelled");
+    if(type==="business"){
+     const map=new Map();orders.forEach(o=>{const day=dhakaDateKey(o.ordered_at);if(!day)return;const r=map.get(day)||{date:day,orders:0,order_value:0,delivery_charge:0,cancelled_orders:0};r.orders++;if(String(o.status).toLowerCase()==="cancelled")r.cancelled_orders++;else{r.order_value+=num(o.total);r.delivery_charge+=num(o.delivery_charge);}map.set(day,r);});
+     rows=[...map.values()].sort((a,b)=>b.date.localeCompare(a.date));title="Business Overview Report";notes="অর্ডার মূল্য non-cancelled order total থেকে; এটি সংগৃহীত অর্থের প্রমাণ নয়। বাতিল অর্ডার সংখ্যা আলাদাভাবে দেখানো হয়েছে।";
+    }else if(type==="sales"){
+     const map=new Map();valid.forEach(o=>{const day=dhakaDateKey(o.ordered_at);if(!day)return;const r=map.get(day)||{date:day,orders:0,order_value:0,delivery_charge:0};r.orders++;r.order_value+=num(o.total);r.delivery_charge+=num(o.delivery_charge);map.set(day,r);});
+     rows=[...map.values()].sort((a,b)=>b.date.localeCompare(a.date));title="Sales Performance Report";notes="Sales use non-cancelled order totals. Payment method/status analysis uses original order records.";
+    }else if(type==="daily"){
+     const [finance,settlements]=await Promise.all([fetchReportFinance(range),fetchReportSettlements(range)]);source.finance=finance;source.settlements=settlements;
+     const map=new Map(),get=day=>{if(!day)return null;let r=map.get(day);if(!r){r={date:day,orders:0,cancelled_orders:0,order_value:0,delivery_charge:0,confirmed_expenses:0,cod_collected:0,cod_remitted:0,courier_fees:0};map.set(day,r);}return r;};
+     orders.forEach(o=>{const r=get(dhakaDateKey(o.ordered_at));if(r){r.orders++;if(String(o.status).toLowerCase()==="cancelled")r.cancelled_orders++;else{r.order_value+=num(o.total);r.delivery_charge+=num(o.delivery_charge);}}});
+     finance.filter(e=>String(e.entry_type).toLowerCase()==="expense"&&String(e.status).toLowerCase()==="confirmed").forEach(e=>{const r=get(String(e.entry_date||"").slice(0,10));if(r)r.confirmed_expenses+=num(e.amount);});
+     settlements.forEach(s=>{if(s.collected_at){const r=get(String(s.collected_at).slice(0,10));if(r){r.cod_collected+=num(s.collected_amount);r.courier_fees+=num(s.courier_fee);}}if(s.remitted_at){const r=get(String(s.remitted_at).slice(0,10));if(r)r.cod_remitted+=num(s.remitted_amount);}});
+     rows=[...map.values()].sort((a,b)=>b.date.localeCompare(a.date));title="Daily Business Report";notes="অর্ডার মূল্য cancelled বাদে; ব্যয় কেবল Confirmed expense। COD collection ও remittance তাদের নিজস্ব তারিখে।";
+    }else if(type==="product-sales"||type==="top-products"){
+     const map=new Map();valid.forEach(o=>(o.order_items||[]).forEach(i=>{const key=String(i.product_id||i.product_name||"Unknown");const r=map.get(key)||{product:i.product_name||"Unknown",quantity_sold:0,sales:0,order_lines:0};r.quantity_sold+=num(i.quantity);r.sales+=num(i.line_total)||num(i.quantity)*num(i.unit_price);r.order_lines++;map.set(key,r);}));
+     rows=[...map.values()].sort((a,b)=>type==="top-products"?b.quantity_sold-a.quantity_sold:b.sales-a.sales).map((r,i)=>({rank:i+1,...r}));title=type==="top-products"?"Top Selling Products":"Product Sales Report";notes=type==="top-products"?"Sorted by units sold, not sales amount.":"From order_items snapshots; cancelled orders excluded.";
+    }else if(type==="customer-wise-products"){
+     const map=new Map();valid.forEach(o=>(o.order_items||[]).forEach(i=>{const key=String(o.customer_id||o.customer_name||"Unknown")+"|"+String(i.product_id||i.product_name||"");const r=map.get(key)||{customer:o.customer_name||"Unknown",product:i.product_name||"Unknown",quantity:0,total:0,order_lines:0};r.quantity+=num(i.quantity);r.total+=num(i.line_total)||num(i.quantity)*num(i.unit_price);r.order_lines++;map.set(key,r);}));
+     rows=[...map.values()].sort((a,b)=>b.total-a.total);title="Customer-wise Product Sales Report";notes="Each row is one customer/product pair.";
+    }else if(type==="customer-products"){
+     const map=new Map();valid.forEach(o=>{const key=String(o.customer_id||o.customer_name||"Unknown");const r=map.get(key)||{customer:o.customer_name||"Unknown",orders:0,unique_products:0,units:0,total_spent:0,last_order:"",_products:new Map()};r.orders++;r.total_spent+=num(o.total);const date=String(o.ordered_at||"");if(date>r.last_order)r.last_order=date;(o.order_items||[]).forEach(i=>{const name=i.product_name||"Unknown";r.units+=num(i.quantity);r._products.set(name,(r._products.get(name)||0)+num(i.quantity));});map.set(key,r);});
+     rows=[...map.values()].map(r=>{r.unique_products=r._products.size;r.top_product=[...r._products.entries()].sort((a,b)=>b[1]-a[1])[0]?.[0]||"—";delete r._products;return r;}).sort((a,b)=>b.unique_products-a.unique_products||b.total_spent-a.total_spent);title="Customer Product Report";notes="One row per customer with unique products, units, top product and last order.";
+    }else{
+     const map=new Map();valid.forEach(o=>{const key=String(o.customer_id||o.customer_name||"Unknown");const r=map.get(key)||{customer:o.customer_name||"Unknown",orders:0,total_spent:0,average_order:0,last_order:"",pending_orders:0,delivered_orders:0};r.orders++;r.total_spent+=num(o.total);const date=String(o.ordered_at||"");if(date>r.last_order)r.last_order=date;if(String(o.status).toLowerCase()==="delivered")r.delivered_orders++;if(["pending","processing","shipped"].includes(String(o.status).toLowerCase()))r.pending_orders++;map.set(key,r);});
+     rows=[...map.values()].map(r=>({...r,average_order:r.orders?r.total_spent/r.orders:0})).sort((a,b)=>type==="top-customers"?b.total_spent-a.total_spent:b.orders-a.orders).map((r,i)=>({rank:i+1,...r}));title=type==="top-customers"?"Top Customers Report":"Customer Report";notes="Grouped by customer ID where available; personal phone/email is not included.";
+    }
+   }else if(type==="purchase"||type==="product-purchase"){
+    const purchases=await signedQuery(rangeQuery(client.from("admin_purchase_orders").select("id,purchase_number,status,order_date,expected_date,total_amount,supplier_id,admin_suppliers(name),admin_purchase_order_items(id,product_id,product_name,quantity,received_quantity,unit_cost,line_total,unit)").order("order_date",{ascending:false}).limit(5000),"order_date",range));source.purchases=purchases;
+    if(type==="purchase")rows=purchases.map(p=>({purchase_number:p.purchase_number,status:p.status,purchase_date:p.order_date,expected_date:p.expected_date,supplier:p.admin_suppliers?.name||"—",items:(p.admin_purchase_order_items||[]).length,total_amount:num(p.total_amount),ordered_units:(p.admin_purchase_order_items||[]).reduce((n,i)=>n+num(i.quantity),0),received_units:(p.admin_purchase_order_items||[]).reduce((n,i)=>n+num(i.received_quantity),0)}));
+    else rows=purchases.flatMap(p=>(p.admin_purchase_order_items||[]).map(i=>({purchase_number:p.purchase_number,purchase_date:p.order_date,status:p.status,supplier:p.admin_suppliers?.name||"—",product:i.product_name,quantity:num(i.quantity),received_quantity:num(i.received_quantity),pending_quantity:Math.max(0,num(i.quantity)-num(i.received_quantity)),unit:i.unit,unit_cost:num(i.unit_cost),total:num(i.line_total)})));
+    title=type==="purchase"?"Purchase Report":"Product Purchase Report";notes="Source: recorded Purchase Orders and saved purchase-order item snapshots. Purchase orders do not by themselves prove payment.";
+   }else if(type==="payable"){
+    const [bills,allocations]=await Promise.all([signedQuery(rangeQuery(client.from("admin_supplier_bills").select("id,bill_number,supplier_invoice_number,invoice_date,due_date,total_amount,status,admin_suppliers(name)").order("invoice_date",{ascending:false}).limit(5000),"invoice_date",range)),signedQuery(client.from("admin_supplier_payment_allocations").select("supplier_bill_id,allocated_amount").limit(10000))]);
+    const paid=new Map();allocations.forEach(a=>paid.set(a.supplier_bill_id,(paid.get(a.supplier_bill_id)||0)+num(a.allocated_amount)));
+    rows=bills.map(b=>({bill_number:b.bill_number,supplier:b.admin_suppliers?.name||"—",supplier_invoice_number:b.supplier_invoice_number,invoice_date:b.invoice_date,due_date:b.due_date,status:b.status,bill_total:num(b.total_amount),paid:paid.get(b.id)||0,balance:Math.max(0,num(b.total_amount)-(paid.get(b.id)||0)),due_state:String(b.status||"").toLowerCase()==="void"?"Void":String(b.status||"").toLowerCase()==="draft"?"Draft":b.due_date&&b.due_date<todayISO()&&num(b.total_amount)-(paid.get(b.id)||0)>0?"Overdue":num(b.total_amount)-(paid.get(b.id)||0)<=0?"Paid":"Open"}));source.bills=bills;title="Supplier Payables Report";notes="Bill balance subtracts the sum of all payment allocations. Draft/Void bills are separately identified.";
+   }else if(type==="receivable"||type==="collections"){
+    const settlements=await fetchReportSettlements(range);source.settlements=settlements;
+    rows=settlements.map(s=>({order_number:s.order_number,customer:s.customer_name,courier:s.courier_name,tracking_reference:s.tracking_reference,cod_amount:num(s.cod_amount),collected:num(s.collected_amount),courier_fee:num(s.courier_fee),remitted:num(s.remitted_amount),pending_collection:Math.max(0,num(s.cod_amount)-num(s.collected_amount)),pending_remittance:Math.max(0,num(s.collected_amount)-num(s.remitted_amount)),status:s.status,collected_at:s.collected_at,remitted_at:s.remitted_at}));
+    if(type==="receivable")rows=rows.filter(r=>r.pending_collection>0||r.pending_remittance>0||["pending","exception"].includes(String(r.status).toLowerCase()));
+    title=type==="receivable"?"COD Receivable Report":"COD Collections Report";notes="Courier COD tracking, not customer credit sales. Pending collection and pending remittance are separate amounts.";
+   }else if(["low-stock","alert-products","stock","stock-list"].includes(type)){
+    const products=await fetchProducts(10000);source.products=products;
+    const active=products.filter(p=>p.is_active!==false).map(p=>({product:p.name,sku:p.sku,category:p.category||"Uncategorised",price:num(p.price),stock:num(p.stock_quantity),minimum_stock:num(p.low_stock_threshold??5),unit_cost:p.cost_price===null?null:num(p.cost_price),stock_value:p.cost_price===null?null:num(p.stock_quantity)*num(p.cost_price),alert:num(p.stock_quantity)<=0?"OUT OF STOCK":num(p.stock_quantity)<=num(p.low_stock_threshold??5)?"LOW":"OK",updated_at:p.updated_at||p.created_at}));
+    rows=type==="low-stock"?active.filter(p=>p.stock>0&&p.stock<=p.minimum_stock):type==="alert-products"?active.filter(p=>p.stock<=p.minimum_stock):active;
+    title=({"low-stock":"Low Stock Products","alert-products":"Alert Product List",stock:"Stock Valuation Report","stock-list":"Current Stock List"})[type];notes="Current catalogue snapshot only; historical stock movement is not tracked here. Missing cost values are left blank, not estimated.";
+   }else if(["account-payments","expenses","transactions"].includes(type)){
+    const finance=await fetchReportFinance(range);source.finance=finance;
+    if(type==="account-payments"){
+     const accounts=await signedQuery(client.from("admin_finance_accounts").select("id,name,account_type,provider,account_reference,is_active").order("name",{ascending:true}).limit(1000));const map=new Map(accounts.map(a=>[a.id,a]));source.accounts=accounts;
+     rows=finance.filter(e=>e.account_id||String(e.payment_method||"").trim()).map(e=>({entry_date:e.entry_date,entry_type:e.entry_type,party_name:e.party_name,account_name:map.get(e.account_id)?.name||"—",account_type:map.get(e.account_id)?.account_type||"",payment_method:e.payment_method,category:e.category,financial_class:e.financial_class,amount:num(e.amount),status:e.status,reference:e.reference,related_order_id:e.related_order_id||""}));
+     const transfers=await signedQuery(rangeQuery(client.from("admin_finance_transfers").select("id,source_account_id,destination_account_id,transfer_date,amount,reference,description,status").order("transfer_date",{ascending:false}).limit(3000),"transfer_date",range));source.transfers=transfers.map(t=>({...t,source_account:map.get(t.source_account_id)?.name||"—",destination_account:map.get(t.destination_account_id)?.name||"—"}));notes="Account/payment-linked Finance entries shown. Internal transfers remain separate and are not income or expense.";
+    }else if(type==="expenses"){
+     rows=finance.filter(e=>String(e.entry_type||"").toLowerCase()==="expense").map(e=>({entry_date:e.entry_date,category:e.category,party_name:e.party_name,amount:num(e.amount),status:e.status,financial_class:e.financial_class,payment_method:e.payment_method,reference:e.reference,description:e.description}));
+     const budgets=await signedQuery(client.from("admin_finance_budgets").select("category,period_start,budget_amount,status,notes").order("period_start",{ascending:false}).limit(3000));source.budgets=budgets.filter(b=>(!range?.fromDay||String(b.period_start).slice(0,7)>=range.fromDay.slice(0,7))&&(!range?.toDay||String(b.period_start).slice(0,7)<=range.toDay.slice(0,7)));
+     notes="Expense rows use Finance entry_type=expense. Confirmed expenses are separated; monthly budget is a planning amount, not actual spend.";
+    }else{
+     rows=finance.map(e=>({entry_date:e.entry_date,entry_type:e.entry_type,category:e.category,party_name:e.party_name,amount:num(e.amount),financial_class:e.financial_class,status:e.status,payment_method:e.payment_method,account_id:e.account_id,reference:e.reference,related_order_id:e.related_order_id,related_supplier_payment_id:e.related_supplier_payment_id,related_cod_settlement_id:e.related_cod_settlement_id,description:e.description}));
+     notes="All Finance ledger entries listed. Confirmed income/expense are separated; Capital, Loan, Refund and Adjustment are not treated as ordinary operating income/expense.";
+    }
+    title=type==="account-payments"?"Account Payment Report":type==="expenses"?"Expense Report":"Finance Transaction Report";
+   }else if(type==="finance"){
+    const finance=await fetchReportFinance(range);source.finance=finance;rows=finance.map(e=>({entry_date:e.entry_date,entry_type:e.entry_type,category:e.category,amount:num(e.amount),status:e.status,financial_class:e.financial_class,reference:e.reference,description:e.description}));title="Finance Entries Report";notes="Source: Finance ledger.";
+   }else{
+    const orders=await fetchOrders(range,5000);source.orders=orders;rows=orders.map(o=>({order_number:o.order_number,ordered_at:o.ordered_at,status:o.status,subtotal:num(o.subtotal),delivery_charge:num(o.delivery_charge),total:num(o.total),payment_method:o.payment_method}));title="Orders Report";notes="Recorded orders; values are not proof of payment collection.";
+   }
+   const fallback=({
+    business:["date","orders","order_value","delivery_charge","cancelled_orders"],sales:["date","orders","order_value","delivery_charge"],daily:["date","orders","cancelled_orders","order_value","delivery_charge","confirmed_expenses","cod_collected","cod_remitted"],
+    "product-sales":["rank","product","quantity_sold","sales","order_lines"],"top-products":["rank","product","quantity_sold","sales","order_lines"],"customer-wise-products":["customer","product","quantity","total","order_lines"],"customer-products":["customer","orders","unique_products","units","total_spent","last_order","top_product"],"top-customers":["rank","customer","orders","total_spent","average_order","last_order"],customers:["rank","customer","orders","total_spent","average_order","last_order"],
+    purchase:["purchase_number","status","purchase_date","expected_date","supplier","items","ordered_units","received_units","total_amount"],"product-purchase":["purchase_number","purchase_date","supplier","product","quantity","received_quantity","pending_quantity","unit_cost","total"],
+    payable:["bill_number","supplier","invoice_date","due_date","status","bill_total","paid","balance","due_state"],receivable:["order_number","customer","courier","cod_amount","collected","pending_collection","remitted","pending_remittance","status"],collections:["order_number","courier","tracking_reference","cod_amount","collected","courier_fee","remitted","status","collected_at","remitted_at"],
+    "low-stock":["product","sku","category","stock","minimum_stock","unit_cost","stock_value","alert"],"alert-products":["product","sku","category","stock","minimum_stock","unit_cost","stock_value","alert"],stock:["product","sku","category","stock","minimum_stock","unit_cost","stock_value","alert"],"stock-list":["product","sku","category","stock","minimum_stock","unit_cost","stock_value","alert"],
+    "account-payments":["entry_date","entry_type","party_name","account_name","account_type","payment_method","category","financial_class","amount","status","reference"],expenses:["entry_date","category","party_name","amount","status","financial_class","payment_method","reference","description"],transactions:["entry_date","entry_type","category","party_name","amount","financial_class","status","payment_method","reference","related_order_id","description"]
+   })[type]||["entry_date","entry_type","category","amount","status"];
+   const rangeLabel=["low-stock","alert-products","stock","stock-list","products","content"].includes(type)?"Current snapshot":range.label;
+   report={title,columns:rows.length?Object.keys(rows[0]):fallback[ type ]||["record"],rows,notes,rangeLabel,type,source};
+   $("reportTitle").textContent=title;$("reportRangeLabel").textContent=rangeLabel;$("reportRowsCount").textContent=rows.length.toLocaleString("en-BD")+" records";$("reportNote").textContent=notes;
+   $("reportSummary").innerHTML='<div class="hf-summary-pill"><small>Records</small><strong>'+rows.length.toLocaleString("en-BD")+'</strong></div><div class="hf-summary-pill"><small>Report</small><strong style="font-size:14px">'+esc(title)+'</strong></div><div class="hf-summary-pill"><small>Period</small><strong style="font-size:13px">'+esc(rangeLabel)+'</strong></div>';
+   const sample=rows.slice(0,200);$("reportTableHead").innerHTML="<tr>"+report.columns.map(c=>"<th>"+esc(c.replace(/_/g," "))+"</th>").join("")+"</tr>";
+   $("reportTableBody").innerHTML=sample.length?sample.map(row=>"<tr>"+report.columns.map(c=>"<td>"+esc(displayCell(row[c],c))+"</td>").join("")+"</tr>").join(""):'<tr><td colspan="'+report.columns.length+'">'+makeEmpty("No report records","Try another period or add records in the source workspace.")+'</td></tr>';
+   $("reportSampleNote").textContent=rows.length>sample.length?"Preview shows the first "+sample.length+" rows; exports include all rows.":"Preview contains all rows.";
+   $("reportCreatedAt").textContent="Generated "+dateTime(new Date().toISOString());
+   if(reportGroup)renderWorkspace();return report;
+  }
+  function analysisFor(type,rows,source){
+   if(type==="business"||type==="sales")return {columns:["status","records","order_value"],rows:groupRows((source.orders||[]).map(o=>({status:o.status,order_value:num(o.total)})),"status",["order_value"]),bars:"order_value"};
+   if(type==="daily")return {columns:["date","orders","order_value","confirmed_expenses","cod_collected","cod_remitted"],rows:rows.slice().sort((a,b)=>b.date.localeCompare(a.date)),bars:"order_value"};
+   if(["product-sales","top-products","product-purchase","low-stock","alert-products","stock","stock-list"].includes(type))return {columns:rows.length?Object.keys(rows[0]).slice(0,8):["product","records"],rows:rows.slice(0,12),bars:type==="product-purchase"?"total":["low-stock","alert-products"].includes(type)?"stock":type==="stock"||type==="stock-list"?"stock_value":"sales"};
+   if(type==="customer-wise-products")return {columns:["customer","records","quantity","total"],rows:groupRows(rows,"customer",["quantity","total"]),bars:"total"};
+   if(["customer-products","top-customers","customers"].includes(type))return {columns:["customer","orders","unique_products","total_spent","last_order"],rows:rows.slice(0,12),bars:"total_spent"};
+   if(type==="purchase")return {columns:["supplier","records","total_amount"],rows:groupRows(rows,"supplier",["total_amount"]),bars:"total_amount"};
+   if(type==="payable")return {columns:["supplier","records","bill_total","paid","balance"],rows:groupRows(rows,"supplier",["bill_total","paid","balance"]),bars:"balance"};
+   if(type==="receivable"||type==="collections")return {columns:["courier","records","cod_amount","collected","remitted","pending_remittance"],rows:groupRows(rows,"courier",["cod_amount","collected","remitted","pending_remittance"]),bars:"collected"};
+   if(type==="account-payments")return {columns:["account_name","records","amount"],rows:groupRows(rows,"account_name",["amount"]),bars:"amount"};
+   if(type==="expenses")return {columns:["category","records","amount"],rows:groupRows(rows,"category",["amount"]),bars:"amount"};
+   if(type==="transactions")return {columns:["entry_type","records","amount"],rows:groupRows(rows,"entry_type",["amount"]),bars:"amount"};
+   return {columns:rows.length?Object.keys(rows[0]).slice(0,8):["category","records"],rows:rows.slice(0,12),bars:"records"};
+  }
+  function renderBars(rows,key){
+   if(!rows.length)return '<div class="hf-report-empty"><strong>বিশ্লেষণের জন্য রেকর্ড নেই</strong><p>সোর্স মডিউলে ডেটা যুক্ত হলে এই অংশ পূরণ হবে।</p></div>';
+   const max=Math.max(1,...rows.map(r=>num(r[key])));
+   return '<div class="hf-report-bars">'+rows.slice(0,10).map(row=>{const label=String(row[Object.keys(row).find(k=>typeof row[k]==="string")||"date"]??"—"),value=num(row[key]),width=Math.max(value>0?2:0,value/max*100);return '<div class="hf-report-bar-row"><div class="hf-report-bar-label"><strong>'+esc(label)+'</strong><span>'+esc(displayCell(value,key))+'</span></div><div class="hf-report-bar-track"><span style="width:'+width.toFixed(1)+'%"></span></div></div>';}).join("")+'</div>';
+  }
+  function renderRecordTable(){
+   if(!workspace||!report.rows)return;
+   const q=String($("reportWorkspaceSearch")?.value||"").toLowerCase().trim(),filter=String($("reportWorkspaceFieldFilter")?.value||"");
+   visibleRows=report.rows.filter(row=>(!q||Object.values(row).some(v=>String(v??"").toLowerCase().includes(q)))&&(!filter||String(row[activeFilterColumn]??"")===filter));
+   $("reportWorkspaceTableHead").innerHTML="<tr>"+report.columns.map(k=>"<th>"+esc(k.replace(/_/g," "))+"</th>").join("")+"</tr>";
+   $("reportWorkspaceTableBody").innerHTML=visibleRows.length?visibleRows.slice(0,250).map(row=>"<tr>"+report.columns.map(k=>"<td>"+esc(displayCell(row[k],k))+"</td>").join("")+"</tr>").join(""):'<tr><td colspan="'+report.columns.length+'"><div class="hf-report-empty"><strong>কোনো রেকর্ড পাওয়া যায়নি</strong><p>সার্চ বা ফিল্টার পরিবর্তন করুন।</p></div></td></tr>';
+   $("reportWorkspaceRecordsFoot").textContent=visibleRows.length>250?"প্রিভিউতে প্রথম ২৫০টি রেকর্ড; CSV/Excel-এ সম্পূর্ণ তালিকা।":visibleRows.length+"টি রেকর্ড দেখানো হচ্ছে।";
+  }
+  function showSegment(segment){
+   activeSegment=segment;["overview","analysis","records"].forEach(id=>{const panel=$("reportWorkspace"+id.charAt(0).toUpperCase()+id.slice(1));if(panel)panel.hidden=id!==segment;});
+   document.querySelectorAll("[data-report-segment]").forEach(b=>{const active=b.dataset.reportSegment===segment;b.classList.toggle("active",active);b.setAttribute("aria-selected",String(active));});
+   if(segment==="records")renderRecordTable();
+  }
+  function renderWorkspace(){
+   if(!reportGroup||!workspace)return;
+   const def=definitions[report.type]||definitions.business,metrics=kpisFor(report.type,report.rows,report.source||{}),analysis=analysisFor(report.type,report.rows,report.source||{});
+   $("reportWorkspaceTitle").textContent=def[0];$("reportWorkspaceDescription").textContent=def[2];$("reportWorkspaceCode").textContent=report.type.toUpperCase();$("reportWorkspaceRange").textContent=report.rangeLabel+" · "+report.rows.length+" records";
+   $("reportWorkspaceKpis").innerHTML=metrics.map(m=>'<article class="hf-report-kpi"><small>'+esc(m.label)+'</small><strong>'+esc(m.value)+'</strong><span>'+esc(m.note)+'</span></article>').join("");
+   $("reportWorkspaceTabs").innerHTML='<button type="button" role="tab" data-report-segment="overview" aria-selected="true" class="active">সারসংক্ষেপ</button><button type="button" role="tab" data-report-segment="analysis" aria-selected="false">'+esc(def[3])+'</button><button type="button" role="tab" data-report-segment="records" aria-selected="false">'+esc(def[4])+'</button>';
+   const metricRows=metrics.map(m=>({বিষয়:m.label,মান:m.value,বিবরণ:m.note}));
+   $("reportWorkspaceOverview").innerHTML='<div class="hf-report-overview-grid"><section class="hf-report-subsection"><div class="hf-report-subsection-head"><div><h3>মূল সূচক</h3><p>নির্বাচিত সময়ের রেকর্ড ও ডেটা সোর্স</p></div><span>'+metrics.length+' indicators</span></div>'+tableMarkup(metricRows,Object.keys(metricRows[0]||{বিষয়:"",মান:"",বিবরণ:""}),"সারাংশ নেই")+'</section><section class="hf-report-subsection"><div class="hf-report-subsection-head"><div><h3>'+esc(def[3])+'</h3><p>'+esc(def[2])+'</p></div></div>'+tableMarkup(analysis.rows,analysis.columns,"বিশ্লেষণের ডেটা নেই")+'</section></div><div class="hf-report-source-note">'+esc(report.notes||"রিপোর্টটি সংযুক্ত ডেটা সোর্স থেকে তৈরি।")+'</div>';
+   $("reportWorkspaceAnalysis").innerHTML='<section class="hf-report-subsection"><div class="hf-report-subsection-head"><div><h3>'+esc(def[3])+'</h3><p>বিভাগ/ধরন অনুযায়ী সমষ্টি; মূল রেকর্ডের বিকল্প নয়।</p></div><span>'+analysis.rows.length+' groups</span></div>'+renderBars(analysis.rows,analysis.bars||"records")+tableMarkup(analysis.rows,analysis.columns,"এই রিপোর্টে বিশ্লেষণ ডেটা নেই")+'</section>';
+   $("reportWorkspaceRecordsTitle").textContent=def[4];$("reportWorkspaceRecordsNote").textContent="মূল সোর্স রেকর্ড; সার্চ, ফিল্টার এবং CSV/Excel/PDF এক্সপোর্ট ব্যবহার করুন।";
+   const preferred=({business:"date",sales:"date","product-sales":"product","top-products":"product","customer-wise-products":"customer","customer-products":"customer","top-customers":"customer",customers:"customer",purchase:"supplier","product-purchase":"product",payable:"supplier",receivable:"courier",collections:"courier","low-stock":"category","alert-products":"alert",stock:"category","stock-list":"category","account-payments":"account_name",expenses:"category",transactions:"entry_type",daily:"date"})[report.type]||"";
+   activeFilterColumn=preferred&&report.rows.some(r=>r[preferred]!==undefined)?preferred:"";
+   const filter=$("reportWorkspaceFieldFilter"),values=activeFilterColumn?[...new Set(report.rows.map(r=>String(r[activeFilterColumn]??"")).filter(Boolean))].sort():[];
+   if(filter){filter.innerHTML='<option value="">সব '+(activeFilterColumn?esc(activeFilterColumn.replace(/_/g," ")):"রেকর্ড")+'</option>'+values.map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join("");filter.disabled=!values.length;filter.value="";}
+   $("reportWorkspaceSearch").value="";renderRecordTable();$("reportTitle").textContent=def[0];$("reportRangeLabel").textContent=report.rangeLabel;$("reportSummary").innerHTML=metrics.slice(0,3).map(m=>'<div class="hf-summary-pill"><small>'+esc(m.label)+'</small><strong>'+esc(m.value)+'</strong></div>').join("");$("reportNote").textContent=report.notes||"";
+   const hero=document.querySelector(".hf-reports-hero h1");if(hero)hero.textContent=def[0];const eye=document.querySelector(".hf-reports-hero .page-eyebrow");if(eye)eye.textContent="INDIVIDUAL REPORT";const desc=document.querySelector(".hf-reports-hero p:not(.page-eyebrow)");if(desc)desc.textContent=def[2];
+   if($("printReportTitle"))$("printReportTitle").textContent=def[0];if($("printReportDetails"))$("printReportDetails").textContent=report.rangeLabel+" · "+report.rows.length+" records";showSegment(activeSegment);
+  }
+  function initWorkspace(){
+   if(!reportGroup)return;
+   const builder=$("reportBuildSection"),preview=$("reportPreviewSection"),center=document.querySelector(".hf-report-center");
+   workspace=document.createElement("section");workspace.id="reportWorkspace";workspace.className="hf-report-workspace";
+   workspace.innerHTML='<div class="hf-report-workspace-head"><div><p class="page-eyebrow">INDIVIDUAL REPORT WORKSPACE</p><h2 id="reportWorkspaceTitle"></h2><p id="reportWorkspaceDescription"></p></div><div class="hf-report-workspace-meta"><span id="reportWorkspaceCode"></span><small id="reportWorkspaceRange"></small></div></div><div class="hf-report-kpis" id="reportWorkspaceKpis"></div><div class="hf-report-workspace-toolbar"><div class="hf-report-workspace-filters" id="reportWorkspaceFilters"></div><div class="hf-report-workspace-actions" id="reportWorkspaceActions"></div></div><div class="hf-report-segment-nav" id="reportWorkspaceTabs" role="tablist"></div><section class="hf-report-segment-panel" id="reportWorkspaceOverview" role="tabpanel"></section><section class="hf-report-segment-panel" id="reportWorkspaceAnalysis" role="tabpanel" hidden></section><section class="hf-report-segment-panel" id="reportWorkspaceRecords" role="tabpanel" hidden><div class="hf-report-record-toolbar"><div><h3 id="reportWorkspaceRecordsTitle"></h3><p id="reportWorkspaceRecordsNote"></p></div><div class="hf-report-record-filters"><input id="reportWorkspaceSearch" class="hf-input" type="search" placeholder="এই রিপোর্টের রেকর্ড খুঁজুন" aria-label="Search report records"><select id="reportWorkspaceFieldFilter" class="hf-select" aria-label="Filter report records"><option value="">সব রেকর্ড</option></select></div></div><div class="hf-report-table-wrap" tabindex="0" role="region" aria-label="Report detail records"><table class="hf-table"><thead id="reportWorkspaceTableHead"></thead><tbody id="reportWorkspaceTableBody"></tbody></table></div><p class="hf-data-note" id="reportWorkspaceRecordsFoot"></p></section><div class="hf-report-workspace-foot" id="reportWorkspaceFoot"></div>';
+   if(builder)builder.parentNode.insertBefore(workspace,builder);if(center)center.hidden=true;if(builder)builder.hidden=true;if(preview)preview.hidden=true;
+   const filterHost=$("reportWorkspaceFilters"),actionHost=$("reportWorkspaceActions"),rangeLabel=$("rangeSelect")?.closest("label");
+   if(rangeLabel)filterHost.appendChild(rangeLabel);if($("customRangeFields"))filterHost.appendChild($("customRangeFields"));
+   if($("includePersonalData")?.closest("label"))$("includePersonalData").closest("label").hidden=true;
+   if($("buildReportBtn")){ $("buildReportBtn").textContent="রিপোর্ট রিফ্রেশ";actionHost.appendChild($("buildReportBtn")); }
+   ["downloadCsvBtn","downloadXlsxBtn","downloadPdfBtn"].forEach(id=>{if($(id))actionHost.appendChild($(id));});
+   if($("reportType")?.closest("label"))$("reportType").closest("label").hidden=true;
+   $("reportWorkspaceSearch").addEventListener("input",renderRecordTable);$("reportWorkspaceFieldFilter").addEventListener("change",renderRecordTable);
+   $("reportWorkspaceTabs").addEventListener("click",event=>{const b=event.target.closest("[data-report-segment]");if(b)showSegment(b.dataset.reportSegment);});
+  }
+  function setupReportWorkspace(){
+   initWorkspace();
+   if(reportGroup){document.querySelectorAll("[data-report-type]").forEach(button=>button.hidden=true);}
+  }
+  setupReportWorkspace();
+  document.querySelectorAll("[data-report-type]").forEach(button=>button.addEventListener("click",async()=>{const type=button.dataset.reportType;if(!$("reportType"))return;$("reportType").value=type;document.querySelectorAll("[data-report-type]").forEach(item=>item.classList.toggle("is-selected",item===button));const b=$("buildReportBtn");if(b){b.disabled=true;try{await buildReport();$("reportBuildSection")?.scrollIntoView({behavior:"smooth",block:"start"});}catch(err){toast(err.message||"Could not load report.","error");}finally{b.disabled=false;}}}));
+  $("reportType")?.addEventListener("change",()=>document.querySelectorAll("[data-report-type]").forEach(item=>item.classList.toggle("is-selected",item.dataset.reportType===$("reportType").value)));
   $("buildReportBtn")?.addEventListener("click",async()=>{const b=$("buildReportBtn");b.disabled=true;try{await buildReport();toast("Report is ready.");}catch(err){toast(err.message||"Report could not be loaded.","error");}finally{b.disabled=false;}});
-  $("downloadCsvBtn")?.addEventListener("click",async()=>{try{if(!report.rows.length)await buildReport();downloadFile(fileBase(report.title)+"-"+todayISO()+".csv",csvText(report.rows),"text/csv;charset=utf-8");await audit("report_downloaded","report",null,report.title+" CSV downloaded",{rows:report.rows.length,type:report.type});toast("CSV download started.");}catch(err){toast(err.message||"CSV export failed.","error");}});
-  $("downloadXlsxBtn")?.addEventListener("click",async()=>{
-   try{
-    if(!report.rows.length)await buildReport();
-    if(!window.XLSX)throw new Error("Excel export library did not load. Use CSV export instead.");
-    const ws=window.XLSX.utils.json_to_sheet(report.rows);const wb=window.XLSX.utils.book_new();window.XLSX.utils.book_append_sheet(wb,ws,report.title.slice(0,31));window.XLSX.writeFile(wb,fileBase(report.title)+"-"+todayISO()+".xlsx");
-    await audit("report_downloaded","report",null,report.title+" XLSX downloaded",{rows:report.rows.length,type:report.type});toast("Excel file is being downloaded.");
-   }catch(err){toast(err.message||"Excel export failed.","error");}
-  });
-  $("downloadPdfBtn")?.addEventListener("click",async()=>{try{if(!report.rows.length)await buildReport();$("printReportTitle").textContent=report.title;$("printReportDetails").textContent=report.rangeLabel+" · "+report.rows.length+" records · "+new Intl.DateTimeFormat("en-BD",{timeZone:"Asia/Dhaka",dateStyle:"medium",timeStyle:"short"}).format(new Date());await audit("report_printed","report",null,report.title+" opened for PDF/printing",{rows:report.rows.length,type:report.type});window.print();}catch(err){toast(err.message||"Could not prepare print report.","error");}});
-  $("includePersonalData")?.addEventListener("change",()=>{if($("reportType")?.value==="orders")buildReport().catch(err=>toast(err.message||"Could not refresh the report preview.","error"));});
+  $("downloadCsvBtn")?.addEventListener("click",async()=>{try{if(!report.type)await buildReport();downloadFile(fileBase(report.title)+"-"+todayISO()+".csv",csvText(report.rows),"text/csv;charset=utf-8");await audit("report_downloaded","report",null,report.title+" CSV downloaded",{rows:report.rows.length,type:report.type});toast("CSV download started.");}catch(err){toast(err.message||"CSV export failed.","error");}});
+  $("downloadXlsxBtn")?.addEventListener("click",async()=>{try{if(!report.type)await buildReport();if(!window.XLSX)throw new Error("Excel export library did not load. Use CSV instead.");const ws=window.XLSX.utils.json_to_sheet(report.rows),wb=window.XLSX.utils.book_new();window.XLSX.utils.book_append_sheet(wb,ws,report.title.slice(0,31));window.XLSX.writeFile(wb,fileBase(report.title)+"-"+todayISO()+".xlsx");await audit("report_downloaded","report",null,report.title+" XLSX downloaded",{rows:report.rows.length,type:report.type});toast("Excel file is being downloaded.");}catch(err){toast(err.message||"Excel export failed.","error");}});
+  $("downloadPdfBtn")?.addEventListener("click",async()=>{try{if(!report.type)await buildReport();$("printReportTitle").textContent=report.title;$("printReportDetails").textContent=report.rangeLabel+" · "+report.rows.length+" records";await audit("report_printed","report",null,report.title+" opened for PDF/printing",{rows:report.rows.length,type:report.type});window.print();}catch(err){toast(err.message||"Could not prepare print report.","error");}});
   bindRangeControls(()=>buildReport());await buildReport();attachRefresh(buildReport);
  }
- async function initSettings(){
+  async function initSettings(){
   async function healthCheck(){
    const targets=[["Products","products"],["Categories","categories"],["Orders","orders"],["Order items","order_items"],["Courier bookings","admin_shipments"],["Tracking events","analytics_events"],["Homepage content","site_content_blocks"],["Finance entries","admin_finance_entries"],["Activity log","admin_activity_log"],["Messaging conversations","messaging_conversations"],["Messaging messages","messaging_messages"]];
    $("connectionStatus").textContent="Checking database access…";
