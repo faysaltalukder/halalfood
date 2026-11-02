@@ -602,13 +602,13 @@ window.HFAdminReady.then(async H=>{
    const hourLabel=hour=>new Intl.DateTimeFormat(locale,{timeZone:"Asia/Dhaka",hour:"numeric",hour12:true}).format(new Date(Date.UTC(2023,0,1,hour-6)));
    let peakLabel="No recorded activity",peakCount=0,average=0;
    if(pageActivityView==="hour"){
-    const internalHourFormatter=new Intl.DateTimeFormat("en-US",{timeZone:"Asia/Dhaka",hour:"2-digit",hourCycle:"h23"});
+    const hourFormatter=new Intl.DateTimeFormat("en-US",{timeZone:"Asia/Dhaka",hour:"2-digit",hourCycle:"h23"});
     const cells=Array.from({length:7},()=>Array(24).fill(0));
     pageRows.forEach(event=>{
      const date=new Date(event.occurred_at);
      if(Number.isNaN(date.getTime()))return;
      const weekday=new Intl.DateTimeFormat("en-US",{timeZone:"Asia/Dhaka",weekday:"short"}).format(date);
-     const parts=internalHourFormatter.formatToParts(date);
+     const parts=hourFormatter.formatToParts(date);
      const hour=Number(parts.find(part=>part.type==="hour")?.value);
      const dayIndex=englishDays.indexOf(weekday);
      if(dayIndex>=0&&Number.isInteger(hour)&&hour>=0&&hour<24)cells[dayIndex][hour]++;
