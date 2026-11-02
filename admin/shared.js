@@ -626,7 +626,7 @@ function syncThemeStyles(themeId){
  const themeStyles=[
   {theme:"merchant-fieldbook",id:"hfMerchantFieldbookStylesheet",href:"./merchant-fieldbook.css?v=20261101-merchant-fieldbook-v1"},
   {theme:"glass-studio",id:"hfGlassStudioStylesheet",href:"./glass-studio.css?v=20261102-glass-studio-v1"},
-   {theme:"glyph-signal",id:"hfGlyphSignalStylesheet",href:"./glyph-signal.css?v=20261102-glyph-signal-v2"}
+   {theme:"glyph-signal",id:"hfGlyphSignalStylesheet",href:"./glyph-signal.css?v=20261102-glyph-signal-v3"}
  ];
  themeStyles.forEach(item=>{
   let link=document.getElementById(item.id);
@@ -882,13 +882,28 @@ function glyphSignalRestoreName(element){
  delete element.dataset.glyphAddedAria;delete element.dataset.glyphAddedTitle;
 }
 function glyphSignalDecorateNav(element){
- if(element.dataset.glyphNavEnhanced==="1")return;
  const text=(element.querySelector(".admin-nav-text")||element.querySelector(".admin-favorite-link>span:last-child")||element).textContent.trim();
- if(text){glyphSignalKeepName(element,text);element.dataset.glyphNavEnhanced="1";}
+ if(element.dataset.glyphNavEnhanced==="1"&&element.dataset.glyphNavLabel===text)return;
+ if(element.dataset.glyphNavEnhanced==="1")glyphSignalRestoreName(element);
+ if(text){glyphSignalKeepName(element,text);element.dataset.glyphNavLabel=text;element.dataset.glyphNavEnhanced="1";}
+}
+function glyphSignalUnwrapControl(element){
+ const label=element.querySelector(":scope > .glyph-signal-label"),icon=element.querySelector(":scope > .glyph-signal-icon");
+ if(label){while(label.firstChild)element.insertBefore(label.firstChild,label);label.remove();}
+ if(icon)icon.remove();
+ element.classList.remove("glyph-signal-control");delete element.dataset.glyphEnhanced;delete element.dataset.glyphLabel;glyphSignalRestoreName(element);
 }
 function glyphSignalDecorateControl(element){
- if(element.dataset.glyphEnhanced==="1"||element.querySelector("select,input"))return;
- const text=(element.getAttribute("aria-label")||element.getAttribute("title")||element.textContent||"").replace(/\s+/g," ").trim();
+ if(element.dataset.glyphEnhanced==="1"&&element.querySelector("select,input"))glyphSignalUnwrapControl(element);
+ if(element.querySelector("select,input"))return;
+ if(element.dataset.glyphEnhanced==="1"){
+  const current=element.querySelector(":scope > .glyph-signal-label");
+  const visible=(current?current.textContent:element.textContent||"").replace(/\s+/g," ").trim();
+  if(visible===String(element.dataset.glyphLabel||""))return;
+  glyphSignalUnwrapControl(element);
+ }
+ const sourceText=element.dataset.glyphAddedAria==="1"?element.textContent:(element.getAttribute("aria-label")||element.getAttribute("title")||element.textContent||"");
+ const text=String(sourceText||"").replace(/\s+/g," ").trim();
  const iconName=glyphSignalIconForLabel(text);if(!iconName)return;
  glyphSignalKeepName(element,text);element.dataset.glyphLabel=text;
  const existingIcon=[...element.children].find(child=>child.matches("svg,img")||child.querySelector("svg,img"));
@@ -902,7 +917,12 @@ function glyphSignalDecorateControl(element){
  element.classList.add("glyph-signal-control");element.dataset.glyphEnhanced="1";
 }
 function glyphSignalDecorateMetric(element){
- if(element.dataset.glyphMetric==="1"||element.querySelector(".glyph-signal-metric-icon"))return;
+ if(element.dataset.glyphMetric==="1"){
+  const label=element.querySelector(":scope > .glyph-signal-label"),icon=element.querySelector(":scope > .glyph-signal-metric-icon");
+  if(label&&icon)return;
+  if(label){while(label.firstChild)element.insertBefore(label.firstChild,label);label.remove();}
+  if(icon)icon.remove();delete element.dataset.glyphMetric;
+ }
  const iconName=glyphSignalIconForLabel(element.textContent);if(!iconName)return;
  const label=document.createElement("span");label.className="glyph-signal-label";while(element.firstChild)label.appendChild(element.firstChild);
  const iconWrap=document.createElement("span");iconWrap.className="glyph-signal-metric-icon";iconWrap.setAttribute("aria-hidden","true");iconWrap.innerHTML=shellIcon(iconName);
@@ -948,18 +968,26 @@ function glyphSignalRestore(root){
   if(label){while(label.firstChild)element.insertBefore(label.firstChild,label);label.remove();}
   if(icon)icon.remove();delete element.dataset.glyphHeading;delete element.dataset.glyphLabel;glyphSignalRestoreName(element);
  });
- root.querySelectorAll("[data-glyph-nav-enhanced]").forEach(element=>{glyphSignalRestoreName(element);delete element.dataset.glyphNavEnhanced;});
+ root.querySelectorAll("[data-glyph-nav-enhanced]").forEach(element=>{glyphSignalRestoreName(element);delete element.dataset.glyphNavEnhanced;delete element.dataset.glyphNavLabel;});
 }
 function syncGlyphSignalMode(active){
  if(!adminApp)return;adminApp.classList.toggle("glyph-signal-mode",Boolean(active));
  if(!active){if(glyphSignalObserver){glyphSignalObserver.disconnect();glyphSignalObserver=null;}glyphSignalRestore(adminApp);return;}
  glyphSignalEnhance(adminApp);
  if(!glyphSignalObserver&&typeof MutationObserver==="function"){
-  glyphSignalObserver=new MutationObserver(records=>records.forEach(record=>record.addedNodes.forEach(node=>{if(node.nodeType===1)glyphSignalEnhance(node);})));
-  glyphSignalObserver.observe(adminApp,{childList:true,subtree:true});
+  const watched=".admin-nav-link,.admin-nav-parent-toggle,.admin-nav-child-link,.admin-favorite-link,button,a.hf-button,a.hf-workspace-nav-item,.hf-tab,.hf-workspace-tab,.ops-subnav a,.hf-kpi-label,.cu-kpi-label,.cp-kpi-label,.hf-orders-stat-label,.hf-table thead th";
+  glyphSignalObserver=new MutationObserver(records=>{
+   const dirty=new Set();
+   records.forEach(record=>{
+    const target=record.target.nodeType===1?record.target:record.target.parentElement;
+    if(target){const owner=target.closest?.(watched);dirty.add(owner||target);}
+    record.addedNodes.forEach(node=>{if(node.nodeType===1)dirty.add(node);});
+   });
+   dirty.forEach(node=>glyphSignalEnhance(node));
+  });
+  glyphSignalObserver.observe(adminApp,{childList:true,subtree:true,characterData:true});
  }
 }
-
 function makeShell(){
  adminApp.classList.add("admin-app");
  const activePage=pageName==="messenger"?"messenger":pageName==="coupon-usage"?"coupons":(pageName.startsWith("products-")?"products":pageName);
