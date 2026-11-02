@@ -4,6 +4,8 @@ window.HFAdminReady.then(async (H) => {
  if (!H) return;
  const {client,esc,money,dateTime,dateOnly,toast,audit,signedQuery,makeEmpty} = H;
  const $ = (id) => document.getElementById(id);
+ const t = (value) => window.HFAdminLanguage?.t?.(value) || value;
+ const isBangla = () => window.HFAdminLanguage?.language?.() === "bn";
  const table = $("incompleteTableBody");
  const dialog = $("incompleteDetailsDialog");
  let records = [];
@@ -164,7 +166,9 @@ window.HFAdminReady.then(async (H) => {
     return;
    }
    const name = row.customer_name || "there";
-   const message = "Assalamu Alaikum " + name + ", you recently started a checkout on Halal Food. Would you like any help completing that specific order? Please reply here if you need assistance. This is not a promotional offer.";
+   const message = isBangla()
+    ? "আসসালামু আলাইকুম " + name + ", আপনি সম্প্রতি হালাল ফুডে একটি অর্ডার শুরু করেছিলেন। নির্দিষ্ট সেই অর্ডারটি সম্পন্ন করতে কোনো সহায়তা লাগবে কি? সহায়তা প্রয়োজন হলে এখানে জানাবেন। এটি কোনো প্রচারণামূলক বার্তা নয়।"
+    : "Assalamu Alaikum " + name + ", you recently started a checkout on Halal Food. Would you like any help completing that specific order? Please reply here if you need assistance. This is not a promotional offer.";
    window.open("https://wa.me/" + phone + "?text=" + encodeURIComponent(message),"_blank","noopener,noreferrer");
    void audit("incomplete_checkout_recovery_opened","incomplete_checkout",row.id,"Admin opened a checkout-recovery WhatsApp draft",{consentMethod:row.consent_method,marketingConsent:row.marketing_consent===true});
    return;
@@ -172,7 +176,7 @@ window.HFAdminReady.then(async (H) => {
   const deleteButton = event.target.closest("[data-incomplete-delete]");
   if (deleteButton) {
    const row = records.find((item) => item.id === deleteButton.dataset.incompleteDelete);
-   if (!row || !confirm("Permanently delete this incomplete checkout record? This cannot be undone.")) return;
+   if (!row || !confirm(t("Permanently delete this incomplete checkout record? This cannot be undone."))) return;
    deleteButton.disabled = true;
    try {
     const {error} = await client.from("incomplete_checkouts").delete().eq("id",row.id);
