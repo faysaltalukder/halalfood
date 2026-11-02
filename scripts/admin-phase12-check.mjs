@@ -8,10 +8,17 @@ const root = process.cwd();
 const adminDir = join(root, "admin");
 const sharedCssVersion = "20261101-shared-erp-system-v1";
 const workspaceThemeCssVersion = "20261101-merchant-fieldbook-v1";
-const sharedJsVersion = "20261102-glyph-signal-v2";
+const sharedJsVersion = "20261102-corporate-standard-v1";
 const i18nVersion = "20261102-glyph-signal-v2";
 const appJsVersion = "20261030-orders-polish-v5";
 const read = (path) => readFileSync(join(root, path), "utf8");
+
+const themeRegistry = read("admin/shared.js");
+const corporateThemeCss = read("admin/corporate-standard.css");
+assert.ok(themeRegistry.includes('id:"corporate-standard"') && themeRegistry.includes('name:"Corporate Standard"'), "Corporate Standard theme must be registered.");
+assert.ok(themeRegistry.includes('id:"standard",label:"Standard"') && themeRegistry.includes('themeIds:["corporate-standard"]'), "Corporate Standard must appear in its own Standard theme group.");
+assert.ok(themeRegistry.includes('corporate-standard.css?v=20261102-corporate-standard-v1'), "Corporate Standard stylesheet must load dynamically with a cache-busted URL.");
+assert.ok(corporateThemeCss.includes('html[data-hf-theme="corporate-standard"]') && corporateThemeCss.includes(".admin-sidebar") && corporateThemeCss.includes(".admin-topbar") && corporateThemeCss.includes(".hf-table"), "Corporate Standard CSS must cover the real shared admin shell and work tables.");
 
 const htmlFiles = readdirSync(adminDir).filter((file) => file.endsWith(".html"));
 const unifiedPages = htmlFiles.filter((file) => /<body[^>]*\bdata-page=/.test(read(join("admin", file))));
