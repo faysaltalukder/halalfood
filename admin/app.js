@@ -3141,14 +3141,40 @@ async function refresh(){
     else rows=purchases.flatMap(p=>(p.admin_purchase_order_items||[]).map(i=>({purchase_number:p.purchase_number,purchase_date:p.order_date,status:p.status,supplier:p.admin_suppliers?.name||"—",product:i.product_name,quantity:num(i.quantity),received_quantity:num(i.received_quantity),pending_quantity:Math.max(0,num(i.quantity)-num(i.received_quantity)),unit:i.unit,unit_cost:num(i.unit_cost),total:num(i.line_total)})));
     title=type==="purchase"?"Purchase Report":"Product Purchase Report";notes="Only recorded Purchase Orders and saved purchase-order item snapshots are included; order creation does not prove payment.";
    }else if(type==="payable"){
-    const [bills,allocations]=await Promise.all([signedQuery(rangeQuery(client.from("admin_supplier_bills").select("id,bill_number,supplier_invoice_number,invoice_date,due_date,total_amount,status,admin_suppliers(name)").order("invoice_date",{ascending:false}).limit(5000),"invoice_date",range)),signedQuery(client.from("admin_supplier_payment_allocations").select("supplier_bill_id,allocated_amount").limit(10000))]);
-    const paid=new Map();allocations.forEach(a=>paid.set(a.supplier_bill_id,(paid.get(a.supplier_bill_id)||0)+num(a.allocated_amount)));
-    rows=bills.map(b=>({bill_number:b.bill_number,supplier:b.admin_suppliers?.name||"—",supplier_invoice_number:b.supplier_invoice_number,invoice_date:b.invoice_date,due_date:b.due_date,status:b.status,bill_total:num(b.total_amount),paid:paid.get(b.id)||0,balance:Math.max(0,num(b.total_amount)-(paid.get(b.id)||0)),due_state:String(b.status||"").toLowerCase()==="void"?"Void":String(b.status||"").toLowerCase()==="draft"?"Draft":b.due_date&&b.due_date<todayISO()&&num(b.total_amount)-(paid.get(b.id)||0)>0?"Overdue":num(b.total_amount)-(paid.get(b.id)||0)<=0?"Paid":"Open"}));source.bills=bills;title="Supplier Payables Report";notes="Bill balance = total amount less the sum of all payment allocations. Draft and Void bills remain separately identified.";
+    const [bills,allocations,payments,credits,supplierBalances]=await Promise.all([
+     signedQuery(rangeQuery(client.from("admin_supplier_bills").select("id,supplier_id,bill_number,supplier_invoice_number,invoice_date,due_date,total_amount,status,admin_suppliers(name)").order("invoice_date",{ascending:false}).order("id",{ascending:true}).limit(5000),"invoice_date",range)),
+     signedQuery(client.from("admin_supplier_payment_allocations").select("payment_id,supplier_bill_id,allocated_amount").limit(20000)),
+     signedQuery(client.from("admin_supplier_payments").select("id,supplier_id,status,payment_date,amount").limit(10000)),
+     signedQuery(client.from("admin_supplier_credit_notes").select("id,supplier_id,supplier_bill_id,credit_date,amount,status").limit(10000)),
+     signedQuery(client.from("admin_supplier_balances").select("supplier_id,supplier_name,outstanding_balance,total_bills,total_paid,total_credits,opening_balance,last_purchase_date,last_payment_date").order("supplier_name",{ascending:true}).limit(2000))
+    ]);
+    const confirmedPaymentIds=new Set(payments.filter(p=>String(p.status||"").toLowerCase()==="confirmed").map(p=>p.id));
+    const paidByBill=new Map();allocations.forEach(a=>{if(confirmedPaymentIds.has(a.payment_id))paidByBill.set(a.supplier_bill_id,(paidByBill.get(a.supplier_bill_id)||0)+num(a.allocated_amount));});
+    const creditByBill=new Map();credits.forEach(c=>{if(String(c.status||"").toLowerCase()==="confirmed"&&c.supplier_bill_id)creditByBill.set(c.supplier_bill_id,(creditByBill.get(c.supplier_bill_id)||0)+num(c.amount));});
+    const supplierBalanceById=new Map(supplierBalances.map(v=>[v.supplier_id,v]));
+    rows=bills.map(bill=>{
+     const st=String(bill.status||"").toLowerCase(),total=num(bill.total_amount),paid=paidByBill.get(bill.id)||0,credit=creditByBill.get(bill.id)||0;
+     const balance=st==="confirmed"?Math.max(0,total-paid-credit):0,supplier=supplierBalanceById.get(bill.supplier_id);
+     const due=st==="void"?"Void":st==="draft"?"Draft":bill.due_date&&bill.due_date<todayISO()&&balance>0?"Overdue":balance<=0&&paid+credit>0?"Paid / Credited":paid+credit>0?"Partially paid":"Open";
+     return {bill_number:bill.bill_number,supplier:bill.admin_suppliers?.name||supplier?.supplier_name||"—",supplier_invoice_number:bill.supplier_invoice_number,invoice_date:bill.invoice_date,due_date:bill.due_date,status:bill.status,bill_total:total,paid,confirmed_credit:credit,balance,due_state:due,supplier_current_balance:num(supplier?.outstanding_balance)};
+    });
+    source.bills=bills;source.payments=payments;source.allocations=allocations;source.credits=credits;source.supplierBalances=supplierBalances;
+    title="Supplier Payables Report";
+    notes="Bills are selected by invoice date. Bill-level payments include allocations from confirmed supplier payments only; confirmed credit notes are deducted. Supplier balances show the latest ledger position, not a historical as-of balance.";
    }else if(type==="receivable"||type==="collections"){
-    const settlements=await fetchReportSettlements(range);source.settlements=settlements;
-    rows=settlements.map(s=>({order_number:s.order_number,customer:s.customer_name,courier:s.courier_name,tracking_reference:s.tracking_reference,cod_amount:num(s.cod_amount),collected:num(s.collected_amount),courier_fee:num(s.courier_fee),remitted:num(s.remitted_amount),pending_collection:Math.max(0,num(s.cod_amount)-num(s.collected_amount)),pending_remittance:Math.max(0,num(s.collected_amount)-num(s.remitted_amount)),status:s.status,collected_at:s.collected_at,remitted_at:s.remitted_at}));
+    const [settlements,codFinance]=await Promise.all([fetchReportSettlements(null),fetchReportFinance(type==="collections"?range:null)]);
+    source.settlements=settlements;source.codFinance=codFinance.filter(e=>e.entry_type==="income"&&e.status==="confirmed"&&e.related_cod_settlement_id);
+    const verifiedBySettlement=new Map();source.codFinance.forEach(e=>verifiedBySettlement.set(e.related_cod_settlement_id,(verifiedBySettlement.get(e.related_cod_settlement_id)||0)+num(e.amount)));
+    const inRange=value=>{const day=String(value||"").slice(0,10);if(!day)return false;const from=range.fromDay??(range.from?String(range.from).slice(0,10):"0000-01-01");const to=range.toDay??(range.to?String(range.to).slice(0,10):todayISO());return day>=from&&day<=to;};
+    rows=settlements.filter(settlement=>String(settlement.status||"").toLowerCase()!=="cancelled").map(settlement=>{
+     const cod=num(settlement.cod_amount),collected=num(settlement.collected_amount),fee=num(settlement.courier_fee),adjustment=num(settlement.adjustment_amount);
+     const expected=Math.max(0,collected-fee+adjustment),verified=verifiedBySettlement.get(settlement.id)||0;
+     return {settlement_id:settlement.id,order_number:settlement.order_number,customer:settlement.customer_name,courier:settlement.courier_name,tracking_reference:settlement.tracking_reference,cod_amount:cod,collected,courier_fee:fee,adjustment_amount:adjustment,expected_net_remittance:expected,recorded_remitted:num(settlement.remitted_amount),verified_remitted:verified,pending_collection:Math.max(0,cod-collected),pending_remittance:Math.max(0,expected-verified),remittance_variance:verified-expected,status:settlement.status,collected_at:settlement.collected_at,remitted_at:settlement.remitted_at,created_at:settlement.created_at,remitted_account_id:settlement.remitted_account_id};
+    });
     if(type==="receivable")rows=rows.filter(r=>r.pending_collection>0||r.pending_remittance>0||["pending","exception"].includes(String(r.status).toLowerCase()));
-    title=type==="receivable"?"COD Receivable Report":"COD Collections Report";notes="This is courier COD collection/remittance tracking, not customer credit sales. Pending collection and pending remittance are calculated separately.";
+    else rows=rows.filter(r=>inRange(r.collected_at)||inRange(r.remitted_at)||inRange(r.created_at));
+    title=type==="receivable"?"Courier / COD Receivable Report":"COD Collections Report";
+    notes=type==="receivable"?"Current exposure snapshot. Uncollected COD and net courier remittance not yet verified in Finance are shown separately. This is not customer credit debt.":"Selected by collection/remittance/creation date; linked confirmed Finance income is the verified remittance source. Settlement rows show the latest saved state, not a full event-by-event history.";
    }else if(["low-stock","alert-products","stock","stock-list"].includes(type)){
     const products=await fetchProducts(10000);source.products=products;
     const active=products.filter(p=>p.is_active!==false).map(p=>({product:p.name,sku:p.sku,category:p.category||"Uncategorised",price:num(p.price),stock:num(p.stock_quantity),minimum_stock:num(p.low_stock_threshold??5),unit_cost:p.cost_price===null?null:num(p.cost_price),stock_value:p.cost_price===null?null:num(p.stock_quantity)*num(p.cost_price),alert:num(p.stock_quantity)<=0?"OUT OF STOCK":num(p.stock_quantity)<=num(p.low_stock_threshold??5)?"LOW":"OK",updated_at:p.updated_at||p.created_at}));
