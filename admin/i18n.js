@@ -854,7 +854,7 @@
       .filter(([source]) => /\s/.test(source.trim()) && source.trim().length > 2)
       .sort((a, b) => b[0].length - a[0].length);
     for (const [source, target] of phrases) {
-      const escaped = source.trim().replace(/[.*+?^$()|[\]{}\\]/g, "\\$&");
+      const escaped = source.trim().split("").map(char => "\\^$.*+?()[]{}|".includes(char) ? "\\" + char : char).join("");
       const pattern = new RegExp("(^|[^A-Za-z0-9])(" + escaped + ")(?=$|[^A-Za-z0-9])", "gi");
       output = output.replace(pattern, (_match, prefix) => prefix + target);
     }
