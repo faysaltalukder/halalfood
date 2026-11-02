@@ -2259,7 +2259,7 @@ async function refresh(){
     if(payload.entry_type==="income"&&payload.status==="confirmed"&&payload.related_order_id){
      const linkedOrder=orders.find(o=>o.id===payload.related_order_id);
      if(!linkedOrder||linkedOrder.status==="cancelled")throw new Error("The linked order is missing or cancelled. Do not confirm it as income.");
-     if(settlements.some(s=>s.order_id===payload.related_order_id&&s.status==="reconciled"))throw new Error("This order already has a reconciled COD remittance. Do not create a second income record.");
+     if(settlements.some(s=>s.order_id===payload.related_order_id))throw new Error("This order has a COD settlement record. Complete or review it in Order & COD Settlement instead of adding a second manual income entry.");
     }
     if(!id)payload.created_by=H.ADMIN_EMAIL;
     if(id){const {error}=await client.from("admin_finance_entries").update(payload).eq("id",id);if(error)throw error;await audit("finance_entry_updated","finance_entry",id,"Finance transaction updated",{entry_type:payload.entry_type,status:payload.status,financial_class:payload.financial_class});}
@@ -2316,7 +2316,13 @@ async function refresh(){
     const duplicate=settlements.find(s=>s.order_id===payload.order_id&&s.id!==id);if(duplicate)throw new Error("A COD settlement record already exists for this order. Edit the existing record instead.");
     if(payload.status==="reconciled"){
      if(payload.remitted_amount<=0||!payload.remitted_account_id||!payload.remitted_at)throw new Error("Reconciled requires a verified remitted amount, destination account and remittance date.");
+     const duplicateManualIncome=entries.some(e=>e.related_order_id===payload.order_id&&e.entry_type==="income"&&e.status==="confirmed"&&!e.related_cod_settlement_id);
+     if(duplicateManualIncome)throw new Error("This order already has a confirmed manual income entry. Review the ledger before reconciling COD to avoid double-counting the same receipt.");
      if(!confirm("This will create or update one linked Confirmed Income record for the verified remittance. Have you verified the money reached this account?"))throw new Error("Reconciliation cancelled. No changes were saved.");
+    }
+    const previousSettlement=settlements.find(s=>s.id===id);
+    if(previousSettlement?.status==="reconciled"&&payload.status!=="reconciled"){
+     if(!confirm("This settlement was already reconciled. Changing it away from Reconciled will Void its linked Finance income entry and reduce the destination account balance. Continue only if the previous reconciliation was incorrect."))throw new Error("Settlement change cancelled.");
     }
     if(!id)payload.created_by=H.ADMIN_EMAIL;
     if(id){payload.updated_at=new Date().toISOString();const {error}=await client.from("admin_cod_settlements").update(payload).eq("id",id);if(error)throw error;await audit("finance_cod_settlement_updated","cod_settlement",id,"COD settlement updated",{status:payload.status,remitted_amount:payload.remitted_amount});}
@@ -2359,7 +2365,14 @@ async function refresh(){
    const confirmBtn=event.target.closest("[data-confirm-transfer]"),voidBtn=event.target.closest("[data-void-transfer]");
    const item=transfers.find(t=>t.id===(confirmBtn?.dataset.confirmTransfer||voidBtn?.dataset.voidTransfer));if(!item)return;
    const next=confirmBtn?"confirmed":"void";
-   if(next==="confirmed"&&!confirm("Confirm this transfer only after the money has actually moved between the two accounts. It will update both account balances but not Income or Expenses."))return;
+   if(next==="confirmed"){
+    const source=accounts.find(a=>a.id===item.source_account_id),destination=accounts.find(a=>a.id===item.destination_account_id);
+    if(!source||!destination||!source.is_active||!destination.is_active){toast("Both source and destination accounts must be active before confirming this transfer.","error");return;}
+    if(String(item.transfer_date)<String(source.opening_date)||String(item.transfer_date)<String(destination.opening_date)){toast("Transfer date cannot be earlier than either account opening date.","error");return;}
+    const available=accountBalance(source);
+    if(Number(item.amount)>available){toast("Insufficient recorded balance in "+source.name+". Available: "+money(available)+".","error");return;}
+    if(!confirm("Confirm this transfer only after the money has actually moved between the two accounts. It will update both account balances but not Income or Expenses."))return;
+   }
    if(next==="void"&&!confirm("Void this transfer? It will remain in history but stop affecting account balances."))return;
    try{const {error}=await client.from("admin_finance_transfers").update({status:next,updated_at:new Date().toISOString()}).eq("id",item.id);if(error)throw error;await audit("finance_transfer_status_changed","finance_transfer",item.id,"Internal transfer "+next,{amount:item.amount});toast("Transfer "+next+".");await refresh();}
    catch(err){toast(err.message||"Transfer could not be updated.","error");}
