@@ -3612,6 +3612,49 @@ async function refresh(){
    ]};
    return {blocks:[block("রিপোর্ট বিশ্লেষণ","নির্বাচিত রেকর্ডের সারাংশ।",rows.length?Object.keys(rows[0]).slice(0,8):["record"],rows.slice(0,20),"records")]};
   }
+  function insightsFor(type,rows,source){
+   const items=[],add=(level,title,detail,action)=>items.push({level,title,detail,action:action||""});
+   if(type==="account-payments"){
+    const accounts=source.accountBalances||[];
+    if(!accounts.length)add("info","অ্যাকাউন্ট সেটআপ নেই","Cash, Bank বা Mobile Wallet account না থাকায় account balance নির্ভরযোগ্যভাবে দেখানো যাচ্ছে না।","Finance → Cash & Accounts");
+    const negative=accounts.filter(a=>a.current_balance<0);
+    if(negative.length)add("warning","Negative account balance",negative.map(a=>a.account_name+" · "+money(a.current_balance)).join(" | "),"Opening balance ও linked entries যাচাই করুন");
+    const unassigned=rows.filter(r=>r.record_kind==="Finance entry"&&r.status==="confirmed"&&r.account_name==="Unassigned");
+    if(unassigned.length)add("warning","Confirmed entry-তে account যুক্ত নেই",unassigned.length+"টি confirmed Finance entry কোনো account-এ বরাদ্দ নয়।","Finance ledger-এ account mapping review করুন");
+    const drafts=rows.filter(r=>r.record_kind==="Finance entry"&&r.status==="draft");
+    if(drafts.length)add("info","Draft transaction review বাকি",drafts.length+"টি draft entry confirmed balance-এ অন্তর্ভুক্ত হয়নি।","Draft entry যাচাই করে confirm বা void করুন");
+   }else if(type==="payable"){
+    const overdue=rows.filter(r=>r.due_state==="Overdue"),balance=(source.supplierBalances||[]).reduce((n,r)=>n+num(r.outstanding_balance),0);
+    if(overdue.length)add("warning","Overdue supplier bills",overdue.length+"টি নির্বাচিত bill-এর due date পার হয়েছে এবং balance বাকি আছে।","Supplier payment schedule review করুন");
+    if(balance>0)add("info","বর্তমান supplier liability",money(balance)+" supplier ledger অনুযায়ী outstanding।","Due date ও cash plan মিলিয়ে payment schedule করুন");
+    const drafts=rows.filter(r=>String(r.status||"").toLowerCase()==="draft");
+    if(drafts.length)add("info","Draft bill review",drafts.length+"টি draft bill confirmed liability নয়।","Invoice যাচাই করে confirm বা void করুন");
+   }else if(type==="receivable"||type==="collections"){
+    const pendingCollection=rows.reduce((n,r)=>n+num(r.pending_collection),0),pendingRemittance=rows.reduce((n,r)=>n+num(r.pending_remittance),0);
+    const exceptions=rows.filter(r=>String(r.status||"").toLowerCase()==="exception"),variance=rows.filter(r=>Math.abs(num(r.remittance_variance))>0.009);
+    if(pendingCollection>0)add("warning","COD collection এখনো বাকি",money(pendingCollection)+" এখনো courier collection হিসেবে রেকর্ড হয়নি।","Courier tracking ও collection status যাচাই করুন");
+    if(pendingRemittance>0)add("warning","Net remittance এখনো যাচাইকৃত নয়",money(pendingRemittance)+" courier fee/adjustment বাদ দেওয়ার পরও Finance-এ verified income হিসেবে নেই।","Courier statement ও linked reconciled settlement যাচাই করুন");
+    if(exceptions.length)add("warning","Courier settlement exception",exceptions.length+"টি settlement manual review প্রয়োজন।","Exception record ও courier statement মিলিয়ে দেখুন");
+    if(variance.length)add("warning","Remittance variance",variance.length+"টি settlement-এর verified amount expected net amount-এর সঙ্গে মেলে না।","Courier statement, fee ও adjustment যাচাই করুন");
+    if(!items.length)add("success","বর্তমান COD অবস্থায় খোলা পার্থক্য নেই","নির্বাচিত রেকর্ডে uncollected COD বা pending verified remittance পাওয়া যায়নি।");
+   }else if(type==="expenses"){
+    const budgets=(source.budgets||[]).filter(b=>b.status==="active"),actualRows=source.budgetFinance||[];
+    const actualByKey=new Map();
+    actualRows.forEach(r=>{const key=String(r.entry_date||"").slice(0,7)+"|"+String(r.category||"");actualByKey.set(key,(actualByKey.get(key)||0)+num(r.amount));});
+    const over=budgets.map(b=>({category:b.category,month:String(b.period_start||"").slice(0,7),budget:num(b.budget_amount),actual:actualByKey.get(String(b.period_start||"").slice(0,7)+"|"+b.category)||0})).filter(b=>b.actual>b.budget);
+    if(over.length)add("warning","Budget exceeded",over.map(b=>b.category+" · "+b.month+" · "+money(b.actual-b.budget)+" over").join(" | "),"Category spending ও budget review করুন");
+    const drafts=rows.filter(r=>r.status==="draft");
+    if(drafts.length)add("info","Draft expense review বাকি",drafts.length+"টি draft expense confirmed expense total-এ ধরা হয়নি।","Receipt/approval যাচাই করে status update করুন");
+    if(!items.length)add("success","নির্বাচিত expense data-তে সতর্কতা নেই","Confirmed operating expense-এ দৃশ্যমান budget overrun বা draft review item নেই।");
+   }else if(type==="transactions"){
+    const drafts=rows.filter(r=>r.status==="draft"),voids=rows.filter(r=>r.status==="void"),transfers=rows.filter(r=>r.record_kind==="Internal transfer");
+    if(drafts.length)add("info","Draft transaction review বাকি",drafts.length+"টি draft transaction confirmed cash movement-এ অন্তর্ভুক্ত নয়।","Source record যাচাই করুন");
+    if(voids.length)add("info","Void transaction আছে",voids.length+"টি void record audit trail-এ আছে, confirmed totals-এ গণনা হয়নি।");
+    if(transfers.length)add("info","Internal transfer আলাদা রাখা হয়েছে",transfers.length+"টি account transfer income/expense হিসেবে গণনা হয়নি।");
+    if(!items.length)add("success","লেনদেনের অবস্থা পরিষ্কার","নির্বাচিত সময়ে draft/void item বা internal transfer record পাওয়া যায়নি।");
+   }
+   return items;
+  }
   function renderBars(rows,key){
    if(!rows.length)return '<div class="hf-report-empty"><strong>বিশ্লেষণের জন্য রেকর্ড নেই</strong><p>সোর্স মডিউলে ডেটা যুক্ত হলে এই অংশ পূরণ হবে।</p></div>';
    const max=Math.max(1,...rows.map(r=>num(r[key])));
@@ -3626,7 +3669,8 @@ async function refresh(){
    $("reportWorkspaceRecordsFoot").textContent=visibleRows.length>250?"প্রিভিউতে প্রথম ২৫০টি রেকর্ড; CSV/Excel-এ সম্পূর্ণ তালিকা।":visibleRows.length+"টি রেকর্ড দেখানো হচ্ছে।";
   }
   function showSegment(segment){
-   activeSegment=segment;["overview","analysis","records"].forEach(id=>{const panel=$("reportWorkspace"+id.charAt(0).toUpperCase()+id.slice(1));if(panel)panel.hidden=id!==segment;});
+   activeSegment=segment;
+   ["overview","analysis","records","insights"].forEach(id=>{const panel=$("reportWorkspace"+id.charAt(0).toUpperCase()+id.slice(1));if(panel)panel.hidden=id!==segment;});
    document.querySelectorAll("[data-report-segment]").forEach(b=>{const active=b.dataset.reportSegment===segment;b.classList.toggle("active",active);b.setAttribute("aria-selected",String(active));});
    if(segment==="records")renderRecordTable();
   }
@@ -3635,10 +3679,11 @@ async function refresh(){
    const def=definitions[report.type]||definitions.business,metrics=kpisFor(report.type,report.rows,report.source||{}),analysis=analysisFor(report.type,report.rows,report.source||{});
    $("reportWorkspaceTitle").textContent=def[0];$("reportWorkspaceDescription").textContent=def[2];$("reportWorkspaceCode").textContent=report.type.toUpperCase();$("reportWorkspaceRange").textContent=report.rangeLabel+" · "+report.rows.length+" records";
    $("reportWorkspaceKpis").innerHTML=metrics.map(m=>'<article class="hf-report-kpi"><small>'+esc(m.label)+'</small><strong>'+esc(m.value)+'</strong><span>'+esc(m.note)+'</span></article>').join("");
-   $("reportWorkspaceTabs").innerHTML='<button type="button" role="tab" data-report-segment="overview" aria-selected="true" class="active">সারসংক্ষেপ</button><button type="button" role="tab" data-report-segment="analysis" aria-selected="false">'+esc(def[3])+'</button><button type="button" role="tab" data-report-segment="records" aria-selected="false">'+esc(def[4])+'</button>';
+   $("reportWorkspaceTabs").innerHTML='<button type="button" role="tab" data-report-segment="overview" aria-selected="true" class="active">সারসংক্ষেপ</button><button type="button" role="tab" data-report-segment="analysis" aria-selected="false">'+esc(def[3])+'</button><button type="button" role="tab" data-report-segment="records" aria-selected="false">'+esc(def[4])+'</button>'+(["account-payments","collections","expenses","transactions","payable","receivable"].includes(report.type)?'<button type="button" role="tab" data-report-segment="insights" aria-selected="false">ব্যবসায়িক ইনসাইটস</button>':'');
    const metricRows=metrics.map(m=>({বিষয়:m.label,মান:m.value,বিবরণ:m.note}));
    $("reportWorkspaceOverview").innerHTML='<div class="hf-report-overview-grid"><section class="hf-report-subsection"><div class="hf-report-subsection-head"><div><h3>মূল সূচক</h3><p>নির্বাচিত সময়ের রেকর্ড ও ডেটা সোর্স</p></div><span>'+metrics.length+' indicators</span></div>'+tableMarkup(metricRows,Object.keys(metricRows[0]||{বিষয়:"",মান:"",বিবরণ:""}),"সারাংশ নেই")+'</section><section class="hf-report-subsection"><div class="hf-report-subsection-head"><div><h3>'+esc(def[3])+'</h3><p>'+esc(def[2])+'</p></div></div>'+tableMarkup(analysis.rows,analysis.columns,"বিশ্লেষণের ডেটা নেই")+'</section></div><div class="hf-report-source-note">'+esc(report.notes||"রিপোর্টটি সংযুক্ত ডেটা সোর্স থেকে তৈরি।")+'</div>';
    $("reportWorkspaceAnalysis").innerHTML='<section class="hf-report-subsection"><div class="hf-report-subsection-head"><div><h3>'+esc(def[3])+'</h3><p>বিভাগ/ধরন অনুযায়ী সমষ্টি; মূল রেকর্ডের বিকল্প নয়।</p></div><span>'+analysis.rows.length+' groups</span></div>'+renderBars(analysis.rows,analysis.bars||"records")+tableMarkup(analysis.rows,analysis.columns,"এই রিপোর্টে বিশ্লেষণ ডেটা নেই")+'</section>';
+   $("reportWorkspaceInsights").innerHTML=insightsFor(report.type,report.rows,report.source||{}).map(item=>'<article class="hf-report-insight-card is-'+esc(item.level)+'"><div><span class="hf-report-insight-level">'+esc(item.level.toUpperCase())+'</span><h3>'+esc(item.title)+'</h3></div><p>'+esc(item.detail)+'</p>'+(item.action?'<small>'+esc(item.action)+'</small>':'')+'</article>').join("")||'<div class="hf-report-empty"><strong>এই রিপোর্টে উল্লেখযোগ্য ব্যবসায়িক সতর্কতা নেই</strong><p>যাচাইকৃত রেকর্ড থেকে কোনো নির্দিষ্ট action item পাওয়া যায়নি।</p></div>';
    $("reportWorkspaceRecordsTitle").textContent=def[4];$("reportWorkspaceRecordsNote").textContent="মূল সোর্স রেকর্ড; সার্চ, ফিল্টার এবং CSV/Excel/PDF এক্সপোর্ট ব্যবহার করুন।";
    const preferred=({business:"date",sales:"date","product-sales":"product","top-products":"product","customer-wise-products":"customer","customer-products":"customer","top-customers":"customer",customers:"customer",purchase:"supplier","product-purchase":"product",payable:"supplier",receivable:"courier",collections:"courier","low-stock":"category","alert-products":"alert",stock:"category","stock-list":"category","account-payments":"account_name",expenses:"category",transactions:"entry_type",daily:"date"})[report.type]||"";
    activeFilterColumn=preferred&&report.rows.some(r=>r[preferred]!==undefined)?preferred:"";
@@ -3652,10 +3697,11 @@ async function refresh(){
    if(!reportGroup)return;
    const builder=$("reportBuildSection"),preview=$("reportPreviewSection"),center=document.querySelector(".hf-report-center");
    workspace=document.createElement("section");workspace.id="reportWorkspace";workspace.className="hf-report-workspace";
-   workspace.innerHTML='<div class="hf-report-workspace-head"><div><p class="page-eyebrow">INDIVIDUAL REPORT WORKSPACE</p><h2 id="reportWorkspaceTitle"></h2><p id="reportWorkspaceDescription"></p></div><div class="hf-report-workspace-meta"><span id="reportWorkspaceCode"></span><small id="reportWorkspaceRange"></small></div></div><div class="hf-report-kpis" id="reportWorkspaceKpis"></div><div class="hf-report-workspace-toolbar"><div class="hf-report-workspace-filters" id="reportWorkspaceFilters"></div><div class="hf-report-workspace-actions" id="reportWorkspaceActions"></div></div><div class="hf-report-segment-nav" id="reportWorkspaceTabs" role="tablist"></div><section class="hf-report-segment-panel" id="reportWorkspaceOverview" role="tabpanel"></section><section class="hf-report-segment-panel" id="reportWorkspaceAnalysis" role="tabpanel" hidden></section><section class="hf-report-segment-panel" id="reportWorkspaceRecords" role="tabpanel" hidden><div class="hf-report-record-toolbar"><div><h3 id="reportWorkspaceRecordsTitle"></h3><p id="reportWorkspaceRecordsNote"></p></div><div class="hf-report-record-filters"><input id="reportWorkspaceSearch" class="hf-input" type="search" placeholder="এই রিপোর্টের রেকর্ড খুঁজুন" aria-label="Search report records"><select id="reportWorkspaceFieldFilter" class="hf-select" aria-label="Filter report records"><option value="">সব রেকর্ড</option></select></div></div><div class="hf-report-table-wrap" tabindex="0" role="region" aria-label="Report detail records"><table class="hf-table"><thead id="reportWorkspaceTableHead"></thead><tbody id="reportWorkspaceTableBody"></tbody></table></div><p class="hf-data-note" id="reportWorkspaceRecordsFoot"></p></section><div class="hf-report-workspace-foot" id="reportWorkspaceFoot"></div>';
+   workspace.innerHTML='<div class="hf-report-workspace-head"><div><p class="page-eyebrow">INDIVIDUAL REPORT WORKSPACE</p><h2 id="reportWorkspaceTitle"></h2><p id="reportWorkspaceDescription"></p></div><div class="hf-report-workspace-meta"><span id="reportWorkspaceCode"></span><small id="reportWorkspaceRange"></small></div></div><div class="hf-report-kpis" id="reportWorkspaceKpis"></div><div class="hf-report-workspace-toolbar"><div class="hf-report-workspace-filters" id="reportWorkspaceFilters"></div><div class="hf-report-workspace-actions" id="reportWorkspaceActions"></div></div><div class="hf-report-segment-nav" id="reportWorkspaceTabs" role="tablist"></div><section class="hf-report-segment-panel" id="reportWorkspaceOverview" role="tabpanel"></section><section class="hf-report-segment-panel" id="reportWorkspaceAnalysis" role="tabpanel" hidden></section><section class="hf-report-segment-panel" id="reportWorkspaceRecords" role="tabpanel" hidden><div class="hf-report-record-toolbar"><div><h3 id="reportWorkspaceRecordsTitle"></h3><p id="reportWorkspaceRecordsNote"></p></div><div class="hf-report-record-filters"><input id="reportWorkspaceSearch" class="hf-input" type="search" placeholder="এই রিপোর্টের রেকর্ড খুঁজুন" aria-label="Search report records"><select id="reportWorkspaceFieldFilter" class="hf-select" aria-label="Filter report records"><option value="">সব রেকর্ড</option></select></div></div><div class="hf-report-table-wrap" tabindex="0" role="region" aria-label="Report detail records"><table class="hf-table"><thead id="reportWorkspaceTableHead"></thead><tbody id="reportWorkspaceTableBody"></tbody></table></div><p class="hf-data-note" id="reportWorkspaceRecordsFoot"></p></section><section class="hf-report-segment-panel" id="reportWorkspaceInsights" role="tabpanel" hidden></section><div class="hf-report-workspace-foot" id="reportWorkspaceFoot"></div>';
    if(builder)builder.parentNode.insertBefore(workspace,builder);if(center)center.hidden=true;if(builder)builder.hidden=true;if(preview)preview.hidden=true;
    const filterHost=$("reportWorkspaceFilters"),actionHost=$("reportWorkspaceActions"),rangeLabel=$("rangeSelect")?.closest("label");
    if(rangeLabel)filterHost.appendChild(rangeLabel);if($("customRangeFields"))filterHost.appendChild($("customRangeFields"));
+   if(first==="receivable"){if(rangeLabel)rangeLabel.hidden=true;if($("customRangeFields"))$("customRangeFields").hidden=true;}
    if($("includePersonalData")?.closest("label"))$("includePersonalData").closest("label").hidden=true;
    if($("buildReportBtn")){ $("buildReportBtn").textContent="রিপোর্ট রিফ্রেশ";actionHost.appendChild($("buildReportBtn")); }
    ["downloadCsvBtn","downloadXlsxBtn","downloadPdfBtn"].forEach(id=>{if($(id))actionHost.appendChild($(id));});
