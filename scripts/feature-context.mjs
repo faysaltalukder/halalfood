@@ -266,15 +266,33 @@ const FEATURES = {
     guardrails: ["Preserve customer privacy and verified user-to-customer mapping.", "Do not expose customer records through public or anonymous access."]
   },
   finance: {
-    title: "Finance and reconciliation",
-    purpose: "Income, expenses, order-linked revenue, courier settlements and finance entries.",
-    readFirst: ["admin/finance.html", "admin/app.js"],
-    files: ["admin/finance.html", "admin/app.js", "admin/shared.js"],
-    anchors: [{ file: "admin/app.js", names: ["initFinance", "linkedIncomeTotal", "renderReconciliation", "openEntry"] }],
-    tables: ["admin_finance_entries", "orders", "admin_shipments", "order_status_history"],
+    title: "Finance & Cash Flow workspace",
+    purpose: "Verified operating receipts and expenses, account balances, internal transfers, monthly budgets, Supplier Payment mapping, manual COD collection and remittance reconciliation, and CSV reporting.",
+    readFirst: ["admin/finance.html", "admin/app.js", "admin/finance-cashflow-workspace.css", "supabase/migrations/20261102052408_finance_cashflow_workspace_v1.sql"],
+    files: [
+      "admin/finance.html", "admin/app.js", "admin/shared.js", "admin/finance-cashflow-workspace.css",
+      "supabase/migrations/20261102052408_finance_cashflow_workspace_v1.sql",
+      "supabase/migrations/20261102053037_finance_supplier_account_link_v1.sql",
+      "supabase/migrations/20261102053526_finance_supplier_account_backfill_v1.sql",
+      "scripts/finance-workspace-check.mjs"
+    ],
+    anchors: [{ file: "admin/app.js", names: ["initFinance", "renderKpis", "renderAccounts", "renderTransfers", "renderCod", "renderBudgets", "renderLedger", "openEntry", "openAccount", "openTransfer", "openCod"] }],
+    tables: [
+      "admin_finance_entries", "admin_finance_accounts", "admin_finance_transfers", "admin_finance_budgets",
+      "admin_cod_settlements", "admin_supplier_payments", "admin_supplier_balances", "orders", "admin_activity_log"
+    ],
     functions: [],
-    tests: ["scripts/admin-phase12-check.mjs", "scripts/architecture-check.mjs"],
-    guardrails: ["Do not count cancelled or uncollected orders as received cash.", "Keep order references and ledger relationships intact."]
+    tests: ["scripts/finance-workspace-check.mjs", "scripts/admin-phase12-check.mjs", "scripts/architecture-check.mjs"],
+    guardrails: [
+      "Only manually verified, confirmed receipts or payments count as received cash. Order value and courier status are not proof of cash.",
+      "Internal transfers update account balances only and never count as income or expense.",
+      "Only a reconciled COD remittance with a verified amount, date and destination account creates one linked confirmed Finance income entry.",
+      "Supplier Payments remain source-managed from Supplier Payment History; exact account-name/reference matching maps them to a Finance account without creating a duplicate expense.",
+      "Draft and void entries remain in history but are excluded from confirmed totals and account balances.",
+      "Capital, loans, refunds and adjustments remain distinguishable from operating sales and expenses.",
+      "Do not show profit or margin until reliable net sales and cost-of-goods data are available.",
+      "Keep existing ledger rows and supplier linkages intact; use additive migrations and MFA-protected admin RLS."
+    ]
   },
   reports: {
     title: "Admin reports",
