@@ -2968,7 +2968,7 @@ async function refresh(){
     ]};
    }
    if(type==="product-sales")return {blocks:[block("বিক্রয় মূল্য অনুযায়ী পণ্য","পণ্যের মোট line total ও অর্ডার লাইনের সংখ্যা।",["product","quantity_sold","sales","order_lines"],rows.slice().sort((a,b)=>num(b.sales)-num(a.sales)).slice(0,20),"sales"),grouped("ক্যাটাগরি অনুযায়ী পণ্য বিক্রয়","পণ্যের বর্তমান ক্যাটাগরি সংরক্ষিত না থাকলে Uncategorised দেখানো হবে।",rows,"category",["quantity_sold","sales"])]};
-   if(type==="top-products")return {blocks:[block("বিক্রিত ইউনিট অনুযায়ী শীর্ষ পণ্য","সর্বাধিক ইউনিট বিক্রি হওয়া পণ্য আগে দেখানো হয়েছে।",["rank","product","quantity_sold","sales","order_lines"],rows.slice(0,20),"quantity_sold"),block("বিক্রয় মূল্যের শীর্ষ পণ্য","যে পণ্যগুলো মোট বিক্রয় মূল্যে এগিয়ে।",["product","quantity_sold","sales","order_lines"],rows.slice().sort((a,b)=>num(b.sales)-num(a.sales)).slice(0,20),"sales")]};
+   if(type==="top-products")return {blocks:[block("বিক্রিত ইউনিট অনুযায়ী শীর্ষ পণ্য","সর্বাধিক ইউনিট বিক্রি হওয়া পণ্য আগে দেখানো হয়েছে।",["rank","product","sku","category","quantity_sold","sales","order_lines","current_stock","minimum_stock","catalogue_status"],rows.slice(0,20),"quantity_sold"),block("বিক্রয় মূল্যের শীর্ষ পণ্য","যে পণ্যগুলো মোট বিক্রয় মূল্যে এগিয়ে।",["product","quantity_sold","sales","order_lines"],rows.slice().sort((a,b)=>num(b.sales)-num(a.sales)).slice(0,20),"sales")]};
    if(type==="customer-wise-products")return {blocks:[
     grouped("গ্রাহকভিত্তিক পণ্য ক্রয়","একই গ্রাহকের একাধিক পণ্যের পরিমাণ ও মূল্য যোগ করা হয়েছে।",rows,"customer",["quantity","total"]),
     grouped("পণ্যভিত্তিক গ্রাহক বিক্রয়","কোন পণ্য কতজন/কতটি customer-product pair-এ বিক্রি হয়েছে।",rows,"product",["quantity","total"])
@@ -3117,10 +3117,10 @@ async function refresh(){
      rows=[...byDay.values()].sort((a,b)=>b.date.localeCompare(a.date));title="Sales Performance Report";notes="Sales are based on non-cancelled order totals; payment method and status analysis uses source orders.";
     }else if(type==="daily"){
      const [finance,settlements]=await Promise.all([fetchReportFinance(range),fetchReportSettlements(null)]);source.finance=finance;source.settlements=settlements;
-     const byDay=new Map();const dayRow=day=>{if(!day)return null;let r=byDay.get(day);if(!r){r={date:day,orders:0,cancelled_orders:0,order_value:0,delivery_charge:0,confirmed_expenses:0,cod_collected:0,cod_remitted:0,cod_remitted_recorded:0,cod_remitted_verified:0,courier_fees:0};byDay.set(day,r);}return r;};
+     const byDay=new Map();const dayRow=day=>{if(!day)return null;let r=byDay.get(day);if(!r){r={date:day,orders:0,cancelled_orders:0,order_value:0,delivery_charge:0,confirmed_expenses:0,cod_collected:0,cod_remitted_recorded:0,cod_remitted_verified:0,courier_fees:0};byDay.set(day,r);}return r;};
      orders.forEach(o=>{const r=dayRow(dhakaDateKey(o.ordered_at));if(r){r.orders++;if(String(o.status).toLowerCase()==="cancelled")r.cancelled_orders++;else{r.order_value+=num(o.total);r.delivery_charge+=num(o.delivery_charge);}}});
      finance.filter(e=>String(e.entry_type).toLowerCase()==="expense"&&String(e.status).toLowerCase()==="confirmed").forEach(e=>{const r=dayRow(String(e.entry_date||"").slice(0,10));if(r)r.confirmed_expenses+=num(e.amount);});
-     settlements.forEach(s=>{if(s.collected_at){const r=dayRow(String(s.collected_at).slice(0,10));if(r){r.cod_collected+=num(s.collected_amount);r.courier_fees+=num(s.courier_fee);}}if(s.remitted_at){const r=dayRow(String(s.remitted_at).slice(0,10));if(r){r.cod_remitted+=num(s.remitted_amount);r.cod_remitted_recorded+=num(s.remitted_amount);}}});
+     settlements.forEach(s=>{if(s.collected_at){const r=dayRow(String(s.collected_at).slice(0,10));if(r){r.cod_collected+=num(s.collected_amount);r.courier_fees+=num(s.courier_fee);}}if(s.remitted_at){const r=dayRow(String(s.remitted_at).slice(0,10));if(r){r.cod_remitted_recorded+=num(s.remitted_amount);}}});
      finance.filter(e=>String(e.entry_type||"").toLowerCase()==="income"&&String(e.status||"").toLowerCase()==="confirmed"&&e.related_cod_settlement_id).forEach(e=>{const r=dayRow(String(e.entry_date||"").slice(0,10));if(r)r.cod_remitted_verified+=num(e.amount);});
      rows=[...byDay.values()].sort((a,b)=>b.date.localeCompare(a.date));title="Daily Business Report";notes="অর্ডার মূল্য cancelled বাদে; ব্যয় কেবল Confirmed expense। COD collection ও settlement-এ লেখা remittance তাদের event date-এ এবং verified remittance linked confirmed Finance income-এর entry date-এ দেখানো হয়েছে। Recorded amount-কে verified cash ধরা হয় না।";
     }else if(type==="product-sales"||type==="top-products"){
@@ -3637,7 +3637,7 @@ async function refresh(){
     block("দিনভিত্তিক ব্যবসায়িক সারাংশ","অর্ডার, বাতিল, অর্ডার মূল্য, নিশ্চিত ব্যয়, COD সংগ্রহ, রেকর্ডকৃত ও যাচাইকৃত রেমিট্যান্স।",["date","orders","cancelled_orders","order_value","delivery_charge","confirmed_expenses","cod_collected","cod_remitted_recorded","cod_remitted_verified"],rows.slice().sort((a,b)=>String(b.date||"").localeCompare(String(a.date||""))),"order_value")
    ]};
    if(["product-sales","top-products"].includes(type))return {blocks:[
-    block("পণ্যভিত্তিক বিক্রয়","Units sold এবং order line value; cancelled order বাদ.",["rank","product","sku","category","quantity_sold","sales","order_lines"],rows.slice(0,12),"sales"),
+    block("পণ্যভিত্তিক বিক্রয়","Units sold এবং order line value; cancelled order বাদ.",["rank","product","sku","category","quantity_sold","sales","order_lines","current_stock","minimum_stock","catalogue_status"],rows.slice(0,12),"sales"),
     grouped("ক্যাটাগরি অনুযায়ী বিক্রয়","Current catalogue category match যেখানে পাওয়া গেছে.",rows,"category",["quantity_sold","sales"])
    ]};
    if(type==="customer-wise-products")return {blocks:[
