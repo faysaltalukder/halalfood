@@ -36,9 +36,19 @@ function moonData(now){
  else if(phase>=.78&&phase<.97)label="Waning Crescent";
  return {phase,illumination,label};
 }
+
+function injectBaseStyles(){
+ if(document.getElementById("hfCelestialBaseStyles"))return;
+ const style=document.createElement("style");style.id="hfCelestialBaseStyles";
+ style.textContent=".hf-theme-mode-control{margin:12px 16px 4px;padding:13px 14px;border:1px solid var(--hf-theme-border,#E4E7EC);border-radius:14px;background:var(--hf-theme-card-bg,#FFFFFF)}.hf-theme-mode-heading{display:flex;flex-direction:column;gap:3px;margin-bottom:10px}.hf-theme-mode-heading strong{font-size:12px;color:var(--hf-theme-text,#344054)}.hf-theme-mode-heading small{font-size:10px;line-height:1.45;color:var(--hf-theme-muted,#667085)}.hf-theme-mode-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.hf-theme-mode-actions button{min-height:35px;padding:7px 6px;border:1px solid var(--hf-theme-border,#D9DDE5);border-radius:9px;background:var(--hf-theme-control-bg,#FFFFFF);color:var(--hf-theme-text,#4E5669);font:inherit;font-size:11px;font-weight:650;cursor:pointer;transition:background .2s,border-color .2s,transform .2s}.hf-theme-mode-actions button:hover{transform:translateY(-1px)}.hf-theme-mode-actions button.is-active{background:var(--hf-theme-secondary,#E8EDF5);border-color:var(--hf-theme-accent,#8095B9);color:var(--hf-theme-secondary-ink,var(--hf-theme-text,#304665))}html[data-hf-celestial] .admin-sidebar,html[data-hf-celestial] .admin-topbar,html[data-hf-celestial] .admin-main .hf-card,html[data-hf-celestial] .admin-main .hf-kpi,html[data-hf-celestial] .hf-table{transition:background 45s ease,background-color 45s ease,border-color 45s ease,color 45s ease}";
+ document.head.appendChild(style);
+}
 function hexRgb(hex){const h=hex.replace("#","");return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];}
 function rgbHex(rgb){return "#"+rgb.map(v=>Math.round(v).toString(16).padStart(2,"0")).join("");}
 function mix(a,b,t){const x=hexRgb(a),y=hexRgb(b);return rgbHex(x.map((v,i)=>v+(y[i]-v)*t));}
+
+const solarChartBase=["#9D6348","#CD9555","#718B98","#C27A61","#A6B8B5","#D7AF75","#7E695D","#B58B79","#6D93A2","#C4A59A"];
+const lunarChartBase=["#AFC0EA","#D8C69E","#8EACD0","#B59BCB","#86B6B2","#D5A17F","#91A3CB","#C5B2D5","#87A0B4","#D1B68B"];
 const solarStops=[
  {at:0,c:{canvas:"#F5E5DC",header:"#FFF6F0",card:"#FFFCF8",nested:"#F3E5DC",control:"#FFFEFC",text:"#59463F",muted:"#806E66",border:"#E7D4C9",primary:"#A45F48",primaryHover:"#884D3B",secondary:"#F2E1D6",secondaryInk:"#684B3D",accent:"#D18D55",focus:"#B87955",sidebar:"#755249",sideInk:"#FFF8F1",table:"#FFFDF9",tableHead:"#F2E3D9",tableAlt:"#FAF0E9",tableHover:"#F0DED3",chart:"#F5EAE2",chartText:"#5D4D45",chartMuted:"#82746C",chartGrid:"#E5D6CC"}},
  {at:.2,c:{canvas:"#EEF2EF",header:"#F8FCFA",card:"#FFFFFF",nested:"#E8F0ED",control:"#FCFFFD",text:"#41535A",muted:"#708087",border:"#D8E4E0",primary:"#557F91",primaryHover:"#42697A",secondary:"#DDEBE7",secondaryInk:"#3F6267",accent:"#CFA35F",focus:"#6D9AAB",sidebar:"#506E70",sideInk:"#F6FCF9",table:"#FFFFFF",tableHead:"#E3EFEB",tableAlt:"#F1F6F4",tableHover:"#DDECE7",chart:"#EAF2EF",chartText:"#445D62",chartMuted:"#75898B",chartGrid:"#D6E4DF"}},
@@ -68,6 +78,7 @@ function setPalette(kind,progress){
  if(theme)theme.tokens["sidebar-bg"]=sidebar;document.documentElement.style.setProperty("--hf-theme-sidebar-bg",sidebar);
  const derived={"table-row":c.table,"chart-surface":c.card,"tooltip-bg":kind==="lunar"?"#29334F":c.card,"side-menu-1":kind==="lunar"?mix(c.card,"#FFFFFF",.045):mix(c.card,"#FFFFFF",.18),"side-menu-2":c.nested,"side-menu-ink":kind==="lunar"?"#EEF2FB":"#5F4A40","side-menu-hover":kind==="lunar"?mix(c.card,"#FFFFFF",.13):mix(c.card,c.accent,.16),"side-menu-active":kind==="lunar"?mix(c.primary,"#FFFFFF",.08):mix(c.accent,"#FFFFFF",.45),"side-menu-active-ink":kind==="lunar"?"#FFFFFF":"#5A4334","side-icon-bg":kind==="lunar"?mix(c.card,c.primary,.22):mix(c.card,c.accent,.2),"side-icon-ink":kind==="lunar"?"#E1D7F4":c.primary,"kpi-1":c.nested,"kpi-2":c.card,"kpi-3":c.nested,"kpi-4":c.card};
  Object.entries(derived).forEach(([k,v])=>{if(theme)theme.tokens[k]=v;document.documentElement.style.setProperty("--hf-theme-"+k,v);});
+ const base=kind==="solar"?solarChartBase:lunarChartBase;const themeForCharts=window.HFAdmin?.getCurrentColorTheme?.();if(themeForCharts){themeForCharts.chartColors.splice(0,themeForCharts.chartColors.length,...base.map(color=>mix(color,c.accent,.08+.08*clamp(progress))));window.HFAdmin?.colorSet?.splice(0,window.HFAdmin.colorSet.length,...themeForCharts.chartColors);}
  const p=window.HFAdmin?.palette;if(p){p.navy=c.text;p.orange=c.accent;p.blue=c.primary;p.muted=c.muted;p.purple=c.primary;}
  window.HFAdmin?.syncChartsForTheme?.();
 }
@@ -116,7 +127,7 @@ function selectTheme(themeId){
  setMode("theme",true);config.applyTheme(themeId,true);
 }
 function init(options){
- config=options;
+ config=options;injectBaseStyles();
  const key="hf_admin_celestial_mode:"+String(config.getUserId()||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"").slice(0,100);
  let saved="theme";try{saved=localStorage.getItem(key)||"theme";}catch(_){}
  if(saved==="theme"&&config.getCurrentTheme()==="solar-journey")saved="day";
