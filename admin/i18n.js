@@ -1033,11 +1033,13 @@
     }
     const lang = language();
     const label = segment.querySelector(".hf-language-label");
-    if (label) label.textContent = lang === "bn" ? "ভাষা" : "Language";
+    const labelText = lang === "bn" ? "ভাষা" : "Language";
+    if (label && label.textContent !== labelText) label.textContent = labelText;
     segment.querySelectorAll("[data-hf-language]").forEach(button => {
       const active = button.dataset.hfLanguage === lang;
-      button.setAttribute("aria-pressed", String(active));
-      button.classList.toggle("is-active", active);
+      const pressed = String(active);
+      if (button.getAttribute("aria-pressed") !== pressed) button.setAttribute("aria-pressed", pressed);
+      if (button.classList.contains("is-active") !== active) button.classList.toggle("is-active", active);
     });
   }
 
@@ -1058,15 +1060,26 @@
     applyLanguage();
     const observer = new MutationObserver(records => {
       const lang = language();
+      let pickerMissing = !document.querySelector(".hf-language-segment, .hf-language-picker");
       for (const record of records) {
-        if (record.type === "characterData") translateText(record.target, lang);
-        if (record.type === "attributes") translateElement(record.target, lang);
+        if (record.type === "characterData") {
+          if (!isPickerOption(record.target)) translateText(record.target, lang);
+          continue;
+        }
+        if (record.type === "attributes") {
+          if (!isPickerOption(record.target)) translateElement(record.target, lang);
+          continue;
+        }
+        if (record.type !== "childList") continue;
         for (const node of record.addedNodes || []) {
-          if (node.nodeType === 1 && node.matches?.(".hf-language-segment, .hf-language-picker")) continue;
+          if (isPickerOption(node)) continue;
           translateTree(node, lang);
         }
+        if (!document.querySelector(".hf-language-segment, .hf-language-picker")) pickerMissing = true;
       }
-      ensurePicker();
+      // Recreate the picker only when it is actually absent. Calling this on
+      // every mutation used to rewrite the same label and retrigger this observer.
+      if (pickerMissing) ensurePicker();
     });
     observer.observe(document.body, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: attrNames });
   }

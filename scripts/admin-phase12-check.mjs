@@ -9,9 +9,13 @@ const adminDir = join(root, "admin");
 const sharedCssVersion = "20261101-shared-erp-system-v1";
 const workspaceThemeCssVersion = "20261101-merchant-fieldbook-v1";
 const sharedJsVersion = "20261102-solar-lunar-v1";
-const i18nVersion = "20261102-bilingual-segment-v3";
+const i18nVersion = "20261102-bilingual-loop-fix-v4";
 const appJsVersion = "20261030-orders-polish-v5";
 const read = (path) => readFileSync(join(root, path), "utf8");
+const languageEngine = read("admin/i18n.js");
+assert.ok(languageEngine.includes("label.textContent !== labelText"), "Language picker label updates must be idempotent to prevent mutation-observer loops.");
+assert.ok(languageEngine.includes("if (pickerMissing) ensurePicker();"), "The language picker must only be re-created when missing.");
+assert.ok(languageEngine.includes("if (!isPickerOption(record.target)) translateText(record.target, lang);"), "Language picker DOM mutations must be excluded from recursive translation work.");
 
 const themeRegistry = read("admin/shared.js");
 const corporateThemeCss = read("admin/corporate-standard.css");
