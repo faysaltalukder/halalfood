@@ -1095,7 +1095,43 @@ function makeShell(){
   {label:"WORKSPACE",items:[["overview","overview","Overview","dashboard home start"]]},
   {label:"STORE MANAGEMENT",items:[["pos","pos","POS Management","offline pos point of sale offline sales import cash register"],["orders","orders","Orders","order order management customer orders"],["incomplete-orders","orders","Incomplete Orders","incomplete checkout abandoned cart order recovery leads"],["operations","operations","Operations","operation packing fulfillment"],["suppliers","layers","Suppliers","supplier vendors procurement purchase orders grn goods received supplier bills payment history payable ledger",[[ "supplier-add","plus","Add Supplier","supplier vendor add new directory contact registration" ],[ "supplier-purchases","orders","Purchase List","purchase orders procurement invoice goods received grn stock" ],[ "supplier-payments","finance","Payment History","supplier payments accounts payable ledger due bkash bank cash" ]]],["products","products","Products","product inventory stock sku barcode scanner reviews ratings",[['products-add','plus','Add Product','add new create product'],['products','products','All Products','all products catalogue inventory'],['products-barcode','barcode','Barcode Generation','barcode generate print scan qr'],['products-reviews','star','Product Reviews','customer product reviews ratings moderation']]],["categories","layers","Categories","catalog categories hierarchy subcategories product order drag drop merchandising"],["coupons","coupons","Coupons","coupon coupon codes discounts promotion campaigns marketing",[[ "coupons","coupons","Coupon Promotions","coupon promotions offer campaigns" ],[ "coupon-usage","analytics","Coupon Usage","coupon usage redemption orders customers discounts" ]]],["content","content","Website Content","content pages blog seo"]]},
   {label:"CUSTOMERS & MESSAGES",items:[["messages","messages","WhatsApp Inbox","whatsapp inbox customer chat messages"],["messenger","messenger","Messenger Inbox","facebook messenger messages social inbox"],["facebook-publishing","messenger","Facebook Publishing","facebook publishing posts social media schedule"],["meta-ads-review","finance","Meta Ads Review","meta ads advertising campaign paid media copy review draft"],["youtube-publishing","video","YouTube Publishing","youtube channel videos upload schedule"],["customers","customers","Customer Information","customer contact audience crm directory loyalty"],["customer-settings","settings","Customer Settings","customer segmentation tier vip special customer rules"],["marketing-center","messages","Customer Messages","customer messages customer support order updates email whatsapp service communication"]]},
-  {label:"INSIGHTS & FINANCE",items:[["analytics","analytics","Analytics","analytics insights website traffic marketing"],["finance","finance","Finance & Cash Flow","finance expenses income bookkeeping cash"],["business-health","health","Business Health","daily business questions sales profit cash flow stock inventory supplier payable operating performance product pricing calculator margin markup break even",[["business-health","health","Business Overview","business health daily business questions sales finance cash stock inventory"],["business-health-pricing","finance","Pricing & Profit Calculator","product pricing profit calculator landed cost break even margin markup"]]],["reports","reports","Reports","report export download csv",[["reports-business","chart","Business & Sales","business sales revenue order product sales top products"],["reports-purchase","shopping-bag","Purchase & Supply","purchase supplier procurement purchase order bills"],["reports-customers","users","Customer Reports","customers top customer receivable customer order"],["reports-payables","wallet","Payables","supplier payable bills payment due"],["reports-inventory","boxes","Inventory Reports","inventory stock low stock movement"],["reports-finance","finance","Financial Reports","finance account payment collection expense transaction"],["reports-daily","calendar","Daily Reports","daily business report day sales summary"]]]]},
+  {label:"INSIGHTS & FINANCE",items:[["analytics","analytics","Analytics","analytics insights website traffic marketing"],["finance","finance","Finance & Cash Flow","finance expenses income bookkeeping cash"],["business-health","health","Business Health","daily business questions sales profit cash flow stock inventory supplier payable operating performance product pricing calculator margin markup break even",[["business-health","health","Business Overview","business health daily business questions sales finance cash stock inventory"],["business-health-pricing","finance","Pricing & Profit Calculator","product pricing profit calculator landed cost break even margin markup"]]],["reports","reports","Reports","reports report export download csv business sales purchase customers receivable payable inventory stock finance expenses collection daily",[
+    {label:"Business & Sales",items:[
+     ["business","chart","ব্যবসা রিপোর্ট","Business overview","reports-business","business sales revenue order overview"],
+     ["sales","chart","বিক্রয় রিপোর্ট","Sales performance","reports-business","sales performance order revenue"],
+     ["product-sales","boxes","পণ্য বিক্রয় রিপোর্ট","Product sales","reports-business","product sales item quantity"],
+     ["top-products","chart","সর্বাধিক বিক্রিত পণ্য","Top selling products","reports-business","top selling product ranking"],
+     ["customer-wise-products","users","কাস্টমারভিত্তিক পণ্য বিক্রয়","Customer-wise product sales","reports-business","customer wise product sales"],
+     ["customer-products","users","কাস্টমার পণ্য রিপোর্ট","Customer product report","reports-business","customer product report"]
+    ]},
+    {label:"Purchase & Supply",items:[
+     ["purchase","shopping-bag","ক্রয় রিপোর্ট","Purchase history","reports-purchase","purchase orders procurement supplier"],
+     ["product-purchase","boxes","ক্রয় পণ্য রিপোর্ট","Product purchase report","reports-purchase","product purchase quantity unit cost"]
+    ]},
+    {label:"Customer Reports",items:[
+     ["top-customers","users","শীর্ষ কাস্টমার","Top customers","reports-customers","top customer ranking"],
+     ["customers","users","কাস্টমার রিপোর্ট","Customer overview","reports-customers","customer overview order spending"],
+     ["receivable","wallet","পাওনাদার রিপোর্ট","Customer receivables","reports-customers","receivable cod remittance customer due"]
+    ]},
+    {label:"Payables",items:[
+     ["payable","wallet","দেনাদার রিপোর্ট","Supplier payables","reports-payables","supplier payable bill balance"]
+    ]},
+    {label:"Inventory Reports",items:[
+     ["low-stock","boxes","স্বল্প স্টকের পণ্য","Low stock products","reports-inventory","low stock threshold inventory"],
+     ["alert-products","chart","অ্যালার্ট পণ্য তালিকা","Stock alert products","reports-inventory","alert products stock warning"],
+     ["stock","boxes","স্টক রিপোর্ট","Inventory valuation","reports-inventory","stock valuation inventory"],
+     ["stock-list","boxes","স্টক লিস্ট","Current stock list","reports-inventory","stock list products"]
+    ]},
+    {label:"Financial Reports",items:[
+     ["account-payments","finance","অ্যাকাউন্ট পেমেন্ট রিপোর্ট","Account payments","reports-finance","account payment method finance"],
+     ["collections","wallet","কালেকশন তালিকা","Collections","reports-finance","collection cod courier remittance"],
+     ["expenses","finance","খরচ রিপোর্ট","Expense report","reports-finance","expense ledger finance"],
+     ["transactions","finance","লেনদেন রিপোর্ট","Transactions","reports-finance","financial transactions ledger"]
+    ]},
+    {label:"Daily Reports",items:[
+     ["daily","calendar","দৈনিক ব্যবসায়িক রিপোর্ট","Daily business summary","reports-daily","daily business sales summary"]
+    ]}
+   ]]]},
   {label:"SYSTEM",items:[["website-publisher","settings","Website Publisher","website publisher deploy code review approve publish"],["tracking","sliders","Tracking Controls","tracking meta pixel conversions api capi google analytics event routing"],["settings","settings","Settings & Security","settings security preferences access"]]}
  ];
  const allItems=menuGroups.flatMap(group=>group.items.map(item=>({id:item[0],icon:item[1],label:item[2],href:"./"+item[0]+".html",keys:item[3]})));
@@ -1122,7 +1158,21 @@ function makeShell(){
  const renderNavigation=()=>menuGroups.map(group=>{
   const links=group.items.map(item=>{
    if(["products","coupons","suppliers","business-health","reports"].includes(item[0])&&Array.isArray(item[4])){
-    const section=item[0],children=item[4],open=children.some(child=>child[0]===pageName)||(section==="categories"&&pageName==="categories");
+    const section=item[0],children=item[4];
+    if(section==="reports"){
+     const reportDefaults={"reports-business":"business","reports-purchase":"purchase","reports-customers":"top-customers","reports-payables":"payable","reports-inventory":"low-stock","reports-finance":"account-payments","reports-daily":"daily"};
+     const activeReportType=new URLSearchParams(window.location.search).get("report")||reportDefaults[pageName]||"";
+     const open=pageName==="reports"||pageName.startsWith("reports-");
+     const childLinks=children.map(category=>'<div class="admin-nav-report-group" data-nav-report-group><div class="admin-nav-report-heading">'+esc(category.label)+'</div>'+category.items.map(report=>{
+      const [type,icon,label,subtitle,workspace,keywords]=report;
+      const href="./"+workspace+".html?report="+encodeURIComponent(type);
+      const active=pageName===workspace&&activeReportType===type;
+      const searchKeys=[category.label,label,subtitle,keywords,type,"reports report"].join(" ");
+      return '<div class="admin-nav-item admin-nav-report-item" data-nav-item data-nav-keys="'+esc(searchKeys)+'"><a class="admin-nav-child-link admin-nav-report-link '+(active?"active":"")+'" href="'+esc(href)+'" data-report-nav-type="'+esc(type)+'" '+(active?'aria-current="page"':'')+'><span class="admin-nav-child-icon">'+shellIcon(icon)+'</span><span class="admin-nav-report-copy"><strong>'+esc(label)+'</strong><small>'+esc(subtitle)+'</small></span></a></div>';
+     }).join("")+'</div>').join("");
+     return '<div class="admin-nav-item admin-nav-parent-item" data-nav-item data-nav-keys="'+esc(item[3])+'"><div class="admin-nav-parent-row"><button class="admin-nav-link admin-nav-parent-toggle '+(open?"active":"")+'" type="button" data-nav-expand="'+section+'" aria-expanded="'+String(open)+'"><span class="nav-icon nav-icon-'+section+'">'+navPictureIcon(section)+'</span><span class="admin-nav-text">'+esc(item[2])+'</span><span class="admin-nav-expand-icon" aria-hidden="true">'+shellIcon("chevron")+'</span></button>'+favoriteStar(item[0],item[2])+'</div><div class="admin-nav-children admin-nav-report-children" data-nav-children="'+section+'" '+(open?"":"hidden")+'>'+childLinks+'</div></div>';
+    }
+    const open=children.some(child=>child[0]===pageName)||(section==="categories"&&pageName==="categories");
     const childLinks=children.map(child=>'<a class="admin-nav-child-link '+(child[0]===pageName?"active":"")+'" href="./'+child[0]+'.html" '+(child[0]===pageName?'aria-current="page"':'')+'><span class="admin-nav-child-icon">'+shellIcon(child[1])+'</span><span>'+esc(child[2])+'</span></a>').join("");
     return '<div class="admin-nav-item admin-nav-parent-item" data-nav-item data-nav-keys="'+esc(item[3])+'"><div class="admin-nav-parent-row"><button class="admin-nav-link admin-nav-parent-toggle '+(open?"active":"")+'" type="button" data-nav-expand="'+section+'" aria-expanded="'+String(open)+'"><span class="nav-icon nav-icon-'+section+'">'+navPictureIcon(section)+'</span><span class="admin-nav-text">'+esc(item[2])+'</span><span class="admin-nav-expand-icon" aria-hidden="true">'+shellIcon("chevron")+'</span></button>'+favoriteStar(item[0],item[2])+'</div><div class="admin-nav-children" data-nav-children="'+section+'" '+(open?"":"hidden")+'>'+childLinks+'</div></div>';
    }
@@ -1240,13 +1290,22 @@ function makeShell(){
   const items=[...sidebar.querySelectorAll("[data-nav-item]")];
   let matches=0;const matching=[];
   items.forEach(row=>{
-   const link=row.querySelector(".admin-nav-link");
+   const link=row.querySelector(".admin-nav-link,.admin-nav-child-link");
    const haystack=((row.dataset.navKeys||"")+" "+(link?.textContent||"")).toLowerCase();
-   const matched=tokens.every(token=>haystack.includes(token));
+   const ownMatch=tokens.every(token=>haystack.includes(token));
+   const nestedReportMatch=row.classList.contains("admin-nav-parent-item")&&[...row.querySelectorAll(".admin-nav-report-item")].some(child=>{
+    const childLink=child.querySelector(".admin-nav-child-link");
+    const childText=((child.dataset.navKeys||"")+" "+(childLink?.textContent||"")).toLowerCase();
+    return tokens.every(token=>childText.includes(token));
+   });
+   const matched=ownMatch||nestedReportMatch;
    row.hidden=!matched;
    row.classList.toggle("is-search-match",matched&&tokens.length>0);
    link?.classList.remove("is-first");
    if(matched){matches++;matching.push(link);}
+  });
+  sidebar.querySelectorAll("[data-nav-report-group]").forEach(group=>{
+   group.hidden=tokens.length>0&&![...group.querySelectorAll(".admin-nav-report-item")].some(item=>!item.hidden);
   });
   sidebar.querySelectorAll("[data-nav-group]").forEach(group=>{
    const groupItems=[...group.querySelectorAll("[data-nav-item]")];
@@ -1277,9 +1336,9 @@ function makeShell(){
  renderFavorites();filterNavigation();
  navSearchInput?.addEventListener("input",filterNavigation);
  navSearchInput?.addEventListener("keydown",event=>{
-  const links=[...sidebar.querySelectorAll(".admin-nav-item:not([hidden]) .admin-nav-link")];
+  const links=[...sidebar.querySelectorAll(".admin-nav-item:not([hidden]) .admin-nav-link,.admin-nav-item:not([hidden]) .admin-nav-child-link")];
   const first=links[0];
-  if(event.key==="Enter"&&String(navSearchInput.value||"").trim()&&first){event.preventDefault();const target=first.matches("[data-nav-expand]")?first.closest(".admin-nav-parent-row")?.parentElement?.querySelector(".admin-nav-child-link"):first;if(target?.href)location.href=target.href;}
+  if(event.key==="Enter"&&String(navSearchInput.value||"").trim()&&first){event.preventDefault();const target=first.matches("[data-nav-expand]")?(first.closest(".admin-nav-parent-row")?.parentElement?.querySelector(".admin-nav-report-item:not([hidden]) .admin-nav-child-link")||first.closest(".admin-nav-parent-row")?.parentElement?.querySelector(".admin-nav-child-link")):first;if(target?.href)location.href=target.href;}
   else if(event.key==="ArrowDown"&&first){event.preventDefault();first.focus();}
   else if(event.key==="Escape"&&navSearchInput.value){event.preventDefault();clearMenuSearch();}
  });
@@ -1287,7 +1346,7 @@ function makeShell(){
   if(!["ArrowDown","ArrowUp"].includes(event.key))return;
   const link=event.target.closest?.(".admin-nav-link");
   if(!link||!String(navSearchInput?.value||"").trim())return;
-  const links=[...sidebar.querySelectorAll(".admin-nav-item:not([hidden]) .admin-nav-link")];
+  const links=[...sidebar.querySelectorAll(".admin-nav-item:not([hidden]) .admin-nav-link,.admin-nav-item:not([hidden]) .admin-nav-child-link")];
   const index=links.indexOf(link);if(index<0)return;
   event.preventDefault();
   if(event.key==="ArrowUp"&&index===0)navSearchInput.focus();
