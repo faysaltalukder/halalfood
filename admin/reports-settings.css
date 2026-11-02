@@ -173,3 +173,141 @@ html[data-admin-theme="dark"] .hf-report-segment-nav button.active{background:#4
 html[data-admin-theme="dark"] .hf-report-workspace .hf-table th{background:#393747;color:#E8E2EC}
 html[data-admin-theme="dark"] .hf-report-source-note{background:#34313D;color:#DED5D0}
 html[data-admin-theme="dark"] .hf-report-empty strong{color:#F2F0EA}
+
+
+/* REPORT WORKSPACE THEME TOKENS
+   All report surfaces consume the active Admin theme registry variables.
+   No report-specific fixed palette is used, so every saved color theme stays coherent. */
+html[data-hf-theme] body[data-page] .hf-report-workspace{
+ background:var(--hf-theme-hero-bg,var(--hf-theme-card-bg,#FFFDF8))!important;
+ border-color:var(--hf-theme-hero-border,var(--hf-theme-card-border,#E4DDD1))!important;
+ color:var(--hf-theme-text,#654536)!important;
+}
+html[data-hf-theme] body[data-page] .hf-report-workspace-head h2,
+html[data-hf-theme] body[data-page] .hf-report-subsection-head h3,
+html[data-hf-theme] body[data-page] .hf-report-record-toolbar h3,
+html[data-hf-theme] body[data-page] .hf-report-insight-card h3{
+ color:var(--hf-theme-text,#654536)!important;
+}
+html[data-hf-theme] body[data-page] .hf-report-workspace-head>div:first-child>p:last-child,
+html[data-hf-theme] body[data-page] .hf-report-subsection-head p,
+html[data-hf-theme] body[data-page] .hf-report-record-toolbar p,
+html[data-hf-theme] body[data-page] .hf-report-workspace-meta small,
+html[data-hf-theme] body[data-page] .hf-report-workspace-foot,
+html[data-hf-theme] body[data-page] .hf-report-kpi span,
+html[data-hf-theme] body[data-page] .hf-report-insight-card p,
+html[data-hf-theme] body[data-page] .hf-report-insight-card small{
+ color:var(--hf-theme-muted,#8B7062)!important;
+}
+html[data-hf-theme] body[data-page] .hf-report-workspace-meta span,
+html[data-hf-theme] body[data-page] .hf-report-subsection-head>span,
+html[data-hf-theme] body[data-page] .hf-report-insight-level{
+ background:var(--hf-theme-secondary,#F2F0EA)!important;
+ color:var(--hf-theme-secondary-ink,var(--hf-theme-primary,#89513E))!important;
+ border-color:var(--hf-theme-border,#E3C6B1)!important;
+}
+html[data-hf-theme] body[data-page] .hf-report-kpi{
+ border-color:var(--hf-theme-card-border,#E2C7B3)!important;
+ background:var(--hf-theme-kpi-1,var(--hf-theme-card-bg,#FFFDF8))!important;
+ color:var(--hf-theme-text,#654536)!important;
+}
+html[data-hf-theme] body[data-page] .hf-report-kpi:nth-child(4n+2){background:var(--hf-theme-kpi-2,var(--hf-theme-card-bg,#FFFDF8))!important}
+html[data-hf-theme] body[data-page] .hf-report-kpi:nth-child(4n+3){background:var(--hf-theme-kpi-3,var(--hf-theme-card-bg,#FFFDF8))!important}
+html[data-hf-theme] body[data-page] .hf-report-kpi:nth-child(4n){background:var(--hf-theme-kpi-4,var(--hf-theme-card-bg,#FFFDF8))!important}
+html[data-hf-theme] body[data-page] .hf-report-kpi small,
+html[data-hf-theme] body[data-page] .hf-report-kpi strong{
+ color:var(--hf-theme-text,#654536)!important;
+}
+html[data-hf-theme] body[data-page] .hf-report-workspace-toolbar,
+html[data-hf-theme] body[data-page] .hf-report-subsection,
+html[data-hf-theme] body[data-page] .hf-report-insight-card{
+ border-color:var(--hf-theme-card-border,var(--hf-theme-border,#E3C6B1))!important;
+ background:var(--hf-theme-card-bg,#FFFDF8)!important;
+ color:var(--hf-theme-text,#654536)!important;
+}
+html[data-hf-theme] body[data-page] .hf-report-subsection .hf-table th,
+html[data-hf-theme] body[data-page] .hf-report-workspace .hf-table th{
+ background:var(--hf-theme-table-head,#EBD8C8)!important;
+ color:var(--hf-theme-text,#654536)!important;
+ border-color:var(--hf-theme-border,#E3C6B1)!important;
+}
+html[data-hf-theme] body[data-page] .hf-report-workspace .hf-table td{
+ background:var(--hf-theme-table-row,#FFF8F1)!important;
+ color:var(--hf-theme-text,#654536)!important;
+ border-color:var(--hf-theme-border,#E3C6B1)!important;
+}
+html[data-hf-theme] body[data-page] .hf-report-workspace .hf-table tbody tr:nth-child(even) td{
+ background:var(--hf-theme-table-alt,#F5E9DE)!important;
+}
+html[data-hf-theme] body[data-page] .hf-report-workspace .hf-table tbody tr:hover td{
+ background:var(--hf-theme-table-hover,#F1DDCC)!important;
+}
+html[data-hf-theme] body[data-page] .hf-report-workspace .hf-report-table-wrap{
+ border-color:var(--hf-theme-card-border,#E2C7B3)!important;
+}
+html[data-hf-theme] body[data-page] .hf-report-segment-nav{
+ border-color:var(--hf-theme-border,#E3C6B1)!important;
+ background:var(--hf-theme-secondary,#F2F0EA)!important;
+}
+html[data-hf-theme] body[data-page] .hf-report-segment-nav button{
+ color:var(--hf-theme-secondary-ink,var(--hf-theme-muted,#8B7062))!important;
+}
+html[data-hf-theme] body[data-page] .hf-report-segment-nav button:hover{
+ background:var(--hf-theme-card-bg,#FFFDF8)!important;
+ color:var(--hf-theme-primary,#A94335)!important;
+}
+html[data-hf-theme] body[data-page] .hf-report-segment-nav button.active{
+ border-color:var(--hf-theme-focus,var(--hf-theme-accent,#D49537))!important;
+ background:var(--hf-theme-card-bg,#FFFDF8)!important;
+ color:var(--hf-theme-primary,#A94335)!important;
+ box-shadow:0 2px 7px color-mix(in srgb,var(--hf-theme-primary,#A94335) 12%,transparent)!important;
+}
+html[data-hf-theme] body[data-page] .hf-report-source-note{
+ border-left-color:var(--hf-theme-accent,#D49537)!important;
+ background:var(--hf-theme-nested-bg,#F0DFD2)!important;
+ color:var(--hf-theme-muted,#8B7062)!important;
+}
+html[data-hf-theme] body[data-page] .hf-report-bars{
+ border-color:var(--hf-theme-chart-grid,var(--hf-theme-border,#E3C6B1))!important;
+ background:var(--hf-theme-chart-bg,var(--hf-theme-nested-bg,#F0DFD2))!important;
+}
+html[data-hf-theme] body[data-page] .hf-report-bar-label,
+html[data-hf-theme] body[data-page] .hf-report-bar-label strong{
+ color:var(--hf-theme-chart-text,var(--hf-theme-text,#654536))!important;
+}
+html[data-hf-theme] body[data-page] .hf-report-bar-label span{
+ color:var(--hf-theme-chart-muted,var(--hf-theme-muted,#8B7062))!important;
+}
+html[data-hf-theme] body[data-page] .hf-report-bar-track{
+ background:var(--hf-theme-chart-grid,var(--hf-theme-table-alt,#EDE8DF))!important;
+}
+html[data-hf-theme] body[data-page] .hf-report-bar-track span{
+ background:var(--hf-theme-primary,#A94335)!important;
+}
+html[data-hf-theme] body[data-page] .hf-report-empty{
+ color:var(--hf-theme-muted,#8B7062)!important;
+}
+html[data-hf-theme] body[data-page] .hf-report-empty strong{
+ color:var(--hf-theme-text,#654536)!important;
+}
+html[data-hf-theme] body[data-page] .hf-report-empty p{
+ color:var(--hf-theme-muted,#8B7062)!important;
+}
+.hf-report-insights-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.hf-report-insight-card{display:grid;align-content:start;gap:8px;min-width:0;padding:14px;border:1px solid;border-radius:13px}
+.hf-report-insight-card>div{display:flex;align-items:center;gap:8px;min-width:0}
+.hf-report-insight-level{display:inline-flex;flex:0 0 auto;align-items:center;padding:4px 7px;border:1px solid;border-radius:6px;font-size:8px;font-weight:850;letter-spacing:.06em}
+.hf-report-insight-card h3{margin:0;font-size:12px;font-weight:850;line-height:1.35}
+.hf-report-insight-card p{margin:0;font-size:10px;line-height:1.55;overflow-wrap:anywhere}
+.hf-report-insight-card small{font-size:9px;line-height:1.5;font-weight:650}
+html[data-hf-theme] body[data-page] .hf-report-insight-card.is-warning{border-left:3px solid var(--hf-theme-accent,#D49537)!important}
+html[data-hf-theme] body[data-page] .hf-report-insight-card.is-info{border-left:3px solid var(--hf-theme-primary,#A94335)!important}
+html[data-hf-theme] body[data-page] .hf-report-insight-card.is-success{border-left:3px solid var(--hf-theme-accent-alt,var(--hf-theme-accent,#D49537))!important}
+html[data-hf-theme] body[data-page] .hf-report-insight-card.is-warning .hf-report-insight-level{border-color:var(--hf-theme-accent,#D49537)!important}
+html[data-hf-theme] body[data-page] .hf-report-insight-card.is-info .hf-report-insight-level{border-color:var(--hf-theme-primary,#A94335)!important}
+html[data-hf-theme] body[data-page] .hf-report-insight-card.is-success .hf-report-insight-level{border-color:var(--hf-theme-accent-alt,var(--hf-theme-accent,#D49537))!important}
+@media(max-width:640px){.hf-report-insights-grid{grid-template-columns:minmax(0,1fr)}}
+@media print{
+ .hf-report-workspace{background:#fff!important;color:#222!important}
+ .hf-report-insight-card{break-inside:avoid}
+}
