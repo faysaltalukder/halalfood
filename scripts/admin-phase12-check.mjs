@@ -8,7 +8,7 @@ const root = process.cwd();
 const adminDir = join(root, "admin");
 const sharedCssVersion = "20261101-shared-erp-system-v1";
 const workspaceThemeCssVersion = "20261101-merchant-fieldbook-v1";
-const sharedJsVersion = "20261102-golden-prestige-v1";
+const sharedJsVersion = "20261102-solar-lunar-v1";
 const i18nVersion = "20261102-glyph-signal-v2";
 const appJsVersion = "20261030-orders-polish-v5";
 const read = (path) => readFileSync(join(root, path), "utf8");
@@ -16,6 +16,9 @@ const read = (path) => readFileSync(join(root, path), "utf8");
 const themeRegistry = read("admin/shared.js");
 const corporateThemeCss = read("admin/corporate-standard.css");
 const goldenPrestigeCss = read("admin/golden-prestige.css");
+const solarJourneyCss = read("admin/solar-journey.css");
+const lunarJourneyCss = read("admin/lunar-journey.css");
+const celestialEngine = read("admin/celestial-engine.js");
 assert.ok(themeRegistry.includes('id:"corporate-standard"') && themeRegistry.includes('name:"Corporate Standard"'), "Corporate Standard theme must be registered.");
 assert.ok(themeRegistry.includes('id:"standard",label:"Standard"') && themeRegistry.includes('themeIds:["corporate-standard"]'), "Corporate Standard must appear in its own Standard theme group.");
 assert.ok(themeRegistry.includes('corporate-standard.css?v=20261102-corporate-standard-v1'), "Corporate Standard stylesheet must load dynamically with a cache-busted URL.");
@@ -24,6 +27,18 @@ assert.ok(themeRegistry.includes('id:"golden-prestige"') && themeRegistry.includ
 assert.ok(themeRegistry.includes('id:"premium",label:"Premium"') && themeRegistry.includes('themeIds:["golden-prestige"]'), "Golden Prestige must appear in the Premium group.");
 assert.ok(themeRegistry.includes("golden-prestige.css?v=20261102-golden-prestige-v1"), "Golden Prestige stylesheet must load with a cache-busted URL.");
 assert.ok(goldenPrestigeCss.includes('html[data-hf-theme="golden-prestige"]') && goldenPrestigeCss.includes(".admin-sidebar") && goldenPrestigeCss.includes(".admin-topbar") && goldenPrestigeCss.includes(".hf-table"), "Golden Prestige CSS must cover the shared shell and work tables.");
+
+assert.ok(themeRegistry.includes('id:"solar-journey"') && themeRegistry.includes('name:"Solar Journey"'), "Solar Journey theme must be registered.");
+assert.ok(themeRegistry.includes('id:"lunar-journey"') && themeRegistry.includes('name:"Lunar Journey"'), "Lunar Journey theme must be registered.");
+assert.ok(themeRegistry.includes('id:"celestial",label:"Celestial"') && themeRegistry.includes('themeIds:["solar-journey","lunar-journey"]'), "Both dynamic themes must appear together in Celestial group.");
+assert.ok(themeRegistry.includes("solar-journey.css?v=20261102-solar-lunar-v1") && themeRegistry.includes("lunar-journey.css?v=20261102-solar-lunar-v1"), "Both dynamic theme stylesheets must load with cache-busted URLs.");
+assert.ok(solarJourneyCss.includes('html[data-hf-theme="solar-journey"]') && solarJourneyCss.includes(".hf-celestial-orb") && solarJourneyCss.includes(".hf-theme-mode-actions"), "Solar Journey CSS must style the daytime scene and controls.");
+assert.ok(lunarJourneyCss.includes('html[data-hf-theme="lunar-journey"]') && lunarJourneyCss.includes(".hf-moon-shadow") && lunarJourneyCss.includes(".hf-celestial-stars"), "Lunar Journey CSS must style moon phases and stars.");
+assert.ok(celestialEngine.includes("function solarTimes") && celestialEngine.includes("function moonData") && celestialEngine.includes("Asia/Dhaka"), "Dynamic engine must calculate local sunrise/sunset and lunar phase without an API.");
+assert.ok(celestialEngine.includes('data-hf-time-mode') && celestialEngine.includes('latitude:21.99') && celestialEngine.includes('longitude:90.24'), "Engine must expose Auto/Day/Night controls and use the Kalapara area coordinates.");
+assert.ok(themeRegistry.includes('id="hfCelestialScene"') && themeRegistry.includes('id="hfMoonShadow"'), "Shared shell must mount the non-interactive sun/moon scene.");
+assert.ok(celestialEngine.includes("setInterval(update,60000)") && solarJourneyCss.includes("prefers-reduced-motion") && lunarJourneyCss.includes("prefers-reduced-motion"), "Theme updates must be throttled and respect reduced motion.");
+
 
 
 const htmlFiles = readdirSync(adminDir).filter((file) => file.endsWith(".html"));
