@@ -492,7 +492,16 @@ window.HFAdminReady.then(async H=>{
   attachRefresh(refresh);
  }
  async function initAnalytics(){
-  let plotlyLoadPromise=null,latest3DModel=null,threeDInView=false;
+  let plotlyLoadPromise=null,latest3DModel=null,threeDInView=false,analyticsCoveragePromise=null;
+  function getAnalyticsCoverage(){
+   if(!analyticsCoveragePromise){
+    analyticsCoveragePromise=fetchEvents(null,15000).then(rows=>{
+     const days=rows.map(event=>dhakaDateKey(event.occurred_at)).filter(Boolean).sort();
+     return {firstTrackedDay:days[0]||null,complete:rows.length<15000,rowsFetched:rows.length};
+    });
+   }
+   return analyticsCoveragePromise;
+  }
   function loadAnalytics3D(){
    if(window.Plotly)return Promise.resolve(window.Plotly);
    if(plotlyLoadPromise)return plotlyLoadPromise;
@@ -545,11 +554,8 @@ window.HFAdminReady.then(async H=>{
   }
   async function refresh(){
    const range=selectedRange();
-   const historyPromise=range.fromDay?fetchEvents(null,15000):Promise.resolve(null);
-   const [rawEvents,orders,products,historyRows]=await Promise.all([fetchEvents(range,15000),fetchOrders(range,5000),fetchProducts(),historyPromise]);
-   const historyEvents=historyRows||rawEvents;
-   const historyDays=historyEvents.map(event=>dhakaDateKey(event.occurred_at)).filter(Boolean).sort();
-   const firstTrackedDay=historyDays[0]||null,historyComplete=historyEvents.length<15000;
+   const [rawEvents,orders,products,coverage]=await Promise.all([fetchEvents(range,15000),fetchOrders(range,5000),fetchProducts(),getAnalyticsCoverage()]);
+   const firstTrackedDay=coverage.firstTrackedDay,historyComplete=coverage.complete;
    const prepared=prepareAnalyticsEvents(rawEvents),events=prepared.events;
    const observedDays=events.map(event=>dhakaDateKey(event.occurred_at)).filter(Boolean).sort();
    const requestedFrom=range.fromDay||(observedDays[0]||firstTrackedDay||dhakaDateKey(new Date()));
@@ -627,7 +633,7 @@ window.HFAdminReady.then(async H=>{
    }
    const health=$("analyticsDataHealth"),rawTotal=prepared.rawCount;
    if(health){
-    const idCoverage=rawTotal?Math.round(prepared.eventIds/rawTotal*100):0,sessionCoverage=rawTotal?Math.round(prepared.identified/rawTotal*100):0,attributionCoverage=rawTotal?Math.round(prepared.attributed/rawTotal*100):0;
+    const idCoverage=rawTotal?Math.round((rawTotal-prepared.missingIds)/rawTotal*100):0,sessionCoverage=rawTotal?Math.round(prepared.identified/rawTotal*100):0,attributionCoverage=rawTotal?Math.round(prepared.attributed/rawTotal*100):0;
     const healthItems=[
      ["Canonical page paths",shortNum(prepared.cleanedPaths)+" normalized","Duplicate slashes and home-page aliases are grouped for analytics; source rows remain unchanged."],
      ["Event ID coverage",idCoverage+"% present",Math.round(prepared.missingIds/Math.max(1,rawTotal)*100)+"% of fetched events have no event_id. Missing IDs are not assumed to be duplicates."],
