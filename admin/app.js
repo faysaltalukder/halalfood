@@ -2303,7 +2303,9 @@ async function refresh(){
      notes:$("financeCodNotes").value.trim()};
     if(!order)throw new Error("Choose an existing order.");
     if(!payload.courier_name)throw new Error("Enter the courier name.");
-    if([payload.cod_amount,payload.collected_amount,payload.courier_fee,payload.remitted_amount].some(n=>!Number.isFinite(n)||n<0)||!Number.isFinite(payload.adjustment_amount))throw new Error("Enter valid non-negative values. Adjustment may be positive or negative.");
+    if(!Number.isFinite(payload.cod_amount)||payload.cod_amount<=0||[payload.collected_amount,payload.courier_fee,payload.remitted_amount].some(n=>!Number.isFinite(n)||n<0)||!Number.isFinite(payload.adjustment_amount))throw new Error("Enter a positive COD value and valid non-negative amounts. Adjustment may be positive or negative.");
+    if(["collected","remitted","reconciled"].includes(payload.status)&&payload.collected_amount<=0)throw new Error("Enter the amount collected from the customer before using this status.");
+    if(["remitted","reconciled"].includes(payload.status)&&payload.remitted_amount<=0)throw new Error("Enter the actual remitted amount before using this status.");
     const duplicate=settlements.find(s=>s.order_id===payload.order_id&&s.id!==id);if(duplicate)throw new Error("A COD settlement record already exists for this order. Edit the existing record instead.");
     if(payload.status==="reconciled"){
      if(payload.remitted_amount<=0||!payload.remitted_account_id||!payload.remitted_at)throw new Error("Reconciled requires a verified remitted amount, destination account and remittance date.");
