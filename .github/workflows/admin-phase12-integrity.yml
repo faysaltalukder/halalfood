@@ -62,3 +62,5 @@ jobs:
         run: node scripts/analytics-workspace-check.mjs
       - name: Run Business Health workspace checks
         run: node scripts/business-health-check.mjs
+      - name: Run Business Health Pricing Calculator checks
+        run: node scripts/business-health-pricing-check.mjs

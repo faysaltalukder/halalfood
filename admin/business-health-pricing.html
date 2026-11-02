@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="robots" content="noindex,nofollow"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<title>Product Pricing & Profit Calculator · Halal Food Admin</title>
+<link rel="stylesheet" href="./shared.css?v=20261101-shared-erp-system-v1"><link rel="stylesheet" href="./phase4-pages.css?v=20261023-admin-ultimate-v1"><link rel="stylesheet" href="./workspace-global-theme.css?v=20261101-merchant-fieldbook-v1"><link rel="stylesheet" href="./business-health.css?v=20261102-business-health-v2"><link rel="stylesheet" href="./business-health-pricing.css?v=20261102-pricing-v1">
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
+</head>
+<body data-page="business-health-pricing">
+<div id="authGate" class="auth-gate"><div class="auth-gate-card"><strong>Checking secure admin access…</strong><p>Pricing scenarios are available only to the verified admin session with two-step verification.</p></div></div>
+<div id="adminApp" hidden>
+<main id="pageContent" tabindex="-1" class="hf-bhp-page">
+<header class="hf-bhp-hero">
+ <div><p class="page-eyebrow">BUSINESS DECISION SUPPORT</p><h1>Product Pricing & Profit Calculator</h1><p>Work out landed cost, break-even price and a realistic selling price before buying or listing a product. Only the values you enter are included.</p></div>
+ <div class="hf-bhp-hero-tools"><label class="hf-bhp-product-select"><span>Start with an existing product (optional)</span><select id="bhpProductPicker" class="hf-select" aria-label="Choose an existing product"><option value="">New / unlisted product</option></select></label><button id="bhpReloadProducts" class="hf-button hf-button-secondary" type="button">↻ Products</button></div>
+</header>
+<nav class="hf-bh-subnav" aria-label="Business Health categories">
+ <a href="./business-health.html"><span class="hf-bh-subnav-icon">◫</span><span><strong>Business Overview</strong><small>Current business position</small></span></a>
+ <a class="active" href="./business-health-pricing.html" aria-current="page"><span class="hf-bh-subnav-icon">⌗</span><span><strong>Pricing & Profit Calculator</strong><small>Cost and selling decisions</small></span></a>
+</nav>
+<div class="hf-bhp-layout">
+ <div class="hf-bhp-input-column">
+  <section class="hf-bhp-section">
+   <div class="hf-bhp-section-head"><div><p class="page-eyebrow">01 · PRODUCT BASIS</p><h2>Purchase & usable quantity</h2><p>Enter a unit purchase price or the full batch amount. Batch sourcing costs are divided across saleable units.</p></div><span class="hf-bhp-step">01</span></div>
+   <div class="hf-bhp-grid">
+    <label class="hf-bhp-field"><span>Product / scenario name <small>Optional</small></span><input id="bhpProductName" class="hf-input" type="text" maxlength="200" placeholder="e.g. Pure Cow Ghee 500g"></label>
+    <label class="hf-bhp-field"><span>Purchase price per unit <small>৳ / unit</small></span><input class="hf-input" type="number" min="0" step="0.01" inputmode="decimal" data-field="purchase_unit_cost" placeholder="Not entered"></label>
+    <label class="hf-bhp-field"><span>Total batch purchase amount <small>৳ · optional alternative</small></span><input class="hf-input" type="number" min="0" step="0.01" inputmode="decimal" data-field="batch_purchase_total" placeholder="Not entered"></label>
+    <label class="hf-bhp-field"><span>Units purchased <small>Units</small></span><input class="hf-input" type="number" min="0.001" step="0.001" inputmode="decimal" data-field="purchase_quantity" placeholder="Not entered"></label>
+    <label class="hf-bhp-field"><span>Saleable units after wastage <small>Units</small></span><input class="hf-input" type="number" min="0.001" step="0.001" inputmode="decimal" data-field="saleable_quantity" placeholder="Not entered"></label>
+   </div>
+   <p class="hf-bhp-help">When batch amount is entered, it is divided by saleable units and takes priority over the unit purchase price. Leave quantity blank for a single unit calculation.</p>
+  </section>
+  <section class="hf-bhp-section">
+   <div class="hf-bhp-section-head"><div><p class="page-eyebrow">02 · LANDED COST</p><h2>Bring the product into sale-ready stock</h2><p>Batch expenses are allocated across saleable quantity; preparation costs are per unit.</p></div><span class="hf-bhp-step">02</span></div>
+   <div class="hf-bhp-subgroup"><h3>Batch sourcing & receiving costs</h3><div class="hf-bhp-grid">
+    <label class="hf-bhp-field"><span>Supplier freight / transport <small>৳ · batch total</small></span><input class="hf-input" type="number" min="0" step="0.01" data-field="supplier_freight_total" placeholder="Not entered"></label>
+    <label class="hf-bhp-field"><span>Loading / unloading <small>৳ · batch total</small></span><input class="hf-input" type="number" min="0" step="0.01" data-field="loading_total" placeholder="Not entered"></label>
+    <label class="hf-bhp-field"><span>Import, duty or other landed costs <small>৳ · batch total</small></span><input class="hf-input" type="number" min="0" step="0.01" data-field="other_landed_total" placeholder="Not entered"></label>
+    <label class="hf-bhp-field"><span>Other direct batch cost <small>৳ · batch total</small></span><input class="hf-input" type="number" min="0" step="0.01" data-field="other_direct_batch_cost" placeholder="Not entered"></label>
+   </div></div>
+   <div class="hf-bhp-subgroup"><h3>Preparation & packing per unit</h3><div class="hf-bhp-grid">
+    <label class="hf-bhp-field"><span>Packaging / container <small>৳ / unit</small></span><input class="hf-input" type="number" min="0" step="0.01" data-field="packaging_unit_cost" placeholder="Not entered"></label>
+    <label class="hf-bhp-field"><span>Label / sticker <small>৳ / unit</small></span><input class="hf-input" type="number" min="0" step="0.01" data-field="label_unit_cost" placeholder="Not entered"></label>
+    <label class="hf-bhp-field"><span>Preparation / labour <small>৳ / unit</small></span><input class="hf-input" type="number" min="0" step="0.01" data-field="prep_unit_cost" placeholder="Not entered"></label>
+    <label class="hf-bhp-field"><span>Other direct cost <small>৳ / unit</small></span><input class="hf-input" type="number" min="0" step="0.01" data-field="other_direct_unit_cost" placeholder="Not entered"></label>
+   </div></div>
+  </section>
+  <section class="hf-bhp-section">
+   <div class="hf-bhp-section-head"><div><p class="page-eyebrow">03 · ORDER ECONOMICS</p><h2>Delivery & selling costs</h2><p>Keep courier expense separate from the delivery charge collected from the customer.</p></div><span class="hf-bhp-step">03</span></div>
+   <div class="hf-bhp-grid">
+    <label class="hf-bhp-field"><span>Average product units per order <small>Units · default 1</small></span><input class="hf-input" type="number" min="0.001" step="0.001" data-field="avg_units_per_order" placeholder="Not entered"></label>
+    <label class="hf-bhp-field"><span>Courier / delivery expense <small>৳ / order</small></span><input class="hf-input" type="number" min="0" step="0.01" data-field="courier_unit_cost" placeholder="Not entered"></label>
+    <label class="hf-bhp-field"><span>Delivery charge collected <small>৳ / order</small></span><input class="hf-input" type="number" min="0" step="0.01" data-field="customer_delivery_charge" placeholder="Not entered"></label>
+    <label class="hf-bhp-field"><span>Order handling expense <small>৳ / order</small></span><input class="hf-input" type="number" min="0" step="0.01" data-field="handling_unit_cost" placeholder="Not entered"></label>
+    <label class="hf-bhp-field"><span>Advertising / acquisition cost <small>৳ / order</small></span><input class="hf-input" type="number" min="0" step="0.01" data-field="ad_cost_per_order" placeholder="Not entered"></label>
+    <label class="hf-bhp-field"><span>Expected return / damage reserve <small>৳ / unit · estimate</small></span><input class="hf-input" type="number" min="0" step="0.01" data-field="return_reserve_per_unit" placeholder="Not entered"></label>
+    <label class="hf-bhp-field"><span>Payment processing fee <small>% of checkout</small></span><input class="hf-input" type="number" min="0" max="100" step="0.01" data-field="payment_fee_pct" placeholder="Not entered"></label>
+    <label class="hf-bhp-field"><span>Marketplace / sales commission <small>% of checkout</small></span><input class="hf-input" type="number" min="0" max="100" step="0.01" data-field="marketplace_fee_pct" placeholder="Not entered"></label>
+   </div>
+  </section>
+  <section class="hf-bhp-section">
+   <div class="hf-bhp-section-head"><div><p class="page-eyebrow">04 · TAX & PRICING</p><h2>Tax, discount & selling target</h2><p>Use the tax rate applicable to your business. Income tax is not estimated at product level.</p></div><span class="hf-bhp-step">04</span></div>
+   <div class="hf-bhp-grid">
+    <label class="hf-bhp-field"><span>VAT / sales tax rate <small>% · optional</small></span><input class="hf-input" type="number" min="0" max="100" step="0.01" data-field="vat_pct" placeholder="Not entered"></label>
+    <label class="hf-bhp-field"><span>Tax treatment <small>For product price</small></span><select class="hf-select" data-field="vat_mode" aria-label="Choose tax treatment"><option value="inclusive">Tax included in product price</option><option value="exclusive">Tax added on top of product price</option></select></label>
+    <label class="hf-bhp-field"><span>Current / planned list price <small>৳ / unit</small></span><input class="hf-input" type="number" min="0" step="0.01" data-field="selling_price" placeholder="Not entered"></label>
+    <label class="hf-bhp-field"><span>Discount type</span><select class="hf-select" data-field="discount_mode" aria-label="Choose discount type"><option value="none">No discount</option><option value="percent">Percentage discount</option><option value="amount">Fixed taka discount</option></select></label>
+    <label class="hf-bhp-field"><span>Discount value <small>% or ৳ based on type</small></span><input class="hf-input" type="number" min="0" step="0.01" data-field="discount_value" placeholder="Not entered"></label>
+    <label class="hf-bhp-field"><span>Target profit method</span><select class="hf-select" data-field="target_mode" aria-label="Choose target profit method"><option value="margin">Profit margin on net revenue</option><option value="markup">Markup on entered unit cost</option><option value="fixed">Fixed profit amount per unit</option></select></label>
+    <label class="hf-bhp-field"><span>Target value <small>% for margin / markup, ৳ for fixed profit</small></span><input class="hf-input" type="number" min="0" step="0.01" data-field="target_value" placeholder="Not entered"></label>
+   </div>
+   <div class="hf-bhp-note"><strong>Tax note</strong><span>VAT is calculated on the discounted product amount only; customer delivery charge is treated separately. For inclusive tax the VAT portion is extracted from the price. For exclusive tax it is added to the customer payable. Actual VAT treatment should follow your applicable rules.</span></div>
+  </section>
+  <section class="hf-bhp-section">
+   <div class="hf-bhp-section-head"><div><p class="page-eyebrow">05 · FULL BUSINESS COST</p><h2>Allocate monthly overhead (optional)</h2><p>Include rent, salaries, utilities, software and other recurring operating costs only when you can estimate monthly sales volume.</p></div><span class="hf-bhp-step">05</span></div>
+   <div class="hf-bhp-grid">
+    <label class="hf-bhp-field"><span>Total monthly operating overhead <small>৳ / month</small></span><input class="hf-input" type="number" min="0" step="0.01" data-field="monthly_overhead" placeholder="Not entered"></label>
+    <label class="hf-bhp-field"><span>Expected units sold per month <small>Units / month</small></span><input class="hf-input" type="number" min="0.001" step="0.001" data-field="monthly_units" placeholder="Not entered"></label>
+   </div>
+   <p class="hf-bhp-help">Overhead per unit is included only when both monthly overhead and expected units are provided. This is an allocation estimate, not a posted expense.</p>
+  </section>
+  <section class="hf-bhp-section">
+   <div class="hf-bhp-section-head"><div><p class="page-eyebrow">06 · PRICE TESTING</p><h2>Compare alternative selling prices</h2><p>Test up to three price points using the same cost assumptions and discount settings.</p></div><span class="hf-bhp-step">06</span></div>
+   <div class="hf-bhp-grid hf-bhp-compare-grid">
+    <label class="hf-bhp-field"><span>Scenario A <small>৳ / list price</small></span><input class="hf-input" type="number" min="0" step="0.01" data-field="compare_price_1" placeholder="Not entered"></label>
+    <label class="hf-bhp-field"><span>Scenario B <small>৳ / list price</small></span><input class="hf-input" type="number" min="0" step="0.01" data-field="compare_price_2" placeholder="Not entered"></label>
+    <label class="hf-bhp-field"><span>Scenario C <small>৳ / list price</small></span><input class="hf-input" type="number" min="0" step="0.01" data-field="compare_price_3" placeholder="Not entered"></label>
+   </div>
+   <div id="bhpComparison" class="hf-bhp-comparison" aria-live="polite"><p>Enter alternative prices to compare the estimated profit and margin.</p></div>
+  </section>
+ </div>
+ <aside class="hf-bhp-results-column">
+  <section class="hf-bhp-result-panel" aria-live="polite">
+   <div class="hf-bhp-result-head"><div><p class="page-eyebrow">LIVE CALCULATION</p><h2>Pricing decision</h2></div><span id="bhpQuality" class="hf-bhp-quality">Waiting for inputs</span></div>
+   <div class="hf-bhp-result-hero"><span>Suggested website list price</span><strong id="bhpSuggestedPrice">—</strong><small id="bhpSuggestedNote">Enter costs and a target to calculate a suggested price.</small></div>
+   <div class="hf-bhp-kpis">
+    <div><span>Break-even list price</span><strong id="bhpBreakEven">—</strong></div>
+    <div><span>Profit at entered price</span><strong id="bhpProfit">—</strong></div>
+    <div><span>Profit margin</span><strong id="bhpMargin">—</strong></div>
+    <div><span>Customer payable</span><strong id="bhpCustomerPayable">—</strong></div>
+   </div>
+   <div class="hf-bhp-result-divider"></div>
+   <div class="hf-bhp-breakdown-head"><h3>Per-unit cost breakdown</h3><span>৳ / unit</span></div>
+   <div id="bhpBreakdown" class="hf-bhp-breakdown"><p>Enter any cost to see the breakdown.</p></div>
+   <div id="bhpWarnings" class="hf-bhp-warnings" role="status">Unfilled fields are excluded, not confirmed as zero costs. The result is based only on values entered.</div>
+   <button id="bhpApplyPrice" class="hf-button hf-button-primary hf-bhp-apply" type="button" disabled>Use suggested price for selected product</button>
+  </section>
+  <section class="hf-bhp-save-panel">
+   <div><p class="page-eyebrow">SAVE YOUR WORK</p><h2>Pricing scenarios</h2><p>Save a calculation to revisit or compare it later. Saved scenarios are not finance transactions.</p></div>
+   <label class="hf-bhp-field"><span>Scenario title</span><input id="bhpScenarioTitle" class="hf-input" type="text" maxlength="120" placeholder="e.g. Ghee 500g — November pricing"></label>
+   <div class="hf-bhp-save-actions"><button id="bhpSaveScenario" class="hf-button hf-button-primary" type="button">Save calculation</button><button id="bhpNewScenario" class="hf-button hf-button-secondary" type="button">New calculation</button></div>
+   <div class="hf-bhp-saved-head"><h3>Saved calculations</h3><button id="bhpRefreshScenarios" class="hf-button hf-button-quiet hf-button-small" type="button">Refresh</button></div>
+   <div id="bhpSavedScenarios" class="hf-bhp-saved-list"><p>Loading saved calculations…</p></div>
+  </section>
+  <p class="hf-bhp-disclaimer">Planning estimate only. Unentered costs, business-level income tax, cash timing and actual returns can change the result. Review every assumption before changing a live product price.</p>
+ </aside>
+</div>
+<footer class="hf-bhp-footer"><span id="bhpSourceStatus">Checking products and saved scenarios…</span><span>Currency: BDT · Calculations are local to this page until saved.</span></footer>
+</main></div>
+<dialog id="bhpApplyDialog" class="hf-dialog hf-bhp-dialog"><div class="hf-dialog-inner"><div class="hf-dialog-head"><div><p class="hf-dialog-title-tag">PRODUCT PRICE CHANGE</p><h2>Review before applying</h2></div><button id="bhpApplyClose" class="hf-button hf-button-secondary hf-dialog-close" type="button" aria-label="Close">×</button></div><div id="bhpApplySummary" class="hf-bhp-apply-summary"></div><div class="hf-dialog-actions"><button id="bhpApplyCancel" class="hf-button hf-button-secondary" type="button">Cancel</button><button id="bhpApplyConfirm" class="hf-button hf-button-primary" type="button">Confirm price update</button></div></div></dialog>
+<script defer src="./i18n.js?v=20261102-glyph-signal-v2"></script><script defer src="../js/store-config.js?v=20261101-store-config-v1"></script><script defer src="./shared.js?v=20261102-solar-lunar-v1"></script><script defer src="./business-health-pricing-core.js?v=20261102-pricing-core-v1"></script><script defer src="./business-health-pricing.js?v=20261102-pricing-v1"></script>
+</body></html>
