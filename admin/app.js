@@ -2852,13 +2852,24 @@ async function refresh(){
     const blocks=await signedQuery(client.from("site_content_blocks").select("block_key,block_type,title,image_url,link_url,alt_text,is_active,sort_order,updated_by,updated_at").order("sort_order",{ascending:true}));
     rows=blocks.map(b=>({placement:b.block_type,key:b.block_key,title:b.title,image_url:b.image_url,destination_url:b.link_url,alt_text:b.alt_text,active:b.is_active?"yes":"no",sort_order:b.sort_order,updated_by:b.updated_by,updated_at:b.updated_at}));
     title="Homepage Content Settings";notes="This report contains the banner and promotion configuration used by the public homepage. Hero slides remain enabled to preserve carousel behavior; side banner and popup active flags can be changed from Website Content.";
+   }else if(type==="finance"||type==="expenses"||type==="transactions"||type==="account-payments"||type==="collections"){
+    const entries=await fetchFinance(range,3000);
+    if(entries.length>=3000)notes="The report reached the 3,000-entry finance retrieval cap. ";
+    const filtered=type==="expenses"?entries.filter(e=>String(e.entry_type||"").toLowerCase()==="expense"):entries;
+    rows=filtered.map(e=>({entry_date:e.entry_date,entry_type:e.entry_type,category:e.category,amount:Number(e.amount||0),status:e.status,description:e.description,reference:e.reference,related_order_id:e.related_order_id||""}));
+    title=({expenses:"Expense Report",transactions:"Transaction Report","account-payments":"Account Payment Report",collections:"Collection Report"})[type]||"Finance Entries Report";
+    notes="Source: existing finance ledger. Only recorded entries are shown; collection/payment classifications depend on how the source entries were recorded.";
+   }else if(type==="business"||type==="sales"||type==="daily"||type==="receivable"||type==="payable"||type==="purchase"||type==="product-purchase"||type==="product-sales"||type==="top-products"||type==="customer-wise-products"||type==="customer-products"||type==="top-customers"||type==="customers"||type==="low-stock"||type==="alert-products"||type==="stock"||type==="stock-list"){
+    title=({business:"Business Report",sales:"Sales Report",daily:"Daily Business Report",receivable:"Receivable Report",payable:"Payable Report",purchase:"Purchase Report","product-purchase":"Product Purchase Report","product-sales":"Product Sales Report","top-products":"Top Selling Products","customer-wise-products":"Customer-wise Product Sales","customer-products":"Customer Product Report","top-customers":"Top Customers",customers:"Customer Report","low-stock":"Low Stock Products","alert-products":"Alert Products",stock:"Stock Report","stock-list":"Stock List"})[type]||"Business Report";
+    notes="এই রিপোর্টের জন্য প্রয়োজনীয় নির্দিষ্ট ডেটা সোর্স এখনো যাচাই/সংযুক্ত করা হয়নি। কোনো অনুমানভিত্তিক ফলাফল দেখানো হচ্ছে না। সংশ্লিষ্ট Purchase, Supplier, Customer balance বা Stock movement ডেটা সংযুক্ত হলে এই রিপোর্ট সক্রিয় হবে।";
+    rows=[];
    }else{
     const entries=await fetchFinance(range,3000);
     if(entries.length>=3000)notes="The report reached the 3,000-entry finance retrieval cap. It contains the newest matching ledger entries returned by the query, not necessarily every entry in the selected period. ";
     rows=entries.map(e=>({entry_date:e.entry_date,entry_type:e.entry_type,category:e.category,amount:Number(e.amount||0),status:e.status,description:e.description,reference:e.reference,related_order_id:e.related_order_id||""}));
     title="Finance Entries Report";notes="Only Confirmed entries contribute to recorded income/expense totals. Entries are manual records and are not independently verified by a payment provider.";
    }
-   const displayRange=(type==="products"||type==="content")?"Current snapshot":range.label;
+   const displayRange=(type==="products"||type==="content"||["low-stock","alert-products","stock","stock-list"].includes(type))?"Current snapshot":range.label;
    report={title,columns:rows.length?Object.keys(rows[0]):(type==="orders"?["order_number","ordered_at","status","subtotal","delivery_charge","total"]:type==="analytics"?["occurred_at","event_name","page_path","item_name"]:type==="products"?["name","slug","category","price","stock_quantity","is_active"]:type==="content"?["placement","key","title","image_url","destination_url","active"]:["entry_date","entry_type","category","amount","status"]),rows,notes,rangeLabel:displayRange,type};
    $("reportTitle").textContent=title;$("reportRangeLabel").textContent=displayRange;$("reportRowsCount").textContent=rows.length.toLocaleString("en-BD");$("reportNote").textContent=notes;
    $("reportSummary").innerHTML='<div class="hf-summary-pill"><small>Records in report</small><strong>'+rows.length.toLocaleString("en-BD")+'</strong></div><div class="hf-summary-pill"><small>Report type</small><strong style="font-size:14px">'+esc(title)+'</strong></div><div class="hf-summary-pill"><small>Time filter</small><strong style="font-size:13px">'+esc(displayRange)+'</strong></div>';
