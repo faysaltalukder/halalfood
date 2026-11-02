@@ -2011,85 +2011,380 @@ async function refresh(){
   await refresh();attachRefresh(refresh);
  }
  async function initFinance(){
-  let entries=[],orders=[];
-  const financeChartColors=["#345F9D","#2A918B","#E1A84C","#C87670","#8C78C5","#6F94B8"];
-  function linkedIncomeTotal(orderId){
-   return entries.filter(e=>e.related_order_id===orderId&&e.entry_type==="income"&&e.status==="confirmed").reduce((sum,e)=>sum+Number(e.amount||0),0);
+  let entries=[],orders=[],accounts=[],transfers=[],settlements=[],budgets=[],supplierPayables=null;
+  const financeChartColors=["#C97B3D","#345F9D","#2A918B","#E1A84C","#C87670","#8C78C5","#6F94B8"];
+  const sum=(rows,fn)=>rows.reduce((total,row)=>total+Number(fn(row)||0),0);
+  const accountName=id=>accounts.find(a=>a.id===id)?.name||"Unassigned";
+  const statusLabel=status=>({pending:"Pending",processing:"Processing",shipped:"Shipped",delivered:"Delivered",cancelled:"Cancelled",draft:"Draft",confirmed:"Confirmed",void:"Void",collected:"Collected",remitted:"Remitted",reconciled:"Reconciled",exception:"Exception",active:"Active",archived:"Archived"}[status]||String(status||"—").replace(/[_-]+/g," "));
+  const statusTone=status=>({confirmed:"success",reconciled:"success",delivered:"success",active:"success",draft:"pending",pending:"pending",collected:"info",remitted:"info",processing:"info",shipped:"info",exception:"danger",void:"muted",cancelled:"muted",archived:"muted"}[status]||"muted");
+  const statusBadge=status=>'<span class="hf-finance-status hf-finance-status-'+statusTone(status)+'">'+esc(statusLabel(status))+'</span>';
+  const dateRange=()=>{
+   const p=$("financePeriodFilter")?.value||"30",today=todayISO();
+   if(p==="all")return {from:"0000-01-01",to:today,label:"All time"};
+   if(p==="today")return {from:today,to:today,label:"Today"};
+   if(p==="this-month")return {from:today.slice(0,7)+"-01",to:today,label:"This month"};
+   if(p==="this-year")return {from:today.slice(0,4)+"-01-01",to:today,label:"This year"};
+   const days=Math.max(1,Number(p)||30);
+   return {from:addDhakaDays(today,-(days-1)),to:today,label:"Last "+days+" days"};
+  };
+  const inRange=(value,range)=>String(value||"").slice(0,10)>=range.from&&String(value||"").slice(0,10)<=range.to;
+  const financialClass=e=>e.financial_class||"operating";
+  function accountBalance(account){
+   const start=String(account.opening_date||"0000-01-01").slice(0,10);
+   const ledger=sum(entries.filter(e=>e.account_id===account.id&&e.status==="confirmed"&&String(e.entry_date)>=start),e=>(e.entry_type==="income"?1:-1)*Number(e.amount||0));
+   const transferIn=sum(transfers.filter(t=>t.destination_account_id===account.id&&t.status==="confirmed"&&String(t.transfer_date)>=start),t=>t.amount);
+   const transferOut=sum(transfers.filter(t=>t.source_account_id===account.id&&t.status==="confirmed"&&String(t.transfer_date)>=start),t=>t.amount);
+   return Number(account.opening_balance||0)+ledger+transferIn-transferOut;
   }
-  function renderReconciliation(){
-   const body=$("orderReconciliationTableBody");if(!body)return;
-   body.innerHTML=orders.length?orders.map(o=>{
-    const linked=linkedIncomeTotal(o.id),cancelled=o.status==="cancelled",difference=Number(o.total||0)-linked,method=String(o.payment_method||"").toLowerCase()==="cash_on_delivery"?"Cash on Delivery (COD)":String(o.payment_method||"not recorded").replace(/[_-]+/g," ");
-    return '<tr><td><strong>'+esc(o.order_number||String(o.id).slice(0,8))+'</strong><small>'+esc(o.customer_name||"Customer not named")+' · '+esc(o.customer_phone||"No phone")+'</small></td><td>'+dateOnly(o.ordered_at)+'</td><td>'+esc(method)+'</td><td>'+makeStatus(o.status)+'</td><td><strong>'+money(o.total)+'</strong><small>Recorded order value</small></td><td>'+money(linked)+'<small>Confirmed linked income only</small></td><td>'+(cancelled?"Not compared":money(difference))+'</td><td>'+(cancelled?'<span class="hf-status hf-status-cancelled">Cancelled — no income</span>':'<button class="hf-button hf-button-secondary hf-button-small" data-record-income="'+esc(o.id)+'">Record income</button>')+'</td></tr>';
-   }).join(""):'<tr><td colspan="8">'+makeEmpty("No order records available","Orders will appear here when they are loaded.")+'</td></tr>';
-   $("financeReconcileNote").textContent="Showing "+orders.length.toLocaleString("en-BD")+" recent order records (up to the latest 1,000). The selected payment method is not proof of payment. Confirmed income is a manually verified ledger entry linked to the order; no payment gateway is connected. The difference is for review only—not profit, debt, or an amount due.";
+  function accountOptions(target,placeholder,includeInactive=false,selected=""){
+   if(!target)return;
+   const rows=accounts.filter(a=>includeInactive||a.is_active);
+   target.innerHTML='<option value="">'+esc(placeholder)+'</option>'+rows.map(a=>'<option value="'+esc(a.id)+'"'+(a.id===selected?" selected":"")+'>'+esc(a.name)+' · '+esc(statusLabel(a.account_type))+'</option>').join("");
   }
-  function totals(){
-   const active=entries.filter(e=>e.status==="confirmed"),income=active.filter(e=>e.entry_type==="income").reduce((s,e)=>s+Number(e.amount||0),0),expense=active.filter(e=>e.entry_type==="expense").reduce((s,e)=>s+Number(e.amount||0),0);
-   $("financeIncomeTotal").textContent=money(income);$("financeExpenseTotal").textContent=money(expense);$("financeNetTotal").textContent=money(income-expense);$("financePendingCount").textContent=entries.filter(e=>e.status==="draft").length.toLocaleString("en-BD");
-   const cats=groupBy(active.filter(e=>e.entry_type==="expense"),e=>e.category);
-   drawChart("financeExpenseChart",{type:"doughnut",data:{labels:cats.map(x=>x.label),datasets:[{data:cats.map(x=>entries.filter(e=>e.status==="confirmed"&&e.entry_type==="expense"&&e.category===x.label).reduce((s,e)=>s+Number(e.amount||0),0)),backgroundColor:financeChartColors,borderColor:chartTheme().surface,borderWidth:3,hoverOffset:6}]},options:{cutout:"62%",plugins:{legend:{position:"bottom"}}}});
-   const monthKeys=[];const now=new Date();for(let i=5;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1);monthKeys.push(d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"));}
+  function orderOptions(target,placeholder,selected="",excludeSettlementId=""){
+   if(!target)return;
+   const linked=new Set(settlements.filter(s=>s.id!==excludeSettlementId&&s.order_id).map(s=>s.order_id));
+   const rows=orders.filter(o=>o.status!=="cancelled"&&(!linked.has(o.id)||o.id===selected));
+   target.innerHTML='<option value="">'+esc(placeholder)+'</option>'+rows.map(o=>'<option value="'+esc(o.id)+'"'+(o.id===selected?" selected":"")+'>'+esc(o.order_number||String(o.id).slice(0,8))+' · '+esc(o.customer_name||"Customer")+' · '+money(o.total)+'</option>').join("");
+  }
+  function renderKpis(){
+   const range=dateRange(),periodEntries=entries.filter(e=>e.status==="confirmed"&&inRange(e.entry_date,range));
+   const income=sum(periodEntries.filter(e=>e.entry_type==="income"&&financialClass(e)==="operating"),e=>e.amount);
+   const expense=sum(periodEntries.filter(e=>e.entry_type==="expense"&&financialClass(e)==="operating"),e=>e.amount);
+   const cashIn=sum(periodEntries.filter(e=>e.entry_type==="income"),e=>e.amount),cashOut=sum(periodEntries.filter(e=>e.entry_type==="expense"),e=>e.amount);
+   const available=sum(accounts,accountBalance);
+   const codPipeline=sum(settlements.filter(s=>s.status!=="cancelled"),s=>Math.max(0,Number(s.cod_amount||0)-Number(s.remitted_amount||0)));
+   const draftCount=entries.filter(e=>e.status==="draft").length+transfers.filter(t=>t.status==="draft").length;
+   $("financeIncomeTotal").textContent=money(income);
+   $("financeExpenseTotal").textContent=money(expense);
+   $("financeNetTotal").textContent=money(cashIn-cashOut);
+   $("financeAvailableBalance").textContent=accounts.length?money(available):"Not set up";
+   $("financeOutstandingCod").textContent=money(codPipeline);
+   $("financeSupplierPayables").textContent=supplierPayables===null?"—":money(supplierPayables);
+   $("financeDraftCount").textContent=draftCount.toLocaleString("en-BD");
+   $("financeCodPipelineTotal").textContent=money(codPipeline);
+   $("financeCodReconciledTotal").textContent=money(sum(settlements.filter(s=>s.status==="reconciled"),s=>s.remitted_amount));
+   $("financeCodExceptionCount").textContent=settlements.filter(s=>s.status==="exception").length.toLocaleString("en-BD");
+   const note=$("financePeriodFilter");
+   if(note)note.title="Operating KPIs and cash movement for "+range.label+". Account balances show the current all-time position.";
+  }
+  function renderAlerts(){
+   const alerts=[];
+   if(!accounts.length)alerts.push(["Account setup","Add your cash, bank or mobile-wallet accounts and enter verified opening balances.","#financeAccountsSection","info"]);
+   const oldDrafts=entries.filter(e=>e.status==="draft"&&e.created_at&&(Date.now()-new Date(e.created_at).getTime())>7*86400000).length;
+   if(oldDrafts)alerts.push(["Old draft records",oldDrafts+" finance draft(s) are older than seven days. Review them before using totals.","#financeTransactionsSection","warning"]);
+   const exceptions=settlements.filter(s=>s.status==="exception").length;
+   if(exceptions)alerts.push(["COD exceptions",exceptions+" settlement record(s) need manual review.","#financeCodSection","warning"]);
+   const currentMonth=todayISO().slice(0,7)+"-01";
+   const overspent=budgets.filter(b=>b.status==="active"&&String(b.period_start)===currentMonth).filter(b=>{
+    const end=new Date(Date.UTC(Number(currentMonth.slice(0,4)),Number(currentMonth.slice(5,7)),0)).toISOString().slice(0,10);
+    const actual=sum(entries.filter(e=>e.entry_type==="expense"&&e.status==="confirmed"&&financialClass(e)==="operating"&&e.category.toLowerCase()===b.category.toLowerCase()&&e.entry_date>=currentMonth&&e.entry_date<=end),e=>e.amount);
+    return actual>Number(b.budget_amount||0);
+   });
+   if(overspent.length)alerts.push(["Budget limit exceeded",overspent.length+" active budget category/categories are above the monthly limit.","#financeReportsSection","warning"]);
+   if(draftCount>0){} 
+   if(!alerts.length){$("financeAlerts").innerHTML='<div class="hf-finance-alert hf-finance-alert-success"><span>✓</span><div><strong>No urgent finance reminders</strong><p>Keep account balances and settlement records current as new transactions occur.</p></div></div>';return;}
+   $("financeAlerts").innerHTML=alerts.map(a=>'<a class="hf-finance-alert hf-finance-alert-'+a[3]+'" href="'+a[2]+'"><span>!</span><div><strong>'+esc(a[0])+'</strong><p>'+esc(a[1])+'</p></div><span class="hf-finance-alert-arrow">↗</span></a>').join("");
+  }
+  function renderCharts(){
+   const active=entries.filter(e=>e.status==="confirmed");
+   const monthKeys=[],now=new Date();
+   for(let i=5;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1);monthKeys.push(d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"));}
    drawChart("financeTrendChart",{type:"bar",data:{labels:monthKeys.map(k=>{const [y,m]=k.split("-");return new Date(Number(y),Number(m)-1,1).toLocaleDateString("en-BD",{month:"short",year:"2-digit"});}),datasets:[
-    {label:"Confirmed income records",data:monthKeys.map(k=>active.filter(e=>e.entry_type==="income"&&String(e.entry_date).startsWith(k)).reduce((s,e)=>s+Number(e.amount||0),0)),backgroundColor:"#2A918B",borderRadius:6},
-    {label:"Confirmed expense records",data:monthKeys.map(k=>active.filter(e=>e.entry_type==="expense"&&String(e.entry_date).startsWith(k)).reduce((s,e)=>s+Number(e.amount||0),0)),backgroundColor:"#C87670",borderRadius:6}
+    {label:"Confirmed cash in",data:monthKeys.map(k=>sum(active.filter(e=>e.entry_type==="income"&&String(e.entry_date).startsWith(k)),e=>e.amount)),backgroundColor:"#2A918B",borderRadius:6},
+    {label:"Confirmed cash out",data:monthKeys.map(k=>sum(active.filter(e=>e.entry_type==="expense"&&String(e.entry_date).startsWith(k)),e=>e.amount)),backgroundColor:"#C87670",borderRadius:6}
    ]},options:{scales:{x:{ticks:{color:chartTheme().muted},grid:{display:false}},y:{beginAtZero:true,ticks:{color:chartTheme().muted,callback:v=>"৳"+Number(v).toLocaleString("en-BD")},grid:{color:chartTheme().grid}}},plugins:{legend:{position:"bottom"}}}});
+   const expenseRows=active.filter(e=>e.entry_type==="expense"&&financialClass(e)==="operating"),byCategory=new Map();
+   expenseRows.forEach(e=>byCategory.set(e.category,(byCategory.get(e.category)||0)+Number(e.amount||0)));
+   const labels=[...byCategory.keys()];
+   drawChart("financeExpenseChart",{type:"doughnut",data:{labels,datasets:[{data:labels.map(k=>byCategory.get(k)),backgroundColor:financeChartColors,borderColor:chartTheme().surface,borderWidth:3,hoverOffset:6}]},options:{cutout:"62%",plugins:{legend:{position:"bottom"}}}});
+  }
+  function renderAccounts(){
+   const grid=$("financeAccountsGrid");
+   if(!accounts.length){grid.innerHTML='<div class="hf-card hf-card-pad hf-finance-empty"><strong>No cash accounts configured yet</strong><p>Add an account and enter its verified opening balance. Do not use a test amount just to fill the dashboard.</p><button class="hf-button hf-button-primary" id="financeEmptyAddAccount" type="button">＋ Set up first account</button></div>';return;}
+   grid.innerHTML=accounts.map(a=>{
+    const balance=accountBalance(a),kind={cash:"Cash in hand",bank:"Bank account",bkash:"bKash wallet",nagad:"Nagad wallet",rocket:"Rocket wallet",courier_clearing:"Courier clearing",other:"Other account"}[a.account_type]||a.account_type;
+    return '<article class="hf-card hf-finance-account-card'+(a.is_active?"":" is-inactive")+'"><div class="hf-finance-account-top"><span class="hf-finance-account-icon">'+({cash:"৳",bank:"▤",bkash:"b",nagad:"n",rocket:"r",courier_clearing:"⇄",other:"◈"}[a.account_type]||"◈")+'</span>'+statusBadge(a.is_active?"active":"archived")+'</div><p class="hf-finance-account-type">'+esc(kind)+(a.provider?" · "+esc(a.provider):"")+'</p><h3>'+esc(a.name)+'</h3><strong class="hf-finance-account-balance">'+money(balance)+'</strong><small>Opening '+money(a.opening_balance)+' · '+esc(dateOnly(a.opening_date))+'</small><div class="hf-finance-account-actions"><button class="hf-button hf-button-secondary hf-button-small" data-edit-account="'+esc(a.id)+'">Edit</button><button class="hf-button hf-button-secondary hf-button-small" data-toggle-account="'+esc(a.id)+'">'+(a.is_active?"Archive":"Reactivate")+'</button></div></article>';
+   }).join("");
+  }
+  function renderTransfers(){
+   const rows=[...transfers].sort((a,b)=>String(b.transfer_date).localeCompare(String(a.transfer_date)));
+   $("financeTransfersBody").innerHTML=rows.length?rows.map(t=>'<tr><td>'+dateOnly(t.transfer_date)+'</td><td><strong>'+esc(accountName(t.source_account_id))+'</strong></td><td><strong>'+esc(accountName(t.destination_account_id))+'</strong></td><td><strong>'+money(t.amount)+'</strong></td><td>'+esc(t.reference||t.description||"—")+'</td><td>'+statusBadge(t.status)+'</td><td><div class="hf-table-actions">'+(t.status==="draft"?'<button class="hf-button hf-button-primary hf-button-small" data-confirm-transfer="'+esc(t.id)+'">Confirm</button>':"")+(t.status!=="void"?'<button class="hf-button hf-button-danger hf-button-small" data-void-transfer="'+esc(t.id)+'">Void</button>':"")+'</div></td></tr>').join(""):'<tr><td colspan="7">'+makeEmpty("No transfers recorded","Internal transfers will appear here after you save them.")+'</td></tr>';
+  }
+  function renderCod(){
+   const rows=[...settlements].sort((a,b)=>String(b.updated_at||b.created_at).localeCompare(String(a.updated_at||a.created_at)));
+   $("financeCodTableBody").innerHTML=rows.length?rows.map(s=>{
+    const expected=Number(s.collected_amount||0)-Number(s.courier_fee||0)+Number(s.adjustment_amount||0);
+    const variance=Number(s.remitted_amount||0)-expected;
+    return '<tr><td><strong>'+esc(s.order_number)+'</strong><small>'+esc(s.courier_name||"Courier not set")+(s.tracking_reference?" · "+esc(s.tracking_reference):"")+'</small></td><td>'+money(s.cod_amount)+'</td><td>'+money(s.collected_amount)+'</td><td>'+money(s.courier_fee)+'</td><td><strong>'+money(s.remitted_amount)+'</strong><small>'+(s.remitted_account_id?esc(accountName(s.remitted_account_id)):"No account")+'</small></td><td>'+(s.status==="pending"?"—":money(variance))+'</td><td>'+statusBadge(s.status)+'</td><td><button class="hf-button hf-button-secondary hf-button-small" data-edit-cod="'+esc(s.id)+'">Review / edit</button></td></tr>';
+   }).join(""):'<tr><td colspan="8">'+makeEmpty("No COD settlement records","Add a courier settlement record when you have real collection or remittance information.")+'</td></tr>';
+  }
+  function budgetActual(b){
+   const from=String(b.period_start).slice(0,10);
+   const end=new Date(Date.UTC(Number(from.slice(0,4)),Number(from.slice(5,7)),0)).toISOString().slice(0,10);
+   return sum(entries.filter(e=>e.entry_type==="expense"&&e.status==="confirmed"&&financialClass(e)==="operating"&&e.category.toLowerCase()===b.category.toLowerCase()&&e.entry_date>=from&&e.entry_date<=end),e=>e.amount);
+  }
+  function renderBudgets(){
+   const rows=[...budgets].sort((a,b)=>String(b.period_start).localeCompare(String(a.period_start))||a.category.localeCompare(b.category));
+   $("financeBudgetTableBody").innerHTML=rows.length?rows.map(b=>{
+    const actual=budgetActual(b),limit=Number(b.budget_amount||0),pct=limit?Math.round(actual/limit*100):0;
+    return '<tr><td>'+esc(String(b.period_start).slice(0,7))+'</td><td><strong>'+esc(b.category)+'</strong><small>'+esc(b.notes||"")+'</small></td><td>'+money(limit)+'</td><td>'+money(actual)+'</td><td><div class="hf-finance-budget-progress"><span style="width:'+Math.min(100,pct)+'%"></span></div><small>'+pct+'%</small></td><td>'+statusBadge(actual>limit&&b.status==="active"?"exception":b.status)+'</td><td>'+(b.status==="active"?'<button class="hf-button hf-button-secondary hf-button-small" data-archive-budget="'+esc(b.id)+'">Archive</button>':'')+'</td></tr>';
+   }).join(""):'<tr><td colspan="7">'+makeEmpty("No budgets configured","Set a monthly limit for marketing, delivery, packaging or another expense category.")+'</td></tr>';
+  }
+  function renderLedger(){
+   const search=String($("financeSearch")?.value||$("globalSearch")?.value||"").toLowerCase().trim();
+   const type=$("financeTypeFilter")?.value||"",klass=$("financeClassFilter")?.value||"",status=$("financeStatusFilter")?.value||"",account=$("financeAccountFilter")?.value||"";
+   const rows=entries.filter(e=>(!type||e.entry_type===type)&&(!klass||financialClass(e)===klass)&&(!status||e.status===status)&&(!account||e.account_id===account)&&(!search||[e.category,e.description,e.reference,e.status,e.party_name,e.payment_method].join(" ").toLowerCase().includes(search)));
+   $("financeTableBody").innerHTML=rows.length?rows.map(e=>{
+    const locked=Boolean(e.related_supplier_payment_id||e.related_cod_settlement_id);
+    const source=e.related_supplier_payment_id?"Supplier payment history":e.related_cod_settlement_id?"COD settlement register":"";
+    return '<tr><td>'+dateOnly(e.entry_date)+'</td><td>'+makeStatus(e.entry_type)+'</td><td><strong>'+esc(e.category)+'</strong><small>'+esc(e.description||"No description")+'</small></td><td>'+esc(e.party_name||"—")+'</td><td>'+esc(accountName(e.account_id))+'</td><td><strong>'+money(e.amount)+'</strong></td><td>'+esc(financialClass(e))+'</td><td>'+statusBadge(e.status)+'</td><td><div class="hf-table-actions">'+(locked?'<small class="hf-finance-managed-source">'+esc(source)+'</small>':'<button class="hf-button hf-button-secondary hf-button-small" data-edit-finance="'+esc(e.id)+'">Edit</button>')+(!locked&&e.status!=="void"?'<button class="hf-button hf-button-danger hf-button-small" data-void-finance="'+esc(e.id)+'">Void</button>':"")+'</div></td></tr>';
+   }).join(""):'<tr><td colspan="9">'+makeEmpty("No matching transactions","Change the filters or record a new transaction.")+'</td></tr>';
+  }
+  function renderRecent(){
+   const rows=[...entries].sort((a,b)=>String(b.entry_date).localeCompare(String(a.entry_date))||String(b.created_at).localeCompare(String(a.created_at))).slice(0,8);
+   $("financeRecentBody").innerHTML=rows.length?rows.map(e=>'<tr><td>'+dateOnly(e.entry_date)+'</td><td>'+makeStatus(e.entry_type)+'</td><td><strong>'+esc(e.category)+'</strong><small>'+esc(e.party_name||e.description||"")+'</small></td><td>'+esc(accountName(e.account_id))+'</td><td><strong>'+money(e.amount)+'</strong></td><td>'+statusBadge(e.status)+'</td></tr>').join(""):'<tr><td colspan="6">'+makeEmpty("No finance activity yet","The ledger will show activity after a transaction is saved.")+'</td></tr>';
   }
   function render(){
-   const search=String($("financeSearch")?.value||$("globalSearch")?.value||"").toLowerCase().trim(),type=$("financeTypeFilter")?.value||"",status=$("financeStatusFilter")?.value||"";
-   const rows=entries.filter(e=>(!type||e.entry_type===type)&&(!status||e.status===status)&&(!search||[e.category,e.description,e.reference,e.status].join(" ").toLowerCase().includes(search)));
-   $("financeTableBody").innerHTML=rows.length?rows.map(e=>'<tr><td>'+dateOnly(e.entry_date)+'</td><td>'+makeStatus(e.entry_type)+'</td><td><strong>'+esc(e.category)+'</strong><small>'+esc(e.description||"No description")+'</small></td><td><strong>'+money(e.amount)+'</strong></td><td>'+makeStatus(e.status)+'</td><td>'+esc(e.reference||"—")+'</td><td><div class="hf-table-actions"><button class="hf-button hf-button-secondary hf-button-small" data-edit-finance="'+esc(e.id)+'">Edit</button>'+(e.status!=="void"?'<button class="hf-button hf-button-danger hf-button-small" data-void-finance="'+esc(e.id)+'">Void</button>':'')+'</div></td></tr>').join(""):'<tr><td colspan="7">'+makeEmpty("No matching entries","Add an income or expense record, or change your filters.")+'</td></tr>';
-   totals();renderReconciliation();
+   renderKpis();renderAlerts();renderCharts();renderAccounts();renderTransfers();renderCod();renderBudgets();renderLedger();renderRecent();
+  }
+  function refreshSelects(){
+   accountOptions($("financeAccountId"),"Not assigned to an account");
+   accountOptions($("financeCodAccount"),"Choose account only when verified");
+   accountOptions($("financeTransferSource"),"Choose source account");
+   accountOptions($("financeTransferDestination"),"Choose destination account");
+   const filter=$("financeAccountFilter"),prior=filter?.value||"";
+   if(filter)filter.innerHTML='<option value="">All accounts</option>'+accounts.map(a=>'<option value="'+esc(a.id)+'">'+esc(a.name)+(a.is_active?"":" · Archived")+'</option>').join("");
+   if(filter)filter.value=prior;
+   orderOptions($("financeOrderId"),"No linked order");
+   orderOptions($("financeCodOrderId"),"Choose an order");
   }
   async function refresh(){
-   [entries,orders]=await Promise.all([fetchFinance(null,3000),signedQuery(client.from("orders").select("id,order_number,customer_name,customer_phone,total,status,ordered_at,payment_method").order("ordered_at",{ascending:false}).order("id",{ascending:true}).limit(1000))]);
-   const sel=$("financeOrderId");if(sel)sel.innerHTML='<option value="">No linked order</option>'+orders.slice(0,300).map(o=>'<option value="'+esc(o.id)+'">'+esc(o.order_number||String(o.id).slice(0,8))+' · '+money(o.total)+'</option>').join("");
-   render();
+   const supplierQuery=signedQuery(client.from("admin_supplier_balances").select("outstanding_balance").limit(1000)).catch(err=>{console.warn("Supplier balance summary unavailable",err);return null;});
+   [entries,accounts,transfers,settlements,budgets,orders,supplierRows]=await Promise.all([
+    fetchFinance(null,5000),
+    signedQuery(client.from("admin_finance_accounts").select("*").order("is_active",{ascending:false}).order("name",{ascending:true}).limit(300)),
+    signedQuery(client.from("admin_finance_transfers").select("*").order("transfer_date",{ascending:false}).limit(1000)),
+    signedQuery(client.from("admin_cod_settlements").select("*").order("updated_at",{ascending:false}).limit(1000)),
+    signedQuery(client.from("admin_finance_budgets").select("*").order("period_start",{ascending:false}).limit(1000)),
+    signedQuery(client.from("orders").select("id,order_number,customer_name,total,status,ordered_at,payment_method").order("ordered_at",{ascending:false}).limit(1000)),
+    supplierQuery
+   ]);
+   supplierPayables=Array.isArray(supplierRows)?sum(supplierRows.filter(r=>Number(r.outstanding_balance||0)>0),r=>r.outstanding_balance):null;
+   refreshSelects();render();
   }
   function openEntry(e=null,order=null){
    $("financeForm").reset();$("financeId").value=e?.id||"";
    $("financeEntryType").value=order?"income":e?.entry_type||"expense";
    $("financeCategory").value=order?"Verified income":e?.category||"Supplies";
+   $("financeCategory").setAttribute("list",$("financeEntryType").value==="expense"?"financeExpenseCategoryOptions":"financeIncomeCategoryOptions");
    $("financeAmount").value=e?.amount??"";
    $("financeDate").value=e?.entry_date||todayISO();
-   $("financeDescription").value=e?.description||(order?"Manually verify any actual payment before confirming this entry.":"");
+   $("financeAccountId").value=e?.account_id||"";
+   $("financePaymentMethod").value=e?.payment_method||"";
+   $("financeClass").value=financialClass(e||{});
+   $("financeParty").value=e?.party_name||"";
+   $("financeDescription").value=e?.description||(order?"Record only after the actual payment has been verified.":"");
    $("financeReference").value=e?.reference||(order?(order.order_number||String(order.id).slice(0,8)):"");
    $("financeStatus").value=e?.status||"draft";$("financeOrderId").value=order?.id||e?.related_order_id||"";
-   $("financeFormError").textContent="";$("financeDialogTitle").textContent=e?"Edit finance entry":order?"Record income linked to order":"Record an entry";$("financeDialog").showModal();
+   $("financeFormError").textContent="";
+   $("financeDialogTitle").textContent=e?"Edit transaction":order?"Record income linked to order":"Record a transaction";
+   $("financeDialog").showModal();
+  }
+  function openAccount(account=null){
+   $("financeAccountForm").reset();$("financeAccountIdHidden").value=account?.id||"";
+   $("financeAccountDialogTitle").textContent=account?"Edit account":"Add account";
+   $("financeAccountName").value=account?.name||"";
+   $("financeAccountType").value=account?.account_type||"cash";
+   $("financeAccountProvider").value=account?.provider||"";
+   $("financeAccountReference").value=account?.account_reference||"";
+   $("financeAccountOpening").value=account?.opening_balance??0;
+   $("financeAccountOpeningDate").value=account?.opening_date||todayISO();
+   $("financeAccountFormError").textContent="";$("financeAccountDialog").showModal();
+  }
+  function openTransfer(){
+   if(accounts.filter(a=>a.is_active).length<2){toast("Add at least two active accounts before recording a transfer.","error");return;}
+   $("financeTransferForm").reset();$("financeTransferDate").value=todayISO();
+   $("financeTransferFormError").textContent="";$("financeTransferDialog").showModal();
+  }
+  function openCod(settlement=null){
+   $("financeCodForm").reset();$("financeCodId").value=settlement?.id||"";
+   orderOptions($("financeCodOrderId"),"Choose an order",settlement?.order_id||"",settlement?.id||"");
+   $("financeCodOrderId").value=settlement?.order_id||"";
+   $("financeCodCourier").value=settlement?.courier_name||"";
+   $("financeCodTracking").value=settlement?.tracking_reference||"";
+   $("financeCodAmount").value=settlement?.cod_amount??"";
+   $("financeCodCollected").value=settlement?.collected_amount??0;
+   $("financeCodFee").value=settlement?.courier_fee??0;
+   $("financeCodAdjustment").value=settlement?.adjustment_amount??0;
+   $("financeCodRemitted").value=settlement?.remitted_amount??0;
+   $("financeCodAccount").value=settlement?.remitted_account_id||"";
+   $("financeCodStatus").value=settlement?.status||"pending";
+   $("financeCodCollectedAt").value=settlement?.collected_at||"";
+   $("financeCodRemittedAt").value=settlement?.remitted_at||"";
+   $("financeCodNotes").value=settlement?.notes||"";
+   $("financeCodDialogTitle").textContent=settlement?"Review COD settlement":"Add COD settlement";
+   $("financeCodFormError").textContent="";$("financeCodDialog").showModal();
   }
   $("addFinanceEntryBtn")?.addEventListener("click",()=>openEntry());
-  $("financeForm")?.addEventListener("submit",async e=>{
-   e.preventDefault();const id=$("financeId").value,button=$("saveFinanceBtn");button.disabled=true;$("financeFormError").textContent="";
+  $("financeAddTransactionSecondary")?.addEventListener("click",()=>openEntry());
+  $("addFinanceAccountBtn")?.addEventListener("click",()=>openAccount());
+  $("financeAccountsAdd")?.addEventListener("click",()=>openAccount());
+  $("financeEmptyAddAccount")?.addEventListener("click",()=>openAccount());
+  $("financeTransferAdd")?.addEventListener("click",openTransfer);
+  $("financeCodAdd")?.addEventListener("click",()=>openCod());
+  $("financePeriodFilter")?.addEventListener("change",render);
+  $("financeEntryType")?.addEventListener("change",()=>{$("financeCategory").setAttribute("list",$("financeEntryType").value==="expense"?"financeExpenseCategoryOptions":"financeIncomeCategoryOptions");});
+  $("financeCodOrderId")?.addEventListener("change",()=>{
+   const order=orders.find(o=>o.id===$("financeCodOrderId").value);
+   if(order&& !$("financeCodId").value) $("financeCodAmount").value=Number(order.total||0).toFixed(2);
+  });
+  $("financeForm")?.addEventListener("submit",async event=>{
+   event.preventDefault();const id=$("financeId").value,button=$("saveFinanceBtn");button.disabled=true;$("financeFormError").textContent="";
    try{
-    const amount=Number($("financeAmount").value),category=$("financeCategory").value.trim(),date=$("financeDate").value;
-    if(!Number.isFinite(amount)||amount<=0)throw new Error("Enter an amount greater than zero.");
-    if(!category)throw new Error("Choose a category.");if(!date)throw new Error("Choose an entry date.");
-    const payload={entry_type:$("financeEntryType").value,category,amount,entry_date:date,description:$("financeDescription").value.trim(),reference:$("financeReference").value.trim()||null,status:$("financeStatus").value,related_order_id:$("financeOrderId").value||null};
+    const payload={entry_type:$("financeEntryType").value,category:$("financeCategory").value.trim(),amount:Number($("financeAmount").value),entry_date:$("financeDate").value,
+     description:$("financeDescription").value.trim(),reference:$("financeReference").value.trim()||null,status:$("financeStatus").value,
+     related_order_id:$("financeOrderId").value||null,account_id:$("financeAccountId").value||null,payment_method:$("financePaymentMethod").value,
+     party_name:$("financeParty").value.trim(),financial_class:$("financeClass").value};
+    if(!Number.isFinite(payload.amount)||payload.amount<=0)throw new Error("Enter an amount greater than zero.");
+    if(!payload.category)throw new Error("Enter a transaction category.");
+    if(!payload.entry_date)throw new Error("Choose a transaction date.");
+    if(payload.entry_type==="expense"&&payload.related_order_id)throw new Error("Linking an order is reserved for verified customer receipts. Remove the order link from this expense.");
     if(payload.entry_type==="income"&&payload.status==="confirmed"&&payload.related_order_id){
-     const {data:linkedOrder,error:linkedOrderError}=await client.from("orders").select("id,status").eq("id",payload.related_order_id).maybeSingle();
-     if(linkedOrderError||!linkedOrder)throw new Error("Could not verify the linked order. Refresh and retry before confirming income.");
-     if(linkedOrder.status==="cancelled")throw new Error("A cancelled order cannot be confirmed as income. Record any real receipt as a separate, documented adjustment instead.");
+     const linkedOrder=orders.find(o=>o.id===payload.related_order_id);
+     if(!linkedOrder||linkedOrder.status==="cancelled")throw new Error("The linked order is missing or cancelled. Do not confirm it as income.");
+     if(settlements.some(s=>s.order_id===payload.related_order_id&&s.status==="reconciled"))throw new Error("This order already has a reconciled COD remittance. Do not create a second income record.");
     }
     if(!id)payload.created_by=H.ADMIN_EMAIL;
-    if(id){const {error}=await client.from("admin_finance_entries").update(payload).eq("id",id);if(error)throw error;await audit("finance_entry_updated","finance_entry",id,"Finance entry updated",{entry_type:payload.entry_type,status:payload.status});}
-    else{const {data,error}=await client.from("admin_finance_entries").insert(payload).select("id").single();if(error)throw error;await audit("finance_entry_created","finance_entry",data.id,"Finance entry added",{entry_type:payload.entry_type,status:payload.status});}
-    $("financeDialog").close();toast("Finance entry saved.");await refresh();
-   }catch(err){$("financeFormError").textContent=err.message||"Entry could not be saved. Check admin permissions.";}
+    if(id){const {error}=await client.from("admin_finance_entries").update(payload).eq("id",id);if(error)throw error;await audit("finance_entry_updated","finance_entry",id,"Finance transaction updated",{entry_type:payload.entry_type,status:payload.status,financial_class:payload.financial_class});}
+    else{const {data,error}=await client.from("admin_finance_entries").insert(payload).select("id").single();if(error)throw error;await audit("finance_entry_created","finance_entry",data.id,"Finance transaction added",{entry_type:payload.entry_type,status:payload.status,financial_class:payload.financial_class});}
+    $("financeDialog").close();toast("Transaction saved.");await refresh();
+   }catch(err){$("financeFormError").textContent=err.message||"Transaction could not be saved. Check admin permissions.";}
    finally{button.disabled=false;}
   });
-  $("financeTableBody")?.addEventListener("click",async e=>{
-   const edit=e.target.closest("[data-edit-finance]"),voidBtn=e.target.closest("[data-void-finance]");
-   if(edit){openEntry(entries.find(x=>x.id===edit.dataset.editFinance));return;}
-   if(voidBtn){const item=entries.find(x=>x.id===voidBtn.dataset.voidFinance);if(!item)return;if(!confirm("Mark this finance entry as void? It will remain in the history but no longer count in totals."))return;try{const {error}=await client.from("admin_finance_entries").update({status:"void"}).eq("id",item.id);if(error)throw error;await audit("finance_entry_voided","finance_entry",item.id,"Finance entry marked void",{entry_type:item.entry_type});toast("Entry marked as void.");await refresh();}catch(err){toast(err.message||"Entry could not be updated.","error");}}
+  $("financeAccountForm")?.addEventListener("submit",async event=>{
+   event.preventDefault();const id=$("financeAccountIdHidden").value,button=$("financeAccountForm").querySelector('[type="submit"]');button.disabled=true;$("financeAccountFormError").textContent="";
+   try{
+    const payload={name:$("financeAccountName").value.trim(),account_type:$("financeAccountType").value,provider:$("financeAccountProvider").value.trim(),
+     account_reference:$("financeAccountReference").value.trim(),opening_balance:Number($("financeAccountOpening").value),opening_date:$("financeAccountOpeningDate").value};
+    if(payload.name.length<2)throw new Error("Enter an account name.");
+    if(!Number.isFinite(payload.opening_balance)||payload.opening_balance<0)throw new Error("Opening balance cannot be negative.");
+    if(!payload.opening_date)throw new Error("Choose the opening balance date.");
+    if(!id)payload.created_by=H.ADMIN_EMAIL;
+    if(id){const {error}=await client.from("admin_finance_accounts").update(payload).eq("id",id);if(error)throw error;await audit("finance_account_updated","finance_account",id,"Finance account updated",{account_type:payload.account_type});}
+    else{const {data,error}=await client.from("admin_finance_accounts").insert(payload).select("id").single();if(error)throw error;await audit("finance_account_created","finance_account",data.id,"Finance account added",{account_type:payload.account_type});}
+    $("financeAccountDialog").close();toast("Account saved.");await refresh();
+   }catch(err){$("financeAccountFormError").textContent=err.message||"Account could not be saved.";}
+   finally{button.disabled=false;}
   });
-  $("orderReconciliationTableBody")?.addEventListener("click",e=>{
-   const btn=e.target.closest("[data-record-income]");if(!btn)return;
-   const order=orders.find(o=>o.id===btn.dataset.recordIncome);if(!order)return;if(order.status==="cancelled"){toast("Cancelled orders cannot be recorded as income. If money was actually received, reconcile it separately with a documented adjustment.","error");return;}openEntry(null,order);
+  $("financeTransferForm")?.addEventListener("submit",async event=>{
+   event.preventDefault();const button=$("financeTransferForm").querySelector('[type="submit"]');button.disabled=true;$("financeTransferFormError").textContent="";
+   try{
+    const payload={source_account_id:$("financeTransferSource").value,destination_account_id:$("financeTransferDestination").value,
+     amount:Number($("financeTransferAmount").value),transfer_date:$("financeTransferDate").value,reference:$("financeTransferReference").value.trim()||null,
+     description:$("financeTransferDescription").value.trim(),status:"draft",created_by:H.ADMIN_EMAIL};
+    if(!payload.source_account_id||!payload.destination_account_id)throw new Error("Choose both accounts.");
+    if(payload.source_account_id===payload.destination_account_id)throw new Error("Source and destination accounts must be different.");
+    if(!Number.isFinite(payload.amount)||payload.amount<=0)throw new Error("Enter a transfer amount greater than zero.");
+    if(!payload.transfer_date)throw new Error("Choose a transfer date.");
+    const {data,error}=await client.from("admin_finance_transfers").insert(payload).select("id").single();if(error)throw error;
+    await audit("finance_transfer_created","finance_transfer",data.id,"Internal account transfer drafted",{amount:payload.amount});
+    $("financeTransferDialog").close();toast("Transfer saved as Draft. Confirm it after the money moves.");await refresh();
+   }catch(err){$("financeTransferFormError").textContent=err.message||"Transfer could not be saved.";}
+   finally{button.disabled=false;}
   });
-  document.querySelectorAll("[data-close-dialog]").forEach(b=>b.addEventListener("click",()=>$(b.dataset.closeDialog)?.close()));
-  $("financeSearch")?.addEventListener("input",render);$("financeTypeFilter")?.addEventListener("change",render);$("financeStatusFilter")?.addEventListener("change",render);$("globalSearch")?.addEventListener("input",render);
+  $("financeCodForm")?.addEventListener("submit",async event=>{
+   event.preventDefault();const id=$("financeCodId").value,button=$("financeCodForm").querySelector('[type="submit"]');button.disabled=true;$("financeCodFormError").textContent="";
+   try{
+    const order=orders.find(o=>o.id===$("financeCodOrderId").value),payload={order_id:$("financeCodOrderId").value||null,order_number:order?.order_number||"",customer_name:order?.customer_name||"",
+     courier_name:$("financeCodCourier").value.trim(),tracking_reference:$("financeCodTracking").value.trim(),
+     cod_amount:Number($("financeCodAmount").value),collected_amount:Number($("financeCodCollected").value),courier_fee:Number($("financeCodFee").value),
+     adjustment_amount:Number($("financeCodAdjustment").value),remitted_amount:Number($("financeCodRemitted").value),remitted_account_id:$("financeCodAccount").value||null,
+     status:$("financeCodStatus").value,collected_at:$("financeCodCollectedAt").value||null,remitted_at:$("financeCodRemittedAt").value||null,
+     notes:$("financeCodNotes").value.trim()};
+    if(!order)throw new Error("Choose an existing order.");
+    if(!payload.courier_name)throw new Error("Enter the courier name.");
+    if([payload.cod_amount,payload.collected_amount,payload.courier_fee,payload.remitted_amount].some(n=>!Number.isFinite(n)||n<0)||!Number.isFinite(payload.adjustment_amount))throw new Error("Enter valid non-negative values. Adjustment may be positive or negative.");
+    const duplicate=settlements.find(s=>s.order_id===payload.order_id&&s.id!==id);if(duplicate)throw new Error("A COD settlement record already exists for this order. Edit the existing record instead.");
+    if(payload.status==="reconciled"){
+     if(payload.remitted_amount<=0||!payload.remitted_account_id||!payload.remitted_at)throw new Error("Reconciled requires a verified remitted amount, destination account and remittance date.");
+     if(!confirm("This will create or update one linked Confirmed Income record for the verified remittance. Have you verified the money reached this account?"))throw new Error("Reconciliation cancelled. No changes were saved.");
+    }
+    if(!id)payload.created_by=H.ADMIN_EMAIL;
+    if(id){const {error}=await client.from("admin_cod_settlements").update(payload).eq("id",id);if(error)throw error;await audit("finance_cod_settlement_updated","cod_settlement",id,"COD settlement updated",{status:payload.status,remitted_amount:payload.remitted_amount});}
+    else{const {data,error}=await client.from("admin_cod_settlements").insert(payload).select("id").single();if(error)throw error;await audit("finance_cod_settlement_created","cod_settlement",data.id,"COD settlement added",{status:payload.status,remitted_amount:payload.remitted_amount});}
+    $("financeCodDialog").close();toast(payload.status==="reconciled"?"Settlement reconciled and linked to the Finance Ledger.":"COD settlement saved.");await refresh();
+   }catch(err){$("financeCodFormError").textContent=err.message||"COD settlement could not be saved.";}
+   finally{button.disabled=false;}
+  });
+  $("financeBudgetForm")?.addEventListener("submit",async event=>{
+   event.preventDefault();const button=$("financeBudgetSaveBtn");button.disabled=true;
+   try{
+    const category=$("financeBudgetCategory").value.trim(),month=$("financeBudgetMonth").value,amount=Number($("financeBudgetAmount").value);
+    if(!category||!month||!Number.isFinite(amount)||amount<=0)throw new Error("Enter a category, month and positive budget amount.");
+    const periodStart=month+"-01";
+    const existing=budgets.find(b=>String(b.period_start).slice(0,10)===periodStart&&b.category.toLowerCase()===category.toLowerCase());
+    const payload={category,period_start:periodStart,budget_amount:amount,notes:$("financeBudgetNotes").value.trim(),status:"active"};
+    if(existing){const {error}=await client.from("admin_finance_budgets").update(payload).eq("id",existing.id);if(error)throw error;await audit("finance_budget_updated","finance_budget",existing.id,"Monthly finance budget updated",{category,period_start:periodStart});}
+    else{payload.created_by=H.ADMIN_EMAIL;const {data,error}=await client.from("admin_finance_budgets").insert(payload).select("id").single();if(error)throw error;await audit("finance_budget_created","finance_budget",data.id,"Monthly finance budget added",{category,period_start:periodStart});}
+    $("financeBudgetForm").reset();$("financeBudgetMonth").value=todayISO().slice(0,7);toast("Monthly budget saved.");await refresh();
+   }catch(err){toast(err.message||"Budget could not be saved.","error");}
+   finally{button.disabled=false;}
+  });
+  $("financeTableBody")?.addEventListener("click",async event=>{
+   const edit=event.target.closest("[data-edit-finance]"),voidBtn=event.target.closest("[data-void-finance]");
+   if(edit){const item=entries.find(e=>e.id===edit.dataset.editFinance);if(item)openEntry(item);return;}
+   if(voidBtn){
+    const item=entries.find(e=>e.id===voidBtn.dataset.voidFinance);if(!item||item.related_supplier_payment_id||item.related_cod_settlement_id)return;
+    if(!confirm("Mark this transaction as Void? It remains in history but is excluded from totals and account balances."))return;
+    try{const {error}=await client.from("admin_finance_entries").update({status:"void"}).eq("id",item.id);if(error)throw error;await audit("finance_entry_voided","finance_entry",item.id,"Finance transaction marked void",{entry_type:item.entry_type});toast("Transaction marked Void.");await refresh();}
+    catch(err){toast(err.message||"Transaction could not be updated.","error");}
+   }
+  });
+  $("financeAccountsGrid")?.addEventListener("click",async event=>{
+   const edit=event.target.closest("[data-edit-account]"),toggle=event.target.closest("[data-toggle-account]"),empty=event.target.closest("#financeEmptyAddAccount");
+   if(edit){const item=accounts.find(a=>a.id===edit.dataset.editAccount);if(item)openAccount(item);return;}
+   if(empty){openAccount();return;}
+   if(toggle){const item=accounts.find(a=>a.id===toggle.dataset.toggleAccount);if(!item)return;try{const {error}=await client.from("admin_finance_accounts").update({is_active:!item.is_active}).eq("id",item.id);if(error)throw error;await audit("finance_account_status_changed","finance_account",item.id,item.is_active?"Finance account archived":"Finance account reactivated",{is_active:!item.is_active});toast(item.is_active?"Account archived. Existing balances and history remain.":"Account reactivated.");await refresh();}catch(err){toast(err.message||"Account status could not be changed.","error");}}
+  });
+  $("financeTransfersBody")?.addEventListener("click",async event=>{
+   const confirmBtn=event.target.closest("[data-confirm-transfer]"),voidBtn=event.target.closest("[data-void-transfer]");
+   const item=transfers.find(t=>t.id===(confirmBtn?.dataset.confirmTransfer||voidBtn?.dataset.voidTransfer));if(!item)return;
+   const next=confirmBtn?"confirmed":"void";
+   if(next==="confirmed"&&!confirm("Confirm this transfer only after the money has actually moved between the two accounts. It will update both account balances but not Income or Expenses."))return;
+   if(next==="void"&&!confirm("Void this transfer? It will remain in history but stop affecting account balances."))return;
+   try{const {error}=await client.from("admin_finance_transfers").update({status:next}).eq("id",item.id);if(error)throw error;await audit("finance_transfer_status_changed","finance_transfer",item.id,"Internal transfer "+next,{amount:item.amount});toast("Transfer "+next+".");await refresh();}
+   catch(err){toast(err.message||"Transfer could not be updated.","error");}
+  });
+  $("financeCodTableBody")?.addEventListener("click",event=>{const btn=event.target.closest("[data-edit-cod]");if(!btn)return;const item=settlements.find(s=>s.id===btn.dataset.editCod);if(item)openCod(item);});
+  $("financeBudgetTableBody")?.addEventListener("click",async event=>{
+   const btn=event.target.closest("[data-archive-budget]");if(!btn)return;
+   const item=budgets.find(b=>b.id===btn.dataset.archiveBudget);if(!item)return;
+   if(!confirm("Archive this budget? Historical actuals and budget values remain available."))return;
+   try{const {error}=await client.from("admin_finance_budgets").update({status:"archived"}).eq("id",item.id);if(error)throw error;await audit("finance_budget_archived","finance_budget",item.id,"Finance budget archived",{category:item.category});toast("Budget archived.");await refresh();}
+   catch(err){toast(err.message||"Budget could not be archived.","error");}
+  });
+  const exportEntries=()=>{
+   const rows=entries.map(e=>({date:e.entry_date,type:e.entry_type,classification:financialClass(e),category:e.category,party:e.party_name||"",description:e.description||"",amount:Number(e.amount||0),account:accountName(e.account_id),payment_method:e.payment_method||"",status:e.status,reference:e.reference||"",order_id:e.related_order_id||"",source:e.related_supplier_payment_id?"supplier_payment":e.related_cod_settlement_id?"cod_settlement":"manual"}));
+   downloadFile("halal-food-finance-ledger-"+todayISO()+".csv",csvText(rows),"text/csv;charset=utf-8");toast(rows.length+" ledger record(s) exported.");
+  };
+  $("financeExportBtn")?.addEventListener("click",exportEntries);
+  $("financeReportExportBtn")?.addEventListener("click",exportEntries);
+  $("financeCodExportBtn")?.addEventListener("click",()=>{
+   const rows=settlements.map(s=>({order_number:s.order_number,courier:s.courier_name,tracking_reference:s.tracking_reference,cod_amount:s.cod_amount,collected_amount:s.collected_amount,courier_fee:s.courier_fee,adjustment_amount:s.adjustment_amount,remitted_amount:s.remitted_amount,remitted_account:accountName(s.remitted_account_id),status:s.status,variance_for_review:Number(s.remitted_amount||0)-(Number(s.collected_amount||0)-Number(s.courier_fee||0)+Number(s.adjustment_amount||0)),notes:s.notes||""}));
+   downloadFile("halal-food-cod-settlements-"+todayISO()+".csv",csvText(rows),"text/csv;charset=utf-8");toast(rows.length+" COD record(s) exported.");
+  });
+  $("financeSearch")?.addEventListener("input",renderLedger);
+  $("financeTypeFilter")?.addEventListener("change",renderLedger);
+  $("financeClassFilter")?.addEventListener("change",renderLedger);
+  $("financeStatusFilter")?.addEventListener("change",renderLedger);
+  $("financeAccountFilter")?.addEventListener("change",renderLedger);
+  $("globalSearch")?.addEventListener("input",renderLedger);
+  $("financeBudgetMonth").value=todayISO().slice(0,7);
+  document.querySelectorAll("[data-close-dialog]").forEach(button=>button.addEventListener("click",()=>$(button.dataset.closeDialog)?.close()));
   await refresh();attachRefresh(refresh);
  }
+ 
  async function initReports(){
   let report={title:"",columns:[],rows:[],notes:"",rangeLabel:""};
   async function buildReport(){
