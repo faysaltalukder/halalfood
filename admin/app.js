@@ -572,7 +572,7 @@ window.HFAdminReady.then(async H=>{
    });
    if(!latestPageActivity)return;
    const data=latestPageActivity;
-   if(data.noTrackedData){
+   if(data.noTrackedData&&pageActivityView==="hour"){
     if(heatmap)heatmap.hidden=true;
     if(monthGrid)monthGrid.hidden=true;
     if(note)note.textContent="No tracked page-view data is available in this selected period. Earlier dates are not counted as zero.";
@@ -585,7 +585,11 @@ window.HFAdminReady.then(async H=>{
    const hourLabel=hour=>new Intl.DateTimeFormat(locale,{timeZone:"Asia/Dhaka",hour:"numeric",hour12:true}).format(new Date(Date.UTC(2023,0,1,hour-6)));
    const setActivityNote=()=>{
     let message=config.note;
-    if(data.requestedFrom&&data.chartFrom&&data.requestedFrom<data.chartFrom)message+=" Tracking coverage begins "+data.chartFrom+"; earlier dates are excluded, not counted as zero.";
+    if(data.requestedFrom&&data.firstTrackedDay&&data.requestedFrom<data.firstTrackedDay){
+     message+=pageActivityView==="month"
+      ?" Dates before tracking coverage ("+data.firstTrackedDay+") are shown as Not tracked, not zero activity."
+      :" Dates before tracking coverage ("+data.firstTrackedDay+") are excluded from the hourly totals, not counted as zero.";
+    }
     if(!data.historyComplete)message+=" History may be limited to the latest 15,000 fetched events.";
     if(note)note.textContent=message;
    };
@@ -622,18 +626,21 @@ window.HFAdminReady.then(async H=>{
    const dailyCounts=new Map();
    pageRows.forEach(event=>{
     const day=dhakaDateKey(event.occurred_at);
-    if(!day||day<data.chartFrom||day>data.chartTo)return;
+    if(!day||day<data.requestedFrom||day>data.requestedTo)return;
     dailyCounts.set(day,(dailyCounts.get(day)||0)+1);
    });
    const dayKeys=[];
-   for(let day=data.chartFrom;day<=data.chartTo;day=addDhakaDays(day,1))dayKeys.push(day);
-   const maximum=Math.max(1,...dayKeys.map(day=>dailyCounts.get(day)||0));
+   for(let day=data.requestedFrom;day<=data.requestedTo;day=addDhakaDays(day,1))dayKeys.push(day);
+   const observedPageDays=pageRows.map(event=>dhakaDateKey(event.occurred_at)).filter(Boolean).sort();
+   const trackingStart=data.firstTrackedDay||observedPageDays[0]||"";
+   const maximum=Math.max(1,...dayKeys.filter(day=>trackingStart&&day>=trackingStart).map(day=>dailyCounts.get(day)||0));
    const themeColors=Array.isArray(colorSet)&&colorSet.length?colorSet:["#C97B3D"];
    const numberFormat=new Intl.NumberFormat(locale);
    const dayFormatter=new Intl.DateTimeFormat(locale,{timeZone:"Asia/Dhaka",day:"numeric",month:"short"});
    const dayCells=dayKeys.map(day=>{
     const parts=day.split("-").map(Number);
     const date=new Date(Date.UTC(parts[0],parts[1]-1,parts[2],6));
+    const tracked=Boolean(trackingStart&&day>=trackingStart);
     const count=dailyCounts.get(day)||0;
     const intensity=count/maximum;
     const colorIndex=count?Math.min(themeColors.length-1,Math.floor(intensity*themeColors.length)):0;
@@ -641,9 +648,13 @@ window.HFAdminReady.then(async H=>{
     const safeColor=/^#[0-9a-f]{3,8}$/i.test(cellColor)?cellColor:"#C97B3D";
     const mix=count?(16+intensity*76).toFixed(0)+"%":"0%";
     const label=dayFormatter.format(date);
-    const tip=label+" · "+numberFormat.format(count)+" page views";
-    const peak=count>0&&count===maximum;
-    return '<div class="hf-page-activity-day-cell'+(peak?' is-peak':"")+(count?"":" is-zero")+'" style="--activity-color:'+safeColor+';--activity-mix:'+mix+'" title="'+esc(tip)+'" aria-label="'+esc(tip)+'"><span class="hf-page-activity-day-date">'+esc(label)+'</span><strong class="hf-page-activity-day-count">'+numberFormat.format(count)+'</strong><small>views</small></div>';
+    const stateLabel=tracked?(numberFormat.format(count)+" page views"):"tracking not yet available";
+    const tip=label+" · "+stateLabel;
+    const peak=tracked&&count>0&&count===maximum;
+    const stateClass=tracked?(count?"":" is-zero"):" is-untracked";
+    const countLabel=tracked?numberFormat.format(count):"—";
+    const footerLabel=tracked?"views":(locale==="bn-BD"?"ট্র্যাকিং নেই":"Not tracked");
+    return '<div class="hf-page-activity-day-cell'+(peak?' is-peak':"")+stateClass+'" style="--activity-color:'+safeColor+';--activity-mix:'+(tracked?mix:"0%")+'" title="'+esc(tip)+'" aria-label="'+esc(tip)+'"><span class="hf-page-activity-day-date">'+esc(label)+'</span><strong class="hf-page-activity-day-count">'+countLabel+'</strong><small>'+footerLabel+'</small></div>';
    });
    monthGrid.innerHTML=dayCells.join("");
    heatmap.hidden=true;
@@ -730,7 +741,7 @@ window.HFAdminReady.then(async H=>{
    const top=topProducts(events,products);
    drawChart("analyticsProductChart",{type:"polarArea",data:{labels:top.slice(0,7).map(x=>x.name),datasets:[{data:top.slice(0,7).map(x=>x.count),backgroundColor:colorSet,borderColor:chartTheme().surface,borderWidth:2,hoverOffset:9}]},options:{animation:{duration:850,easing:"easeOutQuart"},scales:{r:{ticks:{display:false,color:chartTheme().muted},grid:{color:chartTheme().grid}}},plugins:{legend:{position:"bottom"}}}});
    const pageStats=buildPageExperience(events);
-   latestPageActivity={events,range,requestedFrom,chartFrom,chartTo,noTrackedData,firstTrackedDay,historyComplete};
+   latestPageActivity={events,range,requestedFrom,requestedTo,chartFrom,chartTo,noTrackedData,firstTrackedDay,historyComplete};
    renderPageActivity();
    renderPageActivity();
    const health=$("analyticsDataHealth"),rawTotal=prepared.rawCount;
