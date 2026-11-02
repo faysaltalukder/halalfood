@@ -3358,6 +3358,26 @@ async function refresh(){
    if($("printReportTitle"))$("printReportTitle").textContent=def[0];if($("printReportDetails"))$("printReportDetails").textContent=report.rangeLabel+" · "+report.rows.length+" records";
    showSegment(activeSegment);
   }
+  async function paginateQuery(buildQuery,limit=10000){
+   const rows=[],pageSize=1000,concurrency=3,maxRows=Math.max(0,Math.min(10000,Number(limit)||0));
+   const firstSize=Math.min(pageSize,maxRows);
+   if(firstSize<=0)return rows;
+   const first=await signedQuery(buildQuery().range(0,firstSize-1));
+   rows.push(...first);
+   if(first.length<firstSize)return rows;
+   for(let base=pageSize;base<maxRows;base+=pageSize*concurrency){
+    const offsets=[];
+    for(let offset=base;offset<Math.min(maxRows,base+pageSize*concurrency);offset+=pageSize){
+     offsets.push({offset,size:Math.min(pageSize,maxRows-offset)});
+    }
+    const pages=await Promise.all(offsets.map(({offset,size})=>signedQuery(buildQuery().range(offset,offset+size-1))));
+    for(let i=0;i<pages.length;i++){
+     rows.push(...pages[i]);
+     if(pages[i].length<offsets[i].size)return rows;
+    }
+   }
+   return rows;
+  }
   async function fetchReportFinance(range,limit=10000){
    return paginateQuery(()=>{
     let q=client.from("admin_finance_entries").select("id,entry_type,category,amount,entry_date,description,reference,status,related_order_id,account_id,payment_method,party_name,financial_class,related_supplier_payment_id,related_cod_settlement_id,created_by,created_at,updated_at").order("entry_date",{ascending:false}).order("created_at",{ascending:false}).order("id",{ascending:true});
