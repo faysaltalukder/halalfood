@@ -8,17 +8,23 @@ const root = process.cwd();
 const adminDir = join(root, "admin");
 const sharedCssVersion = "20261101-shared-erp-system-v1";
 const workspaceThemeCssVersion = "20261101-merchant-fieldbook-v1";
-const sharedJsVersion = "20261102-corporate-standard-v1";
+const sharedJsVersion = "20261102-golden-prestige-v1";
 const i18nVersion = "20261102-glyph-signal-v2";
 const appJsVersion = "20261030-orders-polish-v5";
 const read = (path) => readFileSync(join(root, path), "utf8");
 
 const themeRegistry = read("admin/shared.js");
 const corporateThemeCss = read("admin/corporate-standard.css");
+const goldenPrestigeCss = read("admin/golden-prestige.css");
 assert.ok(themeRegistry.includes('id:"corporate-standard"') && themeRegistry.includes('name:"Corporate Standard"'), "Corporate Standard theme must be registered.");
 assert.ok(themeRegistry.includes('id:"standard",label:"Standard"') && themeRegistry.includes('themeIds:["corporate-standard"]'), "Corporate Standard must appear in its own Standard theme group.");
 assert.ok(themeRegistry.includes('corporate-standard.css?v=20261102-corporate-standard-v1'), "Corporate Standard stylesheet must load dynamically with a cache-busted URL.");
 assert.ok(corporateThemeCss.includes('html[data-hf-theme="corporate-standard"]') && corporateThemeCss.includes(".admin-sidebar") && corporateThemeCss.includes(".admin-topbar") && corporateThemeCss.includes(".hf-table"), "Corporate Standard CSS must cover the real shared admin shell and work tables.");
+assert.ok(themeRegistry.includes('id:"golden-prestige"') && themeRegistry.includes('name:"Golden Prestige"'), "Golden Prestige must be registered.");
+assert.ok(themeRegistry.includes('id:"premium",label:"Premium"') && themeRegistry.includes('themeIds:["golden-prestige"]'), "Golden Prestige must appear in the Premium group.");
+assert.ok(themeRegistry.includes("golden-prestige.css?v=20261102-golden-prestige-v1"), "Golden Prestige stylesheet must load with a cache-busted URL.");
+assert.ok(goldenPrestigeCss.includes('html[data-hf-theme="golden-prestige"]') && goldenPrestigeCss.includes(".admin-sidebar") && goldenPrestigeCss.includes(".admin-topbar") && goldenPrestigeCss.includes(".hf-table"), "Golden Prestige CSS must cover the shared shell and work tables.");
+
 
 const htmlFiles = readdirSync(adminDir).filter((file) => file.endsWith(".html"));
 const unifiedPages = htmlFiles.filter((file) => /<body[^>]*\bdata-page=/.test(read(join("admin", file))));
@@ -140,7 +146,7 @@ assert.ok(shared.includes('profile":"Creative · Refined · Expressive"') && sha
 assert.ok(shared.includes("const ADMIN_THEME_GROUPS=[") && shared.includes('label:"Modern"') && shared.includes('label:"Balanced"') && shared.includes('label:"Classic Comfort"') && shared.includes('label:"Signature"') && shared.includes('themeIds:["merchant-fieldbook","glass-studio","glyph-signal"]'), "All four theme groups must remain, with three themes in Signature.");
 const themeGroupMatches=[...shared.matchAll(/themeIds:\[([^\]]*)\]/g)];
 const themeGroupCount=themeGroupMatches.reduce((total,match)=>total+(match[1].match(/"[^"]+"/g)||[]).length,0);
-assert.equal(themeGroupCount,14,"The picker must expose exactly fourteen themes after adding Corporate Standard.");
+assert.equal(themeGroupCount,15,"The picker must expose exactly fifteen themes after adding Golden Prestige.");
 assert.ok(shared.includes("All themes are available to every administrator") && !shared.includes("of 11 themes available"), "Theme count must be registry-driven and not hard-coded.");
 assert.ok(shared.includes('aria-label="Select ') && shared.includes(' theme" aria-pressed="') && shared.includes('aria-pressed='), "Theme choices must expose accessible names and selected states.");
 assert.ok(shared.includes("function makeExtendedAdminTheme") && shared.includes("EXTENDED_ADMIN_THEME_CONFIGS.forEach"), "The four added themes must be generated through the shared dynamic theme engine.");
