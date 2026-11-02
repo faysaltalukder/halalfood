@@ -51,6 +51,9 @@ assert.ok(financeApp.includes("financial_class") && html.includes('value="capita
 assert.ok(financeApp.includes('status==="reconciled"') && financeApp.includes("remitted_account_id") && financeApp.includes("remitted_at"), "COD reconciliation must require verified remittance fields.");
 assert.ok(financeApp.includes("Confirm this transfer only after the money has actually moved"), "Transfers must require a human verification step before affecting balances.");
 assert.ok(financeApp.includes("admin_supplier_balances"), "Supplier payables should reuse the Supplier workspace balance source.");
+assert.ok(financeApp.includes("This order has a COD settlement record") && financeApp.includes("duplicateManualIncome"), "Manual order income and COD settlement must not double count the same order receipt.");
+assert.ok(financeApp.includes("Insufficient recorded balance") && financeApp.includes("Transfer date cannot be earlier"), "Internal transfers must validate available source balance and account opening dates.");
+assert.ok(financeApp.includes("Changing it away from Reconciled will Void"), "Leaving an already reconciled COD status must explicitly warn about the ledger reversal.");
 assert.ok(financeApp.includes("Account balances") || financeApp.includes("accountBalance"), "Balances must be derived from source movements, not hardcoded totals.");
 assert.ok(!financeApp.includes("grossProfit") && !financeApp.includes("profitMargin"), "Do not present a profit figure without verified cost-of-goods data.");
 
