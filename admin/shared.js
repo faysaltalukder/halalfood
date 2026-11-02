@@ -891,7 +891,7 @@ function glyphSignalUnwrapControl(element){
  const label=element.querySelector(":scope > .glyph-signal-label"),icon=element.querySelector(":scope > .glyph-signal-icon");
  if(label){while(label.firstChild)element.insertBefore(label.firstChild,label);label.remove();}
  if(icon)icon.remove();
- element.classList.remove("glyph-signal-control");delete element.dataset.glyphEnhanced;delete element.dataset.glyphLabel;glyphSignalRestoreName(element);
+ element.classList.remove("glyph-signal-control");delete element.dataset.glyphEnhanced;delete element.dataset.glyphLabel;delete element.dataset.glyphVisibleText;glyphSignalRestoreName(element);
 }
 function glyphSignalDecorateControl(element){
  if(element.dataset.glyphEnhanced==="1"&&element.querySelector("select,input"))glyphSignalUnwrapControl(element);
@@ -899,7 +899,7 @@ function glyphSignalDecorateControl(element){
  if(element.dataset.glyphEnhanced==="1"){
   const current=element.querySelector(":scope > .glyph-signal-label");
   const visible=(current?current.textContent:element.textContent||"").replace(/\s+/g," ").trim();
-  if(visible===String(element.dataset.glyphLabel||""))return;
+  if(visible===String(element.dataset.glyphVisibleText||""))return;
   glyphSignalUnwrapControl(element);
  }
  const sourceText=element.dataset.glyphAddedAria==="1"?element.textContent:(element.getAttribute("aria-label")||element.getAttribute("title")||element.textContent||"");
@@ -914,7 +914,7 @@ function glyphSignalDecorateControl(element){
   const iconWrap=document.createElement("span");iconWrap.className="glyph-signal-icon";iconWrap.setAttribute("aria-hidden","true");iconWrap.innerHTML=shellIcon(iconName);
   element.append(iconWrap,label);
  }
- element.classList.add("glyph-signal-control");element.dataset.glyphEnhanced="1";
+ element.classList.add("glyph-signal-control");element.dataset.glyphEnhanced="1";element.dataset.glyphVisibleText=(label.textContent||"").replace(/\\s+/g," ").trim();
 }
 function glyphSignalDecorateMetric(element){
  if(element.dataset.glyphMetric==="1"){
