@@ -59,8 +59,8 @@ function interpolated(stops,p){
  const t=clamp((p-a.at)/Math.max(.0001,b.at-a.at));const out={};
  Object.keys(a.c).forEach(k=>out[k]=mix(a.c[k],b.c[k],t));return out;
 }
-function setPalette(kind,p){
- const c=interpolated(kind==="solar"?solarStops:lunarStops,clamp(p));
+function setPalette(kind,progress){
+ const c=interpolated(kind==="solar"?solarStops:lunarStops,clamp(progress));
  const tokenMap={canvas:"canvas-bg",header:"header-bg",card:"card-bg",nested:"nested-bg",control:"control-bg",text:"text",muted:"muted",border:"border",primary:"primary",primaryHover:"primary-hover",secondary:"secondary",secondaryInk:"secondary-ink",accent:"accent",focus:"focus",sideInk:"sidebar-ink",table:"table-bg",tableHead:"table-head",tableAlt:"table-alt",tableHover:"table-hover",chart:"chart-bg",chartText:"chart-text",chartMuted:"chart-muted",chartGrid:"chart-grid"};
  const theme=window.HFAdmin?.getCurrentColorTheme?.();
  Object.entries(tokenMap).forEach(([from,to])=>{const v=c[from];if(!v)return;if(theme)theme.tokens[to]=v;document.documentElement.style.setProperty("--hf-theme-"+to,v);});
