@@ -2869,7 +2869,7 @@ async function refresh(){
     const blocks=await signedQuery(client.from("site_content_blocks").select("block_key,block_type,title,image_url,link_url,alt_text,is_active,sort_order,updated_by,updated_at").order("sort_order",{ascending:true}));
     rows=blocks.map(b=>({placement:b.block_type,key:b.block_key,title:b.title,image_url:b.image_url,destination_url:b.link_url,alt_text:b.alt_text,active:b.is_active?"yes":"no",sort_order:b.sort_order,updated_by:b.updated_by,updated_at:b.updated_at}));
     title="Homepage Content Settings";notes="This report contains the banner and promotion configuration used by the public homepage. Hero slides remain enabled to preserve carousel behavior; side banner and popup active flags can be changed from Website Content.";
-   }else if(type==="finance"||type==="expenses"||type==="transactions"||type==="account-payments"||type==="collections"){
+   }else if(type==="finance"){
     const entries=await fetchFinance(range,3000);
     if(entries.length>=3000)notes="The report reached the 3,000-entry finance retrieval cap. ";
     const filtered=type==="expenses"?entries.filter(e=>String(e.entry_type||"").toLowerCase()==="expense"):entries;
