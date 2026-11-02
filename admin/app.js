@@ -2829,7 +2829,8 @@ async function refresh(){
  }
  
  async function initReports(){
-  const reportGroup=pageName.startsWith("reports-")?pageName.slice("reports-".length):"";
+  const reportGroup=page.startsWith("reports-")?page.slice("reports-".length):"";
+  const requestedReport=new URLSearchParams(window.location.search).get("report")||"";
   const reportGroups={
    business:["business","sales","product-sales","top-products","customer-wise-products","customer-products"],
    purchase:["purchase","product-purchase"],
@@ -2841,9 +2842,11 @@ async function refresh(){
   };
   if(reportGroup){
    const allowed=reportGroups[reportGroup]||[];
-   const first=allowed[0];if(first&&$("reportType"))$("reportType").value=first;
+   const first=allowed.includes(requestedReport)?requestedReport:allowed[0];
+   if(first&&$("reportType"))$("reportType").value=first;
    document.querySelectorAll("[data-report-category]").forEach(section=>{section.hidden=false;section.style.display="";});
    document.querySelectorAll("#reportType option").forEach(option=>{option.hidden=false;option.disabled=false;});
+   document.querySelectorAll("[data-report-type]").forEach(button=>button.classList.toggle("is-selected",button.dataset.reportType===first));
    const heading=document.querySelector(".hf-reports-hero h1");if(heading)heading.textContent=({business:"Business & Sales Reports",purchase:"Purchase & Supply Reports",customers:"Customer Reports",payables:"Payables Reports",inventory:"Inventory Reports",finance:"Financial Reports",daily:"Daily Reports"})[reportGroup]||"Reports";
   }
   let report={title:"",columns:[],rows:[],notes:"",rangeLabel:""};
