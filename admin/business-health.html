@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="robots" content="noindex,nofollow"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<title>Business Health · Halal Food Admin</title>
+<link rel="stylesheet" href="./shared.css?v=20261102-business-health-v1"><link rel="stylesheet" href="./phase4-pages.css?v=20261023-admin-ultimate-v1"><link rel="stylesheet" href="./workspace-global-theme.css?v=20261101-merchant-fieldbook-v1"><link rel="stylesheet" href="./business-health.css?v=20261102-business-health-v1">
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
+</head>
+<body data-page="business-health">
+<div id="authGate" class="auth-gate"><div class="auth-gate-card"><strong>Checking secure admin access…</strong><p>Business Health uses verified admin records and two-step verification before showing financial and inventory information.</p></div></div>
+<div id="adminApp" hidden>
+<main id="pageContent" tabindex="-1" class="hf-business-health-page">
+<header class="hf-bh-hero"><div class="hf-bh-hero-copy"><p class="page-eyebrow">DAILY OPERATING DESK</p><h1>Business Health</h1><p>Clear answers to the questions that matter when you run a business. Every answer comes from your live orders, finance, stock and supplier records.</p></div>
+<div class="hf-bh-hero-actions"><label class="hf-bh-period-field"><span>Reporting period</span><select class="hf-select" id="bhPeriod" aria-label="Choose reporting period"><option value="today" selected>Today</option><option value="yesterday">Yesterday</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="month">This month</option></select></label><button class="hf-button hf-button-primary" id="bhRefresh" type="button">↻ Refresh</button></div>
+</header>
+<section class="hf-bh-pulse" aria-label="Business summary"><div class="hf-bh-pulse-head"><div><p class="page-eyebrow">AT A GLANCE</p><h2>Business pulse</h2><p id="bhRangeLabel">Today · Bangladesh time</p></div><span id="bhUpdatedAt" class="hf-bh-updated">Loading live data…</span></div>
+<div id="bhSummary" class="hf-bh-summary"><div class="hf-bh-summary-card"><span>Booked order value</span><strong>—</strong><small>Loading orders…</small></div><div class="hf-bh-summary-card"><span>Confirmed money in</span><strong>—</strong><small>Loading Finance…</small></div><div class="hf-bh-summary-card"><span>Open orders</span><strong>—</strong><small>Pending, processing or shipped</small></div><div class="hf-bh-summary-card"><span>Stock to review</span><strong>—</strong><small>Low and out of stock</small></div></div><p class="hf-bh-pulse-hint" id="bhSummaryHint">Preparing current business indicators…</p></section>
+<section class="hf-bh-coverage" id="bhCoverage" aria-live="polite"><div class="hf-bh-coverage-icon">…</div><div class="hf-bh-coverage-copy"><strong>Checking data readiness</strong><p>Cost coverage, inventory configuration and source availability are being checked.</p></div><div class="hf-bh-coverage-action"><a class="hf-bh-inline-link" href="./products.html">Products ↗</a></div></section>
+<section class="hf-bh-questions-section"><div class="hf-bh-question-toolbar"><div><p class="page-eyebrow">YOUR DAILY QUESTIONS</p><h2>What do you need to know?</h2><p>Open a question for its answer. Use Details to inspect the records behind it.</p></div><label class="hf-bh-search"><span aria-hidden="true">⌕</span><input class="hf-input" id="bhSearch" type="search" placeholder="Search a business question…" aria-label="Search business questions"></label></div>
+<div class="hf-bh-group-anchor-row" aria-label="Question categories"><a href="#bh-sales">Sales & Orders</a><a href="#bh-money">Money & Profit</a><a href="#bh-stock">Stock & Inventory</a><a href="#bh-control">Purchasing & Control</a></div>
+<div id="bhQuestionGroups" class="hf-bh-question-groups"><div class="hf-bh-loading">Loading live order, finance, stock and supplier records…</div></div></section>
+<footer class="hf-bh-footer"><span id="bhSourceHealth">Checking data sources…</span><span>Business dates and delivery dates use Asia/Dhaka.</span></footer>
+</main></div>
+<dialog id="businessHealthDialog" class="hf-dialog hf-bh-dialog"><div class="hf-dialog-inner"><div class="hf-dialog-head"><div><p class="hf-dialog-title-tag" id="bhDialogEyebrow">BUSINESS HEALTH DETAIL</p><h2 id="bhDialogTitle">Answer</h2></div><div class="hf-bh-dialog-status" id="bhDialogStatus"></div><button class="hf-button hf-button-secondary hf-dialog-close" id="bhDialogClose" type="button" aria-label="Close details">×</button></div><div id="bhDialogBody" class="hf-bh-dialog-body"></div><div class="hf-dialog-actions"><button class="hf-button hf-button-secondary" id="bhDialogCloseBottom" type="button">Close details</button></div></div></dialog>
+<script defer src="./i18n.js?v=20261102-glyph-signal-v2"></script><script defer src="../js/store-config.js?v=20261101-store-config-v1"></script><script defer src="./shared.js?v=20261102-business-health-v1"></script><script defer src="./business-health.js?v=20261102-business-health-v1"></script>
+</body></html>
