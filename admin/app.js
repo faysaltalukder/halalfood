@@ -2011,7 +2011,7 @@ async function refresh(){
   await refresh();attachRefresh(refresh);
  }
  async function initFinance(){
-  let entries=[],orders=[],accounts=[],transfers=[],settlements=[],budgets=[],supplierPayables=null;
+  let entries=[],orders=[],accounts=[],transfers=[],settlements=[],budgets=[],supplierPayables=null,supplierRows=null;
   const financeChartColors=["#C97B3D","#345F9D","#2A918B","#E1A84C","#C87670","#8C78C5","#6F94B8"];
   const sum=(rows,fn)=>rows.reduce((total,row)=>total+Number(fn(row)||0),0);
   const accountName=id=>accounts.find(a=>a.id===id)?.name||"Unassigned";
@@ -2082,7 +2082,6 @@ async function refresh(){
     return actual>Number(b.budget_amount||0);
    });
    if(overspent.length)alerts.push(["Budget limit exceeded",overspent.length+" active budget category/categories are above the monthly limit.","#financeReportsSection","warning"]);
-   if(draftCount>0){} 
    if(!alerts.length){$("financeAlerts").innerHTML='<div class="hf-finance-alert hf-finance-alert-success"><span>✓</span><div><strong>No urgent finance reminders</strong><p>Keep account balances and settlement records current as new transactions occur.</p></div></div>';return;}
    $("financeAlerts").innerHTML=alerts.map(a=>'<a class="hf-finance-alert hf-finance-alert-'+a[3]+'" href="'+a[2]+'"><span>!</span><div><strong>'+esc(a[0])+'</strong><p>'+esc(a[1])+'</p></div><span class="hf-finance-alert-arrow">↗</span></a>').join("");
   }
