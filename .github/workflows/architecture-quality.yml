@@ -33,6 +33,8 @@ jobs:
         run: node scripts/admin-product-tools-check.mjs
       - name: Run Finance & Cash Flow workspace checks
         run: node scripts/finance-workspace-check.mjs
+      - name: Run Part 1 Financial Reports checks
+        run: node scripts/report-financial-part1-check.mjs
       - name: Run Analytics workspace checks
         run: node scripts/analytics-workspace-check.mjs
 
