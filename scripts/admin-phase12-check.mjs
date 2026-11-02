@@ -9,7 +9,7 @@ const adminDir = join(root, "admin");
 const sharedCssVersion = "20261101-shared-erp-system-v1";
 const workspaceThemeCssVersion = "20261101-merchant-fieldbook-v1";
 const sharedJsVersion = "20261102-solar-lunar-v1";
-const i18nVersion = "20261102-glyph-signal-v2";
+const i18nVersion = "20261102-bilingual-segment-v2";
 const appJsVersion = "20261030-orders-polish-v5";
 const read = (path) => readFileSync(join(root, path), "utf8");
 
@@ -108,7 +108,7 @@ assert.ok(!read("admin/operations.html").includes('id="suppliersSection"') && re
 
 for (const file of unifiedPages) {
   const source = read(join("admin", file));
-  const expectedI18nVersion = file === "analytics.html" ? "20261102-page-activity-intervals-v1" : i18nVersion;
+  const expectedI18nVersion = i18nVersion;
   assert.ok(source.includes(`i18n.js?v=${expectedI18nVersion}`), `${file}: missing or stale shared language dictionary.`);
   assert.ok(source.includes(`shared.css?v=${sharedCssVersion}`), `${file}: stale shared UI cache version.`);
   assert.ok(source.includes(`shared.js?v=${sharedJsVersion}`), `${file}: missing or stale multi-theme shared JS version.`);
