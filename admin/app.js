@@ -2840,7 +2840,7 @@ async function refresh(){
    daily:["daily"]
   };
   if(reportGroup){
-   document.querySelectorAll("[data-report-category]").forEach(section=>{section.hidden=section.dataset.reportCategory!==reportGroup;});
+   document.querySelectorAll("[data-report-category]").forEach(section=>{section.hidden=section.dataset.reportCategory!==reportGroup;section.style.display=section.dataset.reportCategory===reportGroup?"":"none";});
    const allowed=reportGroups[reportGroup]||[];
    document.querySelectorAll("#reportType option").forEach(option=>{option.hidden=!allowed.includes(option.value);option.disabled=!allowed.includes(option.value);});
    const first=allowed[0];if(first&&$("reportType"))$("reportType").value=first;
