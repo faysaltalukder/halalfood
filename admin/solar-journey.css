@@ -1,5 +1,5 @@
 
-/* Theme #18 · Solar Journey: sunrise, daylight, golden hour and sunset */
+/* Theme #16 · Solar Journey: sunrise, daylight, golden hour and sunset */
 html[data-hf-theme="solar-journey"]{color-scheme:light}
 html[data-hf-theme="solar-journey"] body{background:var(--hf-theme-canvas-bg);color:var(--hf-theme-text);transition:background-color 45s ease,color 45s ease}
 html[data-hf-theme="solar-journey"] .admin-frame{position:relative;background:var(--hf-theme-canvas-bg)}
