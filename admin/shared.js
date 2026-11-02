@@ -1392,7 +1392,7 @@ window.HFAdminReady=(async()=>{
   if(aal.error||aal.data?.currentLevel!=="aal2"){location.replace("./index.html");return null;}
   const user=await client.auth.getUser();currentUser=user.data?.user||data.session.user;
   makeShell();
-  window.HFAdmin={client,ADMIN_EMAIL,esc,money,shortNum,dateTime,dateOnly,toast,audit,signedQuery,downloadFile,csvText,slugify,dayISO,dateRangeFromControls,rangeQuery,showTableMessage,statusClass,makeStatus,makeEmpty,groupBy,dateKey,lastDateKeys,fetchOrders,fetchEvents,fetchProducts,fetchCategories,fetchPosts,fetchFinance,palette,colorSet,chartTheme,drawChart,charts,colorThemes:ADMIN_COLOR_THEMES,applyColorTheme,getCurrentColorTheme};
+  window.HFAdmin={client,ADMIN_EMAIL,esc,money,shortNum,dateTime,dateOnly,toast,audit,signedQuery,downloadFile,csvText,slugify,dayISO,dateRangeFromControls,rangeQuery,showTableMessage,statusClass,makeStatus,makeEmpty,groupBy,dateKey,lastDateKeys,fetchOrders,fetchEvents,fetchProducts,fetchCategories,fetchPosts,fetchFinance,palette,colorSet,chartTheme,drawChart,charts,colorThemes:ADMIN_COLOR_THEMES,applyColorTheme,getCurrentColorTheme,syncChartsForTheme};
   return window.HFAdmin;
  }catch(err){console.error("Admin access check failed",err);gate.innerHTML='<div class="auth-gate-card"><strong>Secure sign-in could not be verified</strong><p>Please refresh and sign in again. No admin data was loaded.</p><p style="margin-top:14px"><a href="./index.html" class="hf-button hf-button-primary">Return to sign-in</a></p></div>';return null;}
 })();
