@@ -3422,18 +3422,46 @@ async function refresh(){
    }else if(["account-payments","expenses","transactions"].includes(type)){
     const finance=await fetchReportFinance(range);source.finance=finance;
     if(type==="account-payments"){
-     const accounts=await signedQuery(client.from("admin_finance_accounts").select("id,name,account_type,provider,account_reference,is_active").order("name",{ascending:true}).limit(1000));const map=new Map(accounts.map(a=>[a.id,a]));source.accounts=accounts;
-     rows=finance.filter(e=>e.account_id||String(e.payment_method||"").trim()).map(e=>({entry_date:e.entry_date,entry_type:e.entry_type,party_name:e.party_name,account_name:map.get(e.account_id)?.name||"—",account_type:map.get(e.account_id)?.account_type||"",payment_method:e.payment_method,category:e.category,financial_class:e.financial_class,amount:num(e.amount),status:e.status,reference:e.reference,related_order_id:e.related_order_id||""}));
-     const transfers=await signedQuery(rangeQuery(client.from("admin_finance_transfers").select("id,source_account_id,destination_account_id,transfer_date,amount,reference,description,status").order("transfer_date",{ascending:false}).limit(3000),"transfer_date",range));source.transfers=transfers.map(t=>({...t,source_account:map.get(t.source_account_id)?.name||"—",destination_account:map.get(t.destination_account_id)?.name||"—"}));notes="Account/payment-linked Finance entries shown. Internal transfers remain separate and are not income or expense.";
+     const [allFinance,accounts,periodTransfers,allTransfers]=await Promise.all([
+      fetchReportFinance(null),
+      signedQuery(client.from("admin_finance_accounts").select("id,name,account_type,provider,account_reference,opening_balance,opening_date,is_active").order("name",{ascending:true}).limit(1000)),
+      fetchReportTransfers(range),
+      fetchReportTransfers(null)
+     ]);
+     const accountMap=new Map(accounts.map(account=>[account.id,account]));
+     source.accountBalances=accounts.map(account=>{
+      const start=String(account.opening_date||"0000-01-01").slice(0,10);
+      const entries=allFinance.filter(entry=>entry.account_id===account.id&&entry.status==="confirmed"&&String(entry.entry_date||"")>=start);
+      const cashMovement=entries.reduce((sum,entry)=>sum+(entry.entry_type==="income"?1:-1)*num(entry.amount),0);
+      const transferIn=allTransfers.filter(t=>t.destination_account_id===account.id&&t.status==="confirmed"&&String(t.transfer_date||"")>=start).reduce((sum,t)=>sum+num(t.amount),0);
+      const transferOut=allTransfers.filter(t=>t.source_account_id===account.id&&t.status==="confirmed"&&String(t.transfer_date||"")>=start).reduce((sum,t)=>sum+num(t.amount),0);
+      const periodEntries=finance.filter(entry=>entry.account_id===account.id&&entry.status==="confirmed");
+      const periodIn=periodEntries.filter(entry=>entry.entry_type==="income").reduce((sum,entry)=>sum+num(entry.amount),0);
+      const periodOut=periodEntries.filter(entry=>entry.entry_type==="expense").reduce((sum,entry)=>sum+num(entry.amount),0);
+      const periodTransferIn=periodTransfers.filter(t=>t.destination_account_id===account.id&&t.status==="confirmed").reduce((sum,t)=>sum+num(t.amount),0);
+      const periodTransferOut=periodTransfers.filter(t=>t.source_account_id===account.id&&t.status==="confirmed").reduce((sum,t)=>sum+num(t.amount),0);
+      return {account_id:account.id,account_name:account.name,account_type:account.account_type,provider:account.provider,account_reference:account.account_reference,is_active:account.is_active,opening_balance:num(account.opening_balance),opening_date:start,current_balance:num(account.opening_balance)+cashMovement+transferIn-transferOut,period_income:periodIn,period_expense:periodOut,period_transfer_in:periodTransferIn,period_transfer_out:periodTransferOut,period_net_movement:periodIn-periodOut+periodTransferIn-periodTransferOut};
+     });
+     source.transfers=periodTransfers.map(t=>({...t,source_account:accountMap.get(t.source_account_id)?.name||"—",destination_account:accountMap.get(t.destination_account_id)?.name||"—"}));
+     const entryRows=finance.map(entry=>({record_kind:"Finance entry",record_id:entry.id,entry_date:entry.entry_date,entry_type:entry.entry_type,party_name:entry.party_name,account_name:accountMap.get(entry.account_id)?.name||"Unassigned",account_type:accountMap.get(entry.account_id)?.account_type||"",source_account:"",destination_account:"",payment_method:entry.payment_method,category:entry.category,financial_class:entry.financial_class,amount:num(entry.amount),status:entry.status,reference:entry.reference,related_order_id:entry.related_order_id||"",description:entry.description}));
+     const transferRows=periodTransfers.map(t=>({record_kind:"Internal transfer",record_id:t.id,entry_date:t.transfer_date,entry_type:"transfer",party_name:"",account_name:"",account_type:"",source_account:accountMap.get(t.source_account_id)?.name||"—",destination_account:accountMap.get(t.destination_account_id)?.name||"—",payment_method:"Internal transfer",category:"Internal transfer",financial_class:"internal_transfer",amount:num(t.amount),status:t.status,reference:t.reference||"",related_order_id:"",description:t.description||""}));
+     rows=[...entryRows,...transferRows].sort((a,b)=>String(b.entry_date||"").localeCompare(String(a.entry_date||"")));
+     source.allFinanceCount=allFinance.length;source.allTransfersCount=allTransfers.length;
+     notes="Current balance = opening balance + confirmed account-linked income − confirmed expenses + confirmed transfers in − transfers out. Period movement uses selected-period records. Internal transfers are not income or expense.";
     }else if(type==="expenses"){
-     rows=finance.filter(e=>String(e.entry_type||"").toLowerCase()==="expense").map(e=>({entry_date:e.entry_date,category:e.category,party_name:e.party_name,amount:num(e.amount),status:e.status,financial_class:e.financial_class,payment_method:e.payment_method,reference:e.reference,description:e.description}));
-     const budgets=await signedQuery(client.from("admin_finance_budgets").select("category,period_start,budget_amount,status,notes").order("period_start",{ascending:false}).limit(3000));source.budgets=budgets.filter(b=>(!range?.fromDay||String(b.period_start).slice(0,7)>=range.fromDay.slice(0,7))&&(!range?.toDay||String(b.period_start).slice(0,7)<=range.toDay.slice(0,7)));
-     notes="Expense rows use Finance entry_type=expense. Confirmed expenses are separated; monthly budget is a planning amount, not actual spend.";
+     rows=finance.filter(entry=>String(entry.entry_type||"").toLowerCase()==="expense").map(entry=>({entry_date:entry.entry_date,category:entry.category,party_name:entry.party_name,amount:num(entry.amount),status:entry.status,financial_class:entry.financial_class,payment_method:entry.payment_method,reference:entry.reference,description:entry.description}));
+     const budgets=await signedQuery(client.from("admin_finance_budgets").select("category,period_start,budget_amount,status,notes").order("period_start",{ascending:false}).order("category",{ascending:true}).limit(3000));
+     source.budgets=budgets.filter(b=>(!range?.fromDay||String(b.period_start).slice(0,7)>=String(range.fromDay||range.from).slice(0,7))&&(!range?.toDay||String(b.period_start).slice(0,7)<=String(range.toDay||range.to).slice(0,7)));
+     notes="Expense rows include all saved statuses. Confirmed operating expense is separated from draft, void and non-operating entries. Budgets are planning limits, not paid cash.";
     }else{
-     rows=finance.map(e=>({entry_date:e.entry_date,entry_type:e.entry_type,category:e.category,party_name:e.party_name,amount:num(e.amount),financial_class:e.financial_class,status:e.status,payment_method:e.payment_method,account_id:e.account_id,reference:e.reference,related_order_id:e.related_order_id,related_supplier_payment_id:e.related_supplier_payment_id,related_cod_settlement_id:e.related_cod_settlement_id,description:e.description}));
-     notes="All Finance ledger entries listed. Confirmed income/expense are separated; Capital, Loan, Refund and Adjustment are not treated as ordinary operating income/expense.";
+     const [transfers,accounts]=await Promise.all([fetchReportTransfers(range),signedQuery(client.from("admin_finance_accounts").select("id,name,account_type").order("name",{ascending:true}).limit(1000))]);
+     const accountMap=new Map(accounts.map(account=>[account.id,account]));source.transfers=transfers;source.accounts=accounts;
+     const entryRows=finance.map(entry=>({record_kind:"Finance entry",record_id:entry.id,entry_date:entry.entry_date,entry_type:entry.entry_type,category:entry.category,party_name:entry.party_name,amount:num(entry.amount),financial_class:entry.financial_class,status:entry.status,payment_method:entry.payment_method,account_name:accountMap.get(entry.account_id)?.name||"Unassigned",source_account:"",destination_account:"",reference:entry.reference,related_order_id:entry.related_order_id,related_supplier_payment_id:entry.related_supplier_payment_id,related_cod_settlement_id:entry.related_cod_settlement_id,description:entry.description}));
+     const transferRows=transfers.map(t=>({record_kind:"Internal transfer",record_id:t.id,entry_date:t.transfer_date,entry_type:"transfer",category:"Internal transfer",party_name:"",amount:num(t.amount),financial_class:"internal_transfer",status:t.status,payment_method:"Internal transfer",account_name:"",source_account:accountMap.get(t.source_account_id)?.name||"—",destination_account:accountMap.get(t.destination_account_id)?.name||"—",reference:t.reference||"",related_order_id:"",related_supplier_payment_id:"",related_cod_settlement_id:"",description:t.description||""}));
+     rows=[...entryRows,...transferRows].sort((a,b)=>String(b.entry_date||"").localeCompare(String(a.entry_date||"")));
+     notes="Finance ledger entries and internal account transfers are shown as distinct record types. Transfers do not count as income or expense. Capital, loan, refund and adjustment classes are not ordinary operating income/expense.";
     }
-    title=type==="account-payments"?"Account Payment Report":type==="expenses"?"Expense Report":"Finance Transaction Report";
+    title=type==="account-payments"?"Account Payments & Balances":type==="expenses"?"Expense & Budget Report":"Financial Transactions Ledger";
    }else if(type==="finance"){
     const finance=await fetchReportFinance(range);source.finance=finance;rows=finance.map(e=>({entry_date:e.entry_date,entry_type:e.entry_type,category:e.category,amount:num(e.amount),status:e.status,financial_class:e.financial_class,reference:e.reference,description:e.description}));title="Finance Entries Report";notes="Source: Finance ledger.";
    }else{
