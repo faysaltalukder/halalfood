@@ -2829,6 +2829,23 @@ async function refresh(){
  }
  
  async function initReports(){
+  const reportGroup=pageName.startsWith("reports-")?pageName.slice("reports-".length):"";
+  const reportGroups={
+   business:["business","sales","product-sales","top-products","customer-wise-products","customer-products"],
+   purchase:["purchase","product-purchase"],
+   customers:["top-customers","customers","receivable"],
+   payables:["payable"],
+   inventory:["low-stock","alert-products","stock","stock-list"],
+   finance:["account-payments","collections","expenses","transactions"],
+   daily:["daily"]
+  };
+  if(reportGroup){
+   document.querySelectorAll("[data-report-category]").forEach(section=>{section.hidden=section.dataset.reportCategory!==reportGroup;});
+   const allowed=reportGroups[reportGroup]||[];
+   document.querySelectorAll("#reportType option").forEach(option=>{option.hidden=!allowed.includes(option.value);option.disabled=!allowed.includes(option.value);});
+   const first=allowed[0];if(first&&$("reportType"))$("reportType").value=first;
+   const heading=document.querySelector(".hf-reports-hero h1");if(heading)heading.textContent=({business:"Business & Sales Reports",purchase:"Purchase & Supply Reports",customers:"Customer Reports",payables:"Payables Reports",inventory:"Inventory Reports",finance:"Financial Reports",daily:"Daily Reports"})[reportGroup]||"Reports";
+  }
   let report={title:"",columns:[],rows:[],notes:"",rangeLabel:""};
   async function buildReport(){
    const range=selectedRange(),type=$("reportType").value;let rows=[],title="",notes="";
