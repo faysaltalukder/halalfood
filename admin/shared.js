@@ -645,13 +645,48 @@ ADMIN_COLOR_THEMES["golden-prestige"]={
  chartColors:["#8A642D","#B68A45","#64758A","#C5A66D","#52677C","#A77C43","#8794A1","#D0B77F","#6F6251","#B18C69"]
 };
 
+
+ADMIN_COLOR_THEMES["solar-journey"]={
+ id:"solar-journey",name:"Solar Journey",profile:"Dynamic Day · Sunrise · Golden Hour",
+ previewColors:["#F3D8C8","#E8F0F1","#D6A45C","#FFFDF8"],
+ tokens:Object.assign({},ADMIN_COLOR_THEMES["warm-harvest"].tokens,{
+  "sidebar-bg":"linear-gradient(150deg,#77554D 0%,#9B745A 100%)","sidebar-ink":"#FFF9F1","sidebar-muted":"#F2DCCB","sidebar-border":"rgba(255,249,241,.3)",
+  "side-group-bg":"rgba(255,249,241,.1)","side-group-border":"rgba(255,249,241,.22)","side-menu-1":"#FFF5EC","side-menu-2":"#F9EBDD","side-menu-3":"#F5EAE2","side-menu-4":"#F2EAE1",
+  "side-menu-ink":"#624B42","side-menu-border":"rgba(255,255,255,.92)","side-menu-hover":"#F4E1D3","side-menu-active":"linear-gradient(110deg,#F4D6A7,#E9BC7E)","side-menu-active-ink":"#5A402E",
+  "side-child-bg":"#FFF9F3","side-child-ink":"#654F45","side-accent":"#EFC58F","side-icon-bg":"#F7E6D8","side-icon-ink":"#986448",
+  "canvas-bg":"#F4ECE5","canvas-ink":"#51463F","header-bg":"rgba(255,250,245,.97)","header-border":"#E8D9CC","header-control-bg":"#F6EADF","header-control-ink":"#76513D","header-control-border":"#E4CFBE",
+  "hero-bg":"linear-gradient(120deg,#FFF9F3,#F5E7DB)","hero-border":"#E8D8C9","card-bg":"#FFFDF9","card-border":"#E8DED4","nested-bg":"#F5EAE1","control-bg":"#FFFEFC",
+  "text":"#51463F","muted":"#7C6F68","border":"#E6D8CE","primary":"#9D6348","primary-hover":"#824E3A","secondary":"#F3E4D8","secondary-ink":"#684B3D","secondary-hover":"#EBD7C8","accent":"#CD9555","accent-alt":"#718B98","focus":"#B87D55",
+  "kpi-1":"#F7E8DF","kpi-2":"#F6EDDE","kpi-3":"#EAF0EF","kpi-4":"#F1E9E1",
+  "table-bg":"#FFFDF9","table-head":"#F3E6DC","table-row":"#FFFDF9","table-alt":"#FAF2EC","table-hover":"#F1E1D5","chart-bg":"#F4EAE1","chart-text":"#5A4D45","chart-muted":"#82756D","chart-grid":"#E6D8CE","chart-surface":"#FFFDF9","tooltip-bg":"#FFFDF9","leaf-filter":"none"
+ }),
+ chartColors:["#9D6348","#CD9555","#718B98","#C27A61","#A6B8B5","#D7AF75","#7E695D","#B58B79","#6D93A2","#C4A59A"]
+};
+ADMIN_COLOR_THEMES["lunar-journey"]={
+ id:"lunar-journey",name:"Lunar Journey",profile:"Dynamic Night · Moonlight · Midnight",
+ previewColors:["#242E4C","#414B6D","#AAB6DA","#E6D9B8"],
+ tokens:Object.assign({},ADMIN_COLOR_THEMES["royal-indigo"].tokens,{
+  "sidebar-bg":"linear-gradient(150deg,#1F2946 0%,#303A5A 100%)","sidebar-ink":"#F2F4FC","sidebar-muted":"#CBD2E8","sidebar-border":"rgba(202,213,242,.25)",
+  "side-group-bg":"rgba(226,232,250,.06)","side-group-border":"rgba(202,213,242,.18)","side-menu-1":"#3D4868","side-menu-2":"#404B6C","side-menu-3":"#424D6D","side-menu-4":"#394563",
+  "side-menu-ink":"#F0F2FA","side-menu-border":"rgba(194,207,239,.16)","side-menu-hover":"#4A5678","side-menu-active":"linear-gradient(110deg,#66759D,#59698F)","side-menu-active-ink":"#FFFFFF",
+  "side-child-bg":"#35415F","side-child-ink":"#E6EAF7","side-accent":"#D9C59D","side-icon-bg":"#465477","side-icon-ink":"#E0D1AE",
+  "canvas-bg":"#2C3653","canvas-ink":"#EEF1FA","header-bg":"rgba(42,52,79,.97)","header-border":"#4D5A7B","header-control-bg":"#3B4768","header-control-ink":"#E9EDF9","header-control-border":"#58678B",
+  "hero-bg":"linear-gradient(120deg,#3B4666,#333F5F)","hero-border":"#556184","card-bg":"#35415F","card-border":"#4E5B7C","nested-bg":"#303C5A","control-bg":"#303C5A",
+  "text":"#EEF1FA","muted":"#C0C8DD","border":"#536080","primary":"#9EAFD9","primary-hover":"#B6C4E7","secondary":"#465273","secondary-ink":"#F0F2FA","secondary-hover":"#536184","accent":"#D7C39A","accent-alt":"#91A3CB","focus":"#9EAFD9",
+  "kpi-1":"#3B4869","kpi-2":"#424C68","kpi-3":"#394A66","kpi-4":"#484964",
+  "table-bg":"#313D5A","table-head":"#3D4969","table-row":"#34405D","table-alt":"#394563","table-hover":"#455273","chart-bg":"#303C59","chart-text":"#E8ECF8","chart-muted":"#BAC4DE","chart-grid":"#4E5B7B","chart-surface":"#34405D","tooltip-bg":"#27324F","leaf-filter":"none"
+ }),
+ chartColors:["#AFC0EA","#D8C69E","#8EACD0","#B59BCB","#86B6B2","#D5A17F","#91A3CB","#C5B2D5","#87A0B4","#D1B68B"]
+};
+
 const ADMIN_THEME_GROUPS=[
  {id:"standard",label:"Standard",description:"Traditional · familiar · straightforward",themeIds:["corporate-standard"]},
  {id:"modern",label:"Modern",description:"Expressive · contemporary",themeIds:["ocean-calm","berry-rose","plum-amethyst","coral-peach"]},
  {id:"balanced",label:"Balanced",description:"Premium · versatile · business",themeIds:["warm-harvest","royal-indigo","coastal-blue","copper-espresso"]},
  {id:"classic-comfort",label:"Classic Comfort",description:"Calm · familiar · easy on the eyes",themeIds:["forest-sage","olive-citrus"]},
  {id:"signature",label:"Signature",description:"Editorial · tactile · unmistakable",themeIds:["merchant-fieldbook","glass-studio","glyph-signal"]},
- {id:"premium",label:"Premium",description:"Royal · polished · prestigious",themeIds:["golden-prestige"]}
+ {id:"premium",label:"Premium",description:"Royal · polished · prestigious",themeIds:["golden-prestige"]},
+ {id:"celestial",label:"Celestial",description:"Time-aware · atmospheric · living sky",themeIds:["solar-journey","lunar-journey"]}
 ];
 const ADMIN_THEME_CATEGORY_BY_ID=Object.fromEntries(ADMIN_THEME_GROUPS.flatMap(group=>group.themeIds.map(id=>[id,group.id])));
 Object.values(ADMIN_COLOR_THEMES).forEach(theme=>{theme.category=ADMIN_THEME_CATEGORY_BY_ID[theme.id]||"balanced";});
@@ -672,7 +707,9 @@ function syncThemeStyles(themeId){
   {theme:"glass-studio",id:"hfGlassStudioStylesheet",href:"./glass-studio.css?v=20261102-glass-studio-v1"},
    {theme:"glyph-signal",id:"hfGlyphSignalStylesheet",href:"./glyph-signal.css?v=20261102-glyph-signal-v3"},
   {theme:"corporate-standard",id:"hfCorporateStandardStylesheet",href:"./corporate-standard.css?v=20261102-corporate-standard-v1"},
-  {theme:"golden-prestige",id:"hfGoldenPrestigeStylesheet",href:"./golden-prestige.css?v=20261102-golden-prestige-v1"}
+  {theme:"golden-prestige",id:"hfGoldenPrestigeStylesheet",href:"./golden-prestige.css?v=20261102-golden-prestige-v1"},
+  {theme:"solar-journey",id:"hfSolarJourneyStylesheet",href:"./solar-journey.css?v=20261102-solar-lunar-v1"},
+  {theme:"lunar-journey",id:"hfLunarJourneyStylesheet",href:"./lunar-journey.css?v=20261102-solar-lunar-v1"}
  ];
  themeStyles.forEach(item=>{
   let link=document.getElementById(item.id);
@@ -1114,14 +1151,14 @@ function makeShell(){
    '<div class="admin-global-search" role="search"><span class="admin-global-search-icon" aria-hidden="true">'+shellIcon("search")+'</span><input id="globalSearch" type="search" autocomplete="off" placeholder="Search this page’s records…" aria-label="Search records on this page"></div>'+
    '<span class="admin-topbar-spacer" aria-hidden="true"></span>'+
    '<div class="admin-topbar-actions">'+
-    '<div class="hf-theme-control" id="hfThemeControl"><button class="admin-top-button hf-theme-picker-trigger" id="hfThemePickerToggle" type="button" aria-haspopup="dialog" aria-controls="hfThemePicker" aria-expanded="false" aria-label="Choose workspace color theme" title="Choose workspace color theme"><span class="topbar-button-icon" aria-hidden="true">◈</span><span class="topbar-label">Theme</span><span class="hf-theme-current-name" id="hfThemeCurrentName">Warm Harvest</span><span class="hf-theme-chevron" aria-hidden="true">⌄</span></button><section class="hf-theme-picker" id="hfThemePicker" role="dialog" aria-label="Choose workspace color theme" hidden><div class="hf-theme-picker-heading"><div><strong>Choose your theme</strong><p>Sidebar and workspace change together</p></div><button type="button" class="hf-theme-picker-close" id="hfThemePickerClose" aria-label="Close theme picker">×</button></div><div class="hf-theme-grid" id="hfThemeGrid"></div><p class="hf-theme-picker-footnote" id="hfThemePickerFootnote"></p></section></div>'+
+    '<div class="hf-theme-control" id="hfThemeControl"><button class="admin-top-button hf-theme-picker-trigger" id="hfThemePickerToggle" type="button" aria-haspopup="dialog" aria-controls="hfThemePicker" aria-expanded="false" aria-label="Choose workspace color theme" title="Choose workspace color theme"><span class="topbar-button-icon" aria-hidden="true">◈</span><span class="topbar-label">Theme</span><span class="hf-theme-current-name" id="hfThemeCurrentName">Warm Harvest</span><span class="hf-theme-chevron" aria-hidden="true">⌄</span></button><section class="hf-theme-picker" id="hfThemePicker" role="dialog" aria-label="Choose workspace color theme" hidden><div class="hf-theme-picker-heading"><div><strong>Choose your theme</strong><p>Sidebar and workspace change together</p></div><button type="button" class="hf-theme-picker-close" id="hfThemePickerClose" aria-label="Close theme picker">×</button></div><div class="hf-theme-grid" id="hfThemeGrid"></div><div class="hf-theme-mode-control" id="hfThemeModeControl"><div class="hf-theme-mode-heading"><strong>Time-aware theme</strong><small id="hfCelestialStatus">Choose Auto, Day or Night</small></div><div class="hf-theme-mode-actions"><button type="button" data-hf-time-mode="auto" aria-pressed="false"><span aria-hidden="true">◷</span> Auto</button><button type="button" data-hf-time-mode="day" aria-pressed="false"><span aria-hidden="true">☀</span> Day</button><button type="button" data-hf-time-mode="night" aria-pressed="false"><span aria-hidden="true">☾</span> Night</button></div></div><p class="hf-theme-picker-footnote" id="hfThemePickerFootnote"></p></section></div>'+
     '<button class="admin-top-button admin-mode-toggle" id="modeToggle" type="button" title="Switch to advanced view"><span class="topbar-button-icon">'+shellIcon("sliders")+'</span><span class="topbar-label">Advanced view</span></button>'+
     '<button class="admin-top-button admin-help-toggle" id="helpBtn" type="button" title="Open quick guide"><span class="topbar-button-icon">'+shellIcon("help")+'</span><span class="topbar-label">Help</span></button>'+
    '</div>'+
    '<details class="admin-account-menu" id="adminAccountMenu"><summary class="admin-account-chip" aria-label="Open administrator account menu">'+
     '<span class="admin-account-avatar">'+avatarMarkup+'</span><span class="admin-account-meta"><strong>'+esc(displayName)+'</strong><small id="accountEmail">'+esc(emailValue)+'</small></span><span class="admin-account-chevron">'+shellIcon("chevron")+'</span>'+
    '</summary><div class="admin-account-dropdown"><div class="admin-account-dropdown-head"><span class="admin-account-dropdown-kicker">SIGNED IN</span><strong>'+esc(displayName)+'</strong><small>'+esc(emailValue)+'</small></div><a class="admin-account-settings-link" href="./settings.html">'+shellIcon("settings")+'<span>Settings &amp; security</span></a><button id="logoutBtn" class="admin-account-logout" type="button">'+shellIcon("logout")+'<span>Sign out</span></button></div></details>'+
-  '</header><div class="admin-main" id="adminMain">'+initialContent+'</div></div>'+
+  '</header><div class="hf-celestial-scene" id="hfCelestialScene" aria-hidden="true" hidden><svg class="hf-celestial-track" viewBox="0 0 1000 190" preserveAspectRatio="none"><path d="M35 156 Q500 -72 965 156"></path></svg><div class="hf-celestial-stars"></div><div class="hf-celestial-orb" id="hfCelestialOrb"><span class="hf-sun-glow"></span><svg viewBox="0 0 56 56" role="presentation"><circle class="hf-sun-disc" cx="28" cy="28" r="22"></circle><circle class="hf-moon-disc" cx="28" cy="28" r="25"></circle><circle class="hf-moon-shadow" id="hfMoonShadow" cx="28" cy="28" r="25"></circle></svg></div><div class="hf-celestial-horizon"></div></div><div class="admin-main" id="adminMain">'+initialContent+'</div></div>'+
   '<div id="hfToast" class="hf-toast" role="status" aria-live="polite"></div>'+
   '<dialog id="helpDialog" class="hf-dialog"><div class="hf-dialog-inner help-content"><div class="hf-dialog-head"><div><p class="hf-dialog-title-tag">QUICK GUIDE</p><h2>How to use your admin panel</h2><p>Every section is designed for everyday, non-technical use.</p></div><button class="hf-button hf-button-secondary hf-dialog-close" data-close-help type="button" aria-label="Close help">×</button></div><ol><li>Choose a section from the left menu.</li><li>Use Search menu or press / to find a section. Use Ctrl/Cmd + K to focus menu search.</li><li>Star important sections to keep them in Favorites. You can save up to eight.</li><li>Use the page search, date filters and search boxes to narrow down records.</li><li>Charts are interactive: hover or tap a chart to see values and labels.</li><li>Use Reports to export filtered data. CSV opens in spreadsheets; PDF opens the print dialog where you can choose Save as PDF.</li><li>Finance entries count in summaries only after they are marked Confirmed. Confirm only records you have checked.</li><li>This is a learning/testing storefront. Order value is not proof of collected payment; real delivery and payments are not enabled.</li></ol><div class="hf-dialog-actions"><button class="hf-button hf-button-primary" data-close-help type="button">Got it</button></div></div></dialog>';
  adminApp.innerHTML=shell;
@@ -1319,7 +1356,7 @@ function makeShell(){
  const openThemePicker=()=>{if(!themePicker)return;themePicker.hidden=false;themePickerToggle?.setAttribute("aria-expanded","true");themePicker.querySelector("[data-theme-choice]")?.focus({preventScroll:true});};
  themePickerToggle?.addEventListener("click",()=>themePicker?.hidden?openThemePicker():closeThemePicker());
  themePickerClose?.addEventListener("click",closeThemePicker);
- themeGrid?.addEventListener("click",event=>{const choice=event.target.closest("[data-theme-choice]");if(!choice)return;applyColorTheme(choice.dataset.themeChoice,true);renderThemePicker();closeThemePicker();});
+ themeGrid?.addEventListener("click",event=>{const choice=event.target.closest("[data-theme-choice]");if(!choice)return;if(window.HFCelestialEngine)window.HFCelestialEngine.selectTheme(choice.dataset.themeChoice);else applyColorTheme(choice.dataset.themeChoice,true);renderThemePicker();closeThemePicker();});
  document.addEventListener("click",event=>{if(themePicker&&!themePicker.hidden&&!themeControl?.contains(event.target))closeThemePicker();});
  document.addEventListener("keydown",event=>{if(event.key==="Escape"&&themePicker&&!themePicker.hidden){closeThemePicker();themePickerToggle?.focus({preventScroll:true});}});
  const modeBtn=document.getElementById("modeToggle");
@@ -1342,6 +1379,7 @@ function makeShell(){
   }
  }
  const email=document.getElementById("accountEmail");if(email)email.textContent=emailValue;
+ const celestialScript=document.createElement("script");celestialScript.src="./celestial-engine.js?v=20261102-solar-lunar-v1";celestialScript.onload=()=>window.HFCelestialEngine?.init({applyTheme:applyColorTheme,getCurrentTheme:()=>currentThemeId,getUserId:()=>currentUser?.id||"anonymous"});document.head.appendChild(celestialScript);
 }
 
 window.HFAdminReady=(async()=>{
@@ -1354,7 +1392,7 @@ window.HFAdminReady=(async()=>{
   if(aal.error||aal.data?.currentLevel!=="aal2"){location.replace("./index.html");return null;}
   const user=await client.auth.getUser();currentUser=user.data?.user||data.session.user;
   makeShell();
-  window.HFAdmin={client,ADMIN_EMAIL,esc,money,shortNum,dateTime,dateOnly,toast,audit,signedQuery,downloadFile,csvText,slugify,dayISO,dateRangeFromControls,rangeQuery,showTableMessage,statusClass,makeStatus,makeEmpty,groupBy,dateKey,lastDateKeys,fetchOrders,fetchEvents,fetchProducts,fetchCategories,fetchPosts,fetchFinance,palette,colorSet,chartTheme,drawChart,charts,colorThemes:ADMIN_COLOR_THEMES,applyColorTheme,getCurrentColorTheme};
+  window.HFAdmin={client,ADMIN_EMAIL,esc,money,shortNum,dateTime,dateOnly,toast,audit,signedQuery,downloadFile,csvText,slugify,dayISO,dateRangeFromControls,rangeQuery,showTableMessage,statusClass,makeStatus,makeEmpty,groupBy,dateKey,lastDateKeys,fetchOrders,fetchEvents,fetchProducts,fetchCategories,fetchPosts,fetchFinance,palette,colorSet,chartTheme,drawChart,charts,colorThemes:ADMIN_COLOR_THEMES,applyColorTheme,getCurrentColorTheme,syncChartsForTheme};
   return window.HFAdmin;
  }catch(err){console.error("Admin access check failed",err);gate.innerHTML='<div class="auth-gate-card"><strong>Secure sign-in could not be verified</strong><p>Please refresh and sign in again. No admin data was loaded.</p><p style="margin-top:14px"><a href="./index.html" class="hf-button hf-button-primary">Return to sign-in</a></p></div>';return null;}
 })();

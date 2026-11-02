@@ -1,0 +1,52 @@
+
+/* Theme #16 · Solar Journey: sunrise, daylight, golden hour and sunset */
+html[data-hf-theme="solar-journey"]{color-scheme:light}
+html[data-hf-theme="solar-journey"] body{background:var(--hf-theme-canvas-bg);color:var(--hf-theme-text);transition:background-color 45s ease,color 45s ease}
+html[data-hf-theme="solar-journey"] .admin-frame{position:relative;background:var(--hf-theme-canvas-bg)}
+html[data-hf-theme="solar-journey"] .admin-sidebar{background:var(--hf-theme-sidebar-bg)!important;color:var(--hf-theme-sidebar-ink)!important;border-color:var(--hf-theme-sidebar-border)}
+html[data-hf-theme="solar-journey"] .admin-sidebar :is(.admin-brand small,.admin-nav-label,.admin-sidebar-note){color:var(--hf-theme-sidebar-muted)}
+html[data-hf-theme="solar-journey"] .admin-nav-link{color:var(--hf-theme-sidebar-muted);transition:background 2s ease,color 45s ease}
+html[data-hf-theme="solar-journey"] .admin-nav-link:hover,html[data-hf-theme="solar-journey"] .admin-nav-link.active{color:#FFFDF8}
+html[data-hf-theme="solar-journey"] .admin-topbar{background:var(--hf-theme-header-bg)!important;border-color:var(--hf-theme-border)!important;color:var(--hf-theme-text)}
+html[data-hf-theme="solar-journey"] .admin-top-button,html[data-hf-theme="solar-journey"] .admin-menu-toggle{background:var(--hf-theme-control-bg);border-color:var(--hf-theme-border);color:var(--hf-theme-text)}
+html[data-hf-theme="solar-journey"] .admin-global-search input{background:var(--hf-theme-control-bg);border-color:var(--hf-theme-border);color:var(--hf-theme-text)}
+html[data-hf-theme="solar-journey"] .admin-main{position:relative;z-index:1;background:transparent!important;color:var(--hf-theme-text)}
+html[data-hf-theme="solar-journey"] .admin-main :is(h1,h2,h3,h4){color:var(--hf-theme-text)}
+html[data-hf-theme="solar-journey"] .admin-main :is(p,small,.hf-muted,.hf-data-note,.page-heading p){color:var(--hf-theme-muted)}
+html[data-hf-theme="solar-journey"] .admin-main :is(.hf-card,.hf-panel,.hf-section,.hf-kpi,.hf-summary-card,.hf-overview-range-toolbar,.hf-overview-shortcuts,.hf-orders-hero,.hf-products-toolbar,.hf-table-wrap){background:var(--hf-theme-card-bg);border-color:var(--hf-theme-border);transition:background 45s ease,border-color 45s ease,color 45s ease}
+html[data-hf-theme="solar-journey"] .admin-main :is(.hf-card-pad,.hf-summary-strip,.hf-summary-pill,.hf-table-toolbar,.hf-filter-panel){background:var(--hf-theme-nested-bg);border-color:var(--hf-theme-border)}
+html[data-hf-theme="solar-journey"] .admin-main :is(.hf-input,.hf-select,.hf-textarea,input,select,textarea){background:var(--hf-theme-control-bg);border-color:var(--hf-theme-border);color:var(--hf-theme-text)}
+html[data-hf-theme="solar-journey"] .admin-main :is(.hf-button-primary,.btn-primary){background:var(--hf-theme-primary);border-color:var(--hf-theme-primary);color:#FFFFFF}
+html[data-hf-theme="solar-journey"] .admin-main :is(.hf-button-secondary,.btn-secondary){background:var(--hf-theme-secondary);border-color:var(--hf-theme-border);color:var(--hf-theme-secondary-ink)}
+html[data-hf-theme="solar-journey"] .hf-table{background:var(--hf-theme-table-bg);color:var(--hf-theme-text)}
+html[data-hf-theme="solar-journey"] .hf-table thead th{background:var(--hf-theme-table-head);color:var(--hf-theme-text);border-color:var(--hf-theme-border)}
+html[data-hf-theme="solar-journey"] .hf-table tbody tr{background:var(--hf-theme-table-row);border-color:var(--hf-theme-border)}
+html[data-hf-theme="solar-journey"] .hf-table tbody tr:nth-child(even){background:var(--hf-theme-table-alt)}
+html[data-hf-theme="solar-journey"] .hf-table tbody tr:hover{background:var(--hf-theme-table-hover)}
+html[data-hf-theme="solar-journey"] .hf-theme-mode-control{background:linear-gradient(120deg,#FFF9F2,#F2E5D9);border-color:#E6D2C2}
+html[data-hf-theme="solar-journey"] .hf-theme-mode-heading strong{color:#684B3D}
+html[data-hf-theme="solar-journey"] .hf-theme-mode-heading small{color:#846F62}
+html[data-hf-theme="solar-journey"] .hf-theme-mode-actions button{background:#FFFCF8;border-color:#E6D7CB;color:#674D40}
+html[data-hf-theme="solar-journey"] .hf-theme-mode-actions button.is-active{background:#EBD2B4;border-color:#C99762;color:#533B2D}
+.hf-celestial-scene{position:absolute;z-index:0;top:74px;left:0;right:0;height:190px;overflow:hidden;pointer-events:none;opacity:0;transition:opacity 1.8s ease;background:linear-gradient(180deg,rgba(255,255,255,.1),rgba(255,255,255,0))}
+.hf-celestial-scene.is-visible{opacity:.94}
+.hf-celestial-track{position:absolute;inset:0;width:100%;height:100%;opacity:.35}
+.hf-celestial-track path{fill:none;stroke:rgba(255,255,255,.82);stroke-width:1.5;stroke-dasharray:4 9}
+.hf-celestial-orb{position:absolute;width:56px;height:56px;transform:translate(-50%,-50%);transition:left 1.2s ease,top 1.2s ease;filter:drop-shadow(0 5px 13px rgba(174,111,57,.18))}
+.hf-celestial-orb svg{width:100%;height:100%;overflow:visible}
+.hf-celestial-orb .hf-sun-disc{fill:#F7C879;stroke:#FFF0D0;stroke-width:2}
+.hf-celestial-orb .hf-sun-glow{position:absolute;inset:-17px;border-radius:50%;background:radial-gradient(circle,rgba(248,190,108,.36),rgba(248,190,108,0) 68%);animation:hfSolarGlow 6s ease-in-out infinite}
+.hf-celestial-orb .hf-moon-disc,.hf-celestial-orb .hf-moon-shadow{display:none}
+.hf-celestial-stars{position:absolute;inset:0;opacity:0}
+.hf-celestial-horizon{position:absolute;bottom:0;left:0;right:0;height:26px;background:linear-gradient(180deg,transparent,rgba(255,255,255,.18))}
+@keyframes hfSolarGlow{0%,100%{transform:scale(.94);opacity:.72}50%{transform:scale(1.12);opacity:1}}
+.hf-theme-mode-control{margin:12px 16px 4px;padding:13px 14px;border:1px solid #E4D9CE;border-radius:14px;background:#F8F5EF}
+.hf-theme-mode-heading{display:flex;flex-direction:column;gap:3px;margin-bottom:10px}
+.hf-theme-mode-heading strong{font-size:12px;color:#3E4658}
+.hf-theme-mode-heading small{font-size:10px;line-height:1.45;color:#777D8E}
+.hf-theme-mode-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.hf-theme-mode-actions button{min-height:35px;border:1px solid #D9DDE5;border-radius:9px;background:#FFFFFF;color:#4E5669;font:inherit;font-size:11px;font-weight:650;cursor:pointer;transition:background .2s,border-color .2s,transform .2s}
+.hf-theme-mode-actions button:hover{transform:translateY(-1px)}
+.hf-theme-mode-actions button.is-active{background:#E8EDF5;border-color:#8095B9;color:#304665}
+@media(max-width:760px){.hf-celestial-scene{top:64px;height:150px}.hf-celestial-orb{width:44px;height:44px}.hf-theme-mode-control{margin:10px;padding:11px}.hf-theme-mode-actions{gap:5px}}
+@media(prefers-reduced-motion:reduce){.hf-celestial-scene,.hf-celestial-orb,.hf-theme-mode-actions button{transition:none!important}.hf-celestial-orb .hf-sun-glow{animation:none!important}}
