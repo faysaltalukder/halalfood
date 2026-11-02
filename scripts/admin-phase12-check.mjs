@@ -184,8 +184,9 @@ assert.ok(app.includes('order_items(id,product_id,product_name,quantity,unit,uni
 assert.ok(app.includes("normalizeCourierMobile(freshOrder.customer_phone)"), "Courier booking must match backend phone validation.");
 assert.ok(app.includes("freshCustomerName.length<3||freshCustomerName.length>100"), "Courier booking must validate provider-compatible customer names.");
 assert.ok(app.includes('providerAddressLimit=provider==="pathao"?220:250'), "Courier booking must use provider-specific address limits.");
-assert.ok(app.includes('if(linkedOrder.status==="cancelled")'), "Confirmed income must reject cancelled orders.");
-assert.ok(app.includes("Cancelled — no income"), "Reconciliation must visibly label cancelled orders.");
+const financeAppContract = app.slice(app.indexOf("async function initFinance"), app.indexOf("async function initReports", app.indexOf("async function initFinance")));
+assert.ok(financeAppContract.includes('linkedOrder.status==="cancelled"'), "Confirmed manual income must reject cancelled orders.");
+assert.ok(financeAppContract.includes('payload.status==="reconciled"') && financeAppContract.includes("remitted_amount") && financeAppContract.includes("remitted_account_id"), "COD reconciliation must require a verified remittance amount and destination account.");
 
 const helperMatch = app.match(/function normalizeCourierMobile\(value\)\s*\{[\s\S]*?\n\}/);
 assert.ok(helperMatch, "Could not find normalizeCourierMobile for behavior tests.");

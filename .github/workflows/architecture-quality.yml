@@ -31,6 +31,8 @@ jobs:
         run: node scripts/admin-pos-check.mjs
       - name: Run Product, Barcode and Reviews contract checks
         run: node scripts/admin-product-tools-check.mjs
+      - name: Run Finance & Cash Flow workspace checks
+        run: node scripts/finance-workspace-check.mjs
 
   edge-function-types:
     name: Type-check all Supabase Edge Functions
