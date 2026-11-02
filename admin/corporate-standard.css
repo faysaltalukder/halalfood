@@ -1,0 +1,58 @@
+/* Corporate Standard — familiar, task-first ERP/CRM presentation. Scoped to this theme only. */
+html[data-hf-theme="corporate-standard"] body[data-page]{background:#F4F6F8!important;color:#344054!important}
+html[data-hf-theme="corporate-standard"] body[data-page] .admin-app{background:#F4F6F8!important}
+html[data-hf-theme="corporate-standard"] body[data-page] .admin-sidebar{background:#FFFFFF!important;color:#344054!important;border-right:1px solid #E4E7EC!important;box-shadow:none!important}
+html[data-hf-theme="corporate-standard"] body[data-page] .admin-sidebar *{color:inherit}
+html[data-hf-theme="corporate-standard"] body[data-page] .admin-sidebar a,
+html[data-hf-theme="corporate-standard"] body[data-page] .admin-sidebar button{background:transparent!important;border:1px solid transparent!important;color:#475467!important;box-shadow:none!important}
+html[data-hf-theme="corporate-standard"] body[data-page] .admin-sidebar a:hover,
+html[data-hf-theme="corporate-standard"] body[data-page] .admin-sidebar button:hover{background:#F2F4F7!important;color:#344054!important}
+html[data-hf-theme="corporate-standard"] body[data-page] .admin-sidebar .active,
+html[data-hf-theme="corporate-standard"] body[data-page] .admin-sidebar [aria-current="page"]{background:#EAF1F8!important;border-color:#D5E2EF!important;color:#244D73!important}
+html[data-hf-theme="corporate-standard"] body[data-page] .admin-topbar,
+html[data-hf-theme="corporate-standard"] body[data-page] .topbar{background:#FFFFFF!important;border-bottom:1px solid #E4E7EC!important;box-shadow:none!important}
+html[data-hf-theme="corporate-standard"] body[data-page] .page-heading,
+html[data-hf-theme="corporate-standard"] body[data-page] .hf-card,
+html[data-hf-theme="corporate-standard"] body[data-page] .card,
+html[data-hf-theme="corporate-standard"] body[data-page] .stat-card,
+html[data-hf-theme="corporate-standard"] body[data-page] .kpi-card{background:#FFFFFF!important;border:1px solid #E4E7EC!important;box-shadow:0 1px 2px rgba(16,24,40,.04)!important;border-radius:9px!important}
+html[data-hf-theme="corporate-standard"] body[data-page] h1,
+html[data-hf-theme="corporate-standard"] body[data-page] h2,
+html[data-hf-theme="corporate-standard"] body[data-page] h3{color:#344054!important;letter-spacing:normal!important}
+html[data-hf-theme="corporate-standard"] body[data-page] p,
+html[data-hf-theme="corporate-standard"] body[data-page] small,
+html[data-hf-theme="corporate-standard"] body[data-page] .muted{color:#667085}
+html[data-hf-theme="corporate-standard"] body[data-page] .hf-button-primary,
+html[data-hf-theme="corporate-standard"] body[data-page] button.primary{background:#376A9B!important;border-color:#376A9B!important;color:#FFFFFF!important;box-shadow:none!important}
+html[data-hf-theme="corporate-standard"] body[data-page] .hf-button-secondary,
+html[data-hf-theme="corporate-standard"] body[data-page] button.secondary{background:#FFFFFF!important;border:1px solid #D0D5DD!important;color:#344054!important;box-shadow:none!important}
+html[data-hf-theme="corporate-standard"] body[data-page] input,
+html[data-hf-theme="corporate-standard"] body[data-page] select,
+html[data-hf-theme="corporate-standard"] body[data-page] textarea{background:#FFFFFF!important;color:#344054!important;border:1px solid #D0D5DD!important;border-radius:6px!important;box-shadow:none!important}
+html[data-hf-theme="corporate-standard"] body[data-page] input:focus,
+html[data-hf-theme="corporate-standard"] body[data-page] select:focus,
+html[data-hf-theme="corporate-standard"] body[data-page] textarea:focus{outline:3px solid rgba(55,106,155,.16)!important;border-color:#376A9B!important}
+html[data-hf-theme="corporate-standard"] body[data-page] .hf-table-wrap{border:1px solid #E4E7EC!important;border-radius:8px!important;background:#FFFFFF!important;box-shadow:none!important}
+html[data-hf-theme="corporate-standard"] body[data-page] .hf-table{background:#FFFFFF!important}
+html[data-hf-theme="corporate-standard"] body[data-page] .hf-table thead th{background:#F8FAFC!important;color:#475467!important;border-bottom:1px solid #E4E7EC!important}
+html[data-hf-theme="corporate-standard"] body[data-page] .hf-table tbody tr{background:#FFFFFF!important;border-bottom:1px solid #EAECF0!important}
+html[data-hf-theme="corporate-standard"] body[data-page] .hf-table tbody tr:nth-child(even){background:#FAFBFC!important}
+html[data-hf-theme="corporate-standard"] body[data-page] .hf-table tbody tr:hover{background:#F2F4F7!important}
+html[data-hf-theme="corporate-standard"] body[data-page] dialog,
+html[data-hf-theme="corporate-standard"] body[data-page] .modal{background:#FFFFFF!important;color:#344054!important;border:1px solid #E4E7EC!important;border-radius:10px!important;box-shadow:0 12px 32px rgba(16,24,40,.12)!important}
+html[data-hf-theme="corporate-standard"] body[data-page] :focus-visible{outline:3px solid rgba(55,106,155,.28)!important;outline-offset:2px}
+html[data-hf-theme="corporate-standard"] body[data-page] .hf-status-success{background:#ECFDF3!important;color:#027A48!important}
+html[data-hf-theme="corporate-standard"] body[data-page] .hf-status-warning,
+html[data-hf-theme="corporate-standard"] body[data-page] .hf-status-review{background:#FFFAEB!important;color:#B54708!important}
+html[data-hf-theme="corporate-standard"] body[data-page] .hf-status-danger,
+html[data-hf-theme="corporate-standard"] body[data-page] .hf-status-cancelled{background:#FEF3F2!important;color:#B42318!important}
+@media(max-width:760px){
+ html[data-hf-theme="corporate-standard"] body[data-page] .admin-sidebar{box-shadow:0 12px 32px rgba(16,24,40,.12)!important}
+ html[data-hf-theme="corporate-standard"] body[data-page] .hf-table-wrap{overflow-x:auto!important}
+ html[data-hf-theme="corporate-standard"] body[data-page] .page-heading{padding:16px!important}
+}
+@media(prefers-reduced-motion:reduce){
+ html[data-hf-theme="corporate-standard"] body[data-page] *,
+ html[data-hf-theme="corporate-standard"] body[data-page] *::before,
+ html[data-hf-theme="corporate-standard"] body[data-page] *::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
+}
