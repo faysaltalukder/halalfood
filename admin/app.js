@@ -553,17 +553,16 @@ window.HFAdminReady.then(async H=>{
    }else threeDInView=true;
   }
 
-  let pageActivityView="day",latestPageActivity=null;
+  
+  let pageActivityView="hour",latestPageActivity=null;
   const pageActivityViews={
-   hour:{title:"Page activity by hour",description:"Compare page views by weekday and local clock hour across the selected reporting period.",footnote:"Hourly activity is grouped by Bangladesh weekday and clock hour. Each cell combines all matching dates in the selected range."},
-   day:{title:"Page activity by day",description:"Compare page views across dates in the selected reporting period.",footnote:"Daily totals use Asia/Dhaka dates. Page views are event counts, not unique visitors."},
-   week:{title:"Page activity by week",description:"Compare weekly page-view totals. Weeks run Sunday to Saturday.",footnote:"Weekly totals use Sunday–Saturday weeks in Bangladesh time. Page views are event counts, not unique visitors."},
-   month:{title:"Page activity by month",description:"Compare page views across calendar months.",footnote:"Monthly totals follow calendar months in Bangladesh time. Page views are event counts, not unique visitors."}
+   hour:{title:"Page activity by hour",description:"Compare page views by weekday and local clock hour across the selected reporting period.",note:"Hourly activity is grouped by Bangladesh weekday and clock hour. Each cell combines all matching dates in the selected range."},
+   month:{title:"Page activity by month",description:"Compare page views across dates in the selected reporting period.",note:"Each box represents one date in the selected range. Colour intensity shows page-view volume; hover or tap for the exact count."}
   };
   function renderPageActivity(){
-   const config=pageActivityViews[pageActivityView]||pageActivityViews.day;
+   const config=pageActivityViews[pageActivityView]||pageActivityViews.hour;
    const title=$("analyticsActivityTitle"),description=$("analyticsActivityDescription"),note=$("analyticsActivityNote");
-   const canvas=$("analyticsActivityChart"),heatmap=$("analyticsActivityHeatmap"),empty=$("analyticsActivityEmpty");
+   const heatmap=$("analyticsActivityHeatmap"),monthGrid=$("analyticsActivityMonthGrid");
    if(title)title.textContent=config.title;
    if(description)description.textContent=config.description;
    document.querySelectorAll("[data-activity-view]").forEach(button=>{
@@ -571,36 +570,25 @@ window.HFAdminReady.then(async H=>{
     button.setAttribute("aria-pressed",active?"true":"false");
     button.classList.toggle("is-active",active);
    });
-   if(!latestPageActivity){
-    if(canvas)canvas.hidden=true;
-    if(heatmap)heatmap.hidden=true;
-    return;
-   }
+   if(!latestPageActivity)return;
    const data=latestPageActivity;
    if(data.noTrackedData){
-    if(canvas)canvas.hidden=true;
     if(heatmap)heatmap.hidden=true;
-    if(empty){empty.hidden=false;empty.textContent="No tracked page-view data is available in this selected period.";}
-    $("analyticsActivityTotal").textContent="0";
-    $("analyticsActivityPeak").textContent="No recorded activity";
-    $("analyticsActivityAverage").textContent="—";
-    if(note)note.innerHTML=esc("Page views are event counts, not unique visitors.")+" <span>Tracking coverage begins</span> <strong>"+esc(data.firstTrackedDay||"")+"</strong>. "+esc("Earlier dates are excluded, not counted as zero.");
+    if(monthGrid)monthGrid.hidden=true;
+    if(note)note.textContent="No tracked page-view data is available in this selected period. Earlier dates are not counted as zero.";
     return;
    }
-   if(empty)empty.hidden=true;
    const pageRows=data.events.filter(event=>event.event_name==="page_view"&&event.occurred_at);
-   const total=pageRows.length;
    const locale=document.documentElement.lang==="bn"?"bn-BD":"en-BD";
-   const numberFormat=new Intl.NumberFormat(locale,{maximumFractionDigits:1});
-   const atDhakaNoon=day=>{
-    const parts=String(day).split("-").map(Number);
-    return new Date(Date.UTC(parts[0],parts[1]-1,parts[2],6));
-   };
-   const dateLabel=day=>new Intl.DateTimeFormat(locale,{timeZone:"Asia/Dhaka",day:"numeric",month:"short"}).format(atDhakaNoon(day));
    const englishDays=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
    const displayDays=Array.from({length:7},(_,index)=>new Intl.DateTimeFormat(locale,{timeZone:"Asia/Dhaka",weekday:"short"}).format(new Date(Date.UTC(2023,0,1+index,6))));
    const hourLabel=hour=>new Intl.DateTimeFormat(locale,{timeZone:"Asia/Dhaka",hour:"numeric",hour12:true}).format(new Date(Date.UTC(2023,0,1,hour-6)));
-   let peakLabel="No recorded activity",peakCount=0,average=0;
+   const setActivityNote=()=>{
+    let message=config.note;
+    if(data.requestedFrom&&data.chartFrom&&data.requestedFrom<data.chartFrom)message+=" Tracking coverage begins "+data.chartFrom+"; earlier dates are excluded, not counted as zero.";
+    if(!data.historyComplete)message+=" History may be limited to the latest 15,000 fetched events.";
+    if(note)note.textContent=message;
+   };
    if(pageActivityView==="hour"){
     const hourFormatter=new Intl.DateTimeFormat("en-US",{timeZone:"Asia/Dhaka",hour:"2-digit",hourCycle:"h23"});
     const cells=Array.from({length:7},()=>Array(24).fill(0));
@@ -613,90 +601,54 @@ window.HFAdminReady.then(async H=>{
      const dayIndex=englishDays.indexOf(weekday);
      if(dayIndex>=0&&Number.isInteger(hour)&&hour>=0&&hour<24)cells[dayIndex][hour]++;
     });
-    let peakDay=0,peakHour=0;
-    cells.forEach((row,dayIndex)=>row.forEach((count,hour)=>{
-     if(count>peakCount){peakCount=count;peakDay=dayIndex;peakHour=hour;}
-    }));
-    if(peakCount>0)peakLabel=displayDays[peakDay]+" · "+hourLabel(peakHour);
-    average=total/168;
     const maximum=Math.max(1,...cells.flat());
+    const themeColor=String(colorSet[0]||palette.blue||"#C97B3D");
+    const safeThemeColor=/^#[0-9a-f]{3,8}$/i.test(themeColor)?themeColor:"#C97B3D";
     const header='<div class="hf-analytics-heatmap-label">Day</div><div class="hf-analytics-heatmap-hours">'+Array.from({length:24},(_,hour)=>'<span>'+([0,6,12,18].includes(hour)?hourLabel(hour):"")+'</span>').join("")+'</div>';
     heatmap.innerHTML=header+cells.map((row,dayIndex)=>{
      const cellHtml=row.map((count,hour)=>{
       const tip=displayDays[dayIndex]+" · "+hourLabel(hour)+" · "+shortNum(count)+" page views";
-      return '<span class="hf-analytics-heatmap-cell" style="--level:'+(count/maximum).toFixed(3)+'" title="'+esc(tip)+'" aria-label="'+esc(tip)+'"></span>';
+      const mix=(count/maximum*78).toFixed(0)+"%";
+      return '<span class="hf-analytics-heatmap-cell" style="--activity-mix:'+mix+'" title="'+esc(tip)+'" aria-label="'+esc(tip)+'"></span>';
      }).join("");
      return '<div class="hf-analytics-heatmap-label">'+esc(displayDays[dayIndex])+'</div><div class="hf-analytics-heatmap-hours">'+cellHtml+'</div>';
     }).join("");
-    if(heatmap)heatmap.hidden=false;
-    if(canvas)canvas.hidden=true;
-   }else{
-    const counts=new Map();
-    const weekKey=day=>addDhakaDays(day,-new Date(day+"T00:00:00Z").getUTCDay());
-    pageRows.forEach(event=>{
-     const day=dhakaDateKey(event.occurred_at);
-     if(!day||day<data.chartFrom||day>data.chartTo)return;
-     const key=pageActivityView==="day"?day:pageActivityView==="week"?weekKey(day):day.slice(0,7);
-     counts.set(key,(counts.get(key)||0)+1);
-    });
-    const buckets=[];
-    if(pageActivityView==="day"){
-     for(let day=data.chartFrom;day<=data.chartTo;day=addDhakaDays(day,1))buckets.push({key:day,label:dateLabel(day)});
-    }else if(pageActivityView==="week"){
-     let start=weekKey(data.chartFrom);
-     while(start<=data.chartTo){
-      const end=addDhakaDays(start,6);
-      const clippedStart=start<data.chartFrom?data.chartFrom:start;
-      const clippedEnd=end>data.chartTo?data.chartTo:end;
-      buckets.push({key:start,label:dateLabel(clippedStart)+"–"+dateLabel(clippedEnd)});
-      start=addDhakaDays(start,7);
-     }
-    }else{
-     let month=data.chartFrom.slice(0,7);
-     const lastMonth=data.chartTo.slice(0,7);
-     while(month<=lastMonth){
-      const parts=month.split("-").map(Number);
-      const date=new Date(Date.UTC(parts[0],parts[1]-1,15,6));
-      const label=new Intl.DateTimeFormat(locale,{timeZone:"Asia/Dhaka",month:"short",year:"numeric"}).format(date);
-      buckets.push({key:month,label:label});
-      const next=new Date(Date.UTC(parts[0],parts[1],1));
-      month=next.getUTCFullYear()+"-"+String(next.getUTCMonth()+1).padStart(2,"0");
-     }
-    }
-    buckets.forEach(bucket=>bucket.count=counts.get(bucket.key)||0);
-    let peakIndex=-1;
-    buckets.forEach((bucket,index)=>{
-     if(bucket.count>peakCount){peakCount=bucket.count;peakIndex=index;}
-    });
-    if(peakIndex>=0)peakLabel=buckets[peakIndex].label;
-    average=buckets.length?total/buckets.length:0;
-    if(heatmap)heatmap.hidden=true;
-    if(canvas)canvas.hidden=false;
-    const axis=chartAxisOptions();
-    drawChart("analyticsActivityChart",{type:"bar",data:{labels:buckets.map(bucket=>bucket.label),datasets:[{
-     label:"Page views",data:buckets.map(bucket=>bucket.count),
-     backgroundColor:buckets.map((bucket,index)=>index===peakIndex?palette.orange+"D8":palette.blue+"B8"),
-     borderColor:buckets.map((bucket,index)=>index===peakIndex?palette.orange:palette.blue),
-     borderWidth:1,borderRadius:7,borderSkipped:false,maxBarThickness:pageActivityView==="day"?26:42
-    }]},options:{...axis,maintainAspectRatio:false,animation:{duration:550,easing:"easeOutQuart"},
-     interaction:{mode:"index",intersect:false},
-     plugins:{legend:{display:false},tooltip:{callbacks:{label:context=>"Page views: "+shortNum(context.raw)}}},
-     scales:{x:{...axis.scales.x,ticks:{...axis.scales.x.ticks,maxTicksLimit:pageActivityView==="day"?14:12}},
-      y:{...axis.scales.y,title:{display:true,text:"Page views",color:chartTheme().muted}}}
-    }});
+    heatmap.style.setProperty("--activity-color",safeThemeColor);
+    heatmap.hidden=false;
+    if(monthGrid)monthGrid.hidden=true;
+    setActivityNote();
+    return;
    }
-   $("analyticsActivityTotal").textContent=shortNum(total);
-   $("analyticsActivityPeak").textContent=peakCount>0?peakLabel+" · "+shortNum(peakCount):"No recorded activity";
-   $("analyticsActivityAverage").textContent=numberFormat.format(average);
-   if(note){
-    let noteHtml=esc(config.footnote);
-    if(data.requestedFrom&&data.chartFrom&&data.requestedFrom<data.chartFrom){
-     noteHtml+=" <span>Tracking coverage begins</span> <strong>"+esc(data.chartFrom)+"</strong>. "+esc("Earlier dates are excluded, not counted as zero.");
-    }
-    if(!data.historyComplete)noteHtml+=" "+esc("History may be limited to the latest 15,000 fetched events.");
-    note.innerHTML=noteHtml;
-   }
-   if(canvas)canvas.setAttribute("aria-label",config.title+" · Page views");
+   const dailyCounts=new Map();
+   pageRows.forEach(event=>{
+    const day=dhakaDateKey(event.occurred_at);
+    if(!day||day<data.chartFrom||day>data.chartTo)return;
+    dailyCounts.set(day,(dailyCounts.get(day)||0)+1);
+   });
+   const dayKeys=[];
+   for(let day=data.chartFrom;day<=data.chartTo;day=addDhakaDays(day,1))dayKeys.push(day);
+   const maximum=Math.max(1,...dayKeys.map(day=>dailyCounts.get(day)||0));
+   const themeColors=Array.isArray(colorSet)&&colorSet.length?colorSet:["#C97B3D"];
+   const numberFormat=new Intl.NumberFormat(locale);
+   const dayFormatter=new Intl.DateTimeFormat(locale,{timeZone:"Asia/Dhaka",day:"numeric",month:"short"});
+   const dayCells=dayKeys.map(day=>{
+    const parts=day.split("-").map(Number);
+    const date=new Date(Date.UTC(parts[0],parts[1]-1,parts[2],6));
+    const count=dailyCounts.get(day)||0;
+    const intensity=count/maximum;
+    const colorIndex=count?Math.min(themeColors.length-1,Math.floor(intensity*themeColors.length)):0;
+    const cellColor=String(themeColors[colorIndex]||palette.blue||"#C97B3D");
+    const safeColor=/^#[0-9a-f]{3,8}$/i.test(cellColor)?cellColor:"#C97B3D";
+    const mix=count?(16+intensity*76).toFixed(0)+"%":"0%";
+    const label=dayFormatter.format(date);
+    const tip=label+" · "+numberFormat.format(count)+" page views";
+    const peak=count>0&&count===maximum;
+    return '<div class="hf-page-activity-day-cell'+(peak?' is-peak':"")+(count?"":" is-zero")+'" style="--activity-color:'+safeColor+';--activity-mix:'+mix+'" title="'+esc(tip)+'" aria-label="'+esc(tip)+'"><span class="hf-page-activity-day-date">'+esc(label)+'</span><strong class="hf-page-activity-day-count">'+numberFormat.format(count)+'</strong><small>views</small></div>';
+   });
+   monthGrid.innerHTML=dayCells.join("");
+   heatmap.hidden=true;
+   monthGrid.hidden=false;
+   setActivityNote();
   }
   document.querySelectorAll("[data-activity-view]").forEach(button=>{
    button.addEventListener("click",()=>{
@@ -706,6 +658,10 @@ window.HFAdminReady.then(async H=>{
     renderPageActivity();
    });
   });
+  const activityThemeObserver=new MutationObserver(()=>{
+   if(latestPageActivity)renderPageActivity();
+  });
+  activityThemeObserver.observe(document.documentElement,{attributes:true,attributeFilter:["data-hf-theme"]});
   renderPageActivity();
 
   async function refresh(){
@@ -775,6 +731,7 @@ window.HFAdminReady.then(async H=>{
    drawChart("analyticsProductChart",{type:"polarArea",data:{labels:top.slice(0,7).map(x=>x.name),datasets:[{data:top.slice(0,7).map(x=>x.count),backgroundColor:colorSet,borderColor:chartTheme().surface,borderWidth:2,hoverOffset:9}]},options:{animation:{duration:850,easing:"easeOutQuart"},scales:{r:{ticks:{display:false,color:chartTheme().muted},grid:{color:chartTheme().grid}}},plugins:{legend:{position:"bottom"}}}});
    const pageStats=buildPageExperience(events);
    latestPageActivity={events,range,requestedFrom,chartFrom,chartTo,noTrackedData,firstTrackedDay,historyComplete};
+   renderPageActivity();
    renderPageActivity();
    const health=$("analyticsDataHealth"),rawTotal=prepared.rawCount;
    if(health){
