@@ -3595,7 +3595,7 @@ async function refresh(){
    if(type==="expenses"){
     const confirmed=rows.filter(r=>r.status==="confirmed"),operating=confirmed.filter(r=>(r.financial_class||"operating")==="operating");
     const actualByMonthCategory=new Map();
-    operating.forEach(r=>{const key=String(r.entry_date||"").slice(0,7)+"|"+String(r.category||"Uncategorised");actualByMonthCategory.set(key,(actualByMonthCategory.get(key)||0)+num(r.amount));});
+    (source.budgetFinance||operating).forEach(r=>{const key=String(r.entry_date||"").slice(0,7)+"|"+String(r.category||"Uncategorised");actualByMonthCategory.set(key,(actualByMonthCategory.get(key)||0)+num(r.amount));});
     const budgets=(source.budgets||[]).map(b=>{const key=String(b.period_start||"").slice(0,7)+"|"+String(b.category||"");const actual=actualByMonthCategory.get(key)||0;return {month:String(b.period_start||"").slice(0,7),category:b.category,budget_amount:num(b.budget_amount),confirmed_expense:actual,remaining_budget:num(b.budget_amount)-actual,status:b.status,variance:actual-num(b.budget_amount)};});
     return {blocks:[
      grouped("ক্যাটাগরি অনুযায়ী নিশ্চিত Operating Expense","Budget utilization uses confirmed operating expense only.",operating,"category",["amount"]),
