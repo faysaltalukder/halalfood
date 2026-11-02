@@ -2161,7 +2161,7 @@ async function refresh(){
   async function refresh(){
    const supplierQuery=signedQuery(client.from("admin_supplier_balances").select("outstanding_balance").limit(1000)).catch(err=>{console.warn("Supplier balance summary unavailable",err);return null;});
    [entries,accounts,transfers,settlements,budgets,orders,supplierRows]=await Promise.all([
-    fetchFinance(null,5000),
+    signedQuery(client.from("admin_finance_entries").select("id,entry_type,category,amount,entry_date,description,reference,status,related_order_id,related_supplier_payment_id,related_cod_settlement_id,account_id,payment_method,party_name,financial_class,created_by,created_at,updated_at").order("entry_date",{ascending:false}).order("created_at",{ascending:false}).limit(5000)),
     signedQuery(client.from("admin_finance_accounts").select("*").order("is_active",{ascending:false}).order("name",{ascending:true}).limit(300)),
     signedQuery(client.from("admin_finance_transfers").select("*").order("transfer_date",{ascending:false}).limit(1000)),
     signedQuery(client.from("admin_cod_settlements").select("*").order("updated_at",{ascending:false}).limit(1000)),
