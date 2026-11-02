@@ -16,6 +16,9 @@ assert.ok(app.includes('type:"scatter3d"')&&app.includes("IntersectionObserver")
 assert.ok(app.includes('type:"bubble"')&&app.includes("viewSessions.size"),"Product bubble uses unique-session denominators.");
 assert.ok(app.includes("Asia/Dhaka")&&app.includes("hourFormatter")&&app.includes("cells=Array.from({length:7},()=>Array(24).fill(0))"),"Hour heatmap must keep its 7×24 Dhaka-local blocks.");
 assert.ok(app.includes("dailyCounts")&&app.includes("hf-page-activity-day-cell")&&app.includes("themeColors[colorIndex]"),"Month view must render theme-aware daily boxes, not a candle/bar chart.");
+assert.ok(app.includes("for(let day=data.requestedFrom;day<=data.requestedTo;day=addDhakaDays(day,1))"),"Month view must render every day in the selected period, not truncate to tracked-history coverage.");
+assert.ok(app.includes("requestedFrom,requestedTo,chartFrom,chartTo")&&app.includes("is-untracked")&&app.includes("Not tracked"),"Dates before tracking coverage must remain visible but must not be presented as zero-view days.");
+assert.ok(app.includes('pageActivityView==="month"')&&app.includes("Dates before tracking coverage"),"Month view must explain the tracking-coverage gap.");
 assert.ok(shared.includes("event_id,event_name"),"Event retrieval must include event_id.");
 assert.ok(css.includes(".hf-analytics-3d-chart")&&css.includes(".hf-analytics-heatmap")&&css.includes(".hf-analytics-health-grid"),"Responsive analytics styles are required.");
 console.log("Analytics workspace checks passed.");
