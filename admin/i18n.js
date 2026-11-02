@@ -822,6 +822,37 @@
     "Chart type": "চার্টের ধরন",
   };
 
+  const reverseTranslations = Object.create(null);
+  Object.entries(translations).forEach(([source, target]) => {
+    if (target && !reverseTranslations[target]) reverseTranslations[target] = source;
+  });
+
+  function escapeRegExp(value) {
+    return String(value).split("").map(char =>
+      "\\^$.*+?()[]{}|".includes(char) ? "\\" + char : char
+    ).join("");
+  }
+
+  function buildPhraseRules(sourceMap) {
+    return Object.entries(sourceMap)
+      .filter(([source]) => /\s/.test(source.trim()) && source.trim().length > 2)
+      .sort((a, b) => b[0].length - a[0].length)
+      .map(([source, target]) => {
+        try {
+          const pattern = new RegExp("(^|[^\\p{L}\\p{N}])(" + escapeRegExp(source.trim()) + ")(?=$|[^\\p{L}\\p{N}])", "giu");
+          return { source: source.toLocaleLowerCase(), pattern, target };
+        } catch (_) {
+          return null;
+        }
+      })
+      .filter(Boolean);
+  }
+
+  const phraseRules = {
+    bn: buildPhraseRules(translations),
+    en: buildPhraseRules(reverseTranslations)
+  };
+
   const textState = new WeakMap();
   const attrState = new WeakMap();
   const chartState = new WeakMap();
@@ -834,29 +865,31 @@
   }
 
   function translated(value, lang) {
-    if (lang !== "bn") return value;
-    if (translations[value]) return translations[value];
-    const titleCase = value ? value.charAt(0).toUpperCase() + value.slice(1) : value;
-    if (translations[titleCase]) return translations[titleCase];
-    const favorite = String(value).match(/^(Add|Remove)\s+(.+?)\s+from favorites$/i);
-    if (favorite) {
-      const label = translated(favorite[2], lang);
-      return (favorite[1].toLowerCase() === "add" ? "প্রিয় বিভাগে যোগ করুন: " : "প্রিয় বিভাগ থেকে সরান: ") + label;
+    const source = String(value ?? "");
+    if (lang === "bn") {
+      if (translations[source]) return translations[source];
+      const titleCase = source ? source.charAt(0).toUpperCase() + source.slice(1) : source;
+      if (translations[titleCase]) return translations[titleCase];
+      const favorite = source.match(/^(Add|Remove)\s+(.+?)\s+from favorites$/i);
+      if (favorite) {
+        const label = translated(favorite[2], lang);
+        return (favorite[1].toLowerCase() === "add" ? "প্রিয় বিভাগে যোগ করুন: " : "প্রিয় বিভাগ থেকে সরান: ") + label;
+      }
+      const theme = source.match(/^Select (.+) theme$/i);
+      if (theme) return "রং-সজ্জা বেছে নিন: " + translated(theme[1], lang);
+      return translatePhrases(source, lang);
     }
-    const theme = String(value).match(/^Select (.+) theme$/i);
-    if (theme) return "রং-সজ্জা বেছে নিন: " + translated(theme[1], lang);
-    return translatePhrases(value);
+    if (reverseTranslations[source]) return reverseTranslations[source];
+    return translatePhrases(source, lang);
   }
 
-  function translatePhrases(value) {
+  function translatePhrases(value, lang) {
     let output = String(value ?? "");
-    const phrases = Object.entries(translations)
-      .filter(([source]) => /\s/.test(source.trim()) && source.trim().length > 2)
-      .sort((a, b) => b[0].length - a[0].length);
-    for (const [source, target] of phrases) {
-      const escaped = source.trim().split("").map(char => "\\^$.*+?()[]{}|".includes(char) ? "\\" + char : char).join("");
-      const pattern = new RegExp("(^|[^A-Za-z0-9])(" + escaped + ")(?=$|[^A-Za-z0-9])", "gi");
-      output = output.replace(pattern, (_match, prefix) => prefix + target);
+    const rules = phraseRules[lang] || [];
+    const searchable = output.toLocaleLowerCase();
+    for (const rule of rules) {
+      if (!searchable.includes(rule.source)) continue;
+      output = output.replace(rule.pattern, (_match, prefix) => prefix + rule.target);
     }
     return output;
   }
@@ -893,7 +926,7 @@
 
   function isPickerOption(node) {
     const el = node.nodeType === 1 ? node : node.parentElement;
-    return !!el?.closest?.(".hf-language-picker") && (!!el.closest?.("option") || el.tagName === "OPTION");
+    return !!el?.closest?.(".hf-language-segment, .hf-language-picker") && (!!el.closest?.("option") || el.tagName === "OPTION" || !!el.closest?.(".hf-language-segment"));
   }
 
   function translateText(node, lang) {
@@ -960,6 +993,11 @@
     const style = document.createElement("style");
     style.id = "hfLanguageStyles";
     style.textContent =
+      ".hf-language-segment{display:inline-flex;align-items:center;gap:3px;flex:0 0 auto;padding:3px;border:1px solid #E5DED4;border-radius:12px;background:#F8F6F1;white-space:nowrap}" +
+      ".hf-language-label{padding:0 5px;color:#756D63;font-size:10px;font-weight:750}" +
+      ".hf-language-segment button{min-height:31px;padding:5px 10px;border:0;border-radius:8px;background:transparent;color:#5B5660;font:700 11px Inter,system-ui,sans-serif;cursor:pointer;white-space:nowrap}" +
+      ".hf-language-segment button.is-active{background:#C97B3D;color:#FFFDF8;box-shadow:0 1px 3px rgba(80,48,24,.14)}" +
+      ".hf-language-segment button:focus-visible{outline:2px solid #8B542F;outline-offset:2px}" +
       ".hf-language-picker{display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;white-space:nowrap}" +
       ".hf-language-picker>span{font-size:10px;font-weight:800;letter-spacing:.02em;color:var(--hf-muted,#96A6BE)}" +
       ".hf-language-picker select{max-width:116px;min-width:84px;height:38px;padding:6px 25px 6px 9px;border:1px solid var(--hf-border,#30425C);border-radius:10px;background:var(--hf-surface,#111C2E);color:var(--hf-navy,#E6EDF8);font:600 11px Inter,system-ui,sans-serif}" +
@@ -967,33 +1005,46 @@
       "body>header .hf-language-picker>span{color:#B9C6D8}" +
       "body>header .hf-language-picker select{background:#17243A;color:#F2F6FF;border-color:#30425C}" +
       "html[data-admin-theme=\"light\"] .hf-language-picker select{background:#FFFDF8;color:#2B2A3D;border-color:#E5E0D6}" +
-      "@media(max-width:620px){.admin-topbar{gap:6px!important;height:auto!important;min-height:66px;flex-wrap:wrap;align-content:center;padding-top:10px;padding-bottom:10px}.admin-topbar-spacer{display:none}.admin-global-search{order:10;flex:1 0 100%;width:100%;max-width:none}.hf-language-picker{gap:4px}.hf-language-picker>span{display:none}.hf-language-picker select{min-width:70px;width:75px;max-width:75px;padding:6px 4px;font-size:10px}body>header{flex-wrap:wrap;gap:8px}body>header .hf-language-picker{margin-left:auto;margin-right:0}}";
+      "@media(max-width:760px){.admin-topbar{gap:6px!important;height:auto!important;min-height:66px;flex-wrap:wrap;align-content:center;padding-top:10px;padding-bottom:10px}.admin-topbar-spacer{display:none}.admin-global-search{order:10;flex:1 0 100%;width:100%;max-width:none}.admin-topbar-actions{gap:5px;flex-wrap:wrap;justify-content:flex-end}.hf-language-segment{gap:2px;padding:2px}.hf-language-label{display:none}.hf-language-segment button{min-height:30px;padding:5px 8px;font-size:10px}.hf-language-picker{gap:4px}.hf-language-picker>span{display:none}.hf-language-picker select{min-width:70px;width:75px;max-width:75px;padding:6px 4px;font-size:10px}body>header{flex-wrap:wrap;gap:8px}body>header .hf-language-picker{margin-left:auto;margin-right:0}}";
     document.head.appendChild(style);
   }
 
   function ensurePicker() {
-    const headers = [];
-    const modern = document.querySelector(".admin-topbar");
-    const legacy = document.querySelector("body>header");
-    if (modern) headers.push(modern);
-    if (legacy && legacy !== modern) headers.push(legacy);
-    headers.forEach(header => {
-      if (header.querySelector(":scope > .hf-language-picker")) return;
-      const wrap = document.createElement("label");
-      wrap.className = "hf-language-picker";
-      wrap.innerHTML = '<span>Language</span><select aria-label="Language" title="Language"><option value="en">English</option><option value="bn">বাংলা</option></select>';
-      const select = wrap.querySelector("select");
-      select.value = language();
-      select.addEventListener("change", () => {
-        try { localStorage.setItem("hf_admin_language", select.value); } catch (_) {}
+    let segment = document.querySelector(".hf-language-segment");
+    if (!segment) {
+      const host = document.querySelector(".admin-topbar-actions") ||
+        document.querySelector(".admin-topbar") ||
+        document.querySelector("body>header");
+      if (host) {
+        segment = document.createElement("div");
+        segment.className = "hf-language-segment";
+        segment.setAttribute("role", "group");
+        segment.setAttribute("aria-label", "Language");
+        segment.innerHTML = '<span class="hf-language-label">Language</span><button type="button" data-hf-language="bn" aria-pressed="false">বাংলা</button><button type="button" data-hf-language="en" aria-pressed="false">English</button>';
+        const actions = host.classList?.contains("admin-topbar-actions") ? host : host.querySelector?.(".admin-topbar-actions");
+        const target = actions || host;
+        target.insertBefore(segment, target.firstChild);
+      }
+    }
+    if (!segment) return;
+    if (!segment.dataset.hfBound) {
+      segment.addEventListener("click", (event) => {
+        const button = event.target.closest("[data-hf-language]");
+        if (!button || !segment.contains(button)) return;
+        const next = button.dataset.hfLanguage;
+        if (next !== "bn" && next !== "en") return;
+        try { localStorage.setItem("hf_admin_language", next); } catch (_) {}
         applyLanguage();
       });
-      const anchor = header.querySelector(":scope > .admin-topbar-actions") ||
-        header.querySelector(":scope > #themeToggle") ||
-        header.querySelector(":scope > #logoutBtn") || null;
-      if (anchor && anchor.parentElement === header) header.insertBefore(wrap, anchor);
-      else header.appendChild(wrap);
-      translateTree(wrap, language());
+      segment.dataset.hfBound = "true";
+    }
+    const lang = language();
+    const label = segment.querySelector(".hf-language-label");
+    if (label) label.textContent = lang === "bn" ? "ভাষা" : "Language";
+    segment.querySelectorAll("[data-hf-language]").forEach(button => {
+      const active = button.dataset.hfLanguage === lang;
+      button.setAttribute("aria-pressed", String(active));
+      button.classList.toggle("is-active", active);
     });
   }
 
@@ -1003,8 +1054,8 @@
     injectStyles();
     ensurePicker();
     translateTree(document.documentElement, lang);
-    document.querySelectorAll(".hf-language-picker select").forEach(select => { select.value = lang; });
     document.documentElement.dataset.adminLanguage = lang;
+    ensurePicker();
     translateCharts(lang);
   }
 
@@ -1016,15 +1067,15 @@
       const lang = language();
       for (const record of records) {
         if (record.type === "characterData") translateText(record.target, lang);
+        if (record.type === "attributes") translateElement(record.target, lang);
         for (const node of record.addedNodes || []) {
-          if (node.nodeType === 1 && node.matches?.(".hf-language-picker")) continue;
+          if (node.nodeType === 1 && node.matches?.(".hf-language-segment, .hf-language-picker")) continue;
           translateTree(node, lang);
         }
       }
       ensurePicker();
-      document.querySelectorAll(".hf-language-picker select").forEach(select => { select.value = lang; });
     });
-    observer.observe(document.body, { subtree: true, childList: true, characterData: true });
+    observer.observe(document.body, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: attrNames });
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot, { once: true });
