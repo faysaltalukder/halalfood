@@ -2919,7 +2919,7 @@ async function refresh(){
     rows=bills.map(b=>({bill_number:b.bill_number,supplier:b.admin_suppliers?.name||"—",invoice_date:b.invoice_date,due_date:b.due_date,status:b.status,bill_total:Number(b.total_amount||0),paid:paid.get(b.id)||0,balance:Math.max(0,Number(b.total_amount||0)-(paid.get(b.id)||0))}));
     title="Supplier Payables Report";notes="Outstanding balance is calculated from bill totals less payment allocations. Draft/void bills remain identified by status and should not be treated as confirmed liabilities.";
    }else if(type==="receivable"){
-    const settlements=await signedQuery(rangeQuery(client.from("admin_cod_settlements").select("order_number,customer_name,courier_name,cod_amount,collected_amount,courier_fee,remitted_amount,status,collected_at,remitted_at").order("created_at",{ascending:false}),"collected_at",range));
+    const settlements=await signedQuery(rangeQuery(client.from("admin_cod_settlements").select("order_number,customer_name,courier_name,cod_amount,collected_amount,courier_fee,remitted_amount,status,collected_at,remitted_at,created_at").order("created_at",{ascending:false}),"created_at",range));
     rows=settlements.map(s=>({order_number:s.order_number,customer:s.customer_name,courier:s.courier_name,cod_amount:Number(s.cod_amount||0),collected:Number(s.collected_amount||0),remitted:Number(s.remitted_amount||0),pending_remittance:Math.max(0,Number(s.collected_amount||0)-Number(s.remitted_amount||0)),status:s.status}));
     title="COD Receivable & Remittance Report";notes="This report shows courier COD collection/remittance tracking, not customer credit sales. Amounts are based on manually recorded settlement records.";
    }else if(["low-stock","alert-products","stock","stock-list"].includes(type)){
