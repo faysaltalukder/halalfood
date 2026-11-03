@@ -4,7 +4,7 @@ function classifyCustomerIntent(message, hasImage = false) {
   const hasCategory = /(ঘি|ghee|মধু|honey|বাদাম|nuts?|almond|তেল|oil|চাল|rice|মসলা|মশলা|masala|spice|খেজুর|dates?|চা|tea|মাংস|গরু|beef|meat|chicken|মুরগি|ড্রাই\s*ফুড|dry\s*food)/iu.test(text);
   const broad = /(কী\s*কী\s*পণ্য|কি\s*কি\s*পণ্য|কোন\s*কোন\s*পণ্য|সব\s*পণ্য|পণ্যের\s*তালিকা|ক্যাটালগ|catalog|product\s*list|list\s*(all\s*)?products|what\s+products|which\s+products|available\s+products)/iu.test(text);
   const comparison = /(তুলনা|পার্থক্য|তফাৎ|দুটোর মধ্যে|দুটির মধ্যে|compare|comparison|difference|versus|\bvs\b)/iu.test(text);
-  const recommendation = /(সাজেস্ট|সাজেশন|পরামর্শ|recommend|suggest|কোনটা.{0,30}ভালো|কোনটি.{0,30}ভালো|আমার জন্য.{0,30}(?:ভালো|উপযুক্ত)|কোনটা নেব|কোনটি নেব|আরেকটা দেখাও|আরও একটি দেখাও|আরেকটি বিকল্প|অন্যটা দেখাও)/iu.test(text);
+  const recommendation = /(সাজেস্ট|সাজেশন|পরামর্শ|recommend|suggest|কোনটা.{0,30}ভালো|কোনটি.{0,30}ভালো|আমার জন্য.{0,30}(?:ভালো|উপযুক্ত)|কোনটা নেব|কোনটি নেব|কি নেব|কী নেব|কী নিতে পারি|কি নিতে পারি|বাজেট.{0,30}(?:মধ্যে|ভিতরে)|within.{0,20}budget|under.{0,20}budget|আরেকটা দেখাও|আরও একটি দেখাও|আরেকটি বিকল্প|অন্যটা দেখাও)/iu.test(text);
   const price = /(দাম|মূল্য|কত টাকা|কত দাম|price|cost|how much)/iu.test(text);
   const categoryBrowse = hasCategory && /(কী\s*কী|কি\s*কি|কোন\s*কোন|কয়েকটি|কিছু|সবগুলো|তালিকা|\p{L}+(?:গুলো|গুলি)|what .{0,40}(?:oil|ghee|honey|rice|tea|product)|what (?:kind|types|kinds)|show me (?:some|all|the)?\s*(?:oils?|ghee|honey|products?)|list)/iu.test(text);
   const availability = /(স্টকে|মজুত|উপলভ্য|available|in stock|আছে কি না|আছে কিনা|do you have|have you got)/iu.test(text) && !categoryBrowse;
@@ -15,7 +15,7 @@ function classifyCustomerIntent(message, hasImage = false) {
   const casual = /^(হ্যালো|হাই|আসসালামু আলাইকুম|সালাম|ধন্যবাদ|অনেক ধন্যবাদ|hi|hello|hey|thanks|thank you|good morning|good afternoon|good evening)[!.\s]*$/iu.test(text);
   const info = /(কীভাবে|কিভাবে|কেন|কী জিনিস|কি জিনিস|মানে কী|কী দিয়ে তৈরি|কি দিয়ে তৈরি|তৈরি হয়|তৈরি করা হয়|উপকারিতা|ব্যবহার কী|what is|how is|how are|why does|made from|ingredients|benefits of)/iu.test(text);
   const exactLookup = hasCategory && /(একটা|একটি|এক\s|দেখাও|দেখতে চাই|আছে|পাওয়া|পাওয়া|খুঁজছি|চাই|show|find|available|do you have|want|buy|purchase|order)/iu.test(text);
-  const rejection = /(চাই না|পছন্দ হয়নি|পছন্দ হয়নি|ভালো লাগেনি|অন্যটা চাই|not this|don't want|do not want|not interested)/iu.test(text);
+  const rejection = /(চাই না|পছন্দ হয়নি|পছন্দ হয়নি|ভালো লাগেনি|এটা নয়|এটা না|ওটা নয়|ভুল পণ্য|not this|don't want|do not want|not interested|wrong product|not what i asked)/iu.test(text);
   let primary = "general_information", permission = "none", maxCards = 0, matchMode = "none", confidence = "medium", clarification = false;
   if (complaint) { primary = "complaint_or_problem"; confidence = "high"; }
   else if (humanSupport) { primary = "human_support_request"; confidence = "high"; }
