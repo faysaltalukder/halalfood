@@ -196,7 +196,21 @@ function safeEvent(input: Record<string, unknown>) {
     value,
     quantity,
     search_term: textValue(input.search_term, 120),
-    metadata: eventName === "page_engagement" ? { measurement: "visible_seconds" } : {}
+    metadata: (() => {
+      if (eventName === "page_engagement") return { measurement: "visible_seconds" };
+      const raw = input.metadata && typeof input.metadata === "object" && !Array.isArray(input.metadata)
+        ? input.metadata as Record<string, unknown> : {};
+      const safe: Record<string, unknown> = {};
+      const interactionSource = textValue(raw.interaction_source, 40);
+      const orderChannel = textValue(raw.order_channel, 40);
+      const view = textValue(raw.view, 40);
+      const step = textValue(raw.step, 40);
+      if (interactionSource === "ai_chat" || interactionSource === "website") safe.interaction_source = interactionSource;
+      if (orderChannel === "ai_chat" || orderChannel === "website") safe.order_channel = orderChannel;
+      if (view) safe.view = view;
+      if (step) safe.step = step;
+      return safe;
+    })()
   };
   const fbp = safeCookie(input.fbp);
   const fbc = safeCookie(input.fbc);
