@@ -52,7 +52,7 @@
     '</header>' +
     '<div class="hf-ai-chat-content" id="hf-ai-chat-content">' +
       '<div class="hf-ai-chat-messages" id="hf-ai-chat-messages" aria-live="polite">' +
-        '<div class="hf-ai-message hf-ai-message-assistant"><p>আসসালামু আলাইকুম! আমি Halal Food-এর AI সহকারী। পণ্য, ওয়েবসাইট বা সাধারণ সেবা সম্পর্কে কী জানতে চান?</p><span class="hf-ai-message-time">Halal Food Assistant</span></div>' +
+        '<div class="hf-ai-message hf-ai-message-assistant"><p>আসসালামু আলাইকুম! Halal Food-এ স্বাগতম। কী খুঁজছেন বা কীভাবে সাহায্য করতে পারি?</p><span class="hf-ai-message-time">Halal Food Assistant</span></div>' +
         '<div class="hf-ai-chat-prompts" aria-label="সাধারণ প্রশ্ন">' +
           '<button type="button" data-hf-chat-prompt="আমি কী কী পণ্য পেতে পারি?">কী কী পণ্য পাওয়া যায়?</button>' +
           '<button type="button" data-hf-chat-prompt="ডেলিভারি সম্পর্কে জানতে চাই।">ডেলিভারি সম্পর্কে জানতে চাই</button>' +
@@ -89,15 +89,17 @@
   }
   function cleanAssistantText(value) {
     return String(value || "")
-      .replace(/^\\s{0,3}#{1,6}\\s+/gm, "")
-      .replace(/^\\s*[-*•]+\\s+/gm, "")
-      .replace(/^\\s*\\d+[.)]\\s+/gm, "")
-      .replace(/\\*\\*(.*?)\\*\\*/g, "$1")
+      .replace(/^\s{0,3}#{1,6}\s+/gm, "")
+      .replace(/^\s*[-*•]+\s+/gm, "")
+      .replace(/^\s*\d+[.)]\s+/gm, "")
+      .replace(/\*\*(.*?)\*\*/g, "$1")
       .replace(/__(.*?)__/g, "$1")
-      .replace(/(?<!\\*)\\*(?!\\s)(.*?)(?<!\\s)\\*(?!\\*)/g, "$1")
+      .replace(/(?<!\*)\*(?!\s)(.*?)(?<!\s)\*(?!\*)/g, "$1")
       .replace(/`([^`]+)`/g, "$1")
-      .replace(/^\\s*[-_]{3,}\\s*$/gm, "")
-      .replace(/\\n{3,}/g, "\\n\\n")
+      .replace(/^\s*[-_]{3,}\s*$/gm, "")
+      .replace(/\n{3,}/g, "\n\n")
+      .replace(/[ \t]+([,;:!?।])/g, "$1")
+      .replace(/([.!?।])(?:\s*[.!?।])+/g, "$1")
       .trim();
   }
   function appendMessage(text, sender, extraClass) {
@@ -141,7 +143,7 @@
       const price = document.createElement("span");
       price.textContent = String(product.price || "দাম যাচাই প্রয়োজন");
       const meta = document.createElement("small");
-      meta.textContent = [product.category, product.availability === "available" ? "তালিকায় উপলভ্য" : product.availability === "unavailable" ? "বর্তমানে অনুপলব্ধ" : "স্টক নিশ্চিত করতে হবে"].filter(Boolean).join(" · ");
+      meta.textContent = [product.category, product.availability === "available" ? "তালিকায় উপলভ্য" : product.availability === "unavailable" ? "বর্তমানে অনুপলব্ধ" : "স্টক নিশ্চিত করতে হবে"].filter(Boolean).join(", ");
       copy.append(name, price, meta);
       link.appendChild(copy);
       wrap.appendChild(link);
@@ -155,10 +157,10 @@
   function friendlyError(data, status) {
     const code = data && data.code;
     if (code === "AI_NOT_CONFIGURED") return "AI সার্ভারে API key সেট করা নেই। আমাদের টিমকে জানান।";
-    if (code === "GEMINI_AUTH") return "Google AI সার্ভারের API key যাচাই হয়নি। সার্ভার কনফিগারেশন পরীক্ষা করা হচ্ছে।";
-    if (code === "GEMINI_PERMISSION") return "Google AI প্রজেক্টে API ব্যবহারের অনুমতি বা billing/quota সেটিংসে সমস্যা আছে।";
-    if (code === "GEMINI_MODEL" || code === "AI_MODEL_CONFIG_INVALID") return "AI মডেলের নাম বা কনফিগারেশনে সমস্যা আছে।";
-    if (code === "GEMINI_QUOTA") return "এই প্রশ্নটির জন্য Gemini ভাষা-মডেল থেকে উত্তর পাওয়া যাচ্ছে না। পণ্য ও প্রকাশিত সেবার তথ্যের জন্য যাচাইকৃত বিকল্প ব্যবস্থা কাজ করবে; আরও খোলা বা জটিল প্রশ্নে AI মডেল পুনরায় সচল না হওয়া পর্যন্ত উত্তর অসম্পূর্ণ থাকতে পারে।";
+    if (code === "GEMINI_AUTH") return "এই মুহূর্তে উত্তর তৈরি করতে সমস্যা হচ্ছে। অনুগ্রহ করে একটু পরে আবার চেষ্টা করুন।";
+    if (code === "GEMINI_PERMISSION") return "এই মুহূর্তে উত্তর তৈরি করতে সমস্যা হচ্ছে। অনুগ্রহ করে একটু পরে আবার চেষ্টা করুন।";
+    if (code === "GEMINI_MODEL" || code === "AI_MODEL_CONFIG_INVALID") return "এই মুহূর্তে সহকারী উত্তর দিতে পারছে না। একটু পরে আবার চেষ্টা করুন।";
+    if (code === "GEMINI_QUOTA") return "এই মুহূর্তে উত্তর তৈরি করতে সাময়িক সমস্যা হচ্ছে। পণ্যের সাধারণ তথ্য জানতে চাইলে প্রশ্নটি আরেকভাবে লিখে দেখতে পারেন।";
     if (code === "GEMINI_UNAVAILABLE") return "এই মুহূর্তে উত্তর তৈরি করতে সাময়িক সমস্যা হচ্ছে। অনুগ্রহ করে একটু পরে আবার চেষ্টা করুন।";
     if (code === "GEMINI_TIMEOUT") return "উত্তর পেতে বেশি সময় লাগছে। অনুগ্রহ করে আবার চেষ্টা করুন.";
     if (code === "INCOMPLETE_AI_RESPONSE") return "উত্তরটি সম্পূর্ণ তৈরি হয়নি। অনুগ্রহ করে প্রশ্নটি আরেকবার পাঠান।";
@@ -169,7 +171,7 @@
     if (!text || busy) return;
     appendMessage(text, "user");
     input.value = "";
-    const pending = appendMessage("উত্তর তৈরি হচ্ছে…", "assistant", "hf-ai-message-pending");
+    const pending = appendMessage("একটু দেখছি", "assistant", "hf-ai-message-pending");
     busy = true;
     input.disabled = true;
     sendButton.disabled = true;
@@ -198,7 +200,7 @@
       }
     } catch (_error) {
       pending.remove();
-      appendMessage("সার্ভারের সঙ্গে সংযোগ বিচ্ছিন্ন হয়েছে। ইন্টারনেট পরীক্ষা করে আবার চেষ্টা করুন।", "assistant");
+      appendMessage("এই মুহূর্তে সংযোগে সমস্যা হচ্ছে। একটু পর আবার চেষ্টা করবেন?", "assistant");
     } finally {
       busy = false;
       input.disabled = false;
