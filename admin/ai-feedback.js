@@ -60,8 +60,7 @@
   async function load(){
    $("aifFeedbackList").innerHTML='<div class="hf-loading">Loading feedback records…</div>';
    try{
-    const rating=value("aifRating"),status=value("aifStatus"),reason=value("aifReason");
-    const result=await api({action:"admin_feedback_list",limit:500,rating,status,reason});
+    const result=await api({action:"admin_feedback_list",limit:500});
     rows=Array.isArray(result.rows)?result.rows:[];
     renderMetrics();applyFilters();
     if(selectedId&&rows.some(r=>r.request_id===selectedId))selectRow(selectedId);
@@ -96,7 +95,7 @@
    toast(curated.length+" curated training examples exported.");
   }
   $("aifRefresh").addEventListener("click",load);
-  ["aifSearch","aifRating","aifStatus","aifReason"].forEach(id=>$(id).addEventListener(id==="aifSearch"?"input":"change",()=>{if(id!=="aifSearch")load();else applyFilters();}));
+  ["aifSearch","aifRating","aifStatus","aifReason"].forEach(id=>$(id).addEventListener(id==="aifSearch"?"input":"change",applyFilters));
   $("aifFeedbackList").addEventListener("click",e=>{const item=e.target.closest("[data-feedback-id]");if(item)selectRow(item.dataset.feedbackId);});
   $("aifSaveReview").addEventListener("click",()=>save());
   $("aifMarkReviewed").addEventListener("click",()=>save("reviewed"));
