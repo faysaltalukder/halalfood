@@ -109,6 +109,7 @@
     <div><span>Supplier items awaiting posting</span><strong id="financeOpsSupplierCount">—</strong><small>Confirmed bills and payments</small></div>
     <div><span>Opening balances awaiting posting</span><strong id="financeOpsOpeningCount">—</strong><small>Must be independently verified</small></div>
     <div><span>COGS awaiting posting</span><strong id="financeOpsCogsCount">—</strong><small>Requires verified product cost</small></div>
+    <div><span>Customer refunds awaiting posting</span><strong id="financeOpsRefundCount">—</strong><small>Processed refunds only</small></div>
    </div>
    <div class="hf-finance-operations-grid">
     <section class="hf-finance-operations-card">
@@ -130,6 +131,14 @@
     <section class="hf-finance-operations-card">
      <div class="hf-finance-accounting-panel-head"><div><strong>Verified Finance account opening balances</strong><p>Post only after checking actual cash, bank or wallet statements. Offset must be an Equity or Liability account.</p></div></div>
      <div class="hf-table-wrap" tabindex="0" role="region" aria-label="Opening balances awaiting posting"><table class="hf-table"><thead><tr><th>Account</th><th>Opening date</th><th>Amount</th><th>GL mapping</th><th>Action</th></tr></thead><tbody id="financeOpsOpeningBody"><tr><td colspan="5" class="hf-loading">Loading…</td></tr></tbody></table></div>
+    </section>
+    <section class="hf-finance-operations-card">
+     <div class="hf-finance-accounting-panel-head"><div><strong>Supplier credit notes</strong><p>Credit notes reduce Accounts Payable or create a Supplier Advance when the original bill has already been paid.</p></div></div>
+     <div class="hf-table-wrap" tabindex="0" role="region" aria-label="Supplier credit notes awaiting accounting"><table class="hf-table"><thead><tr><th>Credit note</th><th>Date</th><th>Supplier bill</th><th>Amount</th><th>Action</th></tr></thead><tbody id="financeOpsCreditNotesBody"><tr><td colspan="5" class="hf-loading">Loading…</td></tr></tbody></table></div>
+    </section>
+    <section class="hf-finance-operations-card">
+     <div class="hf-finance-accounting-panel-head"><div><strong>Customer returns & refunds</strong><p>Only processed refunds are posted. Stock restocking and COGS reversal require verified returned item quantities and are not inferred from a return request alone.</p></div></div>
+     <div class="hf-table-wrap" tabindex="0" role="region" aria-label="Customer refunds awaiting accounting"><table class="hf-table"><thead><tr><th>Return</th><th>Order</th><th>Item condition</th><th>Refund</th><th>Action</th></tr></thead><tbody id="financeOpsRefundBody"><tr><td colspan="5" class="hf-loading">Loading…</td></tr></tbody></table></div>
     </section>
     <section class="hf-finance-operations-card">
      <div class="hf-finance-accounting-panel-head"><div><strong>Delivered order Cost of Goods Sold</strong><p>Requires a posted sale journal and verified manual or weighted-average landed unit costs.</p></div></div>
@@ -196,6 +205,10 @@
  <label class="hf-field" id="financeOperationalTaxField" hidden>Invoice tax account *
   <select id="financeOperationalTaxAccount" class="hf-select"><option value="">Choose tax classification</option></select>
   <small class="hf-help">Select VAT / Tax Recoverable only when the invoice and applicable tax treatment support recovery; otherwise select the appropriate Expense account.</small>
+ </label>
+ <label class="hf-field" id="financeOperationalCashAccountField" hidden>Refund paid from Finance account *
+  <select id="financeOperationalCashAccount" class="hf-select"><option value="">Choose cash, bank or wallet</option></select>
+  <small class="hf-help">Select the account from which the refund was actually paid. The journal will credit its mapped Asset account.</small>
  </label>
  <div class="hf-finance-operational-warning" id="financeOperationalWarning">Posting is permanent. Corrections use a linked reversal journal.</div>
  <p class="hf-form-error" id="financeOperationalPostError" role="alert"></p>
