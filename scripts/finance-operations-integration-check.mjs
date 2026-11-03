@@ -59,6 +59,10 @@ assert.ok(migration.includes("Purchase Order line gross total does not match its
 assert.ok(migration.includes("Supplier Bill total does not reconcile to subtotal, discount, additional charges and tax"), "Supplier Bill totals must reconcile before posting.");
 assert.ok(migration.includes("A landed-cost layer can be created only for an existing Confirmed Goods Received Note"), "Only confirmed GRNs may create inventory landed-cost layers.");
 assert.ok(migration.includes("order_sale") && migration.includes("Courier Clearing"), "Delivered COD revenue and courier clearing must be distinct from remittance.");
+assert.ok(migration.includes("Customer Advances (2020)") && migration.includes("v_customer_advance"), "Pre-delivery customer payments must be held as advances and applied when sales are delivered.");
+assert.ok(migration.includes("Customer receipts cannot be posted against a cancelled order"), "Cancelled orders must not accept new customer advances.");
+assert.ok(migration.includes("pre-delivery advance refunds") && migration.includes("Customer advance refunds cannot exceed"), "Pre-delivery advance refunds must debit only the verified net Customer Advance balance.");
+assert.ok(migration.includes("This customer advance has already been applied to a posted sale"), "An advance already applied to a delivered sale must not be reversed without a correcting workflow.");
 assert.ok(!/insert\s+into\s+public\.admin_finance_journal_entries\s*\([^)]*select/i.test(migration), "No historical source rows may be automatically journalized.");
 assert.ok(!/\b(drop table|truncate|delete from public\.(?:admin_finance_entries|orders|admin_supplier_bills|admin_supplier_payments))\b/i.test(migration), "Phase 2 migration must not delete or truncate operational data.");
 
