@@ -590,16 +590,25 @@ begin
     raise exception 'Adjustment entries may need multiple lines; create a manual Journal Entry instead.';
   end if;
   if v_entry.related_order_id is not null then
-    if v_entry.entry_type<>'income' then
-      raise exception 'An order-linked customer receipt must be recorded as Income.';
-    end if;
     select status,payment_method,total into v_order_status,v_order_method,v_order_total
     from public.orders where id=v_entry.related_order_id;
     if not found then raise exception 'The linked customer order was not found.'; end if;
     if v_order_method='cash_on_delivery' then
-      raise exception 'COD receipts are recorded only through the courier settlement workflow.';
+      raise exception 'COD receipts and COD refunds are recorded only through the courier settlement / return workflows.';
     end if;
+
+    select coalesce(sum(jl.credit-jl.debit),0) into v_prior_customer_advance
+    from public.admin_finance_entries e
+    join public.admin_finance_journal_entries je on je.id=e.accounting_journal_id and je.status='posted'
+    join public.admin_finance_journal_lines jl on jl.journal_entry_id=je.id
+    where e.related_order_id=v_entry.related_order_id
+      and e.status='confirmed' and e.id<>v_entry.id
+      and jl.account_id=(select id from public.admin_finance_chart_of_accounts where account_code='2020');
+
     if v_order_status='delivered' then
+      if v_entry.entry_type<>'income' then
+        raise exception 'Post-delivery refunds must use the processed customer return workflow.';
+      end if;
       if not exists(select 1 from public.admin_finance_journal_entries
         where source_type='order_sale' and source_key=v_entry.related_order_id::text and status='posted') then
         raise exception 'Recognize the delivered order sale before recording the customer collection.';
@@ -608,20 +617,26 @@ begin
         raise exception 'A post-delivery customer receipt must credit Accounts Receivable (1100).';
       end if;
     else
-      if p_counter_account_id is distinct from (select id from public.admin_finance_chart_of_accounts where account_code='2020') then
-        raise exception 'A customer receipt before delivery must credit Customer Advances (2020), not Sales Revenue.';
-      end if;
-      select coalesce(sum(jl.credit),0) into v_prior_customer_advance
-      from public.admin_finance_entries e
-      join public.admin_finance_journal_entries je on je.id=e.accounting_journal_id and je.status='posted'
-      join public.admin_finance_journal_lines jl on jl.journal_entry_id=je.id
-      where e.related_order_id=v_entry.related_order_id and e.entry_type='income'
-        and e.status='confirmed' and e.id<>v_entry.id
-        and jl.account_id=p_counter_account_id and jl.credit>0;
-      if v_prior_customer_advance+v_entry.amount>v_order_total+0.01 then
-        raise exception 'Customer receipts cannot exceed the linked order total.';
+      if v_entry.entry_type='income' then
+        if p_counter_account_id is distinct from (select id from public.admin_finance_chart_of_accounts where account_code='2020') then
+          raise exception 'A customer receipt before delivery must credit Customer Advances (2020), not Sales Revenue.';
+        end if;
+        if v_prior_customer_advance+v_entry.amount>v_order_total+0.01 then
+          raise exception 'Customer receipts cannot exceed the linked order total.';
+        end if;
+      elsif v_entry.entry_type='expense' then
+        if p_counter_account_id is distinct from (select id from public.admin_finance_chart_of_accounts where account_code='2020') then
+          raise exception 'A pre-delivery customer advance refund must debit Customer Advances (2020).';
+        end if;
+        if v_entry.amount>v_prior_customer_advance+0.01 then
+          raise exception 'Customer advance refunds cannot exceed the currently posted advance balance for this order.';
+        end if;
+      else
+        raise exception 'An order-linked customer cash movement must be an Income advance or a pre-delivery advance refund.';
       end if;
     end if;
+  elsif p_counter_account_id=(select id from public.admin_finance_chart_of_accounts where account_code='2020') then
+    raise exception 'Customer Advance entries must link to their original customer order.';
   end if;
   select ledger_account_id,id,opening_date into v_cash_coa_id,v_cash_account_id,v_period_open
   from public.admin_finance_accounts where id=v_entry.account_id;
@@ -891,20 +906,21 @@ begin
 
   -- Pre-delivery customer receipts are posted to Customer Advances (2020).
   -- On delivery, release only posted, non-voided advances against this order.
-  select coalesce(sum(jl.credit),0) into v_customer_advance
+  select coalesce(sum(jl.credit-jl.debit),0) into v_customer_advance
   from public.admin_finance_entries e
   join public.admin_finance_journal_entries je on je.id=e.accounting_journal_id and je.status='posted'
   join public.admin_finance_journal_lines jl on jl.journal_entry_id=je.id
   where e.related_order_id=p_order_id
-    and e.entry_type='income'
     and e.status='confirmed'
     and e.related_cod_settlement_id is null
-    and jl.account_id=(select id from public.admin_finance_chart_of_accounts where account_code='2020')
-    and jl.credit>0;
+    and jl.account_id=(select id from public.admin_finance_chart_of_accounts where account_code='2020');
+  if v_customer_advance< -0.01 then
+    raise exception 'Net Customer Advances are negative. Reconcile advance refunds before recognizing the sale.';
+  end if;
   if v_customer_advance>v_order.total+0.01 then
     raise exception 'Posted customer advances exceed the order total. Reconcile the customer receipts before recognizing the sale.';
   end if;
-  v_customer_advance:=least(round(v_customer_advance,2),round(v_order.total,2));
+  v_customer_advance:=least(round(greatest(0,v_customer_advance),2),round(v_order.total,2));
  end if;
  if v_debit_account_id is null then
   raise exception 'The required Receivable / Courier Clearing account is not configured in the Chart of Accounts.';
@@ -1313,6 +1329,17 @@ begin
  if not found then raise exception 'Cashbook transaction was not found.'; end if;
  if v_entry.related_cod_settlement_id is not null or v_entry.related_supplier_payment_id is not null then
   raise exception 'COD and Supplier Payment cashbook mirrors must be reversed from their source workflow.';
+ end if;
+ if v_entry.related_order_id is not null and exists(
+   select 1 from public.admin_finance_journal_entries
+   where source_type='order_sale' and source_key=v_entry.related_order_id::text and status='posted'
+ ) and exists(
+   select 1 from public.admin_finance_journal_lines jl
+   where jl.journal_entry_id=v_entry.accounting_journal_id
+     and jl.account_id=(select id from public.admin_finance_chart_of_accounts where account_code='2020')
+     and jl.credit>0
+ ) then
+  raise exception 'This customer advance has already been applied to a posted sale. Reverse the sale journal or post an audited correction before reversing the cash receipt.';
  end if;
  if v_entry.status='void' then return v_entry.reversal_journal_id; end if;
  if v_entry.status not in ('confirmed','draft') then raise exception 'Only Draft or Confirmed cashbook entries can be voided.'; end if;
