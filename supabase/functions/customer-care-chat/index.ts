@@ -412,12 +412,12 @@ async function resolveCustomerOrderTracking(
   const activeTracking = Boolean(trackingId) && bookingState === "succeeded" &&
     shipmentStatus !== "cancelled" && statusCode !== "cancelled";
   if (activeTracking) {
-    if (shipmentStatus === "booked") {
-      parts.push("কুরিয়ার বুকিং সম্পন্ন হয়েছে (" + (courier || "নির্ধারিত কুরিয়ার") + ")। ট্র্যাকিং নম্বর: " + trackingId + "। কুরিয়ার পার্সেলটি পিকআপ করার পর ট্র্যাকিং আপডেট দেখা যেতে পারে।");
+    if (shipmentStatus === "delivered" || statusCode === "delivered") {
+      parts.push("কুরিয়ার রেকর্ডে ডেলিভারি সম্পন্ন দেখাচ্ছে। ট্র্যাকিং নম্বর: " + trackingId + "।");
     } else if (shipmentStatus === "picked_up" || statusCode === "shipped") {
       parts.push("কুরিয়ার পার্সেলটি গ্রহণ করেছে (" + (courier || "নির্ধারিত কুরিয়ার") + ")। ট্র্যাকিং নম্বর: " + trackingId + "।");
-    } else if (shipmentStatus === "delivered" || statusCode === "delivered") {
-      parts.push("কুরিয়ার রেকর্ডে ডেলিভারি সম্পন্ন দেখাচ্ছে। ট্র্যাকিং নম্বর: " + trackingId + "।");
+    } else if (shipmentStatus === "booked") {
+      parts.push("কুরিয়ার বুকিং সম্পন্ন হয়েছে (" + (courier || "নির্ধারিত কুরিয়ার") + ")। ট্র্যাকিং নম্বর: " + trackingId + "। কুরিয়ার পার্সেলটি পিকআপ করার পর ট্র্যাকিং আপডেট দেখা যেতে পারে।");
     } else {
       parts.push("কুরিয়ার: " + (courier || "নির্ধারিত কুরিয়ার") + "। ট্র্যাকিং নম্বর: " + trackingId + "।");
     }
