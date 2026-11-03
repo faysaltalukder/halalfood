@@ -90,7 +90,7 @@
   function exportJsonl(){
    const curated=rows.filter(r=>r.review_status==="applied"&&r.corrected_answer&&r.question);
    if(!curated.length){toast("No Applied records with corrected answers yet. Review and correct examples first.","error");return;}
-   const lines=curated.map(r=>JSON.stringify({messages:[{role:"user",content:r.question},{role:"assistant",content:r.corrected_answer}],metadata:{request_id:r.request_id,feedback_reason:r.feedback_reason,rating:r.rating,source:"halal-food-owner-reviewed"}}));
+   const lines=curated.map(r=>JSON.stringify({messages:[{role:"user",content:r.question},{role:"assistant",content:r.corrected_answer}]}));
    downloadFile("halal-food-reviewed-training.jsonl",lines.join("\n")+"\n","application/jsonl;charset=utf-8");
    toast(curated.length+" curated training examples exported.");
   }
