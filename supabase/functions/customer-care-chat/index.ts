@@ -186,6 +186,34 @@ Deno.serve(async (req: Request) => {
     }
 
     if (!upstream) throw new Error("Gemini request did not return a response.");
+
+    let modelUsed = model;
+    if (upstream.status === 503 && model !== "gemini-3.6-flash") {
+      modelUsed = "gemini-3.6-flash";
+      console.warn(JSON.stringify({
+        event: "customer_care_model_fallback",
+        requestId,
+        primaryModel: model,
+        fallbackModel: modelUsed,
+      }));
+      upstream = await fetch(
+        "https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(modelUsed) + ":generateContent",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-goog-api-key": apiKey,
+          },
+          body: JSON.stringify({
+            systemInstruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
+            contents,
+            generationConfig: { maxOutputTokens: 600 },
+          }),
+          signal: controller.signal,
+        },
+      );
+    }
+
     if (!upstream.ok) {
       const providerPayload = await upstream.json().catch(() => null);
       const providerError = providerPayload && typeof providerPayload === "object"
@@ -195,6 +223,7 @@ Deno.serve(async (req: Request) => {
       console.warn(JSON.stringify({
         event: "customer_care_gemini_error",
         requestId,
+        model: modelUsed,
         upstreamStatus: upstream.status,
         providerCode: typeof providerError?.status === "string" ? providerError.status : "unknown",
         providerMessage: typeof providerError?.message === "string" ? providerError.message.slice(0, 180) : "No provider message",
@@ -214,7 +243,7 @@ Deno.serve(async (req: Request) => {
       return response({ success: false, code: "EMPTY_AI_RESPONSE", requestId }, 502);
     }
 
-    return response({ success: true, reply, requestId });
+    return response({ success: true, reply, requestId, model: modelUsed });
   } catch (error) {
     const timedOut = error instanceof DOMException && error.name === "AbortError";
     console.error(JSON.stringify({
