@@ -220,7 +220,7 @@ function rankProductCandidates(products, profiles, message, decision={}, imageMa
     scored.push({product,profile,score,confidence_score:confidenceScore,confidence_level:confidenceLevel,match_type:matchType,
       evidence:{identity:identityScore,intent:intentScore,category:categoryScore,attribute:attributeScore,semantic:semanticScore,visual:visualScore,packaging:packagingScore,pack_preference:packPreferenceScore}});
   }
-  return scored.sort((a,b)=>b.score-a.score||String(a.product.name||"").localeCompare(String(b.product.name||"")));
+  return scored.sort((a,b)=>b.score-a.score||Number(b.product.is_featured===true)-Number(a.product.is_featured===true)||(Number(a.product.sort_order??999999)-Number(b.product.sort_order??999999))||String(a.product.name||"").localeCompare(String(b.product.name||"")));
 }
 function extractConversationState(message, history=[]) {
   const turns=history.filter(item=>item?.role==="user").slice(-10)
