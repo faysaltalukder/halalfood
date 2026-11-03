@@ -2796,7 +2796,7 @@ async function refresh(){
      if(!source||!destination||!source.is_active||!destination.is_active){toast("Both source and destination accounts must be active before confirming this transfer.","error");return;}
      if(String(item.transfer_date)<String(source.opening_date)||String(item.transfer_date)<String(destination.opening_date)){toast("Transfer date cannot be earlier than either account opening date.","error");return;}
      if(Number(item.amount)>accountBalance(source)){toast("Insufficient recorded balance in "+source.name+". Available: "+money(accountBalance(source))+".","error");return;}
-     if(!confirm("Confirm the transfer only after the money has actually moved. This posts Dr destination account / Cr source account and does not change Revenue or Expenses."))return;
+     if(!confirm("Confirm this transfer only after the money has actually moved. This posts Dr destination account / Cr source account and does not change Revenue or Expenses."))return;
      const {data,error}=await client.rpc("admin_finance_confirm_transfer",{p_transfer_id:item.id});
      if(error)throw error;
      await audit("finance_transfer_confirmed","finance_transfer",item.id,"Internal transfer journal posted",{amount:item.amount,journal_id:data});
