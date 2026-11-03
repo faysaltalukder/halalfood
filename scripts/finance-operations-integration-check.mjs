@@ -64,7 +64,7 @@ assert.ok(core.includes("admin_finance_reverse_cod_settlement"), "COD reversal m
 assert.ok(core.includes("admin_finance_post_supplier_payment"), "Supplier payment posting must be available from the operational queue.");
 assert.ok(core.includes("financeAccountLedgerId"), "Cash/bank/wallet accounts must map to an Asset account.");
 assert.ok(core.includes("financeOperationsRefresh"), "Operational queue must be refreshable.");
-assert.ok(core.includes("No historical records are auto-posted"), "The queue must disclose that historical records are not auto-posted.");
+assert.ok(core.includes("Historical test records are not automatically posted"), "The queue must disclose that historical records are not auto-posted.");
 assert.ok(app.includes("admin_finance_confirm_transfer") && app.includes("admin_finance_void_transfer"), "Transfers must confirm and reverse through server RPCs.");
 assert.ok(app.includes("data-post-cod") && app.includes("data-reverse-cod"), "COD screen must expose post and reverse controls.");
 assert.ok(app.includes("Reverse only the COD remittance journal"), "COD reversal UX must not imply that the delivered sale is also reversed.");
