@@ -54,6 +54,10 @@ assert.ok(migration.includes("A cashbook transaction is posted") || migration.in
 assert.ok(migration.includes("Customer refund") && migration.includes("Actual refund paid"), "Customer refund journal must debit sales returns and credit the actual payment account.");
 assert.ok(migration.includes("This COD settlement is posted to accounting") || migration.includes("COD remittance Journal"), "COD settlement must have controlled remittance reversal.");
 assert.ok(migration.includes("manual") && migration.includes("weighted_average"), "Product costing must expose manual and landed-cost weighted-average sources.");
+assert.ok(migration.includes("cl.created_at<=coalesce(v_order.updated_at,v_order.ordered_at)") && migration.includes("cl.created_at<=coalesce(o.updated_at,o.ordered_at)"), "Historical COGS and product margin must not use landed-cost layers created after the order's recorded delivery/update time.");
+assert.ok(migration.includes("Purchase Order line gross total does not match its saved subtotal") && migration.includes("Purchase Order total does not reconcile"), "Supplier Bill posting must validate Purchase Order arithmetic before journal posting.");
+assert.ok(migration.includes("Supplier Bill total does not reconcile to subtotal, discount, additional charges and tax"), "Supplier Bill totals must reconcile before posting.");
+assert.ok(migration.includes("A landed-cost layer can be created only for an existing Confirmed Goods Received Note"), "Only confirmed GRNs may create inventory landed-cost layers.");
 assert.ok(migration.includes("order_sale") && migration.includes("Courier Clearing"), "Delivered COD revenue and courier clearing must be distinct from remittance.");
 assert.ok(!/insert\s+into\s+public\.admin_finance_journal_entries\s*\([^)]*select/i.test(migration), "No historical source rows may be automatically journalized.");
 assert.ok(!/\b(drop table|truncate|delete from public\.(?:admin_finance_entries|orders|admin_supplier_bills|admin_supplier_payments))\b/i.test(migration), "Phase 2 migration must not delete or truncate operational data.");
