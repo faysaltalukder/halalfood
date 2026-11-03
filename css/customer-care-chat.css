@@ -153,3 +153,21 @@ html.dark-mode .hf-ai-delivery-options label,html.dark-mode .hf-ai-payment-choic
 .hf-ai-chat-panel.has-shopping-view .hf-ai-chat-context{flex-basis:38px}
 .hf-ai-chat-panel.has-shopping-view .hf-ai-chat-content{min-height:0}
 .hf-ai-chat-panel.has-shopping-view .hf-ai-chat-view{flex:1 1 0}
+
+
+/* AI chat product image integrity and catalogue page links */
+.hf-ai-product-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.hf-ai-product-card{display:flex;flex-direction:column;align-items:stretch;gap:8px;min-width:0}
+.hf-ai-product-card>img.hf-ai-product-card-image{display:block;width:100%;height:116px;flex:0 0 116px;object-fit:contain;border-radius:9px;background:#f4eee6}
+.hf-ai-product-image-placeholder{display:grid;width:100%;height:116px;place-items:center;border-radius:9px;background:#f4eee6;color:#7c7168;font-size:11px;text-align:center}
+.hf-ai-product-card-actions{display:flex;flex-wrap:wrap;gap:6px}
+.hf-ai-product-card-actions button,.hf-ai-product-card-actions a{flex:1 1 74px;min-width:0}
+.hf-ai-product-page-link{display:inline-flex;align-items:center;justify-content:center;min-height:32px;padding:6px 8px;border:1px solid #d8d4c9;border-radius:9px;background:#fffdf8;color:#2b2a3d;text-decoration:none;font-size:10px;font-weight:700}
+.hf-ai-product-page-link:hover{border-color:#c97b3d;color:#9a5c2e}
+@media(max-width:430px){
+  .hf-ai-product-cards{grid-template-columns:1fr}
+  .hf-ai-product-card{display:grid;grid-template-columns:68px minmax(0,1fr);gap:8px}
+  .hf-ai-product-card>img.hf-ai-product-card-image,.hf-ai-product-image-placeholder{grid-row:span 2;width:68px;height:68px;min-height:68px;flex-basis:68px}
+  .hf-ai-product-card-copy{align-self:center}
+  .hf-ai-product-card-actions{grid-column:1/-1}
+}
