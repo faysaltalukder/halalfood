@@ -430,7 +430,6 @@ function buildDeterministicFallbackReply(
       ? "I understood that you are looking for honey. I cannot find a honey item in the currently published catalog. Would you like to explore another product category?"
       : "আপনি মধু খুঁজছেন বুঝতে পেরেছি। বর্তমানে প্রকাশিত ক্যাটালগে মধুর পণ্য খুঁজে পাচ্ছি না। অন্য কোনো পণ্যের ক্যাটাগরি দেখতে চান?";
   }
-  if (!knowledge.available) return null;
   if (/(ঘি|ghee)/iu.test(normalized)) {
     const found = products.filter((p) => /ঘি|ghee/iu.test(String(p.name || "") + " " + String(p.category || "")));
     if (found.length) {
@@ -454,7 +453,9 @@ function buildDeterministicFallbackReply(
     const doc = knowledge.documents.find((d) => String(d.document_key || "") === "official-contact-channels");
     if (doc) return "Halal Food-এর অফিসিয়াল যোগাযোগ:\n\n• ফোন/WhatsApp: +8801842031164\n• ইমেইল: halalfoodbd.official@gmail.com\n• ওয়েবসাইট: https://faysaltalukder.github.io/halalfood/\n\nএগুলোই প্রকাশিত অফিসিয়াল যোগাযোগের মাধ্যম।";
   }
-  return null;
+  return /[A-Za-z]/u.test(message)
+    ? "Thanks for your message. I can help with Halal Food's product categories, listed prices, availability, website information, and current service status. What would you like to explore?"
+    : "আপনার বার্তাটি পেয়েছি। Halal Food-এর পণ্যের ক্যাটাগরি, তালিকাভুক্ত দাম, উপলভ্যতা, ওয়েবসাইট এবং বর্তমান সেবার অবস্থা সম্পর্কে সাহায্য করতে পারি। কোন বিষয়টি জানতে চান?";
 }
 
 function friendlyErrorCode(status: number): string {
