@@ -171,3 +171,67 @@ html.dark-mode .hf-ai-delivery-options label,html.dark-mode .hf-ai-payment-choic
   .hf-ai-product-card-copy{align-self:center}
   .hf-ai-product-card-actions{grid-column:1/-1}
 }
+
+
+/* Final product recommendation CTA layout: exactly two inline actions. */
+.hf-ai-product-card-actions{
+  display:flex!important;
+  flex-wrap:nowrap!important;
+  gap:8px!important;
+  width:100%;
+  margin-top:8px;
+}
+.hf-ai-product-card-actions button{
+  display:inline-flex;
+  flex:1 1 0!important;
+  min-width:0;
+  min-height:38px!important;
+  align-items:center;
+  justify-content:center;
+  padding:8px 10px!important;
+  border:1px solid #d8d4c9!important;
+  border-radius:9px!important;
+  background:#fffdf8!important;
+  color:#2b2a3d!important;
+  font:inherit;
+  font-size:11px!important;
+  font-weight:700!important;
+  line-height:1.25;
+  white-space:nowrap;
+  cursor:pointer;
+}
+.hf-ai-product-card-actions button:last-child{
+  border-color:#2b2a3d!important;
+  background:#2b2a3d!important;
+  color:#fffdf8!important;
+}
+.hf-ai-product-card-actions button:last-child:hover{
+  border-color:#41405a!important;
+  background:#41405a!important;
+}
+.hf-ai-product-card-actions button:disabled{
+  opacity:.48!important;
+  cursor:not-allowed;
+}
+html.dark-mode .hf-ai-product-card-actions button:first-child{
+  border-color:#d8d4c9!important;
+  background:#fffdf8!important;
+  color:#2b2a3d!important;
+}
+html.dark-mode .hf-ai-product-card-actions button:last-child{
+  border-color:#2b2a3d!important;
+  background:#2b2a3d!important;
+  color:#fffdf8!important;
+}
+.hf-ai-product-page-link{display:none!important}
+@media(max-width:430px){
+  .hf-ai-product-card-actions{
+    grid-column:1/-1;
+    display:flex!important;
+    flex-wrap:nowrap!important;
+  }
+  .hf-ai-product-card-actions button{
+    flex:1 1 0!important;
+    min-width:0;
+  }
+}
