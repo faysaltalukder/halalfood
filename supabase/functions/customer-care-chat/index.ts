@@ -14,6 +14,9 @@ const SYSTEM_INSTRUCTION = [
   "You are Halal Food's polite, capable customer-care assistant for a Bangladesh-based grocery and food e-commerce demonstration project.",
   "Reply in natural Bengali by default. If the customer writes in English, answer in English. Be warm, clear, practical, creative in presentation, and honest. Do not impose an arbitrary short-answer limit: simple questions can receive concise answers, while difficult, critical, or multi-part questions should receive a careful, well-structured explanation with examples or trade-offs when useful.",
   "For complex questions, identify each part of the customer's actual concern, answer the important parts in order, explain what is verified versus general guidance, and ask at most one focused follow-up question when an essential detail is missing. Do not reject or oversimplify a question merely because it is unusual, technical, detailed, or critical.",
+  "Use conversation history to avoid asking for information the customer has already supplied. Build a lightweight need profile only from explicit statements: requested category/product, intended use, budget, preferred pack size, comparison criteria and constraints. Never infer sensitive personal traits. If a budget is explicit, prioritize products within it; if none fit, say so and offer the nearest listed alternatives without pretending they fit.",
+  "For recommendations, explain briefly why each suggestion matches the stated need, but only use suitability facts in the published product profile. If no verified suitability fact exists, be transparent and compare only confirmed name, category, pack/price and availability. For comparisons, compare the actual products requested and use a compact table or clear bullets; distinguish known differences from missing information.",
+  "When a live product match is provided, use the exact product URL and do not replace it with a generic store link. If the customer is still deciding, help narrow the choice with one useful question rather than pushing a sale.",
   "Understand the customer's need before suggesting products. When asked for recommendations, suggest up to 3 suitable items. When asked what products or varieties exist in a category, list the relevant matching live catalog items supplied in context. Use only exact product names, prices, availability states, and URLs supplied in context. Never invent a product, price, discount, package size, stock count, or URL.",
   "For product prices, use the current live catalog price supplied in the context. Do not disclose numeric stock quantity. You may say a product is currently listed as available, unavailable, or that availability needs confirmation, based only on the supplied availability state.",
   "Only describe ingredients, origin, quality attributes, production method, taste, texture, storage, allergens, certifications, or special suitability when an owner-published product knowledge profile explicitly supplies that fact. A missing detail is unknown; do not fill gaps with assumptions.",
@@ -133,6 +136,67 @@ function isCategoryCatalogQuestion(message: string): boolean {
   return /(ঘি|ghee|মধু|honey|বাদাম|nuts?|almond|তেল|oil|চাল|rice|মসলা|মশলা|masala|spice|খেজুর|dates?|চা|tea|মাংস|গরু|beef|meat|chicken|মুরগি|ড্রাই\s*ফুড|dry\s*food)/iu.test(message);
 }
 
+function toEnglishDigits(value: string): string {
+  return value.replace(/[০-৯]/g, (digit) => String("০১২৩৪৫৬৭৮৯".indexOf(digit)));
+}
+
+function analyzeCustomerNeed(
+  message: string,
+  history: Array<{ role: "user" | "model"; parts: Array<{ text: string }> }>,
+): Record<string, unknown> {
+  const userHistory = history.filter((item) => item.role === "user").map((item) => item.parts[0]?.text || "");
+  const combined = [...userHistory, message].join(" ").normalize("NFKC");
+  const normalized = toEnglishDigits(combined).toLowerCase();
+  const compare = /(তুলনা|পার্থক্য|তফাৎ|দুটোর মধ্যে|দুটির মধ্যে|which is better|compare|comparison|difference|versus|\bvs\b)/iu.test(normalized);
+  const recommend = /(পরামর্শ|সাজেস্ট|suggest|recommend|কোনটা.*ভালো|কোনটি.*ভালো|কোন.*নেব|কোন.*কিনব|কী.*কিনব|কি.*কিনব|আমার.*জন্য|ভালো.*হবে)/iu.test(normalized);
+  const broad = isBroadCatalogQuestion(message);
+  const category = isCategoryCatalogQuestion(message);
+  const budgetMatch = normalized.match(/(?:৳|টাকা|টাকার|budget|under|within|max(?:imum)?|সর্বোচ্চ|বাজেট)[\s:=,-]*([0-9][0-9,]*)/iu)
+    || normalized.match(/([0-9][0-9,]*)\s*(?:টাকা|টাকার মধ্যে|bdt)/iu);
+  const budgetBdt = budgetMatch ? Number(String(budgetMatch[1]).replace(/,/g, "")) : null;
+  const purposeMap: Array<[RegExp, string]> = [
+    [/(রান্না|ভাজি|রেসিপি|cooking|cook|fry|baking|বেকিং)/iu, "cooking_or_baking"],
+    [/(উপহার|গিফট|gift|present)/iu, "gift"],
+    [/(পরিবার|বাসা|ঘর|family|household|daily use|প্রতিদিন)/iu, "household_use"],
+    [/(ব্যবসা|রিসেল|resell|wholesale|পাইকারি)/iu, "business_or_resale"],
+  ];
+  const purpose = purposeMap.find(([pattern]) => pattern.test(normalized))?.[1] || null;
+  const packPreference = /(ছোট প্যাক|ছোট প্যাকেট|small pack|small size)/iu.test(normalized) ? "small_pack"
+    : /(বড় প্যাক|বড় প্যাক|বাল্ক|bulk|large pack|বেশি পরিমাণ)/iu.test(normalized) ? "large_pack" : null;
+  const intent = compare ? "compare" : recommend ? "recommend" : broad ? "catalog" : category ? "category_or_product" : "general";
+  return {
+    intent,
+    budget_bdt: Number.isFinite(budgetBdt) && budgetBdt! > 0 ? budgetBdt : null,
+    purpose,
+    pack_preference: packPreference,
+    explicit_context: message.slice(0, 1200),
+  };
+}
+
+function numericProductPrice(product: Record<string, unknown>): number | null {
+  const raw = product.price ?? product.display_price;
+  const match = String(raw ?? "").replace(/[০-৯]/g, (digit) => String("০১২৩৪৫৬৭৮৯".indexOf(digit))).replace(/,/g, "").match(/[0-9]+(?:\.[0-9]+)?/);
+  if (!match) return null;
+  const value = Number(match[0]);
+  return Number.isFinite(value) ? value : null;
+}
+
+function publicProductCards(knowledge: Awaited<ReturnType<typeof loadKnowledge>>): Record<string, unknown>[] {
+  return knowledge.products.slice(0, 3).map((product) => {
+    const profile = product.verified_product_knowledge && typeof product.verified_product_knowledge === "object"
+      ? product.verified_product_knowledge as Record<string, unknown> : null;
+    return {
+      name: product.name,
+      category: product.category,
+      price: product.price,
+      availability: product.availability,
+      product_url: product.product_url,
+      image_url: product.image_url,
+      verified_summary: profile?.quality_summary || null,
+    };
+  }).filter((product) => typeof product.product_url === "string" && product.product_url !== "");
+}
+
 function isTestOrPlaceholderProduct(product: Record<string, unknown>): boolean {
   const identity = String(product.name || "") + " " + String(product.slug || "");
   return /(?:^|[\s_-])(test|sample|demo|draft|placeholder)(?:$|[\s_-])/iu.test(identity);
@@ -193,15 +257,25 @@ async function loadKnowledge(message: string, history: Array<{ role: "user" | "m
   const categoryNames = Array.from(new Set(customerFacingProducts.map((item) => String(item.category || "")).filter(Boolean))).sort();
   const broadCatalogQuestion = isBroadCatalogQuestion(searchText);
   const categoryCatalogQuestion = isCategoryCatalogQuestion(searchText);
-  const ranked = customerFacingProducts
+  const customerNeed = analyzeCustomerNeed(message, history);
+  const rankedAll = customerFacingProducts
     .map((product) => ({ product, score: productScore(product, terms) }))
     .filter((item) => broadCatalogQuestion || item.score > 0)
     .sort((a, b) => {
       if (b.score !== a.score) return b.score - a.score;
       const categoryOrder = String(a.product.category || "").localeCompare(String(b.product.category || ""));
       return categoryOrder || String(a.product.name || "").localeCompare(String(b.product.name || ""));
+    });
+  const budget = Number(customerNeed.budget_bdt || 0);
+  const budgetMatches = budget > 0
+    ? rankedAll.filter((item) => {
+      const price = numericProductPrice(item.product);
+      return price !== null && price <= budget;
     })
-    .slice(0, broadCatalogQuestion ? 15 : categoryCatalogQuestion ? 12 : 5);
+    : [];
+  const useBudgetMatches = customerNeed.intent === "recommend" && budget > 0 && budgetMatches.length > 0;
+  const rankedSource = useBudgetMatches ? budgetMatches : rankedAll;
+  const ranked = rankedSource.slice(0, broadCatalogQuestion ? 15 : categoryCatalogQuestion ? 12 : customerNeed.intent === "recommend" ? 8 : 5);
 
   let productKnowledge: Record<string, unknown>[] = [];
   if (ranked.length) {
@@ -233,6 +307,7 @@ async function loadKnowledge(message: string, history: Array<{ role: "user" | "m
     return {
       name: String(product.name || ""),
       category: String(product.category || ""),
+      unit_type: String(product.unit_type || "piece"),
       price: product.display_price || ("৳ " + String(product.price || "") + " / " + String(product.unit_type || "piece")),
       availability,
       product_url: productUrl(product),
@@ -263,6 +338,8 @@ async function loadKnowledge(message: string, history: Array<{ role: "user" | "m
     productKnowledge,
     categoryNames,
     catalogCount: customerFacingProducts.length,
+    customerNeed,
+    budgetMatchedCount: budgetMatches.length,
     broadCatalogQuestion,
     categoryCatalogQuestion,
   };
@@ -276,6 +353,10 @@ function buildKnowledgeContext(knowledge: Awaited<ReturnType<typeof loadKnowledg
   }
   if (knowledge.categoryNames.length) {
     sections.push("LIVE PRODUCT CATEGORIES:\n" + knowledge.categoryNames.join(", "));
+  }
+  if (knowledge.customerNeed) {
+    sections.push("CUSTOMER NEED PROFILE (only explicit conversation details; null means unknown):\n" + JSON.stringify(knowledge.customerNeed) +
+      (Number(knowledge.customerNeed.budget_bdt || 0) > 0 ? "\nProducts matching stated budget: " + knowledge.budgetMatchedCount : ""));
   }
   if (knowledge.broadCatalogQuestion) {
     sections.push("GENERAL CATALOG QUESTION: The store currently has " + knowledge.catalogCount +
@@ -315,6 +396,17 @@ function buildDeterministicFallbackReply(
       (list ? "\n\n**কয়েকটি পণ্যের নাম ও বর্তমান তালিকাভুক্ত দাম:**\n" + list : "") +
       "\n\nএটি ক্যাটালগের সংক্ষিপ্ত নমুনা। নির্দিষ্ট ক্যাটাগরির সব পণ্য ও দাম জানতে ক্যাটাগরির নাম লিখুন।" +
       "\n\nমনে রাখবেন, ওয়েবসাইটটি বর্তমানে ডেমো প্রকল্প; বাস্তব অর্ডার, পেমেন্ট বা ডেলিভারি চালু নেই।";
+  }
+  if (knowledge.customerNeed?.intent === "recommend" && products.length) {
+    const budget = Number(knowledge.customerNeed.budget_bdt || 0);
+    if (budget > 0 && knowledge.budgetMatchedCount === 0) {
+      return "আপনার উল্লেখ করা ৳" + budget.toLocaleString("en-BD") + " বাজেটের মধ্যে যাচাইকৃত লাইভ ক্যাটালগে কোনো নির্ভুল মিল পাইনি। কাছাকাছি তালিকাভুক্ত বিকল্পগুলো হলো:\n\n" +
+        products.slice(0, 3).map(productLine).join("\n") +
+        "\n\nকোনো পণ্যের উপাদান বা বিশেষ উপযোগিতা প্রকাশিত প্রোফাইলে না থাকলে তা অনুমান করে বলছি না।";
+    }
+    return (budget > 0 ? "আপনার উল্লেখ করা বাজেটের মধ্যে পাওয়া বিকল্পগুলো:" : "আপনার প্রয়োজন অনুযায়ী বিবেচনা করতে পারেন:") +
+      "\n\n" + products.slice(0, 3).map(productLine).join("\n") +
+      "\n\nকোনটি বেশি উপযোগী তা নির্দিষ্টভাবে বলতে আপনার ব্যবহার বা প্যাকের পছন্দ জানাতে পারেন।";
   }
   if (/(ঘি|ghee)/iu.test(normalized)) {
     const found = products.filter((p) => /ঘি|ghee/iu.test(String(p.name || "") + " " + String(p.category || "")));
@@ -401,7 +493,7 @@ async function callGeminiWithFallback(
     modelUsed = modelCandidates[index];
     const upstream = await callGemini(modelUsed, apiKey, contents, systemInstruction, signal);
     lastResponse = upstream;
-    if (upstream.ok || (upstream.status !== 429 && upstream.status !== 503)) {
+    if (upstream.ok || upstream.status === 429 || upstream.status !== 503) {
       return { response: upstream, modelUsed };
     }
 
@@ -526,7 +618,7 @@ Deno.serve(async (req: Request) => {
 
     if (!apiKey) {
       const offlineReply = buildDeterministicFallbackReply(message, knowledge);
-      if (offlineReply) return response({ success: true, reply: offlineReply, requestId,
+      if (offlineReply) return response({ success: true, reply: offlineReply, products: publicProductCards(knowledge), requestId,
         model: "verified-knowledge-fallback",
         knowledge: { documents: knowledge.documents.length, matchedProducts: knowledge.products.length } });
       return response({ success: false, code: "AI_NOT_CONFIGURED", requestId }, 503);
@@ -552,7 +644,7 @@ Deno.serve(async (req: Request) => {
       const offlineReply = buildDeterministicFallbackReply(message, knowledge);
       if (offlineReply) {
         console.info(JSON.stringify({ event: "customer_care_verified_knowledge_fallback", requestId, providerCode: errorCode }));
-        return response({ success: true, reply: offlineReply, requestId, model: "verified-knowledge-fallback",
+        return response({ success: true, reply: offlineReply, products: publicProductCards(knowledge), requestId, model: "verified-knowledge-fallback",
           knowledge: { documents: knowledge.documents.length, matchedProducts: knowledge.products.length } });
       }
       return response({ success: false, code: errorCode, requestId }, upstream.status === 429 ? 429 : 502);
@@ -626,7 +718,7 @@ Deno.serve(async (req: Request) => {
 
     if (!reply || !isCompleteReply(reply, finishReason)) {
       const offlineReply = buildDeterministicFallbackReply(message, knowledge);
-      if (offlineReply) return response({ success: true, reply: offlineReply, requestId, model: "verified-knowledge-fallback",
+      if (offlineReply) return response({ success: true, reply: offlineReply, products: publicProductCards(knowledge), requestId, model: "verified-knowledge-fallback",
         knowledge: { documents: knowledge.documents.length, matchedProducts: knowledge.products.length } });
       return response({ success: false, code: "INCOMPLETE_AI_RESPONSE", requestId }, 502);
     }
@@ -634,6 +726,7 @@ Deno.serve(async (req: Request) => {
     return response({
       success: true,
       reply,
+      products: publicProductCards(knowledge),
       requestId,
       model: modelUsed,
       knowledge: {
@@ -644,7 +737,7 @@ Deno.serve(async (req: Request) => {
   } catch (error) {
     const timedOut = error instanceof DOMException && error.name === "AbortError";
     const offlineReply = loadedKnowledge ? buildDeterministicFallbackReply(message, loadedKnowledge) : null;
-    if (offlineReply && loadedKnowledge) return response({ success: true, reply: offlineReply, requestId,
+    if (offlineReply && loadedKnowledge) return response({ success: true, reply: offlineReply, products: publicProductCards(loadedKnowledge), requestId,
       model: "verified-knowledge-fallback",
       knowledge: { documents: loadedKnowledge.documents.length, matchedProducts: loadedKnowledge.products.length } });
     console.error(JSON.stringify({
