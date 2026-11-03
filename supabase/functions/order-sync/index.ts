@@ -226,6 +226,40 @@ Deno.serve(async (req: Request) => {
     const ipCountry = clean(req.headers.get("cf-ipcountry"), 8).toUpperCase() || null;
     const userAgent = clean(req.headers.get("user-agent"), 500) || null;
     const deviceId = clean(d.deviceId ?? d.hf_device_id, 100);
+    const expectedSubtotal = Number(d.expectedSubtotal);
+    const expectedDeliveryCharge = Number(d.expectedDeliveryCharge);
+    if (Number.isFinite(expectedSubtotal) && Number.isFinite(expectedDeliveryCharge)) {
+      const requestedSlugs = Array.from(new Set(payload.items.map((item: any) => clean(item.product, 120)).filter(Boolean)));
+      const { data: quoteProducts, error: quoteError } = await admin
+        .from("products")
+        .select("slug,name,price,stock_quantity,is_active")
+        .in("slug", requestedSlugs);
+      if (quoteError) {
+        console.error("Could not revalidate chat checkout prices:", String(quoteError.code || "unknown"));
+        return json({ success: false, code: "QUOTE_UNAVAILABLE", error: "অর্ডারের বর্তমান মূল্য যাচাই করা যাচ্ছে না। আবার চেষ্টা করুন।" }, 503);
+      }
+      let liveSubtotal = 0;
+      for (const item of payload.items) {
+        const slug = clean(item.product, 120);
+        const product = (quoteProducts || []).find((row: any) => String(row.slug) === slug && row.is_active === true);
+        if (!product) return json({ success: false, code: "PRODUCT_UNAVAILABLE", error: "আপনার কার্টের একটি পণ্য এখন আর উপলভ্য নেই।" }, 409);
+        const quantity = Math.floor(Number(item.quantity) || 0);
+        const price = Number(product.price);
+        if (!Number.isFinite(price) || price < 0) return json({ success: false, code: "PRICE_UNAVAILABLE", error: "একটি পণ্যের বর্তমান মূল্য যাচাই করা যাচ্ছে না।" }, 409);
+        if (product.stock_quantity !== null && product.stock_quantity !== undefined && Number(product.stock_quantity) < quantity) {
+          return json({ success: false, code: "OUT_OF_STOCK", error: String(product.name || "একটি পণ্য") + " পর্যাপ্ত পরিমাণে স্টকে নেই।" }, 409);
+        }
+        liveSubtotal += price * quantity;
+      }
+      const liveDeliveryCharge = payload.deliveryZone === "inside_dhaka" ? 70 : payload.deliveryZone === "outside_dhaka" ? 120 : -1;
+      if (Math.abs(liveSubtotal - expectedSubtotal) > 0.01 || Math.abs(liveDeliveryCharge - expectedDeliveryCharge) > 0.01) {
+        return json({
+          success: false, code: "PRICE_CHANGED",
+          error: "পণ্যের মূল্য বা ডেলিভারি চার্জ আপডেট হয়েছে। নতুন হিসাব দেখে আবার নিশ্চিত করুন।",
+          currentSubtotal: liveSubtotal, currentDeliveryCharge: liveDeliveryCharge
+        }, 409);
+      }
+    }
     const normalizedPhone = clean(payload.phone, 32).replace(/\s+/g, "").replace(/-/g, "");
     const { data: blockedCustomer, error: blockedCustomerError } = await admin
       .from("customers")
@@ -370,7 +404,7 @@ Deno.serve(async (req: Request) => {
     if (error) {
       const message = String(error.message || "");
       const clientError = /Please enter|Sorry, this product|Cash on Delivery|select a valid delivery|Not enough stock|Too many items|between 1 and 30|Too many orders|This customer is blocked|Coupon:/i.test(message);
-      return json({ success: false, error: clientError ? message : "Order could not be placed. Please try again or contact us by phone." }, clientError ? 400 : 500);
+      return json({ success: false, code: clientError ? "ORDER_VALIDATION" : "ORDER_FAILED", error: clientError ? message : "Order could not be placed. Please try again or contact us by phone." }, clientError ? 400 : 500);
     }
     if (!data || data.success !== true) return json({ success: false, error: "Order could not be placed. Please try again." }, 500);
 
