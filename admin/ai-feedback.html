@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="robots" content="noindex,nofollow"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI Training & Feedback Center · Halal Food Admin</title>
+<link rel="stylesheet" href="./shared.css?v=20261102-reports-navigation-v3">
+<link rel="stylesheet" href="./workspace-global-theme.css?v=20261101-merchant-fieldbook-v1">
+<link rel="stylesheet" href="./ai-feedback.css?v=20261103-feedback-center-v1">
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
+</head>
+<body data-page="ai-feedback">
+<div id="authGate" class="auth-gate"><div class="auth-gate-card"><strong>Checking secure admin access…</strong><p>This workspace requires the authorized admin account and two-step verification.</p></div></div>
+<div id="adminApp" hidden><main id="pageContent" tabindex="-1">
+<section class="aif-hero">
+ <div><p class="page-eyebrow">CUSTOMER CARE INTELLIGENCE</p><h1>AI Training &amp; Feedback Center</h1><p>Review real customer-care conversations, correct weak answers and prepare clean examples for future AI improvements.</p></div>
+ <div class="aif-hero-actions"><span class="hf-status hf-status-active">AAL2 protected</span><button class="hf-button hf-button-secondary" id="aifRefresh" type="button">↻ Refresh</button></div>
+</section>
+<div class="hf-banner hf-banner-info"><span>ⓘ</span><div><strong>Feedback is not automatic model training</strong>Appreciate and Disagree labels help identify patterns. A corrected answer becomes a training example only after you review it. Mark an item Applied only after you have actually updated the relevant AI rule or verified knowledge.</div></div>
+<section class="aif-metrics" aria-label="Feedback summary">
+ <article class="hf-card"><span>Total feedback</span><strong id="aifTotal">—</strong><small>Latest records loaded</small></article>
+ <article class="hf-card"><span>Helpful</span><strong id="aifHelpful">—</strong><small>Customers approved the answer</small></article>
+ <article class="hf-card"><span>Needs review</span><strong id="aifNeedsReview">—</strong><small>Disagree feedback not yet reviewed</small></article>
+ <article class="hf-card"><span>Applied examples</span><strong id="aifApplied">—</strong><small>Reviewed and corrected examples</small></article>
+</section>
+<section class="aif-insights hf-card hf-card-pad">
+ <div class="hf-section-head"><div><h2>Where the assistant needs improvement</h2><p>Most common reasons selected for negative feedback.</p></div><span id="aifUpdated" class="aif-muted">Not refreshed yet</span></div>
+ <div id="aifReasonBreakdown" class="aif-reason-grid"><div class="hf-loading">Loading feedback patterns…</div></div>
+</section>
+<section class="aif-workspace">
+ <div class="aif-inbox hf-card hf-card-pad">
+  <div class="hf-section-head"><div><h2>Feedback inbox</h2><p>Open a conversation to review the original answer and prepare a correction.</p></div><div class="aif-export-actions"><button class="hf-button hf-button-secondary" id="aifExportCsv" type="button">Export CSV</button><button class="hf-button hf-button-primary" id="aifExportJsonl" type="button">Training JSONL</button></div></div>
+  <div class="aif-filters">
+   <input class="hf-input" id="aifSearch" type="search" placeholder="Search questions, answers or products…" aria-label="Search feedback">
+   <select class="hf-select" id="aifRating"><option value="">All feedback</option><option value="not_helpful">Disagree</option><option value="helpful">Appreciate</option></select>
+   <select class="hf-select" id="aifStatus"><option value="">All review statuses</option><option value="new">New</option><option value="reviewed">Reviewed</option><option value="applied">Applied</option><option value="dismissed">Dismissed</option></select>
+   <select class="hf-select" id="aifReason"><option value="">All mistake types</option><option value="wrong_product">Wrong product</option><option value="misunderstood">Misunderstood question</option><option value="incorrect_information">Incorrect information</option><option value="irrelevant">Irrelevant answer</option><option value="unclear">Unclear answer</option><option value="other">Other</option></select>
+  </div>
+  <p class="aif-note" id="aifListNote">Loading feedback…</p>
+  <div id="aifFeedbackList" class="aif-feedback-list"><div class="hf-loading">Loading feedback records…</div></div>
+ </div>
+ <aside class="aif-review hf-card hf-card-pad" id="aifReviewPanel">
+  <div class="hf-section-head"><div><p class="page-eyebrow">REVIEW WORKSPACE</p><h2 id="aifReviewTitle">Select a feedback item</h2><p id="aifReviewSubtitle">The original question and answer will appear here.</p></div></div>
+  <div id="aifReviewEmpty" class="aif-empty">Choose a feedback item from the inbox to inspect it.</div>
+  <div id="aifReviewContent" hidden>
+   <div class="aif-conversation-block"><span class="aif-block-label">CUSTOMER QUESTION</span><p id="aifQuestion"></p></div>
+   <div class="aif-conversation-block"><span class="aif-block-label">AI ANSWER</span><p id="aifAnswer"></p></div>
+   <div class="aif-context" id="aifProductContext"></div>
+   <label class="hf-field">Corrected ideal answer<textarea class="hf-textarea" id="aifCorrectedAnswer" rows="7" maxlength="8000" placeholder="Write the answer you would want the AI to give next time. Use only verified product and business facts."></textarea></label>
+   <label class="hf-field">Private reviewer notes<textarea class="hf-textarea" id="aifAdminNotes" rows="3" maxlength="3000" placeholder="Why was the answer wrong? Which rule or verified fact needs updating?"></textarea></label>
+   <label class="hf-field">Review status<select class="hf-select" id="aifReviewStatus"><option value="new">New — not reviewed</option><option value="reviewed">Reviewed — correction prepared</option><option value="applied">Applied — AI rule / knowledge updated</option><option value="dismissed">Dismissed — no change needed</option></select></label>
+   <p class="aif-note">Applied means you have separately updated the relevant AI knowledge or rule. Saving this record does not change the model or customer-facing answer by itself.</p>
+   <p class="hf-form-error" id="aifSaveError" role="alert"></p>
+   <div class="hf-dialog-actions"><button type="button" class="hf-button hf-button-secondary" id="aifMarkReviewed">Mark reviewed</button><button type="button" class="hf-button hf-button-primary" id="aifSaveReview">Save review</button></div>
+  </div>
+ </aside>
+</section>
+</main></div>
+<script defer src="./i18n.js?v=20261102-dashboard-speed-v2"></script>
+<script defer src="../js/store-config.js?v=20261101-store-config-v1"></script>
+<script defer src="./shared.js?v=20261102-reports-navigation-v3"></script>
+<script defer src="./app.js?v=20261102-dashboard-speed-v2"></script>
+<script defer src="./ai-feedback.js?v=20261103-feedback-center-v1"></script>
+</body></html>
