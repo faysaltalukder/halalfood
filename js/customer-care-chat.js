@@ -255,6 +255,7 @@
 
   launcher.addEventListener("click", () => {
     if (panel.hidden) openChat();
+    else if (minimized) restoreChat();
     else closeChat();
   });
   closeButton.addEventListener("click", closeChat);
