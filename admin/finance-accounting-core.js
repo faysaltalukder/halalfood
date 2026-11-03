@@ -21,6 +21,8 @@ window.HFAdminReady.then(async H => {
   let deliveredOrders = [];
   let supplierBills = [];
   let supplierPayments = [];
+  let supplierCreditNotes = [];
+  let customerReturns = [];
   let profitabilityRows = [];
   let busy = false;
   let operationalPostContext = null;
@@ -214,10 +216,12 @@ window.HFAdminReady.then(async H => {
         signedQuery(client.from("orders").select("id,order_number,customer_name,subtotal,delivery_charge,coupon_discount_amount,total,payment_method,status,ordered_at").eq("status","delivered").order("ordered_at", { ascending: false }).limit(2000)),
         signedQuery(client.from("admin_supplier_bills").select("id,bill_number,supplier_id,purchase_order_id,supplier_invoice_number,invoice_date,due_date,total_amount,tax_amount,status,accounting_journal_id,reversal_journal_id").order("invoice_date", { ascending: false }).limit(2000)),
         signedQuery(client.from("admin_supplier_payments").select("id,payment_number,supplier_id,payment_date,amount,paid_from_account,status,accounting_journal_id,reversal_journal_id").order("payment_date", { ascending: false }).limit(2000)),
+        signedQuery(client.from("admin_supplier_credit_notes").select("id,credit_note_number,supplier_id,supplier_bill_id,purchase_order_id,credit_date,amount,reason,status,accounting_journal_id,reversal_journal_id").order("credit_date", { ascending: false }).limit(2000)),
+        signedQuery(client.from("admin_return_requests").select("id,order_id,reason,refund_amount,status,item_condition,restock_approved,refund_account_id,accounting_journal_id,reversal_journal_id").order("created_at", { ascending: false }).limit(2000)),
         signedQuery(client.from("admin_finance_product_profitability").select("*").order("gross_profit", { ascending: false, nullsFirst: false }).limit(1000))
       ]);
       [accounts, journals, ledger, trialBalance, periods, cashbookEntries, financeAccounts,
-        codRows, deliveredOrders, supplierBills, supplierPayments, profitabilityRows] = results;
+        codRows, deliveredOrders, supplierBills, supplierPayments, supplierCreditNotes, customerReturns, profitabilityRows] = results;
       renderAll();
       renderOperationalIntegration();
     } catch (error) {
@@ -255,6 +259,10 @@ window.HFAdminReady.then(async H => {
       || (p.accounting_journal_id && !p.reversal_journal_id));
     const openings = financeAccounts.filter(a => a.is_active && Number(a.opening_balance||0)>0
       && !a.opening_balance_journal_id);
+    const creditNotes = supplierCreditNotes.filter(n => (n.status==="confirmed" && !n.reversal_journal_id)
+      || (n.accounting_journal_id && !n.reversal_journal_id));
+    const refunds = customerReturns.filter(r => (r.status==="refunded" && !r.reversal_journal_id)
+      || (r.accounting_journal_id && !r.reversal_journal_id));
     const cogs = deliveredOrders.filter(o => {
       const sale=sourceJournal("order_sale",o.id), cost=sourceJournal("order_cogs",o.id);
       return sale?.status==="posted" && !cost;
@@ -272,6 +280,7 @@ window.HFAdminReady.then(async H => {
     $("financeOpsSupplierCount").textContent=supplierPending.toLocaleString("en-BD");
     $("financeOpsOpeningCount").textContent=openings.length.toLocaleString("en-BD");
     $("financeOpsCogsCount").textContent=cogs.length.toLocaleString("en-BD");
+    $("financeOpsRefundCount").textContent=refunds.filter(r=>!r.accounting_journal_id).length.toLocaleString("en-BD");
 
     $("financeOpsCashbookBody").innerHTML=standaloneCashbook.length?standaloneCashbook.map(e=>{
       const action=e.accounting_journal_id
@@ -336,6 +345,26 @@ window.HFAdminReady.then(async H => {
       "Cost validated before posting</td><td>"+operationButton("order_cogs",o.id,"Post COGS")+"</td></tr>"
     ).join(""):emptyOperationRow(4,"No Delivered order with a posted sale is waiting for COGS.");
 
+    $("financeOpsCreditNotesBody").innerHTML=creditNotes.length?creditNotes.map(n=>{
+      const action=n.accounting_journal_id
+        ?operationButton("supplier_credit_reverse",n.id,"Reverse",true)
+        :operationButton("supplier_credit_post",n.id,"Post credit");
+      return "<tr><td><strong>"+esc(n.credit_note_number)+"</strong><small>"+esc(n.reason)+"</small></td><td>"+
+        dateOnly(n.credit_date)+"</td><td>"+esc(n.supplier_bill_id?"Linked bill":"Supplier account credit")+
+        "</td><td><strong>"+money(n.amount)+"</strong></td><td>"+action+"</td></tr>";
+    }).join(""):emptyOperationRow(5,"No Confirmed supplier credit notes are waiting for accounting.");
+
+    $("financeOpsRefundBody").innerHTML=refunds.length?refunds.map(r=>{
+      const action=r.accounting_journal_id
+        ?operationButton("customer_refund_reverse",r.id,"Reverse",true)
+        :operationButton("customer_refund_post",r.id,"Post refund");
+      const order=deliveredOrders.find(o=>o.id===r.order_id);
+      return "<tr><td><strong>"+esc(String(r.id).slice(0,8))+"</strong><small>"+esc(r.reason||"Return request")+"</small></td><td>"+
+        esc(order?.order_number||String(r.order_id).slice(0,8))+"</td><td>"+esc(r.item_condition||"Not inspected")+
+        (r.restock_approved?' <small>Restock flag set</small>':"")+"</td><td><strong>"+money(r.refund_amount)+
+        "</strong></td><td>"+action+"</td></tr>";
+    }).join(""):emptyOperationRow(5,"No processed customer refunds are waiting for accounting.");
+
     $("financeOpsProfitCount").textContent=profitabilityRows.length.toLocaleString("en-BD")+" products";
     $("financeOpsProfitBody").innerHTML=profitabilityRows.length?profitabilityRows.map(row=>
       "<tr><td><strong>"+esc(row.product_name||"Product")+"</strong><small>"+esc(row.unit||"")+
@@ -357,6 +386,15 @@ window.HFAdminReady.then(async H => {
     const taxSelect=$("financeOperationalTaxAccount");
     const field=$("financeOperationalAccountField");
     const taxField=$("financeOperationalTaxField");
+    const cashField=$("financeOperationalCashAccountField");
+    const cashSelect=$("financeOperationalCashAccount");
+    const refundAccounts=financeAccounts.filter(a=>a.is_active&&a.ledger_account_id);
+    if(cashSelect){
+      const oldCash=cashSelect.value;
+      cashSelect.innerHTML='<option value="">Choose cash, bank or wallet</option>'+refundAccounts.map(a=>
+        '<option value="'+esc(a.id)+'"'+(a.id===oldCash?" selected":"")+">"+esc(a.name)+"</option>").join("");
+    }
+    if(cashField)cashField.hidden=kind!=="customer_refund_post";
     const allowed=accounts.filter(a=>a.is_active&&a.is_postable&&(
       kind==="cashbook_post"?true:
       kind==="supplier_bill_post"?["asset","expense","cost_of_sales"].includes(a.account_type):
@@ -385,6 +423,8 @@ window.HFAdminReady.then(async H => {
     fillOperationalAccounts(kind,meta.defaultAccount||"");
     $("financeOperationalTaxField").hidden=!(kind==="supplier_bill_post"&&Number(meta.taxAmount||0)>0);
     $("financeOperationalTaxAccount").required=kind==="supplier_bill_post"&&Number(meta.taxAmount||0)>0;
+    $("financeOperationalCashAccountField").hidden=kind!=="customer_refund_post";
+    $("financeOperationalCashAccount").required=kind==="customer_refund_post";
     $("financeOperationalPostDialog").showModal();
   }
 
@@ -401,6 +441,10 @@ window.HFAdminReady.then(async H => {
       supplier_payment_post:{
         message:"Post this Confirmed supplier payment? Allocations reduce Accounts Payable; unallocated money becomes Supplier Advances.",
         rpc:"admin_finance_post_supplier_payment",args:{p_payment_id:id}
+      },
+      supplier_credit_post:{
+        message:"Post this Confirmed supplier credit note? It will reduce the supplier payable or create a Supplier Advance; it will not be counted as new income.",
+        rpc:"admin_finance_post_supplier_credit_note",args:{p_credit_note_id:id}
       },
       order_cogs:{
         message:"Post COGS using verified manual product costs or weighted-average landed GRN costs? Missing costs will block posting.",
@@ -427,7 +471,9 @@ window.HFAdminReady.then(async H => {
       cashbook_reverse:["admin_finance_reverse_cashbook_entry",{p_entry_id:id,p_reversal_date:todayDhaka(),p_reason:reason.trim()}],
       cod_reverse:["admin_finance_reverse_cod_settlement",{p_settlement_id:id,p_reversal_date:todayDhaka(),p_reason:reason.trim()}],
       supplier_bill_reverse:["admin_finance_reverse_supplier_bill",{p_bill_id:id,p_reversal_date:todayDhaka(),p_reason:reason.trim()}],
-      supplier_payment_reverse:["admin_finance_reverse_supplier_payment",{p_payment_id:id,p_reversal_date:todayDhaka(),p_reason:reason.trim()}]
+      supplier_payment_reverse:["admin_finance_reverse_supplier_payment",{p_payment_id:id,p_reversal_date:todayDhaka(),p_reason:reason.trim()}],
+      supplier_credit_reverse:["admin_finance_reverse_supplier_credit_note",{p_credit_note_id:id,p_reversal_date:todayDhaka(),p_reason:reason.trim()}],
+      customer_refund_reverse:["admin_finance_reverse_customer_refund",{p_return_request_id:id,p_reversal_date:todayDhaka(),p_reason:reason.trim()}]
     };
     const [rpc,args]=config[kind]||[];
     if(!rpc)return;
@@ -470,6 +516,12 @@ window.HFAdminReady.then(async H => {
         if(!confirm("Confirm this opening balance matches a real statement and is not test data."))return;
         rpc="admin_finance_post_account_opening_balance";
         args={p_account_id:id,p_offset_account_id:offset};
+      }else if(kind==="customer_refund_post"){
+        const refundAccount=$("financeOperationalCashAccount").value;
+        if(!refundAccount)throw new Error("Choose the cash, bank or wallet account from which the refund was actually paid.");
+        if(!confirm("Confirm the customer refund has actually been paid from this account. The posting will debit Sales Returns and credit the selected cash/bank account."))return;
+        rpc="admin_finance_post_customer_refund";
+        args={p_return_request_id:id,p_refund_account_id:refundAccount};
       }else throw new Error("Unsupported operational posting action.");
       const {data,error}=await client.rpc(rpc,args);
       if(error)throw error;
@@ -747,6 +799,15 @@ window.HFAdminReady.then(async H => {
           taxAmount:bill?.tax_amount||0,
           warning:"A Confirmed bill with a linked PO and accepted GRN is required. The Journal credits Accounts Payable."
         });
+      } else if (kind === "customer_refund_post") {
+        const item=customerReturns.find(r=>r.id===id);
+        openOperationalPosting(kind,id,{
+          title:"Post customer refund",
+          description:"Choose the Finance account from which the refund was actually paid. The Journal debits Sales Returns and credits that cash, bank or wallet account.",
+          warning:"This records the refund amount only. Inventory restocking and COGS reversal are not inferred because the return record has no verified item-level quantities."
+        });
+      } else if (kind === "supplier_credit_post") {
+        await runOperationalAction(kind,id);
       } else if (kind === "opening_post") {
         const account=financeAccounts.find(a=>a.id===id);
         openOperationalPosting(kind,id,{
