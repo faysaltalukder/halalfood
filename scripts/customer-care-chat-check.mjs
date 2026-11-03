@@ -7,7 +7,7 @@ const css = fs.readFileSync("css/customer-care-chat.css", "utf8");
 const home = fs.readFileSync("index.html", "utf8");
 const edge = fs.readFileSync("supabase/functions/customer-care-chat/index.ts", "utf8");
 
-assert.match(main, /js\/customer-care-chat\.js\?v=20261103-business-chat-v3/);
+assert.match(main, /js\/customer-care-chat\.js\?v=20261103-business-chat-v4/);
 assert.match(chat, /functions\/v1\/customer-care-chat/);
 assert.doesNotMatch(chat, /ageConfirmed|hf-ai-chat-age-gate|hf-ai-age-confirm|প্রাপ্তবয়স্কদের জন্য AI সহায়তা/);
 assert.match(chat, /if \(!text \|\| busy\) return;/);
@@ -105,7 +105,7 @@ assert.match(chat, /textarea id="hf-ai-chat-input"/);
 assert.match(chat, /messages.addEventListener\("wheel"/);
 assert.match(chat, /hf-ai-chat-new/);
 assert.match(chat, /hf-ai-chat-minimize/);
-assert.match(css, /width:min\(440px/);
-assert.match(css, /height:min\(680px/);
+assert.match(css, /width:min\(520px/);
+assert.match(css, /height:min\(760px/);
 assert.match(css, /overscroll-behavior-y:contain/);
 assert.match(css, /touch-action:pan-y/);
