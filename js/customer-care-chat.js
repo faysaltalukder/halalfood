@@ -245,7 +245,7 @@
     if (!Array.isArray(products) || !products.length) return;
     const wrap = document.createElement("div");
     wrap.className = "hf-ai-product-cards";
-    products.slice(0, 4).forEach(function (product) {
+    products.slice(0, safeLimit).forEach(function (product) {
       if (!product || typeof product.id !== "string" || typeof product.slug !== "string" || !product.name) return;
       productCatalog.set(product.id, product);
       const card = document.createElement("article");
@@ -740,7 +740,7 @@
       } else {
         const reply = data.reply.trim();
         const answerBubble = appendMessage(reply || "দুঃখিত, এবার উত্তর তৈরি করা যায়নি। আবার চেষ্টা করুন।", "assistant");
-        appendProductCards(answerBubble, data.products);
+        appendProductCards(answerBubble, data.products, data.recommendation && data.recommendation.max_product_cards);
         conversation.push({ role: "user", text: text });
         conversation.push({ role: "assistant", text: reply });
         if (conversation.length > 40) conversation.splice(0, conversation.length - 40);
