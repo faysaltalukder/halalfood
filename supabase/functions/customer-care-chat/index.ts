@@ -446,10 +446,16 @@ async function loadKnowledge(
   const categoryNames = Array.from(new Set(customerFacingProducts.map((item) => String(item.category || "")).filter(Boolean))).sort();
   const customerNeed = analyzeCustomerNeed(message, history, imageSearch);
   const productKnowledge = profilesResult.status === "fulfilled" ? profilesResult.value : [];
+  const rankingText = [
+    searchText,
+    customerNeed.purpose,
+    customerNeed.pack_preference ? String(customerNeed.pack_preference) + " pack" : null,
+    customerNeed.preference,
+  ].filter(Boolean).join(" ");
   const rankedBeforeRejection = rankProductCandidates(
     customerFacingProducts,
     productKnowledge,
-    searchText,
+    rankingText,
     { ...customerNeed, image_search: imageSearch },
   );
   const rejectedText = String(customerNeed.rejection_context || "").toLocaleLowerCase();
