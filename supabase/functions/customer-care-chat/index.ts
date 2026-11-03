@@ -361,8 +361,16 @@ function extractTrackingPhone(value: string): string {
   return matches.length ? normalizeTrackingPhone(matches[matches.length - 1][0]) : "";
 }
 
-function isOrderTrackingRequest(message: string): boolean {
-  return /(ট্র্যাক|track(?:ing)?|অর্ডারের অবস্থা|অর্ডার কোথায়|অর্ডার কোথায়|অর্ডার ট্র্যাক|আমার অর্ডার|order status|my order|shipment|শিপমেন্ট|কুরিয়ার|কুরিয়ার|courier)/iu.test(message);
+function isOrderTrackingRequest(message: string, historyInput: unknown[] = []): boolean {
+  const trackingPattern = /(ট্র্যাক|track(?:ing)?|অর্ডারের অবস্থা|অর্ডার কোথায়|অর্ডার কোথায়|অর্ডার ট্র্যাক|আমার অর্ডার|order status|my order|shipment|শিপমেন্ট|কুরিয়ার|কুরিয়ার|courier)/iu;
+  if (trackingPattern.test(message)) return true;
+  const recentUserMessages = historyInput.slice(-8).flatMap((item) => {
+    if (!item || typeof item !== "object") return [];
+    const record = item as Record<string, unknown>;
+    return record.role === "user" && typeof record.text === "string" ? [record.text] : [];
+  });
+  const hasRecentTrackingRequest = recentUserMessages.some((text) => trackingPattern.test(text));
+  return hasRecentTrackingRequest && Boolean(extractTrackingOrderId(message) || extractTrackingPhone(message));
 }
 
 async function resolveCustomerOrderTracking(
@@ -1232,7 +1240,7 @@ Deno.serve(async (req: Request) => {
   }
 
   const historyInput = Array.isArray(payload.history) ? payload.history.slice(-MAX_HISTORY_ITEMS) : [];
-  if (isOrderTrackingRequest(message)) {
+  if (isOrderTrackingRequest(message, historyInput)) {
     try {
       const tracking = await resolveCustomerOrderTracking(message, historyInput);
       return response({
