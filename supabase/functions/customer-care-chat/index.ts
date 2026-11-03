@@ -397,6 +397,17 @@ function buildDeterministicFallbackReply(
       "\n\nএটি ক্যাটালগের সংক্ষিপ্ত নমুনা। নির্দিষ্ট ক্যাটাগরির সব পণ্য ও দাম জানতে ক্যাটাগরির নাম লিখুন।" +
       "\n\nমনে রাখবেন, ওয়েবসাইটটি বর্তমানে ডেমো প্রকল্প; বাস্তব অর্ডার, পেমেন্ট বা ডেলিভারি চালু নেই।";
   }
+  if (knowledge.customerNeed?.intent === "recommend" && products.length) {
+    const budget = Number(knowledge.customerNeed.budget_bdt || 0);
+    if (budget > 0 && knowledge.budgetMatchedCount === 0) {
+      return "আপনার উল্লেখ করা ৳" + budget.toLocaleString("en-BD") + " বাজেটের মধ্যে যাচাইকৃত লাইভ ক্যাটালগে কোনো নির্ভুল মিল পাইনি। কাছাকাছি তালিকাভুক্ত বিকল্পগুলো হলো:\n\n" +
+        products.slice(0, 3).map(productLine).join("\n") +
+        "\n\nকোনো পণ্যের উপাদান বা বিশেষ উপযোগিতা প্রকাশিত প্রোফাইলে না থাকলে তা অনুমান করে বলছি না।";
+    }
+    return (budget > 0 ? "আপনার উল্লেখ করা বাজেটের মধ্যে পাওয়া বিকল্পগুলো:" : "আপনার প্রয়োজন অনুযায়ী বিবেচনা করতে পারেন:") +
+      "\n\n" + products.slice(0, 3).map(productLine).join("\n") +
+      "\n\nকোনটি বেশি উপযোগী তা নির্দিষ্টভাবে বলতে আপনার ব্যবহার বা প্যাকের পছন্দ জানাতে পারেন।";
+  }
   if (/(ঘি|ghee)/iu.test(normalized)) {
     const found = products.filter((p) => /ঘি|ghee/iu.test(String(p.name || "") + " " + String(p.category || "")));
     if (found.length) {
@@ -482,7 +493,7 @@ async function callGeminiWithFallback(
     modelUsed = modelCandidates[index];
     const upstream = await callGemini(modelUsed, apiKey, contents, systemInstruction, signal);
     lastResponse = upstream;
-    if (upstream.ok || (upstream.status !== 429 && upstream.status !== 503)) {
+    if (upstream.ok || upstream.status === 429 || upstream.status !== 503) {
       return { response: upstream, modelUsed };
     }
 
@@ -607,7 +618,7 @@ Deno.serve(async (req: Request) => {
 
     if (!apiKey) {
       const offlineReply = buildDeterministicFallbackReply(message, knowledge);
-      if (offlineReply) return response({ success: true, reply: offlineReply, requestId,
+      if (offlineReply) return response({ success: true, reply: offlineReply, products: publicProductCards(knowledge), requestId,
         model: "verified-knowledge-fallback",
         knowledge: { documents: knowledge.documents.length, matchedProducts: knowledge.products.length } });
       return response({ success: false, code: "AI_NOT_CONFIGURED", requestId }, 503);
@@ -633,7 +644,7 @@ Deno.serve(async (req: Request) => {
       const offlineReply = buildDeterministicFallbackReply(message, knowledge);
       if (offlineReply) {
         console.info(JSON.stringify({ event: "customer_care_verified_knowledge_fallback", requestId, providerCode: errorCode }));
-        return response({ success: true, reply: offlineReply, requestId, model: "verified-knowledge-fallback",
+        return response({ success: true, reply: offlineReply, products: publicProductCards(knowledge), requestId, model: "verified-knowledge-fallback",
           knowledge: { documents: knowledge.documents.length, matchedProducts: knowledge.products.length } });
       }
       return response({ success: false, code: errorCode, requestId }, upstream.status === 429 ? 429 : 502);
