@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { classifyCustomerIntent } from "./policy.mjs";
+import { rankProductCandidates, extractConversationState, extractImageMatch, applyConfidencePolicy, expandSearchTerms } from "./intelligence.mjs";
 
 const ALLOWED_ORIGIN = "https://faysaltalukder.github.io";
 const SITE_ROOT = "https://faysaltalukder.github.io/halalfood/";
@@ -150,24 +151,11 @@ function analyzeCustomerNeed(
   history: Array<{ role: "user" | "model"; parts: Array<{ text: string }> }>,
   hasImage = false,
 ): Record<string, unknown> {
+  const decision = classifyCustomerIntent(message, hasImage);
+  const state = extractConversationState(message, history);
   const userMessages = history.filter((item) => item.role === "user").map((item) => item.parts[0]?.text || "").filter(Boolean);
   const followUp = /(আরেকটা|আরও একটি|অন্যটা|বিকল্প|ওইটা|সেটা|আগেরটা|একইটা|same one|another one|more options|those)/iu.test(message);
-  const recentContext = followUp ? userMessages.slice(-5).join(" ") + " " + message : message;
-  const normalized = toEnglishDigits(recentContext.normalize("NFKC")).toLowerCase();
-  const decision = classifyCustomerIntent(message, hasImage);
-  const budgetMatch = normalized.match(/(?:৳|টাকা|টাকার|budget|under|within|max(?:imum)?|সর্বোচ্চ|বাজেট)[\\s:=,-]*([0-9][0-9,]*)/iu)
-    || normalized.match(/([0-9][0-9,]*)\\s*(?:টাকা|টাকার মধ্যে|bdt)/iu);
-  const budgetBdt = budgetMatch ? Number(String(budgetMatch[1]).replace(/,/g, "")) : null;
-  const purposeMap: Array<[RegExp, string]> = [
-    [/(রান্না|ভাজি|রেসিপি|cooking|cook|fry|baking|বেকিং)/iu, "cooking_or_baking"],
-    [/(উপহার|গিফট|gift|present)/iu, "gift"],
-    [/(পরিবার|বাসা|ঘর|family|household|daily use|প্রতিদিন)/iu, "household_use"],
-    [/(ব্যবসা|রিসেল|resell|wholesale|পাইকারি)/iu, "business_or_resale"],
-  ];
-  const purpose = purposeMap.find(([pattern]) => pattern.test(normalized))?.[1] || null;
-  const packPreference = /(ছোট প্যাক|ছোট প্যাকেট|small pack|small size)/iu.test(normalized) ? "small_pack"
-    : /(বড় প্যাক|বড় প্যাক|বাল্ক|bulk|large pack|বেশি পরিমাণ)/iu.test(normalized) ? "large_pack" : null;
-  const rejectionPattern = /(চাই না|পছন্দ হয়নি|পছন্দ হয়নি|ভালো লাগেনি|অন্যটা চাই|not this|don't want|do not want|not interested)/iu;
+  const rejectionPattern = /(চাই না|পছন্দ হয়নি|পছন্দ হয়নি|ভালো লাগেনি|এটা নয়|এটা না|ওটা নয়|ভুল পণ্য|not this|don't want|do not want|not interested|wrong product|not what i asked)/iu;
   const userEntries = history.map((item, index) => ({ item, index })).filter(({ item }) => item.role === "user");
   const lastRejection = [...userEntries].reverse().find(({ item }) => rejectionPattern.test(item.parts[0]?.text || ""));
   const rejectionIsRecent = Boolean(lastRejection && userEntries.slice(-3).some(({ index }) => index === lastRejection.index));
@@ -177,8 +165,32 @@ function analyzeCustomerNeed(
   const previousAssistant = [...history].reverse().find((item) => item.role === "model")?.parts.map((part) => part.text || "").join(" ") || "";
   const rejectionContext = decision.rejection_detected ? previousAssistant.slice(0, 3000)
     : followUp && rejectionIsRecent ? assistantBeforeRejection.slice(0, 3000) : "";
-  return { ...decision, budget_bdt: Number.isFinite(budgetBdt) && budgetBdt! > 0 ? budgetBdt : null,
-    purpose, pack_preference: packPreference, explicit_context: message.slice(0, 1200), rejection_context: rejectionContext };
+  const correctionDetected = state.correction_detected === true;
+  if (correctionDetected && decision.recommendation_permission === "none") {
+    decision.primary_intent = "ambiguous_product_request";
+    decision.recommendation_permission = "none";
+    decision.allow_product_cards = false;
+    decision.max_product_cards = 0;
+    decision.clarification_needed = true;
+  }
+  return {
+    ...decision,
+    budget_bdt: state.budget_bdt,
+    purpose: state.purpose,
+    pack_preference: state.pack_preference,
+    preference: state.preference,
+    correction_detected: correctionDetected,
+    rejection_context: rejectionContext,
+    conversation_state: {
+      budget_bdt: state.budget_bdt,
+      purpose: state.purpose,
+      pack_preference: state.pack_preference,
+      preference: state.preference,
+      correction_detected: correctionDetected,
+      rejection_detected: state.rejection_detected === true,
+      recent_turns: state.recent_turns,
+    },
+  };
 }
 
 function numericProductPrice(product: Record<string, unknown>): number | null {
@@ -189,32 +201,51 @@ function numericProductPrice(product: Record<string, unknown>): number | null {
   return Number.isFinite(value) ? value : null;
 }
 
-function publicProductCards(knowledge: Awaited<ReturnType<typeof loadKnowledge>>, message: string, reply = ""): Record<string, unknown>[] {
+function publicProductCards(
+  knowledge: Awaited<ReturnType<typeof loadKnowledge>>,
+  message: string,
+  reply = "",
+  imageMatch: Record<string, unknown> | null = null,
+): Record<string, unknown>[] {
   const decision = knowledge.customerNeed;
   const maxCards = Math.min(4, Math.max(0, Math.floor(Number(decision?.max_product_cards || 0))));
   if (!decision || decision.allow_product_cards !== true || maxCards < 1 || !knowledge.products.length) return [];
   let sourceProducts = knowledge.products;
-  if (knowledge.imageSearch && reply) {
-    const namedMatches = sourceProducts.filter((product) => {
-      const name = String(product.name || "").trim().toLocaleLowerCase();
-      return name.length > 2 && reply.toLocaleLowerCase().includes(name);
-    });
-    if (namedMatches.length) sourceProducts = namedMatches;
+  if (knowledge.imageSearch) {
+    const ranked = knowledge.rankedCandidates || [];
+    const permitted = applyConfidencePolicy(ranked, { ...decision, image_search: true }, imageMatch);
+    const permittedIds = new Set(permitted.map((item: Record<string, unknown>) => String((item.product as Record<string, unknown>)?.id || "")));
+    sourceProducts = sourceProducts.filter((product: Record<string, unknown>) => permittedIds.has(String(product.id || "")));
   }
-  return sourceProducts.slice(0, maxCards).map((product) => {
+  if (!sourceProducts.length) return [];
+  return sourceProducts.slice(0, maxCards).map((product: Record<string, unknown>) => {
     const profile = product.verified_product_knowledge && typeof product.verified_product_knowledge === "object"
       ? product.verified_product_knowledge as Record<string, unknown> : null;
-    return { id: product.id, slug: product.slug, name: product.name, category: product.category, unit_type: product.unit_type,
-      price_value: product.price_value, price: product.price, description: product.description, short_description: product.short_description,
-      full_description: product.full_description, availability: product.availability, image_url: product.image_url,
-      verified_summary: profile?.quality_summary || null };
+    return {
+      id: product.id, slug: product.slug, name: product.name, category: product.category, unit_type: product.unit_type,
+      price_value: product.price_value, price: product.price, description: product.description,
+      short_description: product.short_description, full_description: product.full_description,
+      availability: product.availability, image_url: product.image_url, product_url: product.product_url,
+      verified_summary: profile?.quality_summary || null, match_type: product.match_type || null,
+      confidence_level: product.confidence_level || null,
+    };
   }).filter((product) => typeof product.id === "string" && typeof product.slug === "string");
 }
 function buildRecommendationContract(knowledge: Awaited<ReturnType<typeof loadKnowledge>>): Record<string, unknown> {
   const need = knowledge.customerNeed || {};
-  return { primary_intent: need.primary_intent || "general_information", secondary_intents: need.secondary_intents || [],
-    recommendation_permission: need.recommendation_permission || "none", max_product_cards: Math.min(4, Math.max(0, Number(need.max_product_cards || 0))),
-    match_mode: need.match_mode || "none", intent_confidence: need.intent_confidence || "medium", clarification_needed: need.clarification_needed === true };
+  return {
+    primary_intent: need.primary_intent || "general_information",
+    secondary_intents: need.secondary_intents || [],
+    recommendation_permission: need.recommendation_permission || "none",
+    max_product_cards: Math.min(4, Math.max(0, Number(need.max_product_cards || 0))),
+    match_mode: need.match_mode || "none",
+    intent_confidence: need.intent_confidence || "medium",
+    clarification_needed: need.clarification_needed === true,
+    search_target: need.search_target || null,
+    search_confidence: need.search_confidence || null,
+    match_type: need.match_type || null,
+    budget_bdt: need.budget_bdt || null,
+  };
 }
 
 function isTestOrPlaceholderProduct(product: Record<string, unknown>): boolean {
@@ -246,28 +277,33 @@ function productUrl(product: Record<string, unknown>): string {
   return SITE_ROOT + "products/" + encodeURIComponent(slug) + ".html";
 }
 
-async function loadKnowledge(message: string, history: Array<{ role: "user" | "model"; parts: Array<{ text: string }> }>, imageSearch = false) {
+async function loadKnowledge(
+  message: string,
+  history: Array<{ role: "user" | "model"; parts: Array<{ text: string }> }>,
+  imageSearch = false,
+) {
   const credentials = getSupabaseCredentials();
   if (!credentials) {
-    return { available: false, documents: [], products: [], productKnowledge: [], categoryNames: [] as string[] };
+    return { available: false, documents: [], products: [], productKnowledge: [], categoryNames: [], rankedCandidates: [], customerNeed: null, imageSearch };
   }
 
-  const priorUserMessages = history.filter((item) => item.role === "user").map((item) => item.parts[0]?.text || "").filter((value) => value && value !== message);
-  const followUp = /(আরেকটা|আরও একটি|ওইটা|সেটা|আগেরটা|একইটা|same one|another one|more options|those)/iu.test(message);
-  const searchText = followUp && priorUserMessages.length ? priorUserMessages[priorUserMessages.length - 1] + " " + message : message;
-  const terms = expandTerms(searchText);
-  const [documentsResult, productsResult] = await Promise.allSettled([
+  const priorUserMessages = history.filter((item) => item.role === "user")
+    .map((item) => item.parts[0]?.text || "").filter((value) => value && value !== message);
+  const followUp = /(আরেকটা|আরও একটি|অন্যটা|বিকল্প|ওইটা|সেটা|আগেরটা|একইটা|same one|another one|more options|those)/iu.test(message);
+  const searchText = followUp && priorUserMessages.length
+    ? priorUserMessages.slice(-4).join(" ") + " " + message : message;
+  const [documentsResult, productsResult, profilesResult] = await Promise.allSettled([
     fetchSupabaseRows("ai_knowledge_documents", {
       select: "document_key,title,document_type,language,content,metadata,priority,expires_at",
-      status: "eq.published",
-      order: "priority.asc",
-      limit: "20",
+      status: "eq.published", order: "priority.asc", limit: "20",
     }, credentials),
     fetchSupabaseRows("products", {
       select: "id,name,slug,category,category_slug,price,display_price,unit_type,image_url,description,short_description,full_description,is_active,stock_quantity,cms_created",
-      is_active: "eq.true",
-      order: "name.asc",
-      limit: "100",
+      is_active: "eq.true", order: "name.asc", limit: "100",
+    }, credentials),
+    fetchSupabaseRows("ai_product_knowledge", {
+      select: "product_id,quality_summary,ingredients,origin,production_method,taste_aroma_profile,texture_profile,usage_instructions,storage_instructions,allergen_info,certification_info,verified_claims,faq,customer_fit,prohibited_claims,version,verified_at,search_synonyms,product_form,derived_from,related_terms,brand,packaging_type,visual_description,size_label,search_attributes",
+      status: "eq.published", order: "updated_at.desc", limit: "100",
     }, credentials),
   ]);
 
@@ -275,118 +311,90 @@ async function loadKnowledge(message: string, history: Array<{ role: "user" | "m
     ? documentsResult.value.filter((item) => !item.expires_at || new Date(String(item.expires_at)).getTime() > Date.now())
     : [];
   const allProducts = productsResult.status === "fulfilled" ? productsResult.value : [];
-  const customerFacingProducts = allProducts.filter((product) => !isTestOrPlaceholderProduct(product));
+  const customerFacingProducts = allProducts.filter((product) => !isTestOrPlaceholderProduct(product) && product.is_active === true);
   const categoryNames = Array.from(new Set(customerFacingProducts.map((item) => String(item.category || "")).filter(Boolean))).sort();
   const customerNeed = analyzeCustomerNeed(message, history, imageSearch);
-  const broadCatalogQuestion = customerNeed.primary_intent === "broad_catalog_browse";
-  const categoryCatalogQuestion = customerNeed.primary_intent === "category_browse";
-  const rejectedText = String(customerNeed.rejection_context || "").toLocaleLowerCase();
-  const rejectedProducts = rejectedText
-    ? customerFacingProducts.filter((product) => {
-      const name = String(product.name || "").trim().toLocaleLowerCase();
-      return name.length > 2 && rejectedText.includes(name);
-    })
-    : [];
-  if (rejectedProducts.length > 1 && customerNeed.rejection_context) {
-    customerNeed.primary_intent = "ambiguous_product_request";
-    customerNeed.recommendation_permission = "none";
-    customerNeed.allow_product_cards = false;
-    customerNeed.max_product_cards = 0;
-    customerNeed.clarification_needed = true;
-  }
-  const rejectedProductIds = new Set(rejectedProducts.length === 1 ? [String(rejectedProducts[0].id)] : []);
-  const rankedAll = customerFacingProducts
-    .map((product) => ({ product, score: productScore(product, terms) }))
-    .filter((item) => broadCatalogQuestion || item.score > 0)
-    .filter((item) => !rejectedProductIds.has(String(item.product.id || "")))
-    .sort((a, b) => {
-      if (b.score !== a.score) return b.score - a.score;
-      const categoryOrder = String(a.product.category || "").localeCompare(String(b.product.category || ""));
-      return categoryOrder || String(a.product.name || "").localeCompare(String(b.product.name || ""));
-    });
+  const productKnowledge = profilesResult.status === "fulfilled" ? profilesResult.value : [];
+  const rankedAll = rankProductCandidates(
+    customerFacingProducts,
+    productKnowledge,
+    searchText,
+    { ...customerNeed, image_search: imageSearch },
+  );
   const budget = Number(customerNeed.budget_bdt || 0);
   const budgetMatches = budget > 0
-    ? rankedAll.filter((item) => {
-      const price = numericProductPrice(item.product);
+    ? rankedAll.filter((item: Record<string, unknown>) => {
+      const product = item.product as Record<string, unknown>;
+      const price = numericProductPrice(product);
       return price !== null && price <= budget;
     })
     : [];
-  const useBudgetMatches = customerNeed.intent === "recommend" && budget > 0 && budgetMatches.length > 0;
-  const rankedSource = useBudgetMatches ? budgetMatches : rankedAll;
-  const ranked = rankedSource.slice(0, imageSearch ? 30 : broadCatalogQuestion ? 15 : categoryCatalogQuestion ? 12 : customerNeed.intent === "recommend" ? 15 : 10);
-
-  let productKnowledge: Record<string, unknown>[] = [];
-  if (ranked.length) {
-    const ids = ranked.map((item) => String(item.product.id || "")).filter((id) => /^[0-9a-f-]{36}$/i.test(id));
-    if (ids.length) {
-      try {
-        const inFilter = "(" + ids.join(",") + ")";
-        productKnowledge = await fetchSupabaseRows("ai_product_knowledge", {
-          select: "product_id,quality_summary,ingredients,origin,production_method,taste_aroma_profile,texture_profile,usage_instructions,storage_instructions,allergen_info,certification_info,verified_claims,faq,customer_fit,prohibited_claims,version,verified_at",
-          status: "eq.published",
-          product_id: "in." + inFilter,
-          limit: "10",
-        }, credentials);
-      } catch (error) {
-        console.warn(JSON.stringify({ event: "customer_care_product_knowledge_read_failed", message: String(error).slice(0, 120) }));
-      }
-    }
+  const useBudgetMatches = customerNeed.primary_intent === "recommendation_request" && budget > 0;
+  if (useBudgetMatches && budgetMatches.length === 0) {
+    customerNeed.no_budget_match = true;
+    customerNeed.allow_product_cards = false;
+    customerNeed.max_product_cards = 0;
+    customerNeed.recommendation_permission = "none";
   }
+  let rankedSource = useBudgetMatches && budgetMatches.length ? budgetMatches : rankedAll;
+  if (!imageSearch) rankedSource = applyConfidencePolicy(rankedSource, customerNeed);
+  const broadCatalogQuestion = customerNeed.primary_intent === "broad_catalog_browse";
+  const categoryCatalogQuestion = customerNeed.primary_intent === "category_browse";
+  const limit = imageSearch ? 61 : broadCatalogQuestion ? 15 : categoryCatalogQuestion ? 12 : customerNeed.primary_intent === "recommendation_request" ? 15 : 10;
+  const ranked = rankedSource.slice(0, limit);
+  if (!ranked.length && ["exact_product_lookup","product_price_inquiry","product_availability_inquiry","image_product_search","image_material_search","image_similar_product_search"].includes(String(customerNeed.primary_intent))) {
+    customerNeed.search_not_found = true;
+    customerNeed.clarification_needed = true;
+  }
+  customerNeed.search_target = ranked[0]?.product?.name || null;
+  customerNeed.match_type = ranked[0]?.match_type || null;
+  customerNeed.search_confidence = ranked[0]?.confidence_level || null;
 
   const knowledgeByProduct = new Map(productKnowledge.map((item) => [String(item.product_id), item]));
-  const products = ranked.map(({ product }) => {
-    const quantity = product.stock_quantity === null || product.stock_quantity === undefined
-      ? null
-      : Number(product.stock_quantity);
-    const availability = quantity === null || !Number.isFinite(quantity)
-      ? "unconfirmed"
-      : quantity > 0 ? "available" : "unavailable";
+  const products = ranked.map((item: Record<string, unknown>) => {
+    const product = item.product as Record<string, unknown>;
+    const quantity = product.stock_quantity === null || product.stock_quantity === undefined ? null : Number(product.stock_quantity);
+    const availability = quantity === null || !Number.isFinite(quantity) ? "unconfirmed" : quantity > 0 ? "available" : "unavailable";
     const profile = knowledgeByProduct.get(String(product.id)) || null;
+    const searchProfile = profile ? {
+      search_synonyms: profile.search_synonyms || [],
+      product_form: profile.product_form || null,
+      derived_from: profile.derived_from || [],
+      related_terms: profile.related_terms || [],
+      brand: profile.brand || null,
+      packaging_type: profile.packaging_type || null,
+      visual_description: profile.visual_description || null,
+      size_label: profile.size_label || null,
+      search_attributes: profile.search_attributes || {},
+    } : null;
     return {
-      id: String(product.id || ""),
-      slug: String(product.slug || ""),
-      name: String(product.name || ""),
-      category: String(product.category || ""),
-      unit_type: String(product.unit_type || "piece"),
+      id: String(product.id || ""), slug: String(product.slug || ""), name: String(product.name || ""),
+      category: String(product.category || ""), unit_type: String(product.unit_type || "piece"),
       price_value: numericProductPrice(product),
       price: product.display_price || ("৳ " + String(product.price || "") + " / " + String(product.unit_type || "piece")),
-      description: String(product.description || ""),
-      short_description: String(product.short_description || ""),
-      full_description: String(product.full_description || ""),
-      availability,
-      product_url: productUrl(product),
+      description: String(product.description || ""), short_description: String(product.short_description || ""),
+      full_description: String(product.full_description || ""), availability, product_url: productUrl(product),
       image_url: typeof product.image_url === "string" ? product.image_url : "",
+      match_type: item.match_type || null, confidence_score: item.confidence_score || null,
+      confidence_level: item.confidence_level || null,
       verified_product_knowledge: profile ? {
-        quality_summary: profile.quality_summary,
-        ingredients: profile.ingredients,
-        origin: profile.origin,
-        production_method: profile.production_method,
-        taste_aroma_profile: profile.taste_aroma_profile,
-        texture_profile: profile.texture_profile,
-        usage_instructions: profile.usage_instructions,
-        storage_instructions: profile.storage_instructions,
-        allergen_info: profile.allergen_info,
-        certification_info: profile.certification_info,
-        verified_claims: profile.verified_claims,
-        faq: profile.faq,
-        customer_fit: profile.customer_fit,
-        prohibited_claims: profile.prohibited_claims,
+        quality_summary: profile.quality_summary, ingredients: profile.ingredients, origin: profile.origin,
+        production_method: profile.production_method, taste_aroma_profile: profile.taste_aroma_profile,
+        texture_profile: profile.texture_profile, usage_instructions: profile.usage_instructions,
+        storage_instructions: profile.storage_instructions, allergen_info: profile.allergen_info,
+        certification_info: profile.certification_info, verified_claims: profile.verified_claims,
+        faq: profile.faq, customer_fit: profile.customer_fit, prohibited_claims: profile.prohibited_claims,
       } : null,
+      verified_search_profile: searchProfile,
     };
   });
 
   return {
     available: documentsResult.status === "fulfilled" && productsResult.status === "fulfilled",
-    documents,
-    products,
-    productKnowledge,
-    categoryNames,
-    catalogCount: customerFacingProducts.length,
-    imageSearch,
-    customerNeed,
-    budgetMatchedCount: budgetMatches.length,
-    broadCatalogQuestion,
-    categoryCatalogQuestion,
+    documents, products, productKnowledge, categoryNames, catalogCount: customerFacingProducts.length,
+    imageSearch, customerNeed, budgetMatchedCount: budgetMatches.length,
+    broadCatalogQuestion, categoryCatalogQuestion, rankedCandidates: ranked,
+    profilesAvailable: profilesResult.status === "fulfilled",
   };
 }
 
