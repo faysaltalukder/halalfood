@@ -45,7 +45,7 @@ const required = [
   "scripts/finance-workspace-check.mjs",
   "admin/finance-accounting-core.js",
   "admin/finance-accounting-core.css",
-  "supabase/migrations/20261103083500_finance_accounting_foundation_v1.sql",
+  "supabase/migrations/20261103024455_finance_accounting_foundation_v1.sql",
   "scripts/finance-accounting-core-check.mjs",
   "admin/supplier-add.html",
   "admin/supplier-purchases.html",
