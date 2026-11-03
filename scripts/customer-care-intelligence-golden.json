@@ -1,0 +1,846 @@
+{
+  "version": "stage2-golden-v1",
+  "description": "120 curated Bangla, Banglish and English customer-care intent examples. These are regression fixtures, not training data or proof of model accuracy.",
+  "cases": [
+    {
+      "category": "exact",
+      "message": "একটা সরিষার তেল দেখাও",
+      "has_image": false,
+      "expected_intent": "exact_product_lookup",
+      "expected_max_cards": 1
+    },
+    {
+      "category": "exact",
+      "message": "একটি নারিকেল তেল দেখতে চাই",
+      "has_image": false,
+      "expected_intent": "exact_product_lookup",
+      "expected_max_cards": 1
+    },
+    {
+      "category": "exact",
+      "message": "ঘি আছে?",
+      "has_image": false,
+      "expected_intent": "exact_product_lookup",
+      "expected_max_cards": 1
+    },
+    {
+      "category": "exact",
+      "message": "মধু খুঁজছি",
+      "has_image": false,
+      "expected_intent": "exact_product_lookup",
+      "expected_max_cards": 1
+    },
+    {
+      "category": "exact",
+      "message": "বাদাম কিনতে চাই",
+      "has_image": false,
+      "expected_intent": "exact_product_lookup",
+      "expected_max_cards": 1
+    },
+    {
+      "category": "exact",
+      "message": "Pure Cow Ghee buy",
+      "has_image": false,
+      "expected_intent": "exact_product_lookup",
+      "expected_max_cards": 1
+    },
+    {
+      "category": "exact",
+      "message": "I want to buy mustard oil",
+      "has_image": false,
+      "expected_intent": "exact_product_lookup",
+      "expected_max_cards": 1
+    },
+    {
+      "category": "exact",
+      "message": "Show me coconut oil",
+      "has_image": false,
+      "expected_intent": "exact_product_lookup",
+      "expected_max_cards": 1
+    },
+    {
+      "category": "exact",
+      "message": "Find almonds",
+      "has_image": false,
+      "expected_intent": "exact_product_lookup",
+      "expected_max_cards": 1
+    },
+    {
+      "category": "exact",
+      "message": "তিলের তেল দেখাও",
+      "has_image": false,
+      "expected_intent": "exact_product_lookup",
+      "expected_max_cards": 1
+    },
+    {
+      "category": "exact",
+      "message": "সয়াবিন তেল চাই",
+      "has_image": false,
+      "expected_intent": "exact_product_lookup",
+      "expected_max_cards": 1
+    },
+    {
+      "category": "exact",
+      "message": "একটা খেজুর দেখাও",
+      "has_image": false,
+      "expected_intent": "exact_product_lookup",
+      "expected_max_cards": 1
+    },
+    {
+      "category": "exact",
+      "message": "মসুর ডাল চাই",
+      "has_image": false,
+      "expected_intent": "exact_product_lookup",
+      "expected_max_cards": 1
+    },
+    {
+      "category": "exact",
+      "message": "চিকেন কিনতে চাই",
+      "has_image": false,
+      "expected_intent": "exact_product_lookup",
+      "expected_max_cards": 1
+    },
+    {
+      "category": "exact",
+      "message": "beef curry cut order",
+      "has_image": false,
+      "expected_intent": "exact_product_lookup",
+      "expected_max_cards": 1
+    },
+    {
+      "category": "exact",
+      "message": "Sundarban honey",
+      "has_image": false,
+      "expected_intent": "exact_product_lookup",
+      "expected_max_cards": 1
+    },
+    {
+      "category": "exact",
+      "message": "olive oil",
+      "has_image": false,
+      "expected_intent": "exact_product_lookup",
+      "expected_max_cards": 1
+    },
+    {
+      "category": "exact",
+      "message": "ghee please",
+      "has_image": false,
+      "expected_intent": "exact_product_lookup",
+      "expected_max_cards": 1
+    },
+    {
+      "category": "exact",
+      "message": "কাঠবাদাম",
+      "has_image": false,
+      "expected_intent": "exact_product_lookup",
+      "expected_max_cards": 1
+    },
+    {
+      "category": "exact",
+      "message": "চা চাই",
+      "has_image": false,
+      "expected_intent": "exact_product_lookup",
+      "expected_max_cards": 1
+    },
+    {
+      "category": "price",
+      "message": "সরিষার তেলের দাম কত?",
+      "has_image": false,
+      "expected_intent": "product_price_inquiry",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "price",
+      "message": "How much is ghee?",
+      "has_image": false,
+      "expected_intent": "product_price_inquiry",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "price",
+      "message": "মধুর মূল্য কত?",
+      "has_image": false,
+      "expected_intent": "product_price_inquiry",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "price",
+      "message": "price of almonds",
+      "has_image": false,
+      "expected_intent": "product_price_inquiry",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "price",
+      "message": "নারিকেল তেলের দাম বলুন",
+      "has_image": false,
+      "expected_intent": "product_price_inquiry",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "price",
+      "message": "How much does honey cost?",
+      "has_image": false,
+      "expected_intent": "product_price_inquiry",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "price",
+      "message": "খেজুরের দাম বলবেন?",
+      "has_image": false,
+      "expected_intent": "product_price_inquiry",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "price",
+      "message": "What is the price of basmati rice?",
+      "has_image": false,
+      "expected_intent": "product_price_inquiry",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "price",
+      "message": "চিকেন কত টাকা কেজি?",
+      "has_image": false,
+      "expected_intent": "product_price_inquiry",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "price",
+      "message": "দামের তালিকা বলুন for ghee",
+      "has_image": false,
+      "expected_intent": "product_price_inquiry",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "availability",
+      "message": "সরিষার তেল স্টকে আছে?",
+      "has_image": false,
+      "expected_intent": "product_availability_inquiry",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "availability",
+      "message": "Is ghee in stock?",
+      "has_image": false,
+      "expected_intent": "product_availability_inquiry",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "availability",
+      "message": "মধু উপলভ্য আছে?",
+      "has_image": false,
+      "expected_intent": "product_availability_inquiry",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "availability",
+      "message": "Do you have almonds in stock?",
+      "has_image": false,
+      "expected_intent": "product_availability_inquiry",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "availability",
+      "message": "নারিকেল তেল available?",
+      "has_image": false,
+      "expected_intent": "product_availability_inquiry",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "availability",
+      "message": "চিকেন মজুত আছে?",
+      "has_image": false,
+      "expected_intent": "product_availability_inquiry",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "availability",
+      "message": "Are dates available?",
+      "has_image": false,
+      "expected_intent": "product_availability_inquiry",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "availability",
+      "message": "মসুর ডাল স্টকে আছে?",
+      "has_image": false,
+      "expected_intent": "product_availability_inquiry",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "availability",
+      "message": "তিলের তেল আছে কি না?",
+      "has_image": false,
+      "expected_intent": "product_availability_inquiry",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "availability",
+      "message": "Is basmati rice available?",
+      "has_image": false,
+      "expected_intent": "product_availability_inquiry",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "category",
+      "message": "কী কী তেল পাওয়া যায়?",
+      "has_image": false,
+      "expected_intent": "category_browse",
+      "expected_max_cards": 4
+    },
+    {
+      "category": "category",
+      "message": "তেলগুলো দেখাও",
+      "has_image": false,
+      "expected_intent": "category_browse",
+      "expected_max_cards": 4
+    },
+    {
+      "category": "category",
+      "message": "কোন কোন ঘি আছে?",
+      "has_image": false,
+      "expected_intent": "category_browse",
+      "expected_max_cards": 4
+    },
+    {
+      "category": "category",
+      "message": "মধুর তালিকা দাও",
+      "has_image": false,
+      "expected_intent": "category_browse",
+      "expected_max_cards": 4
+    },
+    {
+      "category": "category",
+      "message": "Show me all oils",
+      "has_image": false,
+      "expected_intent": "category_browse",
+      "expected_max_cards": 4
+    },
+    {
+      "category": "category",
+      "message": "What kinds of tea do you have?",
+      "has_image": false,
+      "expected_intent": "category_browse",
+      "expected_max_cards": 4
+    },
+    {
+      "category": "category",
+      "message": "কয়েকটি বাদাম দেখাও",
+      "has_image": false,
+      "expected_intent": "category_browse",
+      "expected_max_cards": 4
+    },
+    {
+      "category": "category",
+      "message": "ডালগুলো দেখাও",
+      "has_image": false,
+      "expected_intent": "category_browse",
+      "expected_max_cards": 4
+    },
+    {
+      "category": "category",
+      "message": "List all dates",
+      "has_image": false,
+      "expected_intent": "category_browse",
+      "expected_max_cards": 4
+    },
+    {
+      "category": "category",
+      "message": "কী কী মসলা আছে?",
+      "has_image": false,
+      "expected_intent": "category_browse",
+      "expected_max_cards": 4
+    },
+    {
+      "category": "recommend",
+      "message": "কয়েকটি ঘি সাজেস্ট করো",
+      "has_image": false,
+      "expected_intent": "recommendation_request",
+      "expected_max_cards": 4
+    },
+    {
+      "category": "recommend",
+      "message": "আমার জন্য কোন তেল ভালো?",
+      "has_image": false,
+      "expected_intent": "recommendation_request",
+      "expected_max_cards": 4
+    },
+    {
+      "category": "recommend",
+      "message": "Which ghee do you recommend?",
+      "has_image": false,
+      "expected_intent": "recommendation_request",
+      "expected_max_cards": 4
+    },
+    {
+      "category": "recommend",
+      "message": "১০০০ টাকার মধ্যে কী নিতে পারি?",
+      "has_image": false,
+      "expected_intent": "recommendation_request",
+      "expected_max_cards": 4
+    },
+    {
+      "category": "recommend",
+      "message": "I want a suggestion for honey",
+      "has_image": false,
+      "expected_intent": "recommendation_request",
+      "expected_max_cards": 4
+    },
+    {
+      "category": "recommend",
+      "message": "অন্যটা দেখাও",
+      "has_image": false,
+      "expected_intent": "recommendation_request",
+      "expected_max_cards": 4
+    },
+    {
+      "category": "recommend",
+      "message": "আরেকটা দেখাও",
+      "has_image": false,
+      "expected_intent": "recommendation_request",
+      "expected_max_cards": 4
+    },
+    {
+      "category": "recommend",
+      "message": "কোন মধুটা ভালো হবে?",
+      "has_image": false,
+      "expected_intent": "recommendation_request",
+      "expected_max_cards": 4
+    },
+    {
+      "category": "recommend",
+      "message": "Suggest some nuts",
+      "has_image": false,
+      "expected_intent": "recommendation_request",
+      "expected_max_cards": 4
+    },
+    {
+      "category": "recommend",
+      "message": "Which oil should I choose?",
+      "has_image": false,
+      "expected_intent": "recommendation_request",
+      "expected_max_cards": 4
+    },
+    {
+      "category": "compare",
+      "message": "ঘি আর মধুর তুলনা করো",
+      "has_image": false,
+      "expected_intent": "product_comparison",
+      "expected_max_cards": 4
+    },
+    {
+      "category": "compare",
+      "message": "Compare olive oil and mustard oil",
+      "has_image": false,
+      "expected_intent": "product_comparison",
+      "expected_max_cards": 4
+    },
+    {
+      "category": "compare",
+      "message": "What is the difference between ghee and butter?",
+      "has_image": false,
+      "expected_intent": "product_comparison",
+      "expected_max_cards": 4
+    },
+    {
+      "category": "compare",
+      "message": "দুটি তেলের পার্থক্য কী?",
+      "has_image": false,
+      "expected_intent": "product_comparison",
+      "expected_max_cards": 4
+    },
+    {
+      "category": "compare",
+      "message": "Compare two types of dates",
+      "has_image": false,
+      "expected_intent": "product_comparison",
+      "expected_max_cards": 4
+    },
+    {
+      "category": "compare",
+      "message": "কাজু ও কাঠবাদামের তুলনা করো",
+      "has_image": false,
+      "expected_intent": "product_comparison",
+      "expected_max_cards": 4
+    },
+    {
+      "category": "compare",
+      "message": "Which is different: cow ghee vs buffalo ghee?",
+      "has_image": false,
+      "expected_intent": "product_comparison",
+      "expected_max_cards": 4
+    },
+    {
+      "category": "compare",
+      "message": "মধু বনাম খেজুরের সিরাপ তুলনা করো",
+      "has_image": false,
+      "expected_intent": "product_comparison",
+      "expected_max_cards": 4
+    },
+    {
+      "category": "compare",
+      "message": "Compare chicken masala and beef masala",
+      "has_image": false,
+      "expected_intent": "product_comparison",
+      "expected_max_cards": 4
+    },
+    {
+      "category": "compare",
+      "message": "তুলনা করে বলুন কোনটা ভালো",
+      "has_image": false,
+      "expected_intent": "product_comparison",
+      "expected_max_cards": 4
+    },
+    {
+      "category": "policy",
+      "message": "ডেলিভারি চার্জ কত?",
+      "has_image": false,
+      "expected_intent": "store_policy_question",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "policy",
+      "message": "Do you offer cash on delivery?",
+      "has_image": false,
+      "expected_intent": "store_policy_question",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "policy",
+      "message": "পেমেন্ট কীভাবে করব?",
+      "has_image": false,
+      "expected_intent": "store_policy_question",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "policy",
+      "message": "What is your return policy?",
+      "has_image": false,
+      "expected_intent": "store_policy_question",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "policy",
+      "message": "Refund rules?",
+      "has_image": false,
+      "expected_intent": "store_policy_question",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "policy",
+      "message": "কুরিয়ার চার্জ কত?",
+      "has_image": false,
+      "expected_intent": "store_policy_question",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "policy",
+      "message": "How long does delivery take?",
+      "has_image": false,
+      "expected_intent": "store_policy_question",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "policy",
+      "message": "COD payment available?",
+      "has_image": false,
+      "expected_intent": "store_policy_question",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "policy",
+      "message": "পণ্য ফেরত দিতে পারব?",
+      "has_image": false,
+      "expected_intent": "store_policy_question",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "policy",
+      "message": "ডেলিভারি কোথায় হয়?",
+      "has_image": false,
+      "expected_intent": "store_policy_question",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "order",
+      "message": "আমার অর্ডারের অবস্থা কী?",
+      "has_image": false,
+      "expected_intent": "order_support",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "order",
+      "message": "Track order HF-1234",
+      "has_image": false,
+      "expected_intent": "order_support",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "order",
+      "message": "Where is my order?",
+      "has_image": false,
+      "expected_intent": "order_support",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "order",
+      "message": "courier status",
+      "has_image": false,
+      "expected_intent": "order_support",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "order",
+      "message": "অর্ডার ট্র্যাক করতে চাই",
+      "has_image": false,
+      "expected_intent": "order_support",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "order",
+      "message": "My order status please",
+      "has_image": false,
+      "expected_intent": "order_support",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "order",
+      "message": "শিপমেন্ট কোথায়?",
+      "has_image": false,
+      "expected_intent": "order_support",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "order",
+      "message": "কুরিয়ার ট্র্যাকিং জানতে চাই",
+      "has_image": false,
+      "expected_intent": "order_support",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "order",
+      "message": "Checkout status",
+      "has_image": false,
+      "expected_intent": "order_support",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "order",
+      "message": "আমার অর্ডার কোথায় আছে?",
+      "has_image": false,
+      "expected_intent": "order_support",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "complaint",
+      "message": "ভাঙা পণ্য পেয়েছি",
+      "has_image": false,
+      "expected_intent": "complaint_or_problem",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "complaint",
+      "message": "আমার অর্ডারে সমস্যা হয়েছে",
+      "has_image": false,
+      "expected_intent": "complaint_or_problem",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "complaint",
+      "message": "The product arrived damaged",
+      "has_image": false,
+      "expected_intent": "complaint_or_problem",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "complaint",
+      "message": "I want to complain",
+      "has_image": false,
+      "expected_intent": "complaint_or_problem",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "complaint",
+      "message": "ভুল পণ্য পাঠিয়েছেন",
+      "has_image": false,
+      "expected_intent": "complaint_or_problem",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "human",
+      "message": "মানুষের সঙ্গে কথা বলতে চাই",
+      "has_image": false,
+      "expected_intent": "human_support_request",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "human",
+      "message": "talk to a human",
+      "has_image": false,
+      "expected_intent": "human_support_request",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "human",
+      "message": "কাস্টমার কেয়ারের সঙ্গে কথা বলব",
+      "has_image": false,
+      "expected_intent": "human_support_request",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "human",
+      "message": "Connect me to an agent",
+      "has_image": false,
+      "expected_intent": "human_support_request",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "human",
+      "message": "লাইভ এজেন্ট চাই",
+      "has_image": false,
+      "expected_intent": "human_support_request",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "casual",
+      "message": "হ্যালো",
+      "has_image": false,
+      "expected_intent": "casual_conversation",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "casual",
+      "message": "হাই",
+      "has_image": false,
+      "expected_intent": "casual_conversation",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "casual",
+      "message": "আসসালামু আলাইকুম",
+      "has_image": false,
+      "expected_intent": "casual_conversation",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "casual",
+      "message": "ধন্যবাদ",
+      "has_image": false,
+      "expected_intent": "casual_conversation",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "casual",
+      "message": "hi",
+      "has_image": false,
+      "expected_intent": "casual_conversation",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "casual",
+      "message": "hello",
+      "has_image": false,
+      "expected_intent": "casual_conversation",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "casual",
+      "message": "thanks",
+      "has_image": false,
+      "expected_intent": "casual_conversation",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "casual",
+      "message": "thank you",
+      "has_image": false,
+      "expected_intent": "casual_conversation",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "casual",
+      "message": "good morning",
+      "has_image": false,
+      "expected_intent": "casual_conversation",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "casual",
+      "message": "সালাম",
+      "has_image": false,
+      "expected_intent": "casual_conversation",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "image",
+      "message": "",
+      "has_image": true,
+      "expected_intent": "ambiguous_product_request",
+      "expected_max_cards": 0
+    },
+    {
+      "category": "image",
+      "message": "এই প্যাকেটের মতো তেল আছে?",
+      "has_image": true,
+      "expected_intent": "image_similar_product_search",
+      "expected_max_cards": 3
+    },
+    {
+      "category": "image",
+      "message": "এই বোতলের মতো কিছু আছে?",
+      "has_image": true,
+      "expected_intent": "image_similar_product_search",
+      "expected_max_cards": 3
+    },
+    {
+      "category": "image",
+      "message": "নারিকেলের তেল আছে?",
+      "has_image": true,
+      "expected_intent": "image_material_search",
+      "expected_max_cards": 1
+    },
+    {
+      "category": "image",
+      "message": "ছবির এই পণ্যটি খুঁজে দাও",
+      "has_image": true,
+      "expected_intent": "image_product_search",
+      "expected_max_cards": 1
+    },
+    {
+      "category": "image",
+      "message": "same type of ghee",
+      "has_image": true,
+      "expected_intent": "image_similar_product_search",
+      "expected_max_cards": 3
+    },
+    {
+      "category": "image",
+      "message": "এই প্যাকেটের মতো ঘি চাই",
+      "has_image": true,
+      "expected_intent": "image_similar_product_search",
+      "expected_max_cards": 3
+    },
+    {
+      "category": "image",
+      "message": "coconut photo, find oil",
+      "has_image": true,
+      "expected_intent": "image_material_search",
+      "expected_max_cards": 1
+    },
+    {
+      "category": "image",
+      "message": "এই ছবির পণ্যটা কী?",
+      "has_image": true,
+      "expected_intent": "image_product_search",
+      "expected_max_cards": 1
+    },
+    {
+      "category": "image",
+      "message": "এই ধরনের পণ্য আছে?",
+      "has_image": true,
+      "expected_intent": "image_similar_product_search",
+      "expected_max_cards": 3
+    }
+  ]
+}
