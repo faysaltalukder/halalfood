@@ -1336,6 +1336,7 @@ begin
  if v_entry.related_cod_settlement_id is not null or v_entry.related_supplier_payment_id is not null then
   raise exception 'COD and Supplier Payment cashbook mirrors must be reversed from their source workflow.';
  end if;
+ if v_entry.status='void' then return v_entry.reversal_journal_id; end if;
  if v_entry.related_order_id is not null and exists(
    select 1 from public.admin_finance_journal_entries
    where source_type='order_sale' and source_key=v_entry.related_order_id::text and status='posted'
@@ -1347,7 +1348,6 @@ begin
  ) then
   raise exception 'This customer advance has already been applied to a posted sale. Reverse the sale journal or post an audited correction before reversing the cash receipt.';
  end if;
- if v_entry.status='void' then return v_entry.reversal_journal_id; end if;
  if v_entry.status not in ('confirmed','draft') then raise exception 'Only Draft or Confirmed cashbook entries can be voided.'; end if;
 
  if v_entry.accounting_journal_id is not null then
@@ -1817,13 +1817,17 @@ declare
  v_missing bigint;
  v_journal_id uuid;
  v_existing uuid;
+ v_sale_posted_at timestamptz;
 begin
  if v_email<>'halalfoodbd.official@gmail.com' or v_aal<>'aal2' or auth.uid() is null then
   raise exception 'Authorized admin account and MFA are required.' using errcode='42501';
  end if;
  select * into v_order from public.orders where id=p_order_id for update;
  if not found or v_order.status<>'delivered' then raise exception 'COGS can be posted only for a Delivered order.'; end if;
- if not exists(select 1 from public.admin_finance_journal_entries where source_type='order_sale' and source_key=p_order_id::text and status='posted') then
+ select created_at into v_sale_posted_at
+ from public.admin_finance_journal_entries
+ where source_type='order_sale' and source_key=p_order_id::text and status='posted';
+ if v_sale_posted_at is null then
   raise exception 'Recognize the delivered sale before posting its COGS.';
  end if;
  select id into v_existing from public.admin_finance_journal_entries
@@ -1842,7 +1846,7 @@ begin
    select sum(cl.accepted_quantity*cl.landed_unit_cost)/nullif(sum(cl.accepted_quantity),0) as weighted_cost
    from public.admin_inventory_cost_layers cl
    where cl.product_id=oi.product_id
-     and cl.created_at<=coalesce(v_order.updated_at,v_order.ordered_at)
+     and cl.created_at<=v_sale_posted_at
  ) layer on true
  where oi.order_id=p_order_id;
  if v_line_count=0 or v_missing>0 then
@@ -1887,8 +1891,15 @@ with item_rows as (
    select sum(cl.accepted_quantity*cl.landed_unit_cost)/nullif(sum(cl.accepted_quantity),0) as weighted_cost
    from public.admin_inventory_cost_layers cl
    where cl.product_id=oi.product_id
-     and cl.created_at<=coalesce(o.updated_at,o.ordered_at)
+     and cl.created_at<=coalesce(sale_recognition.created_at,o.updated_at,o.ordered_at)
  ) layer on true
+ left join lateral (
+   select je.created_at
+   from public.admin_finance_journal_entries je
+   where je.source_type='order_sale' and je.source_key=o.id::text and je.status='posted'
+   order by je.created_at
+   limit 1
+ ) sale_recognition on true
  where o.status='delivered'
 ),
 aggregated as (
