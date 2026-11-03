@@ -567,10 +567,6 @@ Deno.serve(async (req: Request) => {
     return response({ success: false, code: "INVALID_JSON", requestId }, 400);
   }
 
-  if (payload.ageConfirmed !== true) {
-    return response({ success: false, code: "ADULT_CONFIRMATION_REQUIRED", requestId }, 403);
-  }
-
   const message = typeof payload.message === "string" ? payload.message.trim() : "";
   if (!message || message.length > MAX_MESSAGE_CHARS) {
     return response({ success: false, code: "INVALID_MESSAGE", requestId }, 400);
