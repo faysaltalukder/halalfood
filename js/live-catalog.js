@@ -524,8 +524,8 @@
     const message = encodeURIComponent("আমি " + product.name + " অর্ডার করতে চাই");
     const whats = $('.product-detail-actions a[href*="wa.me"]', article);
     if (whats) whats.href = "https://wa.me/" + WHATSAPP_NUMBER + "?text=" + message;
-    const detail = $(".product-description-section .product-description-inner p", article);
-    if (detail && (product.full_description != null || product.description != null)) detail.textContent = product.category_slug === "dates" && product.short_description != null ? product.short_description : (product.full_description || product.description || "");
+    const detail = $(".product-description-section .product-description-inner > p:first-of-type", article);
+    if (detail && product.short_description != null) detail.textContent = String(product.short_description);
     const breadcrumb = $("#product-breadcrumb");
     const productCategory = (categories || []).find(item => item.slug === product.category_slug);
     if (breadcrumb && productCategory) {
