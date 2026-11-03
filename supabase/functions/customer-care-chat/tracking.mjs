@@ -29,7 +29,7 @@ export function getTrackingUserMessages(historyInput = []) {
   });
 }
 
-const TRACKING_REQUEST_PATTERN = /(ট্র্যাক|track(?:ing)?|অর্ডারের অবস্থা|অর্ডার কোথায়|অর্ডার কোথায়|অর্ডার ট্র্যাক|আমার অর্ডার|order status|my order|shipment|শিপমেন্ট|কুরিয়ার|কুরিয়ার|courier)/iu;
+const TRACKING_REQUEST_PATTERN = /(ট্র্যাক|tracking|অর্ডারের অবস্থা|অর্ডার কোথায়|অর্ডার কোথায়|অর্ডার ট্র্যাক|আমার অর্ডার|অর্ডার.*(পৌঁছেছে|এসেছে)|ডেলিভারি.*(অবস্থা|কোথায়|কোথায়)|track(?:ing)?|order status|delivery status|where\s+is\s+my\s+(?:order|parcel|package)|my\s+(?:order|parcel|package)|shipment|parcel|package|শিপমেন্ট|কুরিয়ার|কুরিয়ার|courier)/iu;
 
 export function isOrderTrackingRequest(message, historyInput = []) {
   if (TRACKING_REQUEST_PATTERN.test(String(message || ""))) return true;
