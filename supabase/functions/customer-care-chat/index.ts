@@ -7,9 +7,9 @@ const JSON_HEADERS = {
   "Cache-Control": "no-store, max-age=0",
   "Vary": "Origin",
 };
-const MAX_MESSAGE_CHARS = 1000;
-const MAX_HISTORY_ITEMS = 8;
-const MAX_REQUEST_BYTES = 12000;
+const MAX_MESSAGE_CHARS = 12000;
+const MAX_HISTORY_ITEMS = 12;
+const MAX_REQUEST_BYTES = 65536;
 const SYSTEM_INSTRUCTION = [
   "You are Halal Food's polite, capable customer-care assistant for a Bangladesh-based grocery and food e-commerce demonstration project.",
   "Reply in natural Bengali by default. If the customer writes in English, answer in English. Be warm, clear, practical, creative in presentation, and honest. Do not impose an arbitrary short-answer limit: simple questions can receive concise answers, while difficult, critical, or multi-part questions should receive a careful, well-structured explanation with examples or trade-offs when useful.",
@@ -293,6 +293,55 @@ function buildKnowledgeContext(knowledge: Awaited<ReturnType<typeof loadKnowledg
   return sections.join("\n\n---\n\n");
 }
 
+function buildDeterministicFallbackReply(
+  message: string,
+  knowledge: Awaited<ReturnType<typeof loadKnowledge>>,
+): string | null {
+  if (!knowledge.available) return null;
+  const normalized = message.toLowerCase().normalize("NFKC");
+  const products = knowledge.products;
+  const productLine = (product: Record<string, unknown>) => {
+    const availability = product.availability === "available" ? "তালিকায় উপলভ্য"
+      : product.availability === "unavailable" ? "বর্তমানে অনুপলব্ধ" : "স্টক নিশ্চিত করতে হবে";
+    const url = typeof product.product_url === "string" && product.product_url ? " | বিস্তারিত: " + product.product_url : "";
+    return "• " + String(product.name || "পণ্য") + " — " + String(product.price || "দাম যাচাই প্রয়োজন") +
+      " (" + availability + ")" + url;
+  };
+  if (isBroadCatalogQuestion(message)) {
+    const cats = knowledge.categoryNames.length ? knowledge.categoryNames.join(" • ") : "ক্যাটালগ বিভাগ এখন নিশ্চিত নয়";
+    const list = products.slice(0, 15).map(productLine).join("\n");
+    return "অবশ্যই! Halal Food-এর লাইভ ক্যাটালগে বর্তমানে " + knowledge.catalogCount +
+      "টি সক্রিয় গ্রাহক-দৃশ্যমান পণ্য রয়েছে।\n\n**ক্যাটাগরি:** " + cats +
+      (list ? "\n\n**কয়েকটি পণ্যের নাম ও বর্তমান তালিকাভুক্ত দাম:**\n" + list : "") +
+      "\n\nএটি ক্যাটালগের সংক্ষিপ্ত নমুনা। নির্দিষ্ট ক্যাটাগরির সব পণ্য ও দাম জানতে ক্যাটাগরির নাম লিখুন।" +
+      "\n\nমনে রাখবেন, ওয়েবসাইটটি বর্তমানে ডেমো প্রকল্প; বাস্তব অর্ডার, পেমেন্ট বা ডেলিভারি চালু নেই।";
+  }
+  if (/(ঘি|ghee)/iu.test(normalized)) {
+    const found = products.filter((p) => /ঘি|ghee/iu.test(String(p.name || "") + " " + String(p.category || "")));
+    if (found.length) {
+      const diff = /(পার্থক্য|তফাৎ|ভিন্ন|different|difference|compare|তুলনা)/iu.test(normalized);
+      return "আমাদের লাইভ ক্যাটালগে বর্তমানে " + found.length + " ধরনের ঘি তালিকাভুক্ত আছে:\n\n" +
+        found.map(productLine).join("\n") +
+        (diff ? "\n\n**পার্থক্য সম্পর্কে:** যাচাইকৃত তথ্য দিয়ে নাম, প্যাকের পরিমাণ ও তালিকাভুক্ত দামের তুলনা করা যাচ্ছে। উপাদান, উৎস, স্বাদ, উৎপাদন-পদ্ধতি বা মানের পার্থক্য সম্পর্কে মালিক-যাচাইকৃত তথ্য না থাকলে অনুমান করে বলা ঠিক হবে না।" : "") +
+        "\n\nনোট: Halal Food বর্তমানে ডেমো প্রকল্প; বাস্তব অর্ডার বা ডেলিভারি চালু নেই।";
+    }
+  }
+  if (isCategoryCatalogQuestion(message) && products.length) {
+    return "আপনার প্রশ্নের সঙ্গে মিলে যাওয়া লাইভ ক্যাটালগের পণ্যগুলো হলো:\n\n" +
+      products.map(productLine).join("\n") +
+      "\n\nএখানে শুধু তালিকাভুক্ত নাম, দাম ও প্যাকের তথ্য দেওয়া হয়েছে; যাচাইকৃত প্রোফাইল ছাড়া গুণগত বৈশিষ্ট্য অনুমান করছি না।";
+  }
+  if (/(অর্ডার|order|পেমেন্ট|payment|ডেলিভারি|delivery|কুরিয়ার|courier|refund|রিফান্ড|checkout|শিপমেন্ট|shipment)/iu.test(normalized)) {
+    const doc = knowledge.documents.find((d) => String(d.document_key || "") === "project-operational-status");
+    if (doc) return "বর্তমান সেবার অবস্থা:\n\n• Halal Food ওয়েবসাইটটি বর্তমানে একটি ডেমো/টেস্ট প্রকল্প।\n• বাস্তব অর্ডার গ্রহণ বা নিশ্চিতকরণ চালু নেই।\n• অনলাইন পেমেন্ট সংগ্রহ বা প্রসেসিং চালু নেই।\n• পণ্য প্যাকেটজাত, কুরিয়ারে পাঠানো বা ডেলিভারি কার্যক্রম চালু নেই।\n\nতাই ওয়েবসাইটে অর্ডারের চেষ্টা বাস্তব ক্রয় হিসেবে গণ্য হবে না। যোগাযোগ: WhatsApp +8801842031164।";
+  }
+  if (/(যোগাযোগ|contact|ফোন|phone|whatsapp|হোয়াটসঅ্যাপ|হোয়াটসঅ্যাপ|ইমেইল|email)/iu.test(normalized)) {
+    const doc = knowledge.documents.find((d) => String(d.document_key || "") === "official-contact-channels");
+    if (doc) return "Halal Food-এর অফিসিয়াল যোগাযোগ:\n\n• ফোন/WhatsApp: +8801842031164\n• ইমেইল: halalfoodbd.official@gmail.com\n• ওয়েবসাইট: https://faysaltalukder.github.io/halalfood/\n\nএগুলোই প্রকাশিত অফিসিয়াল যোগাযোগের মাধ্যম।";
+  }
+  return null;
+}
+
 function friendlyErrorCode(status: number): string {
   if (status === 401) return "GEMINI_AUTH";
   if (status === 403) return "GEMINI_PERMISSION";
@@ -334,7 +383,7 @@ async function callGemini(
   );
 }
 
-const FALLBACK_MODELS = ["gemini-3.7-flash", "gemini-3.6-flash"];
+const FALLBACK_MODELS = ["gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite"];
 
 async function callGeminiWithFallback(
   primaryModel: string,
@@ -437,11 +486,7 @@ Deno.serve(async (req: Request) => {
 
   const apiKey = Deno.env.get("GEMINI_API_KEY");
   const model = (Deno.env.get("GEMINI_MODEL") || "gemini-3.8-flash").trim();
-  if (!apiKey) {
-    console.error(JSON.stringify({ event: "customer_care_config_missing", requestId }));
-    return response({ success: false, code: "AI_NOT_CONFIGURED", requestId }, 503);
-  }
-  if (!/^gemini-[a-z0-9.-]+$/i.test(model)) {
+  if (apiKey && !/^gemini-[a-z0-9.-]+$/i.test(model)) {
     console.error(JSON.stringify({ event: "customer_care_invalid_model_config", requestId }));
     return response({ success: false, code: "AI_MODEL_CONFIG_INVALID", requestId }, 500);
   }
@@ -452,19 +497,21 @@ Deno.serve(async (req: Request) => {
   for (const item of historyInput) {
     if (!item || typeof item !== "object") continue;
     const record = item as Record<string, unknown>;
-    const text = typeof record.text === "string" ? record.text.trim().slice(0, 1000) : "";
+    const text = typeof record.text === "string" ? record.text.trim().slice(0, MAX_MESSAGE_CHARS) : "";
     const role = record.role === "assistant" ? "model" : record.role === "user" ? "user" : null;
     if (!role || !text) continue;
     historyChars += text.length;
-    if (historyChars > 4000) break;
+    if (historyChars > 16000) break;
     contents.push({ role, parts: [{ text }] });
   }
   contents.push({ role: "user", parts: [{ text: message }] });
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 28_000);
+  let loadedKnowledge: Awaited<ReturnType<typeof loadKnowledge>> | null = null;
   try {
     const knowledge = await loadKnowledge(message, contents);
+    loadedKnowledge = knowledge;
     const systemInstruction = SYSTEM_INSTRUCTION + "\n\n--- RETRIEVED KNOWLEDGE CONTEXT ---\n" +
       buildKnowledgeContext(knowledge) +
       "\n\nRemember: do not expose internal metadata or numeric stock. Only use verified facts and the exact URLs supplied above.";
@@ -477,6 +524,13 @@ Deno.serve(async (req: Request) => {
       databaseAvailable: knowledge.available,
     }));
 
+    if (!apiKey) {
+      const offlineReply = buildDeterministicFallbackReply(message, knowledge);
+      if (offlineReply) return response({ success: true, reply: offlineReply, requestId,
+        model: "verified-knowledge-fallback",
+        knowledge: { documents: knowledge.documents.length, matchedProducts: knowledge.products.length } });
+      return response({ success: false, code: "AI_NOT_CONFIGURED", requestId }, 503);
+    }
     const initialResult = await callGeminiWithFallback(model, requestId, apiKey, contents, systemInstruction, controller.signal);
     let upstream = initialResult.response;
     let modelUsed = initialResult.modelUsed;
@@ -495,6 +549,12 @@ Deno.serve(async (req: Request) => {
         providerCode: typeof providerError?.status === "string" ? providerError.status : "unknown",
         code: errorCode,
       }));
+      const offlineReply = buildDeterministicFallbackReply(message, knowledge);
+      if (offlineReply) {
+        console.info(JSON.stringify({ event: "customer_care_verified_knowledge_fallback", requestId, providerCode: errorCode }));
+        return response({ success: true, reply: offlineReply, requestId, model: "verified-knowledge-fallback",
+          knowledge: { documents: knowledge.documents.length, matchedProducts: knowledge.products.length } });
+      }
       return response({ success: false, code: errorCode, requestId }, upstream.status === 429 ? 429 : 502);
     }
 
@@ -565,6 +625,9 @@ Deno.serve(async (req: Request) => {
     }
 
     if (!reply || !isCompleteReply(reply, finishReason)) {
+      const offlineReply = buildDeterministicFallbackReply(message, knowledge);
+      if (offlineReply) return response({ success: true, reply: offlineReply, requestId, model: "verified-knowledge-fallback",
+        knowledge: { documents: knowledge.documents.length, matchedProducts: knowledge.products.length } });
       return response({ success: false, code: "INCOMPLETE_AI_RESPONSE", requestId }, 502);
     }
 
@@ -580,6 +643,10 @@ Deno.serve(async (req: Request) => {
     });
   } catch (error) {
     const timedOut = error instanceof DOMException && error.name === "AbortError";
+    const offlineReply = loadedKnowledge ? buildDeterministicFallbackReply(message, loadedKnowledge) : null;
+    if (offlineReply && loadedKnowledge) return response({ success: true, reply: offlineReply, requestId,
+      model: "verified-knowledge-fallback",
+      knowledge: { documents: loadedKnowledge.documents.length, matchedProducts: loadedKnowledge.products.length } });
     console.error(JSON.stringify({
       event: "customer_care_upstream_fetch_failed",
       requestId,

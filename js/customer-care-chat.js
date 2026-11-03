@@ -70,7 +70,7 @@
         '</div>' +
       '</div>' +
       '<form class="hf-ai-chat-composer" id="hf-ai-chat-form">' +
-        '<label class="hf-ai-chat-input-wrap"><span class="hf-ai-visually-hidden">আপনার প্রশ্ন লিখুন</span><input id="hf-ai-chat-input" name="message" type="text" maxlength="1000" autocomplete="off" placeholder="আপনার প্রশ্ন লিখুন..." required></label>' +
+        '<label class="hf-ai-chat-input-wrap"><span class="hf-ai-visually-hidden">আপনার প্রশ্ন লিখুন</span><input id="hf-ai-chat-input" name="message" type="text" maxlength="12000" autocomplete="off" placeholder="আপনার প্রশ্ন লিখুন..." required></label>' +
         '<button class="hf-ai-chat-send" type="submit" aria-label="Send message"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21 3-7.2 18-3.7-7.1L3 10.2 21 3Z"></path><path d="M10.1 13.9 21 3"></path></svg></button>' +
       '</form>' +
       '<div class="hf-ai-chat-footnote">AI উত্তর ভুল হতে পারে। বর্তমান মূল্য, স্টক, অর্ডার ও ডেলিভারি মানব সহায়তায় নিশ্চিত করুন। ব্যক্তিগত বা পেমেন্ট-সংক্রান্ত তথ্য পাঠাবেন না।</div>' +
@@ -134,12 +134,11 @@
   }
   function friendlyError(data, status) {
     const code = data && data.code;
-    if (code === "RATE_LIMITED") return "চ্যাট সার্ভার সাময়িকভাবে অনুরোধ গ্রহণ করতে পারেনি। অনুগ্রহ করে আবার চেষ্টা করুন।";
     if (code === "AI_NOT_CONFIGURED") return "AI সার্ভারে API key সেট করা নেই। আমাদের টিমকে জানান।";
     if (code === "GEMINI_AUTH") return "Google AI সার্ভারের API key যাচাই হয়নি। সার্ভার কনফিগারেশন পরীক্ষা করা হচ্ছে।";
     if (code === "GEMINI_PERMISSION") return "Google AI প্রজেক্টে API ব্যবহারের অনুমতি বা billing/quota সেটিংসে সমস্যা আছে।";
     if (code === "GEMINI_MODEL" || code === "AI_MODEL_CONFIG_INVALID") return "AI মডেলের নাম বা কনফিগারেশনে সমস্যা আছে।";
-    if (code === "GEMINI_QUOTA") return "Google AI-এর প্রকল্প-স্তরের API quota বা সাময়িক capacity সীমায় পৌঁছেছে। এটি আপনার প্রশ্নের সংখ্যার জন্য আমাদের চ্যাট-লক নয়। কিছুক্ষণ পরে আবার চেষ্টা করুন, অথবা WhatsApp-এ যোগাযোগ করুন।";
+    if (code === "GEMINI_QUOTA") return "এই প্রশ্নটির জন্য Gemini ভাষা-মডেল থেকে উত্তর পাওয়া যাচ্ছে না। পণ্য ও প্রকাশিত সেবার তথ্যের জন্য যাচাইকৃত বিকল্প ব্যবস্থা কাজ করবে; আরও খোলা বা জটিল প্রশ্নে AI মডেল পুনরায় সচল না হওয়া পর্যন্ত উত্তর অসম্পূর্ণ থাকতে পারে।";
     if (code === "GEMINI_UNAVAILABLE") return "AI মডেলগুলো এই মুহূর্তে ব্যস্ত বা সাময়িকভাবে অনুপলব্ধ। আপনার প্রশ্ন সংরক্ষণ করা হয়নি—অনুগ্রহ করে আবার পাঠান বা WhatsApp-এ যোগাযোগ করুন।";
     if (code === "GEMINI_TIMEOUT") return "উত্তর পেতে বেশি সময় লাগছে। অনুগ্রহ করে আবার চেষ্টা করুন.";
     if (code === "INCOMPLETE_AI_RESPONSE") return "উত্তরটি সম্পূর্ণ তৈরি হয়নি। অনুগ্রহ করে প্রশ্নটি আরেকবার পাঠান।";
