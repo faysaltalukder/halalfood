@@ -311,3 +311,64 @@ html[data-hf-theme] body[data-page] .hf-report-insight-card.is-success .hf-repor
  .hf-report-workspace{background:#fff!important;color:#222!important}
  .hf-report-insight-card{break-inside:avoid}
 }
+
+
+/* REPORT BUTTON STATES — active Admin theme colors, never a fixed white
+   selected surface. Shared by all report workspaces and their theme variants. */
+body[data-page^="reports"] .hf-report-center .hf-report-link{
+ border-color:var(--hf-theme-card-border,var(--hf-border,#E5E0D6));
+ transition:background .16s ease,border-color .16s ease,color .16s ease,box-shadow .16s ease,transform .16s ease;
+}
+body[data-page^="reports"] .hf-report-center .hf-report-link:hover{
+ background:var(--hf-theme-secondary-hover,#F1E6DC);
+ border-color:var(--hf-theme-accent,var(--hf-theme-primary,#A9612D));
+ color:var(--hf-theme-text,#2B2A3D);
+}
+body[data-page^="reports"] .hf-report-center .hf-report-link:hover>span:last-child{
+ color:var(--hf-theme-primary,#A9612D);
+}
+body[data-page^="reports"] .hf-report-center .hf-report-link.is-selected,
+html[data-hf-theme] body[data-page^="reports"] .hf-report-center .hf-report-link.is-selected{
+ background:linear-gradient(135deg,var(--hf-theme-primary,#A9612D),var(--hf-theme-primary-hover,var(--hf-theme-primary,#A9612D)))!important;
+ border-color:var(--hf-theme-primary,#A9612D)!important;
+ color:#FFFFFF!important;
+ box-shadow:0 5px 14px color-mix(in srgb,var(--hf-theme-primary,#A9612D) 22%,transparent)!important;
+}
+body[data-page^="reports"] .hf-report-center .hf-report-link.is-selected strong,
+body[data-page^="reports"] .hf-report-center .hf-report-link.is-selected small,
+body[data-page^="reports"] .hf-report-center .hf-report-link.is-selected>span:last-child{
+ color:#FFFFFF!important;
+}
+body[data-page^="reports"] .hf-report-center .hf-report-link.is-selected small{opacity:.86}
+body[data-page^="reports"] .hf-report-center .hf-report-link:focus-visible{
+ outline:2px solid var(--hf-theme-focus,var(--hf-theme-accent,#C97B3D));
+ outline-offset:3px;
+}
+
+/* Inner report tabs: active tab takes the theme primary color; inactive tabs
+   stay calm and use the theme's secondary surface for hover/focus. */
+body[data-page^="reports"] .hf-report-segment-nav button{
+ border-color:transparent;
+ transition:background .16s ease,border-color .16s ease,color .16s ease,box-shadow .16s ease;
+}
+body[data-page^="reports"] .hf-report-segment-nav button:hover{
+ background:var(--hf-theme-secondary-hover,#F1E6DC)!important;
+ color:var(--hf-theme-primary,#A9612D)!important;
+}
+body[data-page^="reports"] .hf-report-segment-nav button.active,
+body[data-page^="reports"] .hf-report-segment-nav button[aria-selected="true"],
+html[data-hf-theme] body[data-page^="reports"] .hf-report-segment-nav button.active,
+html[data-hf-theme] body[data-page^="reports"] .hf-report-segment-nav button[aria-selected="true"]{
+ border-color:var(--hf-theme-primary,#A9612D)!important;
+ background:linear-gradient(135deg,var(--hf-theme-primary,#A9612D),var(--hf-theme-primary-hover,var(--hf-theme-primary,#A9612D)))!important;
+ color:#FFFFFF!important;
+ box-shadow:0 4px 12px color-mix(in srgb,var(--hf-theme-primary,#A9612D) 20%,transparent)!important;
+}
+body[data-page^="reports"] .hf-report-segment-nav button:focus-visible{
+ outline:2px solid var(--hf-theme-focus,var(--hf-theme-accent,#C97B3D));
+ outline-offset:2px;
+}
+@media(prefers-reduced-motion:reduce){
+ body[data-page^="reports"] .hf-report-center .hf-report-link,
+ body[data-page^="reports"] .hf-report-segment-nav button{transition:none}
+}
