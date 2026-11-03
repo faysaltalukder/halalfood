@@ -170,3 +170,7 @@ assert.equal(imageSimilar.max_product_cards, 3);
 const imageMaterial = classifyCustomerIntent("নারিকেলের তেল আছে?", true);
 assert.equal(imageMaterial.primary_intent, "image_material_search");
 assert.equal(imageMaterial.max_product_cards, 1);
+
+const rejected = classifyCustomerIntent("এই ঘি চাই না");
+assert.equal(rejected.primary_intent, "ambiguous_product_request");
+assert.equal(rejected.max_product_cards, 0);
