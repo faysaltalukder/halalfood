@@ -148,7 +148,7 @@ function analyzeCustomerNeed(
   const combined = [...userHistory, message].join(" ").normalize("NFKC");
   const normalized = toEnglishDigits(combined).toLowerCase();
   const compare = /(তুলনা|পার্থক্য|তফাৎ|compare|comparison|difference|versus|\bvs\b)/iu.test(normalized);
-  const recommend = /(পরামর্শ|সাজেস্ট|suggest|recommend|কোনটা.*ভালো|কোনটি.*ভালো|কোন.*নেব|কোন.*কিনব|আমার.*জন্য|ভালো.*হবে)/iu.test(normalized);
+  const recommend = /(পরামর্শ|সাজেস্ট|suggest|recommend|কোনটা.*ভালো|কোনটি.*ভালো|কোন.*নেব|কোন.*কিনব|কী.*কিনব|কি.*কিনব|আমার.*জন্য|ভালো.*হবে)/iu.test(normalized);
   const broad = isBroadCatalogQuestion(message);
   const category = isCategoryCatalogQuestion(message);
   const budgetMatch = normalized.match(/(?:৳|টাকা|টাকার|budget|under|within|max(?:imum)?|সর্বোচ্চ|বাজেট)[\s:=,-]*([0-9][0-9,]*)/iu)
@@ -718,7 +718,7 @@ Deno.serve(async (req: Request) => {
 
     if (!reply || !isCompleteReply(reply, finishReason)) {
       const offlineReply = buildDeterministicFallbackReply(message, knowledge);
-      if (offlineReply) return response({ success: true, reply: offlineReply, requestId, model: "verified-knowledge-fallback",
+      if (offlineReply) return response({ success: true, reply: offlineReply, products: publicProductCards(knowledge), requestId, model: "verified-knowledge-fallback",
         knowledge: { documents: knowledge.documents.length, matchedProducts: knowledge.products.length } });
       return response({ success: false, code: "INCOMPLETE_AI_RESPONSE", requestId }, 502);
     }
@@ -726,6 +726,7 @@ Deno.serve(async (req: Request) => {
     return response({
       success: true,
       reply,
+      products: publicProductCards(knowledge),
       requestId,
       model: modelUsed,
       knowledge: {
@@ -736,7 +737,7 @@ Deno.serve(async (req: Request) => {
   } catch (error) {
     const timedOut = error instanceof DOMException && error.name === "AbortError";
     const offlineReply = loadedKnowledge ? buildDeterministicFallbackReply(message, loadedKnowledge) : null;
-    if (offlineReply && loadedKnowledge) return response({ success: true, reply: offlineReply, requestId,
+    if (offlineReply && loadedKnowledge) return response({ success: true, reply: offlineReply, products: publicProductCards(loadedKnowledge), requestId,
       model: "verified-knowledge-fallback",
       knowledge: { documents: loadedKnowledge.documents.length, matchedProducts: loadedKnowledge.products.length } });
     console.error(JSON.stringify({
