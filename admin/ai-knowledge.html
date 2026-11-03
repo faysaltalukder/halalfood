@@ -28,7 +28,7 @@
 <section id="aiKbDocuments" class="ai-kb-workspace">
  <div class="ai-kb-list-panel hf-card hf-card-pad">
   <div class="hf-section-head"><div><h2>Knowledge library</h2><p>Policies, business details, service status, FAQ and response guidance.</p></div><button class="hf-button hf-button-primary" id="aiKbNewDoc" type="button">＋ New document</button></div>
-  <div class="hf-toolbar"><input class="hf-input" id="aiKbDocSearch" type="search" placeholder="Search title, content or key…"><select class="hf-select" id="aiKbDocFilter"><option value="">All statuses</option><option value="published">Published</option><option value="draft">Draft</option><option value="archived">Archived</option></select></div>
+  <div class="hf-toolbar"><input class="hf-input" id="aiKbDocSearch" type="search" aria-label="Search knowledge documents" placeholder="Search title, content or key…"><select class="hf-select" id="aiKbDocFilter" aria-label="Filter knowledge documents by status"><option value="">All statuses</option><option value="published">Published</option><option value="draft">Draft</option><option value="archived">Archived</option></select></div>
   <div id="aiKbDocList" class="ai-kb-record-list"><div class="hf-loading">Loading knowledge documents…</div></div>
  </div>
  <form id="aiKbDocForm" class="ai-kb-editor hf-card hf-card-pad">
@@ -54,7 +54,7 @@
 <section id="aiKbProducts" class="ai-kb-workspace" hidden>
  <div class="ai-kb-list-panel hf-card hf-card-pad">
   <div class="hf-section-head"><div><h2>Product profile coverage</h2><p>Choose a live catalog product to add or update verified product details.</p></div></div>
-  <div class="hf-toolbar"><input class="hf-input" id="aiKbProductSearch" type="search" placeholder="Search product name…"><select class="hf-select" id="aiKbProductStatus"><option value="">All profile states</option><option value="published">Published</option><option value="draft">Draft</option><option value="missing">Not created</option></select></div>
+  <div class="hf-toolbar"><input class="hf-input" id="aiKbProductSearch" type="search" aria-label="Search product profiles" placeholder="Search product name…"><select class="hf-select" id="aiKbProductStatus" aria-label="Filter product profiles by status"><option value="">All profile states</option><option value="published">Published</option><option value="draft">Draft</option><option value="missing">Not created</option></select></div>
   <div id="aiKbProductList" class="ai-kb-record-list"><div class="hf-loading">Loading product profiles…</div></div>
  </div>
  <form id="aiKbProductForm" class="ai-kb-editor hf-card hf-card-pad">
