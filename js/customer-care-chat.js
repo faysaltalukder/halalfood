@@ -722,7 +722,7 @@
     try {
       const requestBody = {
         message: userText,
-        history: conversation.slice(-20)
+        history: imageFile ? [] : conversation.slice(-20)
       };
       if (imageFile) requestBody.image = await prepareImageForUpload(imageFile);
       const response = await fetch(CHAT_API, {
