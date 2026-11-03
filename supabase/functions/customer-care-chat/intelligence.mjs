@@ -269,6 +269,7 @@ function extractImageMatch(reply) {
   }catch{imageMatch=null;}
   return {reply:String(reply||"").replace(marker,"").trim(),imageMatch};
 }
+/** @param {any[]} ranked @param {any} decision @param {any} [imageMatch=null] */
 function applyConfidencePolicy(ranked, decision, imageMatch=null) {
   if(!Array.isArray(ranked)||!ranked.length)return [];
   if(decision?.primary_intent?.startsWith("image_")){
