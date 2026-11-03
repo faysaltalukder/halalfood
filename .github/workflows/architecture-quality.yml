@@ -37,6 +37,8 @@ jobs:
         run: node scripts/finance-accounting-core-check.mjs
       - name: Run Finance Operations Integration checks
         run: node scripts/finance-operations-integration-check.mjs
+      - name: Run Finance Phase 3 reporting intelligence checks
+        run: node scripts/finance-reporting-intelligence-check.mjs
       - name: Run Part 1 Financial Reports checks
         run: node scripts/report-financial-part1-check.mjs
       - name: Run Part 2 Operational Reports checks
