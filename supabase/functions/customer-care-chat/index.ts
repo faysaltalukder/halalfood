@@ -460,8 +460,8 @@ function buildDeterministicFallbackReply(
     }
   }
   return /[A-Za-z]/u.test(message)
-    ? "I’m happy to help. Tell me what you’re looking for, and I’ll do my best to sort it out with you."
-    : "অবশ্যই, আমি সাহায্য করছি। আপনি কী খুঁজছেন বা কোন সমস্যায় পড়েছেন, একটু বলুন—আমি এখানেই সমাধান করার চেষ্টা করছি।";
+    ? "Of course, I can help with that. Tell me a little more about what you need, and I’ll work through it with you."
+    : "অবশ্যই, আমি সাহায্য করছি। আপনার প্রয়োজনটা একটু বলুন, আমি এখানেই যতটা সম্ভব সমাধান করে দিচ্ছি।";
 }
 
 function friendlyErrorCode(status: number): string {
