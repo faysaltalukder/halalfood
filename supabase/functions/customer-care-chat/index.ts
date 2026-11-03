@@ -1105,20 +1105,21 @@ Deno.serve(async (req: Request) => {
     reply = extractedImage.reply;
     const imageMatch = extractedImage.imageMatch;
     let approvedCards = publicProductCards(knowledge, message, reply, imageMatch);
-    if (hasImage && Number(knowledge.customerNeed?.max_product_cards || 0) > 0) {
+    const customerNeed = knowledge.customerNeed;
+    if (hasImage && customerNeed && Number(customerNeed.max_product_cards || 0) > 0) {
       if (!approvedCards.length) {
-        knowledge.customerNeed.allow_product_cards = false;
-        knowledge.customerNeed.max_product_cards = 0;
-        knowledge.customerNeed.recommendation_permission = "none";
-        knowledge.customerNeed.clarification_needed = true;
-        knowledge.customerNeed.search_not_found = true;
+        customerNeed.allow_product_cards = false;
+        customerNeed.max_product_cards = 0;
+        customerNeed.recommendation_permission = "none";
+        customerNeed.clarification_needed = true;
+        customerNeed.search_not_found = true;
       } else {
-        knowledge.customerNeed.match_type = imageMatch?.match_type || approvedCards[0].match_type || "visual";
-        knowledge.customerNeed.search_confidence = imageMatch?.confidence || approvedCards[0].confidence_level || "medium";
+        customerNeed.match_type = imageMatch?.match_type || approvedCards[0].match_type || "visual";
+        customerNeed.search_confidence = imageMatch?.confidence || approvedCards[0].confidence_level || "medium";
       }
-    } else if (approvedCards.length) {
-      knowledge.customerNeed.match_type = approvedCards[0].match_type || knowledge.customerNeed.match_type;
-      knowledge.customerNeed.search_confidence = approvedCards[0].confidence_level || knowledge.customerNeed.search_confidence;
+    } else if (approvedCards.length && customerNeed) {
+      customerNeed.match_type = approvedCards[0].match_type || customerNeed.match_type;
+      customerNeed.search_confidence = approvedCards[0].confidence_level || customerNeed.search_confidence;
     }
     await logAiCustomerCareEvents(knowledge, requestId, imageMatch, approvedCards.length, approvedCards.length ? "resolved" : "answered_or_clarified");
     return response({
