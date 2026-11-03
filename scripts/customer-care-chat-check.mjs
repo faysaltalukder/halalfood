@@ -17,7 +17,7 @@ const adminApp = fs.readFileSync("admin/app.js", "utf8");
 const stageTwoMigration = fs.readFileSync("supabase/migrations/20261103143000_ai_customer_intelligence_stage_two.sql", "utf8");
 const golden = JSON.parse(fs.readFileSync("scripts/customer-care-intelligence-golden.json", "utf8"));
 
-assert.match(main, /js\/customer-care-chat\.js\?v=20261103-product-card-cta-v6/);
+assert.match(main, /js\/customer-care-chat\.js\?v=20261103-product-card-cta-v7/);
 assert.match(chat, /functions\/v1\/customer-care-chat/);
 assert.doesNotMatch(chat, /ageConfirmed|hf-ai-chat-age-gate|hf-ai-age-confirm|প্রাপ্তবয়স্কদের জন্য AI সহায়তা/);
 assert.match(chat, /if \(\(!text && !imageFile\) \|\| busy\) return;/);
@@ -60,12 +60,12 @@ assert.match(edge, /publicProductCards/);
 assert.match(edge, /CUSTOMER NEED PROFILE/);
 assert.match(chat, /appendProductCards/);
 assert.match(chat, /hf-ai-product-card/);
-assert.match(chat, /textContent = "অর্ডার করুন"/);
+assert.match(chat, /innerHTML = "অর্ডার<br>করুন"/);\nassert.match(chat, /setAttribute\("aria-label", "অর্ডার করুন"\)/);
 assert.doesNotMatch(chat, /অর্ডার নিন|পণ্যের পেজ/);
 assert.match(chat, /actions\.append\(details, order\)/);
 assert.match(css, /flex-wrap:\s*nowrap!important/);
 assert.match(css, /background:\s*#c97b3d!important/);
-assert.match(css, /min-height:42px!important/);
+assert.match(css, /min-height:48px!important/);\nassert.match(css, /flex:1.22 1 0!important/);
 assert.match(css, /padding:8px 5px!important/);
 assert.doesNotMatch(css, /\.hf-ai-product-card-actions button:last-child\{[^}]*background:#2b2a3d!important/s);
 assert.match(chat, /hf-ai-chat-view/);
@@ -146,7 +146,7 @@ assert.match(edge, /maxOutputTokens: 8192/);
 assert.match(edge, /thinkingConfig: \{ thinkingLevel: "HIGH" \}/);
 assert.match(edge, /45_000/);
 assert.ok(edge.includes("return Boolean(reply.trim())"));
-assert.match(main, /customer-care-chat\.js\?v=20261103-product-card-cta-v6/);
+assert.match(main, /customer-care-chat\.js\?v=20261103-product-card-cta-v7/);
 
 assert.match(chat, /textarea id="hf-ai-chat-input"/);
 assert.match(chat, /messages.addEventListener\("wheel"/);
@@ -175,13 +175,13 @@ assert.match(css, /hf-ai-chat-mic/);
 const intentCases = [
   ["একটা সরিষার তেল দেখাও", "exact_product_lookup", 1],
   ["I want to order mustard oil", "exact_product_lookup", 1],
-  ["কী কী তেল পাওয়া যায়", "category_browse", 3],
-  ["তেলগুলো দেখাও", "category_browse", 3],
+  ["কী কী তেল পাওয়া যায়", "category_browse", 4],
+  ["তেলগুলো দেখাও", "category_browse", 4],
   ["সরিষার তেলের দাম কত?", "product_price_inquiry", 0],
   ["ডেলিভারি কত?", "store_policy_question", 0],
   ["ধন্যবাদ", "casual_conversation", 0],
-  ["কয়েকটি ঘি সাজেস্ট করো", "recommendation_request", 3],
-  ["অন্যটা দেখাও", "recommendation_request", 3],
+  ["কয়েকটি ঘি সাজেস্ট করো", "recommendation_request", 4],
+  ["অন্যটা দেখাও", "recommendation_request", 4],
   ["এই ঘিগুলোর তুলনা করো", "product_comparison", 2],
 ];
 for (const [query, expectedIntent, expectedCards] of intentCases) {
