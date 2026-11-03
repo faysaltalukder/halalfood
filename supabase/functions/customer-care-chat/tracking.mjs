@@ -10,7 +10,7 @@ export function normalizeTrackingPhone(value) {
 }
 
 export function extractTrackingOrderId(value) {
-  const matches = Array.from(String(value || "").toUpperCase().matchAll(/\bHF\s*-?\s*(\d{4,6})\b/g));
+  const matches = Array.from(toEnglishDigits(value).toUpperCase().matchAll(/\bHF\s*-?\s*(\d{4,6})\b/g));
   const last = matches[matches.length - 1];
   return last ? "HF-" + last[1] : "";
 }
