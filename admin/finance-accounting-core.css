@@ -102,3 +102,79 @@ body[data-page="finance"] .hf-finance-accounting-core{
   body[data-page="finance"] .hf-finance-accounting-core *::before,
   body[data-page="finance"] .hf-finance-accounting-core *::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}
 }
+
+/* Phase 2 — operational integration remains inside the existing Finance Transactions workspace. */
+.hf-finance-operations-note{
+  margin:12px 0 14px;padding:11px 13px;border:1px solid #E6D9C8;border-left:3px solid #C97B3D;
+  border-radius:10px;background:#FBF5ED;color:#6D5946;font-size:11px;line-height:1.55;
+}
+.hf-finance-operations-grid{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start;
+}
+.hf-finance-operations-card{
+  min-width:0;padding:13px;border:1px solid #E6E1D9;border-radius:13px;background:#FFFDF8;
+}
+.hf-finance-operations-card .hf-finance-accounting-panel-head{
+  min-height:42px;margin-bottom:8px;
+}
+.hf-finance-operations-card .hf-finance-accounting-panel-head p{
+  max-width:560px;font-size:11px;
+}
+.hf-finance-operations-card .hf-table-wrap{
+  max-height:320px;overflow:auto;border-radius:9px;
+}
+.hf-finance-operations-card .hf-table th,
+.hf-finance-operations-card .hf-table td{
+  padding:9px 8px;font-size:11px;vertical-align:middle;
+}
+.hf-finance-operations-card .hf-table td small{
+  display:block;margin-top:3px;color:#888494;font-size:10px;line-height:1.35;
+}
+.hf-finance-operations-card .hf-table-actions{
+  display:flex;gap:5px;flex-wrap:wrap;
+}
+.hf-finance-operations-card .hf-button-small{
+  white-space:nowrap;
+}
+.hf-finance-operations-metrics{
+  grid-template-columns:repeat(3,minmax(0,1fr));
+}
+.hf-finance-operations-metrics>div{
+  background:#FAF7F1;
+}
+.hf-finance-profitability-card{
+  margin-top:13px;
+}
+.hf-finance-profitability-card .hf-table-wrap{
+  max-height:360px;
+}
+.hf-finance-operational-dialog{
+  width:min(620px,calc(100vw - 24px));
+  max-width:620px;
+}
+.hf-finance-operational-dialog .hf-field{
+  display:grid;gap:6px;margin:12px 0;color:#686576;font-size:12px;font-weight:650;
+}
+.hf-finance-operational-dialog .hf-field[hidden]{
+  display:none!important;
+}
+.hf-finance-operational-warning{
+  margin:12px 0 6px;padding:10px 12px;border:1px solid #E7D8C8;border-radius:9px;
+  background:#FBF4EA;color:#765B41;font-size:11px;line-height:1.5;
+}
+.hf-finance-operational-dialog .hf-help{
+  color:#888494;font-size:10px;line-height:1.45;font-weight:450;
+}
+.hf-finance-operations-card .hf-finance-status-warning{
+  margin-top:4px;padding:3px 6px;font-size:9px;
+}
+@media(max-width:900px){
+  .hf-finance-operations-grid{grid-template-columns:1fr}
+  .hf-finance-operations-card .hf-table-wrap{max-height:280px}
+}
+@media(max-width:640px){
+  .hf-finance-operations-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .hf-finance-operations-card{padding:10px}
+  .hf-finance-operations-card .hf-finance-accounting-panel-head{display:grid;grid-template-columns:1fr}
+  .hf-finance-operational-dialog .hf-dialog-actions{display:flex;flex-wrap:wrap}
+}
