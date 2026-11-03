@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="robots" content="noindex,nofollow"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI Knowledge Center · Halal Food Admin</title>
+<link rel="stylesheet" href="./shared.css?v=20261103-ai-stage2-v1">
+<link rel="stylesheet" href="./workspace-global-theme.css?v=20261101-merchant-fieldbook-v1">
+<link rel="stylesheet" href="./ai-knowledge.css?v=20261103-ai-stage2-v1">
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
+</head>
+<body data-page="ai-knowledge">
+<div id="authGate" class="auth-gate"><div class="auth-gate-card"><strong>Checking secure admin access…</strong><p>AI knowledge is available only after the authorized account and two-step verification are confirmed.</p></div></div>
+<div id="adminApp" hidden><main id="pageContent" tabindex="-1">
+<section class="ai-kb-hero">
+ <div><p class="page-eyebrow">CUSTOMER CARE INTELLIGENCE</p><h1>AI Knowledge Center</h1><p>Manage verified business answers, FAQs and product knowledge used by the Halal Food AI assistant.</p></div>
+ <div class="ai-kb-hero-actions"><span class="hf-status hf-status-active">AAL2 protected</span><button class="hf-button hf-button-secondary" id="aiKbRefresh" type="button">↻ Refresh data</button></div>
+</section>
+<div class="hf-banner hf-banner-info"><span>ⓘ</span><div><strong>Verified facts only</strong>Only published information is shared with the customer-facing AI. Product price and availability always come from the live catalog. Draft content stays private; never add secrets, customer records or internal cost data.</div></div>
+<div class="ai-kb-metrics">
+ <section class="hf-card"><span>Knowledge documents</span><strong id="aiKbDocCount">—</strong><small id="aiKbDocMeta">Published / draft</small></section>
+ <section class="hf-card"><span>Published product profiles</span><strong id="aiKbProfileCount">—</strong><small id="aiKbProfileMeta">Verified product guidance</small></section>
+ <section class="hf-card"><span>Catalog products</span><strong id="aiKbCatalogCount">—</strong><small>Active customer-facing products</small></section>
+</div>
+<div class="ai-kb-tabs" role="tablist" aria-label="AI knowledge sections">
+ <button type="button" class="is-active" data-ai-kb-tab="documents" role="tab" aria-selected="true">Business knowledge &amp; FAQs</button>
+ <button type="button" data-ai-kb-tab="products" role="tab" aria-selected="false">Product knowledge profiles</button>
+</div>
+<section id="aiKbDocuments" class="ai-kb-workspace">
+ <div class="ai-kb-list-panel hf-card hf-card-pad">
+  <div class="hf-section-head"><div><h2>Knowledge library</h2><p>Policies, business details, service status, FAQ and response guidance.</p></div><button class="hf-button hf-button-primary" id="aiKbNewDoc" type="button">＋ New document</button></div>
+  <div class="hf-toolbar"><input class="hf-input" id="aiKbDocSearch" type="search" placeholder="Search title, content or key…"><select class="hf-select" id="aiKbDocFilter"><option value="">All statuses</option><option value="published">Published</option><option value="draft">Draft</option><option value="archived">Archived</option></select></div>
+  <div id="aiKbDocList" class="ai-kb-record-list"><div class="hf-loading">Loading knowledge documents…</div></div>
+ </div>
+ <form id="aiKbDocForm" class="ai-kb-editor hf-card hf-card-pad">
+  <div class="hf-section-head"><div><p class="page-eyebrow">DOCUMENT EDITOR</p><h2 id="aiKbDocFormTitle">Create knowledge document</h2><p>Keep each document focused on one topic.</p></div><button type="button" class="hf-button hf-button-secondary" id="aiKbDocReset">Clear</button></div>
+  <input type="hidden" id="aiKbDocId">
+  <label class="hf-field">Document title *<input class="hf-input" id="aiKbDocTitle" required maxlength="140" placeholder="e.g. Delivery policy FAQ"></label>
+  <div class="ai-kb-two-col">
+   <label class="hf-field">Document key *<input class="hf-input" id="aiKbDocKey" required pattern="[a-z0-9][a-z0-9-]*" maxlength="100" placeholder="delivery-policy-faq"></label>
+   <label class="hf-field">Type<select class="hf-select" id="aiKbDocType"><option value="faq">FAQ</option><option value="policy">Policy</option><option value="business_profile">Business profile</option><option value="project_status">Project status</option><option value="contact_info">Contact information</option><option value="response_rule">Response rule</option><option value="support_guide">Support guide</option></select></label>
+   <label class="hf-field">Language<select class="hf-select" id="aiKbDocLanguage"><option value="both">Bengali &amp; English</option><option value="bn">Bengali</option><option value="en">English</option></select></label>
+   <label class="hf-field">Priority (lower appears first)<input class="hf-input" id="aiKbDocPriority" type="number" min="1" max="999" value="100"></label>
+  </div>
+  <label class="hf-field">Verified customer-facing content *<textarea class="hf-textarea" id="aiKbDocContent" rows="9" required maxlength="12000" placeholder="Write only facts and guidance approved for customers…"></textarea></label>
+  <div class="ai-kb-two-col">
+   <label class="hf-field">Source / verification note<input class="hf-input" id="aiKbDocSource" maxlength="180" placeholder="Owner confirmed / official policy"></label>
+   <label class="hf-field">Optional expiry date<input class="hf-input" id="aiKbDocExpiry" type="date"></label>
+  </div>
+  <p class="ai-kb-editor-note">Publishing makes this document available to the AI assistant immediately. Review expiry dates for temporary offers or policies.</p>
+  <p class="hf-form-error" id="aiKbDocError" role="alert"></p>
+  <div class="hf-dialog-actions"><button class="hf-button hf-button-secondary" type="button" id="aiKbDocSaveDraft">Save draft</button><button class="hf-button hf-button-primary" type="submit">Publish document</button></div>
+ </form>
+</section>
+<section id="aiKbProducts" class="ai-kb-workspace" hidden>
+ <div class="ai-kb-list-panel hf-card hf-card-pad">
+  <div class="hf-section-head"><div><h2>Product profile coverage</h2><p>Choose a live catalog product to add or update verified product details.</p></div></div>
+  <div class="hf-toolbar"><input class="hf-input" id="aiKbProductSearch" type="search" placeholder="Search product name…"><select class="hf-select" id="aiKbProductStatus"><option value="">All profile states</option><option value="published">Published</option><option value="draft">Draft</option><option value="missing">Not created</option></select></div>
+  <div id="aiKbProductList" class="ai-kb-record-list"><div class="hf-loading">Loading product profiles…</div></div>
+ </div>
+ <form id="aiKbProductForm" class="ai-kb-editor hf-card hf-card-pad">
+  <div class="hf-section-head"><div><p class="page-eyebrow">VERIFIED PRODUCT PROFILE</p><h2 id="aiKbProductTitle">Select a product</h2><p id="aiKbProductSubtitle">Profile facts help the AI explain suitability and differences.</p></div><span id="aiKbProductStatusBadge" class="hf-status hf-status-review">Not selected</span></div>
+  <input type="hidden" id="aiKbProductId">
+  <div class="ai-kb-two-col">
+   <label class="hf-field">Quality summary<textarea class="hf-textarea" id="aiKbQuality" rows="3"></textarea></label>
+   <label class="hf-field">Ingredients<textarea class="hf-textarea" id="aiKbIngredients" rows="3"></textarea></label>
+   <label class="hf-field">Origin / source<textarea class="hf-textarea" id="aiKbOrigin" rows="2"></textarea></label>
+   <label class="hf-field">Production method<textarea class="hf-textarea" id="aiKbProduction" rows="2"></textarea></label>
+   <label class="hf-field">Taste / aroma<textarea class="hf-textarea" id="aiKbTaste" rows="2"></textarea></label>
+   <label class="hf-field">Texture<textarea class="hf-textarea" id="aiKbTexture" rows="2"></textarea></label>
+   <label class="hf-field">Usage instructions<textarea class="hf-textarea" id="aiKbUsage" rows="3"></textarea></label>
+   <label class="hf-field">Storage instructions<textarea class="hf-textarea" id="aiKbStorage" rows="3"></textarea></label>
+   <label class="hf-field">Allergen information<textarea class="hf-textarea" id="aiKbAllergen" rows="2"></textarea></label>
+   <label class="hf-field">Certification information<textarea class="hf-textarea" id="aiKbCertification" rows="2"></textarea></label>
+  </div>
+  <label class="hf-field">Verified claims (one approved claim per line)<textarea class="hf-textarea" id="aiKbClaims" rows="3" placeholder="Only exact, documented claims"></textarea></label>
+  <label class="hf-field">Customer fit (one suitable use-case per line)<textarea class="hf-textarea" id="aiKbFit" rows="3" placeholder="e.g. Suitable for customers looking for a 500g pack"></textarea></label>
+  <label class="hf-field">Product FAQs (one per line: question | answer)<textarea class="hf-textarea" id="aiKbFaq" rows="4" placeholder="এই পণ্যটি কীভাবে ব্যবহার করব? | প্রকাশিত ব্যবহারের নির্দেশনা লিখুন"></textarea></label>
+  <label class="hf-field">Claims the AI must not make (one per line)<textarea class="hf-textarea" id="aiKbProhibited" rows="2"></textarea></label>
+  <label class="hf-field">Internal source / evidence notes (never shown to customers)<textarea class="hf-textarea" id="aiKbSourceNotes" rows="3" placeholder="Where this fact was verified. Do not enter supplier secrets or cost data."></textarea></label>
+  <p class="ai-kb-editor-note">Price, package display and availability are not edited here. The live catalog remains their only source of truth.</p>
+  <p class="hf-form-error" id="aiKbProductError" role="alert"></p>
+  <div class="hf-dialog-actions"><button class="hf-button hf-button-secondary" type="button" id="aiKbProductSaveDraft">Save draft</button><button class="hf-button hf-button-primary" type="submit">Publish verified profile</button></div>
+ </form>
+</section>
+</main></div>
+<script defer src="./i18n.js?v=20261102-dashboard-speed-v2"></script>
+<script defer src="../js/store-config.js?v=20261101-store-config-v1"></script>
+<script defer src="./shared.js?v=20261103-ai-stage2-v1"></script>
+<script defer src="./app.js?v=20261102-dashboard-speed-v2"></script>
+<script defer src="./ai-knowledge.js?v=20261103-ai-stage2-v1"></script>
+</body></html>
