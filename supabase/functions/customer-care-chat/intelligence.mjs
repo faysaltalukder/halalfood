@@ -45,7 +45,7 @@ function normalizeText(value) {
   return String(value || "").normalize("NFKC").toLocaleLowerCase()
     .replace(/[০-৯]/g, d => String("০১২৩৪৫৬৭৮৯".indexOf(d)))
     .replace(/[অ-ঔ]/gu, c => c)
-    .replace(/[^\p{L}\p{N}\s&-]/gu," ").replace(/\s+/g," ").trim();
+    .replace(/[^\p{L}\p{M}\p{N}\s&-]/gu," ").replace(/\s+/g," ").trim();
 }
 function tokenize(value) {
   return normalizeText(value).split(/[\s&-]+/u).filter(t=>t.length>1&&!STOP.has(t)).slice(0,50);
