@@ -274,7 +274,7 @@
       const shouldStick = messages.scrollHeight - messages.scrollTop - messages.clientHeight < 100;
       bubble.appendChild(wrap);
       trackChatEvent("view_item_list", shownItems, null, { list_name:"ai_chat_recommendations" });
-      trackChatEvent("ai_product_card_shown", shownItems, null, { match_type:matchType || "unknown", interaction_source:"ai_chat" });
+      shownItems.forEach(function (item) { trackChatEvent("ai_product_card_shown", [item], null, { match_type:matchType || item.match_type || "unknown", confidence_level:item.confidence_level || "unknown", interaction_source:"ai_chat" }); });
       if (shouldStick) scrollToLatest(true);
     }
   }
