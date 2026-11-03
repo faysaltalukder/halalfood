@@ -469,9 +469,7 @@ function friendlyErrorCode(status: number): string {
 }
 
 function isCompleteReply(reply: string, finishReason: string): boolean {
-  const clean = reply.trim();
-  if (!clean || finishReason === "MAX_TOKENS" || finishReason === "SAFETY") return false;
-  return /[.!?।…][”"'’)]*$/u.test(clean);
+  return Boolean(reply.trim()) && finishReason !== "MAX_TOKENS" && finishReason !== "SAFETY";
 }
 
 async function callGemini(
