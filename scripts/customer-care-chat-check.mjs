@@ -1,4 +1,5 @@
 import { classifyCustomerIntent } from "../supabase/functions/customer-care-chat/policy.mjs";
+import { extractTrackingOrderId, extractTrackingPhone, getOrderTrackingCredentials, isOrderTrackingRequest, normalizeTrackingPhone } from "../supabase/functions/customer-care-chat/tracking.mjs";
 import { rankProductCandidates, extractConversationState, extractImageMatch, applyConfidencePolicy, normalizeText } from "../supabase/functions/customer-care-chat/intelligence.mjs";
 import fs from "node:fs";
 import assert from "node:assert/strict";
@@ -16,6 +17,23 @@ const analyticsPage = fs.readFileSync("admin/analytics.html", "utf8");
 const adminApp = fs.readFileSync("admin/app.js", "utf8");
 const stageTwoMigration = fs.readFileSync("supabase/migrations/20261103143000_ai_customer_intelligence_stage_two.sql", "utf8");
 const golden = JSON.parse(fs.readFileSync("scripts/customer-care-intelligence-golden.json", "utf8"));
+
+assert.equal(extractTrackingOrderId("Track my order HF-484590"), "HF-484590");
+assert.equal(extractTrackingOrderId("অর্ডার HF-১২৩৪"), "HF-1234");
+assert.equal(extractTrackingPhone("আমার নম্বর ০১৮৪২০৩১১৬৪"), "01842031164");
+assert.equal(extractTrackingPhone("+880 1700-000000"), "01700000000");
+assert.equal(normalizeTrackingPhone("8801700000000"), "01700000000");
+assert.equal(isOrderTrackingRequest("আমি একটা পণ্য ট্র্যাক করতে চাই"), true);
+assert.equal(isOrderTrackingRequest("HF-484590", [{role:"user",text:"I want to track my product"}]), true);
+assert.equal(isOrderTrackingRequest("HF-484590", [{role:"assistant",text:"track this order"}]), false);
+assert.deepEqual(
+  getOrderTrackingCredentials("আমার নম্বর 01700000000", [{role:"user",text:"Please track order HF-484590"}]),
+  {orderId:"HF-484590",mobile:"01700000000"}
+);
+assert.match(edge, /from "\.\/tracking\.mjs"/);
+assert.match(edge, /getOrderTrackingCredentials\(message, historyInput\)/);
+assert.match(edge, /parts\.join\("\\n"\)/);
+
 
 assert.match(main, /js\/customer-care-chat\.js\?v=20261103-product-card-cta-v7/);
 assert.match(chat, /functions\/v1\/customer-care-chat/);
