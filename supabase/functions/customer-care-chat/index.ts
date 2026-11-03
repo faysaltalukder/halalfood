@@ -422,9 +422,7 @@ function buildDeterministicFallbackReply(
     if (found.length) {
       return (/[A-Za-z]/u.test(message) ? "Here are the honey products currently listed in our live catalog:" : "আমাদের লাইভ ক্যাটালগে বর্তমানে মধুর তালিকাভুক্ত পণ্যগুলো হলো:")
         + "\n\n" + found.map(productLine).join("\n")
-        + "\n\n" + (/[A-Za-z]/u.test(message)
-          ? "Please note: this is a demo project; real orders and delivery are not active."
-          : "নোট: এটি একটি ডেমো প্রকল্প; বাস্তব অর্ডার ও ডেলিভারি চালু নেই।");
+        + "";
     }
     return /[A-Za-z]/u.test(message)
       ? "I understood that you are looking for honey. I cannot find a honey item in the currently published catalog. Would you like to explore another product category?"
@@ -436,8 +434,7 @@ function buildDeterministicFallbackReply(
       const diff = /(পার্থক্য|তফাৎ|ভিন্ন|different|difference|compare|তুলনা)/iu.test(normalized);
       return "আমাদের লাইভ ক্যাটালগে বর্তমানে " + found.length + " ধরনের ঘি তালিকাভুক্ত আছে:\n\n" +
         found.map(productLine).join("\n") +
-        (diff ? "\n\n**পার্থক্য সম্পর্কে:** যাচাইকৃত তথ্য দিয়ে নাম, প্যাকের পরিমাণ ও তালিকাভুক্ত দামের তুলনা করা যাচ্ছে। উপাদান, উৎস, স্বাদ, উৎপাদন-পদ্ধতি বা মানের পার্থক্য সম্পর্কে মালিক-যাচাইকৃত তথ্য না থাকলে অনুমান করে বলা ঠিক হবে না।" : "") +
-        "\n\nনোট: Halal Food বর্তমানে ডেমো প্রকল্প; বাস্তব অর্ডার বা ডেলিভারি চালু নেই।";
+        (diff ? "\n\nপার্থক্য সম্পর্কে: যাচাইকৃত তথ্য দিয়ে নাম, প্যাকের পরিমাণ ও তালিকাভুক্ত দামের তুলনা করা যাচ্ছে। উপাদান, উৎস, স্বাদ, উৎপাদন-পদ্ধতি বা মানের পার্থক্য সম্পর্কে যাচাইকৃত তথ্য না থাকলে অনুমান করে বলা ঠিক হবে না." : "");
     }
   }
   if (isCategoryCatalogQuestion(message) && products.length) {
@@ -449,9 +446,18 @@ function buildDeterministicFallbackReply(
     const doc = knowledge.documents.find((d) => String(d.document_key || "") === "project-operational-status");
     if (doc) return "অবশ্যই, পণ্য কেনার বিষয়ে আমি সাহায্য করছি। কোন পণ্যটি নিতে চান এবং কতটুকু পরিমাণ প্রয়োজন? পণ্যের বর্তমান দাম ও তালিকাভুক্ত উপলভ্যতা দেখে আপনাকে পরবর্তী ধাপ বুঝিয়ে দিচ্ছি। নির্দিষ্ট ডেলিভারি বা পেমেন্টের তথ্য নিশ্চিত না থাকলে অনুমান করে বলব না.";
   }
-  if (/(যোগাযোগ|contact|ফোন|phone|whatsapp|হোয়াটসঅ্যাপ|হোয়াটসঅ্যাপ|ইমেইল|email)/iu.test(normalized)) {
+  if (/(যোগাযোগ|contact|ফোন|phone|whatsapp|হোয়াটসঅ্যাপ|হোয়াটসঅ্যাপ|ইমেইল|email|ওয়েবসাইটের লিংক|website link)/iu.test(normalized)) {
     const doc = knowledge.documents.find((d) => String(d.document_key || "") === "official-contact-channels");
-    if (doc) return "অবশ্যই। ফোন/WhatsApp: +8801842031164। ইমেইল: halalfoodbd.official@gmail.com। ওয়েবসাইট: https://faysaltalukder.github.io/halalfood/।";
+    if (doc) {
+      const wantsPhone = /(ফোন|phone|whatsapp|হোয়াটসঅ্যাপ|হোয়াটসঅ্যাপ|যোগাযোগ|contact)/iu.test(normalized);
+      const wantsEmail = /(ইমেইল|email)/iu.test(normalized);
+      const wantsWebsite = /(ওয়েবসাইট|ওয়েবসাইট|website|লিংক|link)/iu.test(normalized);
+      const details = [];
+      if (wantsPhone) details.push("ফোন/WhatsApp: +8801842031164");
+      if (wantsEmail) details.push("ইমেইল: halalfoodbd.official@gmail.com");
+      if (wantsWebsite) details.push("ওয়েবসাইট: https://faysaltalukder.github.io/halalfood/");
+      return "অবশ্যই, " + (details.length ? details.join("। ") + "।" : "কীভাবে যোগাযোগ করতে চান—ফোন, ইমেইল, নাকি ওয়েবসাইট?");
+    }
   }
   return /[A-Za-z]/u.test(message)
     ? "I’m happy to help. Tell me what you’re looking for, and I’ll do my best to sort it out with you."
@@ -643,7 +649,7 @@ Deno.serve(async (req: Request) => {
     loadedKnowledge = knowledge;
     const systemInstruction = SYSTEM_INSTRUCTION + "\n\n--- RETRIEVED KNOWLEDGE CONTEXT ---\n" +
       buildKnowledgeContext(knowledge) +
-      "\n\nRemember: do not expose internal metadata or numeric stock. Only use verified facts and the exact URLs supplied above.";
+      "\n\nRemember: do not expose internal metadata or numeric stock. Only use verified facts and exact URLs supplied above. Speak naturally in plain text without Markdown decoration. The owner’s current confirmation that this is a real selling business overrides older demo/test-status text in retrieved documents. Do not volunteer contact details or redirect the customer away from this chat unless explicitly requested or genuinely necessary.";
     console.info(JSON.stringify({
       event: "customer_care_knowledge_loaded",
       requestId,
