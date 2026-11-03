@@ -158,6 +158,9 @@ begin
     if tg_op='DELETE' then
       raise exception 'Finance accounts are retained for audit history; archive an account instead.';
     end if;
+    if tg_op='INSERT' and (new.opening_balance_journal_id is not null or new.opening_offset_account_id is not null) and not v_sync then
+      raise exception 'Opening balance journal links are workflow-managed.';
+    end if;
     if new.ledger_account_id is null then
       raise exception 'Choose a General Ledger account mapping before saving this Finance account.';
     end if;
@@ -1002,6 +1005,240 @@ $$;
 revoke all on function public.admin_finance_post_supplier_payment(uuid) from public,anon;
 grant execute on function public.admin_finance_post_supplier_payment(uuid) to authenticated;
 
+create or replace function public.admin_finance_reverse_cashbook_entry(
+ p_entry_id uuid,p_reversal_date date,p_reason text
+)
+returns uuid
+language plpgsql
+security invoker
+set search_path=''
+as $
+declare
+ v_email text:=lower(coalesce((select auth.jwt()->>'email'),''));
+ v_aal text:=coalesce((select auth.jwt()->>'aal'),'aal1');
+ v_entry public.admin_finance_entries%rowtype;
+ v_status text;
+ v_reversal uuid;
+begin
+ if v_email<>'halalfoodbd.official@gmail.com' or v_aal<>'aal2' or auth.uid() is null then
+  raise exception 'Authorized admin account and MFA are required.' using errcode='42501';
+ end if;
+ if p_reversal_date is null or length(btrim(coalesce(p_reason,'')))<5 then
+  raise exception 'Enter a reversal date and a reason of at least five characters.';
+ end if;
+ select * into v_entry from public.admin_finance_entries where id=p_entry_id for update;
+ if not found then raise exception 'Cashbook transaction was not found.'; end if;
+ if v_entry.related_cod_settlement_id is not null or v_entry.related_supplier_payment_id is not null then
+  raise exception 'COD and Supplier Payment cashbook mirrors must be reversed from their source workflow.';
+ end if;
+ if v_entry.status='void' then return v_entry.reversal_journal_id; end if;
+ if v_entry.status not in ('confirmed','draft') then raise exception 'Only Draft or Confirmed cashbook entries can be voided.'; end if;
+
+ if v_entry.accounting_journal_id is not null then
+  select status into v_status from public.admin_finance_journal_entries where id=v_entry.accounting_journal_id;
+  if v_status='posted' then
+   v_reversal:=public.admin_finance_reverse_journal_entry(v_entry.accounting_journal_id,p_reversal_date,p_reason);
+  elsif v_status='reversed' then
+   select reversed_by into v_reversal from public.admin_finance_journal_entries where id=v_entry.accounting_journal_id;
+  else
+   raise exception 'The linked Journal is not Posted or Reversed. Review the accounting record.';
+  end if;
+ end if;
+ perform pg_catalog.set_config('app.finance_operations_sync','on',true);
+ update public.admin_finance_entries
+ set status='void',reversal_journal_id=v_reversal,updated_at=now()
+ where id=p_entry_id;
+ return v_reversal;
+end;
+$;
+revoke all on function public.admin_finance_reverse_cashbook_entry(uuid,date,text) from public,anon;
+grant execute on function public.admin_finance_reverse_cashbook_entry(uuid,date,text) to authenticated;
+
+create or replace function public.admin_finance_reverse_cod_settlement(
+ p_settlement_id uuid,p_reversal_date date,p_reason text
+)
+returns uuid
+language plpgsql
+security invoker
+set search_path=''
+as $
+declare
+ v_email text:=lower(coalesce((select auth.jwt()->>'email'),''));
+ v_aal text:=coalesce((select auth.jwt()->>'aal'),'aal1');
+ v_settlement public.admin_cod_settlements%rowtype;
+ v_status text;
+ v_reversal uuid;
+ v_sale uuid;
+ v_sale_reverse uuid;
+ v_cogs uuid;
+ v_cogs_reverse uuid;
+begin
+ if v_email<>'halalfoodbd.official@gmail.com' or v_aal<>'aal2' or auth.uid() is null then
+  raise exception 'Authorized admin account and MFA are required.' using errcode='42501';
+ end if;
+ if p_reversal_date is null or length(btrim(coalesce(p_reason,'')))<5 then
+  raise exception 'Enter a reversal date and a reason of at least five characters.';
+ end if;
+ select * into v_settlement from public.admin_cod_settlements where id=p_settlement_id for update;
+ if not found then raise exception 'COD settlement was not found.'; end if;
+ if v_settlement.reversal_journal_id is not null then return v_settlement.reversal_journal_id; end if;
+ if v_settlement.accounting_journal_id is null then
+  raise exception 'This COD settlement has no accounting Journal. Use the ordinary settlement review workflow.';
+ end if;
+
+ select status into v_status from public.admin_finance_journal_entries where id=v_settlement.accounting_journal_id;
+ if v_status='posted' then
+  v_reversal:=public.admin_finance_reverse_journal_entry(v_settlement.accounting_journal_id,p_reversal_date,p_reason);
+ elsif v_status='reversed' then
+  select reversed_by into v_reversal from public.admin_finance_journal_entries where id=v_settlement.accounting_journal_id;
+ else
+  raise exception 'The COD settlement Journal is not Posted or Reversed.';
+ end if;
+
+ select id into v_sale from public.admin_finance_journal_entries
+ where source_type='order_sale' and source_key=v_settlement.order_id::text;
+ if v_sale is not null then
+  select status into v_status from public.admin_finance_journal_entries where id=v_sale;
+  if v_status='posted' then
+   v_sale_reverse:=public.admin_finance_reverse_journal_entry(v_sale,p_reversal_date,'COD settlement correction: '||left(p_reason,400));
+  elsif v_status='reversed' then
+   select reversed_by into v_sale_reverse from public.admin_finance_journal_entries where id=v_sale;
+  end if;
+ end if;
+
+ select id into v_cogs from public.admin_finance_journal_entries
+ where source_type='order_cogs' and source_key=v_settlement.order_id::text;
+ if v_cogs is not null then
+  select status into v_status from public.admin_finance_journal_entries where id=v_cogs;
+  if v_status='posted' then
+   v_cogs_reverse:=public.admin_finance_reverse_journal_entry(v_cogs,p_reversal_date,'COD settlement correction: '||left(p_reason,400));
+  elsif v_status='reversed' then
+   select reversed_by into v_cogs_reverse from public.admin_finance_journal_entries where id=v_cogs;
+  end if;
+ end if;
+
+ perform pg_catalog.set_config('app.finance_operations_sync','on',true);
+ update public.admin_cod_settlements
+ set status='exception',
+     reversal_journal_id=v_reversal,
+     order_sale_reversal_journal_id=v_sale_reverse,
+     order_cogs_reversal_journal_id=v_cogs_reverse,
+     notes=left(concat_ws(E'\n',nullif(notes,''),'Accounting reversal: '||btrim(p_reason)),1200),
+     updated_at=now()
+ where id=p_settlement_id;
+ return v_reversal;
+end;
+$;
+revoke all on function public.admin_finance_reverse_cod_settlement(uuid,date,text) from public,anon;
+grant execute on function public.admin_finance_reverse_cod_settlement(uuid,date,text) to authenticated;
+
+create or replace function public.admin_finance_reverse_supplier_bill(
+ p_bill_id uuid,p_reversal_date date,p_reason text
+)
+returns uuid
+language plpgsql
+security invoker
+set search_path=''
+as $
+declare
+ v_email text:=lower(coalesce((select auth.jwt()->>'email'),''));
+ v_aal text:=coalesce((select auth.jwt()->>'aal'),'aal1');
+ v_bill public.admin_supplier_bills%rowtype;
+ v_status text;
+ v_reversal uuid;
+ v_allocations numeric(14,2);
+begin
+ if v_email<>'halalfoodbd.official@gmail.com' or v_aal<>'aal2' or auth.uid() is null then
+  raise exception 'Authorized admin account and MFA are required.' using errcode='42501';
+ end if;
+ if p_reversal_date is null or length(btrim(coalesce(p_reason,'')))<5 then
+  raise exception 'Enter a reversal date and a reason of at least five characters.';
+ end if;
+ select * into v_bill from public.admin_supplier_bills where id=p_bill_id for update;
+ if not found then raise exception 'Supplier bill was not found.'; end if;
+ if v_bill.reversal_journal_id is not null then return v_bill.reversal_journal_id; end if;
+ if v_bill.accounting_journal_id is null then
+  if v_bill.status='draft' then
+   perform pg_catalog.set_config('app.finance_operations_sync','on',true);
+   update public.admin_supplier_bills set status='void',updated_at=now() where id=p_bill_id;
+   return null;
+  end if;
+  raise exception 'The supplier bill has not been posted to accounting.';
+ end if;
+ select coalesce(sum(a.allocated_amount),0) into v_allocations
+ from public.admin_supplier_payment_allocations a
+ join public.admin_supplier_payments p on p.id=a.payment_id
+ where a.supplier_bill_id=p_bill_id and p.status='confirmed';
+ if v_allocations>0 then
+  raise exception 'This bill has confirmed payment allocations. Reverse or reallocate those payments before voiding the bill.';
+ end if;
+ select status into v_status from public.admin_finance_journal_entries where id=v_bill.accounting_journal_id;
+ if v_status='posted' then
+  v_reversal:=public.admin_finance_reverse_journal_entry(v_bill.accounting_journal_id,p_reversal_date,p_reason);
+ elsif v_status='reversed' then
+  select reversed_by into v_reversal from public.admin_finance_journal_entries where id=v_bill.accounting_journal_id;
+ else
+  raise exception 'Supplier bill Journal is not Posted or Reversed.';
+ end if;
+ perform pg_catalog.set_config('app.finance_operations_sync','on',true);
+ update public.admin_supplier_bills set status='void',reversal_journal_id=v_reversal,updated_at=now()
+ where id=p_bill_id;
+ return v_reversal;
+end;
+$;
+revoke all on function public.admin_finance_reverse_supplier_bill(uuid,date,text) from public,anon;
+grant execute on function public.admin_finance_reverse_supplier_bill(uuid,date,text) to authenticated;
+
+create or replace function public.admin_finance_reverse_supplier_payment(
+ p_payment_id uuid,p_reversal_date date,p_reason text
+)
+returns uuid
+language plpgsql
+security invoker
+set search_path=''
+as $
+declare
+ v_email text:=lower(coalesce((select auth.jwt()->>'email'),''));
+ v_aal text:=coalesce((select auth.jwt()->>'aal'),'aal1');
+ v_payment public.admin_supplier_payments%rowtype;
+ v_status text;
+ v_reversal uuid;
+begin
+ if v_email<>'halalfoodbd.official@gmail.com' or v_aal<>'aal2' or auth.uid() is null then
+  raise exception 'Authorized admin account and MFA are required.' using errcode='42501';
+ end if;
+ if p_reversal_date is null or length(btrim(coalesce(p_reason,'')))<5 then
+  raise exception 'Enter a reversal date and a reason of at least five characters.';
+ end if;
+ select * into v_payment from public.admin_supplier_payments where id=p_payment_id for update;
+ if not found then raise exception 'Supplier payment was not found.'; end if;
+ if v_payment.reversal_journal_id is not null then return v_payment.reversal_journal_id; end if;
+ if v_payment.accounting_journal_id is null then
+  if v_payment.status='draft' then
+   perform pg_catalog.set_config('app.finance_operations_sync','on',true);
+   update public.admin_supplier_payments set status='void',updated_at=now() where id=p_payment_id;
+   return null;
+  end if;
+  raise exception 'The supplier payment has not been posted to accounting.';
+ end if;
+ select status into v_status from public.admin_finance_journal_entries where id=v_payment.accounting_journal_id;
+ if v_status='posted' then
+  v_reversal:=public.admin_finance_reverse_journal_entry(v_payment.accounting_journal_id,p_reversal_date,p_reason);
+ elsif v_status='reversed' then
+  select reversed_by into v_reversal from public.admin_finance_journal_entries where id=v_payment.accounting_journal_id;
+ else
+  raise exception 'Supplier payment Journal is not Posted or Reversed.';
+ end if;
+ perform pg_catalog.set_config('app.finance_operations_sync','on',true);
+ update public.admin_supplier_payments set status='void',reversal_journal_id=v_reversal,updated_at=now()
+ where id=p_payment_id;
+ return v_reversal;
+end;
+$;
+revoke all on function public.admin_finance_reverse_supplier_payment(uuid,date,text) from public,anon;
+grant execute on function public.admin_finance_reverse_supplier_payment(uuid,date,text) to authenticated;
+
+
 create or replace function public.admin_finance_post_order_cogs(p_order_id uuid)
 returns uuid
 language plpgsql
@@ -1118,6 +1355,13 @@ from aggregated;
 
 revoke all on public.admin_finance_product_profitability from public,anon,authenticated;
 grant select on public.admin_finance_product_profitability to authenticated;
+
+comment on column public.admin_finance_entries.reversal_journal_id is 'Reversal journal for a manual cashbook entry that was previously posted.';
+comment on column public.admin_cod_settlements.reversal_journal_id is 'Reversal journal for the reconciled COD remittance.';
+comment on column public.admin_cod_settlements.order_sale_reversal_journal_id is 'Reversal journal for recognized sales associated with a voided or corrected COD settlement.';
+comment on column public.admin_cod_settlements.order_cogs_reversal_journal_id is 'Reversal journal for COGS associated with a voided or corrected COD settlement.';
+comment on column public.admin_supplier_bills.reversal_journal_id is 'Reversal journal for a posted supplier bill.';
+comment on column public.admin_supplier_payments.reversal_journal_id is 'Reversal journal for a posted supplier payment.';
 
 comment on column public.admin_finance_accounts.ledger_account_id is 'Required Chart of Accounts Asset mapping. Several bank/wallet subaccounts may share one GL control account.';
 comment on column public.admin_finance_accounts.opening_balance_journal_id is 'Journal created only after the owner verifies the real opening balance and chooses an equity/liability offset.';
