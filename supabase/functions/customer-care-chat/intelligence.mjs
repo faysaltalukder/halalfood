@@ -128,6 +128,7 @@ function rankProductCandidates(products, profiles, message, decision={}, imageMa
     /(টিন|tin)/u.test(query)?"tin":
     /(প্যাকেট|packet|pouch|পাউচ)/u.test(query)?"packet":null;
   const requestedSize=(query.match(/(?:^|\s)([0-9]+\s?(?:ml|l|g|kg))(?=\s|$)/u)||[])[1]||"";
+  const packPreference=decision.pack_preference==="small"||decision.pack_preference==="large"?decision.pack_preference:null;
   const visualSlug=typeof imageMatch?.candidate_slug==="string"?imageMatch.candidate_slug:"";
   const visualSlugs=Array.isArray(imageMatch?.candidate_slugs)?imageMatch.candidate_slugs.filter(x=>typeof x==="string"):[];
 
