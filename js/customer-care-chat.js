@@ -8,7 +8,7 @@
   const style = document.createElement("link");
   style.id = "hf-customer-care-chat-styles";
   style.rel = "stylesheet";
-  style.href = ASSET_BASE + "css/customer-care-chat.css?v=20261103-product-card-cta-v6";
+  style.href = ASSET_BASE + "css/customer-care-chat.css?v=20261103-product-card-cta-v7";
   document.head.appendChild(style);
 
   let root = document.getElementById("hf-contact-widget");
@@ -282,7 +282,7 @@
       copy.append(name, price, meta);
       const actions = document.createElement("span"); actions.className = "hf-ai-product-card-actions";
       const details = document.createElement("button"); details.type = "button"; details.textContent = "বিস্তারিত"; details.dataset.hfProductView = product.id;
-      const order = document.createElement("button"); order.type = "button"; order.textContent = "অর্ডার করুন"; order.dataset.hfProductOrder = product.id; order.disabled = product.availability === "unavailable";
+      const order = document.createElement("button"); order.type = "button"; order.innerHTML = "অর্ডার<br>করুন"; order.setAttribute("aria-label", "অর্ডার করুন"); order.dataset.hfProductOrder = product.id; order.disabled = product.availability === "unavailable";
       actions.append(details, order);
       card.append(copy, actions);
       wrap.appendChild(card);
