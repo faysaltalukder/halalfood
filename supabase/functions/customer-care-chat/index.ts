@@ -182,7 +182,7 @@ function numericProductPrice(product: Record<string, unknown>): number | null {
 }
 
 function publicProductCards(knowledge: Awaited<ReturnType<typeof loadKnowledge>>, message: string): Record<string, unknown>[] {
-  if (!/(পণ্যের লিংক|প্রোডাক্ট লিংক|পণ্যের পেজ|পণ্যের url|product\s*(?:page\\s*)?(?:link|url)|product page|link to (?:this|that|the) product)/iu.test(message)) return [];
+  if (!/(পণ্যের লিংক|প্রোডাক্ট লিংক|পণ্যের পেজ|পণ্যের url|product\s*(?:page\s*)?(?:link|url)|product page|link to (?:this|that|the) product)/iu.test(message)) return [];
   return knowledge.products.slice(0, 8).map((product) => {
     const profile = product.verified_product_knowledge && typeof product.verified_product_knowledge === "object"
       ? product.verified_product_knowledge as Record<string, unknown> : null;
@@ -381,7 +381,7 @@ function buildDeterministicFallbackReply(
 ): string | null {
   const normalized = message.toLowerCase().normalize("NFKC");
   const products = knowledge.products;
-  const wantsProductLink = /(পণ্যের লিংক|প্রোডাক্ট লিংক|পণ্যের পেজ|পণ্যের url|product\s*(?:page\\s*)?(?:link|url)|product page|link to (?:this|that|the) product)/iu.test(message);
+  const wantsProductLink = /(পণ্যের লিংক|প্রোডাক্ট লিংক|পণ্যের পেজ|পণ্যের url|product\s*(?:page\s*)?(?:link|url)|product page|link to (?:this|that|the) product)/iu.test(message);
   const productLine = (product: Record<string, unknown>) => {
     const availability = product.availability === "available" ? "তালিকায় উপলভ্য"
       : product.availability === "unavailable" ? "বর্তমানে অনুপলব্ধ" : "স্টক নিশ্চিত করতে হবে";
