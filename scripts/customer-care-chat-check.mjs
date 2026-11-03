@@ -24,6 +24,8 @@ assert.equal(extractTrackingPhone("আমার নম্বর ০১৮৪২�
 assert.equal(extractTrackingPhone("+880 1700-000000"), "01700000000");
 assert.equal(normalizeTrackingPhone("8801700000000"), "01700000000");
 assert.equal(isOrderTrackingRequest("আমি একটা পণ্য ট্র্যাক করতে চাই"), true);
+assert.equal(isOrderTrackingRequest("where is my package"), true);
+assert.equal(isOrderTrackingRequest("ডেলিভারি স্ট্যাটাস কী"), true);
 assert.equal(isOrderTrackingRequest("HF-484590", [{role:"user",text:"I want to track my product"}]), true);
 assert.equal(isOrderTrackingRequest("HF-484590", [{role:"assistant",text:"track this order"}]), false);
 assert.deepEqual(
