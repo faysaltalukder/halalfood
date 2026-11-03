@@ -7,7 +7,7 @@ const css = fs.readFileSync("css/customer-care-chat.css", "utf8");
 const home = fs.readFileSync("index.html", "utf8");
 const edge = fs.readFileSync("supabase/functions/customer-care-chat/index.ts", "utf8");
 
-assert.match(main, /js\/customer-care-chat\.js\?v=20261103-gemini-chat-v2/);
+assert.match(main, /js\/customer-care-chat\.js\?v=20261103-gemini-chat-v3/);
 assert.match(chat, /functions\/v1\/customer-care-chat/);
 assert.match(chat, /ageConfirmed:\s*true/);
 assert.match(chat, /আমি নিশ্চিত করছি, আমার বয়স ১৮ বছর বা তার বেশি/);
