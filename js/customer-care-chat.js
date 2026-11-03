@@ -505,10 +505,19 @@
       pendingOrderId = ""; checkoutQuote = null; checkoutValues = {}; chatCheckoutStartedAt = 0;
     } catch (error) {
       if (error.code === "PRICE_CHANGED" || error.code === "DELIVERY_CHANGED") {
-        try { checkoutQuote = await requestChatQuote(checkoutValues.deliveryZone); } catch (_) {}
-        try { if (turnstileWidgetId !== null) window.turnstile?.remove?.(turnstileWidgetId); } catch (_) {}
-        turnstileWidgetId = null; turnstileToken = "";
-        renderReview("হিসাবটি আপডেট করা হয়েছে। নতুন মোট মূল্য দেখে আবার নিশ্চিত করুন।");
+        try {
+          checkoutQuote = await requestChatQuote(checkoutValues.deliveryZone);
+          try { if (turnstileWidgetId !== null) window.turnstile?.remove?.(turnstileWidgetId); } catch (_) {}
+          turnstileWidgetId = null; turnstileToken = "";
+          renderReview("পণ্যের মূল্য বা ডেলিভারি চার্জ আপডেট হয়েছে। নতুন মোট মূল্য দেখে আবার নিশ্চিত করুন।");
+        } catch (refreshError) {
+          checkoutQuote = null;
+          try { if (turnstileWidgetId !== null) window.turnstile?.remove?.(turnstileWidgetId); } catch (_) {}
+          turnstileWidgetId = null; turnstileToken = "";
+          renderCheckout();
+          setView("checkout");
+          renderCheckoutError("বর্তমান মূল্য যাচাই করা যাচ্ছে না। আপনার তথ্য রাখা হয়েছে। আবার হিসাব যাচাই করুন।");
+        }
       } else {
         if (errorBox) { errorBox.hidden = false; errorBox.textContent = error.message || "অর্ডার পাঠাতে সমস্যা হয়েছে। তথ্য ঠিক রেখে আবার চেষ্টা করতে পারেন।"; }
         try { window.turnstile?.reset?.(turnstileWidgetId); } catch (_) {}
