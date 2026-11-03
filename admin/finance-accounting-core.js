@@ -23,13 +23,13 @@ window.HFAdminReady.then(async H => {
     contra_revenue: "Contra revenue", cost_of_sales: "Cost of sales",
     expense: "Expense", other_income: "Other income"
   };
-  const statusLabels = { draft: "Draft", posted: "Posted", reversed: "Reversed", open: "Open", closed: "Closed", locked: "Locked" };
+  const statusLabels = { draft: "Draft", posted: "Posted", reversed: "Reversed", open: "Open", closed: "Closed", locked: "Locked", active: "Active", inactive: "Inactive" };
   const todayDhaka = () => new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Dhaka", year: "numeric", month: "2-digit", day: "2-digit"
   }).format(new Date());
   const sum = (rows, field) => rows.reduce((n, row) => n + Number(row[field] || 0), 0);
   const statusBadge = status => {
-    const tone = status === "posted" || status === "locked" ? "success"
+    const tone = status === "posted" || status === "active" || status === "locked" ? "success"
       : status === "draft" || status === "open" ? "pending"
       : status === "closed" ? "info" : "muted";
     return '<span class="hf-finance-status hf-finance-status-' + tone + '">' +
@@ -72,7 +72,7 @@ window.HFAdminReady.then(async H => {
       esc(a.normal_balance === "debit" ? "Debit" : "Credit") + "</td><td>" +
       (a.is_postable ? '<span class="hf-finance-status hf-finance-status-success">Postable</span>' :
         '<span class="hf-finance-status hf-finance-status-muted">Group only</span>') +
-      "</td><td>" + statusBadge(a.is_active ? "open" : "locked") + "</td></tr>"
+      "</td><td>" + statusBadge(a.is_active ? "active" : "inactive") + "</td></tr>"
     ).join("") : '<tr><td colspan="6">No accounts configured.</td></tr>';
 
     const selector = $("financeAccLedgerAccount");
@@ -448,14 +448,15 @@ window.HFAdminReady.then(async H => {
   $("financeAccountingRefresh")?.addEventListener("click", refreshAll);
   $("financeJournalAddLine")?.addEventListener("click", () => {
     const rows = [...$("financeJournalLines").querySelectorAll("[data-journal-line]")];
-    rows.push({});
-    renderJournalLines(rows.map(row => ({
+    const lines = rows.map(row => ({
       account_id: row.querySelector("[data-line-account]").value,
       description: row.querySelector("[data-line-description]").value,
       party_name: row.querySelector("[data-line-party]").value,
       debit: row.querySelector("[data-line-debit]").value,
       credit: row.querySelector("[data-line-credit]").value
-    })).concat([{}]));
+    }));
+    lines.push({});
+    renderJournalLines(lines);
   });
   $("financeJournalLines")?.addEventListener("input", updateJournalTotals);
   $("financeJournalLines")?.addEventListener("change", updateJournalTotals);
@@ -466,6 +467,7 @@ window.HFAdminReady.then(async H => {
     row?.remove();
     updateJournalTotals();
   });
+  $("financeJournalForm")?.addEventListener("submit", event => event.preventDefault());
   $("financeJournalSaveDraft")?.addEventListener("click", () => saveJournal(false));
   $("financeJournalPost")?.addEventListener("click", () => saveJournal(true));
   $("financeJournalClose")?.addEventListener("click", () => $("financeJournalDialog").close());
