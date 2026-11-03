@@ -25,6 +25,14 @@ from public.admin_finance_chart_of_accounts p
 where p.account_code='6000'
 on conflict (account_code) do nothing;
 
+insert into public.admin_finance_chart_of_accounts
+  (account_code,name,account_type,normal_balance,parent_account_id,is_postable,is_system,description)
+select '5030','Supplier Purchase Returns & Allowances','cost_of_sales','credit',p.id,true,true,
+       'Supplier credit notes and purchase returns that reduce inventory purchase cost'
+from public.admin_finance_chart_of_accounts p
+where p.account_code='5000'
+on conflict (account_code) do nothing;
+
 alter table public.admin_finance_accounts
   add column if not exists ledger_account_id uuid,
   add column if not exists opening_balance_journal_id uuid,
@@ -49,6 +57,15 @@ alter table public.admin_supplier_bills
   add column if not exists reversal_journal_id uuid;
 
 alter table public.admin_supplier_payments
+  add column if not exists accounting_journal_id uuid,
+  add column if not exists reversal_journal_id uuid;
+
+alter table public.admin_supplier_credit_notes
+  add column if not exists accounting_journal_id uuid,
+  add column if not exists reversal_journal_id uuid;
+
+alter table public.admin_return_requests
+  add column if not exists refund_account_id uuid,
   add column if not exists accounting_journal_id uuid,
   add column if not exists reversal_journal_id uuid;
 
@@ -114,6 +131,26 @@ begin
     alter table public.admin_supplier_payments add constraint admin_supplier_payments_reversal_journal_id_fkey
       foreign key (reversal_journal_id) references public.admin_finance_journal_entries(id) on delete restrict;
   end if;
+  if not exists(select 1 from pg_constraint where conname='admin_supplier_credit_notes_accounting_journal_id_fkey') then
+    alter table public.admin_supplier_credit_notes add constraint admin_supplier_credit_notes_accounting_journal_id_fkey
+      foreign key (accounting_journal_id) references public.admin_finance_journal_entries(id) on delete restrict;
+  end if;
+  if not exists(select 1 from pg_constraint where conname='admin_supplier_credit_notes_reversal_journal_id_fkey') then
+    alter table public.admin_supplier_credit_notes add constraint admin_supplier_credit_notes_reversal_journal_id_fkey
+      foreign key (reversal_journal_id) references public.admin_finance_journal_entries(id) on delete restrict;
+  end if;
+  if not exists(select 1 from pg_constraint where conname='admin_return_requests_refund_account_id_fkey') then
+    alter table public.admin_return_requests add constraint admin_return_requests_refund_account_id_fkey
+      foreign key (refund_account_id) references public.admin_finance_accounts(id) on delete restrict;
+  end if;
+  if not exists(select 1 from pg_constraint where conname='admin_return_requests_accounting_journal_id_fkey') then
+    alter table public.admin_return_requests add constraint admin_return_requests_accounting_journal_id_fkey
+      foreign key (accounting_journal_id) references public.admin_finance_journal_entries(id) on delete restrict;
+  end if;
+  if not exists(select 1 from pg_constraint where conname='admin_return_requests_reversal_journal_id_fkey') then
+    alter table public.admin_return_requests add constraint admin_return_requests_reversal_journal_id_fkey
+      foreign key (reversal_journal_id) references public.admin_finance_journal_entries(id) on delete restrict;
+  end if;
 end
 $fk$;
 
@@ -123,6 +160,10 @@ create index if not exists admin_finance_entries_accounting_journal_idx
   on public.admin_finance_entries(accounting_journal_id) where accounting_journal_id is not null;
 create index if not exists admin_finance_transfers_accounting_journal_idx
   on public.admin_finance_transfers(accounting_journal_id) where accounting_journal_id is not null;
+create index if not exists admin_supplier_credit_notes_accounting_journal_idx
+  on public.admin_supplier_credit_notes(accounting_journal_id) where accounting_journal_id is not null;
+create index if not exists admin_return_requests_accounting_journal_idx
+  on public.admin_return_requests(accounting_journal_id) where accounting_journal_id is not null;
 
 -- New accounts created after this migration can use standard chart mappings. This backfill
 -- is intentionally safe and additive; it does not create any opening journals.
@@ -283,6 +324,43 @@ begin
       end if;
     end if;
     return new;
+  elsif tg_table_name='admin_supplier_credit_notes' then
+    if tg_op='INSERT' then
+      if (new.accounting_journal_id is not null or new.reversal_journal_id is not null) and not v_sync then
+        raise exception 'Supplier credit note accounting links are workflow-managed.';
+      end if;
+    else
+      if old.accounting_journal_id is not null and not v_sync and (
+        new.amount is distinct from old.amount or new.status is distinct from old.status
+        or new.supplier_id is distinct from old.supplier_id or new.supplier_bill_id is distinct from old.supplier_bill_id
+      ) then
+        raise exception 'This supplier credit note is posted to accounting. Reverse the journal before correcting it.';
+      end if;
+      if (new.accounting_journal_id is distinct from old.accounting_journal_id
+          or new.reversal_journal_id is distinct from old.reversal_journal_id) and not v_sync then
+        raise exception 'Supplier credit note accounting links are workflow-managed.';
+      end if;
+    end if;
+    return new;
+  elsif tg_table_name='admin_return_requests' then
+    if tg_op='INSERT' then
+      if (new.refund_account_id is not null or new.accounting_journal_id is not null or new.reversal_journal_id is not null) and not v_sync then
+        raise exception 'Customer return accounting links are workflow-managed.';
+      end if;
+    else
+      if old.accounting_journal_id is not null and not v_sync and (
+        new.refund_amount is distinct from old.refund_amount or new.status is distinct from old.status
+        or new.order_id is distinct from old.order_id or new.refund_account_id is distinct from old.refund_account_id
+      ) then
+        raise exception 'This customer refund is posted to accounting. Reverse the journal before correcting it.';
+      end if;
+      if (new.refund_account_id is distinct from old.refund_account_id
+          or new.accounting_journal_id is distinct from old.accounting_journal_id
+          or new.reversal_journal_id is distinct from old.reversal_journal_id) and not v_sync then
+        raise exception 'Customer return accounting links are workflow-managed.';
+      end if;
+    end if;
+    return new;
   end if;
   return new;
 end;
@@ -311,6 +389,14 @@ for each row execute function public.admin_finance_guard_operations_links();
 drop trigger if exists admin_supplier_payments_operations_guard on public.admin_supplier_payments;
 create trigger admin_supplier_payments_operations_guard
 before insert or update on public.admin_supplier_payments
+for each row execute function public.admin_finance_guard_operations_links();
+drop trigger if exists admin_supplier_credit_notes_operations_guard on public.admin_supplier_credit_notes;
+create trigger admin_supplier_credit_notes_operations_guard
+before insert or update on public.admin_supplier_credit_notes
+for each row execute function public.admin_finance_guard_operations_links();
+drop trigger if exists admin_return_requests_operations_guard on public.admin_return_requests;
+create trigger admin_return_requests_operations_guard
+before insert or update on public.admin_return_requests
 for each row execute function public.admin_finance_guard_operations_links();
 
 
@@ -874,6 +960,8 @@ declare
  v_cost public.admin_finance_chart_of_accounts%rowtype;
  v_tax public.admin_finance_chart_of_accounts%rowtype;
  v_grn_quantity numeric;
+ v_po_quantity numeric;
+ v_po_total numeric(14,2);
  v_base_amount numeric(14,2);
  v_lines jsonb:='[]'::jsonb;
  v_journal_id uuid;
@@ -895,8 +983,19 @@ begin
  join public.admin_purchase_receipt_items ri on ri.receipt_id=r.id
  where r.purchase_order_id=v_bill.purchase_order_id and r.supplier_id=v_bill.supplier_id
    and r.status='confirmed';
- if v_grn_quantity<=0 then
-  raise exception 'No accepted Goods Received Note quantity exists for this purchase order. Verify receipt before posting.';
+ select coalesce(sum(quantity),0) into v_po_quantity
+ from public.admin_purchase_order_items where purchase_order_id=v_bill.purchase_order_id;
+ select round(total_amount,2) into v_po_total
+ from public.admin_purchase_orders where id=v_bill.purchase_order_id and supplier_id=v_bill.supplier_id;
+
+ if v_grn_quantity<=0 or v_po_quantity<=0 then
+  raise exception 'No accepted GRN quantity or PO item quantity exists. Verify the purchase receipt before posting.';
+ end if;
+ if v_grn_quantity+0.001<v_po_quantity then
+  raise exception 'Supplier bill posting is blocked until the linked Purchase Order is fully received and accepted. Create separate POs for partial invoicing.';
+ end if;
+ if v_po_total is null or abs(v_bill.total_amount-v_po_total)>0.01 then
+  raise exception 'Supplier invoice total does not match the approved Purchase Order total. Reconcile quantities, discounts, freight and tax before posting.';
  end if;
 
  select * into v_cost from public.admin_finance_chart_of_accounts where id=p_debit_account_id;
@@ -1092,10 +1191,6 @@ declare
  v_settlement public.admin_cod_settlements%rowtype;
  v_status text;
  v_reversal uuid;
- v_sale uuid;
- v_sale_reverse uuid;
- v_cogs uuid;
- v_cogs_reverse uuid;
 begin
  if v_email<>'halalfoodbd.official@gmail.com' or v_aal<>'aal2' or auth.uid() is null then
   raise exception 'Authorized admin account and MFA are required.' using errcode='42501';
@@ -1107,49 +1202,26 @@ begin
  if not found then raise exception 'COD settlement was not found.'; end if;
  if v_settlement.reversal_journal_id is not null then return v_settlement.reversal_journal_id; end if;
  if v_settlement.accounting_journal_id is null then
-  raise exception 'This COD settlement has no accounting Journal. Use the ordinary settlement review workflow.';
+  raise exception 'This COD settlement has no accounting Journal.';
  end if;
-
  select status into v_status from public.admin_finance_journal_entries where id=v_settlement.accounting_journal_id;
  if v_status='posted' then
   v_reversal:=public.admin_finance_reverse_journal_entry(v_settlement.accounting_journal_id,p_reversal_date,p_reason);
  elsif v_status='reversed' then
   select reversed_by into v_reversal from public.admin_finance_journal_entries where id=v_settlement.accounting_journal_id;
  else
-  raise exception 'The COD settlement Journal is not Posted or Reversed.';
+  raise exception 'The COD remittance Journal is not Posted or Reversed.';
  end if;
-
- select id into v_sale from public.admin_finance_journal_entries
- where source_type='order_sale' and source_key=v_settlement.order_id::text;
- if v_sale is not null then
-  select status into v_status from public.admin_finance_journal_entries where id=v_sale;
-  if v_status='posted' then
-   v_sale_reverse:=public.admin_finance_reverse_journal_entry(v_sale,p_reversal_date,'COD settlement correction: '||left(p_reason,400));
-  elsif v_status='reversed' then
-   select reversed_by into v_sale_reverse from public.admin_finance_journal_entries where id=v_sale;
-  end if;
- end if;
-
- select id into v_cogs from public.admin_finance_journal_entries
- where source_type='order_cogs' and source_key=v_settlement.order_id::text;
- if v_cogs is not null then
-  select status into v_status from public.admin_finance_journal_entries where id=v_cogs;
-  if v_status='posted' then
-   v_cogs_reverse:=public.admin_finance_reverse_journal_entry(v_cogs,p_reversal_date,'COD settlement correction: '||left(p_reason,400));
-  elsif v_status='reversed' then
-   select reversed_by into v_cogs_reverse from public.admin_finance_journal_entries where id=v_cogs;
-  end if;
- end if;
-
  perform pg_catalog.set_config('app.finance_operations_sync','on',true);
  update public.admin_cod_settlements
  set status='exception',
      reversal_journal_id=v_reversal,
-     order_sale_reversal_journal_id=v_sale_reverse,
-     order_cogs_reversal_journal_id=v_cogs_reverse,
-     notes=left(concat_ws(E'\n',nullif(notes,''),'Accounting reversal: '||btrim(p_reason)),1200),
+     notes=left(concat_ws(E'\n',nullif(notes,''),'COD remittance reversal: '||btrim(p_reason)),1200),
      updated_at=now()
  where id=p_settlement_id;
+ update public.admin_finance_entries
+ set status='void',reversal_journal_id=v_reversal,updated_at=now()
+ where related_cod_settlement_id=p_settlement_id and accounting_journal_id=v_settlement.accounting_journal_id;
  return v_reversal;
 end;
 $$;
@@ -1262,6 +1334,260 @@ $$;
 revoke all on function public.admin_finance_reverse_supplier_payment(uuid,date,text) from public,anon;
 grant execute on function public.admin_finance_reverse_supplier_payment(uuid,date,text) to authenticated;
 
+
+
+create or replace function public.admin_finance_post_supplier_credit_note(p_credit_note_id uuid)
+returns uuid
+language plpgsql
+security invoker
+set search_path=''
+as $$
+declare
+ v_email text:=lower(coalesce((select auth.jwt()->>'email'),''));
+ v_aal text:=coalesce((select auth.jwt()->>'aal'),'aal1');
+ v_note public.admin_supplier_credit_notes%rowtype;
+ v_bill public.admin_supplier_bills%rowtype;
+ v_paid numeric(14,2);
+ v_credited numeric(14,2);
+ v_outstanding numeric(14,2);
+ v_ap_debit numeric(14,2);
+ v_advance_debit numeric(14,2);
+ v_journal uuid;
+ v_lines jsonb:='[]'::jsonb;
+begin
+ if v_email<>'halalfoodbd.official@gmail.com' or v_aal<>'aal2' or auth.uid() is null then
+  raise exception 'Authorized admin account and MFA are required.' using errcode='42501';
+ end if;
+ select * into v_note from public.admin_supplier_credit_notes where id=p_credit_note_id for update;
+ if not found then raise exception 'Supplier credit note was not found.'; end if;
+ if v_note.reversal_journal_id is not null or v_note.status='void' then
+  raise exception 'This supplier credit note was voided or reversed and cannot be posted again.';
+ end if;
+ if v_note.accounting_journal_id is not null then return v_note.accounting_journal_id; end if;
+ if v_note.status<>'confirmed' then raise exception 'Only a Confirmed supplier credit note can be posted.'; end if;
+
+ v_outstanding:=0;
+ if v_note.supplier_bill_id is not null then
+  select * into v_bill from public.admin_supplier_bills
+  where id=v_note.supplier_bill_id and supplier_id=v_note.supplier_id for update;
+  if not found or v_bill.status<>'confirmed' then
+   raise exception 'The linked supplier bill must exist, belong to this supplier and be Confirmed.';
+  end if;
+  if v_bill.accounting_journal_id is null then
+   raise exception 'Post the linked supplier bill to accounting before allocating a supplier credit note.';
+  end if;
+
+  select coalesce(sum(a.allocated_amount),0) into v_paid
+  from public.admin_supplier_payment_allocations a
+  join public.admin_supplier_payments p on p.id=a.payment_id
+  where a.supplier_bill_id=v_bill.id and p.status='confirmed'
+    and p.accounting_journal_id is not null and p.reversal_journal_id is null;
+  select coalesce(sum(cn.amount),0) into v_credited
+  from public.admin_supplier_credit_notes cn
+  where cn.supplier_bill_id=v_bill.id and cn.status='confirmed'
+    and cn.id<>p_credit_note_id and cn.accounting_journal_id is not null and cn.reversal_journal_id is null;
+  v_outstanding:=greatest(0,round(v_bill.total_amount-v_paid-v_credited,2));
+ end if;
+
+ v_ap_debit:=least(v_note.amount,v_outstanding);
+ v_advance_debit:=round(v_note.amount-v_ap_debit,2);
+ if v_ap_debit>0 then
+  v_lines:=v_lines||jsonb_build_array(jsonb_build_object(
+    'account_id',(select id from public.admin_finance_chart_of_accounts where account_code='2010'),
+    'description','Supplier credit applied against Accounts Payable · '||v_note.credit_note_number,
+    'party_name',v_note.supplier_reference,'debit',v_ap_debit,'credit',0
+  ));
+ end if;
+ if v_advance_debit>0 then
+  v_lines:=v_lines||jsonb_build_array(jsonb_build_object(
+    'account_id',(select id from public.admin_finance_chart_of_accounts where account_code='1110'),
+    'description','Supplier credit balance / advance · '||v_note.credit_note_number,
+    'party_name',v_note.supplier_reference,'debit',v_advance_debit,'credit',0
+  ));
+ end if;
+ v_lines:=v_lines||jsonb_build_array(jsonb_build_object(
+   'account_id',(select id from public.admin_finance_chart_of_accounts where account_code='5030'),
+   'description','Supplier purchase return / allowance · '||v_note.credit_note_number,
+   'party_name',v_note.supplier_reference,'debit',0,'credit',v_note.amount
+ ));
+ v_journal:=public.admin_finance_save_journal_entry(
+   null,v_note.credit_date,'Supplier credit note · '||v_note.credit_note_number,
+   v_lines,'supplier_credit_note',p_credit_note_id::text,true
+ );
+ perform pg_catalog.set_config('app.finance_operations_sync','on',true);
+ update public.admin_supplier_credit_notes
+ set accounting_journal_id=v_journal,updated_at=now()
+ where id=p_credit_note_id;
+ return v_journal;
+end;
+$$;
+revoke all on function public.admin_finance_post_supplier_credit_note(uuid) from public,anon;
+grant execute on function public.admin_finance_post_supplier_credit_note(uuid) to authenticated;
+
+create or replace function public.admin_finance_reverse_supplier_credit_note(
+ p_credit_note_id uuid,p_reversal_date date,p_reason text
+)
+returns uuid
+language plpgsql
+security invoker
+set search_path=''
+as $$
+declare
+ v_email text:=lower(coalesce((select auth.jwt()->>'email'),''));
+ v_aal text:=coalesce((select auth.jwt()->>'aal'),'aal1');
+ v_note public.admin_supplier_credit_notes%rowtype;
+ v_status text;
+ v_reversal uuid;
+begin
+ if v_email<>'halalfoodbd.official@gmail.com' or v_aal<>'aal2' or auth.uid() is null then
+  raise exception 'Authorized admin account and MFA are required.' using errcode='42501';
+ end if;
+ if p_reversal_date is null or length(btrim(coalesce(p_reason,'')))<5 then
+  raise exception 'Enter a reversal date and a reason of at least five characters.';
+ end if;
+ select * into v_note from public.admin_supplier_credit_notes where id=p_credit_note_id for update;
+ if not found then raise exception 'Supplier credit note was not found.'; end if;
+ if v_note.reversal_journal_id is not null then return v_note.reversal_journal_id; end if;
+ if v_note.accounting_journal_id is null then
+  if v_note.status='draft' then
+   perform pg_catalog.set_config('app.finance_operations_sync','on',true);
+   update public.admin_supplier_credit_notes set status='void',updated_at=now() where id=p_credit_note_id;
+   return null;
+  end if;
+  raise exception 'The supplier credit note has not been posted to accounting.';
+ end if;
+ select status into v_status from public.admin_finance_journal_entries where id=v_note.accounting_journal_id;
+ if v_status='posted' then
+  v_reversal:=public.admin_finance_reverse_journal_entry(v_note.accounting_journal_id,p_reversal_date,p_reason);
+ elsif v_status='reversed' then
+  select reversed_by into v_reversal from public.admin_finance_journal_entries where id=v_note.accounting_journal_id;
+ else
+  raise exception 'Supplier credit note Journal is not Posted or Reversed.';
+ end if;
+ perform pg_catalog.set_config('app.finance_operations_sync','on',true);
+ update public.admin_supplier_credit_notes
+ set status='void',reversal_journal_id=v_reversal,updated_at=now()
+ where id=p_credit_note_id;
+ return v_reversal;
+end;
+$$;
+revoke all on function public.admin_finance_reverse_supplier_credit_note(uuid,date,text) from public,anon;
+grant execute on function public.admin_finance_reverse_supplier_credit_note(uuid,date,text) to authenticated;
+
+create or replace function public.admin_finance_post_customer_refund(p_return_request_id uuid)
+returns uuid
+language plpgsql
+security invoker
+set search_path=''
+as $$
+declare
+ v_email text:=lower(coalesce((select auth.jwt()->>'email'),''));
+ v_aal text:=coalesce((select auth.jwt()->>'aal'),'aal1');
+ v_return public.admin_return_requests%rowtype;
+ v_order public.orders%rowtype;
+ v_finance_account public.admin_finance_accounts%rowtype;
+ v_previous_refunds numeric(14,2);
+ v_journal uuid;
+begin
+ if v_email<>'halalfoodbd.official@gmail.com' or v_aal<>'aal2' or auth.uid() is null then
+  raise exception 'Authorized admin account and MFA are required.' using errcode='42501';
+ end if;
+ select * into v_return from public.admin_return_requests where id=p_return_request_id for update;
+ if not found then raise exception 'Customer return request was not found.'; end if;
+ if v_return.reversal_journal_id is not null or v_return.status='closed' then
+  raise exception 'This customer refund was already reversed or closed.';
+ end if;
+ if v_return.accounting_journal_id is not null then return v_return.accounting_journal_id; end if;
+ if v_return.status<>'refunded' or v_return.refund_amount<=0 then
+  raise exception 'Only a processed return with a positive, actually refunded amount can be posted.';
+ end if;
+ if v_return.refund_account_id is null then
+  raise exception 'Choose the Finance cash, bank or wallet account from which the refund was actually paid.';
+ end if;
+ select * into v_order from public.orders where id=v_return.order_id;
+ if not found then raise exception 'Original customer order was not found.'; end if;
+ if not exists(select 1 from public.admin_finance_journal_entries
+   where source_type='order_sale' and source_key=v_return.order_id::text and status='posted') then
+  raise exception 'Recognize the delivered sale before posting its refund.';
+ end if;
+ select coalesce(sum(rr.refund_amount),0) into v_previous_refunds
+ from public.admin_return_requests rr
+ where rr.order_id=v_return.order_id and rr.status='refunded'
+   and rr.id<>p_return_request_id and rr.accounting_journal_id is not null and rr.reversal_journal_id is null;
+ if v_previous_refunds+v_return.refund_amount>v_order.total+0.01 then
+  raise exception 'Total refunds against this order cannot exceed the original order total.';
+ end if;
+ select * into v_finance_account from public.admin_finance_accounts
+ where id=v_return.refund_account_id and is_active;
+ if not found or v_finance_account.ledger_account_id is null then
+  raise exception 'The refund account must be active and mapped to an Asset account in the General Ledger.';
+ end if;
+
+ v_journal:=public.admin_finance_save_journal_entry(
+  null,current_date,'Customer refund · '||v_return.return_number,
+  jsonb_build_array(
+   jsonb_build_object('account_id',(select id from public.admin_finance_chart_of_accounts where account_code='4095'),
+     'description','Sales return / customer refund · '||v_return.return_number,
+     'party_name',v_order.customer_name,'debit',v_return.refund_amount,'credit',0),
+   jsonb_build_object('account_id',v_finance_account.ledger_account_id,
+     'description','Actual refund paid · '||v_return.return_number,
+     'party_name',v_order.customer_name,'debit',0,'credit',v_return.refund_amount)
+  ),
+  'customer_refund',p_return_request_id::text,true
+ );
+ perform pg_catalog.set_config('app.finance_operations_sync','on',true);
+ update public.admin_return_requests set accounting_journal_id=v_journal,updated_at=now()
+ where id=p_return_request_id;
+ return v_journal;
+end;
+$$;
+revoke all on function public.admin_finance_post_customer_refund(uuid) from public,anon;
+grant execute on function public.admin_finance_post_customer_refund(uuid) to authenticated;
+
+create or replace function public.admin_finance_reverse_customer_refund(
+ p_return_request_id uuid,p_reversal_date date,p_reason text
+)
+returns uuid
+language plpgsql
+security invoker
+set search_path=''
+as $$
+declare
+ v_email text:=lower(coalesce((select auth.jwt()->>'email'),''));
+ v_aal text:=coalesce((select auth.jwt()->>'aal'),'aal1');
+ v_return public.admin_return_requests%rowtype;
+ v_status text;
+ v_reversal uuid;
+begin
+ if v_email<>'halalfoodbd.official@gmail.com' or v_aal<>'aal2' or auth.uid() is null then
+  raise exception 'Authorized admin account and MFA are required.' using errcode='42501';
+ end if;
+ if p_reversal_date is null or length(btrim(coalesce(p_reason,'')))<5 then
+  raise exception 'Enter a reversal date and a reason of at least five characters.';
+ end if;
+ select * into v_return from public.admin_return_requests where id=p_return_request_id for update;
+ if not found then raise exception 'Customer refund request was not found.'; end if;
+ if v_return.reversal_journal_id is not null then return v_return.reversal_journal_id; end if;
+ if v_return.accounting_journal_id is null then
+  raise exception 'The customer refund has not been posted to accounting.';
+ end if;
+ select status into v_status from public.admin_finance_journal_entries where id=v_return.accounting_journal_id;
+ if v_status='posted' then
+  v_reversal:=public.admin_finance_reverse_journal_entry(v_return.accounting_journal_id,p_reversal_date,p_reason);
+ elsif v_status='reversed' then
+  select reversed_by into v_reversal from public.admin_finance_journal_entries where id=v_return.accounting_journal_id;
+ else
+  raise exception 'Customer refund Journal is not Posted or Reversed.';
+ end if;
+ perform pg_catalog.set_config('app.finance_operations_sync','on',true);
+ update public.admin_return_requests
+ set status='closed',reversal_journal_id=v_reversal,updated_at=now()
+ where id=p_return_request_id;
+ return v_reversal;
+end;
+$$;
+revoke all on function public.admin_finance_reverse_customer_refund(uuid,date,text) from public,anon;
+grant execute on function public.admin_finance_reverse_customer_refund(uuid,date,text) to authenticated;
 
 create or replace function public.admin_finance_post_order_cogs(p_order_id uuid)
 returns uuid
@@ -1389,6 +1715,12 @@ comment on column public.admin_cod_settlements.order_sale_reversal_journal_id is
 comment on column public.admin_cod_settlements.order_cogs_reversal_journal_id is 'Reversal journal for COGS associated with a voided or corrected COD settlement.';
 comment on column public.admin_supplier_bills.reversal_journal_id is 'Reversal journal for a posted supplier bill.';
 comment on column public.admin_supplier_payments.reversal_journal_id is 'Reversal journal for a posted supplier payment.';
+
+comment on column public.admin_supplier_credit_notes.accounting_journal_id is 'General Ledger entry for a confirmed supplier credit note.';
+comment on column public.admin_supplier_credit_notes.reversal_journal_id is 'Reversal Journal for a posted supplier credit note.';
+comment on column public.admin_return_requests.refund_account_id is 'Finance cash, bank or wallet account from which the actual customer refund was paid.';
+comment on column public.admin_return_requests.accounting_journal_id is 'General Ledger journal for a processed customer refund; stock/COGS is not automatically adjusted because the existing return request has no verified item quantities. ';
+comment on column public.admin_return_requests.reversal_journal_id is 'Reversal Journal for a posted customer refund.';
 
 comment on column public.admin_finance_accounts.ledger_account_id is 'Required Chart of Accounts Asset mapping. Several bank/wallet subaccounts may share one GL control account.';
 comment on column public.admin_finance_accounts.opening_balance_journal_id is 'Journal created only after the owner verifies the real opening balance and chooses an equity/liability offset.';
