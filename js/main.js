@@ -1587,7 +1587,8 @@ document.addEventListener("DOMContentLoaded", () => {
     "page_view","page_engagement","view_item","view_item_list","select_item","search",
     "add_to_cart","remove_from_cart","view_cart","begin_checkout","add_shipping_info",
     "add_payment_info","order_submit","order_success","purchase","track_order",
-    "whatsapp_click","phone_click","sign_up","login","generate_lead","refund"
+    "whatsapp_click","phone_click","sign_up","login","generate_lead","refund",
+    "ai_product_card_shown","ai_product_clicked"
   ]);
 
   window.dataLayer=window.dataLayer||[];
