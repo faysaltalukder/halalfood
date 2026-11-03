@@ -414,7 +414,7 @@ async function resolveCustomerOrderTracking(
     parts.push("কুরিয়ারে হস্তান্তর হলে ট্র্যাকিং নম্বর এখানে দেখানো হবে।");
   }
   return {
-    reply: parts.join("\\n"),
+    reply: parts.join("\n"),
     orderTracking: {
       orderId,
       status: statusCode,
