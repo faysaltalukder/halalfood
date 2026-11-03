@@ -605,7 +605,7 @@ async function loadKnowledge(
   const followUp = /(আরেকটা|আরও একটি|অন্যটা|বিকল্প|ওইটা|সেটা|আগেরটা|একইটা|same one|another one|more options|those)/iu.test(message);
   const searchText = followUp && priorUserMessages.length
     ? priorUserMessages.slice(-4).join(" ") + " " + message : message;
-  const [documentsResult, productsResult, profilesResult] = await Promise.allSettled([
+  const [documentsResult, productsResult, profilesResult, blogPostsResult] = await Promise.allSettled([
     fetchSupabaseRows("ai_knowledge_documents", {
       select: "document_key,title,document_type,language,content,metadata,priority,expires_at",
       status: "eq.published", order: "priority.asc", limit: "20",
@@ -618,11 +618,41 @@ async function loadKnowledge(
       select: "product_id,quality_summary,ingredients,origin,production_method,taste_aroma_profile,texture_profile,usage_instructions,storage_instructions,allergen_info,certification_info,verified_claims,faq,customer_fit,prohibited_claims,version,verified_at,search_synonyms,product_form,derived_from,related_terms,brand,packaging_type,visual_description,size_label,search_attributes",
       status: "eq.published", order: "updated_at.desc", limit: "100",
     }, credentials),
+    fetchSupabaseRows("blog_posts", {
+      select: "title,slug,excerpt,content,category,published_at",
+      status: "eq.published", order: "published_at.desc", limit: "30",
+    }, credentials),
   ]);
 
   const documents = documentsResult.status === "fulfilled"
     ? documentsResult.value.filter((item) => !item.expires_at || new Date(String(item.expires_at)).getTime() > Date.now())
     : [];
+  const rawBlogPosts = blogPostsResult.status === "fulfilled" ? blogPostsResult.value : [];
+  const blogQuestion = /(ব্লগ|blog|article|আর্টিকেল|গাইড|guide|প্রবন্ধ)/iu.test(message);
+  const blogTerms = expandTerms(searchText).map((term) => term.toLocaleLowerCase());
+  const publicArticles = rawBlogPosts.map((article) => {
+    const clean = (value: unknown) => String(value || "")
+      .replace(/<script[\\s\\S]*?<\\/script>/giu, " ")
+      .replace(/<style[\\s\\S]*?<\\/style>/giu, " ")
+      .replace(/<[^>]+>/gu, " ")
+      .replace(/&nbsp;/giu, " ")
+      .replace(/&amp;/giu, "&")
+      .replace(/&quot;/giu, '"')
+      .replace(/&#39;/giu, "'")
+      .replace(/\\s+/gu, " ").trim();
+    const cleanedArticle = {
+      title: clean(article.title).slice(0, 240),
+      category: clean(article.category).slice(0, 80),
+      excerpt: clean(article.excerpt).slice(0, 900),
+      content: clean(article.content).slice(0, 5000),
+    };
+    const searchable = (cleanedArticle.title + " " + cleanedArticle.category + " " + cleanedArticle.excerpt + " " + cleanedArticle.content).toLocaleLowerCase();
+    const score = blogTerms.reduce((total, term) => total + (term.length > 1 && searchable.includes(term) ? 1 : 0), 0);
+    return { article: cleanedArticle, score };
+  }).filter((item) => blogQuestion || item.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, blogQuestion ? 8 : 3)
+    .map((item) => item.article);
   const allProducts = productsResult.status === "fulfilled" ? productsResult.value : [];
   const customerFacingProducts = allProducts.filter((product) => !isTestOrPlaceholderProduct(product) && product.is_active === true);
   const categoryNames = Array.from(new Set(customerFacingProducts.map((item) => String(item.category || "")).filter(Boolean))).sort();
@@ -722,7 +752,7 @@ async function loadKnowledge(
 
   return {
     available: documentsResult.status === "fulfilled" && productsResult.status === "fulfilled",
-    documents, products, productKnowledge, categoryNames, catalogCount: customerFacingProducts.length,
+    documents, products, productKnowledge, categoryNames, publicArticles, catalogCount: customerFacingProducts.length,
     imageSearch, customerNeed, budgetMatchedCount: budgetMatches.length,
     broadCatalogQuestion, categoryCatalogQuestion, rankedCandidates: ranked,
     profilesAvailable: profilesResult.status === "fulfilled",
@@ -737,6 +767,13 @@ function buildKnowledgeContext(knowledge: Awaited<ReturnType<typeof loadKnowledg
   }
   if (knowledge.categoryNames.length) {
     sections.push("LIVE PRODUCT CATEGORIES:\n" + knowledge.categoryNames.join(", "));
+  }
+  if (knowledge.publicArticles?.length) {
+    sections.push("PUBLISHED PUBLIC WEBSITE ARTICLES (educational reference content; summarize for general questions only. Do not treat an article as proof of the ingredients, origin, certification, purity, health effects, or quality of a specific Halal Food product):\\n" +
+      knowledge.publicArticles.map((article: Record<string, unknown>) =>
+        "[" + String(article.category || "Guide") + "] " + String(article.title || "") + "\\n" +
+        String(article.excerpt || "") + "\\n" + String(article.content || "")
+      ).join("\\n\\n"));
   }
   if (knowledge.customerNeed) {
     sections.push("CUSTOMER NEED PROFILE (only explicit conversation details; null means unknown):\\n" + JSON.stringify(knowledge.customerNeed) +
@@ -1263,6 +1300,7 @@ Deno.serve(async (req: Request) => {
       documents: knowledge.documents.length,
       matchedProducts: knowledge.products.length,
       publishedProductProfiles: knowledge.productKnowledge.length,
+      publishedArticles: knowledge.publicArticles?.length || 0,
       databaseAvailable: knowledge.available,
       imageSearch: hasImage,
       catalogImageReferences: catalogImageParts.length / 2,
