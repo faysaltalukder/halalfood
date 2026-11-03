@@ -101,7 +101,7 @@ async function buildCatalogImageParts(
   knowledge: Awaited<ReturnType<typeof loadKnowledge>>,
 ): Promise<Array<{ text: string } | { inlineData: { mimeType: string; data: string } }>> {
   const need = knowledge.customerNeed;
-  if (!need || Number(need.max_product_cards || 0) < 1) return [];
+  if (!need || (!knowledge.imageSearch && Number(need.max_product_cards || 0) < 1)) return [];
   const intent = String(need.primary_intent || "");
   const candidateLimit = knowledge.imageSearch ? 61
     : intent === "category_browse" ? 6
@@ -972,7 +972,7 @@ Deno.serve(async (req: Request) => {
     const catalogImageParts = await buildCatalogImageParts(knowledge);
     if (catalogImageParts.length) userParts.push(...catalogImageParts);
     const catalogImageInstructions = !hasImage && catalogImageParts.length
-      ? "\\n\\nCATALOG IMAGE REFERENCES: The user did not upload an image. The additional images are official live-catalog product references, each paired with an exact slug/name/category label. Use them only to understand the visual appearance of those listed products. Do not claim the customer has uploaded these images and do not move an image to a different product."
+      ? "\n\nCATALOG IMAGE REFERENCES: The user did not upload an image. The additional images are official live-catalog product references, each paired with an exact slug/name/category label. Use them only to understand the visual appearance of those listed products. Do not claim the customer has uploaded these images and do not move an image to a different product."
       : "";
     const imageMatchInstructions = hasImage
       ? "\n\nIMAGE UNDERSTANDING AND CATALOG MATCH RULES: First identify only what is visibly supported by the uploaded image: object/material, readable label text, possible product identity and visible packaging cues. The first image is the customer upload; any later labelled images are actual live-catalog product photos. Compare the customer image with those catalog photos and owner-verified visual profiles. Never invent a brand, ingredient, certification or package type. The customer's explicit text defines search intent; if image and text conflict, ask one concise clarification instead of guessing. If evidence is insufficient, return no candidate. At the end of your customer-facing answer append exactly one machine-readable block and do not explain it: [[HF_IMAGE_MATCH]]{\"image_object\":\"...\",\"candidate_slug\":\"exact-live-slug-or-empty\",\"candidate_slugs\":[\"up-to-4-live-slugs\"],\"brand\":\"verified-visible-brand-or-empty\",\"packaging_type\":\"visible-packaging-or-empty\",\"visible_text\":\"short-readable-label-or-empty\",\"match_type\":\"exact|derived_product|similar|alternative|uncertain\",\"confidence\":\"high|medium|low\"}[[/HF_IMAGE_MATCH]]. Use high only for clear identity evidence, medium for supported similarity or derived-product matches, and low/uncertain when unclear. Candidate slugs must exactly match the live candidate list. If uncertain, leave candidate_slug empty and candidate_slugs empty."
