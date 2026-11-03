@@ -110,24 +110,6 @@
     messages.scrollTop = messages.scrollHeight;
     return bubble;
   }
-  function appendHumanSupport(bubble) {
-    const copy = document.createElement("p");
-    copy.textContent = "অবশ্যই। সরাসরি আমাদের টিমের সঙ্গে যোগাযোগ করতে পারেন:";
-    bubble.appendChild(copy);
-    const links = document.createElement("div");
-    links.className = "hf-ai-human-links";
-    const call = document.createElement("a");
-    call.href = "tel:+8801842031164";
-    call.textContent = "ফোন করুন · 01842-031164";
-    const whatsapp = document.createElement("a");
-    whatsapp.href = "https://wa.me/8801842031164";
-    whatsapp.target = "_blank";
-    whatsapp.rel = "noopener noreferrer";
-    whatsapp.textContent = "WhatsApp-এ মেসেজ করুন";
-    links.append(call, whatsapp);
-    bubble.appendChild(links);
-    messages.scrollTop = messages.scrollHeight;
-  }
   function appendProductCards(bubble, products) {
     if (!Array.isArray(products) || !products.length) return;
     const wrap = document.createElement("div");
@@ -177,22 +159,16 @@
     if (code === "GEMINI_PERMISSION") return "Google AI প্রজেক্টে API ব্যবহারের অনুমতি বা billing/quota সেটিংসে সমস্যা আছে।";
     if (code === "GEMINI_MODEL" || code === "AI_MODEL_CONFIG_INVALID") return "AI মডেলের নাম বা কনফিগারেশনে সমস্যা আছে।";
     if (code === "GEMINI_QUOTA") return "এই প্রশ্নটির জন্য Gemini ভাষা-মডেল থেকে উত্তর পাওয়া যাচ্ছে না। পণ্য ও প্রকাশিত সেবার তথ্যের জন্য যাচাইকৃত বিকল্প ব্যবস্থা কাজ করবে; আরও খোলা বা জটিল প্রশ্নে AI মডেল পুনরায় সচল না হওয়া পর্যন্ত উত্তর অসম্পূর্ণ থাকতে পারে।";
-    if (code === "GEMINI_UNAVAILABLE") return "AI মডেলগুলো এই মুহূর্তে ব্যস্ত বা সাময়িকভাবে অনুপলব্ধ। আপনার প্রশ্ন সংরক্ষণ করা হয়নি—অনুগ্রহ করে আবার পাঠান বা WhatsApp-এ যোগাযোগ করুন।";
+    if (code === "GEMINI_UNAVAILABLE") return "এই মুহূর্তে উত্তর তৈরি করতে সাময়িক সমস্যা হচ্ছে। অনুগ্রহ করে একটু পরে আবার চেষ্টা করুন।";
     if (code === "GEMINI_TIMEOUT") return "উত্তর পেতে বেশি সময় লাগছে। অনুগ্রহ করে আবার চেষ্টা করুন.";
     if (code === "INCOMPLETE_AI_RESPONSE") return "উত্তরটি সম্পূর্ণ তৈরি হয়নি। অনুগ্রহ করে প্রশ্নটি আরেকবার পাঠান।";
-    return "দুঃখিত, AI সহকারীর সঙ্গে সাময়িক সংযোগ সমস্যা হয়েছে। আবার চেষ্টা করুন অথবা ফোন/WhatsApp-এ যোগাযোগ করুন।";
+    return "দুঃখিত, এই মুহূর্তে উত্তর তৈরি করতে সমস্যা হচ্ছে। অনুগ্রহ করে আবার চেষ্টা করুন।";
   }
   async function submitQuestion(question) {
     const text = String(question || "").trim();
     if (!text || busy) return;
     appendMessage(text, "user");
     input.value = "";
-    const humanRequest = /(মানুষ|মানব|প্রতিনিধি|কাস্টমার\s*কেয়ার|কাস্টমার\s*কেয়ার|সরাসরি\s*কথা|এজেন্ট|human|real person|representative|customer support|customer care|live agent|talk to (a )?person|speak to (a )?person|whatsapp|হোয়াটসঅ্যাপ|হোয়াটসঅ্যাপ|ফোনে কথা)/i.test(text);
-    if (humanRequest) {
-      appendHumanSupport(appendMessage("", "assistant"));
-      return;
-    }
-
     const pending = appendMessage("উত্তর তৈরি হচ্ছে…", "assistant", "hf-ai-message-pending");
     busy = true;
     input.disabled = true;
