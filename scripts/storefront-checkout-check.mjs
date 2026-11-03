@@ -52,7 +52,7 @@ for (let i = 0; i < requiredInOrder.length; i++) {
 
 const mainScriptTag = tags.find(tag => /\bsrc\s*=\s*["'][^"']*js\/main\.js(?:\?|["'])/i.test(tag));
 assert.ok(mainScriptTag, "The real main.js script element must not be swallowed as text inside another script.");
-assert.match(mainScriptTag, /20261103-order-checkout-recovery-v1/,
+assert.match(mainScriptTag, /20261103-shopping-chat-v3/,
   "Checkout main.js must have a fresh cache key so browsers stop reusing a previously broken checkout script response.");
 
 // The page must retain the complete product -> selection -> order submission path.
