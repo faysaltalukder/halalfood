@@ -907,6 +907,41 @@ window.HFAdminReady.then(async H=>{
 
    $("analyticsTopProducts").innerHTML=top.length?top.map((x,i)=>'<div class="hf-insight-row">'+(x.product?.image_url?'<img class="hf-thumb" src="'+esc(x.product.image_url)+'" alt="">':'<span class="hf-thumb hf-thumb-empty">'+(i+1)+'</span>')+'<div><strong>'+esc(x.name)+'</strong><small>'+esc(x.product?.category||"No category match")+'</small></div><span class="hf-insight-number">'+shortNum(x.count)+'</span></div>').join(""):makeEmpty("No product-view data","Check again after the website has recorded product views.");
    $("analyticsEventBreakdown").innerHTML=groupBy(events,e=>e.event_name).slice(0,12).map(x=>'<tr><td>'+esc(x.label)+'</td><td>'+shortNum(x.count)+'</td><td>'+(total?Math.round(x.count/total*100)+"%":"—")+'</td></tr>').join("")||'<tr><td colspan="3">'+makeEmpty("No events yet","No website events were recorded in this date range.")+'</td></tr>';
+   const aiEvents=events.filter(event=>String(event.event_name||"").startsWith("ai_"));
+   const aiCount=name=>aiEvents.filter(event=>event.event_name===name).length;
+   const aiIntents=aiEvents.filter(event=>event.event_name==="ai_intent_detected");
+   $("aiAnalyticsConversations").textContent=shortNum(aiIntents.length);
+   $("aiAnalyticsAllowed").textContent=shortNum(aiCount("ai_recommendation_allowed"));
+   $("aiAnalyticsSuppressed").textContent=shortNum(aiCount("ai_recommendation_suppressed"));
+   $("aiAnalyticsImages").textContent=shortNum(aiCount("ai_image_search_started"));
+   $("aiAnalyticsResolved").textContent=shortNum(aiCount("ai_search_resolved"));
+   $("aiAnalyticsCorrections").textContent=shortNum(aiCount("ai_customer_corrected")+aiCount("ai_recommendation_rejected"));
+   const intentRows=groupBy(aiIntents,event=>String(event.metadata?.primary_intent||"unknown").replace(/_/g," "));
+   $("aiAnalyticsIntentBody").innerHTML=intentRows.length?intentRows.map(row=>'<tr><td>'+esc(row.label)+'</td><td>'+shortNum(row.count)+'</td><td>'+Math.round(row.count/Math.max(1,aiIntents.length)*100)+'%</td></tr>').join(""):'<tr><td colspan="3">'+makeEmpty("No AI intent data yet","New customer-care conversations will appear here after Stage 2 is live.")+'</td></tr>';
+   const aiOutcomeRows=[
+    ["Exact product matches",aiCount("ai_exact_product_match")],
+    ["Product match failures",aiCount("ai_product_match_failed")],
+    ["Clarifications requested",aiCount("ai_clarification_requested")],
+    ["Image searches completed",aiCount("ai_image_search_completed")],
+    ["Customer corrections",aiCount("ai_customer_corrected")],
+    ["Recommendation rejections",aiCount("ai_recommendation_rejected")],
+    ["Product searches resolved",aiCount("ai_search_resolved")]
+   ];
+   $("aiAnalyticsOutcomeBody").innerHTML=aiOutcomeRows.map(row=>'<tr><td>'+esc(row[0])+'</td><td>'+shortNum(row[1])+'</td></tr>').join("");
+   const aiProducts=new Map();
+   aiEvents.filter(event=>event.event_name==="ai_product_card_shown"||event.event_name==="ai_product_clicked").forEach(event=>{
+    const name=String(event.item_name||"Unknown product");
+    if(!aiProducts.has(name))aiProducts.set(name,{name,shown:0,clicks:0});
+    const row=aiProducts.get(name);
+    if(event.event_name==="ai_product_card_shown")row.shown++;
+    if(event.event_name==="ai_product_clicked")row.clicks++;
+   });
+   const aiProductRows=Array.from(aiProducts.values()).sort((a,b)=>b.clicks-a.clicks||b.shown-a.shown).slice(0,12);
+   $("aiAnalyticsProductBody").innerHTML=aiProductRows.length?aiProductRows.map(row=>'<tr><td><strong>'+esc(row.name)+'</strong></td><td>'+shortNum(row.shown)+'</td><td>'+shortNum(row.clicks)+'</td><td>'+(row.shown?Math.round(row.clicks/row.shown*100)+'%':'—')+'</td></tr>').join(""):'<tr><td colspan="4">'+makeEmpty("No AI product-card interactions yet","Product impressions and clicks will appear here when customers use the assistant.")+'</td></tr>';
+   $("aiAnalyticsCoverageNote").textContent=aiEvents.length
+    ? aiEvents.length.toLocaleString("en-BD")+" AI intelligence events in the selected period. These are first-party behavioural signals; they do not identify a person or prove purchase."
+    : "No Stage 2 AI events were recorded in this period. Events begin after the new customer-care deployment; older chats are not backfilled.";
+
   }
   bindRangeControls(()=>refresh());await refresh();attachRefresh(refresh);
  }
