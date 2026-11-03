@@ -13,6 +13,7 @@ on:
       - "scripts/admin-phase12-check.mjs"
       - "scripts/admin-pos-check.mjs"
       - "scripts/finance-workspace-check.mjs"
+      - "scripts/finance-accounting-core-check.mjs"
       - "scripts/analytics-workspace-check.mjs"
       - ".github/workflows/admin-phase12-integrity.yml"
   pull_request:
@@ -24,6 +25,8 @@ on:
       - "supabase/functions/site-publisher/**"
       - "supabase/migrations/**"
       - "scripts/admin-phase12-check.mjs"
+      - "scripts/finance-workspace-check.mjs"
+      - "scripts/finance-accounting-core-check.mjs"
       - "scripts/analytics-workspace-check.mjs"
       - ".github/workflows/admin-phase12-integrity.yml"
   workflow_dispatch:
@@ -58,6 +61,8 @@ jobs:
         run: node scripts/admin-pos-check.mjs
       - name: Run Finance & Cash Flow workspace checks
         run: node scripts/finance-workspace-check.mjs
+      - name: Run Finance Accounting Foundation checks
+        run: node scripts/finance-accounting-core-check.mjs
       - name: Run Analytics workspace checks
         run: node scripts/analytics-workspace-check.mjs
       - name: Run Business Health workspace checks
