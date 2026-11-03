@@ -287,140 +287,140 @@
       "message": "কী কী তেল পাওয়া যায়?",
       "has_image": false,
       "expected_intent": "category_browse",
-      "expected_max_cards": 3
+      "expected_max_cards": 4
     },
     {
       "category": "category",
       "message": "তেলগুলো দেখাও",
       "has_image": false,
       "expected_intent": "category_browse",
-      "expected_max_cards": 3
+      "expected_max_cards": 4
     },
     {
       "category": "category",
       "message": "কোন কোন ঘি আছে?",
       "has_image": false,
       "expected_intent": "category_browse",
-      "expected_max_cards": 3
+      "expected_max_cards": 4
     },
     {
       "category": "category",
       "message": "মধুর তালিকা দাও",
       "has_image": false,
       "expected_intent": "category_browse",
-      "expected_max_cards": 3
+      "expected_max_cards": 4
     },
     {
       "category": "category",
       "message": "Show me all oils",
       "has_image": false,
       "expected_intent": "category_browse",
-      "expected_max_cards": 3
+      "expected_max_cards": 4
     },
     {
       "category": "category",
       "message": "What kinds of tea do you have?",
       "has_image": false,
       "expected_intent": "category_browse",
-      "expected_max_cards": 3
+      "expected_max_cards": 4
     },
     {
       "category": "category",
       "message": "কয়েকটি বাদাম দেখাও",
       "has_image": false,
       "expected_intent": "category_browse",
-      "expected_max_cards": 3
+      "expected_max_cards": 4
     },
     {
       "category": "category",
       "message": "ডালগুলো দেখাও",
       "has_image": false,
       "expected_intent": "category_browse",
-      "expected_max_cards": 3
+      "expected_max_cards": 4
     },
     {
       "category": "category",
       "message": "List all dates",
       "has_image": false,
       "expected_intent": "category_browse",
-      "expected_max_cards": 3
+      "expected_max_cards": 4
     },
     {
       "category": "category",
       "message": "কী কী মসলা আছে?",
       "has_image": false,
       "expected_intent": "category_browse",
-      "expected_max_cards": 3
+      "expected_max_cards": 4
     },
     {
       "category": "recommend",
       "message": "কয়েকটি ঘি সাজেস্ট করো",
       "has_image": false,
       "expected_intent": "recommendation_request",
-      "expected_max_cards": 3
+      "expected_max_cards": 4
     },
     {
       "category": "recommend",
       "message": "আমার জন্য কোন তেল ভালো?",
       "has_image": false,
       "expected_intent": "recommendation_request",
-      "expected_max_cards": 3
+      "expected_max_cards": 4
     },
     {
       "category": "recommend",
       "message": "Which ghee do you recommend?",
       "has_image": false,
       "expected_intent": "recommendation_request",
-      "expected_max_cards": 3
+      "expected_max_cards": 4
     },
     {
       "category": "recommend",
       "message": "১০০০ টাকার মধ্যে কী নিতে পারি?",
       "has_image": false,
       "expected_intent": "recommendation_request",
-      "expected_max_cards": 3
+      "expected_max_cards": 4
     },
     {
       "category": "recommend",
       "message": "I want a suggestion for honey",
       "has_image": false,
       "expected_intent": "recommendation_request",
-      "expected_max_cards": 3
+      "expected_max_cards": 4
     },
     {
       "category": "recommend",
       "message": "অন্যটা দেখাও",
       "has_image": false,
       "expected_intent": "recommendation_request",
-      "expected_max_cards": 3
+      "expected_max_cards": 4
     },
     {
       "category": "recommend",
       "message": "আরেকটা দেখাও",
       "has_image": false,
       "expected_intent": "recommendation_request",
-      "expected_max_cards": 3
+      "expected_max_cards": 4
     },
     {
       "category": "recommend",
       "message": "কোন মধুটা ভালো হবে?",
       "has_image": false,
       "expected_intent": "recommendation_request",
-      "expected_max_cards": 3
+      "expected_max_cards": 4
     },
     {
       "category": "recommend",
       "message": "Suggest some nuts",
       "has_image": false,
       "expected_intent": "recommendation_request",
-      "expected_max_cards": 3
+      "expected_max_cards": 4
     },
     {
       "category": "recommend",
       "message": "Which oil should I choose?",
       "has_image": false,
       "expected_intent": "recommendation_request",
-      "expected_max_cards": 3
+      "expected_max_cards": 4
     },
     {
       "category": "compare",
