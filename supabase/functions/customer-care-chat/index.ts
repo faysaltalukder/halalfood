@@ -163,29 +163,41 @@ Deno.serve(async (req: Request) => {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 28_000);
   try {
-    const upstream = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(model) + ":generateContent",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-goog-api-key": apiKey,
+    let upstream: Response | null = null;
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      upstream = await fetch(
+        "https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(model) + ":generateContent",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-goog-api-key": apiKey,
+          },
+          body: JSON.stringify({
+            systemInstruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
+            contents,
+            generationConfig: { maxOutputTokens: 600 },
+          }),
+          signal: controller.signal,
         },
-        body: JSON.stringify({
-          systemInstruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
-          contents,
-          generationConfig: { maxOutputTokens: 600 },
-        }),
-        signal: controller.signal,
-      },
-    );
+      );
+      if (upstream.status !== 503 || attempt === 1) break;
+      await new Promise((resolve) => setTimeout(resolve, 900));
+    }
 
+    if (!upstream) throw new Error("Gemini request did not return a response.");
     if (!upstream.ok) {
+      const providerPayload = await upstream.json().catch(() => null);
+      const providerError = providerPayload && typeof providerPayload === "object"
+        ? (providerPayload as Record<string, unknown>).error as Record<string, unknown> | undefined
+        : undefined;
       const errorCode = friendlyErrorCode(upstream.status);
       console.warn(JSON.stringify({
         event: "customer_care_gemini_error",
         requestId,
         upstreamStatus: upstream.status,
+        providerCode: typeof providerError?.status === "string" ? providerError.status : "unknown",
+        providerMessage: typeof providerError?.message === "string" ? providerError.message.slice(0, 180) : "No provider message",
         code: errorCode,
       }));
       return response({ success: false, code: errorCode, requestId }, upstream.status === 429 ? 429 : 502);
