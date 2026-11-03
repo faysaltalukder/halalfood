@@ -15,7 +15,7 @@ const rateBuckets = new Map<string, { count: number; resetAt: number }>();
 
 const SYSTEM_INSTRUCTION = [
   "You are Halal Food's polite customer-care assistant for a Bangladesh-based grocery e-commerce demonstration website.",
-  "Reply in natural Bengali by default. If the customer writes in English, answer in English. Keep answers clear, warm, practical, and concise. Use plain text without Markdown bold markers or headings.",
+  "Reply in natural Bengali by default. If the customer writes in English, answer in English. Keep answers clear, warm, practical, and concise. Use plain text without Markdown bold markers or headings. Prefer 1–3 short sentences (maximum 80 words), finish every sentence, and never stop mid-sentence. For a direct contact question, provide the phone/WhatsApp number, official email, and website.",
   "Known contact details: phone/WhatsApp +8801842031164; official email halalfoodbd.official@gmail.com; website https://faysaltalukder.github.io/halalfood/.",
   "Important project status: this website is currently a demonstration/test project. Do not promise that a real order will be fulfilled, goods will be delivered, or a payment can be accepted. Explain this clearly whenever a customer asks to buy, pay, or arrange delivery.",
   "You do not have access to the live product catalogue, stock, current prices, discounts, delivery fees, customer accounts, or order records. Never invent or guess these details. Direct customers to the website's visible product information or human support for confirmation.",
@@ -67,6 +67,12 @@ function friendlyErrorCode(status: number): string {
   if (status === 408 || status === 504) return "GEMINI_TIMEOUT";
   if (status >= 500) return "GEMINI_UNAVAILABLE";
   return "GEMINI_REQUEST";
+}
+
+function isCompleteReply(reply: string, finishReason: string): boolean {
+  const clean = reply.trim();
+  if (!clean || finishReason === "MAX_TOKENS" || finishReason === "SAFETY") return false;
+  return /[.!?।…][”"'’)]*$/u.test(clean);
 }
 
 Deno.serve(async (req: Request) => {
@@ -207,7 +213,7 @@ Deno.serve(async (req: Request) => {
           body: JSON.stringify({
             systemInstruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
             contents,
-            generationConfig: { maxOutputTokens: 600 },
+            generationConfig: { maxOutputTokens: 800 },
           }),
           signal: controller.signal,
         },
@@ -232,15 +238,91 @@ Deno.serve(async (req: Request) => {
       return response({ success: false, code: errorCode, requestId }, upstream.status === 429 ? 429 : 502);
     }
 
-    const result = await upstream.json();
-    const parts = result?.candidates?.[0]?.content?.parts;
-    const reply = Array.isArray(parts)
+    let result = await upstream.json();
+    let candidate = result?.candidates?.[0];
+    let parts = candidate?.content?.parts;
+    let reply = Array.isArray(parts)
       ? parts.map((part: Record<string, unknown>) => typeof part.text === "string" ? part.text : "").join("").trim()
       : "";
-    if (!reply) {
-      const finishReason = String(result?.candidates?.[0]?.finishReason || "EMPTY");
-      console.warn(JSON.stringify({ event: "customer_care_empty_response", requestId, finishReason }));
-      return response({ success: false, code: "EMPTY_AI_RESPONSE", requestId }, 502);
+    let finishReason = String(candidate?.finishReason || "EMPTY");
+
+    if (!reply || !isCompleteReply(reply, finishReason)) {
+      console.warn(JSON.stringify({
+        event: "customer_care_incomplete_response_retry",
+        requestId,
+        model: modelUsed,
+        finishReason,
+        responseLength: reply.length,
+        candidateTokenCount: Number(result?.usageMetadata?.candidatesTokenCount || 0),
+      }));
+
+      const retryModel = modelUsed === model && modelUsed !== "gemini-3.6-flash"
+        ? "gemini-3.6-flash"
+        : modelUsed;
+      const retryContents = [
+        ...contents,
+        ...(reply ? [{ role: "model" as const, parts: [{ text: reply }] }] : []),
+        {
+          role: "user" as const,
+          parts: [{
+            text: "আপনার আগের উত্তরটি অসম্পূর্ণ ছিল। গ্রাহকের মূল প্রশ্নের উত্তর নতুন করে সর্বোচ্চ ৩টি ছোট, সম্পূর্ণ বাক্যে দিন। বাক্যের মাঝখানে থামবেন না এবং শেষ বাক্যের শেষে বিরামচিহ্ন দিন।"
+          }]
+        }
+      ];
+      const retryResponse = await fetch(
+        "https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(retryModel) + ":generateContent",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-goog-api-key": apiKey,
+          },
+          body: JSON.stringify({
+            systemInstruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
+            contents: retryContents,
+            generationConfig: { maxOutputTokens: 800 },
+          }),
+          signal: controller.signal,
+        },
+      );
+
+      if (retryResponse.ok) {
+        result = await retryResponse.json();
+        candidate = result?.candidates?.[0];
+        parts = candidate?.content?.parts;
+        const retriedReply = Array.isArray(parts)
+          ? parts.map((part: Record<string, unknown>) => typeof part.text === "string" ? part.text : "").join("").trim()
+          : "";
+        const retryFinishReason = String(candidate?.finishReason || "EMPTY");
+        if (isCompleteReply(retriedReply, retryFinishReason)) {
+          reply = retriedReply;
+          finishReason = retryFinishReason;
+          modelUsed = retryModel;
+        } else {
+          console.warn(JSON.stringify({
+            event: "customer_care_incomplete_retry_failed",
+            requestId,
+            model: retryModel,
+            finishReason: retryFinishReason,
+            responseLength: retriedReply.length,
+            candidateTokenCount: Number(result?.usageMetadata?.candidatesTokenCount || 0),
+          }));
+          reply = "";
+          finishReason = retryFinishReason;
+        }
+      } else {
+        console.warn(JSON.stringify({
+          event: "customer_care_incomplete_retry_upstream_error",
+          requestId,
+          model: retryModel,
+          upstreamStatus: retryResponse.status,
+        }));
+        reply = "";
+      }
+    }
+
+    if (!reply || !isCompleteReply(reply, finishReason)) {
+      return response({ success: false, code: "INCOMPLETE_AI_RESPONSE", requestId }, 502);
     }
 
     return response({ success: true, reply, requestId, model: modelUsed });
