@@ -141,6 +141,8 @@ function rankProductCandidates(products, profiles, message, decision={}, imageMa
   const imageContext=decision.image_search===true;
   const sizeGroups=new Map();
   for(const product of products){
+    const identity=String(product.name||"")+" "+String(product.slug||"");
+    if(product.is_active!==true || /(?:^|[\\s_-])(test|sample|demo|draft|placeholder)(?:$|[\\s_-])/iu.test(identity))continue;
     const profile=profileFor(product,profiles);
     const doc=productSearchDocument(product,profile);
     const size=parseSizeValue(doc.size_label);
