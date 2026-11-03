@@ -150,7 +150,7 @@ function rankProductCandidates(products, profiles, message, decision={}, imageMa
     const name=normalizeText(doc.name),slug=normalizeText(doc.slug),category=normalizeText(doc.category+" "+doc.category_slug);
     const aliasText=doc.synonyms.join(" ");
     if(exactIdentityIntent && targetGroup){
-      const canonicalSlug=normalizeText(targetGroup.canonical).replace(/\\s+/g,"-");
+      const canonicalSlug=normalizeText(targetGroup.canonical).replace(/\s+/g,"-");
       const groupMatch=name.includes(normalizeText(targetGroup.canonical))||slug.includes(canonicalSlug)||
         hasAny(aliasText,targetGroup.aliases)||hasAny(doc.name,targetGroup.aliases);
       if(!groupMatch)continue;
