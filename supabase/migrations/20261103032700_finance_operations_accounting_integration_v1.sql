@@ -242,6 +242,11 @@ begin
         or new.amount is distinct from old.amount or new.entry_date is distinct from old.entry_date
         or new.account_id is distinct from old.account_id or new.status is distinct from old.status
         or new.related_order_id is distinct from old.related_order_id
+        or new.description is distinct from old.description or new.reference is distinct from old.reference
+        or new.party_name is distinct from old.party_name or new.payment_method is distinct from old.payment_method
+        or new.financial_class is distinct from old.financial_class
+        or new.related_cod_settlement_id is distinct from old.related_cod_settlement_id
+        or new.related_supplier_payment_id is distinct from old.related_supplier_payment_id
       ) then
         raise exception 'This transaction is posted to accounting. Reverse its journal before correcting the source record.';
       end if;
@@ -279,7 +284,11 @@ begin
       end if;
     else
       if old.accounting_journal_id is not null and not v_sync and (
-        new.status is distinct from old.status or new.cod_amount is distinct from old.cod_amount
+        new.status is distinct from old.status or new.order_id is distinct from old.order_id
+        or new.order_number is distinct from old.order_number or new.customer_name is distinct from old.customer_name
+        or new.courier_name is distinct from old.courier_name or new.tracking_reference is distinct from old.tracking_reference
+        or new.collected_at is distinct from old.collected_at
+        or new.cod_amount is distinct from old.cod_amount
         or new.collected_amount is distinct from old.collected_amount or new.courier_fee is distinct from old.courier_fee
         or new.adjustment_amount is distinct from old.adjustment_amount or new.remitted_amount is distinct from old.remitted_amount
         or new.remitted_account_id is distinct from old.remitted_account_id or new.remitted_at is distinct from old.remitted_at
@@ -351,6 +360,8 @@ begin
       if old.accounting_journal_id is not null and not v_sync and (
         new.refund_amount is distinct from old.refund_amount or new.status is distinct from old.status
         or new.order_id is distinct from old.order_id or new.refund_account_id is distinct from old.refund_account_id
+        or new.item_condition is distinct from old.item_condition
+        or new.restock_approved is distinct from old.restock_approved
       ) then
         raise exception 'This customer refund is posted to accounting. Reverse the journal before correcting it.';
       end if;
@@ -962,6 +973,10 @@ declare
  v_grn_quantity numeric;
  v_po_quantity numeric;
  v_po_total numeric(14,2);
+ v_po_gross numeric(14,2);
+ v_po_item_discounts numeric(14,2);
+ v_po_expected_total numeric(14,2);
+ v_bill_expected_total numeric(14,2);
  v_base_amount numeric(14,2);
  v_lines jsonb:='[]'::jsonb;
  v_journal_id uuid;
@@ -987,6 +1002,23 @@ begin
  from public.admin_purchase_order_items where purchase_order_id=v_bill.purchase_order_id;
  select round(total_amount,2) into v_po_total
  from public.admin_purchase_orders where id=v_bill.purchase_order_id and supplier_id=v_bill.supplier_id;
+ select round(coalesce(sum(quantity*unit_cost),0),2),
+        round(coalesce(sum(discount_amount),0),2)
+ into v_po_gross,v_po_item_discounts
+ from public.admin_purchase_order_items where purchase_order_id=v_bill.purchase_order_id;
+
+ if v_po_gross is null or abs(v_po_gross-(select subtotal from public.admin_purchase_orders where id=v_bill.purchase_order_id))>0.01 then
+  raise exception 'Purchase Order line gross total does not match its saved subtotal. Correct the PO before posting the supplier bill.';
+ end if;
+ select round(subtotal-discount_amount-v_po_item_discounts+transport_cost+handling_cost+other_charges+tax_amount,2)
+ into v_po_expected_total from public.admin_purchase_orders where id=v_bill.purchase_order_id;
+ if v_po_expected_total is null or abs(v_po_expected_total-v_po_total)>0.01 then
+  raise exception 'Purchase Order total does not reconcile to line items, discounts, freight, handling, charges and tax.';
+ end if;
+ v_bill_expected_total:=round(v_bill.subtotal-v_bill.discount_amount+v_bill.additional_charges+v_bill.tax_amount,2);
+ if abs(v_bill_expected_total-v_bill.total_amount)>0.01 then
+  raise exception 'Supplier Bill total does not reconcile to subtotal, discount, additional charges and tax. Correct the bill before posting.';
+ end if;
 
  if v_grn_quantity<=0 or v_po_quantity<=0 then
   raise exception 'No accepted GRN quantity or PO item quantity exists. Verify the purchase receipt before posting.';
@@ -1708,6 +1740,7 @@ begin
    select sum(cl.accepted_quantity*cl.landed_unit_cost)/nullif(sum(cl.accepted_quantity),0) as weighted_cost
    from public.admin_inventory_cost_layers cl
    where cl.product_id=oi.product_id
+     and cl.created_at<=coalesce(v_order.updated_at,v_order.ordered_at)
  ) layer on true
  where oi.order_id=p_order_id;
  if v_line_count=0 or v_missing>0 then
@@ -1752,6 +1785,7 @@ with item_rows as (
    select sum(cl.accepted_quantity*cl.landed_unit_cost)/nullif(sum(cl.accepted_quantity),0) as weighted_cost
    from public.admin_inventory_cost_layers cl
    where cl.product_id=oi.product_id
+     and cl.created_at<=coalesce(o.updated_at,o.ordered_at)
  ) layer on true
  where o.status='delivered'
 ),
