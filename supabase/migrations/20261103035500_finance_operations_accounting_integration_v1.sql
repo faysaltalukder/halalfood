@@ -479,6 +479,21 @@ begin
   if v_entry.financial_class='adjustment' then
     raise exception 'Adjustment entries may need multiple lines; create a manual Journal Entry instead.';
   end if;
+  if v_entry.related_order_id is not null then
+    if v_entry.entry_type<>'income' then
+      raise exception 'An order-linked cash receipt must be an Income cashbook entry.';
+    end if;
+    if exists(select 1 from public.orders where id=v_entry.related_order_id and payment_method='cash_on_delivery') then
+      raise exception 'COD receipts are recorded only through the courier settlement workflow.';
+    end if;
+    if not exists(select 1 from public.admin_finance_journal_entries
+      where source_type='order_sale' and source_key=v_entry.related_order_id::text and status='posted') then
+      raise exception 'Recognize the delivered order sale first. Customer receipts must reduce Accounts Receivable, not create revenue again.';
+    end if;
+    if p_counter_account_id is distinct from (select id from public.admin_finance_chart_of_accounts where account_code='1100') then
+      raise exception 'An order-linked customer payment must credit Accounts Receivable (1100).';
+    end if;
+  end if;
   select ledger_account_id,id,opening_date into v_cash_coa_id,v_cash_account_id,v_period_open
   from public.admin_finance_accounts where id=v_entry.account_id;
   if v_cash_coa_id is null then raise exception 'Map this Finance account to a Chart of Accounts asset first.'; end if;
@@ -677,10 +692,7 @@ $$;
 revoke all on function public.admin_finance_void_transfer(uuid,text) from public,anon;
 grant execute on function public.admin_finance_void_transfer(uuid,text) to authenticated;
 
-create or replace function public.admin_finance_recognize_delivered_order_sale(
- p_order_id uuid,
- p_debit_account_id uuid default null
-)
+create or replace function public.admin_finance_recognize_delivered_order_sale(p_order_id uuid)
 returns uuid
 language plpgsql
 security invoker
@@ -694,10 +706,10 @@ declare
  v_net_sales numeric(14,2);
  v_debit_account_id uuid;
  v_debit_account_code text;
- v_debit_account_type text;
+ v_existing uuid;
+ v_existing_status text;
  v_lines jsonb;
  v_journal_id uuid;
- v_existing uuid;
 begin
  if v_email<>'halalfoodbd.official@gmail.com' or v_aal<>'aal2' or auth.uid() is null then
   raise exception 'Authorized admin account and MFA are required.' using errcode='42501';
@@ -706,12 +718,20 @@ begin
  if not found then raise exception 'Order was not found.'; end if;
  if v_order.status<>'delivered' then raise exception 'Sales can be recognized only after the order is Delivered.'; end if;
 
- select id into v_existing from public.admin_finance_journal_entries
+ select id,status into v_existing,v_existing_status
+ from public.admin_finance_journal_entries
  where source_type='order_sale' and source_key=p_order_id::text;
- if v_existing is not null then return v_existing; end if;
- if exists(select 1 from public.admin_finance_entries
-   where related_order_id=p_order_id and status='confirmed' and related_cod_settlement_id is null) then
-  raise exception 'A manual confirmed income entry already references this order. Review it before recognizing sales to prevent double counting.';
+ if v_existing is not null then
+  if v_existing_status='posted' then return v_existing; end if;
+  raise exception 'This delivered order sale has already been reversed. Review the order correction before attempting another posting.';
+ end if;
+
+ if exists(
+   select 1 from public.admin_finance_entries e
+   where e.related_order_id=p_order_id and e.entry_type='income'
+     and e.status='confirmed' and e.accounting_journal_id is not null
+ ) then
+  raise exception 'A linked income receipt is already posted to accounting. Review the existing Journal before recognizing this order.';
  end if;
 
  select coalesce(sum(line_total),0) into v_item_subtotal
@@ -726,23 +746,22 @@ begin
  end if;
 
  if v_order.payment_method='cash_on_delivery' then
-  if p_debit_account_id is not null then raise exception 'COD sales must debit Courier Clearing. Post the actual remittance separately.'; end if;
-  select id,account_code,account_type into v_debit_account_id,v_debit_account_code,v_debit_account_type
+  select id,account_code into v_debit_account_id,v_debit_account_code
   from public.admin_finance_chart_of_accounts where account_code='1040' and is_active and is_postable;
  else
-  v_debit_account_id:=coalesce(p_debit_account_id,(select id from public.admin_finance_chart_of_accounts where account_code='1100'));
-  select account_code,account_type into v_debit_account_code,v_debit_account_type
-  from public.admin_finance_chart_of_accounts
-  where id=v_debit_account_id and is_active and is_postable;
-  if v_debit_account_type is distinct from 'asset' then
-    raise exception 'Choose an Asset account, such as Accounts Receivable, Cash, Bank or Mobile Wallet.';
-  end if;
+  select id,account_code into v_debit_account_id,v_debit_account_code
+  from public.admin_finance_chart_of_accounts where account_code='1100' and is_active and is_postable;
  end if;
- if v_debit_account_id is null then raise exception 'The required debit account is not configured in the Chart of Accounts.'; end if;
+ if v_debit_account_id is null then
+  raise exception 'The required Receivable / Courier Clearing account is not configured in the Chart of Accounts.';
+ end if;
 
  v_lines:=jsonb_build_array(
-  jsonb_build_object('account_id',v_debit_account_id,'description','Delivered sale receivable / collection · '||v_order.order_number,'party_name',v_order.customer_name,'debit',v_order.total,'credit',0),
-  jsonb_build_object('account_id',(select id from public.admin_finance_chart_of_accounts where account_code='4010'),'description','Net product sales · '||v_order.order_number,'party_name',v_order.customer_name,'debit',0,'credit',v_net_sales)
+  jsonb_build_object('account_id',v_debit_account_id,
+    'description',case when v_order.payment_method='cash_on_delivery' then 'Courier COD receivable · ' else 'Customer receivable · ' end||v_order.order_number,
+    'party_name',v_order.customer_name,'debit',v_order.total,'credit',0),
+  jsonb_build_object('account_id',(select id from public.admin_finance_chart_of_accounts where account_code='4010'),
+    'description','Net product sales · '||v_order.order_number,'party_name',v_order.customer_name,'debit',0,'credit',v_net_sales)
  );
  if v_order.delivery_charge>0 then
   v_lines:=v_lines||jsonb_build_array(jsonb_build_object(
@@ -759,7 +778,7 @@ begin
  return v_journal_id;
 end;
 $$;
-revoke all on function public.admin_finance_recognize_delivered_order_sale(uuid,uuid) from public,anon;
+revoke all on function public.admin_finance_recognize_delivered_order_sale(uuid) from public,anon;
 grant execute on function public.admin_finance_recognize_delivered_order_sale(uuid,uuid) to authenticated;
 
 revoke all on function public.admin_finance_recognize_cod_order_sale(uuid) from public,anon;
@@ -786,10 +805,11 @@ begin
  end if;
  select * into v_settlement from public.admin_cod_settlements where id=p_settlement_id for update;
  if not found then raise exception 'COD settlement was not found.'; end if;
+ if v_settlement.reversal_journal_id is not null then raise exception 'This COD settlement was reversed. Create a new verified settlement record for any corrected remittance.'; end if;
  if v_settlement.accounting_journal_id is not null then return v_settlement.accounting_journal_id; end if;
  if v_settlement.status<>'reconciled' then raise exception 'Only a Reconciled COD settlement can be posted.'; end if;
  if v_settlement.order_id is null then raise exception 'The COD settlement must be linked to its original order.'; end if;
- v_sale_journal_id:=public.admin_finance_recognize_delivered_order_sale(v_settlement.order_id,null);
+ v_sale_journal_id:=public.admin_finance_recognize_delivered_order_sale(v_settlement.order_id);
  if v_settlement.collected_amount<=0 or v_settlement.collected_amount>v_settlement.cod_amount then
   raise exception 'Collected amount must be positive and cannot exceed the COD order value.';
  end if;
@@ -859,6 +879,7 @@ begin
  end if;
  select * into v_bill from public.admin_supplier_bills where id=p_bill_id for update;
  if not found then raise exception 'Supplier bill was not found.'; end if;
+ if v_bill.reversal_journal_id is not null or v_bill.status='void' then raise exception 'This supplier bill was reversed or voided and cannot be posted again.'; end if;
  if v_bill.accounting_journal_id is not null then return v_bill.accounting_journal_id; end if;
  if v_bill.status<>'confirmed' then raise exception 'Only a Confirmed supplier bill can be posted.'; end if;
  if v_bill.purchase_order_id is null then
@@ -950,6 +971,7 @@ begin
  end if;
  select * into v_payment from public.admin_supplier_payments where id=p_payment_id for update;
  if not found then raise exception 'Supplier payment was not found.'; end if;
+ if v_payment.reversal_journal_id is not null or v_payment.status='void' then raise exception 'This supplier payment was reversed or voided and cannot be posted again.'; end if;
  if v_payment.accounting_journal_id is not null then return v_payment.accounting_journal_id; end if;
  if v_payment.status<>'confirmed' then raise exception 'Only a Confirmed supplier payment can be posted.'; end if;
  select ledger_account_id into v_cash_coa_id
@@ -1265,7 +1287,10 @@ begin
  end if;
  select id into v_existing from public.admin_finance_journal_entries
  where source_type='order_cogs' and source_key=p_order_id::text;
- if v_existing is not null then return v_existing; end if;
+ if v_existing is not null then
+  if (select status from public.admin_finance_journal_entries where id=v_existing)='posted' then return v_existing; end if;
+  raise exception 'This order COGS journal has already been reversed. Review the inventory correction before reposting.';
+ end if;
  select count(*),
         count(*) filter(where oi.product_id is null or coalesce(pc.cost_price,layer.weighted_cost) is null),
         coalesce(sum(oi.quantity*(coalesce(pc.cost_price,layer.weighted_cost,0)+coalesce(pc.packaging_cost,0))),0)
