@@ -401,7 +401,7 @@ declare
   v_period_status text;
   v_original_status text;
   v_bad_lines bigint;
-  v_target jsonb;
+  v_target uuid;
 begin
   if v_email <> 'halalfoodbd.official@gmail.com' or v_aal <> 'aal2' then
     raise exception 'Journal changes require the authorized admin account and MFA.' using errcode='42501';
@@ -435,6 +435,9 @@ begin
     if new.journal_number is distinct from old.journal_number
       or new.created_by is distinct from old.created_by
       or new.created_at is distinct from old.created_at
+      or new.source_type is distinct from old.source_type
+      or new.source_key is distinct from old.source_key
+      or new.currency is distinct from old.currency
       or new.reversal_of is distinct from old.reversal_of then
       raise exception 'Journal identity and source fields cannot be changed after creation.';
     end if;
@@ -649,7 +652,7 @@ begin
   if length(btrim(coalesce(p_description,''))) < 3 or length(p_description) > 500 then
     raise exception 'Enter a journal description between 3 and 500 characters.';
   end if;
-  if jsonb_typeof(p_lines) <> 'array' or jsonb_array_length(p_lines) > 100 then
+  if p_lines is null or jsonb_typeof(p_lines) is distinct from 'array' or jsonb_array_length(p_lines) > 100 then
     raise exception 'Journal lines must be an array containing no more than 100 lines.';
   end if;
   if length(btrim(coalesce(p_source_type,''))) not between 1 and 40 then
@@ -825,24 +828,23 @@ select
   coa.normal_balance,
   coa.parent_account_id,
   coa.is_postable,
-  coalesce(sum(jl.debit),0)::numeric(14,2) as total_debits,
-  coalesce(sum(jl.credit),0)::numeric(14,2) as total_credits,
+  coalesce(sum(jl.debit) filter (where je.status in ('posted','reversed')),0)::numeric(14,2) as total_debits,
+  coalesce(sum(jl.credit) filter (where je.status in ('posted','reversed')),0)::numeric(14,2) as total_credits,
   greatest(
     case when coa.normal_balance='debit'
-      then coalesce(sum(jl.debit-jl.credit),0)
-      else coalesce(sum(jl.credit-jl.debit),0)
+      then coalesce(sum(jl.debit-jl.credit) filter (where je.status in ('posted','reversed')),0)
+      else coalesce(sum(jl.credit-jl.debit) filter (where je.status in ('posted','reversed')),0)
     end,0
   )::numeric(14,2) as debit_balance,
   greatest(
     case when coa.normal_balance='debit'
-      then coalesce(sum(jl.credit-jl.debit),0)
-      else coalesce(sum(jl.debit-jl.credit),0)
+      then coalesce(sum(jl.credit-jl.debit) filter (where je.status in ('posted','reversed')),0)
+      else coalesce(sum(jl.debit-jl.credit) filter (where je.status in ('posted','reversed')),0)
     end,0
   )::numeric(14,2) as credit_balance
 from public.admin_finance_chart_of_accounts coa
 left join public.admin_finance_journal_lines jl on jl.account_id=coa.id
-left join public.admin_finance_journal_entries je
-  on je.id=jl.journal_entry_id and je.status in ('posted','reversed')
+left join public.admin_finance_journal_entries je on je.id=jl.journal_entry_id
 group by coa.id,coa.account_code,coa.name,coa.account_type,coa.normal_balance,coa.parent_account_id,coa.is_postable;
 
 create or replace view public.admin_finance_general_ledger
