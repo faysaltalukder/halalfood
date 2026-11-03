@@ -1101,6 +1101,8 @@ Deno.serve(async (req: Request) => {
         knowledge.customerNeed.recommendation_permission = "none";
         knowledge.customerNeed.clarification_needed = true;
         knowledge.customerNeed.search_not_found = true;
+        knowledge.customerNeed.match_type = imageMatch?.match_type || "uncertain";
+        knowledge.customerNeed.search_confidence = imageMatch?.confidence || "low";
       } else {
         knowledge.customerNeed.match_type = imageMatch?.match_type || approvedCards[0].match_type || "visual";
         knowledge.customerNeed.search_confidence = imageMatch?.confidence || approvedCards[0].confidence_level || "medium";
@@ -1109,7 +1111,8 @@ Deno.serve(async (req: Request) => {
       knowledge.customerNeed.match_type = approvedCards[0].match_type || knowledge.customerNeed.match_type;
       knowledge.customerNeed.search_confidence = approvedCards[0].confidence_level || knowledge.customerNeed.search_confidence;
     }
-    await logAiCustomerCareEvents(knowledge, requestId, imageMatch, approvedCards.length, approvedCards.length ? "resolved" : "answered_or_clarified");
+    const resolvedSearchCount = knowledge.imageSearch ? approvedCards.length : knowledge.products.length;
+    await logAiCustomerCareEvents(knowledge, requestId, imageMatch, resolvedSearchCount, resolvedSearchCount ? "resolved" : "answered_or_clarified");
     return response({
       success: true,
       reply,
@@ -1123,7 +1126,7 @@ Deno.serve(async (req: Request) => {
       model: modelUsed,
       knowledge: {
         documents: knowledge.documents.length,
-        matchedProducts: approvedCards.length,
+        matchedProducts: resolvedSearchCount,
         publishedProductProfiles: knowledge.productKnowledge.length,
       },
     });
