@@ -119,7 +119,7 @@ function rankProductCandidates(products, profiles, message, decision={}, imageMa
     /(জার|jar)/u.test(query)?"jar":
     /(টিন|tin)/u.test(query)?"tin":
     /(প্যাকেট|packet|pouch|পাউচ)/u.test(query)?"packet":null;
-  const requestedSize=(query.match(/(?:^|\\s)([0-9]+\\s?(?:ml|l|g|kg))(?=\\s|$)/u)||[])[1]||"";
+  const requestedSize=(query.match(/(?:^|\s)([0-9]+\s?(?:ml|l|g|kg))(?=\s|$)/u)||[])[1]||"";
   const visualSlug=typeof imageMatch?.candidate_slug==="string"?imageMatch.candidate_slug:"";
   const visualSlugs=Array.isArray(imageMatch?.candidate_slugs)?imageMatch.candidate_slugs.filter(x=>typeof x==="string"):[];
 
@@ -142,7 +142,9 @@ function rankProductCandidates(products, profiles, message, decision={}, imageMa
       if(!categoryAliases.some(a=>normalizeText(product.category).includes(normalizeText(a))||normalizeText(product.category_slug).includes(normalizeText(a).replace(/\s+/g,"-"))))continue;
     }
     if(requestedBrand && (!doc.brand || normalizeText(doc.brand)!==normalizeText(requestedBrand)))continue;
-    if(requestedForm && doc.product_form && !normalizeText(doc.product_form).includes(requestedForm))continue;\n    if(requestedPackaging && doc.packaging_type && !normalizeText(doc.packaging_type).includes(requestedPackaging))continue;\n    if(requestedSize && doc.size_label && normalizeText(doc.size_label).replace(/\\s+/g,"")!==normalizeText(requestedSize).replace(/\\s+/g,""))continue;
+    if(requestedForm && doc.product_form && !normalizeText(doc.product_form).includes(requestedForm))continue;
+    if(requestedPackaging && doc.packaging_type && !normalizeText(doc.packaging_type).includes(requestedPackaging))continue;
+    if(requestedSize && doc.size_label && normalizeText(doc.size_label).replace(/\s+/g,"")!==normalizeText(requestedSize).replace(/\s+/g,""))continue;
     const name=normalizeText(doc.name),slug=normalizeText(doc.slug),category=normalizeText(doc.category+" "+doc.category_slug);
     const aliasText=doc.synonyms.join(" ");
     const exactName=Boolean(name && (query===name || query.includes(name) || name.includes(query)));
@@ -228,7 +230,8 @@ function applyConfidencePolicy(ranked, decision, imageMatch=null) {
   if(!Array.isArray(ranked)||!ranked.length)return [];
   if(decision?.primary_intent?.startsWith("image_")){
     if(!imageMatch || imageMatch.match_type==="uncertain" || imageMatch.confidence==="low")return [];
-    if(imageMatch.candidate_slug)return ranked.filter(x=>String(x.product.slug)===imageMatch.candidate_slug);\n    if(imageMatch.candidate_slugs?.length)return ranked.filter(x=>imageMatch.candidate_slugs.includes(String(x.product.slug))).slice(0,Math.min(3,Number(decision.max_product_cards||0)));
+    if(imageMatch.candidate_slug)return ranked.filter(x=>String(x.product.slug)===imageMatch.candidate_slug);
+    if(imageMatch.candidate_slugs?.length)return ranked.filter(x=>imageMatch.candidate_slugs.includes(String(x.product.slug))).slice(0,Math.min(3,Number(decision.max_product_cards||0)));
     if(imageMatch.match_type==="derived_product"||imageMatch.match_type==="similar")return ranked.filter(x=>x.confidence_level==="high"||x.confidence_level==="medium").slice(0,Math.min(3,Number(decision.max_product_cards||0)));
     return [];
   }
