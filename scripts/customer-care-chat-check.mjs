@@ -22,6 +22,8 @@ assert.match(edge, /checkRateLimit/);
 assert.match(edge, /AbortController/);
 assert.match(edge, /ALLOWED_ORIGIN/);
 assert.match(edge, /generateContent/);
+assert.match(edge, /gemini-3\.6-flash/);
+assert.match(edge, /customer_care_model_fallback/);
 assert.doesNotMatch(edge, /console\.(log|error)\([^)]*message/);
 assert.match(css, /\.hf-ai-chat-panel\[hidden\]\s*\{\s*display:\s*none\s*!important/);
 assert.match(css, /@media \(max-width: 900px\)/);
