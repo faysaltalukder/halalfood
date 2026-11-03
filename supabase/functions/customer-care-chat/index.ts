@@ -96,6 +96,64 @@ async function fetchSupabaseRows(
   }
 }
 
+async function buildCatalogImageParts(
+  knowledge: Awaited<ReturnType<typeof loadKnowledge>>,
+): Promise<Array<{ text: string } | { inlineData: { mimeType: string; data: string } }>> {
+  if (!knowledge.imageSearch || Number(knowledge.customerNeed?.max_product_cards || 0) < 1) return [];
+  const candidates = knowledge.products.slice(0, 4).filter((product: Record<string, unknown>) => typeof product.image_url === "string" && product.image_url);
+  const results = await Promise.all(candidates.map(async (product: Record<string, unknown>) => {
+    const rawUrl = String(product.image_url || "");
+    let url: URL;
+    try { url = new URL(rawUrl); } catch { return null; }
+    if (url.protocol !== "https:" || !["faysaltalukder.github.io", "qfwvrcfkrsydycbfjsxf.supabase.co"].includes(url.hostname)) return null;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 2500);
+    try {
+      const response = await fetch(url.toString(), { method: "GET", redirect: "error", cache: "force-cache", signal: controller.signal });
+      if (!response.ok) return null;
+      const mimeType = (response.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
+      if (!["image/jpeg", "image/png", "image/webp"].includes(mimeType)) return null;
+      const declaredLength = Number(response.headers.get("content-length") || "0");
+      if (declaredLength > 500_000) return null;
+      const reader = response.body?.getReader();
+      if (!reader) return null;
+      const chunks: Uint8Array[] = [];
+      let total = 0;
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        total += value.byteLength;
+        if (total > 500_000) { await reader.cancel(); return null; }
+        chunks.push(value);
+      }
+      const bytes = new Uint8Array(total);
+      let offset = 0;
+      for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
+      let binary = "";
+      for (let index = 0; index < bytes.length; index += 0x8000) {
+        binary += String.fromCharCode(...bytes.subarray(index, Math.min(index + 0x8000, bytes.length)));
+      }
+      return {
+        slug: String(product.slug || ""),
+        name: String(product.name || ""),
+        mimeType,
+        data: btoa(binary),
+      };
+    } catch {
+      return null;
+    } finally {
+      clearTimeout(timeout);
+    }
+  }));
+  const parts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> = [];
+  for (const candidate of results) {
+    if (!candidate || !candidate.slug || !candidate.data) continue;
+    parts.push({ text: "LIVE CATALOG REFERENCE IMAGE — candidate slug: " + candidate.slug + "; official product name: " + candidate.name + ". Compare the customer's uploaded image with this catalog image; this is a reference image, not the customer's photo." });
+    parts.push({ inlineData: { mimeType: candidate.mimeType, data: candidate.data } });
+  }
+  return parts;
+}
+
 async function logAiCustomerCareEvents(
   knowledge: Awaited<ReturnType<typeof loadKnowledge>>,
   requestId: string,
@@ -884,8 +942,12 @@ Deno.serve(async (req: Request) => {
     }));
     const knowledge = await loadKnowledge(message || "ছবিতে থাকা পণ্যটি খুঁজুন", knowledgeHistory, hasImage);
     loadedKnowledge = knowledge;
+    if (hasImage) {
+      const catalogImageParts = await buildCatalogImageParts(knowledge);
+      if (catalogImageParts.length) userParts.push(...catalogImageParts);
+    }
     const imageMatchInstructions = hasImage
-      ? "\n\nIMAGE UNDERSTANDING AND CATALOG MATCH RULES: First identify only what is visibly supported by the uploaded image: object/material, readable label text, possible product identity and visible packaging cues. Compare with supplied live catalog candidates and owner-verified visual profiles. Never invent a brand, ingredient, certification or package type. The customer's explicit text defines search intent; if image and text conflict, ask one concise clarification instead of guessing. If evidence is insufficient, return no candidate. At the end of your customer-facing answer append exactly one machine-readable block and do not explain it: [[HF_IMAGE_MATCH]]{\"image_object\":\"...\",\"candidate_slug\":\"exact-live-slug-or-empty\",\"candidate_slugs\":[\"up-to-4-live-slugs\"],\"brand\":\"verified-visible-brand-or-empty\",\"packaging_type\":\"visible-packaging-or-empty\",\"visible_text\":\"short-readable-label-or-empty\",\"match_type\":\"exact|derived_product|similar|alternative|uncertain\",\"confidence\":\"high|medium|low\"}[[/HF_IMAGE_MATCH]]. Use high only for clear identity evidence, medium for supported similarity or derived-product matches, and low/uncertain when unclear. Candidate slugs must exactly match the live candidate list. If uncertain, leave candidate_slug empty and candidate_slugs empty."
+      ? "\n\nIMAGE UNDERSTANDING AND CATALOG MATCH RULES: First identify only what is visibly supported by the uploaded image: object/material, readable label text, possible product identity and visible packaging cues. The first image is the customer upload; any later labelled images are actual live-catalog product photos. Compare the customer image with those catalog photos and owner-verified visual profiles. Never invent a brand, ingredient, certification or package type. The customer's explicit text defines search intent; if image and text conflict, ask one concise clarification instead of guessing. If evidence is insufficient, return no candidate. At the end of your customer-facing answer append exactly one machine-readable block and do not explain it: [[HF_IMAGE_MATCH]]{\"image_object\":\"...\",\"candidate_slug\":\"exact-live-slug-or-empty\",\"candidate_slugs\":[\"up-to-4-live-slugs\"],\"brand\":\"verified-visible-brand-or-empty\",\"packaging_type\":\"visible-packaging-or-empty\",\"visible_text\":\"short-readable-label-or-empty\",\"match_type\":\"exact|derived_product|similar|alternative|uncertain\",\"confidence\":\"high|medium|low\"}[[/HF_IMAGE_MATCH]]. Use high only for clear identity evidence, medium for supported similarity or derived-product matches, and low/uncertain when unclear. Candidate slugs must exactly match the live candidate list. If uncertain, leave candidate_slug empty and candidate_slugs empty."
       : "";
     const systemInstruction = SYSTEM_INSTRUCTION + "\n\n--- RETRIEVED KNOWLEDGE CONTEXT ---\n" +
       buildKnowledgeContext(knowledge) + imageMatchInstructions +
