@@ -203,7 +203,7 @@ assert.match(edge, /logAiCustomerCareEvents/);
 assert.match(edge, /HF_IMAGE_MATCH/);
 assert.match(edge, /suppressed_rejected_product_count/);
 assert.match(chat, /appendProductCards\(bubble, products, maxCards, matchType\)/);
-assert.match(chat, /const safeLimit = Math\\.min\(4/);
+assert.match(chat, /const safeLimit = Math\.min\(4/);
 assert.match(chat, /ai_product_card_shown/);
 assert.match(chat, /ai_product_clicked/);
 assert.match(main, /ai_product_card_shown/);
