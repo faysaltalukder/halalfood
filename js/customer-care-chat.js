@@ -747,7 +747,7 @@
         const answerBubble = appendMessage(reply || "দুঃখিত, এবার উত্তর তৈরি করা যায়নি। আবার চেষ্টা করুন।", "assistant");
         appendProductCards(answerBubble, data.products, data.recommendation && data.recommendation.max_product_cards, data.recommendation && data.recommendation.match_type);
         conversation.push({ role: "user", text: text });
-        conversation.push({ role: "assistant", text: reply });
+        conversation.push({ role: "assistant", text: reply + (Array.isArray(data.products) && data.products.length ? "\\n[Products shown: " + data.products.map(function (item) { return String(item.name || ""); }).filter(Boolean).join(", ") + "]" : "") });
         if (conversation.length > 40) conversation.splice(0, conversation.length - 40);
       }
     } catch (_error) {
