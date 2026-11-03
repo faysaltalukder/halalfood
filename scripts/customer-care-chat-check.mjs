@@ -17,7 +17,7 @@ const adminApp = fs.readFileSync("admin/app.js", "utf8");
 const stageTwoMigration = fs.readFileSync("supabase/migrations/20261103143000_ai_customer_intelligence_stage_two.sql", "utf8");
 const golden = JSON.parse(fs.readFileSync("scripts/customer-care-intelligence-golden.json", "utf8"));
 
-assert.match(main, /js\/customer-care-chat\.js\?v=20261103-stage2-customer-intelligence-v2/);
+assert.match(main, /js\/customer-care-chat\.js\?v=20261103-visual-catalog-v3/);
 assert.match(chat, /functions\/v1\/customer-care-chat/);
 assert.doesNotMatch(chat, /ageConfirmed|hf-ai-chat-age-gate|hf-ai-age-confirm|প্রাপ্তবয়স্কদের জন্য AI সহায়তা/);
 assert.match(chat, /if \(\(!text && !imageFile\) \|\| busy\) return;/);
@@ -45,8 +45,8 @@ assert.match(edge, /isTestOrPlaceholderProduct/);
 assert.match(edge, /customer_care_model_fallback/);
 assert.match(edge, /\[429, 500, 502, 503, 504\]\.includes\(upstream\.status\)/);
 assert.match(edge, /isCompleteReply/);
-assert.match(edge, /gemini-3\.5-flash-lite/);
-assert.match(edge, /gemini-3\.1-flash-lite/);
+assert.doesNotMatch(edge, /gemini-3\.5-flash-lite|gemini-3\.1-flash-lite/);
+
 assert.match(edge, /buildDeterministicFallbackReply/);
 assert.match(edge, /customer_care_model_network_fallback/);
 assert.match(edge, /hany|honey/);
@@ -134,11 +134,11 @@ assert.match(edge, /MAX_REQUEST_BYTES = 262144/);
 assert.doesNotMatch(edge, /MAX_MESSAGE_CHARS/);
 assert.match(chat, /history: imageFile \? \[\] : conversation\.slice\(-20\)/);
 
-assert.match(edge, /maxOutputTokens: 4096/);
-assert.match(edge, /temperature: 0\.6/);
+assert.match(edge, /maxOutputTokens: 8192/);
+assert.match(edge, /thinkingConfig: \\{ thinkingLevel: "HIGH" \\}/);
 assert.match(edge, /45_000/);
 assert.ok(edge.includes("return Boolean(reply.trim())"));
-assert.match(main, /customer-care-chat\.js\?v=20261103-stage2-customer-intelligence-v2/);
+assert.match(main, /customer-care-chat\.js\?v=20261103-visual-catalog-v3/);
 
 assert.match(chat, /textarea id="hf-ai-chat-input"/);
 assert.match(chat, /messages.addEventListener\("wheel"/);
@@ -167,14 +167,14 @@ assert.match(css, /hf-ai-chat-mic/);
 const intentCases = [
   ["একটা সরিষার তেল দেখাও", "exact_product_lookup", 1],
   ["I want to order mustard oil", "exact_product_lookup", 1],
-  ["কী কী তেল পাওয়া যায়", "category_browse", 4],
-  ["তেলগুলো দেখাও", "category_browse", 4],
+  ["কী কী তেল পাওয়া যায়", "category_browse", 3],
+  ["তেলগুলো দেখাও", "category_browse", 3],
   ["সরিষার তেলের দাম কত?", "product_price_inquiry", 0],
   ["ডেলিভারি কত?", "store_policy_question", 0],
   ["ধন্যবাদ", "casual_conversation", 0],
-  ["কয়েকটি ঘি সাজেস্ট করো", "recommendation_request", 4],
-  ["অন্যটা দেখাও", "recommendation_request", 4],
-  ["এই ঘিগুলোর তুলনা করো", "product_comparison", 4],
+  ["কয়েকটি ঘি সাজেস্ট করো", "recommendation_request", 3],
+  ["অন্যটা দেখাও", "recommendation_request", 3],
+  ["এই ঘিগুলোর তুলনা করো", "product_comparison", 2],
 ];
 for (const [query, expectedIntent, expectedCards] of intentCases) {
   const decision = classifyCustomerIntent(query);
@@ -182,8 +182,8 @@ for (const [query, expectedIntent, expectedCards] of intentCases) {
   assert.equal(decision.max_product_cards, expectedCards, query);
 }
 const imageOnly = classifyCustomerIntent("", true);
-assert.equal(imageOnly.primary_intent, "ambiguous_product_request");
-assert.equal(imageOnly.max_product_cards, 0);
+assert.equal(imageOnly.primary_intent, "image_product_search");
+assert.equal(imageOnly.max_product_cards, 1);
 const imageSimilar = classifyCustomerIntent("এই নারিকেলের ছবির মতো তেল আছে?", true);
 assert.equal(imageSimilar.primary_intent, "image_similar_product_search");
 assert.equal(imageSimilar.max_product_cards, 3);
