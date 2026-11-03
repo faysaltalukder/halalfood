@@ -104,7 +104,7 @@ async function buildCatalogImageParts(
   if (!need || (!knowledge.imageSearch && Number(need.max_product_cards || 0) < 1)) return [];
   const intent = String(need.primary_intent || "");
   const candidateLimit = knowledge.imageSearch ? 61
-    : intent === "category_browse" ? 6
+    : intent === "category_browse" ? 7
     : intent === "broad_catalog_browse" ? 2
     : intent === "recommendation_request" ? 3
     : intent === "product_comparison" ? 2
