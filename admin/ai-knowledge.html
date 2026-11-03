@@ -72,6 +72,19 @@
    <label class="hf-field">Allergen information<textarea class="hf-textarea" id="aiKbAllergen" rows="2"></textarea></label>
    <label class="hf-field">Certification information<textarea class="hf-textarea" id="aiKbCertification" rows="2"></textarea></label>
   </div>
+  <div class="hf-section-head"><div><p class="page-eyebrow">HYBRID SEARCH PROFILE</p><h3>Search identity &amp; product attributes</h3><p>Use only owner-verified information. These fields improve Bangla, English, Banglish, attribute and image matching.</p></div></div>
+  <div class="ai-kb-two-col">
+   <label class="hf-field">Search synonyms (one alias per line)<textarea class="hf-textarea" id="aiKbSearchSynonyms" rows="3" placeholder="সরিষার তেল&#10;Sorishar Tel&#10;Mustard Tel"></textarea></label>
+   <label class="hf-field">Product form<input class="hf-input" id="aiKbProductFormType" maxlength="80" placeholder="e.g. liquid oil, powder, whole"></label>
+   <label class="hf-field">Derived from (one verified source per line)<textarea class="hf-textarea" id="aiKbDerivedFrom" rows="2" placeholder="e.g. mustard seed"></textarea></label>
+   <label class="hf-field">Related search terms (one per line)<textarea class="hf-textarea" id="aiKbRelatedTerms" rows="2" placeholder="e.g. cooking oil"></textarea></label>
+   <label class="hf-field">Verified brand<input class="hf-input" id="aiKbBrand" maxlength="100"></label>
+   <label class="hf-field">Verified packaging type<input class="hf-input" id="aiKbPackaging" maxlength="80" placeholder="e.g. glass bottle, jar, tin"></label>
+   <label class="hf-field">Catalog size / unit label<input class="hf-input" id="aiKbSizeLabel" maxlength="60" placeholder="e.g. 500ml, 1kg"></label>
+   <label class="hf-field">Verified visual description<textarea class="hf-textarea" id="aiKbVisual" rows="3" placeholder="Visible cues that distinguish this product; avoid guesses from unclear images"></textarea></label>
+  </div>
+  <label class="hf-field">Verified search attributes (JSON object)<textarea class="hf-textarea" id="aiKbSearchAttributes" rows="4" spellcheck="false" placeholder='{"ingredient":["mustard seed"],"usage":["cooking"]}'></textarea></label>
+  <p class="ai-kb-editor-note">Search synonyms are used only to find the real catalog product; they never replace its official name. Missing attributes remain unknown. Do not invent brand, origin, certification, ingredients or package claims.</p>
   <label class="hf-field">Verified claims (one approved claim per line)<textarea class="hf-textarea" id="aiKbClaims" rows="3" placeholder="Only exact, documented claims"></textarea></label>
   <label class="hf-field">Customer fit (one suitable use-case per line)<textarea class="hf-textarea" id="aiKbFit" rows="3" placeholder="e.g. Suitable for customers looking for a 500g pack"></textarea></label>
   <label class="hf-field">Product FAQs (one per line: question | answer)<textarea class="hf-textarea" id="aiKbFaq" rows="4" placeholder="এই পণ্যটি কীভাবে ব্যবহার করব? | প্রকাশিত ব্যবহারের নির্দেশনা লিখুন"></textarea></label>
@@ -87,5 +100,5 @@
 <script defer src="../js/store-config.js?v=20261101-store-config-v1"></script>
 <script defer src="./shared.js?v=20261102-reports-navigation-v3"></script>
 <script defer src="./app.js?v=20261102-dashboard-speed-v2"></script>
-<script defer src="./ai-knowledge.js?v=20261103-ai-stage2-v1"></script>
+<script defer src="./ai-knowledge.js?v=20261103-ai-stage2-v2"></script>
 </body></html>
