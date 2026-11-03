@@ -111,6 +111,8 @@ function rankProductCandidates(products, profiles, message, decision={}, imageMa
   const query=normalizeText(message), terms=expandSearchTerms(message,profiles.map(p=>({...p,product_name:"",product_slug:""})));
   const requestedCategory=detectCategory(message);
   const requestedBrand=detectBrand(message,profiles);
+  const targetGroup=GROUPS.find(group=>group.aliases.some(alias=>query.includes(normalizeText(alias))))||null;
+  const exactIdentityIntent=["exact_product_lookup","product_price_inquiry","product_availability_inquiry"].includes(String(decision.primary_intent||""));
   const requestedForm=/(গুঁড়া|গুঁড়া|পাউডার|powder)/u.test(query)?"powder":
     /(তরল|liquid)/u.test(query)?"liquid":
     /(whole|আস্ত|পুরো)/u.test(query)?"whole":
@@ -147,6 +149,12 @@ function rankProductCandidates(products, profiles, message, decision={}, imageMa
     if(requestedSize && doc.size_label && normalizeText(doc.size_label).replace(/\s+/g,"")!==normalizeText(requestedSize).replace(/\s+/g,""))continue;
     const name=normalizeText(doc.name),slug=normalizeText(doc.slug),category=normalizeText(doc.category+" "+doc.category_slug);
     const aliasText=doc.synonyms.join(" ");
+    if(exactIdentityIntent && targetGroup){
+      const canonicalSlug=normalizeText(targetGroup.canonical).replace(/\\s+/g,"-");
+      const groupMatch=name.includes(normalizeText(targetGroup.canonical))||slug.includes(canonicalSlug)||
+        hasAny(aliasText,targetGroup.aliases)||hasAny(doc.name,targetGroup.aliases);
+      if(!groupMatch)continue;
+    }
     const exactName=Boolean(name && (query===name || query.includes(name) || name.includes(query)));
     const exactAlias=hasAny(query,doc.synonyms);
     let identityScore=exactName?1:exactAlias?0.92:0;
