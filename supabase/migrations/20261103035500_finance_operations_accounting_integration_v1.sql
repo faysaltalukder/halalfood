@@ -517,8 +517,11 @@ begin
        and not (v_counter.account_type='asset' and v_counter.account_code='1100' and v_entry.related_order_id is not null) then
       raise exception 'The selected counter-account is not appropriate for a money-in transaction.';
     end if;
-    if v_counter.account_code='1100' and v_entry.related_order_id is null then
-      raise exception 'Accounts Receivable receipts must be linked to their original customer order.';
+    if v_counter.account_code='1100' and (
+      v_entry.related_order_id is null
+      or exists(select 1 from public.orders where id=v_entry.related_order_id and payment_method='cash_on_delivery')
+    ) then
+      raise exception 'Accounts Receivable receipts must be linked to a non-COD customer order.';
     end if;
     v_lines:=jsonb_build_array(
       jsonb_build_object('account_id',v_cash_coa_id,'description',v_entry.category,'party_name',v_entry.party_name,'debit',v_entry.amount,'credit',0),
@@ -783,10 +786,7 @@ begin
 end;
 $$;
 revoke all on function public.admin_finance_recognize_delivered_order_sale(uuid) from public,anon;
-grant execute on function public.admin_finance_recognize_delivered_order_sale(uuid,uuid) to authenticated;
-
-revoke all on function public.admin_finance_recognize_cod_order_sale(uuid) from public,anon;
-grant execute on function public.admin_finance_recognize_cod_order_sale(uuid) to authenticated;
+grant execute on function public.admin_finance_recognize_delivered_order_sale(uuid) to authenticated;
 
 create or replace function public.admin_finance_post_cod_settlement(p_settlement_id uuid)
 returns uuid
@@ -884,7 +884,6 @@ begin
  select * into v_bill from public.admin_supplier_bills where id=p_bill_id for update;
  if not found then raise exception 'Supplier bill was not found.'; end if;
  if v_bill.reversal_journal_id is not null or v_bill.status='void' then raise exception 'This supplier bill was reversed or voided and cannot be posted again.'; end if;
- if v_bill.reversal_journal_id is not null or v_bill.status='void' then raise exception 'This supplier bill was reversed or voided and cannot be posted again.'; end if;
  if v_bill.accounting_journal_id is not null then return v_bill.accounting_journal_id; end if;
  if v_bill.status<>'confirmed' then raise exception 'Only a Confirmed supplier bill can be posted.'; end if;
  if v_bill.purchase_order_id is null then
@@ -948,9 +947,6 @@ end;
 $$;
 revoke all on function public.admin_finance_post_supplier_bill(uuid,uuid,uuid) from public,anon;
 grant execute on function public.admin_finance_post_supplier_bill(uuid,uuid,uuid) to authenticated;
-
-revoke all on function public.admin_finance_post_supplier_bill(uuid,uuid) from public,anon;
-grant execute on function public.admin_finance_post_supplier_bill(uuid,uuid) to authenticated;
 
 create or replace function public.admin_finance_post_supplier_payment(p_payment_id uuid)
 returns uuid
