@@ -86,4 +86,4 @@ assert.match(edge, /MAX_HISTORY_ITEMS = 20/);
 assert.match(edge, /MAX_HISTORY_CHARS = 48000/);
 assert.match(edge, /MAX_REQUEST_BYTES = 262144/);
 assert.doesNotMatch(edge, /MAX_MESSAGE_CHARS/);
-assert.match(chat, /history: conversation\\.slice\\(-20\\)/);
+assert.match(chat, /history: conversation\.slice\(-20\)/);
