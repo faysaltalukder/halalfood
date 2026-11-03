@@ -185,7 +185,7 @@
         setupNote.textContent = "AI সার্ভার প্রস্তুত নয়। ফোন বা WhatsApp-এ সহায়তা নিন।";
         return;
       }
-      setupNote.textContent = "সংযুক্ত · " + (data.model || "Gemini AI") + " · ";
+      setupNote.textContent = "সংযুক্ত · " + (data.model || "Gemini AI");
     } catch (_error) {
       setupNote.textContent = "AI সার্ভারের সঙ্গে সংযোগ করা যাচ্ছে না। ফোন বা WhatsApp-এ সহায়তা নিন।";
     }
