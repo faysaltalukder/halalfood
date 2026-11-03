@@ -92,7 +92,7 @@
     document.documentElement.classList.remove("hf-ai-chat-open"); document.body.classList.remove("hf-ai-chat-open");
     document.body.style.overflow = previousBodyOverflow; document.documentElement.style.overflow = previousHtmlOverflow;
     document.body.style.position = previousBodyPosition; document.body.style.top = previousBodyTop; document.body.style.width = previousBodyWidth;
-    window.scrollTo({ top: savedScrollY, behavior: "instant" });
+    window.scrollTo({ top: savedScrollY, behavior: "auto" });
   }
   function openChat() {
     panel.hidden = false; minimized = false; panel.classList.remove("is-minimized"); lockMobilePage();
@@ -127,8 +127,10 @@
       .replace(/([.!?।])(?:\s*[.!?।])+/g, "$1")
       .trim();
   }
-  function scrollToLatest() { messages.scrollTo({ top: messages.scrollHeight, behavior: "smooth" }); }
+  function scrollToLatest(force) { const distance = messages.scrollHeight - messages.scrollTop - messages.clientHeight; if (force || distance < 100) messages.scrollTo({ top: messages.scrollHeight, behavior: "smooth" }); }
   function appendMessage(text, sender, extraClass) {
+    const wasNearBottom = messages.scrollHeight - messages.scrollTop - messages.clientHeight < 100;
+    const shouldStickToBottom = sender === "user" || wasNearBottom;
     const group = document.createElement("div");
     group.className = "hf-ai-message-group " + (sender === "user" ? "hf-ai-message-group-user" : "hf-ai-message-group-assistant");
     if (sender === "assistant") { const avatar = document.createElement("div"); avatar.className = "hf-ai-message-avatar"; avatar.setAttribute("aria-hidden", "true"); avatar.textContent = "H"; group.appendChild(avatar); }
@@ -137,7 +139,7 @@
     const paragraph = document.createElement("p"); paragraph.textContent = sender === "assistant" ? cleanAssistantText(text) : text; bubble.appendChild(paragraph);
     const time = document.createElement("span"); time.className = "hf-ai-message-time";
     time.textContent = (sender === "user" ? "আপনি · " : "Halal Food AI · ") + new Intl.DateTimeFormat("bn-BD", {hour:"2-digit",minute:"2-digit"}).format(new Date());
-    bubble.appendChild(time); group.appendChild(bubble); messages.appendChild(group); scrollToLatest(); return bubble;
+    bubble.appendChild(time); group.appendChild(bubble); messages.appendChild(group); if (shouldStickToBottom) scrollToLatest(true); return bubble;
   }
   function bindPromptButtons() { panel.querySelectorAll("[data-hf-chat-prompt]").forEach(button => button.addEventListener("click", () => submitQuestion(button.getAttribute("data-hf-chat-prompt")))); }
   function resetConversation() {
@@ -183,8 +185,9 @@
       wrap.appendChild(link);
     });
     if (wrap.children.length) {
+      const shouldStick = messages.scrollHeight - messages.scrollTop - messages.clientHeight < 100;
       bubble.appendChild(wrap);
-      scrollToLatest();
+      if (shouldStick) scrollToLatest(true);
     }
   }
 
