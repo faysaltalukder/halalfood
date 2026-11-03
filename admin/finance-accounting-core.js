@@ -500,8 +500,12 @@ window.HFAdminReady.then(async H => {
         const counter=$("financeOperationalAccount").value;
         if(!counter)throw new Error("Choose a General Ledger counter-account.");
         const source=cashbookEntries.find(e=>e.id===id);
-        if(source?.related_order_id&&counter!==accounts.find(a=>a.account_code==="1100")?.id)
-          throw new Error("Customer receipts linked to an order must credit Accounts Receivable (1100).");
+        if(source?.related_order_id){
+          const delivered=deliveredOrders.some(order=>order.id===source.related_order_id);
+          const requiredCode=delivered?"1100":"2020";
+          if(counter!==accounts.find(a=>a.account_code===requiredCode)?.id)
+            throw new Error(delivered?"Post-delivery receipts must credit Accounts Receivable (1100).":"Pre-delivery customer payments must credit Customer Advances (2020).");
+        }
         rpc="admin_finance_post_cashbook_entry";
         args={p_entry_id:id,p_counter_account_id:counter};
       }else if(kind==="supplier_bill_post"){
@@ -781,14 +785,15 @@ window.HFAdminReady.then(async H => {
       const id = operation.dataset.financeOperationId;
       if (kind === "cashbook_post") {
         const source = cashbookEntries.find(e=>e.id===id);
+        const linkedOrderDelivered = source?.related_order_id && deliveredOrders.some(order=>order.id===source.related_order_id);
         const defaultAccount = source?.related_order_id
-          ? accounts.find(a=>a.account_code==="1100")?.id
+          ? accounts.find(a=>a.account_code===(linkedOrderDelivered?"1100":"2020"))?.id
           : source?.entry_type === "income"
             ? accounts.find(a=>a.account_code==="4010")?.id
             : accounts.find(a=>a.account_code==="6095")?.id;
         openOperationalPosting(kind,id,{
           title:"Post cashbook transaction",
-          description:"Select the counter-account that explains why this money was received or paid. For an order-linked receipt, Accounts Receivable (1100) is mandatory.",
+          description:"Select why this money was received or paid. Customer receipts before delivery credit Customer Advances (2020); after delivery they credit Accounts Receivable (1100). COD uses the courier settlement workflow.",
           defaultAccount,
           warning:"Only Confirmed entries can be posted. Posting creates a permanent, balanced Journal linked to the cashbook source."
         });
