@@ -18,9 +18,10 @@ const SYSTEM_INSTRUCTION = [
   "Reply in the customer’s language, using natural, warm, human-sounding Bengali by default and English when they write in English. Be welcoming, patient, empathetic and practical, like a helpful shop assistant. Keep simple replies concise and conversational; explain complex matters clearly. Avoid robotic phrasing, repeated greetings, excessive punctuation, ellipses, hashtags, Markdown headings, asterisks, decorative bullets, and unnecessary numbered lists. Prefer plain sentences and short paragraphs. Do not make every reply sound like an advertisement or scripted sales pitch.",
   "Take ownership of the customer’s question and try to resolve it yourself before suggesting another channel. Use the available live catalog and verified knowledge to answer as much as possible. Ask only the one most useful follow-up question when essential. Do not repeatedly tell customers to visit the website, call, email, or use WhatsApp. Do not volunteer phone numbers, email addresses, URLs, or contact links unless the customer explicitly asks for them. For a genuinely critical, sensitive, disputed, or account-specific matter that you cannot resolve, politely mention that human customer care is available; provide contact details only if the customer asks how to reach them.",
   "Use conversation history to avoid asking for information the customer has already supplied. Build a lightweight need profile only from explicit statements: requested category/product, intended use, budget, preferred pack size, comparison criteria and constraints. Never infer sensitive personal traits. If a budget is explicit, prioritize products within it; if none fit, say so and offer the nearest listed alternatives without pretending they fit.",
-  "For recommendations, explain briefly why each suggestion matches the stated need, but only use suitability facts in the published product profile. If no verified suitability fact exists, be transparent and compare only confirmed name, category, pack/price and availability. For comparisons, compare the actual products requested and use short plain-text paragraphs or simple labeled lines; distinguish known differences from missing information.",
+  "SMART, LOW-PRESSURE SELLING: Behave like a thoughtful in-store sales assistant, not a product-list generator. First answer what the customer asked. If they ask what products/categories Halal Food has, briefly name the live categories and naturally introduce only the top 2 relevant starter picks from the server-ranked catalog; give one short, evidence-based reason for each when verified profile facts support it. If the customer asks about one category, show at most 3 relevant options. If they ask for a recommendation, show at most 3 well-matched options and explain the best fit first. If they ask for one exact product, focus on that product and do not cross-sell. Never repeat the same suggestions, overwhelm the customer with a long list, or add unrelated products. Offer one gentle next step, such as asking which category or pack they prefer, only when useful. If no suitability evidence exists, say so and use only confirmed name, category, pack, price and availability.",
+  "PRODUCT IMAGE IDENTITY: Product images are paired with a server-generated label containing that exact product slug and name. Treat each image as belonging only to the immediately preceding label. Never swap images between products, never infer a product identity from a neighbouring image, and never invent an image URL. When presenting product options, use the server-provided product cards; do not paste raw image URLs into chat text. If an image is not available, say so instead of substituting a different product image.",
   "When a live product match is provided, answer with its verified name, current price, availability and relevant details. The storefront may separately display secure in-chat product cards for relevant product questions; never invent product links or encourage leaving the chat. Help the customer decide without pressure, urgency tricks, or repeatedly pushing them to another channel.",
-  "Follow the server-provided customer intent and recommendation permission. For greetings, general information, store policy, order support, complaints, and human-support requests, do not append product promotions or product cards. For an exact product request, focus on that product only. For category or broad catalog browsing, show only relevant options supplied by the server and never exceed its approved card limit. For explicit recommendations, explain relevance using verified facts and preserve customer autonomy. An image alone is not permission to show multiple products. Answer the current question before offering a next step.",
+  "Follow the server-provided customer intent and recommendation permission exactly. For greetings, general information, store policy, order support, complaints, and human-support requests, do not append product promotions or product cards. For broad catalog browsing, answer with a concise category overview plus no more than 2 starter suggestions selected from the live ranked candidates. For category browsing, show no more than 3 relevant choices. For explicit recommendations, show no more than 3 choices, with the strongest match first. For an exact product request, focus on that product only. Never pad the response with weak matches or repeat suggestions already rejected by the customer. An image alone is not permission to show multiple products. Answer the current question before offering one gentle, relevant next step.",
   "When a customer attaches a product photo, inspect visible product type, packaging, label and distinctive features. Compare what can actually be seen against the supplied live catalog. Clearly distinguish an exact match from a similar alternative, never claim certainty when the photo is unclear, and ask one concise follow-up if needed. Do not identify brands or ingredients from an unreadable label.",
   "For product prices, use the current live catalog price supplied in the context. Do not disclose numeric stock quantity. You may say a product is currently listed as available, unavailable, or that availability needs confirmation, based only on the supplied availability state.",
   "For store-specific product claims (such as ingredients, origin, certification, allergens, quality or stock), rely on published product information. For general knowledge, explain normally and distinguish general information from verified Halal Food product facts.",
@@ -99,22 +100,32 @@ async function fetchSupabaseRows(
 async function buildCatalogImageParts(
   knowledge: Awaited<ReturnType<typeof loadKnowledge>>,
 ): Promise<Array<{ text: string } | { inlineData: { mimeType: string; data: string } }>> {
-  if (!knowledge.imageSearch || Number(knowledge.customerNeed?.max_product_cards || 0) < 1) return [];
-  const candidates = knowledge.products.slice(0, 4).filter((product: Record<string, unknown>) => typeof product.image_url === "string" && product.image_url);
+  const need = knowledge.customerNeed;
+  if (!need || Number(need.max_product_cards || 0) < 1) return [];
+  const intent = String(need.primary_intent || "");
+  const candidateLimit = knowledge.imageSearch ? 61
+    : intent === "category_browse" ? 6
+    : intent === "broad_catalog_browse" ? 2
+    : intent === "recommendation_request" ? 3
+    : intent === "product_comparison" ? 2
+    : ["exact_product_lookup", "product_price_inquiry", "product_availability_inquiry"].includes(intent) ? 1
+    : 0;
+  if (!candidateLimit) return [];
+  const candidates = knowledge.products.slice(0, candidateLimit).filter((product: Record<string, unknown>) => safeProductImageUrl(product));
   const results = await Promise.all(candidates.map(async (product: Record<string, unknown>) => {
-    const rawUrl = String(product.image_url || "");
+    const rawUrl = safeProductImageUrl(product);
     let url: URL;
     try { url = new URL(rawUrl); } catch { return null; }
-    if (url.protocol !== "https:" || !["faysaltalukder.github.io", "qfwvrcfkrsydycbfjsxf.supabase.co"].includes(url.hostname)) return null;
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 2500);
+    const timeout = setTimeout(() => controller.abort(), 3500);
     try {
       const response = await fetch(url.toString(), { method: "GET", redirect: "error", cache: "force-cache", signal: controller.signal });
       if (!response.ok) return null;
       const mimeType = (response.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
       if (!["image/jpeg", "image/png", "image/webp"].includes(mimeType)) return null;
+      const maxBytes = knowledge.imageSearch ? 160_000 : 240_000;
       const declaredLength = Number(response.headers.get("content-length") || "0");
-      if (declaredLength > 500_000) return null;
+      if (declaredLength > maxBytes) return null;
       const reader = response.body?.getReader();
       if (!reader) return null;
       const chunks: Uint8Array[] = [];
@@ -123,37 +134,27 @@ async function buildCatalogImageParts(
         const { done, value } = await reader.read();
         if (done) break;
         total += value.byteLength;
-        if (total > 500_000) { await reader.cancel(); return null; }
+        if (total > maxBytes) { await reader.cancel(); return null; }
         chunks.push(value);
       }
       const bytes = new Uint8Array(total);
       let offset = 0;
       for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
       let binary = "";
-      for (let index = 0; index < bytes.length; index += 0x8000) {
-        binary += String.fromCharCode(...bytes.subarray(index, Math.min(index + 0x8000, bytes.length)));
-      }
-      return {
-        slug: String(product.slug || ""),
-        name: String(product.name || ""),
-        mimeType,
-        data: btoa(binary),
-      };
-    } catch {
-      return null;
-    } finally {
-      clearTimeout(timeout);
-    }
+      for (let index = 0; index < bytes.length; index += 0x8000) binary += String.fromCharCode(...bytes.subarray(index, Math.min(index + 0x8000, bytes.length)));
+      return { slug: String(product.slug || ""), name: String(product.name || ""), category: String(product.category || ""), mimeType, data: btoa(binary) };
+    } catch { return null; }
+    finally { clearTimeout(timeout); }
   }));
   const parts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> = [];
   for (const candidate of results) {
     if (!candidate || !candidate.slug || !candidate.data) continue;
-    parts.push({ text: "LIVE CATALOG REFERENCE IMAGE — candidate slug: " + candidate.slug + "; official product name: " + candidate.name + ". Compare the customer's uploaded image with this catalog image; this is a reference image, not the customer's photo." });
+    const role = knowledge.imageSearch ? "VISUAL MATCH CANDIDATE" : "CATALOG PRODUCT IMAGE REFERENCE";
+    parts.push({ text: role + " — exact product slug: " + candidate.slug + "; official product name: " + candidate.name + "; category: " + candidate.category + ". The image immediately following this label belongs only to this exact catalog product. Never transfer this image to another product." });
     parts.push({ inlineData: { mimeType: candidate.mimeType, data: candidate.data } });
   }
   return parts;
 }
-
 async function logAiCustomerCareEvents(
   knowledge: Awaited<ReturnType<typeof loadKnowledge>>,
   requestId: string,
@@ -356,7 +357,7 @@ function publicProductCards(
       id: product.id, slug: product.slug, name: product.name, category: product.category, unit_type: product.unit_type,
       price_value: product.price_value, price: product.price, description: product.description,
       short_description: product.short_description, full_description: product.full_description,
-      availability: product.availability, image_url: product.image_url, product_url: product.product_url,
+      availability: product.availability, image_url: safeProductImageUrl(product), product_url: product.product_url,
       verified_summary: profile?.quality_summary || null, match_type: product.match_type || null,
       confidence_level: product.confidence_level || null,
     };
@@ -402,10 +403,18 @@ function productScore(product: Record<string, unknown>, terms: string[]): number
 function productUrl(product: Record<string, unknown>): string {
   const slug = String(product.slug || "");
   if (!slug || !/^[a-z0-9-]+$/i.test(slug)) return "";
-  if (product.cms_created === true) {
-    return SITE_ROOT + "cms-product.html?slug=" + encodeURIComponent(slug);
-  }
+  if (product.cms_created === true) return SITE_ROOT + "cms-product.html?slug=" + encodeURIComponent(slug);
   return SITE_ROOT + "products/" + encodeURIComponent(slug) + ".html";
+}
+
+function safeProductImageUrl(product: Record<string, unknown>): string {
+  const slug = String(product.slug || "").toLowerCase(), raw = String(product.image_url || "");
+  if (!slug || !raw) return "";
+  try {
+    const url = new URL(raw);
+    if (url.protocol !== "https:" || !["faysaltalukder.github.io", "qfwvrcfkrsydycbfjsxf.supabase.co"].includes(url.hostname)) return "";
+    return url.pathname.toLowerCase().includes(slug) ? url.toString() : "";
+  } catch { return ""; }
 }
 
 async function loadKnowledge(
@@ -429,7 +438,7 @@ async function loadKnowledge(
       status: "eq.published", order: "priority.asc", limit: "20",
     }, credentials),
     fetchSupabaseRows("products", {
-      select: "id,name,slug,category,category_slug,price,display_price,unit_type,image_url,description,short_description,full_description,is_active,stock_quantity,cms_created",
+      select: "id,name,slug,category,category_slug,price,display_price,unit_type,image_url,description,short_description,full_description,is_active,stock_quantity,cms_created,is_featured,sort_order",
       is_active: "eq.true", order: "name.asc", limit: "100",
     }, credentials),
     fetchSupabaseRows("ai_product_knowledge", {
@@ -568,7 +577,7 @@ function buildKnowledgeContext(knowledge: Awaited<ReturnType<typeof loadKnowledg
 
   if (knowledge.broadCatalogQuestion) {
     sections.push("GENERAL CATALOG QUESTION: The store currently has " + knowledge.catalogCount +
-      " customer-facing active products across the listed categories. The matched items below are examples, not the complete catalog. Invite the customer to name a category to see more.");
+      " customer-facing active products across the listed categories. The matched items below are only 2 starter suggestions, not the complete catalog. Briefly introduce these as helpful starting points, then invite the customer to name a category if they want to explore further.");
   }
   if (knowledge.imageSearch && knowledge.products.length) {
     sections.push("IMAGE SEARCH CANDIDATES FROM THE LIVE CATALOG (candidate slugs are exact matching IDs; visual attributes are present only when owner-verified):\n" +
@@ -730,14 +739,14 @@ async function callGemini(
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: systemInstruction }] },
         contents,
-        generationConfig: { maxOutputTokens: 4096, temperature: 0.6 },
+        generationConfig: { maxOutputTokens: 8192, thinkingConfig: { thinkingLevel: "HIGH" } },
       }),
       signal,
     },
   );
 }
 
-const FALLBACK_MODELS = ["gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite"];
+const FALLBACK_MODELS = ["gemini-3.7-flash", "gemini-3.6-flash"];
 
 async function callGeminiWithFallback(
   primaryModel: string,
@@ -960,15 +969,16 @@ Deno.serve(async (req: Request) => {
     }));
     const knowledge = await loadKnowledge(message || "ছবিতে থাকা পণ্যটি খুঁজুন", knowledgeHistory, hasImage);
     loadedKnowledge = knowledge;
-    if (hasImage) {
-      const catalogImageParts = await buildCatalogImageParts(knowledge);
-      if (catalogImageParts.length) userParts.push(...catalogImageParts);
-    }
+    const catalogImageParts = await buildCatalogImageParts(knowledge);
+    if (catalogImageParts.length) userParts.push(...catalogImageParts);
+    const catalogImageInstructions = !hasImage && catalogImageParts.length
+      ? "\\n\\nCATALOG IMAGE REFERENCES: The user did not upload an image. The additional images are official live-catalog product references, each paired with an exact slug/name/category label. Use them only to understand the visual appearance of those listed products. Do not claim the customer has uploaded these images and do not move an image to a different product."
+      : "";
     const imageMatchInstructions = hasImage
       ? "\n\nIMAGE UNDERSTANDING AND CATALOG MATCH RULES: First identify only what is visibly supported by the uploaded image: object/material, readable label text, possible product identity and visible packaging cues. The first image is the customer upload; any later labelled images are actual live-catalog product photos. Compare the customer image with those catalog photos and owner-verified visual profiles. Never invent a brand, ingredient, certification or package type. The customer's explicit text defines search intent; if image and text conflict, ask one concise clarification instead of guessing. If evidence is insufficient, return no candidate. At the end of your customer-facing answer append exactly one machine-readable block and do not explain it: [[HF_IMAGE_MATCH]]{\"image_object\":\"...\",\"candidate_slug\":\"exact-live-slug-or-empty\",\"candidate_slugs\":[\"up-to-4-live-slugs\"],\"brand\":\"verified-visible-brand-or-empty\",\"packaging_type\":\"visible-packaging-or-empty\",\"visible_text\":\"short-readable-label-or-empty\",\"match_type\":\"exact|derived_product|similar|alternative|uncertain\",\"confidence\":\"high|medium|low\"}[[/HF_IMAGE_MATCH]]. Use high only for clear identity evidence, medium for supported similarity or derived-product matches, and low/uncertain when unclear. Candidate slugs must exactly match the live candidate list. If uncertain, leave candidate_slug empty and candidate_slugs empty."
       : "";
     const systemInstruction = SYSTEM_INSTRUCTION + "\n\n--- RETRIEVED KNOWLEDGE CONTEXT ---\n" +
-      buildKnowledgeContext(knowledge) + imageMatchInstructions +
+      buildKnowledgeContext(knowledge) + imageMatchInstructions + catalogImageInstructions +
       "\n\nRemember: do not expose internal metadata or numeric stock. Only use verified facts. Include a product URL only when the customer explicitly asks for that product link. Speak naturally in plain text without Markdown decoration. The owner’s current confirmation that this is a real selling business overrides older demo/test-status text in retrieved documents. Do not volunteer contact details or redirect the customer away from this chat unless explicitly requested or genuinely necessary.";
     console.info(JSON.stringify({
       event: "customer_care_knowledge_loaded",
@@ -978,6 +988,7 @@ Deno.serve(async (req: Request) => {
       publishedProductProfiles: knowledge.productKnowledge.length,
       databaseAvailable: knowledge.available,
       imageSearch: hasImage,
+      catalogImageReferences: catalogImageParts.length / 2,
     }));
 
     if (!apiKey && hasImage) {
@@ -1101,8 +1112,6 @@ Deno.serve(async (req: Request) => {
         knowledge.customerNeed.recommendation_permission = "none";
         knowledge.customerNeed.clarification_needed = true;
         knowledge.customerNeed.search_not_found = true;
-        knowledge.customerNeed.match_type = imageMatch?.match_type || "uncertain";
-        knowledge.customerNeed.search_confidence = imageMatch?.confidence || "low";
       } else {
         knowledge.customerNeed.match_type = imageMatch?.match_type || approvedCards[0].match_type || "visual";
         knowledge.customerNeed.search_confidence = imageMatch?.confidence || approvedCards[0].confidence_level || "medium";
@@ -1111,8 +1120,7 @@ Deno.serve(async (req: Request) => {
       knowledge.customerNeed.match_type = approvedCards[0].match_type || knowledge.customerNeed.match_type;
       knowledge.customerNeed.search_confidence = approvedCards[0].confidence_level || knowledge.customerNeed.search_confidence;
     }
-    const resolvedSearchCount = knowledge.imageSearch ? approvedCards.length : knowledge.products.length;
-    await logAiCustomerCareEvents(knowledge, requestId, imageMatch, resolvedSearchCount, resolvedSearchCount ? "resolved" : "answered_or_clarified");
+    await logAiCustomerCareEvents(knowledge, requestId, imageMatch, approvedCards.length, approvedCards.length ? "resolved" : "answered_or_clarified");
     return response({
       success: true,
       reply,
@@ -1126,7 +1134,7 @@ Deno.serve(async (req: Request) => {
       model: modelUsed,
       knowledge: {
         documents: knowledge.documents.length,
-        matchedProducts: resolvedSearchCount,
+        matchedProducts: approvedCards.length,
         publishedProductProfiles: knowledge.productKnowledge.length,
       },
     });
