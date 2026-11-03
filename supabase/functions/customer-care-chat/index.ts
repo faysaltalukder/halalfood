@@ -284,7 +284,7 @@ async function loadKnowledge(message: string, history: Array<{ role: "user" | "m
     : [];
   const useBudgetMatches = customerNeed.intent === "recommend" && budget > 0 && budgetMatches.length > 0;
   const rankedSource = useBudgetMatches ? budgetMatches : rankedAll;
-  const ranked = rankedSource.slice(0, broadCatalogQuestion ? 15 : categoryCatalogQuestion ? 12 : customerNeed.intent === "recommend" ? 15 : 10);
+  const ranked = rankedSource.slice(0, imageSearch ? 30 : broadCatalogQuestion ? 15 : categoryCatalogQuestion ? 12 : customerNeed.intent === "recommend" ? 15 : 10);
 
   let productKnowledge: Record<string, unknown>[] = [];
   if (ranked.length) {
@@ -725,7 +725,7 @@ Deno.serve(async (req: Request) => {
   const timeout = setTimeout(() => controller.abort(), 45_000);
   let loadedKnowledge: Awaited<ReturnType<typeof loadKnowledge>> | null = null;
   try {
-    const knowledge = await loadKnowledge(message || "ছবিতে থাকা পণ্যটি খুঁজুন", contents, hasImage);
+    const knowledgeHistory = contents.map((item) => ({\n      role: item.role,\n      parts: item.parts.filter((part): part is { text: string } => "text" in part),\n    }));\n    const knowledge = await loadKnowledge(message || "ছবিতে থাকা পণ্যটি খুঁজুন", knowledgeHistory, hasImage);
     loadedKnowledge = knowledge;
     const systemInstruction = SYSTEM_INSTRUCTION + "\n\n--- RETRIEVED KNOWLEDGE CONTEXT ---\n" +
       buildKnowledgeContext(knowledge) +
