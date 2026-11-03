@@ -135,7 +135,7 @@ assert.doesNotMatch(edge, /MAX_MESSAGE_CHARS/);
 assert.match(chat, /history: imageFile \? \[\] : conversation\.slice\(-20\)/);
 
 assert.match(edge, /maxOutputTokens: 8192/);
-assert.match(edge, /thinkingConfig: \\{ thinkingLevel: "HIGH" \\}/);
+assert.match(edge, /thinkingConfig: \{ thinkingLevel: "HIGH" \}/);
 assert.match(edge, /45_000/);
 assert.ok(edge.includes("return Boolean(reply.trim())"));
 assert.match(main, /customer-care-chat\.js\?v=20261103-visual-catalog-v3/);
