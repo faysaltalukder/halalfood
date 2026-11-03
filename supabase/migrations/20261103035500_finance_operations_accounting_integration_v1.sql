@@ -1036,7 +1036,7 @@ returns uuid
 language plpgsql
 security invoker
 set search_path=''
-as $
+as $$
 declare
  v_email text:=lower(coalesce((select auth.jwt()->>'email'),''));
  v_aal text:=coalesce((select auth.jwt()->>'aal'),'aal1');
@@ -1074,7 +1074,7 @@ begin
  where id=p_entry_id;
  return v_reversal;
 end;
-$;
+$$;
 revoke all on function public.admin_finance_reverse_cashbook_entry(uuid,date,text) from public,anon;
 grant execute on function public.admin_finance_reverse_cashbook_entry(uuid,date,text) to authenticated;
 
@@ -1085,7 +1085,7 @@ returns uuid
 language plpgsql
 security invoker
 set search_path=''
-as $
+as $$
 declare
  v_email text:=lower(coalesce((select auth.jwt()->>'email'),''));
  v_aal text:=coalesce((select auth.jwt()->>'aal'),'aal1');
@@ -1152,7 +1152,7 @@ begin
  where id=p_settlement_id;
  return v_reversal;
 end;
-$;
+$$;
 revoke all on function public.admin_finance_reverse_cod_settlement(uuid,date,text) from public,anon;
 grant execute on function public.admin_finance_reverse_cod_settlement(uuid,date,text) to authenticated;
 
@@ -1163,7 +1163,7 @@ returns uuid
 language plpgsql
 security invoker
 set search_path=''
-as $
+as $$
 declare
  v_email text:=lower(coalesce((select auth.jwt()->>'email'),''));
  v_aal text:=coalesce((select auth.jwt()->>'aal'),'aal1');
@@ -1209,7 +1209,7 @@ begin
  where id=p_bill_id;
  return v_reversal;
 end;
-$;
+$$;
 revoke all on function public.admin_finance_reverse_supplier_bill(uuid,date,text) from public,anon;
 grant execute on function public.admin_finance_reverse_supplier_bill(uuid,date,text) to authenticated;
 
@@ -1220,7 +1220,7 @@ returns uuid
 language plpgsql
 security invoker
 set search_path=''
-as $
+as $$
 declare
  v_email text:=lower(coalesce((select auth.jwt()->>'email'),''));
  v_aal text:=coalesce((select auth.jwt()->>'aal'),'aal1');
@@ -1258,7 +1258,7 @@ begin
  where id=p_payment_id;
  return v_reversal;
 end;
-$;
+$$;
 revoke all on function public.admin_finance_reverse_supplier_payment(uuid,date,text) from public,anon;
 grant execute on function public.admin_finance_reverse_supplier_payment(uuid,date,text) to authenticated;
 
