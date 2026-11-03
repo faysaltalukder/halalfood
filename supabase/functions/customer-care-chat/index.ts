@@ -365,6 +365,7 @@ async function resolveCustomerOrderTracking(
   const orders = await fetchSupabaseRows("orders", {
     select: "id,order_number,customer_phone,status,updated_at,ordered_at",
     order_number: "eq." + orderId,
+    source: "in.(website,website_parallel,manual_phone)",
     limit: "1",
   }, credentials);
   const order = orders.find((item) => normalizeTrackingPhone(String(item.customer_phone || "")) === mobile);
