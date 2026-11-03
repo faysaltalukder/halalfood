@@ -782,7 +782,7 @@
     speechRecognition = new SpeechRecognitionAPI();
     speechRecognition.lang = "bn-BD";
     speechRecognition.continuous = false;
-    speechRecognition.interimResults = true;
+    speechRecognition.interimResults = false;
     speechRecognition.onstart = () => {
       speechActive = true;
       micButton.classList.add("is-listening");
@@ -796,6 +796,8 @@
       resizeComposer();
     };
     speechRecognition.onerror = event => {
+      speechActive = false;
+      micButton.classList.remove("is-listening");
       inputHint.textContent = event.error === "not-allowed"
         ? "মাইক্রোফোন ব্যবহারের অনুমতি দিন, তারপর আবার চেষ্টা করুন"
         : "ভয়েস শনাক্ত করা যায়নি। আবার চেষ্টা করুন";
