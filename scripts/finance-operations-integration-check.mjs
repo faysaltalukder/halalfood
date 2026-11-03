@@ -8,7 +8,7 @@ const html = read("admin/finance.html");
 const app = read("admin/app.js");
 const core = read("admin/finance-accounting-core.js");
 const css = read("admin/finance-accounting-core.css");
-const migration = read("supabase/migrations/20261103032700_finance_operations_accounting_integration_v1.sql");
+const migration = read("supabase/migrations/20261103035402_finance_operations_accounting_integration_v1.sql");
 
 assert.ok(html.includes('data-finance-accounting-tab="operations"'), "Operational Integration must be a tab inside Accounting.");
 assert.equal((html.match(/class="hf-workspace-nav-item"/g) || []).length, 5, "Finance must keep exactly five existing primary workspaces.");
