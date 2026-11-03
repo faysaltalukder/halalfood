@@ -112,7 +112,7 @@ function expandTerms(message: string): string[] {
   const terms = new Set(tokenize(message));
   const synonymGroups: Array<[RegExp, string[]]> = [
     [/(ঘি|ghee)/iu, ["ghee", "ঘি"]],
-    [/(মধু|honey)/iu, ["honey", "মধু"]],
+    [/(মধু|honey|honi|hany|huni)/iu, ["honey", "মধু"]],
     [/(বাদাম|almond|nuts?)/iu, ["almond", "almonds", "nuts", "বাদাম", "nuts-seeds"]],
     [/(তেল|oil)/iu, ["oil", "তেল"]],
     [/(চাল|rice)/iu, ["rice", "চাল", "dry-food"]],
@@ -133,7 +133,7 @@ function isBroadCatalogQuestion(message: string): boolean {
 }
 
 function isCategoryCatalogQuestion(message: string): boolean {
-  return /(ঘি|ghee|মধু|honey|বাদাম|nuts?|almond|তেল|oil|চাল|rice|মসলা|মশলা|masala|spice|খেজুর|dates?|চা|tea|মাংস|গরু|beef|meat|chicken|মুরগি|ড্রাই\s*ফুড|dry\s*food)/iu.test(message);
+  return /(ঘি|ghee|মধু|honey|honi|hany|huni|বাদাম|nuts?|almond|তেল|oil|চাল|rice|মসলা|মশলা|masala|spice|খেজুর|dates?|চা|tea|মাংস|গরু|beef|meat|chicken|মুরগি|ড্রাই\s*ফুড|dry\s*food)/iu.test(message);
 }
 
 function toEnglishDigits(value: string): string {
@@ -378,7 +378,6 @@ function buildDeterministicFallbackReply(
   message: string,
   knowledge: Awaited<ReturnType<typeof loadKnowledge>>,
 ): string | null {
-  if (!knowledge.available) return null;
   const normalized = message.toLowerCase().normalize("NFKC");
   const products = knowledge.products;
   const productLine = (product: Record<string, unknown>) => {
@@ -408,6 +407,29 @@ function buildDeterministicFallbackReply(
       "\n\n" + products.slice(0, 3).map(productLine).join("\n") +
       "\n\nকোনটি বেশি উপযোগী তা নির্দিষ্টভাবে বলতে আপনার ব্যবহার বা প্যাকের পছন্দ জানাতে পারেন।";
   }
+  if (/(হ্যালো|হ্যালোও|আসসালামু|সালাম|^hi[!. ]*$|^hello[!. ]*$|^hey[!. ]*$|^good\s+(morning|afternoon|evening)[!. ]*$)/iu.test(normalized.trim())) {
+    return /[A-Za-z]/u.test(message)
+      ? "Hello! Welcome to Halal Food. I can help you explore products, prices, availability, and website information. What would you like to know?"
+      : "ওয়ালাইকুম আসসালাম! Halal Food-এ স্বাগতম। পণ্য, দাম, উপলভ্যতা বা ওয়েবসাইট সম্পর্কে জানতে চাইলে বলুন—আমি সাহায্য করছি।";
+  }
+  if (/(honey|honi|hany|huni|মধু)/iu.test(normalized)) {
+    if (!knowledge.available) {
+      return /[A-Za-z]/u.test(message)
+        ? "I understood that you are looking for honey, but I cannot verify the live catalog right now. Please check the product catalog on our website or try again shortly."
+        : "আপনি মধু খুঁজছেন বুঝতে পেরেছি, তবে এই মুহূর্তে লাইভ ক্যাটালগ যাচাই করা যাচ্ছে না। ওয়েবসাইটের পণ্য তালিকা দেখুন অথবা কিছুক্ষণ পর আবার চেষ্টা করুন।";
+    }
+    const found = products.filter((p) => /মধু|honey/iu.test(String(p.name || "") + " " + String(p.category || "")));
+    if (found.length) {
+      return (/[A-Za-z]/u.test(message) ? "Here are the honey products currently listed in our live catalog:" : "আমাদের লাইভ ক্যাটালগে বর্তমানে মধুর তালিকাভুক্ত পণ্যগুলো হলো:")
+        + "\n\n" + found.map(productLine).join("\n")
+        + "\n\n" + (/[A-Za-z]/u.test(message)
+          ? "Please note: this is a demo project; real orders and delivery are not active."
+          : "নোট: এটি একটি ডেমো প্রকল্প; বাস্তব অর্ডার ও ডেলিভারি চালু নেই।");
+    }
+    return /[A-Za-z]/u.test(message)
+      ? "I understood that you are looking for honey. I cannot find a honey item in the currently published catalog. Would you like to explore another product category?"
+      : "আপনি মধু খুঁজছেন বুঝতে পেরেছি। বর্তমানে প্রকাশিত ক্যাটালগে মধুর পণ্য খুঁজে পাচ্ছি না। অন্য কোনো পণ্যের ক্যাটাগরি দেখতে চান?";
+  }
   if (/(ঘি|ghee)/iu.test(normalized)) {
     const found = products.filter((p) => /ঘি|ghee/iu.test(String(p.name || "") + " " + String(p.category || "")));
     if (found.length) {
@@ -431,7 +453,9 @@ function buildDeterministicFallbackReply(
     const doc = knowledge.documents.find((d) => String(d.document_key || "") === "official-contact-channels");
     if (doc) return "Halal Food-এর অফিসিয়াল যোগাযোগ:\n\n• ফোন/WhatsApp: +8801842031164\n• ইমেইল: halalfoodbd.official@gmail.com\n• ওয়েবসাইট: https://faysaltalukder.github.io/halalfood/\n\nএগুলোই প্রকাশিত অফিসিয়াল যোগাযোগের মাধ্যম।";
   }
-  return null;
+  return /[A-Za-z]/u.test(message)
+    ? "Thanks for your message. I can help with Halal Food's product categories, listed prices, availability, website information, and current service status. What would you like to explore?"
+    : "আপনার বার্তাটি পেয়েছি। Halal Food-এর পণ্যের ক্যাটাগরি, তালিকাভুক্ত দাম, উপলভ্যতা, ওয়েবসাইট এবং বর্তমান সেবার অবস্থা সম্পর্কে সাহায্য করতে পারি। কোন বিষয়টি জানতে চান?";
 }
 
 function friendlyErrorCode(status: number): string {
@@ -487,30 +511,49 @@ async function callGeminiWithFallback(
 ): Promise<{ response: Response; modelUsed: string }> {
   const modelCandidates = Array.from(new Set([primaryModel, ...FALLBACK_MODELS]));
   let lastResponse: Response | null = null;
+  let lastError: unknown = null;
   let modelUsed = primaryModel;
 
   for (let index = 0; index < modelCandidates.length; index += 1) {
     modelUsed = modelCandidates[index];
-    const upstream = await callGemini(modelUsed, apiKey, contents, systemInstruction, signal);
-    lastResponse = upstream;
-    if (upstream.ok || upstream.status === 429 || upstream.status !== 503) {
-      return { response: upstream, modelUsed };
-    }
+    try {
+      const upstream = await callGemini(modelUsed, apiKey, contents, systemInstruction, signal);
+      lastResponse = upstream;
+      if (upstream.ok) return { response: upstream, modelUsed };
 
-    const nextModel = modelCandidates[index + 1];
-    if (nextModel) {
-      console.warn(JSON.stringify({
-        event: "customer_care_model_fallback",
-        requestId,
-        primaryModel,
-        fallbackModel: nextModel,
-        upstreamStatus: upstream.status,
-      }));
+      // Quota and transient provider failures may be model-specific. Try the
+      // remaining stable Flash variants before giving up on the whole request.
+      const retryable = [429, 500, 502, 503, 504].includes(upstream.status);
+      if (!retryable) return { response: upstream, modelUsed };
+
+      const nextModel = modelCandidates[index + 1];
+      if (nextModel) {
+        console.warn(JSON.stringify({
+          event: "customer_care_model_fallback",
+          requestId,
+          primaryModel,
+          fallbackModel: nextModel,
+          upstreamStatus: upstream.status,
+        }));
+      }
+    } catch (error) {
+      if (signal.aborted) throw error;
+      lastError = error;
+      const nextModel = modelCandidates[index + 1];
+      if (nextModel) {
+        console.warn(JSON.stringify({
+          event: "customer_care_model_network_fallback",
+          requestId,
+          primaryModel,
+          fallbackModel: nextModel,
+        }));
+      }
     }
   }
 
-  if (!lastResponse) throw new Error("Gemini request did not return a response.");
-  return { response: lastResponse, modelUsed };
+  if (lastResponse) return { response: lastResponse, modelUsed };
+  if (lastError) throw lastError;
+  throw new Error("Gemini request did not return a response.");
 }
 
 Deno.serve(async (req: Request) => {
@@ -541,7 +584,7 @@ Deno.serve(async (req: Request) => {
       configured: apiKeyConfigured,
       databaseConfigured: Boolean(getSupabaseCredentials()),
       model,
-      ageRestricted: true,
+      ageRestricted: false,
       knowledgeMode: "published-documents-and-live-catalog-read-only",
     });
   }
