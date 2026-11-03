@@ -649,7 +649,7 @@ Deno.serve(async (req: Request) => {
     loadedKnowledge = knowledge;
     const systemInstruction = SYSTEM_INSTRUCTION + "\n\n--- RETRIEVED KNOWLEDGE CONTEXT ---\n" +
       buildKnowledgeContext(knowledge) +
-      "\n\nRemember: do not expose internal metadata or numeric stock. Only use verified facts and exact URLs supplied above. Speak naturally in plain text without Markdown decoration. The owner’s current confirmation that this is a real selling business overrides older demo/test-status text in retrieved documents. Do not volunteer contact details or redirect the customer away from this chat unless explicitly requested or genuinely necessary.";
+      "\n\nRemember: do not expose internal metadata or numeric stock. Only use verified facts. Include a product URL only when the customer explicitly asks for that product link. Speak naturally in plain text without Markdown decoration. The owner’s current confirmation that this is a real selling business overrides older demo/test-status text in retrieved documents. Do not volunteer contact details or redirect the customer away from this chat unless explicitly requested or genuinely necessary.";
     console.info(JSON.stringify({
       event: "customer_care_knowledge_loaded",
       requestId,
