@@ -834,16 +834,10 @@ select
   coalesce(sum(jl.debit) filter (where je.status in ('posted','reversed')),0)::numeric(14,2) as total_debits,
   coalesce(sum(jl.credit) filter (where je.status in ('posted','reversed')),0)::numeric(14,2) as total_credits,
   greatest(
-    case when coa.normal_balance='debit'
-      then coalesce(sum(jl.debit-jl.credit) filter (where je.status in ('posted','reversed')),0)
-      else coalesce(sum(jl.credit-jl.debit) filter (where je.status in ('posted','reversed')),0)
-    end,0
+    coalesce(sum(jl.debit-jl.credit) filter (where je.status in ('posted','reversed')),0),0
   )::numeric(14,2) as debit_balance,
   greatest(
-    case when coa.normal_balance='debit'
-      then coalesce(sum(jl.credit-jl.debit) filter (where je.status in ('posted','reversed')),0)
-      else coalesce(sum(jl.debit-jl.credit) filter (where je.status in ('posted','reversed')),0)
-    end,0
+    coalesce(sum(jl.credit-jl.debit) filter (where je.status in ('posted','reversed')),0),0
   )::numeric(14,2) as credit_balance
 from public.admin_finance_chart_of_accounts coa
 left join public.admin_finance_journal_lines jl on jl.account_id=coa.id
