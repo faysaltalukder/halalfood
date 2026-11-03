@@ -185,7 +185,7 @@ function numericProductPrice(product: Record<string, unknown>): number | null {
 
 function publicProductCards(knowledge: Awaited<ReturnType<typeof loadKnowledge>>, message: string): Record<string, unknown>[] {
   if (!knowledge.products.length) return [];
-  return knowledge.products.slice(0, 4).map((product) => {
+  return knowledge.products.slice(0, knowledge.broadCatalogQuestion ? 6 : 4).map((product) => {
     const profile = product.verified_product_knowledge && typeof product.verified_product_knowledge === "object"
       ? product.verified_product_knowledge as Record<string, unknown> : null;
     return {
@@ -691,8 +691,20 @@ Deno.serve(async (req: Request) => {
   }
 
   const message = typeof payload.message === "string" ? payload.message.trim() : "";
-  if (!message) {
+  const rawImage = payload.image && typeof payload.image === "object" ? payload.image as Record<string, unknown> : null;
+  const imageMimeType = typeof rawImage?.mimeType === "string" ? rawImage.mimeType : "";
+  const imageData = typeof rawImage?.data === "string" ? rawImage.data : "";
+  const hasImage = imageData.length > 0;
+  if (!message && !hasImage) {
     return response({ success: false, code: "INVALID_MESSAGE", requestId }, 400);
+  }
+  if (hasImage && (
+    !["image/jpeg", "image/png", "image/webp"].includes(imageMimeType)
+    || imageData.length > MAX_IMAGE_BASE64_CHARS
+    || !/^[A-Za-z0-9+/]+={0,2}$/.test(imageData)
+    || imageData.length % 4 !== 0
+  )) {
+    return response({ success: false, code: "INVALID_IMAGE", requestId }, 400);
   }
 
   const apiKey = Deno.env.get("GEMINI_API_KEY");
@@ -743,6 +755,9 @@ Deno.serve(async (req: Request) => {
       imageSearch: hasImage,
     }));
 
+    if (!apiKey && hasImage) {
+      return response({ success: false, code: "AI_NOT_CONFIGURED", requestId }, 503);
+    }
     if (!apiKey) {
       const offlineReply = buildDeterministicFallbackReply(message, knowledge);
       if (offlineReply) return response({ success: true, reply: offlineReply, products: publicProductCards(knowledge, message), requestId,
