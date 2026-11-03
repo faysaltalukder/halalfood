@@ -25,6 +25,8 @@ jobs:
         run: node scripts/architecture-check.mjs
       - name: Run storefront checkout regression checks
         run: node scripts/storefront-checkout-check.mjs
+      - name: Run AI Customer Care chat widget checks
+        run: node scripts/customer-care-chat-check.mjs
       - name: Validate task-scoped feature context map
         run: node scripts/feature-context.mjs --check
       - name: Run existing admin integrity checks
