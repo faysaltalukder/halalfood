@@ -247,7 +247,7 @@
     const wrap = document.createElement("div");
     wrap.className = "hf-ai-product-cards";
     const shownItems = [];
-    products.slice(0, safeLimit).forEach(function (product) {
+    products.slice(0, safeLimit).forEach(function (product, index) {
       if (!product || typeof product.id !== "string" || typeof product.slug !== "string" || !product.name) return;
       productCatalog.set(product.id, product);
       const card = document.createElement("article");
@@ -255,8 +255,24 @@
       const imageUrl = productImageUrl(product.image_url);
       if (imageUrl) {
         const image = document.createElement("img");
-        image.src = imageUrl; image.alt = product.name; image.loading = "lazy"; image.referrerPolicy = "no-referrer";
+        image.className = "hf-ai-product-card-image";
+        image.src = imageUrl;
+        image.alt = product.name + " — Halal Food";
+        image.loading = "eager";
+        image.decoding = "async";
+        image.referrerPolicy = "no-referrer";
+        image.onerror = function () {
+          const placeholder = document.createElement("span");
+          placeholder.className = "hf-ai-product-image-placeholder";
+          placeholder.textContent = "এই পণ্যের ছবি পাওয়া যায়নি";
+          image.replaceWith(placeholder);
+        };
         card.appendChild(image);
+      } else {
+        const placeholder = document.createElement("span");
+        placeholder.className = "hf-ai-product-image-placeholder";
+        placeholder.textContent = "এই পণ্যের ছবি পাওয়া যায়নি";
+        card.appendChild(placeholder);
       }
       const copy = document.createElement("span"); copy.className = "hf-ai-product-card-copy";
       const name = document.createElement("strong"); name.textContent = product.name;
@@ -267,7 +283,27 @@
       const actions = document.createElement("span"); actions.className = "hf-ai-product-card-actions";
       const details = document.createElement("button"); details.type = "button"; details.textContent = "বিস্তারিত"; details.dataset.hfProductView = product.id;
       const order = document.createElement("button"); order.type = "button"; order.textContent = "অর্ডার নিন"; order.dataset.hfProductOrder = product.id; order.disabled = product.availability === "unavailable";
-      actions.append(details, order); card.append(copy, actions); wrap.appendChild(card);
+      actions.append(details, order);
+      const productUrl = (function () {
+        try {
+          const url = new URL(String(product.product_url || ""));
+          if (url.protocol !== "https:" || url.hostname !== "faysaltalukder.github.io" || !url.pathname.startsWith("/halalfood/")) return "";
+          if (!url.pathname.includes("/products/") && !url.pathname.endsWith("/cms-product.html")) return "";
+          return url.href;
+        } catch (_) { return ""; }
+      })();
+      if (productUrl) {
+        const pageLink = document.createElement("a");
+        pageLink.className = "hf-ai-product-page-link";
+        pageLink.href = productUrl;
+        pageLink.target = "_blank";
+        pageLink.rel = "noopener noreferrer";
+        pageLink.textContent = "পণ্যের পেজ";
+        pageLink.style.cssText = "display:inline-flex;align-items:center;justify-content:center;padding:7px 10px;border:1px solid #d8d4c9;border-radius:8px;color:#2b2a3d;text-decoration:none;font-size:12px;font-weight:700;background:#fffdf8";
+        actions.appendChild(pageLink);
+      }
+      card.append(copy, actions);
+      wrap.appendChild(card);
       shownItems.push(product);
     });
     if (wrap.children.length) {
