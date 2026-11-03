@@ -10,6 +10,7 @@ const JSON_HEADERS = {
 const MAX_HISTORY_ITEMS = 20;
 const MAX_HISTORY_CHARS = 48000;
 const MAX_REQUEST_BYTES = 262144;
+const MAX_IMAGE_BASE64_CHARS = 190000;
 const SYSTEM_INSTRUCTION = [
   "You are Halal Food’s friendly, capable customer-care and shopping assistant for a real operating grocery and food business in Bangladesh. The owner confirms the business is now able to sell products; never describe it as a demo, test, theoretical, or non-operational project. Help customers directly with product discovery, buying decisions, prices, availability, product use, and general questions.",
   "Reply in the customer’s language, using natural, warm, human-sounding Bengali by default and English when they write in English. Be welcoming, patient, empathetic and practical, like a helpful shop assistant. Keep simple replies concise and conversational; explain complex matters clearly. Avoid robotic phrasing, repeated greetings, excessive punctuation, ellipses, hashtags, Markdown headings, asterisks, decorative bullets, and unnecessary numbered lists. Prefer plain sentences and short paragraphs. Do not make every reply sound like an advertisement or scripted sales pitch.",
@@ -18,6 +19,7 @@ const SYSTEM_INSTRUCTION = [
   "For recommendations, explain briefly why each suggestion matches the stated need, but only use suitability facts in the published product profile. If no verified suitability fact exists, be transparent and compare only confirmed name, category, pack/price and availability. For comparisons, compare the actual products requested and use short plain-text paragraphs or simple labeled lines; distinguish known differences from missing information.",
   "When a live product match is provided, answer with its verified name, current price, availability and relevant details. The storefront may separately display secure in-chat product cards for relevant product questions; never invent product links or encourage leaving the chat. Help the customer decide without pressure, urgency tricks, or repeatedly pushing them to another channel.",
   "When asked for recommendations, provide the most relevant available options; do not impose an arbitrary item-count limit. When asked what products or varieties exist in a category, list relevant matching live catalog items supplied in context. Use exact live catalog names, prices and availability; include a product URL only when the customer explicitly asks for that product link. Never invent store-specific facts.",
+  "When a customer attaches a product photo, inspect visible product type, packaging, label and distinctive features. Compare what can actually be seen against the supplied live catalog. Clearly distinguish an exact match from a similar alternative, never claim certainty when the photo is unclear, and ask one concise follow-up if needed. Do not identify brands or ingredients from an unreadable label.\",
   "For product prices, use the current live catalog price supplied in the context. Do not disclose numeric stock quantity. You may say a product is currently listed as available, unavailable, or that availability needs confirmation, based only on the supplied availability state.",
   "For store-specific product claims (such as ingredients, origin, certification, allergens, quality or stock), rely on published product information. For general knowledge, explain normally and distinguish general information from verified Halal Food product facts.",
   "Existing storefront descriptions may contain generic or outdated claims about delivery and payment. Do not treat those claims as current policy. Use current verified operating policies and live business data where available. The owner’s current confirmation that the business is actively selling overrides any older demo/test status statement in retrieved documents.",
@@ -233,7 +235,7 @@ function productUrl(product: Record<string, unknown>): string {
   return SITE_ROOT + "products/" + encodeURIComponent(slug) + ".html";
 }
 
-async function loadKnowledge(message: string, history: Array<{ role: "user" | "model"; parts: Array<{ text: string }> }>) {
+async function loadKnowledge(message: string, history: Array<{ role: "user" | "model"; parts: Array<{ text: string }> }>, imageSearch = false) {
   const credentials = getSupabaseCredentials();
   if (!credentials) {
     return { available: false, documents: [], products: [], productKnowledge: [], categoryNames: [] as string[] };
@@ -262,7 +264,7 @@ async function loadKnowledge(message: string, history: Array<{ role: "user" | "m
   const allProducts = productsResult.status === "fulfilled" ? productsResult.value : [];
   const customerFacingProducts = allProducts.filter((product) => !isTestOrPlaceholderProduct(product));
   const categoryNames = Array.from(new Set(customerFacingProducts.map((item) => String(item.category || "")).filter(Boolean))).sort();
-  const broadCatalogQuestion = isBroadCatalogQuestion(searchText);
+  const broadCatalogQuestion = imageSearch || isBroadCatalogQuestion(searchText);
   const categoryCatalogQuestion = isCategoryCatalogQuestion(searchText);
   const customerNeed = analyzeCustomerNeed(message, history);
   const rankedAll = customerFacingProducts
@@ -495,7 +497,7 @@ function isCompleteReply(reply: string, finishReason: string): boolean {
 async function callGemini(
   modelName: string,
   apiKey: string,
-  contents: Array<{ role: "user" | "model"; parts: Array<{ text: string }> }>,
+  contents: Array<{ role: "user" | "model"; parts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> }>,
   systemInstruction: string,
   signal: AbortSignal,
 ): Promise<Response> {
@@ -701,7 +703,7 @@ Deno.serve(async (req: Request) => {
   }
 
   const historyInput = Array.isArray(payload.history) ? payload.history.slice(-MAX_HISTORY_ITEMS) : [];
-  const contents: Array<{ role: "user" | "model"; parts: Array<{ text: string }> }> = [];
+  const contents: Array<{ role: "user" | "model"; parts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> }> = [];
   let historyChars = 0;
   for (const item of historyInput) {
     if (!item || typeof item !== "object") continue;
@@ -713,13 +715,17 @@ Deno.serve(async (req: Request) => {
     if (historyChars > MAX_HISTORY_CHARS) break;
     contents.push({ role, parts: [{ text }] });
   }
-  contents.push({ role: "user", parts: [{ text: message }] });
+  const userParts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> = [
+    { text: message || "গ্রাহক একটি পণ্যের ছবি পাঠিয়েছেন। ছবিটি দেখে লাইভ ক্যাটালগের সঙ্গে তুলনা করুন এবং সঠিক বা কাছাকাছি পণ্য আছে কি না জানান।" }
+  ];
+  if (hasImage) userParts.push({ inlineData: { mimeType: imageMimeType, data: imageData } });
+  contents.push({ role: "user", parts: userParts });
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 45_000);
   let loadedKnowledge: Awaited<ReturnType<typeof loadKnowledge>> | null = null;
   try {
-    const knowledge = await loadKnowledge(message, contents);
+    const knowledge = await loadKnowledge(message || "ছবিতে থাকা পণ্যটি খুঁজুন", contents, hasImage);
     loadedKnowledge = knowledge;
     const systemInstruction = SYSTEM_INSTRUCTION + "\n\n--- RETRIEVED KNOWLEDGE CONTEXT ---\n" +
       buildKnowledgeContext(knowledge) +
@@ -730,7 +736,7 @@ Deno.serve(async (req: Request) => {
       documents: knowledge.documents.length,
       matchedProducts: knowledge.products.length,
       publishedProductProfiles: knowledge.productKnowledge.length,
-      databaseAvailable: knowledge.available,
+      databaseAvailable: knowledge.available,\n      imageSearch: hasImage,
     }));
 
     if (!apiKey) {
