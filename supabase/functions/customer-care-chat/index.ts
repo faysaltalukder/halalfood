@@ -715,17 +715,20 @@ Deno.serve(async (req: Request) => {
     if (historyChars > MAX_HISTORY_CHARS) break;
     contents.push({ role, parts: [{ text }] });
   }
-  const userParts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> = [
-    { text: message || "গ্রাহক একটি পণ্যের ছবি পাঠিয়েছেন। ছবিটি দেখে লাইভ ক্যাটালগের সঙ্গে তুলনা করুন এবং সঠিক বা কাছাকাছি পণ্য আছে কি না জানান।" }
-  ];
+  const userParts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> = [];
   if (hasImage) userParts.push({ inlineData: { mimeType: imageMimeType, data: imageData } });
+  userParts.push({ text: message || "গ্রাহক একটি পণ্যের ছবি পাঠিয়েছেন। ছবিটি দেখে লাইভ ক্যাটালগের সঙ্গে তুলনা করুন এবং সঠিক বা কাছাকাছি পণ্য আছে কি না জানান।" });
   contents.push({ role: "user", parts: userParts });
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 45_000);
   let loadedKnowledge: Awaited<ReturnType<typeof loadKnowledge>> | null = null;
   try {
-    const knowledgeHistory = contents.map((item) => ({\n      role: item.role,\n      parts: item.parts.filter((part): part is { text: string } => "text" in part),\n    }));\n    const knowledge = await loadKnowledge(message || "ছবিতে থাকা পণ্যটি খুঁজুন", knowledgeHistory, hasImage);
+    const knowledgeHistory = contents.map((item) => ({
+      role: item.role,
+      parts: item.parts.filter((part): part is { text: string } => "text" in part),
+    }));
+    const knowledge = await loadKnowledge(message || "ছবিতে থাকা পণ্যটি খুঁজুন", knowledgeHistory, hasImage);
     loadedKnowledge = knowledge;
     const systemInstruction = SYSTEM_INSTRUCTION + "\n\n--- RETRIEVED KNOWLEDGE CONTEXT ---\n" +
       buildKnowledgeContext(knowledge) +
