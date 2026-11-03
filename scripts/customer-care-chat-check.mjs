@@ -100,3 +100,12 @@ assert.match(edge, /temperature: 0\.6/);
 assert.match(edge, /45_000/);
 assert.ok(edge.includes("return Boolean(reply.trim())"));
 assert.match(main, /customer-care-chat\.js\?v=20261103-ai-chat-friendly-v2/);
+
+assert.match(chat, /textarea id="hf-ai-chat-input"/);
+assert.match(chat, /messages.addEventListener\("wheel"/);
+assert.match(chat, /hf-ai-chat-new/);
+assert.match(chat, /hf-ai-chat-minimize/);
+assert.match(css, /width:min\(440px/);
+assert.match(css, /height:min\(680px/);
+assert.match(css, /overscroll-behavior-y:contain/);
+assert.match(css, /touch-action:pan-y/);
