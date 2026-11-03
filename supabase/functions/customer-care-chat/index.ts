@@ -492,7 +492,7 @@ async function callGemini(
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: systemInstruction }] },
         contents,
-        generationConfig: { maxOutputTokens: 1800, temperature: 0.35 },
+        generationConfig: { maxOutputTokens: 4096, temperature: 0.6 },
       }),
       signal,
     },
@@ -638,7 +638,7 @@ Deno.serve(async (req: Request) => {
   contents.push({ role: "user", parts: [{ text: message }] });
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 28_000);
+  const timeout = setTimeout(() => controller.abort(), 45_000);
   let loadedKnowledge: Awaited<ReturnType<typeof loadKnowledge>> | null = null;
   try {
     const knowledge = await loadKnowledge(message, contents);
@@ -714,7 +714,7 @@ Deno.serve(async (req: Request) => {
         {
           role: "user" as const,
           parts: [{
-            text: "আপনার আগের উত্তরটি অসম্পূর্ণ ছিল। গ্রাহকের মূল প্রশ্নের উত্তর নতুন করে ২–৫টি ছোট, সম্পূর্ণ বাক্যে দিন। বাক্যের মাঝখানে থামবেন না এবং শেষ বাক্যের শেষে বিরামচিহ্ন দিন।"
+            text: "আপনার আগের উত্তরটি অসম্পূর্ণ ছিল। গ্রাহকের মূল প্রশ্নের সম্পূর্ণ উত্তর স্বাভাবিকভাবে আবার দিন। প্রয়োজন অনুযায়ী বিস্তারিত ব্যাখ্যা দিন এবং উত্তরটি সম্পূর্ণ করুন।"
           }]
         }
       ];
