@@ -107,7 +107,15 @@ assert.match(fs.readFileSync("supabase/functions/analytics-ingest/index.ts", "ut
 assert.doesNotMatch(edge, /demo project|ডেমো প্রকল্প|ডেমো\/টেস্ট/);
 assert.doesNotMatch(edge, /\*\*/);
 console.log("Customer-care friendly conversation checks passed.");
-assert.match(edge, /classifyCustomerIntent/);\nassert.match(edge, /recommendation_permission/);\nassert.match(edge, /buildRecommendationContract/);\nassert.match(edge, /SERVER-ENFORCED RECOMMENDATION POLICY/);\nassert.match(edge, /max_product_cards/);\nassert.match(edge, /rejection_context/);\nassert.match(chat, /appendProductCards\\(answerBubble, data.products, data.recommendation/);\nassert.match(chat, /safeLimit/);\nassert.doesNotMatch(chat, /products\\.slice\\(0, 4\\)/);
+assert.match(edge, /classifyCustomerIntent/);
+assert.match(edge, /recommendation_permission/);
+assert.match(edge, /buildRecommendationContract/);
+assert.match(edge, /SERVER-ENFORCED RECOMMENDATION POLICY/);
+assert.match(edge, /max_product_cards/);
+assert.match(edge, /rejection_context/);
+assert.match(chat, /appendProductCards\(answerBubble, data.products, data.recommendation/);
+assert.match(chat, /safeLimit/);
+assert.doesNotMatch(chat, /products\.slice\(0, 4\)/);
 assert.match(edge, /real operating business/);
 assert.match(chat, /conversation.length > 40/);
 
