@@ -391,7 +391,7 @@ function buildDeterministicFallbackReply(
     const cats = knowledge.categoryNames.length ? knowledge.categoryNames.join(" • ") : "ক্যাটালগ বিভাগ এখন নিশ্চিত নয়";
     const list = products.slice(0, 15).map(productLine).join("\n");
     return "অবশ্যই! Halal Food-এর লাইভ ক্যাটালগে বর্তমানে " + knowledge.catalogCount +
-      "টি সক্রিয় গ্রাহক-দৃশ্যমান পণ্য রয়েছে।\n\n**ক্যাটাগরি:** " + cats +
+      "টি সক্রিয় গ্রাহক-দৃশ্যমান পণ্য রয়েছে।\n\nক্যাটাগরি: " + cats +
       (list ? "\n\nকয়েকটি পণ্যের নাম ও বর্তমান তালিকাভুক্ত দাম:\n" + list : "") +
       "\n\nএটি ক্যাটালগের সংক্ষিপ্ত নমুনা। নির্দিষ্ট ক্যাটাগরির সব পণ্য ও দাম জানতে ক্যাটাগরির নাম লিখুন।" +
       "";
