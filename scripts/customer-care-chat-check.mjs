@@ -7,12 +7,12 @@ const css = fs.readFileSync("css/customer-care-chat.css", "utf8");
 const home = fs.readFileSync("index.html", "utf8");
 const edge = fs.readFileSync("supabase/functions/customer-care-chat/index.ts", "utf8");
 
-assert.match(main, /js\/customer-care-chat\.js\?v=20261103-ai-stage2-v1/);
+assert.match(main, /js\/customer-care-chat\.js\?v=20261103-ai-chat-direct-v1/);
 assert.match(chat, /functions\/v1\/customer-care-chat/);
 assert.doesNotMatch(chat, /ageConfirmed|hf-ai-chat-age-gate|hf-ai-age-confirm|প্রাপ্তবয়স্কদের জন্য AI সহায়তা/);
 assert.match(chat, /if \(!text \|\| busy\) return;/);
 assert.match(chat, /serverCheckStarted/);
-assert.match(chat, /আমি নিশ্চিত করছি, আমার বয়স ১৮ বছর বা তার বেশি/);
+assert.doesNotMatch(chat, /আমি নিশ্চিত করছি, আমার বয়স ১৮ বছর বা তার বেশি|১৮ বছর বা তার বেশি/);
 assert.match(chat, /GEMINI_QUOTA/);
 assert.doesNotMatch(chat, /RATE_LIMITED|status === 429/);
 assert.doesNotMatch(chat, /status === 429\) return "আপনি অল্প সময়ে অনেকগুলো প্রশ্ন পাঠিয়েছেন/);
