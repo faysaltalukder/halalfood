@@ -1,4 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { classifyCustomerIntent } from "./policy.mjs";
 
 const ALLOWED_ORIGIN = "https://faysaltalukder.github.io";
 const SITE_ROOT = "https://faysaltalukder.github.io/halalfood/";
@@ -18,7 +19,7 @@ const SYSTEM_INSTRUCTION = [
   "Use conversation history to avoid asking for information the customer has already supplied. Build a lightweight need profile only from explicit statements: requested category/product, intended use, budget, preferred pack size, comparison criteria and constraints. Never infer sensitive personal traits. If a budget is explicit, prioritize products within it; if none fit, say so and offer the nearest listed alternatives without pretending they fit.",
   "For recommendations, explain briefly why each suggestion matches the stated need, but only use suitability facts in the published product profile. If no verified suitability fact exists, be transparent and compare only confirmed name, category, pack/price and availability. For comparisons, compare the actual products requested and use short plain-text paragraphs or simple labeled lines; distinguish known differences from missing information.",
   "When a live product match is provided, answer with its verified name, current price, availability and relevant details. The storefront may separately display secure in-chat product cards for relevant product questions; never invent product links or encourage leaving the chat. Help the customer decide without pressure, urgency tricks, or repeatedly pushing them to another channel.",
-  "When asked for recommendations, provide the most relevant available options; do not impose an arbitrary item-count limit. When asked what products or varieties exist in a category, list relevant matching live catalog items supplied in context. Use exact live catalog names, prices and availability; include a product URL only when the customer explicitly asks for that product link. Never invent store-specific facts.",
+  "Follow the server-provided customer intent and recommendation permission. For greetings, general information, store policy, order support, complaints, and human-support requests, do not append product promotions or product cards. For an exact product request, focus on that product only. For category or broad catalog browsing, show only relevant options supplied by the server and never exceed its approved card limit. For explicit recommendations, explain relevance using verified facts and preserve customer autonomy. An image alone is not permission to show multiple products. Answer the current question before offering a next step.",
   "When a customer attaches a product photo, inspect visible product type, packaging, label and distinctive features. Compare what can actually be seen against the supplied live catalog. Clearly distinguish an exact match from a similar alternative, never claim certainty when the photo is unclear, and ask one concise follow-up if needed. Do not identify brands or ingredients from an unreadable label.",
   "For product prices, use the current live catalog price supplied in the context. Do not disclose numeric stock quantity. You may say a product is currently listed as available, unavailable, or that availability needs confirmation, based only on the supplied availability state.",
   "For store-specific product claims (such as ingredients, origin, certification, allergens, quality or stock), rely on published product information. For general knowledge, explain normally and distinguish general information from verified Halal Food product facts.",
@@ -114,6 +115,8 @@ function expandTerms(message: string): string[] {
   const terms = new Set(tokenize(message));
   const synonymGroups: Array<[RegExp, string[]]> = [
     [/(ঘি|ghee)/iu, ["ghee", "ঘি"]],
+    [/(সরিষা|সরষে|mustard)/iu, ["mustard", "সরিষা", "সরিষার"]],
+    [/(নারিকেল|নারকেল|coconut)/iu, ["coconut", "নারিকেল", "নারকেল"]],
     [/(মধু|honey|honi|hany|huni)/iu, ["honey", "মধু"]],
     [/(বাদাম|almond|nuts?)/iu, ["almond", "almonds", "nuts", "বাদাম", "nuts-seeds"]],
     [/(তেল|oil)/iu, ["oil", "তেল"]],
@@ -145,16 +148,15 @@ function toEnglishDigits(value: string): string {
 function analyzeCustomerNeed(
   message: string,
   history: Array<{ role: "user" | "model"; parts: Array<{ text: string }> }>,
+  hasImage = false,
 ): Record<string, unknown> {
-  const userHistory = history.filter((item) => item.role === "user").map((item) => item.parts[0]?.text || "");
-  const combined = [...userHistory, message].join(" ").normalize("NFKC");
-  const normalized = toEnglishDigits(combined).toLowerCase();
-  const compare = /(তুলনা|পার্থক্য|তফাৎ|দুটোর মধ্যে|দুটির মধ্যে|which is better|compare|comparison|difference|versus|\bvs\b)/iu.test(normalized);
-  const recommend = /(পরামর্শ|সাজেস্ট|suggest|recommend|কোনটা.*ভালো|কোনটি.*ভালো|কোন.*নেব|কোন.*কিনব|কী.*কিনব|কি.*কিনব|আমার.*জন্য|ভালো.*হবে)/iu.test(normalized);
-  const broad = isBroadCatalogQuestion(message);
-  const category = isCategoryCatalogQuestion(message);
-  const budgetMatch = normalized.match(/(?:৳|টাকা|টাকার|budget|under|within|max(?:imum)?|সর্বোচ্চ|বাজেট)[\s:=,-]*([0-9][0-9,]*)/iu)
-    || normalized.match(/([0-9][0-9,]*)\s*(?:টাকা|টাকার মধ্যে|bdt)/iu);
+  const userMessages = history.filter((item) => item.role === "user").map((item) => item.parts[0]?.text || "").filter(Boolean);
+  const followUp = /(আরেকটা|আরও একটি|ওইটা|সেটা|আগেরটা|একইটা|same one|another one|more options|those)/iu.test(message);
+  const recentContext = followUp ? userMessages.slice(-5).join(" ") + " " + message : message;
+  const normalized = toEnglishDigits(recentContext.normalize("NFKC")).toLowerCase();
+  const decision = classifyCustomerIntent(message, hasImage);
+  const budgetMatch = normalized.match(/(?:৳|টাকা|টাকার|budget|under|within|max(?:imum)?|সর্বোচ্চ|বাজেট)[\\s:=,-]*([0-9][0-9,]*)/iu)
+    || normalized.match(/([0-9][0-9,]*)\\s*(?:টাকা|টাকার মধ্যে|bdt)/iu);
   const budgetBdt = budgetMatch ? Number(String(budgetMatch[1]).replace(/,/g, "")) : null;
   const purposeMap: Array<[RegExp, string]> = [
     [/(রান্না|ভাজি|রেসিপি|cooking|cook|fry|baking|বেকিং)/iu, "cooking_or_baking"],
@@ -165,14 +167,10 @@ function analyzeCustomerNeed(
   const purpose = purposeMap.find(([pattern]) => pattern.test(normalized))?.[1] || null;
   const packPreference = /(ছোট প্যাক|ছোট প্যাকেট|small pack|small size)/iu.test(normalized) ? "small_pack"
     : /(বড় প্যাক|বড় প্যাক|বাল্ক|bulk|large pack|বেশি পরিমাণ)/iu.test(normalized) ? "large_pack" : null;
-  const intent = compare ? "compare" : recommend ? "recommend" : broad ? "catalog" : category ? "category_or_product" : "general";
-  return {
-    intent,
-    budget_bdt: Number.isFinite(budgetBdt) && budgetBdt! > 0 ? budgetBdt : null,
-    purpose,
-    pack_preference: packPreference,
-    explicit_context: message.slice(0, 1200),
-  };
+  const previousAssistant = [...history].reverse().find((item) => item.role === "model")?.parts.map((part) => part.text || "").join(" ") || "";
+  const rejectionContext = decision.rejection_detected === true ? previousAssistant.slice(0, 3000) : "";
+  return { ...decision, budget_bdt: Number.isFinite(budgetBdt) && budgetBdt! > 0 ? budgetBdt : null,
+    purpose, pack_preference: packPreference, explicit_context: message.slice(0, 1200), rejection_context: rejectionContext };
 }
 
 function numericProductPrice(product: Record<string, unknown>): number | null {
@@ -184,32 +182,31 @@ function numericProductPrice(product: Record<string, unknown>): number | null {
 }
 
 function publicProductCards(knowledge: Awaited<ReturnType<typeof loadKnowledge>>, message: string, reply = ""): Record<string, unknown>[] {
-  if (!knowledge.products.length) return [];
-  const sourceProducts = knowledge.imageSearch && reply
-    ? knowledge.products.filter((product) => {
+  const decision = knowledge.customerNeed;
+  const maxCards = Math.min(4, Math.max(0, Math.floor(Number(decision?.max_product_cards || 0))));
+  if (!decision || decision.allow_product_cards !== true || maxCards < 1 || !knowledge.products.length) return [];
+  let sourceProducts = knowledge.products;
+  if (knowledge.imageSearch && reply) {
+    const namedMatches = sourceProducts.filter((product) => {
       const name = String(product.name || "").trim().toLocaleLowerCase();
       return name.length > 2 && reply.toLocaleLowerCase().includes(name);
-    })
-    : knowledge.products;
-  return sourceProducts.slice(0, knowledge.broadCatalogQuestion ? 6 : 4).map((product) => {
+    });
+    if (namedMatches.length) sourceProducts = namedMatches;
+  }
+  return sourceProducts.slice(0, maxCards).map((product) => {
     const profile = product.verified_product_knowledge && typeof product.verified_product_knowledge === "object"
       ? product.verified_product_knowledge as Record<string, unknown> : null;
-    return {
-      id: product.id,
-      slug: product.slug,
-      name: product.name,
-      category: product.category,
-      unit_type: product.unit_type,
-      price_value: product.price_value,
-      price: product.price,
-      description: product.description,
-      short_description: product.short_description,
-      full_description: product.full_description,
-      availability: product.availability,
-      image_url: product.image_url,
-      verified_summary: profile?.quality_summary || null,
-    };
+    return { id: product.id, slug: product.slug, name: product.name, category: product.category, unit_type: product.unit_type,
+      price_value: product.price_value, price: product.price, description: product.description, short_description: product.short_description,
+      full_description: product.full_description, availability: product.availability, image_url: product.image_url,
+      verified_summary: profile?.quality_summary || null };
   }).filter((product) => typeof product.id === "string" && typeof product.slug === "string");
+}
+function buildRecommendationContract(knowledge: Awaited<ReturnType<typeof loadKnowledge>>): Record<string, unknown> {
+  const need = knowledge.customerNeed || {};
+  return { primary_intent: need.primary_intent || "general_information", secondary_intents: need.secondary_intents || [],
+    recommendation_permission: need.recommendation_permission || "none", max_product_cards: Math.min(4, Math.max(0, Number(need.max_product_cards || 0))),
+    match_mode: need.match_mode || "none", intent_confidence: need.intent_confidence || "medium", clarification_needed: need.clarification_needed === true };
 }
 
 function isTestOrPlaceholderProduct(product: Record<string, unknown>): boolean {
@@ -247,7 +244,9 @@ async function loadKnowledge(message: string, history: Array<{ role: "user" | "m
     return { available: false, documents: [], products: [], productKnowledge: [], categoryNames: [] as string[] };
   }
 
-  const searchText = [message, ...history.filter((item) => item.role === "user").map((item) => item.parts[0]?.text || "")].join(" ");
+  const priorUserMessages = history.filter((item) => item.role === "user").map((item) => item.parts[0]?.text || "").filter((value) => value && value !== message);
+  const followUp = /(আরেকটা|আরও একটি|ওইটা|সেটা|আগেরটা|একইটা|same one|another one|more options|those)/iu.test(message);
+  const searchText = followUp && priorUserMessages.length ? priorUserMessages[priorUserMessages.length - 1] + " " + message : message;
   const terms = expandTerms(searchText);
   const [documentsResult, productsResult] = await Promise.allSettled([
     fetchSupabaseRows("ai_knowledge_documents", {
@@ -270,12 +269,14 @@ async function loadKnowledge(message: string, history: Array<{ role: "user" | "m
   const allProducts = productsResult.status === "fulfilled" ? productsResult.value : [];
   const customerFacingProducts = allProducts.filter((product) => !isTestOrPlaceholderProduct(product));
   const categoryNames = Array.from(new Set(customerFacingProducts.map((item) => String(item.category || "")).filter(Boolean))).sort();
-  const broadCatalogQuestion = imageSearch || isBroadCatalogQuestion(searchText);
-  const categoryCatalogQuestion = isCategoryCatalogQuestion(searchText);
-  const customerNeed = analyzeCustomerNeed(message, history);
+  const customerNeed = analyzeCustomerNeed(message, history, imageSearch);
+  const broadCatalogQuestion = customerNeed.primary_intent === "broad_catalog_browse";
+  const categoryCatalogQuestion = customerNeed.primary_intent === "category_browse";
+  const rejectedText = String(customerNeed.rejection_context || "").toLocaleLowerCase();
   const rankedAll = customerFacingProducts
     .map((product) => ({ product, score: productScore(product, terms) }))
     .filter((item) => broadCatalogQuestion || item.score > 0)
+    .filter((item) => !rejectedText || !String(item.product.name || "").trim() || !rejectedText.includes(String(item.product.name || "").trim().toLocaleLowerCase()))
     .sort((a, b) => {
       if (b.score !== a.score) return b.score - a.score;
       const categoryOrder = String(a.product.category || "").localeCompare(String(b.product.category || ""));
@@ -377,9 +378,15 @@ function buildKnowledgeContext(knowledge: Awaited<ReturnType<typeof loadKnowledg
     sections.push("LIVE PRODUCT CATEGORIES:\n" + knowledge.categoryNames.join(", "));
   }
   if (knowledge.customerNeed) {
-    sections.push("CUSTOMER NEED PROFILE (only explicit conversation details; null means unknown):\n" + JSON.stringify(knowledge.customerNeed) +
-      (Number(knowledge.customerNeed.budget_bdt || 0) > 0 ? "\nProducts matching stated budget: " + knowledge.budgetMatchedCount : ""));
+    sections.push("CUSTOMER NEED PROFILE (only explicit conversation details; null means unknown):\\n" + JSON.stringify(knowledge.customerNeed) +
+      (Number(knowledge.customerNeed.budget_bdt || 0) > 0 ? "\\nProducts matching stated budget: " + knowledge.budgetMatchedCount : ""));
+    sections.push("SERVER-ENFORCED RECOMMENDATION POLICY: primary_intent=" + String(knowledge.customerNeed.primary_intent) +
+      "; permission=" + String(knowledge.customerNeed.recommendation_permission) +
+      "; max_product_cards=" + String(knowledge.customerNeed.max_product_cards) +
+      "; match_mode=" + String(knowledge.customerNeed.match_mode) +
+      ". Answer the current question first. Do not promote products when permission is none. Never exceed the server-approved card count. An image-only message is not permission to browse the catalog.");
   }
+
   if (knowledge.broadCatalogQuestion) {
     sections.push("GENERAL CATALOG QUESTION: The store currently has " + knowledge.catalogCount +
       " customer-facing active products across the listed categories. The matched items below are examples, not the complete catalog. Invite the customer to name a category to see more.");
@@ -410,20 +417,33 @@ function buildDeterministicFallbackReply(
     return String(product.name || "পণ্য") + " — " + String(product.price || "দাম যাচাই প্রয়োজন") +
       "। " + availability + (url ? "। বিস্তারিত: " + url.replace(" | বিস্তারিত: ", "") : "");
   };
-  if (isBroadCatalogQuestion(message)) {
+  const permittedProducts = products.slice(0, Math.min(4, Number(knowledge.customerNeed?.max_product_cards || 0)));
+  if (knowledge.customerNeed?.primary_intent === "broad_catalog_browse") {
     const cats = knowledge.categoryNames.length ? knowledge.categoryNames.join(", ") : "ক্যাটালগ বিভাগ এখন নিশ্চিত নয়";
-    const list = products.slice(0, 15).map(productLine).join("\n");
+    const list = permittedProducts.map(productLine).join("\n");
     return "অবশ্যই! Halal Food-এর লাইভ ক্যাটালগে বর্তমানে " + knowledge.catalogCount +
       "টি সক্রিয় গ্রাহক-দৃশ্যমান পণ্য রয়েছে।\n\nক্যাটাগরি: " + cats +
       (list ? "\n\nকয়েকটি পণ্যের নাম ও বর্তমান তালিকাভুক্ত দাম:\n" + list : "") +
       "\n\nএটি ক্যাটালগের সংক্ষিপ্ত নমুনা। নির্দিষ্ট ক্যাটাগরির সব পণ্য ও দাম জানতে ক্যাটাগরির নাম লিখুন।" +
       "";
   }
+  if (knowledge.customerNeed?.primary_intent === "product_price_inquiry" && products.length) {
+    const product = products[0];
+    return String(product.name || "পণ্য") + " এর বর্তমান তালিকাভুক্ত দাম " + String(product.price || "এখন যাচাই করা যাচ্ছে না") + "।";
+  }
+  if (knowledge.customerNeed?.primary_intent === "product_availability_inquiry" && products.length) {
+    const product = products[0];
+    const status = product.availability === "available" ? "বর্তমানে তালিকায় উপলভ্য" : product.availability === "unavailable" ? "এই মুহূর্তে স্টকে নেই" : "স্টক নিশ্চিত করতে হবে";
+    return String(product.name || "পণ্য") + " — " + status + "।";
+  }
+  if (knowledge.customerNeed?.primary_intent === "exact_product_lookup" && products.length) {
+    return "আপনার চাওয়া পণ্যটি লাইভ ক্যাটালগে পাওয়া যাচ্ছে: " + productLine(products[0]);
+  }
   if (knowledge.customerNeed?.intent === "recommend" && products.length) {
     const budget = Number(knowledge.customerNeed.budget_bdt || 0);
     if (budget > 0 && knowledge.budgetMatchedCount === 0) {
       return "আপনার উল্লেখ করা ৳" + budget.toLocaleString("en-BD") + " বাজেটের মধ্যে যাচাইকৃত লাইভ ক্যাটালগে কোনো নির্ভুল মিল পাইনি। কাছাকাছি তালিকাভুক্ত বিকল্পগুলো হলো:\n\n" +
-        products.slice(0, 3).map(productLine).join("\n") +
+        permittedProducts.slice(0, 3).map(productLine).join("\n") +
         "\n\nকোনো পণ্যের উপাদান বা বিশেষ উপযোগিতা প্রকাশিত প্রোফাইলে না থাকলে তা অনুমান করে বলছি না।";
     }
     return (budget > 0 ? "আপনার উল্লেখ করা বাজেটের মধ্যে পাওয়া বিকল্পগুলো:" : "আপনার প্রয়োজন অনুযায়ী বিবেচনা করতে পারেন:") +
@@ -441,7 +461,7 @@ function buildDeterministicFallbackReply(
         ? "I understand you are looking for honey. I cannot verify the live catalog at this moment, but I can still help you compare other products or you can try this question again shortly."
         : "আপনি মধু খুঁজছেন বুঝতে পেরেছি। এই মুহূর্তে লাইভ ক্যাটালগ যাচাই করতে পারছি না। চাইলে অন্য পণ্যের সঙ্গে তুলনা করে দিতে পারি, অথবা একটু পর আবার মধুর বিষয়ে জিজ্ঞেস করতে পারেন।";
     }
-    const found = products.filter((p) => /মধু|honey/iu.test(String(p.name || "") + " " + String(p.category || "")));
+    const found = permittedProducts.filter((p) => /মধু|honey/iu.test(String(p.name || "") + " " + String(p.category || "")));
     if (found.length) {
       return (/[A-Za-z]/u.test(message) ? "Here are the honey products currently listed in our live catalog:" : "আমাদের লাইভ ক্যাটালগে বর্তমানে মধুর তালিকাভুক্ত পণ্যগুলো হলো:")
         + "\n\n" + found.map(productLine).join("\n")
@@ -452,7 +472,7 @@ function buildDeterministicFallbackReply(
       : "আপনি মধু খুঁজছেন বুঝতে পেরেছি। বর্তমানে প্রকাশিত ক্যাটালগে মধুর পণ্য খুঁজে পাচ্ছি না। চাইলে আপনার প্রয়োজন অনুযায়ী কাছাকাছি কোনো বিকল্প খুঁজে দিতে পারি।";
   }
   if (/(ঘি|ghee)/iu.test(normalized)) {
-    const found = products.filter((p) => /ঘি|ghee/iu.test(String(p.name || "") + " " + String(p.category || "")));
+    const found = permittedProducts.filter((p) => /ঘি|ghee/iu.test(String(p.name || "") + " " + String(p.category || "")));
     if (found.length) {
       const diff = /(পার্থক্য|তফাৎ|ভিন্ন|different|difference|compare|তুলনা)/iu.test(normalized);
       return "আমাদের লাইভ ক্যাটালগে বর্তমানে " + found.length + " ধরনের ঘি তালিকাভুক্ত আছে:\n\n" +
@@ -460,9 +480,9 @@ function buildDeterministicFallbackReply(
         (diff ? "\n\nপার্থক্য সম্পর্কে: যাচাইকৃত তথ্য দিয়ে নাম, প্যাকের পরিমাণ ও তালিকাভুক্ত দামের তুলনা করা যাচ্ছে। উপাদান, উৎস, স্বাদ, উৎপাদন-পদ্ধতি বা মানের পার্থক্য সম্পর্কে যাচাইকৃত তথ্য না থাকলে অনুমান করে বলা ঠিক হবে না." : "");
     }
   }
-  if (isCategoryCatalogQuestion(message) && products.length) {
+  if (knowledge.customerNeed?.primary_intent === "category_browse" && permittedProducts.length) {
     return "আপনার প্রশ্নের সঙ্গে মিলে যাওয়া লাইভ ক্যাটালগের পণ্যগুলো হলো:\n\n" +
-      products.map(productLine).join("\n") +
+      permittedProducts.map(productLine).join("\n") +
       "\n\nএখানে শুধু তালিকাভুক্ত নাম, দাম ও প্যাকের তথ্য দেওয়া হয়েছে; যাচাইকৃত প্রোফাইল ছাড়া গুণগত বৈশিষ্ট্য অনুমান করছি না।";
   }
   if (/(অর্ডার|order|পেমেন্ট|payment|ডেলিভারি|delivery|কুরিয়ার|courier|refund|রিফান্ড|checkout|শিপমেন্ট|shipment)/iu.test(normalized)) {
@@ -767,7 +787,7 @@ Deno.serve(async (req: Request) => {
     }
     if (!apiKey) {
       const offlineReply = buildDeterministicFallbackReply(message, knowledge);
-      if (offlineReply) return response({ success: true, reply: offlineReply, products: publicProductCards(knowledge, message), requestId,
+      if (offlineReply) return response({ success: true, reply: offlineReply, products: publicProductCards(knowledge, message), recommendation: buildRecommendationContract(knowledge), requestId,
         model: "verified-knowledge-fallback",
         knowledge: { documents: knowledge.documents.length, matchedProducts: knowledge.products.length } });
       return response({ success: false, code: "AI_NOT_CONFIGURED", requestId }, 503);
@@ -793,7 +813,7 @@ Deno.serve(async (req: Request) => {
       const offlineReply = buildDeterministicFallbackReply(message, knowledge);
       if (offlineReply) {
         console.info(JSON.stringify({ event: "customer_care_verified_knowledge_fallback", requestId, providerCode: errorCode }));
-        return response({ success: true, reply: offlineReply, products: publicProductCards(knowledge, message), requestId, model: "verified-knowledge-fallback",
+        return response({ success: true, reply: offlineReply, products: publicProductCards(knowledge, message), recommendation: buildRecommendationContract(knowledge), requestId, model: "verified-knowledge-fallback",
           knowledge: { documents: knowledge.documents.length, matchedProducts: knowledge.products.length } });
       }
       return response({ success: false, code: errorCode, requestId }, upstream.status === 429 ? 429 : 502);
@@ -867,7 +887,7 @@ Deno.serve(async (req: Request) => {
 
     if (!reply || !isCompleteReply(reply, finishReason)) {
       const offlineReply = buildDeterministicFallbackReply(message, knowledge);
-      if (offlineReply) return response({ success: true, reply: offlineReply, products: publicProductCards(knowledge, message), requestId, model: "verified-knowledge-fallback",
+      if (offlineReply) return response({ success: true, reply: offlineReply, products: publicProductCards(knowledge, message), recommendation: buildRecommendationContract(knowledge), requestId, model: "verified-knowledge-fallback",
         knowledge: { documents: knowledge.documents.length, matchedProducts: knowledge.products.length } });
       return response({ success: false, code: "INCOMPLETE_AI_RESPONSE", requestId }, 502);
     }
@@ -875,7 +895,7 @@ Deno.serve(async (req: Request) => {
     return response({
       success: true,
       reply,
-      products: publicProductCards(knowledge, message, reply),
+      products: publicProductCards(knowledge, message, reply), recommendation: buildRecommendationContract(knowledge),
       requestId,
       model: modelUsed,
       knowledge: {
@@ -886,7 +906,7 @@ Deno.serve(async (req: Request) => {
   } catch (error) {
     const timedOut = error instanceof DOMException && error.name === "AbortError";
     const offlineReply = loadedKnowledge ? buildDeterministicFallbackReply(message, loadedKnowledge) : null;
-    if (offlineReply && loadedKnowledge) return response({ success: true, reply: offlineReply, products: publicProductCards(loadedKnowledge, message), requestId,
+    if (offlineReply && loadedKnowledge) return response({ success: true, reply: offlineReply, products: publicProductCards(loadedKnowledge, message), recommendation: buildRecommendationContract(loadedKnowledge), requestId,
       model: "verified-knowledge-fallback",
       knowledge: { documents: loadedKnowledge.documents.length, matchedProducts: loadedKnowledge.products.length } });
     console.error(JSON.stringify({
