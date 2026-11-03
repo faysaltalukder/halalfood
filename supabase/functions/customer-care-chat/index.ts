@@ -16,7 +16,7 @@ const SYSTEM_INSTRUCTION = [
   "Take ownership of the customer’s question and try to resolve it yourself before suggesting another channel. Use the available live catalog and verified knowledge to answer as much as possible. Ask only the one most useful follow-up question when essential. Do not repeatedly tell customers to visit the website, call, email, or use WhatsApp. Do not volunteer phone numbers, email addresses, URLs, or contact links unless the customer explicitly asks for them. For a genuinely critical, sensitive, disputed, or account-specific matter that you cannot resolve, politely mention that human customer care is available; provide contact details only if the customer asks how to reach them.",
   "Use conversation history to avoid asking for information the customer has already supplied. Build a lightweight need profile only from explicit statements: requested category/product, intended use, budget, preferred pack size, comparison criteria and constraints. Never infer sensitive personal traits. If a budget is explicit, prioritize products within it; if none fit, say so and offer the nearest listed alternatives without pretending they fit.",
   "For recommendations, explain briefly why each suggestion matches the stated need, but only use suitability facts in the published product profile. If no verified suitability fact exists, be transparent and compare only confirmed name, category, pack/price and availability. For comparisons, compare the actual products requested and use short plain-text paragraphs or simple labeled lines; distinguish known differences from missing information.",
-  "When a live product match is provided, answer with its verified name, price, availability and relevant details. Share a product URL only when it is genuinely needed to view or buy that specific product, or when the customer asks for a link. Help the customer decide without pressure, urgency tricks, or repeatedly pushing them to another channel.",
+  "When a live product match is provided, answer with its verified name, price, availability and relevant details. Do not automatically attach clickable product cards or URLs. Share a product URL only when the customer explicitly asks for that product’s link or page. Help the customer decide without pressure, urgency tricks, or repeatedly pushing them to another channel.",
   "When asked for recommendations, provide the most relevant available options; do not impose an arbitrary item-count limit. When asked what products or varieties exist in a category, list relevant matching live catalog items supplied in context. Use exact live catalog names, prices, availability and URLs; never invent store-specific facts.",
   "For product prices, use the current live catalog price supplied in the context. Do not disclose numeric stock quantity. You may say a product is currently listed as available, unavailable, or that availability needs confirmation, based only on the supplied availability state.",
   "For store-specific product claims (such as ingredients, origin, certification, allergens, quality or stock), rely on published product information. For general knowledge, explain normally and distinguish general information from verified Halal Food product facts.",
@@ -181,7 +181,8 @@ function numericProductPrice(product: Record<string, unknown>): number | null {
   return Number.isFinite(value) ? value : null;
 }
 
-function publicProductCards(knowledge: Awaited<ReturnType<typeof loadKnowledge>>): Record<string, unknown>[] {
+function publicProductCards(knowledge: Awaited<ReturnType<typeof loadKnowledge>>, message: string): Record<string, unknown>[] {
+  if (!/(পণ্যের লিংক|প্রোডাক্ট লিংক|পণ্যের পেজ|পণ্যের url|product\\s*(?:page\\s*)?(?:link|url)|product page|link to (?:this|that|the) product)/iu.test(message)) return [];
   return knowledge.products.slice(0, 8).map((product) => {
     const profile = product.verified_product_knowledge && typeof product.verified_product_knowledge === "object"
       ? product.verified_product_knowledge as Record<string, unknown> : null;
@@ -380,10 +381,11 @@ function buildDeterministicFallbackReply(
 ): string | null {
   const normalized = message.toLowerCase().normalize("NFKC");
   const products = knowledge.products;
+  const wantsProductLink = /(পণ্যের লিংক|প্রোডাক্ট লিংক|পণ্যের পেজ|পণ্যের url|product\\s*(?:page\\s*)?(?:link|url)|product page|link to (?:this|that|the) product)/iu.test(message);
   const productLine = (product: Record<string, unknown>) => {
     const availability = product.availability === "available" ? "তালিকায় উপলভ্য"
       : product.availability === "unavailable" ? "বর্তমানে অনুপলব্ধ" : "স্টক নিশ্চিত করতে হবে";
-    const url = typeof product.product_url === "string" && product.product_url ? " | বিস্তারিত: " + product.product_url : "";
+    const url = wantsProductLink && typeof product.product_url === "string" && product.product_url ? " | বিস্তারিত: " + product.product_url : "";
     return String(product.name || "পণ্য") + " — " + String(product.price || "দাম যাচাই প্রয়োজন") +
       "। " + availability + (url ? "। বিস্তারিত: " + url.replace(" | বিস্তারিত: ", "") : "");
   };
@@ -659,7 +661,7 @@ Deno.serve(async (req: Request) => {
 
     if (!apiKey) {
       const offlineReply = buildDeterministicFallbackReply(message, knowledge);
-      if (offlineReply) return response({ success: true, reply: offlineReply, products: publicProductCards(knowledge), requestId,
+      if (offlineReply) return response({ success: true, reply: offlineReply, products: publicProductCards(knowledge, message), requestId,
         model: "verified-knowledge-fallback",
         knowledge: { documents: knowledge.documents.length, matchedProducts: knowledge.products.length } });
       return response({ success: false, code: "AI_NOT_CONFIGURED", requestId }, 503);
@@ -685,7 +687,7 @@ Deno.serve(async (req: Request) => {
       const offlineReply = buildDeterministicFallbackReply(message, knowledge);
       if (offlineReply) {
         console.info(JSON.stringify({ event: "customer_care_verified_knowledge_fallback", requestId, providerCode: errorCode }));
-        return response({ success: true, reply: offlineReply, products: publicProductCards(knowledge), requestId, model: "verified-knowledge-fallback",
+        return response({ success: true, reply: offlineReply, products: publicProductCards(knowledge, message), requestId, model: "verified-knowledge-fallback",
           knowledge: { documents: knowledge.documents.length, matchedProducts: knowledge.products.length } });
       }
       return response({ success: false, code: errorCode, requestId }, upstream.status === 429 ? 429 : 502);
@@ -759,7 +761,7 @@ Deno.serve(async (req: Request) => {
 
     if (!reply || !isCompleteReply(reply, finishReason)) {
       const offlineReply = buildDeterministicFallbackReply(message, knowledge);
-      if (offlineReply) return response({ success: true, reply: offlineReply, products: publicProductCards(knowledge), requestId, model: "verified-knowledge-fallback",
+      if (offlineReply) return response({ success: true, reply: offlineReply, products: publicProductCards(knowledge, message), requestId, model: "verified-knowledge-fallback",
         knowledge: { documents: knowledge.documents.length, matchedProducts: knowledge.products.length } });
       return response({ success: false, code: "INCOMPLETE_AI_RESPONSE", requestId }, 502);
     }
@@ -767,7 +769,7 @@ Deno.serve(async (req: Request) => {
     return response({
       success: true,
       reply,
-      products: publicProductCards(knowledge),
+      products: publicProductCards(knowledge, message),
       requestId,
       model: modelUsed,
       knowledge: {
@@ -778,7 +780,7 @@ Deno.serve(async (req: Request) => {
   } catch (error) {
     const timedOut = error instanceof DOMException && error.name === "AbortError";
     const offlineReply = loadedKnowledge ? buildDeterministicFallbackReply(message, loadedKnowledge) : null;
-    if (offlineReply && loadedKnowledge) return response({ success: true, reply: offlineReply, products: publicProductCards(loadedKnowledge), requestId,
+    if (offlineReply && loadedKnowledge) return response({ success: true, reply: offlineReply, products: publicProductCards(loadedKnowledge, message), requestId,
       model: "verified-knowledge-fallback",
       knowledge: { documents: loadedKnowledge.documents.length, matchedProducts: loadedKnowledge.products.length } });
     console.error(JSON.stringify({
