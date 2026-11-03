@@ -61,7 +61,7 @@
         '</div>' +
       '</div>' +
       '<form class="hf-ai-chat-composer" id="hf-ai-chat-form">' +
-        '<label class="hf-ai-chat-input-wrap"><span class="hf-ai-visually-hidden">আপনার প্রশ্ন লিখুন</span><input id="hf-ai-chat-input" name="message" type="text" maxlength="12000" autocomplete="off" placeholder="আপনার প্রশ্ন লিখুন..." required></label>' +
+        '<label class="hf-ai-chat-input-wrap"><span class="hf-ai-visually-hidden">আপনার প্রশ্ন লিখুন</span><input id="hf-ai-chat-input" name="message" type="text" autocomplete="off" placeholder="আপনার প্রশ্ন লিখুন..." required></label>' +
         '<button class="hf-ai-chat-send" type="submit" aria-label="Send message"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21 3-7.2 18-3.7-7.1L3 10.2 21 3Z"></path><path d="M10.1 13.9 21 3"></path></svg></button>' +
       '</form>' +
       '<div class="hf-ai-chat-footnote">পণ্য, মূল্য, স্টক ও সেবা সম্পর্কে যেকোনো প্রশ্ন করুন।</div>' +
@@ -212,7 +212,7 @@
         cache: "no-store",
         body: JSON.stringify({
           message: text,
-          history: conversation.slice(-8)
+          history: conversation.slice(-20)
         })
       });
       let data = {};
@@ -226,7 +226,7 @@
         appendProductCards(answerBubble, data.products);
         conversation.push({ role: "user", text: text });
         conversation.push({ role: "assistant", text: reply });
-        if (conversation.length > 12) conversation.splice(0, conversation.length - 12);
+        if (conversation.length > 40) conversation.splice(0, conversation.length - 40);
       }
     } catch (_error) {
       pending.remove();
