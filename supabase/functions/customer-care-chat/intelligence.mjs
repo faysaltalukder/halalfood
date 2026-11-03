@@ -177,7 +177,7 @@ function rankProductCandidates(products, profiles, message, decision={}, imageMa
   return scored.sort((a,b)=>b.score-a.score||String(a.product.name||"").localeCompare(String(b.product.name||"")));
 }
 function extractConversationState(message, history=[]) {
-  const recent=history.slice(-12).map(item=>String(item?.parts?.map?.(p=>p.text||"").join(" ")||"")).join(" ");
+  const recent=history.filter(item=>item?.role==="user").slice(-10).map(item=>String(item?.parts?.map?.(p=>p.text||"").join(" ")||"")).join(" ");
   const text=normalizeText(recent+" "+message);
   const budgetMatches=[...text.matchAll(/(?:৳|টাকা|টাকার|budget|under|within|maximum|max|বাজেট|সর্বোচ্চ)\\s*([0-9][0-9,]*)/giu)];
   const trailingBudget=[...text.matchAll(/([0-9][0-9,]*)\\s*(?:টাকা|টাকার|bdt)/giu)];
