@@ -77,7 +77,12 @@ assert.match(adminShell, /AI Knowledge Center/);
 assert.match(aiKnowledgeMigration, /aal.*aal2/);
 assert.match(aiKnowledgeMigration, /halalfoodbd\.official@gmail\.com/);
 
-assert.doesNotMatch(chat, /serverCheckStarted|সংযুক্ত ·|GEMINI_MODEL|appendHumanSupport|humanRequest/);\nassert.match(chat, /cleanAssistantText/);\nassert.match(edge, /Do not volunteer phone numbers/);\nassert.doesNotMatch(edge, /demo project|ডেমো প্রকল্প|ডেমো\/টেস্ট/);\nassert.doesNotMatch(edge, /\\*\\*/);\nconsole.log("Customer-care friendly conversation checks passed.");
+assert.doesNotMatch(chat, /serverCheckStarted|সংযুক্ত ·|GEMINI_MODEL|appendHumanSupport|humanRequest/);
+assert.match(chat, /cleanAssistantText/);
+assert.match(edge, /Do not volunteer phone numbers/);
+assert.doesNotMatch(edge, /demo project|ডেমো প্রকল্প|ডেমো\/টেস্ট/);
+assert.doesNotMatch(edge, /\*\*/);
+console.log("Customer-care friendly conversation checks passed.");
 assert.match(edge, /do not impose an arbitrary item-count limit/);
 assert.match(edge, /real operating business/);
 assert.match(chat, /conversation.length > 40/);
