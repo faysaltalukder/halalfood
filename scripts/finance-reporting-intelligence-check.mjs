@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 const html=readFileSync("admin/finance.html","utf8");
 const js=readFileSync("admin/finance-reporting-intelligence.js","utf8");
 const css=readFileSync("admin/finance-reporting-intelligence.css","utf8");
-const migration=readFileSync("supabase/migrations/20261103043000_finance_reporting_intelligence_v1.sql","utf8");
+const migration=readFileSync("supabase/migrations/20261103043429_finance_reporting_intelligence_v1.sql","utf8");
 for(const name of ["admin_finance_receivable_activity","admin_finance_payable_activity","admin_finance_inventory_valuation"])assert.ok(migration.includes("CREATE OR REPLACE VIEW public."+name),"Missing reporting view "+name);
 for(const id of ["financeReportingIntelligence","financeRiReceivablesBody","financeRiPayablesBody","financeRiInventoryBody","financeRiRefresh","financeRiExport"])assert.ok(html.includes('id="'+id+'"'),"Missing UI element "+id);
 assert.ok(html.includes("finance-reporting-intelligence.js?v=20261103-phase3-reporting-v1"),"Phase 3 reporting JS must be loaded");
