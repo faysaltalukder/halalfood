@@ -2469,9 +2469,9 @@ async function refresh(){
   }
   function renderKpis(){
    const range=dateRange(),periodEntries=entries.filter(e=>e.status==="confirmed"&&inRange(e.entry_date,range));
-   const income=sum(periodEntries.filter(e=>e.entry_type==="income"&&financialClass(e)==="operating"),e=>e.amount);
-   const expense=sum(periodEntries.filter(e=>e.entry_type==="expense"&&financialClass(e)==="operating"),e=>e.amount);
-   const cashIn=sum(periodEntries.filter(e=>e.entry_type==="income"),e=>e.amount),cashOut=sum(periodEntries.filter(e=>e.entry_type==="expense"),e=>e.amount);
+   const cashIn=sum(periodEntries.filter(e=>e.entry_type==="income"),e=>e.amount);
+   const cashOut=sum(periodEntries.filter(e=>e.entry_type==="expense"),e=>e.amount);
+   const income=cashIn,expense=cashOut;
    const available=sum(accounts,accountBalance);
    const codPipeline=sum(settlements.filter(s=>s.status!=="cancelled"),s=>Math.max(0,Number(s.cod_amount||0)-Number(s.remitted_amount||0)));
    const draftCount=entries.filter(e=>e.status==="draft").length+transfers.filter(t=>t.status==="draft").length;
@@ -2486,7 +2486,7 @@ async function refresh(){
    $("financeCodReconciledTotal").textContent=money(sum(settlements.filter(s=>s.status==="reconciled"),s=>s.remitted_amount));
    $("financeCodExceptionCount").textContent=settlements.filter(s=>s.status==="exception").length.toLocaleString("en-BD");
    const note=$("financePeriodFilter");
-   if(note)note.title="Operating KPIs and cash movement for "+range.label+". Account balances show the current all-time position.";
+   if(note)note.title="Confirmed cashbook receipts and payments for "+range.label+"; these are not recognized revenue or Profit & Loss. Account balances show the current all-time position.";
   }
   function renderAlerts(){
    const alerts=[];
@@ -2535,13 +2535,15 @@ async function refresh(){
    $("financeCodTableBody").innerHTML=rows.length?rows.map(s=>{
     const expected=Number(s.collected_amount||0)-Number(s.courier_fee||0)+Number(s.adjustment_amount||0);
     const variance=Number(s.remitted_amount||0)-expected;
-    return '<tr><td><strong>'+esc(s.order_number)+'</strong><small>'+esc(s.courier_name||"Courier not set")+(s.tracking_reference?" · "+esc(s.tracking_reference):"")+'</small></td><td>'+money(s.cod_amount)+'</td><td>'+money(s.collected_amount)+'</td><td>'+money(s.courier_fee)+'</td><td><strong>'+money(s.remitted_amount)+'</strong><small>'+(s.remitted_account_id?esc(accountName(s.remitted_account_id)):"No account")+'</small></td><td>'+(s.status==="pending"?"—":money(variance))+'</td><td>'+statusBadge(s.status)+'</td><td><button class="hf-button hf-button-secondary hf-button-small" data-edit-cod="'+esc(s.id)+'">Review / edit</button></td></tr>';
+    const postAction=s.status==="reconciled"&&!s.accounting_journal_id?'<button class="hf-button hf-button-primary hf-button-small" data-post-cod="'+esc(s.id)+'">Post to GL</button>':"";
+    const reverseAction=s.accounting_journal_id&&!s.reversal_journal_id?'<button class="hf-button hf-button-danger hf-button-small" data-reverse-cod="'+esc(s.id)+'">Reverse</button>':"";
+    return '<tr><td><strong>'+esc(s.order_number)+'</strong><small>'+esc(s.courier_name||"Courier not set")+(s.tracking_reference?" · "+esc(s.tracking_reference):"")+'</small></td><td>'+money(s.cod_amount)+'</td><td>'+money(s.collected_amount)+'</td><td>'+money(s.courier_fee)+'</td><td><strong>'+money(s.remitted_amount)+'</strong><small>'+(s.remitted_account_id?esc(accountName(s.remitted_account_id)):"No account")+'</small></td><td>'+(s.status==="pending"?"—":money(variance))+'</td><td>'+statusBadge(s.status)+'</td><td><div class="hf-table-actions">'+postAction+reverseAction+'<button class="hf-button hf-button-secondary hf-button-small" data-edit-cod="'+esc(s.id)+'">Review / edit</button></div></td></tr>';
    }).join(""):'<tr><td colspan="8">'+makeEmpty("No COD settlement records","Add a courier settlement record when you have real collection or remittance information.")+'</td></tr>';
   }
   function budgetActual(b){
    const from=String(b.period_start).slice(0,10);
    const end=new Date(Date.UTC(Number(from.slice(0,4)),Number(from.slice(5,7)),0)).toISOString().slice(0,10);
-   return sum(entries.filter(e=>e.entry_type==="expense"&&e.status==="confirmed"&&financialClass(e)==="operating"&&e.category.toLowerCase()===b.category.toLowerCase()&&e.entry_date>=from&&e.entry_date<=end),e=>e.amount);
+   return sum(entries.filter(e=>e.entry_type==="expense"&&!e.related_supplier_payment_id&&e.status==="confirmed"&&financialClass(e)==="operating"&&e.category.toLowerCase()===b.category.toLowerCase()&&e.entry_date>=from&&e.entry_date<=end),e=>e.amount);
   }
   function renderBudgets(){
    const rows=[...budgets].sort((a,b)=>String(b.period_start).localeCompare(String(a.period_start))||a.category.localeCompare(b.category));
@@ -2588,7 +2590,7 @@ async function refresh(){
   async function refresh(){
    const supplierQuery=signedQuery(client.from("admin_supplier_balances").select("outstanding_balance").limit(1000)).catch(err=>{console.warn("Supplier balance summary unavailable",err);return null;});
    [entries,accounts,transfers,settlements,budgets,orders,supplierRows]=await Promise.all([
-    signedQuery(client.from("admin_finance_entries").select("id,entry_type,category,amount,entry_date,description,reference,status,related_order_id,related_supplier_payment_id,related_cod_settlement_id,account_id,payment_method,party_name,financial_class,created_by,created_at,updated_at").order("entry_date",{ascending:false}).order("created_at",{ascending:false}).limit(5000)),
+    signedQuery(client.from("admin_finance_entries").select("id,entry_type,category,amount,entry_date,description,reference,status,related_order_id,related_supplier_payment_id,related_cod_settlement_id,account_id,payment_method,party_name,financial_class,accounting_journal_id,reversal_journal_id,created_by,created_at,updated_at").order("entry_date",{ascending:false}).order("created_at",{ascending:false}).limit(5000)),
     signedQuery(client.from("admin_finance_accounts").select("*").order("is_active",{ascending:false}).order("name",{ascending:true}).limit(300)),
     signedQuery(client.from("admin_finance_transfers").select("*").order("transfer_date",{ascending:false}).limit(1000)),
     signedQuery(client.from("admin_cod_settlements").select("*").order("updated_at",{ascending:false}).limit(1000)),
@@ -2624,6 +2626,7 @@ async function refresh(){
    $("financeAccountType").value=account?.account_type||"cash";
    $("financeAccountProvider").value=account?.provider||"";
    $("financeAccountReference").value=account?.account_reference||"";
+   $("financeAccountLedgerId").value=account?.ledger_account_id||"";
    $("financeAccountOpening").value=account?.opening_balance??0;
    $("financeAccountOpeningDate").value=account?.opening_date||todayISO();
    $("financeAccountFormError").textContent="";$("financeAccountDialog").showModal();
@@ -2692,8 +2695,10 @@ async function refresh(){
    event.preventDefault();const id=$("financeAccountIdHidden").value,button=$("financeAccountForm").querySelector('[type="submit"]');button.disabled=true;$("financeAccountFormError").textContent="";
    try{
     const payload={name:$("financeAccountName").value.trim(),account_type:$("financeAccountType").value,provider:$("financeAccountProvider").value.trim(),
-     account_reference:$("financeAccountReference").value.trim(),opening_balance:Number($("financeAccountOpening").value),opening_date:$("financeAccountOpeningDate").value};
+     account_reference:$("financeAccountReference").value.trim(),ledger_account_id:$("financeAccountLedgerId").value||null,
+     opening_balance:Number($("financeAccountOpening").value),opening_date:$("financeAccountOpeningDate").value};
     if(payload.name.length<2)throw new Error("Enter an account name.");
+    if(!payload.ledger_account_id)throw new Error("Map this account to an active Asset account in the Chart of Accounts.");
     if(!Number.isFinite(payload.opening_balance)||payload.opening_balance<0)throw new Error("Opening balance cannot be negative.");
     if(!payload.opening_date)throw new Error("Choose the opening balance date.");
     if(!id)payload.created_by=H.ADMIN_EMAIL;
@@ -2784,20 +2789,50 @@ async function refresh(){
   $("financeTransfersBody")?.addEventListener("click",async event=>{
    const confirmBtn=event.target.closest("[data-confirm-transfer]"),voidBtn=event.target.closest("[data-void-transfer]");
    const item=transfers.find(t=>t.id===(confirmBtn?.dataset.confirmTransfer||voidBtn?.dataset.voidTransfer));if(!item)return;
-   const next=confirmBtn?"confirmed":"void";
-   if(next==="confirmed"){
-    const source=accounts.find(a=>a.id===item.source_account_id),destination=accounts.find(a=>a.id===item.destination_account_id);
-    if(!source||!destination||!source.is_active||!destination.is_active){toast("Both source and destination accounts must be active before confirming this transfer.","error");return;}
-    if(String(item.transfer_date)<String(source.opening_date)||String(item.transfer_date)<String(destination.opening_date)){toast("Transfer date cannot be earlier than either account opening date.","error");return;}
-    const available=accountBalance(source);
-    if(Number(item.amount)>available){toast("Insufficient recorded balance in "+source.name+". Available: "+money(available)+".","error");return;}
-    if(!confirm("Confirm this transfer only after the money has actually moved between the two accounts. It will update both account balances but not Income or Expenses."))return;
-   }
-   if(next==="void"&&!confirm("Void this transfer? It will remain in history but stop affecting account balances."))return;
-   try{const {error}=await client.from("admin_finance_transfers").update({status:next,updated_at:new Date().toISOString()}).eq("id",item.id);if(error)throw error;await audit("finance_transfer_status_changed","finance_transfer",item.id,"Internal transfer "+next,{amount:item.amount});toast("Transfer "+next+".");await refresh();}
-   catch(err){toast(err.message||"Transfer could not be updated.","error");}
+   try{
+    if(confirmBtn){
+     const source=accounts.find(a=>a.id===item.source_account_id),destination=accounts.find(a=>a.id===item.destination_account_id);
+     if(!source||!destination||!source.is_active||!destination.is_active){toast("Both source and destination accounts must be active before confirming this transfer.","error");return;}
+     if(String(item.transfer_date)<String(source.opening_date)||String(item.transfer_date)<String(destination.opening_date)){toast("Transfer date cannot be earlier than either account opening date.","error");return;}
+     if(Number(item.amount)>accountBalance(source)){toast("Insufficient recorded balance in "+source.name+". Available: "+money(accountBalance(source))+".","error");return;}
+     if(!confirm("Confirm the transfer only after the money has actually moved. This posts Dr destination account / Cr source account and does not change Revenue or Expenses."))return;
+     const {data,error}=await client.rpc("admin_finance_confirm_transfer",{p_transfer_id:item.id});
+     if(error)throw error;
+     await audit("finance_transfer_confirmed","finance_transfer",item.id,"Internal transfer journal posted",{amount:item.amount,journal_id:data});
+     toast("Transfer confirmed and posted to the General Ledger.");
+    }else{
+     const reason=window.prompt("Reason for voiding this transfer (at least five characters):");
+     if(reason===null)return;
+     if(reason.trim().length<5)throw new Error("Enter a transfer void reason of at least five characters.");
+     if(!confirm("Void this transfer? A confirmed transfer will be reversed through a linked Journal; its history will remain."))return;
+     const {data,error}=await client.rpc("admin_finance_void_transfer",{p_transfer_id:item.id,p_reason:reason.trim()});
+     if(error)throw error;
+     await audit("finance_transfer_voided","finance_transfer",item.id,"Internal transfer voided with reversal",{amount:item.amount,reversal_journal_id:data});
+     toast("Transfer voided. Any posted journal has been reversed.");
+    }
+    await refresh();
+   }catch(err){toast(err.message||"Transfer could not be updated.","error");}
   });
-  $("financeCodTableBody")?.addEventListener("click",event=>{const btn=event.target.closest("[data-edit-cod]");if(!btn)return;const item=settlements.find(s=>s.id===btn.dataset.editCod);if(item)openCod(item);});
+  $("financeCodTableBody")?.addEventListener("click",async event=>{
+   const edit=event.target.closest("[data-edit-cod]"),post=event.target.closest("[data-post-cod]"),reverse=event.target.closest("[data-reverse-cod]");
+   if(edit){const item=settlements.find(s=>s.id===edit.dataset.editCod);if(item)openCod(item);return;}
+   if(post){
+    const item=settlements.find(s=>s.id===post.dataset.postCod);if(!item)return;
+    if(!confirm("Post the reconciled COD remittance? This posts the delivered sale (if not already posted), clears Courier Clearing and records the actual remittance and courier fee."))return;
+    try{const {data,error}=await client.rpc("admin_finance_post_cod_settlement",{p_settlement_id:item.id});if(error)throw error;await audit("finance_cod_posted_to_accounting","cod_settlement",item.id,"COD remittance and fee posted to General Ledger",{journal_id:data});toast("COD settlement posted to the General Ledger.");await refresh();}
+    catch(err){toast(err.message||"COD settlement could not be posted.","error");}
+    return;
+   }
+   if(reverse){
+    const item=settlements.find(s=>s.id===reverse.dataset.reverseCod);if(!item)return;
+    const reason=window.prompt("Why must this COD settlement be reversed? (at least five characters)");
+    if(reason===null)return;
+    if(reason.trim().length<5){toast("Enter a reversal reason of at least five characters.","error");return;}
+    if(!confirm("Reverse the remittance, recognized COD sale and any posted COGS for this order?"))return;
+    try{const {data,error}=await client.rpc("admin_finance_reverse_cod_settlement",{p_settlement_id:item.id,p_reversal_date:todayISO(),p_reason:reason.trim()});if(error)throw error;await audit("finance_cod_reversed","cod_settlement",item.id,"COD remittance, sale and COGS journals reversed",{reversal_journal_id:data});toast("COD journals reversed; the settlement is flagged for review.");await refresh();}
+    catch(err){toast(err.message||"COD settlement could not be reversed.","error");}
+   }
+  });
   $("financeBudgetTableBody")?.addEventListener("click",async event=>{
    const btn=event.target.closest("[data-archive-budget]");if(!btn)return;
    const item=budgets.find(b=>b.id===btn.dataset.archiveBudget);if(!item)return;
@@ -2806,7 +2841,7 @@ async function refresh(){
    catch(err){toast(err.message||"Budget could not be archived.","error");}
   });
   const exportEntries=()=>{
-   const rows=filteredLedgerEntries().map(e=>({date:e.entry_date,type:e.entry_type,classification:financialClass(e),category:e.category,party:e.party_name||"",description:e.description||"",amount:Number(e.amount||0),account:accountName(e.account_id),payment_method:e.payment_method||"",status:e.status,reference:e.reference||"",order_id:e.related_order_id||"",source:e.related_supplier_payment_id?"supplier_payment":e.related_cod_settlement_id?"cod_settlement":"manual"}));
+   const rows=filteredLedgerEntries().map(e=>({date:e.entry_date,type:e.entry_type,classification:financialClass(e),category:e.category,party:e.party_name||"",description:e.description||"",amount:Number(e.amount||0),account:accountName(e.account_id),payment_method:e.payment_method||"",status:e.status,reference:e.reference||"",order_id:e.related_order_id||"",accounting_journal_id:e.accounting_journal_id||"",source:e.related_supplier_payment_id?"supplier_payment":e.related_cod_settlement_id?"cod_settlement":"manual"}));
    downloadFile("halal-food-finance-ledger-"+todayISO()+".csv",csvText(rows),"text/csv;charset=utf-8");toast(rows.length+" filtered ledger record(s) exported.");
   };
   $("financeExportBtn")?.addEventListener("click",exportEntries);
