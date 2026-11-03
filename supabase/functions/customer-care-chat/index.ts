@@ -42,7 +42,7 @@ function response(body: unknown, status = 200, origin = ALLOWED_ORIGIN) {
       ...JSON_HEADERS,
       "Access-Control-Allow-Origin": origin,
       "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-      "Access-Control-Allow-Headers": "content-type",
+      "Access-Control-Allow-Headers": "content-type, authorization",
     },
   });
 }
@@ -108,6 +108,50 @@ async function insertSupabaseRow(table: string, row: Record<string, unknown>, cr
     });
     if (!result.ok) throw new Error("Supabase insert failed for " + table + " (" + result.status + ")");
   } finally { clearTimeout(timeout); }
+}
+
+async function patchSupabaseRow(
+  table: string,
+  filters: Record<string, string>,
+  row: Record<string, unknown>,
+  credentials: { url: string; key: string; isSecretKey: boolean },
+): Promise<void> {
+  const query = new URLSearchParams(filters);
+  const headers: Record<string, string> = { apikey: credentials.key, "Content-Type": "application/json", Prefer: "return=minimal" };
+  if (!credentials.isSecretKey) headers.Authorization = "Bearer " + credentials.key;
+  const result = await fetch(credentials.url + "/rest/v1/" + table + "?" + query.toString(), {
+    method: "PATCH", headers, body: JSON.stringify(row), cache: "no-store",
+  });
+  if (!result.ok) throw new Error("Supabase update failed for " + table + " (" + result.status + ")");
+}
+
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
+  try {
+    const part = token.split(".")[1];
+    if (!part) return null;
+    const normalized = part.replace(/-/g, "+").replace(/_/g, "/");
+    return JSON.parse(atob(normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=")));
+  } catch { return null; }
+}
+
+async function verifyAdminRequest(req: Request, credentials: { url: string; key: string; isSecretKey: boolean }): Promise<string | null> {
+  const token = (req.headers.get("authorization") || "").replace(/^Bearer\\s+/i, "").trim();
+  if (!token) return null;
+  const claims = decodeJwtPayload(token);
+  if (!claims || claims.aal !== "aal2" || Number(claims.exp || 0) <= Math.floor(Date.now() / 1000)) return null;
+  const adminEmail = "halalfoodbd.official@gmail.com";
+  const claimEmail = String(claims.email || "").toLowerCase();
+  if (claimEmail !== adminEmail) return null;
+  const authKey = Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY") || credentials.key;
+  const check = await fetch(credentials.url + "/auth/v1/user", {
+    method: "GET",
+    headers: { apikey: authKey, Authorization: "Bearer " + token },
+    cache: "no-store",
+  });
+  if (!check.ok) return null;
+  const user = await check.json();
+  if (String(user.email || "").toLowerCase() !== adminEmail || user.id !== claims.sub) return null;
+  return adminEmail;
 }
 
 function redactFeedbackText(value: unknown, maxLength: number): string {
@@ -872,6 +916,56 @@ Deno.serve(async (req: Request) => {
     payload = JSON.parse(rawBody);
   } catch {
     return response({ success: false, code: "INVALID_JSON", requestId }, 400);
+  }
+
+  if (payload.action === "admin_feedback_list" || payload.action === "admin_feedback_update") {
+    const credentials = getSupabaseCredentials();
+    if (!credentials) return response({ success: false, code: "FEEDBACK_UNAVAILABLE" }, 503);
+    let adminEmail: string | null = null;
+    try { adminEmail = await verifyAdminRequest(req, credentials); } catch { adminEmail = null; }
+    if (!adminEmail) return response({ success: false, code: "ADMIN_AUTH_REQUIRED" }, 401);
+
+    if (payload.action === "admin_feedback_list") {
+      const params: Record<string, string> = {
+        select: "request_id,rating,feedback_reason,question,answer,product_ids,product_names,model,source,review_status,created_at,reviewed_at,corrected_answer,admin_notes,reviewed_by",
+        order: "created_at.desc",
+        limit: String(Math.max(1, Math.min(500, Number(payload.limit) || 250))),
+      };
+      if (["helpful", "not_helpful"].includes(String(payload.rating || ""))) params.rating = "eq." + String(payload.rating);
+      if (["new", "reviewed", "applied", "dismissed"].includes(String(payload.status || ""))) params.review_status = "eq." + String(payload.status);
+      if (["wrong_product", "misunderstood", "incorrect_information", "irrelevant", "unclear", "other"].includes(String(payload.reason || ""))) params.feedback_reason = "eq." + String(payload.reason);
+      try {
+        const rows = await fetchSupabaseRows("ai_customer_care_feedback", params, credentials);
+        return response({ success: true, rows, admin: adminEmail });
+      } catch {
+        return response({ success: false, code: "FEEDBACK_READ_FAILED" }, 503);
+      }
+    }
+
+    const feedbackRequestId = String(payload.requestId || "");
+    const status = String(payload.status || "");
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(feedbackRequestId) ||
+        !["new", "reviewed", "applied", "dismissed"].includes(status)) {
+      return response({ success: false, code: "INVALID_FEEDBACK_UPDATE" }, 400);
+    }
+    const correctedAnswer = typeof payload.correctedAnswer === "string" ? payload.correctedAnswer.trim().slice(0, 8000) : "";
+    const adminNotes = typeof payload.adminNotes === "string" ? payload.adminNotes.trim().slice(0, 3000) : "";
+    if (status === "applied" && !correctedAnswer) {
+      return response({ success: false, code: "CORRECTED_ANSWER_REQUIRED" }, 400);
+    }
+    const update: Record<string, unknown> = {
+      review_status: status,
+      corrected_answer: correctedAnswer || null,
+      admin_notes: adminNotes || null,
+      reviewed_by: adminEmail,
+      reviewed_at: status === "new" ? null : new Date().toISOString(),
+    };
+    try {
+      await patchSupabaseRow("ai_customer_care_feedback", { request_id: "eq." + feedbackRequestId }, update, credentials);
+      return response({ success: true, saved: true });
+    } catch {
+      return response({ success: false, code: "FEEDBACK_UPDATE_FAILED" }, 503);
+    }
   }
 
   if (payload.action === "feedback") {
