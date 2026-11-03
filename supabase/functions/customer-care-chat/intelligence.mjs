@@ -127,7 +127,7 @@ function rankProductCandidates(products, profiles, message, decision={}, imageMa
   const visibleText=String(imageMatch?.visible_text||"");
   const visualBrand=String(imageMatch?.brand||"");
   const visualPackaging=String(imageMatch?.packaging_type||"");
-  const genericBudgetBrowse=decision.primary_intent==="recommendation_request" && /(?:৳|টাকা|টাকার|budget|under|within|বাজেট|সর্বোচ্চ)\s*[0-9]/iu.test(message);
+  const genericBudgetBrowse=decision.primary_intent==="recommendation_request" && /(?:৳|টাকা|টাকার|budget|under|within|বাজেট|সর্বোচ্চ)\s*[0-9]/iu.test(query);
   const broadBrowse=decision.primary_intent==="broad_catalog_browse" || decision.primary_intent==="category_browse";
   const imageContext=decision.image_search===true;
   const scored=[];
