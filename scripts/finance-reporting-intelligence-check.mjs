@@ -1,0 +1,15 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+const html=readFileSync("admin/finance.html","utf8");
+const js=readFileSync("admin/finance-reporting-intelligence.js","utf8");
+const css=readFileSync("admin/finance-reporting-intelligence.css","utf8");
+const migration=readFileSync("supabase/migrations/20261103043000_finance_reporting_intelligence_v1.sql","utf8");
+for(const name of ["admin_finance_receivable_activity","admin_finance_payable_activity","admin_finance_inventory_valuation"])assert.ok(migration.includes("CREATE OR REPLACE VIEW public."+name),"Missing reporting view "+name);
+for(const id of ["financeReportingIntelligence","financeRiReceivablesBody","financeRiPayablesBody","financeRiInventoryBody","financeRiRefresh","financeRiExport"])assert.ok(html.includes('id="'+id+'"'),"Missing UI element "+id);
+assert.ok(html.includes("finance-reporting-intelligence.js?v=20261103-phase3-reporting-v1"),"Phase 3 reporting JS must be loaded");
+assert.ok(js.includes("summarizeReceivables")&&js.includes("summarizePayables")&&js.includes("admin_finance_inventory_valuation"),"All three live reports must be connected");
+assert.ok(js.includes("security_invoker")===false,"Client must not attempt to bypass database view security");
+assert.ok(css.includes("@media(max-width:760px)")&&css.includes("@media(prefers-reduced-motion:reduce)"),"Reporting workspace must be responsive and motion-accessible");
+assert.ok(migration.includes("security_invoker = true")&&migration.includes("REVOKE ALL")&&migration.includes("GRANT SELECT"),"Reporting views must retain invoker security and authenticated-only grants");
+assert.ok(!/\b(drop table|truncate|delete from|update public\.)\b/i.test(migration),"Reporting migration must be read-only and non-destructive");
+console.log("Finance Phase 3 reporting intelligence checks passed.");
