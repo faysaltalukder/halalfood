@@ -185,7 +185,7 @@
     });
     const params = {
       currency: "BDT", items: rows,
-      metadata: Object.assign({ interaction_source: "ai_chat" }, extra || {})
+      first_party_metadata: Object.assign({ interaction_source: "ai_chat" }, extra || {})
     };
     if (typeof value === "number" && Number.isFinite(value)) params.value = value;
     try { window.halalTrack?.(eventName, params); } catch (_) {}
@@ -352,6 +352,8 @@
   }
   function renderReview(message) {
     const quote = checkoutQuote; if (!quote) return;
+    try { if (turnstileWidgetId !== null) window.turnstile?.remove?.(turnstileWidgetId); } catch (_) {}
+    turnstileWidgetId = null; turnstileToken = "";
     const items = (quote.items || []).map(function (item) {
       return '<div class="hf-ai-review-item"><span>' + escapeHtml(item.name) + ' × ' + item.quantity + '</span><strong>' + money(item.lineTotal) + '</strong></div>';
     }).join("");
@@ -427,6 +429,7 @@
     backup.total = String(Number(result.orderTotal) || Number(checkoutQuote?.total) || 0);
     backup.orderTotal = backup.total; backup.price = backup.total;
     backup.product = shoppingCart.map(function (item) { return item.name + " × " + item.qty; }).join(" | ");
+    backup.items = shoppingCart.map(function (item) { return { product:item.name, slug:item.slug, quantity:String(item.qty), price:String(item.unitPrice), image:String(item.image_url || "") }; });
     backup.quantity = String(shoppingCart.reduce(function (n,item) { return n + item.qty; },0));
     backup.mobile = checkoutValues.phone; backup.name = checkoutValues.name; backup.email = checkoutValues.email || ""; backup.address = checkoutValues.address;
     backup.notes = [backup.notes, result.heldForReview ? "SECURITY REVIEW PENDING — please verify the customer before processing." : "Order placed through Halal Food AI chat."].filter(Boolean).join(" | ").slice(0,500);
@@ -541,7 +544,11 @@
       const quote = await requestChatQuote(checkoutValues.deliveryZone);
       trackChatEvent("add_payment_info", cartItemsForTracking(), Number(quote.total), { payment_method:"cash_on_delivery" });
       renderReview("");
-    } catch (error) { renderCheckoutError(error.message || "পণ্যের বর্তমান মূল্য যাচাই করা যায়নি। আবার চেষ্টা করুন。"); }
+    } catch (error) {
+      const button = formElement.querySelector('button[type="submit"]');
+      if (button) { button.disabled = false; button.textContent = "হিসাব দেখুন"; }
+      renderCheckoutError(error.message || "পণ্যের বর্তমান মূল্য যাচাই করা যায়নি। আবার চেষ্টা করুন।");
+    }
   });
   chatView.addEventListener("click", function (event) {
     const target = event.target, back = target.closest("[data-hf-view-back]");
@@ -655,7 +662,7 @@
   });
   closeButton.addEventListener("click", closeChat);
   minimizeButton.addEventListener("click", () => minimized ? restoreChat() : minimizeChat());
-  newChatButton.addEventListener("click", resetConversation); bindPromptButtons();
+  newChatButton.addEventListener("click", () => { setView("conversation"); resetConversation(); }); bindPromptButtons();
   cartButton?.addEventListener("click", () => renderCart());
   input.addEventListener("input", resizeComposer);
   input.addEventListener("keydown", event => { if (event.key === "Enter" && !event.shiftKey && !event.isComposing) { event.preventDefault(); form.requestSubmit(); } });
