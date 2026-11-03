@@ -82,7 +82,7 @@
   const productCatalog = new Map();
   const shoppingCart = [];
   let currentProduct = null, detailQuantity = 1, activeView = "conversation";
-  let checkoutValues = {}, checkoutQuote = null, pendingOrderId = "", orderSubmitting = false;
+  let checkoutValues = {}, checkoutQuote = null, pendingOrderId = "", orderSubmitting = false, chatCheckoutStartedAt = 0;
   let turnstileWidgetId = null, turnstileToken = "", turnstileScriptPromise = null;
   let busy = false, minimized = false, savedScrollY = 0;
   let previousBodyOverflow = "", previousHtmlOverflow = "", previousBodyPosition = "", previousBodyTop = "", previousBodyWidth = "";
@@ -252,6 +252,7 @@
       actions.append(details, order); card.append(copy, actions); wrap.appendChild(card);
     });
     if (wrap.children.length) {
+      trackChatEvent("view_item_list", products.slice(0,4), null, { list_name:"ai_chat_recommendations" });
       const shouldStick = messages.scrollHeight - messages.scrollTop - messages.clientHeight < 100;
       bubble.appendChild(wrap);
       if (shouldStick) scrollToLatest(true);
@@ -260,7 +261,9 @@
   function openProduct(product, orderNow) {
     if (!product) return;
     currentProduct = product; detailQuantity = 1;
-    trackChatEvent("select_item", [{ id:product.id, slug:product.slug, name:product.name, category:product.category, unitPrice:product.price_value, qty:1 }], Number(product.price_value) || 0, { view:"product_card" });
+    const viewedItem = { id:product.id, slug:product.slug, name:product.name, category:product.category, unitPrice:product.price_value, qty:1 };
+    trackChatEvent("select_item", [viewedItem], Number(product.price_value) || 0, { view:"product_card" });
+    trackChatEvent("view_item", [viewedItem], Number(product.price_value) || 0, { interaction_source:"ai_chat" });
     renderProductDetail(); setView("product");
     if (orderNow) addCurrentProductToCart(true);
   }
@@ -286,7 +289,7 @@
     else shoppingCart.push({ id:p.id, slug:p.slug, name:p.name, category:p.category, unitPrice:Number(p.price_value) || 0,
       displayPrice:p.price, image_url:p.image_url || "", unit_type:p.unit_type || "piece", qty:qty });
     updateCartBadge();
-    trackChatEvent("add_to_cart", cartItemsForTracking(), cartSubtotal(), { action:"product_detail" });
+    trackChatEvent("add_to_cart", [{ id:p.id, slug:p.slug, name:p.name, category:p.category, unitPrice:p.price_value, qty:qty }], (Number(p.price_value) || 0) * qty, { action:"product_detail" });
     if (orderNow) openCheckout();
     else {
       chatView.innerHTML = viewHeader("কার্টে যোগ হয়েছে", "পণ্যে ফিরুন") +
@@ -297,6 +300,7 @@
   }
   function renderCart() {
     updateCartBadge();
+    trackChatEvent("view_cart", cartItemsForTracking(), cartSubtotal(), { cart_source:"ai_chat" });
     let body = "";
     if (!shoppingCart.length) body = '<div class="hf-ai-empty-state"><strong>আপনার কার্ট এখন খালি</strong><p>কথোপকথন থেকে পছন্দের পণ্য বেছে নিতে পারেন।</p><button type="button" class="hf-ai-primary-button" data-hf-view-back>পণ্য খুঁজুন</button></div>';
     else {
@@ -314,6 +318,7 @@
   }
   function openCheckout() {
     if (!shoppingCart.length) { renderCart(); return; }
+    if (!chatCheckoutStartedAt) chatCheckoutStartedAt = Date.now();
     trackChatEvent("begin_checkout", cartItemsForTracking(), cartSubtotal(), { step:"customer_details" });
     renderCheckout(); setView("checkout");
   }
@@ -335,7 +340,8 @@
   }
   async function requestChatQuote(deliveryZone) {
     const response = await fetch(CHAT_API, { method:"POST", headers:{"Content-Type":"application/json"}, cache:"no-store",
-      body:JSON.stringify({ action:"quote", deliveryZone:deliveryZone, items:shoppingCart.map(function (item) { return { id:item.id, quantity:item.qty }; }) }) });
+      body:JSON.stringify({ action:"quote", deliveryZone:deliveryZone, items:shoppingCart.map(function (item) { return { id:item.id, quantity:item.qty }; }) }),
+      signal:AbortSignal.timeout(12000) });
     const data = await response.json().catch(function () { return {}; });
     if (!response.ok || data.success !== true) {
       const error = new Error(data.error || "পণ্যের বর্তমান হিসাব যাচাই করা যায়নি।"); error.code = data.code || "QUOTE_FAILED"; throw error;
@@ -438,7 +444,8 @@
       const response = await fetch("https://script.google.com/macros/s/AKfycbzSf6OzjwGNBSmaZBNxBf5zL8z5wkf3tY7QtSqRUGrjZj2eWLN4DsGw1WQwkPhTqmSzrw/exec", {
         method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body:JSON.stringify(backup), keepalive:true
       });
-      if (!response.ok) throw new Error("Google Sheets backup HTTP " + response.status);
+      const result = await response.json().catch(function () { return null; });
+      if (!response.ok || result?.success === false) throw new Error("Google Sheets backup was not accepted.");
     } catch (error) { console.warn("Chat order saved in Supabase, but its Google Sheets backup did not complete.", error); }
   }
   async function submitChatOrder() {
@@ -470,7 +477,7 @@
       const payload = {
         name:checkoutValues.name, mobile:checkoutValues.phone, email:checkoutValues.email || "", address:checkoutValues.address,
         notes:"Order placed through Halal Food AI chat.", deliveryZone:checkoutValues.deliveryZone, paymentMethod:"cash_on_delivery",
-        orderId:pendingOrderId, items:items, checkoutSessionId:makeChatUuid(), honeypot:"", formStartedAt:String(Date.now()),
+        orderId:pendingOrderId, items:items, checkoutSessionId:makeChatUuid(), honeypot:"", formStartedAt:String(chatCheckoutStartedAt || Date.now()),
         deviceId:deviceId, turnstileToken:turnstileToken, expectedSubtotal:Number(checkoutQuote.subtotal),
         expectedDeliveryCharge:Number(checkoutQuote.deliveryCharge), fbp:readCookie("_fbp"), fbc:readCookie("_fbc")
       };
@@ -495,7 +502,7 @@
       }
       renderOrderConfirmation(confirmedOrderId, total, result.heldForReview === true);
       if (result.heldForReview !== true) { shoppingCart.length = 0; updateCartBadge(); }
-      pendingOrderId = ""; checkoutQuote = null; checkoutValues = {};
+      pendingOrderId = ""; checkoutQuote = null; checkoutValues = {}; chatCheckoutStartedAt = 0;
     } catch (error) {
       if (error.code === "PRICE_CHANGED" || error.code === "DELIVERY_CHANGED") {
         try { checkoutQuote = await requestChatQuote(checkoutValues.deliveryZone); } catch (_) {}
@@ -563,11 +570,15 @@
     if (target.closest("[data-hf-confirm-order]")) { submitChatOrder(); return; }
     if (target.closest("[data-hf-chat-new]")) { setView("conversation"); resetConversation(); return; }
     const remove = target.closest("[data-hf-cart-remove]");
-    if (remove) { shoppingCart.splice(Number(remove.dataset.hfCartRemove),1); renderCart(); return; }
+    if (remove) {
+      const item = shoppingCart[Number(remove.dataset.hfCartRemove)];
+      if (item) trackChatEvent("remove_from_cart", [{ id:item.id, slug:item.slug, name:item.name, category:item.category, unitPrice:item.unitPrice, qty:item.qty }], item.unitPrice * item.qty, { action:"remove_item" });
+      shoppingCart.splice(Number(remove.dataset.hfCartRemove),1); renderCart(); return;
+    }
     const dec = target.closest("[data-hf-cart-minus]");
-    if (dec) { const item = shoppingCart[Number(dec.dataset.hfCartMinus)]; if (item) item.qty = Math.max(1,item.qty-1); renderCart(); return; }
+    if (dec) { const item = shoppingCart[Number(dec.dataset.hfCartMinus)]; if (item) { item.qty = Math.max(1,item.qty-1); trackChatEvent("remove_from_cart", [{ id:item.id, slug:item.slug, name:item.name, category:item.category, unitPrice:item.unitPrice, qty:1 }], item.unitPrice, { action:"decrease_quantity" }); } renderCart(); return; }
     const inc = target.closest("[data-hf-cart-plus]");
-    if (inc) { const item = shoppingCart[Number(inc.dataset.hfCartPlus)]; if (item) item.qty = Math.min(1000,item.qty+1); renderCart(); return; }
+    if (inc) { const item = shoppingCart[Number(inc.dataset.hfCartPlus)]; if (item) { item.qty = Math.min(1000,item.qty+1); trackChatEvent("add_to_cart", [{ id:item.id, slug:item.slug, name:item.name, category:item.category, unitPrice:item.unitPrice, qty:1 }], item.unitPrice, { action:"increase_quantity" }); } renderCart(); return; }
   });
   messages.addEventListener("click", function (event) {
     const detail = event.target.closest("[data-hf-product-view]");
@@ -579,6 +590,7 @@
     const human = event.target.closest("[data-hf-human-support]");
     if (!human) return;
     const text = "আসসালামু আলাইকুম, Halal Food AI চ্যাট থেকে একজন কাস্টমার কেয়ার প্রতিনিধির সহায়তা চাই।";
+    trackChatEvent("whatsapp_click", [], null, { contact_method:"whatsapp", interaction_source:"ai_chat" });
     window.open("https://wa.me/8801842031164?text=" + encodeURIComponent(text), "_blank", "noopener");
   });
   function preventViewScrollChain(event, area) {
