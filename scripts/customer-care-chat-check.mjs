@@ -66,7 +66,8 @@ assert.doesNotMatch(chat, /অর্ডার নিন|পণ্যের প�
 assert.match(chat, /actions\.append\(details, order\)/);
 assert.match(css, /flex-wrap:\s*nowrap!important/);
 assert.match(css, /background:\s*#c97b3d!important/);
-assert.match(css, /min-height:48px!important/);\nassert.match(css, /flex:1.22 1 0!important/);
+assert.match(css, /min-height:48px!important/);
+assert.match(css, /flex:1.22 1 0!important/);
 assert.match(css, /padding:8px 5px!important/);
 assert.doesNotMatch(css, /\.hf-ai-product-card-actions button:last-child\{[^}]*background:#2b2a3d!important/s);
 assert.match(chat, /hf-ai-chat-view/);
