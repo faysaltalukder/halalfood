@@ -444,7 +444,7 @@ function buildDeterministicFallbackReply(
   }
   if (/(অর্ডার|order|পেমেন্ট|payment|ডেলিভারি|delivery|কুরিয়ার|courier|refund|রিফান্ড|checkout|শিপমেন্ট|shipment)/iu.test(normalized)) {
     const doc = knowledge.documents.find((d) => String(d.document_key || "") === "project-operational-status");
-    if (doc) return "অবশ্যই, পণ্য কেনার বিষয়ে আমি সাহায্য করছি। কোন পণ্যটি নিতে চান এবং কতটুকু পরিমাণ প্রয়োজন? পণ্যের বর্তমান দাম ও তালিকাভুক্ত উপলভ্যতা দেখে আপনাকে পরবর্তী ধাপ বুঝিয়ে দিচ্ছি। নির্দিষ্ট ডেলিভারি বা পেমেন্টের তথ্য নিশ্চিত না থাকলে অনুমান করে বলব না.";
+    if (doc) return "অবশ্যই, পণ্য কেনার বিষয়ে আমি সাহায্য করছি। কোন পণ্যটি নিতে চান এবং কতটুকু পরিমাণ প্রয়োজন? পণ্যের বর্তমান দাম ও তালিকাভুক্ত উপলভ্যতা দেখে আপনাকে পরবর্তী ধাপ বুঝিয়ে দিচ্ছি। নির্দিষ্ট ডেলিভারি বা পেমেন্টের তথ্য নিশ্চিত না থাকলে অনুমান করে বলব না।";
   }
   if (/(যোগাযোগ|contact|ফোন|phone|whatsapp|হোয়াটসঅ্যাপ|হোয়াটসঅ্যাপ|ইমেইল|email|ওয়েবসাইটের লিংক|website link)/iu.test(normalized)) {
     const doc = knowledge.documents.find((d) => String(d.document_key || "") === "official-contact-channels");
@@ -581,13 +581,11 @@ Deno.serve(async (req: Request) => {
 
   if (req.method === "GET") {
     const apiKeyConfigured = Boolean(Deno.env.get("GEMINI_API_KEY"));
-    const model = (Deno.env.get("GEMINI_MODEL") || "gemini-3.8-flash").trim();
     return response({
       success: true,
       service: "halal-food-customer-care",
       configured: apiKeyConfigured,
       databaseConfigured: Boolean(getSupabaseCredentials()),
-      model,
       ageRestricted: false,
       knowledgeMode: "published-documents-and-live-catalog-read-only",
     });
