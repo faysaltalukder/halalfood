@@ -285,7 +285,8 @@ window.HFAdminReady.then(async H => {
     $("financeOpsCashbookBody").innerHTML=standaloneCashbook.length?standaloneCashbook.map(e=>{
       const action=e.accounting_journal_id
         ?operationButton("cashbook_reverse",e.id,"Reverse",true)
-        :operationButton("cashbook_post",e.id,"Post to GL");
+        :e.account_id?operationButton("cashbook_post",e.id,"Post to GL")
+        :'<span class="hf-finance-status hf-finance-status-warning">Assign a Finance account first</span>';
       return "<tr><td>"+dateOnly(e.entry_date)+"<small>"+esc(e.entry_type)+"</small></td><td><strong>"+
         esc(e.category)+"</strong><small>"+esc(e.party_name||e.description||"—")+"</small></td><td>"+
         esc(accountById(e.account_id)?.name||"Unassigned")+"</td><td><strong>"+money(e.amount)+
@@ -390,7 +391,7 @@ window.HFAdminReady.then(async H => {
     const cashSelect=$("financeOperationalCashAccount");
     const refundAccounts=financeAccounts.filter(a=>a.is_active&&a.ledger_account_id);
     if(cashSelect){
-      const oldCash=cashSelect.value;
+      const oldCash=selectedId||cashSelect.value;
       cashSelect.innerHTML='<option value="">Choose cash, bank or wallet</option>'+refundAccounts.map(a=>
         '<option value="'+esc(a.id)+'"'+(a.id===oldCash?" selected":"")+">"+esc(a.name)+"</option>").join("");
     }
@@ -803,8 +804,10 @@ window.HFAdminReady.then(async H => {
         });
       } else if (kind === "customer_refund_post") {
         const item=customerReturns.find(r=>r.id===id);
+        const refundAccount=financeAccounts.find(a=>a.id===item?.refund_account_id)?.id;
         openOperationalPosting(kind,id,{
           title:"Post customer refund",
+          defaultAccount:refundAccount,
           description:"Choose the Finance account from which the refund was actually paid. The Journal debits Sales Returns and credits that cash, bank or wallet account.",
           warning:"This records the refund amount only. Inventory restocking and COGS reversal are not inferred because the return record has no verified item-level quantities."
         });
