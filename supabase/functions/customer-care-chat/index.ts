@@ -388,7 +388,7 @@ function buildDeterministicFallbackReply(
       "। " + availability + (url ? "। বিস্তারিত: " + url.replace(" | বিস্তারিত: ", "") : "");
   };
   if (isBroadCatalogQuestion(message)) {
-    const cats = knowledge.categoryNames.length ? knowledge.categoryNames.join(" • ") : "ক্যাটালগ বিভাগ এখন নিশ্চিত নয়";
+    const cats = knowledge.categoryNames.length ? knowledge.categoryNames.join(", ") : "ক্যাটালগ বিভাগ এখন নিশ্চিত নয়";
     const list = products.slice(0, 15).map(productLine).join("\n");
     return "অবশ্যই! Halal Food-এর লাইভ ক্যাটালগে বর্তমানে " + knowledge.catalogCount +
       "টি সক্রিয় গ্রাহক-দৃশ্যমান পণ্য রয়েছে।\n\nক্যাটাগরি: " + cats +
@@ -410,7 +410,7 @@ function buildDeterministicFallbackReply(
   if (/(হ্যালো|হ্যালোও|আসসালামু|সালাম|^hi[!. ]*$|^hello[!. ]*$|^hey[!. ]*$|^good\s+(morning|afternoon|evening)[!. ]*$)/iu.test(normalized.trim())) {
     return /[A-Za-z]/u.test(message)
       ? "Hello! Welcome to Halal Food. I can help you explore products, prices, availability, and website information. What would you like to know?"
-      : "ওয়ালাইকুম আসসালাম! Halal Food-এ স্বাগতম। পণ্য, দাম, উপলভ্যতা বা ওয়েবসাইট সম্পর্কে জানতে চাইলে বলুন—আমি সাহায্য করছি।";
+      : "ওয়ালাইকুম আসসালাম! Halal Food-এ স্বাগতম। কী খুঁজছেন? আমি সাহায্য করছি।";
   }
   if (/(honey|honi|hany|huni|মধু)/iu.test(normalized)) {
     if (!knowledge.available) {
@@ -449,9 +449,9 @@ function buildDeterministicFallbackReply(
   if (/(যোগাযোগ|contact|ফোন|phone|whatsapp|হোয়াটসঅ্যাপ|হোয়াটসঅ্যাপ|ইমেইল|email|ওয়েবসাইটের লিংক|website link)/iu.test(normalized)) {
     const doc = knowledge.documents.find((d) => String(d.document_key || "") === "official-contact-channels");
     if (doc) {
-      const wantsPhone = /(ফোন|phone|whatsapp|হোয়াটসঅ্যাপ|হোয়াটসঅ্যাপ|যোগাযোগ|contact)/iu.test(normalized);
+      const wantsPhone = /(ফোন|মোবাইল|phone|mobile|whatsapp|হোয়াটসঅ্যাপ|হোয়াটসঅ্যাপ)/iu.test(normalized);
       const wantsEmail = /(ইমেইল|email)/iu.test(normalized);
-      const wantsWebsite = /(ওয়েবসাইট|ওয়েবসাইট|website|লিংক|link)/iu.test(normalized);
+      const wantsWebsite = /(ওয়েবসাইট|ওয়েবসাইট|website|site link|ওয়েবসাইটের লিংক)/iu.test(normalized);
       const details = [];
       if (wantsPhone) details.push("ফোন/WhatsApp: +8801842031164");
       if (wantsEmail) details.push("ইমেইল: halalfoodbd.official@gmail.com");
