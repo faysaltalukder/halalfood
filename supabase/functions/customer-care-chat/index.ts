@@ -135,7 +135,7 @@ function decodeJwtPayload(token: string): Record<string, unknown> | null {
 }
 
 async function verifyAdminRequest(req: Request, credentials: { url: string; key: string; isSecretKey: boolean }): Promise<string | null> {
-  const token = (req.headers.get("authorization") || "").replace(/^Bearer\\s+/i, "").trim();
+  const token = (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "").trim();
   if (!token) return null;
   const claims = decodeJwtPayload(token);
   if (!claims || claims.aal !== "aal2" || Number(claims.exp || 0) <= Math.floor(Date.now() / 1000)) return null;
@@ -879,7 +879,7 @@ Deno.serve(async (req: Request) => {
         ...JSON_HEADERS,
         "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
         "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-        "Access-Control-Allow-Headers": "content-type",
+        "Access-Control-Allow-Headers": "content-type, authorization",
         "Access-Control-Max-Age": "86400",
       },
     });
