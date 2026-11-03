@@ -9,6 +9,7 @@ const app = read("admin/app.js");
 const core = read("admin/finance-accounting-core.js");
 const css = read("admin/finance-accounting-core.css");
 const migration = read("supabase/migrations/20261103035402_finance_operations_accounting_integration_v1.sql");
+const indexMigration = read("supabase/migrations/20261103035554_finance_operations_fk_indexes_v1.sql");
 
 assert.ok(html.includes('data-finance-accounting-tab="operations"'), "Operational Integration must be a tab inside Accounting.");
 assert.equal((html.match(/class="hf-workspace-nav-item"/g) || []).length, 5, "Finance must keep exactly five existing primary workspaces.");
@@ -61,6 +62,15 @@ assert.ok(migration.includes("A landed-cost layer can be created only for an exi
 assert.ok(migration.includes("order_sale") && migration.includes("Courier Clearing"), "Delivered COD revenue and courier clearing must be distinct from remittance.");
 assert.ok(migration.includes("Customer Advances (2020)") && migration.includes("v_customer_advance"), "Pre-delivery customer payments must be held as advances and applied when sales are delivered.");
 assert.ok(migration.includes("Customer receipts cannot be posted against a cancelled order"), "Cancelled orders must not accept new customer advances.");
+for (const indexName of [
+  "idx_cod_accounting_journal","idx_cod_cogs_reversal_journal","idx_cod_sale_reversal_journal",
+  "idx_cod_remitted_finance_account","idx_cod_reversal_journal","idx_finance_account_opening_journal",
+  "idx_finance_account_opening_offset","idx_finance_entry_reversal_journal","idx_finance_journal_reversed_by",
+  "idx_finance_transfer_reversal_journal","idx_inventory_cost_layer_po_item","idx_inventory_cost_layer_receipt",
+  "idx_return_refund_finance_account","idx_return_reversal_journal","idx_supplier_bill_accounting_journal",
+  "idx_supplier_bill_reversal_journal","idx_supplier_credit_reversal_journal",
+  "idx_supplier_payment_accounting_journal","idx_supplier_payment_reversal_journal"
+]) assert.ok(indexMigration.includes("if not exists " + indexName), "Phase 2 FK index missing: " + indexName);
 assert.ok(migration.includes("pre-delivery customer advance refund") && migration.includes("Customer advance refunds cannot exceed"), "Pre-delivery advance refunds must debit only the verified net Customer Advance balance.");
 assert.ok(migration.includes("This customer advance or advance refund has already been applied to a posted sale") && migration.includes("(jl.credit>0 or jl.debit>0)"), "An advance receipt or pre-delivery advance refund already applied to a delivered sale must not be reversed out of sequence.");
 assert.ok(!/insert\s+into\s+public\.admin_finance_journal_entries\s*\([^)]*select/i.test(migration), "No historical source rows may be automatically journalized.");
