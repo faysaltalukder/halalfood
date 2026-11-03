@@ -1003,15 +1003,41 @@ Deno.serve(async (req: Request) => {
       return response({ success: false, code: "INCOMPLETE_AI_RESPONSE", requestId }, 502);
     }
 
+    const extractedImage = extractImageMatch(reply);
+    reply = extractedImage.reply;
+    const imageMatch = extractedImage.imageMatch;
+    let approvedCards = publicProductCards(knowledge, message, reply, imageMatch);
+    if (hasImage && Number(knowledge.customerNeed?.max_product_cards || 0) > 0) {
+      if (!approvedCards.length) {
+        knowledge.customerNeed.allow_product_cards = false;
+        knowledge.customerNeed.max_product_cards = 0;
+        knowledge.customerNeed.recommendation_permission = "none";
+        knowledge.customerNeed.clarification_needed = true;
+        knowledge.customerNeed.search_not_found = true;
+      } else {
+        knowledge.customerNeed.match_type = imageMatch?.match_type || approvedCards[0].match_type || "visual";
+        knowledge.customerNeed.search_confidence = imageMatch?.confidence || approvedCards[0].confidence_level || "medium";
+      }
+    } else if (approvedCards.length) {
+      knowledge.customerNeed.match_type = approvedCards[0].match_type || knowledge.customerNeed.match_type;
+      knowledge.customerNeed.search_confidence = approvedCards[0].confidence_level || knowledge.customerNeed.search_confidence;
+    }
+    await logAiCustomerCareEvents(knowledge, requestId, imageMatch, approvedCards.length, approvedCards.length ? "resolved" : "answered_or_clarified");
     return response({
       success: true,
       reply,
-      products: publicProductCards(knowledge, message, reply), recommendation: buildRecommendationContract(knowledge),
+      products: approvedCards,
+      recommendation: buildRecommendationContract(knowledge),
+      image_match: hasImage && imageMatch ? {
+        match_type: imageMatch.match_type,
+        confidence: imageMatch.confidence,
+      } : null,
       requestId,
       model: modelUsed,
       knowledge: {
         documents: knowledge.documents.length,
-        matchedProducts: knowledge.products.length,
+        matchedProducts: approvedCards.length,
+        publishedProductProfiles: knowledge.productKnowledge.length,
       },
     });
   } catch (error) {
