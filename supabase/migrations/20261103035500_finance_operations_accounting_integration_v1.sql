@@ -1474,7 +1474,7 @@ $$;
 revoke all on function public.admin_finance_reverse_supplier_credit_note(uuid,date,text) from public,anon;
 grant execute on function public.admin_finance_reverse_supplier_credit_note(uuid,date,text) to authenticated;
 
-create or replace function public.admin_finance_post_customer_refund(p_return_request_id uuid)
+create or replace function public.admin_finance_post_customer_refund(p_return_request_id uuid,p_refund_account_id uuid)
 returns uuid
 language plpgsql
 security invoker
@@ -1501,7 +1501,7 @@ begin
  if v_return.status<>'refunded' or v_return.refund_amount<=0 then
   raise exception 'Only a processed return with a positive, actually refunded amount can be posted.';
  end if;
- if v_return.refund_account_id is null then
+ if p_refund_account_id is null then
   raise exception 'Choose the Finance cash, bank or wallet account from which the refund was actually paid.';
  end if;
  select * into v_order from public.orders where id=v_return.order_id;
@@ -1518,7 +1518,7 @@ begin
   raise exception 'Total refunds against this order cannot exceed the original order total.';
  end if;
  select * into v_finance_account from public.admin_finance_accounts
- where id=v_return.refund_account_id and is_active;
+ where id=p_refund_account_id and is_active;
  if not found or v_finance_account.ledger_account_id is null then
   raise exception 'The refund account must be active and mapped to an Asset account in the General Ledger.';
  end if;
@@ -1536,13 +1536,14 @@ begin
   'customer_refund',p_return_request_id::text,true
  );
  perform pg_catalog.set_config('app.finance_operations_sync','on',true);
- update public.admin_return_requests set accounting_journal_id=v_journal,updated_at=now()
+ update public.admin_return_requests
+ set refund_account_id=p_refund_account_id,accounting_journal_id=v_journal,updated_at=now()
  where id=p_return_request_id;
  return v_journal;
 end;
 $$;
-revoke all on function public.admin_finance_post_customer_refund(uuid) from public,anon;
-grant execute on function public.admin_finance_post_customer_refund(uuid) to authenticated;
+revoke all on function public.admin_finance_post_customer_refund(uuid,uuid) from public,anon;
+grant execute on function public.admin_finance_post_customer_refund(uuid,uuid) to authenticated;
 
 create or replace function public.admin_finance_reverse_customer_refund(
  p_return_request_id uuid,p_reversal_date date,p_reason text
