@@ -81,3 +81,9 @@ console.log("Gemini customer-care frontend/backend checks passed.");
 assert.match(edge, /do not impose an arbitrary item-count limit/);
 assert.match(edge, /ordinary general questions/);
 assert.match(chat, /conversation.length > 40/);
+
+assert.match(edge, /MAX_HISTORY_ITEMS = 20/);
+assert.match(edge, /MAX_HISTORY_CHARS = 48000/);
+assert.match(edge, /MAX_REQUEST_BYTES = 262144/);
+assert.doesNotMatch(edge, /MAX_MESSAGE_CHARS/);
+assert.match(chat, /history: conversation\\.slice\\(-20\\)/);
