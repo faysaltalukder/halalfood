@@ -104,7 +104,7 @@ function productSearchDocument(product, profile) {
   };
 }
 function parseSizeValue(value) {
-  const match=normalizeText(value).match(/([0-9]+(?:\\.[0-9]+)?)\\s*(kg|g|ml|l)/iu);
+  const match=normalizeText(value).match(/([0-9]+(?:\.[0-9]+)?)\s*(kg|g|ml|l)/iu);
   if(!match)return null;
   const unit=match[2].toLowerCase();
   return {kind:unit==="kg"||unit==="g"?"weight":"volume",value:Number(match[1])*(unit==="kg"||unit==="l"?1000:1)};
