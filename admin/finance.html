@@ -54,6 +54,51 @@
   <div class="hf-table-wrap" tabindex="0" role="region" aria-label="Finance transactions table"><table class="hf-table"><thead><tr><th>Date</th><th>Flow</th><th>Category / description</th><th>Party</th><th>Account</th><th>Amount</th><th>Classification</th><th>Status</th><th>Actions</th></tr></thead><tbody id="financeTableBody"><tr><td colspan="9" class="hf-loading">Loading finance ledger…</td></tr></tbody></table></div>
   <p class="hf-data-note">Supplier-linked and COD-linked entries are managed from their source workflows to prevent duplicate or conflicting records. Transfers are shown separately and never counted as income or expense.</p>
  </section>
+ <section class="hf-card hf-card-pad hf-finance-accounting-core" id="financeAccountingCore" aria-labelledby="financeAccountingHeading">
+  <div class="hf-finance-accounting-head">
+   <div><p class="page-eyebrow">ACCOUNTING FOUNDATION · PHASE 1</p><h3 id="financeAccountingHeading">Double-entry accounting</h3><p>Balanced journals feed the General Ledger and Trial Balance. Existing cashbook records stay separate until individually verified and journalized.</p></div>
+   <div class="hf-finance-accounting-actions"><button class="hf-button hf-button-secondary hf-button-small" id="financeAccountingRefresh" type="button">↻ Refresh</button><button class="hf-button hf-button-primary" id="financeJournalNew" type="button">＋ New journal</button></div>
+  </div>
+  <div class="hf-finance-accounting-trust" id="financeAccountingTrust" role="status">Loading accounting integrity checks…</div>
+  <div class="hf-finance-accounting-metrics">
+   <div><span>Cashbook records</span><strong id="financeAccCashbookCount">—</strong><small>Existing operational records</small></div>
+   <div><span>Not yet journalized</span><strong id="financeAccUnpostedCount">—</strong><small>Not included in General Ledger</small></div>
+   <div><span>Posted journals</span><strong id="financeAccPostedCount">—</strong><small>Validated accounting entries</small></div>
+   <div><span>Draft journals</span><strong id="financeAccDraftCount">—</strong><small>Pending review and posting</small></div>
+  </div>
+  <div class="hf-finance-accounting-tabs" role="tablist" aria-label="Accounting views">
+   <button class="is-active" type="button" role="tab" aria-selected="true" data-finance-accounting-tab="chart">Chart of Accounts</button>
+   <button type="button" role="tab" aria-selected="false" data-finance-accounting-tab="journals">Journal Entries</button>
+   <button type="button" role="tab" aria-selected="false" data-finance-accounting-tab="ledger">General Ledger</button>
+   <button type="button" role="tab" aria-selected="false" data-finance-accounting-tab="trial">Trial Balance & Periods</button>
+  </div>
+  <div class="hf-finance-accounting-panel" data-finance-accounting-panel="chart">
+   <div class="hf-finance-accounting-panel-head"><div><strong>Chart of Accounts</strong><p>Standard account groups for a small trading and grocery business. Seeded accounts are protected; no opening balances are assumed.</p></div><span class="hf-finance-accounting-count" id="financeAccCoaCount">— accounts</span></div>
+   <div class="hf-table-wrap" tabindex="0" role="region" aria-label="Chart of accounts"><table class="hf-table"><thead><tr><th>Code</th><th>Account</th><th>Type</th><th>Normal balance</th><th>Posting</th><th>Status</th></tr></thead><tbody id="financeAccCoaBody"><tr><td colspan="6" class="hf-loading">Loading Chart of Accounts…</td></tr></tbody></table></div>
+  </div>
+  <div class="hf-finance-accounting-panel" data-finance-accounting-panel="journals" hidden>
+   <div class="hf-finance-accounting-panel-head"><div><strong>Journal Entries</strong><p>Only balanced and posted journals affect accounting reports. Posted journals cannot be edited or deleted.</p></div><span class="hf-finance-accounting-count" id="financeAccJournalCount">— journals</span></div>
+   <div class="hf-table-wrap" tabindex="0" role="region" aria-label="Journal entries"><table class="hf-table"><thead><tr><th>Journal</th><th>Date</th><th>Description</th><th>Debit</th><th>Credit</th><th>Status</th><th>Actions</th></tr></thead><tbody id="financeAccJournalsBody"><tr><td colspan="7" class="hf-loading">Loading journal entries…</td></tr></tbody></table></div>
+  </div>
+  <div class="hf-finance-accounting-panel" data-finance-accounting-panel="ledger" hidden>
+   <div class="hf-finance-accounting-panel-head"><div><strong>General Ledger</strong><p>Account-by-account posted activity with a running balance in the account’s normal direction.</p></div></div>
+   <div class="hf-finance-accounting-filters">
+    <label>Account<select id="financeAccLedgerAccount" class="hf-select"><option value="">All accounts</option></select></label>
+    <label>From<input id="financeAccLedgerFrom" class="hf-input" type="date"></label>
+    <label>To<input id="financeAccLedgerTo" class="hf-input" type="date"></label>
+   </div>
+   <div class="hf-table-wrap" tabindex="0" role="region" aria-label="General ledger"><table class="hf-table"><thead><tr><th>Date</th><th>Journal</th><th>Account</th><th>Details</th><th>Debit</th><th>Credit</th><th>Running balance</th></tr></thead><tbody id="financeAccLedgerBody"><tr><td colspan="7" class="hf-loading">Loading General Ledger…</td></tr></tbody></table></div>
+  </div>
+  <div class="hf-finance-accounting-panel" data-finance-accounting-panel="trial" hidden>
+   <div class="hf-finance-accounting-panel-head"><div><strong>Trial Balance</strong><p>Closing debit and credit balances from posted journals and their reversals. Drafts are excluded.</p></div><span class="hf-finance-accounting-count" id="financeAccTrialStatus">Awaiting first posted journal</span></div>
+   <div class="hf-finance-trial-summary"><div><span>Total debit balance</span><strong id="financeAccTrialDebit">৳0</strong></div><div><span>Total credit balance</span><strong id="financeAccTrialCredit">৳0</strong></div><div><span>Difference</span><strong id="financeAccTrialDifference">৳0</strong></div></div>
+   <div class="hf-table-wrap" tabindex="0" role="region" aria-label="Trial balance"><table class="hf-table"><thead><tr><th>Code</th><th>Account</th><th>Type</th><th>Debit balance</th><th>Credit balance</th></tr></thead><tbody id="financeAccTrialBody"><tr><td colspan="5" class="hf-loading">Loading Trial Balance…</td></tr></tbody></table></div>
+   <div class="hf-finance-accounting-periods"><div><strong>Accounting periods</strong><p>Posting automatically opens a monthly period. Close is blocked while Draft journals remain; Locked periods cannot be reopened.</p></div>
+    <div class="hf-table-wrap" tabindex="0" role="region" aria-label="Accounting periods"><table class="hf-table"><thead><tr><th>Month</th><th>Period</th><th>Status</th><th>Closed / locked at</th><th>Action</th></tr></thead><tbody id="financeAccPeriodsBody"><tr><td colspan="5" class="hf-loading">Loading accounting periods…</td></tr></tbody></table></div>
+   </div>
+  </div>
+  <p class="hf-finance-accounting-error" id="financeAccountingError" role="alert" hidden></p>
+ </section>
 </section>
 
 <section id="financeAccountsSection" class="hf-finance-section hf-anchor-section">
@@ -77,6 +122,26 @@
 <datalist id="financeExpenseCategoryOptions"><option value="Product purchase"><option value="Raw materials"><option value="Packaging"><option value="Inventory transport"><option value="Facebook ads"><option value="Content production"><option value="Influencer cost"><option value="Promotion"><option value="Delivery"><option value="Courier charges"><option value="Labour"><option value="Storage"><option value="Utilities"><option value="Repairs"><option value="Website"><option value="Software"><option value="Hosting"><option value="Internet"><option value="Office"><option value="Bank charges"><option value="Taxes"><option value="Other expense"></datalist>
 <datalist id="financeIncomeCategoryOptions"><option value="Product sales"><option value="Offline sales"><option value="Service income"><option value="Other verified income"></datalist>
 
+<dialog id="financeJournalDialog" class="hf-dialog hf-finance-journal-dialog"><form id="financeJournalForm" class="hf-dialog-inner">
+ <div class="hf-dialog-head"><div><p class="hf-dialog-title-tag">DOUBLE-ENTRY ACCOUNTING</p><h2 id="financeJournalDialogTitle">New journal entry</h2><p>Each line posts to one account. Total debits and credits must match before posting.</p></div><button class="hf-button hf-button-secondary hf-dialog-close" id="financeJournalClose" type="button">×</button></div>
+ <input type="hidden" id="financeJournalId">
+ <div class="hf-field-grid">
+  <label class="hf-field">Entry date *<input id="financeJournalDate" class="hf-input" type="date" required></label>
+  <label class="hf-field">Source type<select id="financeJournalSource" class="hf-select"><option value="manual">Manual</option><option value="adjustment">Adjustment</option><option value="opening_balance">Verified opening balance</option></select></label>
+  <label class="hf-field hf-span-2">Description *<input id="financeJournalDescription" class="hf-input" maxlength="500" minlength="3" required placeholder="e.g. Owner capital introduced"></label>
+ </div>
+ <div class="hf-finance-journal-lines-head"><div><strong>Journal lines</strong><p>Choose an active posting account and enter either a Debit or Credit amount.</p></div><button class="hf-button hf-button-secondary hf-button-small" id="financeJournalAddLine" type="button">＋ Add line</button></div>
+ <div id="financeJournalLines" class="hf-finance-journal-lines"></div>
+ <div class="hf-finance-journal-totals"><div><span>Total debit</span><strong id="financeJournalTotalDebit">৳0</strong></div><div><span>Total credit</span><strong id="financeJournalTotalCredit">৳0</strong></div><div><span>Difference</span><strong id="financeJournalDifference">৳0</strong></div><span id="financeJournalBalanceState">Draft can be saved before it balances.</span></div>
+ <p class="hf-form-error" id="financeJournalFormError" role="alert"></p>
+ <div class="hf-dialog-actions"><button class="hf-button hf-button-secondary" id="financeJournalSaveDraft" type="button">Save Draft</button><button class="hf-button hf-button-primary" id="financeJournalPost" type="button">Validate & Post</button></div>
+ <p class="hf-help">Posting is permanent. Corrections must be made through a linked reversal journal. No existing cashbook record or opening balance is imported automatically.</p>
+</form></dialog>
+<dialog id="financeJournalHistoryDialog" class="hf-dialog"><div class="hf-dialog-inner">
+ <div class="hf-dialog-head"><div><p class="hf-dialog-title-tag">IMMUTABLE AUDIT HISTORY</p><h2>Journal activity</h2><p id="financeJournalHistorySubtitle">Changes, posting and reversal events.</p></div><button class="hf-button hf-button-secondary hf-dialog-close" id="financeJournalHistoryClose" type="button">×</button></div>
+ <div class="hf-table-wrap" tabindex="0" role="region" aria-label="Journal audit history"><table class="hf-table"><thead><tr><th>Time</th><th>Action</th><th>Actor</th><th>Details</th></tr></thead><tbody id="financeJournalHistoryBody"><tr><td colspan="4" class="hf-loading">Loading history…</td></tr></tbody></table></div>
+ <div class="hf-dialog-actions"><button class="hf-button hf-button-secondary" id="financeJournalHistoryDone" type="button">Close</button></div>
+</div></dialog>
 <dialog id="financeDialog" class="hf-dialog"><form id="financeForm" class="hf-dialog-inner">
  <div class="hf-dialog-head"><div><p class="hf-dialog-title-tag">TRANSACTION LEDGER</p><h2 id="financeDialogTitle">Record a transaction</h2><p>Only mark Confirmed after verifying the real cash movement.</p></div><button class="hf-button hf-button-secondary hf-dialog-close" data-close-dialog="financeDialog" type="button">×</button></div>
  <input id="financeId" type="hidden">
@@ -150,4 +215,5 @@
 <script defer src="../js/store-config.js?v=20261101-store-config-v1"></script>
 <script defer src="./shared.js?v=20261102-reports-navigation-v3"></script>
 <script defer src="./app.js?v=20261102-dashboard-speed-v2"></script>
+<script defer src="./finance-accounting-core.js?v=20261103-accounting-core-v1"></script>
 </body></html>
