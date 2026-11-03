@@ -2537,7 +2537,8 @@ async function refresh(){
     const variance=Number(s.remitted_amount||0)-expected;
     const postAction=s.status==="reconciled"&&!s.accounting_journal_id?'<button class="hf-button hf-button-primary hf-button-small" data-post-cod="'+esc(s.id)+'">Post to GL</button>':"";
     const reverseAction=s.accounting_journal_id&&!s.reversal_journal_id?'<button class="hf-button hf-button-danger hf-button-small" data-reverse-cod="'+esc(s.id)+'">Reverse</button>':"";
-    return '<tr><td><strong>'+esc(s.order_number)+'</strong><small>'+esc(s.courier_name||"Courier not set")+(s.tracking_reference?" · "+esc(s.tracking_reference):"")+'</small></td><td>'+money(s.cod_amount)+'</td><td>'+money(s.collected_amount)+'</td><td>'+money(s.courier_fee)+'</td><td><strong>'+money(s.remitted_amount)+'</strong><small>'+(s.remitted_account_id?esc(accountName(s.remitted_account_id)):"No account")+'</small></td><td>'+(s.status==="pending"?"—":money(variance))+'</td><td>'+statusBadge(s.status)+'</td><td><div class="hf-table-actions">'+postAction+reverseAction+'<button class="hf-button hf-button-secondary hf-button-small" data-edit-cod="'+esc(s.id)+'">Review / edit</button></div></td></tr>';
+    const editAction=!s.accounting_journal_id?'<button class="hf-button hf-button-secondary hf-button-small" data-edit-cod="'+esc(s.id)+'">Review / edit</button>':'<small class="hf-finance-managed-source">Posted to accounting</small>';
+    return '<tr><td><strong>'+esc(s.order_number)+'</strong><small>'+esc(s.courier_name||"Courier not set")+(s.tracking_reference?" · "+esc(s.tracking_reference):"")+'</small></td><td>'+money(s.cod_amount)+'</td><td>'+money(s.collected_amount)+'</td><td>'+money(s.courier_fee)+'</td><td><strong>'+money(s.remitted_amount)+'</strong><small>'+(s.remitted_account_id?esc(accountName(s.remitted_account_id)):"No account")+'</small></td><td>'+(s.status==="pending"?"—":money(variance))+'</td><td>'+statusBadge(s.status)+'</td><td><div class="hf-table-actions">'+postAction+reverseAction+editAction+'</div></td></tr>';
    }).join(""):'<tr><td colspan="8">'+makeEmpty("No COD settlement records","Add a courier settlement record when you have real collection or remittance information.")+'</td></tr>';
   }
   function budgetActual(b){
@@ -2564,8 +2565,8 @@ async function refresh(){
    const emptyTitle=from&&to&&from>to?"Date range is invalid":"No matching transactions";
    const emptyMessage=from&&to&&from>to?"The start date must be on or before the end date.":"Change the filters or record a new transaction.";
    $("financeTableBody").innerHTML=rows.length?rows.map(e=>{
-    const locked=Boolean(e.related_supplier_payment_id||e.related_cod_settlement_id);
-    const source=e.related_supplier_payment_id?"Supplier payment history":e.related_cod_settlement_id?"COD settlement register":"";
+    const locked=Boolean(e.related_supplier_payment_id||e.related_cod_settlement_id||e.accounting_journal_id);
+    const source=e.related_supplier_payment_id?"Supplier payment history":e.related_cod_settlement_id?"COD settlement register":e.accounting_journal_id?"Posted to accounting":"";
     return '<tr><td>'+dateOnly(e.entry_date)+'</td><td>'+makeStatus(e.entry_type)+'</td><td><strong>'+esc(e.category)+'</strong><small>'+esc(e.description||"No description")+'</small></td><td>'+esc(e.party_name||"—")+'</td><td>'+esc(accountName(e.account_id))+'</td><td><strong>'+money(e.amount)+'</strong></td><td>'+esc(financialClass(e))+'</td><td>'+statusBadge(e.status)+'</td><td><div class="hf-table-actions">'+(locked?'<small class="hf-finance-managed-source">'+esc(source)+'</small>':'<button class="hf-button hf-button-secondary hf-button-small" data-edit-finance="'+esc(e.id)+'">Edit</button>')+(!locked&&e.status!=="void"?'<button class="hf-button hf-button-danger hf-button-small" data-void-finance="'+esc(e.id)+'">Void</button>':"")+'</div></td></tr>';
    }).join(""):'<tr><td colspan="9">'+makeEmpty(emptyTitle,emptyMessage)+'</td></tr>';
   }
