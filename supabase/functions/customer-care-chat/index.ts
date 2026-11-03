@@ -165,6 +165,7 @@ async function logAiCustomerCareEvents(
   if (!credentials || !knowledge.customerNeed) return;
   const need = knowledge.customerNeed;
   const metadata = {
+    interaction_source: "ai_chat",
     primary_intent: String(need.primary_intent || "general_information").slice(0, 48),
     recommendation_permission: String(need.recommendation_permission || "none").slice(0, 24),
     match_mode: String(need.match_mode || "none").slice(0, 40),
@@ -198,7 +199,6 @@ async function logAiCustomerCareEvents(
     occurred_at: now,
     page_path: "/customer-care",
     page_title: "Halal Food Customer Care",
-    source: "ai_chat",
     metadata,
   }));
   const controller = new AbortController();
