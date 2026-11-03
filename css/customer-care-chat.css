@@ -132,3 +132,15 @@ html.dark-mode .hf-ai-age-icon { background: #3a3540; color: #f3dec9; }
 html.dark-mode .hf-ai-chat-age-gate h3 { color: #f3efe5; }
 html.dark-mode .hf-ai-chat-age-gate p, html.dark-mode .hf-ai-age-support { color: #c9c3b8; }
 html.dark-mode .hf-ai-age-support { border-color: #444251; }
+
+
+/* Stage 2: compact, accessible product recommendations inside AI answers. */
+.hf-ai-product-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0 3px;max-width:100%}
+.hf-ai-product-card{display:flex;gap:9px;align-items:center;min-width:0;padding:8px;border:1px solid #e7d8c8;border-radius:11px;background:#fffaf4;color:#47372d;text-decoration:none;transition:border-color .18s ease,transform .18s ease}
+.hf-ai-product-card:hover{border-color:#c97b3d;transform:translateY(-1px)}
+.hf-ai-product-card img{flex:0 0 54px;width:54px;height:54px;object-fit:contain;border-radius:8px;background:#f4eee6}
+.hf-ai-product-card-copy{display:grid;gap:3px;min-width:0}
+.hf-ai-product-card-copy strong{font-size:11px;line-height:1.35;overflow-wrap:anywhere}
+.hf-ai-product-card-copy>span{font-size:11px;font-weight:800;color:#9a5c2e}
+.hf-ai-product-card-copy small{font-size:9px;line-height:1.35;color:#7c7168}
+@media(max-width:430px){.hf-ai-product-cards{grid-template-columns:1fr}.hf-ai-product-card img{width:48px;height:48px;flex-basis:48px}}
