@@ -20,7 +20,7 @@ const SYSTEM_INSTRUCTION = [
   "When asked for recommendations, provide the most relevant available options; do not impose an arbitrary item-count limit. When asked what products or varieties exist in a category, list relevant matching live catalog items supplied in context. Use exact live catalog names, prices, availability and URLs; never invent store-specific facts.",
   "For product prices, use the current live catalog price supplied in the context. Do not disclose numeric stock quantity. You may say a product is currently listed as available, unavailable, or that availability needs confirmation, based only on the supplied availability state.",
   "For store-specific product claims (such as ingredients, origin, certification, allergens, quality or stock), rely on published product information. For general knowledge, explain normally and distinguish general information from verified Halal Food product facts.",
-  "Existing storefront descriptions may contain generic or outdated claims about delivery and payment. Do not treat those claims as current policy. The owner-curated project status and policy documents in the knowledge context take precedence over product-description boilerplate.",
+  "Existing storefront descriptions may contain generic or outdated claims about delivery and payment. Do not treat those claims as current policy. Use current verified operating policies and live business data where available. The owner’s current confirmation that the business is actively selling overrides any older demo/test status statement in retrieved documents.",
   "Current business status: the owner has explicitly confirmed that Halal Food is now a real operating business and can sell products. This current owner instruction overrides any older knowledge document or cached text that calls the business a demo, test, theoretical project, or says sales are not active. Help customers with genuine purchase intent. However, do not invent or guarantee specific stock, delivery coverage/timing/fees, payment methods, order confirmation, refunds, or fulfillment terms unless current verified business policy or live data confirms them. If a detail is not verified, explain that specific uncertainty and continue helping with what is known. Never claim to have placed or changed an order unless an actual order tool confirms it.",
   "Official contact details are available in the verified knowledge context. Keep them private from unsolicited display: share a phone number, WhatsApp link, email address, or website URL only when the customer explicitly requests that specific contact information. For a critical issue you cannot resolve, first say that a human support team can help, without immediately dumping all contact channels.",
   "Do not make medical or disease-treatment claims about food. Do not claim halal certification, organic status, purity, lab testing, or health benefits unless the exact claim is explicitly verified in a published product knowledge profile.",
@@ -415,8 +415,8 @@ function buildDeterministicFallbackReply(
   if (/(honey|honi|hany|huni|মধু)/iu.test(normalized)) {
     if (!knowledge.available) {
       return /[A-Za-z]/u.test(message)
-        ? "I understood that you are looking for honey, but I cannot verify the live catalog right now. Please check the product catalog on our website or try again shortly."
-        : "আপনি মধু খুঁজছেন বুঝতে পেরেছি, তবে এই মুহূর্তে লাইভ ক্যাটালগ যাচাই করা যাচ্ছে না। ওয়েবসাইটের পণ্য তালিকা দেখুন অথবা কিছুক্ষণ পর আবার চেষ্টা করুন।";
+        ? "I understand you are looking for honey. I cannot verify the live catalog at this moment, but I can still help you compare other products or you can try this question again shortly."
+        : "আপনি মধু খুঁজছেন বুঝতে পেরেছি। এই মুহূর্তে লাইভ ক্যাটালগ যাচাই করতে পারছি না। চাইলে অন্য পণ্যের সঙ্গে তুলনা করে দিতে পারি, অথবা একটু পর আবার মধুর বিষয়ে জিজ্ঞেস করতে পারেন।";
     }
     const found = products.filter((p) => /মধু|honey/iu.test(String(p.name || "") + " " + String(p.category || "")));
     if (found.length) {
@@ -425,8 +425,8 @@ function buildDeterministicFallbackReply(
         + "";
     }
     return /[A-Za-z]/u.test(message)
-      ? "I understood that you are looking for honey. I cannot find a honey item in the currently published catalog. Would you like to explore another product category?"
-      : "আপনি মধু খুঁজছেন বুঝতে পেরেছি। বর্তমানে প্রকাশিত ক্যাটালগে মধুর পণ্য খুঁজে পাচ্ছি না। অন্য কোনো পণ্যের ক্যাটাগরি দেখতে চান?";
+      ? "I understand you are looking for honey. I cannot find a honey item in the currently published catalog right now. I can help you find a similar alternative if you tell me what kind of honey or pack size you prefer."
+      : "আপনি মধু খুঁজছেন বুঝতে পেরেছি। বর্তমানে প্রকাশিত ক্যাটালগে মধুর পণ্য খুঁজে পাচ্ছি না। চাইলে আপনার প্রয়োজন অনুযায়ী কাছাকাছি কোনো বিকল্প খুঁজে দিতে পারি।";
   }
   if (/(ঘি|ghee)/iu.test(normalized)) {
     const found = products.filter((p) => /ঘি|ghee/iu.test(String(p.name || "") + " " + String(p.category || "")));
