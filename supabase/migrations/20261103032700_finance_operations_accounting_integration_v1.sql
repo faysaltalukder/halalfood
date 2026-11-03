@@ -570,6 +570,10 @@ declare
   v_journal_id uuid;
   v_lines jsonb;
   v_period_open date;
+  v_order_status text;
+  v_order_method text;
+  v_order_total numeric(14,2);
+  v_prior_customer_advance numeric(14,2);
 begin
   if v_email<>'halalfoodbd.official@gmail.com' or v_aal<>'aal2' or auth.uid() is null then
     raise exception 'Authorized admin account and MFA are required.' using errcode='42501';
@@ -587,17 +591,36 @@ begin
   end if;
   if v_entry.related_order_id is not null then
     if v_entry.entry_type<>'income' then
-      raise exception 'An order-linked cash receipt must be an Income cashbook entry.';
+      raise exception 'An order-linked customer receipt must be recorded as Income.';
     end if;
-    if exists(select 1 from public.orders where id=v_entry.related_order_id and payment_method='cash_on_delivery') then
+    select status,payment_method,total into v_order_status,v_order_method,v_order_total
+    from public.orders where id=v_entry.related_order_id;
+    if not found then raise exception 'The linked customer order was not found.'; end if;
+    if v_order_method='cash_on_delivery' then
       raise exception 'COD receipts are recorded only through the courier settlement workflow.';
     end if;
-    if not exists(select 1 from public.admin_finance_journal_entries
-      where source_type='order_sale' and source_key=v_entry.related_order_id::text and status='posted') then
-      raise exception 'Recognize the delivered order sale first. Customer receipts must reduce Accounts Receivable, not create revenue again.';
-    end if;
-    if p_counter_account_id is distinct from (select id from public.admin_finance_chart_of_accounts where account_code='1100') then
-      raise exception 'An order-linked customer payment must credit Accounts Receivable (1100).';
+    if v_order_status='delivered' then
+      if not exists(select 1 from public.admin_finance_journal_entries
+        where source_type='order_sale' and source_key=v_entry.related_order_id::text and status='posted') then
+        raise exception 'Recognize the delivered order sale before recording the customer collection.';
+      end if;
+      if p_counter_account_id is distinct from (select id from public.admin_finance_chart_of_accounts where account_code='1100') then
+        raise exception 'A post-delivery customer receipt must credit Accounts Receivable (1100).';
+      end if;
+    else
+      if p_counter_account_id is distinct from (select id from public.admin_finance_chart_of_accounts where account_code='2020') then
+        raise exception 'A customer receipt before delivery must credit Customer Advances (2020), not Sales Revenue.';
+      end if;
+      select coalesce(sum(jl.credit),0) into v_prior_customer_advance
+      from public.admin_finance_entries e
+      join public.admin_finance_journal_entries je on je.id=e.accounting_journal_id and je.status='posted'
+      join public.admin_finance_journal_lines jl on jl.journal_entry_id=je.id
+      where e.related_order_id=v_entry.related_order_id and e.entry_type='income'
+        and e.status='confirmed' and e.id<>v_entry.id
+        and jl.account_id=p_counter_account_id and jl.credit>0;
+      if v_prior_customer_advance+v_entry.amount>v_order_total+0.01 then
+        raise exception 'Customer receipts cannot exceed the linked order total.';
+      end if;
     end if;
   end if;
   select ledger_account_id,id,opening_date into v_cash_coa_id,v_cash_account_id,v_period_open
@@ -818,7 +841,7 @@ declare
  v_item_subtotal numeric(14,2);
  v_net_sales numeric(14,2);
  v_debit_account_id uuid;
- v_debit_account_code text;
+ v_customer_advance numeric(14,2):=0;
  v_existing uuid;
  v_existing_status text;
  v_lines jsonb;
@@ -843,8 +866,9 @@ begin
    select 1 from public.admin_finance_entries e
    where e.related_order_id=p_order_id and e.entry_type='income'
      and e.status='confirmed' and e.accounting_journal_id is not null
+     and e.related_cod_settlement_id is not null
  ) then
-  raise exception 'A linked income receipt is already posted to accounting. Review the existing Journal before recognizing this order.';
+  raise exception 'COD receipts must be posted through the courier settlement workflow.';
  end if;
 
  select coalesce(sum(line_total),0) into v_item_subtotal
@@ -859,20 +883,56 @@ begin
  end if;
 
  if v_order.payment_method='cash_on_delivery' then
-  select id,account_code into v_debit_account_id,v_debit_account_code
+  select id into v_debit_account_id
   from public.admin_finance_chart_of_accounts where account_code='1040' and is_active and is_postable;
  else
-  select id,account_code into v_debit_account_id,v_debit_account_code
+  select id into v_debit_account_id
   from public.admin_finance_chart_of_accounts where account_code='1100' and is_active and is_postable;
+
+  -- Pre-delivery customer receipts are posted to Customer Advances (2020).
+  -- On delivery, release only posted, non-voided advances against this order.
+  select coalesce(sum(jl.credit),0) into v_customer_advance
+  from public.admin_finance_entries e
+  join public.admin_finance_journal_entries je on je.id=e.accounting_journal_id and je.status='posted'
+  join public.admin_finance_journal_lines jl on jl.journal_entry_id=je.id
+  where e.related_order_id=p_order_id
+    and e.entry_type='income'
+    and e.status='confirmed'
+    and e.related_cod_settlement_id is null
+    and jl.account_id=(select id from public.admin_finance_chart_of_accounts where account_code='2020')
+    and jl.credit>0;
+  if v_customer_advance>v_order.total+0.01 then
+    raise exception 'Posted customer advances exceed the order total. Reconcile the customer receipts before recognizing the sale.';
+  end if;
+  v_customer_advance:=least(round(v_customer_advance,2),round(v_order.total,2));
  end if;
  if v_debit_account_id is null then
   raise exception 'The required Receivable / Courier Clearing account is not configured in the Chart of Accounts.';
  end if;
 
- v_lines:=jsonb_build_array(
-  jsonb_build_object('account_id',v_debit_account_id,
-    'description',case when v_order.payment_method='cash_on_delivery' then 'Courier COD receivable · ' else 'Customer receivable · ' end||v_order.order_number,
-    'party_name',v_order.customer_name,'debit',v_order.total,'credit',0),
+ v_lines:='[]'::jsonb;
+ if v_order.payment_method='cash_on_delivery' then
+  v_lines:=v_lines||jsonb_build_array(jsonb_build_object(
+   'account_id',v_debit_account_id,'description','Courier COD receivable · '||v_order.order_number,
+   'party_name',v_order.customer_name,'debit',v_order.total,'credit',0
+  ));
+ else
+  if v_customer_advance>0 then
+   v_lines:=v_lines||jsonb_build_array(jsonb_build_object(
+    'account_id',(select id from public.admin_finance_chart_of_accounts where account_code='2020'),
+    'description','Apply customer advance to delivered order · '||v_order.order_number,
+    'party_name',v_order.customer_name,'debit',v_customer_advance,'credit',0
+   ));
+  end if;
+  if round(v_order.total-v_customer_advance,2)>0 then
+   v_lines:=v_lines||jsonb_build_array(jsonb_build_object(
+    'account_id',v_debit_account_id,'description','Customer receivable · '||v_order.order_number,
+    'party_name',v_order.customer_name,'debit',round(v_order.total-v_customer_advance,2),'credit',0
+   ));
+  end if;
+ end if;
+
+ v_lines:=v_lines||jsonb_build_array(
   jsonb_build_object('account_id',(select id from public.admin_finance_chart_of_accounts where account_code='4010'),
     'description','Net product sales · '||v_order.order_number,'party_name',v_order.customer_name,'debit',0,'credit',v_net_sales)
  );
