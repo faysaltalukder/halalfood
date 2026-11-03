@@ -24,6 +24,7 @@ assert.match(edge, /ALLOWED_ORIGIN/);
 assert.match(edge, /generateContent/);
 assert.match(edge, /gemini-3\.6-flash/);
 assert.match(edge, /customer_care_model_fallback/);
+assert.match(edge, /upstream\.status === 503 \|\| upstream\.status === 429/);
 assert.match(edge, /isCompleteReply/);
 assert.match(edge, /customer_care_incomplete_response_retry/);
 assert.match(edge, /INCOMPLETE_AI_RESPONSE/);
