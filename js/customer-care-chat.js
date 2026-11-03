@@ -8,7 +8,7 @@
   const style = document.createElement("link");
   style.id = "hf-customer-care-chat-styles";
   style.rel = "stylesheet";
-  style.href = ASSET_BASE + "css/customer-care-chat.css?v=20261103-gemini-chat-v2";
+  style.href = ASSET_BASE + "css/customer-care-chat.css?v=20261103-gemini-chat-v4";
   document.head.appendChild(style);
 
   let root = document.getElementById("hf-contact-widget");
@@ -134,12 +134,13 @@
   }
   function friendlyError(data, status) {
     const code = data && data.code;
-    if (code === "RATE_LIMITED" || status === 429) return "আপনি অল্প সময়ে অনেকগুলো প্রশ্ন পাঠিয়েছেন। এক মিনিট পরে আবার চেষ্টা করুন।";
+    if (code === "RATE_LIMITED") return "চ্যাট সার্ভার সাময়িকভাবে অনুরোধ গ্রহণ করতে পারেনি। অনুগ্রহ করে আবার চেষ্টা করুন।";
     if (code === "AI_NOT_CONFIGURED") return "AI সার্ভারে API key সেট করা নেই। আমাদের টিমকে জানান।";
     if (code === "GEMINI_AUTH") return "Google AI সার্ভারের API key যাচাই হয়নি। সার্ভার কনফিগারেশন পরীক্ষা করা হচ্ছে।";
     if (code === "GEMINI_PERMISSION") return "Google AI প্রজেক্টে API ব্যবহারের অনুমতি বা billing/quota সেটিংসে সমস্যা আছে।";
     if (code === "GEMINI_MODEL" || code === "AI_MODEL_CONFIG_INVALID") return "AI মডেলের নাম বা কনফিগারেশনে সমস্যা আছে।";
-    if (code === "GEMINI_QUOTA") return "Google AI-এর বর্তমান request limit বা quota পূর্ণ হয়েছে। পরে আবার চেষ্টা করুন।";
+    if (code === "GEMINI_QUOTA") return "Google AI-এর প্রকল্প-স্তরের API quota বা সাময়িক capacity সীমায় পৌঁছেছে। এটি আপনার প্রশ্নের সংখ্যার জন্য আমাদের চ্যাট-লক নয়। কিছুক্ষণ পরে আবার চেষ্টা করুন, অথবা WhatsApp-এ যোগাযোগ করুন।";
+    if (code === "GEMINI_UNAVAILABLE") return "AI মডেলগুলো এই মুহূর্তে ব্যস্ত বা সাময়িকভাবে অনুপলব্ধ। আপনার প্রশ্ন সংরক্ষণ করা হয়নি—অনুগ্রহ করে আবার পাঠান বা WhatsApp-এ যোগাযোগ করুন।";
     if (code === "GEMINI_TIMEOUT") return "উত্তর পেতে বেশি সময় লাগছে। অনুগ্রহ করে আবার চেষ্টা করুন.";
     if (code === "INCOMPLETE_AI_RESPONSE") return "উত্তরটি সম্পূর্ণ তৈরি হয়নি। অনুগ্রহ করে প্রশ্নটি আরেকবার পাঠান।";
     return "দুঃখিত, AI সহকারীর সঙ্গে সাময়িক সংযোগ সমস্যা হয়েছে। আবার চেষ্টা করুন অথবা ফোন/WhatsApp-এ যোগাযোগ করুন।";
