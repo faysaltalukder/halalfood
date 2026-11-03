@@ -20,6 +20,8 @@ const golden = JSON.parse(fs.readFileSync("scripts/customer-care-intelligence-go
 
 assert.equal(extractTrackingOrderId("Track my order HF-484590"), "HF-484590");
 assert.equal(extractTrackingOrderId("অর্ডার HF-১২৩৪"), "HF-1234");
+assert.equal(extractTrackingOrderId("পুরোনো অর্ডার HF-2026110312345-123"), "HF-2026110312345-123");
+assert.equal(extractTrackingOrderId("legacy HF-20261103-99AE9EBB99"), "HF-20261103-99AE9EBB99");
 assert.equal(extractTrackingPhone("আমার নম্বর ০১৮৪২০৩১১৬৪"), "01842031164");
 assert.equal(extractTrackingPhone("+880 1700-000000"), "01700000000");
 assert.equal(normalizeTrackingPhone("8801700000000"), "01700000000");
@@ -34,6 +36,7 @@ assert.deepEqual(
 );
 assert.match(edge, /from "\.\/tracking\.mjs"/);
 assert.match(edge, /getOrderTrackingCredentials\(message, historyInput\)/);
+assert.match(edge, /source: "in\.\(website,website_parallel,manual_phone\)"/);
 assert.match(edge, /activeTracking/);
 assert.match(edge, /bookingState === "succeeded"/);
 assert.match(edge, /shipmentStatus !== "cancelled"/);
