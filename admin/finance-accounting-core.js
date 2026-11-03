@@ -16,7 +16,14 @@ window.HFAdminReady.then(async H => {
   let trialBalance = [];
   let periods = [];
   let cashbookEntries = [];
+  let financeAccounts = [];
+  let codRows = [];
+  let deliveredOrders = [];
+  let supplierBills = [];
+  let supplierPayments = [];
+  let profitabilityRows = [];
   let busy = false;
+  let operationalPostContext = null;
 
   const typeLabels = {
     asset: "Asset", liability: "Liability", equity: "Equity", revenue: "Revenue",
@@ -45,10 +52,8 @@ window.HFAdminReady.then(async H => {
   };
 
   function renderTrust() {
-    const journalized = new Set(journals
-      .filter(j => j.source_type === "cashbook" && j.source_key)
-      .map(j => String(j.source_key)));
-    const unposted = cashbookEntries.filter(e => !journalized.has(String(e.id))).length;
+    const unposted = cashbookEntries.filter(e => e.status === "confirmed" && !e.accounting_journal_id
+      && !e.related_cod_settlement_id && !e.related_supplier_payment_id).length;
     $("financeAccCashbookCount").textContent = cashbookEntries.length.toLocaleString("en-BD");
     $("financeAccUnpostedCount").textContent = unposted.toLocaleString("en-BD");
     $("financeAccPostedCount").textContent = journals.filter(j => j.status === "posted").length.toLocaleString("en-BD");
@@ -82,6 +87,16 @@ window.HFAdminReady.then(async H => {
       .map(a => '<option value="' + esc(a.id) + '">' + esc(a.account_code + " · " + a.name) + "</option>")
       .join("");
     selector.value = selected;
+
+    const mapping = $("financeAccountLedgerId");
+    if (mapping) {
+      const mapped = mapping.value;
+      mapping.innerHTML = '<option value="">Choose Asset account</option>' + accounts
+        .filter(a => a.account_type === "asset" && a.is_postable && a.is_active)
+        .map(a => '<option value="' + esc(a.id) + '">' + esc(a.account_code + " · " + a.name) + "</option>")
+        .join("");
+      mapping.value = mapped;
+    }
   }
 
   function renderJournals() {
@@ -90,8 +105,10 @@ window.HFAdminReady.then(async H => {
       let actions = '<button class="hf-button hf-button-secondary hf-button-small" data-journal-history="' + esc(j.id) + '">History</button>';
       if (j.status === "draft") {
         actions = '<button class="hf-button hf-button-secondary hf-button-small" data-journal-edit="' + esc(j.id) + '">Review / post</button>' + actions;
-      } else if (j.status === "posted") {
+      } else if (j.status === "posted" && ["manual","adjustment","reversal"].includes(j.source_type || "manual")) {
         actions = '<button class="hf-button hf-button-danger hf-button-small" data-journal-reverse="' + esc(j.id) + '">Reverse</button>' + actions;
+      } else if (j.status === "posted") {
+        actions = '<span class="hf-finance-status hf-finance-status-muted">Reverse at source</span>' + actions;
       }
       return "<tr><td><strong>" + journalNumber(j.journal_number) + "</strong></td><td>" +
         dateOnly(j.entry_date) + "</td><td><strong>" + esc(j.description) + "</strong><small>" +
@@ -183,24 +200,38 @@ window.HFAdminReady.then(async H => {
     busy = true;
     const button = $("financeAccountingRefresh");
     if (button) button.disabled = true;
+    if ($("financeOperationsRefresh")) $("financeOperationsRefresh").disabled = true;
     try {
       const results = await Promise.all([
         signedQuery(client.from("admin_finance_chart_of_accounts").select("*").order("account_code", { ascending: true }).limit(300)),
-        signedQuery(client.from("admin_finance_journal_entries").select("*").order("entry_date", { ascending: false }).order("journal_number", { ascending: false }).limit(1000)),
-        signedQuery(client.from("admin_finance_general_ledger").select("*").order("entry_date", { ascending: false }).order("journal_number", { ascending: false }).order("line_no", { ascending: true }).limit(5000)),
+        signedQuery(client.from("admin_finance_journal_entries").select("*").order("entry_date", { ascending: false }).order("journal_number", { ascending: false }).limit(2000)),
+        signedQuery(client.from("admin_finance_general_ledger").select("*").order("entry_date", { ascending: false }).order("journal_number", { ascending: false }).order("line_no", { ascending: true }).limit(10000)),
         signedQuery(client.from("admin_finance_trial_balance").select("*").order("account_code", { ascending: true }).limit(300)),
         signedQuery(client.from("admin_finance_periods").select("*").order("period_start", { ascending: false }).limit(120)),
-        signedQuery(client.from("admin_finance_entries").select("id,status").order("created_at", { ascending: false }).limit(5000))
+        signedQuery(client.from("admin_finance_entries").select("*").order("created_at", { ascending: false }).limit(5000)),
+        signedQuery(client.from("admin_finance_accounts").select("*").order("name", { ascending: true }).limit(300)),
+        signedQuery(client.from("admin_cod_settlements").select("*").order("updated_at", { ascending: false }).limit(2000)),
+        signedQuery(client.from("orders").select("id,order_number,customer_name,subtotal,delivery_charge,coupon_discount_amount,total,payment_method,status,ordered_at").eq("status","delivered").order("ordered_at", { ascending: false }).limit(2000)),
+        signedQuery(client.from("admin_supplier_bills").select("id,bill_number,supplier_id,purchase_order_id,supplier_invoice_number,invoice_date,due_date,total_amount,tax_amount,status,accounting_journal_id,reversal_journal_id").order("invoice_date", { ascending: false }).limit(2000)),
+        signedQuery(client.from("admin_supplier_payments").select("id,payment_number,supplier_id,payment_date,amount,paid_from_account,status,accounting_journal_id,reversal_journal_id").order("payment_date", { ascending: false }).limit(2000)),
+        signedQuery(client.from("admin_finance_product_profitability").select("*").order("gross_profit", { ascending: false, nullsFirst: false }).limit(1000))
       ]);
-      [accounts, journals, ledger, trialBalance, periods, cashbookEntries] = results;
+      [accounts, journals, ledger, trialBalance, periods, cashbookEntries, financeAccounts,
+        codRows, deliveredOrders, supplierBills, supplierPayments, profitabilityRows] = results;
       renderAll();
+      renderOperationalIntegration();
     } catch (error) {
       console.error("Accounting foundation could not be refreshed", error);
       showError(error.message || "Accounting data could not be loaded. Refresh the page or check the accounting migration.");
+      if ($("financeOperationsError")) {
+        $("financeOperationsError").textContent = error.message || "Operational integration data could not be loaded.";
+        $("financeOperationsError").hidden = false;
+      }
       toast(error.message || "Accounting data could not be loaded.", "error");
     } finally {
       busy = false;
       if (button) button.disabled = false;
+      if ($("financeOperationsRefresh")) $("financeOperationsRefresh").disabled = false;
     }
   }
 
@@ -215,6 +246,7 @@ window.HFAdminReady.then(async H => {
     });
     if (name === "ledger") renderLedger();
     if (name === "trial") renderTrialBalance();
+    if (name === "operations") renderOperationalIntegration();
   }
 
   function accountOptions(selected) {
@@ -442,6 +474,45 @@ window.HFAdminReady.then(async H => {
     if (reverse) { await reverseJournal(reverse.dataset.journalReverse); return; }
     const period = event.target.closest("[data-finance-period]");
     if (period) await changePeriod(period);
+
+    const operation = event.target.closest("[data-finance-operation]");
+    if (operation) {
+      const kind = operation.dataset.financeOperation;
+      const id = operation.dataset.financeOperationId;
+      if (kind === "cashbook_post") {
+        const source = cashbookEntries.find(e=>e.id===id);
+        const defaultAccount = source?.entry_type === "income"
+          ? accounts.find(a=>a.account_code==="4010")?.id
+          : accounts.find(a=>a.account_code==="6095")?.id;
+        openOperationalPosting(kind,id,{
+          title:"Post cashbook transaction",
+          description:"Select the counter-account that explains why this money was received or paid. For an order-linked receipt, Accounts Receivable (1100) is mandatory.",
+          defaultAccount,
+          warning:"Only Confirmed entries can be posted. Posting creates a permanent, balanced Journal linked to the cashbook source."
+        });
+      } else if (kind === "supplier_bill_post") {
+        const bill=supplierBills.find(b=>b.id===id);
+        const defaultAccount=accounts.find(a=>a.account_code==="1200")?.id;
+        openOperationalPosting(kind,id,{
+          title:"Post supplier bill",
+          description:"Choose Inventory, Cost of Sales or an Expense account for the bill's base amount. Classify invoice tax separately.",
+          defaultAccount,
+          taxAmount:bill?.tax_amount||0,
+          warning:"A Confirmed bill with a linked PO and accepted GRN is required. The Journal credits Accounts Payable."
+        });
+      } else if (kind === "opening_post") {
+        const account=financeAccounts.find(a=>a.id===id);
+        openOperationalPosting(kind,id,{
+          title:"Post verified opening balance",
+          description:"Choose the Equity or Liability account that explains the source of this opening balance.",
+          warning:"Do not post a test amount. Opening balances are permanent accounting entries and must match actual statements."
+        });
+      } else if (kind.endsWith("_reverse")) {
+        await reverseOperationalSource(kind,id);
+      } else {
+        await runOperationalAction(kind,id);
+      }
+    }
   });
 
   $("financeJournalNew")?.addEventListener("click", () => openJournal(null));
@@ -473,6 +544,10 @@ window.HFAdminReady.then(async H => {
   $("financeJournalClose")?.addEventListener("click", () => $("financeJournalDialog").close());
   $("financeJournalHistoryClose")?.addEventListener("click", () => $("financeJournalHistoryDialog").close());
   $("financeJournalHistoryDone")?.addEventListener("click", () => $("financeJournalHistoryDialog").close());
+  $("financeOperationsRefresh")?.addEventListener("click", refreshAll);
+  $("financeOperationalPostForm")?.addEventListener("submit", submitOperationalPosting);
+  $("financeOperationalPostCancel")?.addEventListener("click", () => $("financeOperationalPostDialog").close());
+  $("financeOperationalPostClose")?.addEventListener("click", () => $("financeOperationalPostDialog").close());
   $("financeAccLedgerAccount")?.addEventListener("change", renderLedger);
   $("financeAccLedgerFrom")?.addEventListener("change", renderLedger);
   $("financeAccLedgerTo")?.addEventListener("change", renderLedger);
