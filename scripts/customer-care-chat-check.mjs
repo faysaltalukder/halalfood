@@ -7,10 +7,10 @@ const css = fs.readFileSync("css/customer-care-chat.css", "utf8");
 const home = fs.readFileSync("index.html", "utf8");
 const edge = fs.readFileSync("supabase/functions/customer-care-chat/index.ts", "utf8");
 
-assert.match(main, /js\/customer-care-chat\.js\?v=20261103-shopping-chat-v3/);
+assert.match(main, /js\/customer-care-chat\.js\?v=20261103-shopping-chat-v4/);
 assert.match(chat, /functions\/v1\/customer-care-chat/);
 assert.doesNotMatch(chat, /ageConfirmed|hf-ai-chat-age-gate|hf-ai-age-confirm|প্রাপ্তবয়স্কদের জন্য AI সহায়তা/);
-assert.match(chat, /if \(!text \|\| busy\) return;/);
+assert.match(chat, /if \(\(!text && !imageFile\) \|\| busy\) return;/);
 assert.match(chat, /cleanAssistantText/);
 assert.doesNotMatch(chat, /আমি নিশ্চিত করছি, আমার বয়স ১৮ বছর বা তার বেশি|১৮ বছর বা তার বেশি/);
 assert.match(chat, /GEMINI_QUOTA/);
@@ -114,13 +114,13 @@ assert.match(edge, /MAX_HISTORY_ITEMS = 20/);
 assert.match(edge, /MAX_HISTORY_CHARS = 48000/);
 assert.match(edge, /MAX_REQUEST_BYTES = 262144/);
 assert.doesNotMatch(edge, /MAX_MESSAGE_CHARS/);
-assert.match(chat, /history: conversation\.slice\(-20\)/);
+assert.match(chat, /history: imageFile \? \[\] : conversation\.slice\(-20\)/);
 
 assert.match(edge, /maxOutputTokens: 4096/);
 assert.match(edge, /temperature: 0\.6/);
 assert.match(edge, /45_000/);
 assert.ok(edge.includes("return Boolean(reply.trim())"));
-assert.match(main, /customer-care-chat\.js\?v=20261103-shopping-chat-v3/);
+assert.match(main, /customer-care-chat\.js\?v=20261103-shopping-chat-v4/);
 
 assert.match(chat, /textarea id="hf-ai-chat-input"/);
 assert.match(chat, /messages.addEventListener\("wheel"/);
@@ -132,3 +132,16 @@ assert.match(css, /hf-ai-checkout-form/);
 assert.match(css, /height:min\(760px/);
 assert.match(css, /overscroll-behavior-y:contain/);
 assert.match(css, /touch-action:pan-y/);
+
+assert.match(chat, /hf-ai-chat-attach/);
+assert.match(chat, /prepareImageForUpload/);
+assert.match(chat, /requestBody\.image/);
+assert.match(chat, /SpeechRecognition/);
+assert.match(chat, /speechRecognition\.interimResults = false/);
+assert.match(edge, /MAX_IMAGE_BASE64_CHARS = 190000/);
+assert.match(edge, /payload\.image/);
+assert.match(edge, /inlineData/);
+assert.match(edge, /imageSearch/);
+assert.match(edge, /INVALID_IMAGE/);
+assert.match(css, /hf-ai-chat-attachment-preview/);
+assert.match(css, /hf-ai-chat-mic/);
