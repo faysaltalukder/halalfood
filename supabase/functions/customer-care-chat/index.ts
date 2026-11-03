@@ -194,7 +194,7 @@ Deno.serve(async (req: Request) => {
     if (!upstream) throw new Error("Gemini request did not return a response.");
 
     let modelUsed = model;
-    if (upstream.status === 503 && model !== "gemini-3.6-flash") {
+    if ((upstream.status === 503 || upstream.status === 429) && model !== "gemini-3.6-flash") {
       modelUsed = "gemini-3.6-flash";
       console.warn(JSON.stringify({
         event: "customer_care_model_fallback",
