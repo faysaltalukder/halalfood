@@ -881,11 +881,6 @@ where je.status in ('posted','reversed');
 grant select on public.admin_finance_trial_balance,public.admin_finance_general_ledger to authenticated;
 revoke all on public.admin_finance_trial_balance,public.admin_finance_general_ledger from anon;
 
-drop trigger if exists admin_finance_coa_updated_at on public.admin_finance_chart_of_accounts;
-create trigger admin_finance_coa_updated_at
-before update on public.admin_finance_chart_of_accounts
-for each row execute function public.set_admin_finance_updated_at();
-
 create or replace function public.admin_finance_guard_chart_account()
 returns trigger
 language plpgsql
