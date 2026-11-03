@@ -421,8 +421,15 @@ function buildKnowledgeContext(knowledge: Awaited<ReturnType<typeof loadKnowledg
     sections.push("GENERAL CATALOG QUESTION: The store currently has " + knowledge.catalogCount +
       " customer-facing active products across the listed categories. The matched items below are examples, not the complete catalog. Invite the customer to name a category to see more.");
   }
+  if (knowledge.imageSearch && knowledge.products.length) {
+    sections.push("IMAGE SEARCH CANDIDATES FROM THE LIVE CATALOG (candidate slugs are exact matching IDs; visual attributes are present only when owner-verified):\n" +
+      JSON.stringify(knowledge.products.map((product: Record<string, unknown>) => ({
+        slug: product.slug, name: product.name, category: product.category, unit_type: product.unit_type,
+        verified_visual_profile: product.verified_search_profile || null,
+      }))));
+  }
   if (knowledge.products.length) {
-    sections.push("MATCHED LIVE PRODUCTS (current catalog fields; numeric stock is intentionally excluded):\n" +
+    sections.push("LIVE PRODUCT CANDIDATES (current catalog facts; price and availability are current; numeric stock is intentionally excluded):\n" +
       JSON.stringify(knowledge.products));
   } else {
     sections.push("No matching live products were found for this message. Do not invent or guess a product.");
@@ -799,8 +806,11 @@ Deno.serve(async (req: Request) => {
     }));
     const knowledge = await loadKnowledge(message || "ছবিতে থাকা পণ্যটি খুঁজুন", knowledgeHistory, hasImage);
     loadedKnowledge = knowledge;
+    const imageMatchInstructions = hasImage
+      ? "\n\nIMAGE UNDERSTANDING AND CATALOG MATCH RULES: First identify only what is visibly supported by the uploaded image: object/material, readable label text, possible product identity and visible packaging cues. Compare with supplied live catalog candidates and owner-verified visual profiles. Never invent a brand, ingredient, certification or package type. The customer's explicit text defines search intent; if image and text conflict, ask one concise clarification instead of guessing. If evidence is insufficient, return no candidate. At the end of your customer-facing answer append exactly one machine-readable block and do not explain it: [[HF_IMAGE_MATCH]]{\\"image_object\\":\\"...\\",\\"candidate_slug\\":\\"exact-live-slug-or-empty\\",\\"candidate_slugs\\":[\\"up-to-4-live-slugs\\"],\\"brand\\":\\"verified-visible-brand-or-empty\\",\\"packaging_type\\":\\"visible-packaging-or-empty\\",\\"visible_text\\":\\"short-readable-label-or-empty\\",\\"match_type\\":\\"exact|derived_product|similar|alternative|uncertain\\",\\"confidence\\":\\"high|medium|low\\"}[[/HF_IMAGE_MATCH]]. Use high only for clear identity evidence, medium for supported similarity or derived-product matches, and low/uncertain when unclear. Candidate slugs must exactly match the live candidate list. If uncertain, leave candidate_slug empty and candidate_slugs empty."
+      : "";
     const systemInstruction = SYSTEM_INSTRUCTION + "\n\n--- RETRIEVED KNOWLEDGE CONTEXT ---\n" +
-      buildKnowledgeContext(knowledge) +
+      buildKnowledgeContext(knowledge) + imageMatchInstructions +
       "\n\nRemember: do not expose internal metadata or numeric stock. Only use verified facts. Include a product URL only when the customer explicitly asks for that product link. Speak naturally in plain text without Markdown decoration. The owner’s current confirmation that this is a real selling business overrides older demo/test-status text in retrieved documents. Do not volunteer contact details or redirect the customer away from this chat unless explicitly requested or genuinely necessary.";
     console.info(JSON.stringify({
       event: "customer_care_knowledge_loaded",
