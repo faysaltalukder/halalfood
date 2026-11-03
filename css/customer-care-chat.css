@@ -224,3 +224,16 @@ html.dark-mode .hf-ai-product-card-actions button:last-child{border-color:#c97b3
     font-size:9px!important;
   }
 }
+
+
+/* Human feedback controls for AI answer quality signals. */
+.hf-ai-feedback-controls{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin-top:10px;padding-top:8px;border-top:1px solid #eee5da}
+.hf-ai-feedback-prompt{font-size:10px;color:#817468;font-weight:600}
+.hf-ai-feedback-actions{display:flex;flex-wrap:wrap;gap:6px}
+.hf-ai-feedback-button,.hf-ai-feedback-reason{border:1px solid #ded5ca;border-radius:999px;background:#fffdf8;color:#65513f;padding:5px 9px;font:inherit;font-size:10px;line-height:1.35;cursor:pointer}
+.hf-ai-feedback-button:hover,.hf-ai-feedback-reason:hover{border-color:#c97b3d;background:#fbf2e9}
+.hf-ai-feedback-button:disabled,.hf-ai-feedback-reason:disabled{opacity:.55;cursor:wait}
+.hf-ai-feedback-status{flex-basis:100%;font-size:10px;color:#9a6a43}
+.hf-ai-feedback-thanks{font-size:10px;color:#58724f}
+html.dark-mode .hf-ai-feedback-controls{border-color:#484756}
+html.dark-mode .hf-ai-feedback-button,html.dark-mode .hf-ai-feedback-reason{border-color:#514e60;background:#302e3d;color:#f3dfca}
