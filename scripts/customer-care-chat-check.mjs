@@ -155,6 +155,7 @@ const intentCases = [
   ["ডেলিভারি কত?", "store_policy_question", 0],
   ["ধন্যবাদ", "casual_conversation", 0],
   ["কয়েকটি ঘি সাজেস্ট করো", "recommendation_request", 4],
+  ["অন্যটা দেখাও", "recommendation_request", 4],
   ["এই ঘিগুলোর তুলনা করো", "product_comparison", 4],
 ];
 for (const [query, expectedIntent, expectedCards] of intentCases) {
