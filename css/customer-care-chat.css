@@ -28,7 +28,6 @@
   color: #fffdf8; font-size: 23px; line-height: 1; cursor: pointer;
 }
 .hf-ai-chat-close:hover { background: rgba(255,253,248,.12); }
-.hf-ai-chat-setup-note {
   padding: 7px 15px; border-bottom: 1px solid #e8e3d9; background: #f7f3ec;
   color: #786b5d; font-size: 11px; line-height: 1.35;
 }
@@ -103,7 +102,6 @@
   .hf-ai-chat-header { min-height: 66px; padding: 11px 13px; }
 }
 html.dark-mode .hf-ai-chat-panel { border-color: #484756; background: #22212e; color: #f3efe5; }
-html.dark-mode .hf-ai-chat-setup-note { border-color: #444251; background: #302e3d; color: #d7c8b4; }
 html.dark-mode .hf-ai-message-assistant { border-color: #484756; background: #302e3d; color: #f3efe5; }
 html.dark-mode .hf-ai-chat-composer, html.dark-mode .hf-ai-chat-footnote { border-color: #444251; background: #22212e; color: #c9c3b8; }
 html.dark-mode .hf-ai-chat-input-wrap input { border-color: #514e60; background: #302e3d; color: #f3efe5; }

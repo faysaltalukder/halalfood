@@ -8,7 +8,7 @@
   const style = document.createElement("link");
   style.id = "hf-customer-care-chat-styles";
   style.rel = "stylesheet";
-  style.href = ASSET_BASE + "css/customer-care-chat.css?v=20261103-ai-chat-direct-v1";
+  style.href = ASSET_BASE + "css/customer-care-chat.css?v=20261103-ai-chat-friendly-v1";
   document.head.appendChild(style);
 
   let root = document.getElementById("hf-contact-widget");
@@ -50,10 +50,9 @@
       '</div>' +
       '<button class="hf-ai-chat-close" type="button" aria-label="Close chat">×</button>' +
     '</header>' +
-    '<div class="hf-ai-chat-setup-note" role="status">AI সহকারীর সংযোগ যাচাই করা হচ্ছে…</div>' +
     '<div class="hf-ai-chat-content" id="hf-ai-chat-content">' +
       '<div class="hf-ai-chat-messages" id="hf-ai-chat-messages" aria-live="polite">' +
-        '<div class="hf-ai-message hf-ai-message-assistant"><p>আসসালামু আলাইকুম! আমি Halal Food-এর AI সহকারী। পণ্য, ওয়েবসাইট বা সাধারণ সেবা সম্পর্কে কী জানতে চান?</p><span class="hf-ai-message-time">Halal Food Assistant</span></div>' +
+        '<div class="hf-ai-message hf-ai-message-assistant"><p>আসসালামু আলাইকুম! Halal Food-এ স্বাগতম। কী খুঁজছেন বা কীভাবে সাহায্য করতে পারি?</p><span class="hf-ai-message-time">Halal Food Assistant</span></div>' +
         '<div class="hf-ai-chat-prompts" aria-label="সাধারণ প্রশ্ন">' +
           '<button type="button" data-hf-chat-prompt="আমি কী কী পণ্য পেতে পারি?">কী কী পণ্য পাওয়া যায়?</button>' +
           '<button type="button" data-hf-chat-prompt="ডেলিভারি সম্পর্কে জানতে চাই।">ডেলিভারি সম্পর্কে জানতে চাই</button>' +
@@ -69,25 +68,18 @@
   document.body.appendChild(panel);
 
   const closeButton = panel.querySelector(".hf-ai-chat-close");
-  const setupNote = panel.querySelector(".hf-ai-chat-setup-note");
   const chatContent = panel.querySelector("#hf-ai-chat-content");
   const messages = panel.querySelector("#hf-ai-chat-messages");
   const form = panel.querySelector("#hf-ai-chat-form");
   const input = panel.querySelector("#hf-ai-chat-input");
   const sendButton = panel.querySelector(".hf-ai-chat-send");
   const conversation = [];
-  let serverCheckStarted = false;
   let busy = false;
 
   function openChat() {
     panel.hidden = false;
     launcher.setAttribute("aria-expanded", "true");
     launcher.setAttribute("aria-label", "Close Halal Food AI chat");
-    if (!serverCheckStarted) {
-      serverCheckStarted = true;
-      setupNote.textContent = "AI সহকারীর সঙ্গে সংযোগ করা হচ্ছে…";
-      checkServer();
-    }
     window.setTimeout(() => input?.focus({ preventScroll: true }), 50);
   }
   function closeChat() {
@@ -95,33 +87,30 @@
     launcher.setAttribute("aria-expanded", "false");
     launcher.setAttribute("aria-label", "Open Halal Food AI chat");
   }
+  function cleanAssistantText(value) {
+    return String(value || "")
+      .replace(/^\s{0,3}#{1,6}\s+/gm, "")
+      .replace(/^\s*[-*•]+\s+/gm, "")
+      .replace(/^\s*\d+[.)]\s+/gm, "")
+      .replace(/\*\*(.*?)\*\*/g, "$1")
+      .replace(/__(.*?)__/g, "$1")
+      .replace(/(?<!\*)\*(?!\s)(.*?)(?<!\s)\*(?!\*)/g, "$1")
+      .replace(/`([^`]+)`/g, "$1")
+      .replace(/^\s*[-_]{3,}\s*$/gm, "")
+      .replace(/\n{3,}/g, "\n\n")
+      .replace(/[ \t]+([,;:!?।])/g, "$1")
+      .replace(/([.!?।])(?:\s*[.!?।])+/g, "$1")
+      .trim();
+  }
   function appendMessage(text, sender, extraClass) {
     const bubble = document.createElement("div");
     bubble.className = "hf-ai-message " + (sender === "user" ? "hf-ai-message-user" : "hf-ai-message-assistant") + (extraClass ? " " + extraClass : "");
     const paragraph = document.createElement("p");
-    paragraph.textContent = text;
+    paragraph.textContent = sender === "assistant" ? cleanAssistantText(text) : text;
     bubble.appendChild(paragraph);
     messages.appendChild(bubble);
     messages.scrollTop = messages.scrollHeight;
     return bubble;
-  }
-  function appendHumanSupport(bubble) {
-    const copy = document.createElement("p");
-    copy.textContent = "অবশ্যই। সরাসরি আমাদের টিমের সঙ্গে যোগাযোগ করতে পারেন:";
-    bubble.appendChild(copy);
-    const links = document.createElement("div");
-    links.className = "hf-ai-human-links";
-    const call = document.createElement("a");
-    call.href = "tel:+8801842031164";
-    call.textContent = "ফোন করুন · 01842-031164";
-    const whatsapp = document.createElement("a");
-    whatsapp.href = "https://wa.me/8801842031164";
-    whatsapp.target = "_blank";
-    whatsapp.rel = "noopener noreferrer";
-    whatsapp.textContent = "WhatsApp-এ মেসেজ করুন";
-    links.append(call, whatsapp);
-    bubble.appendChild(links);
-    messages.scrollTop = messages.scrollHeight;
   }
   function appendProductCards(bubble, products) {
     if (!Array.isArray(products) || !products.length) return;
@@ -154,7 +143,7 @@
       const price = document.createElement("span");
       price.textContent = String(product.price || "দাম যাচাই প্রয়োজন");
       const meta = document.createElement("small");
-      meta.textContent = [product.category, product.availability === "available" ? "তালিকায় উপলভ্য" : product.availability === "unavailable" ? "বর্তমানে অনুপলব্ধ" : "স্টক নিশ্চিত করতে হবে"].filter(Boolean).join(" · ");
+      meta.textContent = [product.category, product.availability === "available" ? "তালিকায় উপলভ্য" : product.availability === "unavailable" ? "বর্তমানে অনুপলব্ধ" : "স্টক নিশ্চিত করতে হবে"].filter(Boolean).join(", ");
       copy.append(name, price, meta);
       link.appendChild(copy);
       wrap.appendChild(link);
@@ -168,40 +157,21 @@
   function friendlyError(data, status) {
     const code = data && data.code;
     if (code === "AI_NOT_CONFIGURED") return "AI সার্ভারে API key সেট করা নেই। আমাদের টিমকে জানান।";
-    if (code === "GEMINI_AUTH") return "Google AI সার্ভারের API key যাচাই হয়নি। সার্ভার কনফিগারেশন পরীক্ষা করা হচ্ছে।";
-    if (code === "GEMINI_PERMISSION") return "Google AI প্রজেক্টে API ব্যবহারের অনুমতি বা billing/quota সেটিংসে সমস্যা আছে।";
-    if (code === "GEMINI_MODEL" || code === "AI_MODEL_CONFIG_INVALID") return "AI মডেলের নাম বা কনফিগারেশনে সমস্যা আছে।";
-    if (code === "GEMINI_QUOTA") return "এই প্রশ্নটির জন্য Gemini ভাষা-মডেল থেকে উত্তর পাওয়া যাচ্ছে না। পণ্য ও প্রকাশিত সেবার তথ্যের জন্য যাচাইকৃত বিকল্প ব্যবস্থা কাজ করবে; আরও খোলা বা জটিল প্রশ্নে AI মডেল পুনরায় সচল না হওয়া পর্যন্ত উত্তর অসম্পূর্ণ থাকতে পারে।";
-    if (code === "GEMINI_UNAVAILABLE") return "AI মডেলগুলো এই মুহূর্তে ব্যস্ত বা সাময়িকভাবে অনুপলব্ধ। আপনার প্রশ্ন সংরক্ষণ করা হয়নি—অনুগ্রহ করে আবার পাঠান বা WhatsApp-এ যোগাযোগ করুন।";
+    if (code === "GEMINI_AUTH") return "এই মুহূর্তে উত্তর তৈরি করতে সমস্যা হচ্ছে। অনুগ্রহ করে একটু পরে আবার চেষ্টা করুন।";
+    if (code === "GEMINI_PERMISSION") return "এই মুহূর্তে উত্তর তৈরি করতে সমস্যা হচ্ছে। অনুগ্রহ করে একটু পরে আবার চেষ্টা করুন।";
+    if (code === "GEMINI_MODEL" || code === "AI_MODEL_CONFIG_INVALID") return "এই মুহূর্তে সহকারী উত্তর দিতে পারছে না। একটু পরে আবার চেষ্টা করুন।";
+    if (code === "GEMINI_QUOTA") return "এই মুহূর্তে উত্তর তৈরি করতে সাময়িক সমস্যা হচ্ছে। পণ্যের সাধারণ তথ্য জানতে চাইলে প্রশ্নটি আরেকভাবে লিখে দেখতে পারেন।";
+    if (code === "GEMINI_UNAVAILABLE") return "এই মুহূর্তে উত্তর তৈরি করতে সাময়িক সমস্যা হচ্ছে। অনুগ্রহ করে একটু পরে আবার চেষ্টা করুন।";
     if (code === "GEMINI_TIMEOUT") return "উত্তর পেতে বেশি সময় লাগছে। অনুগ্রহ করে আবার চেষ্টা করুন.";
     if (code === "INCOMPLETE_AI_RESPONSE") return "উত্তরটি সম্পূর্ণ তৈরি হয়নি। অনুগ্রহ করে প্রশ্নটি আরেকবার পাঠান।";
-    return "দুঃখিত, AI সহকারীর সঙ্গে সাময়িক সংযোগ সমস্যা হয়েছে। আবার চেষ্টা করুন অথবা ফোন/WhatsApp-এ যোগাযোগ করুন।";
-  }
-  async function checkServer() {
-    try {
-      const response = await fetch(CHAT_API, { method: "GET", cache: "no-store" });
-      const data = await response.json();
-      if (!response.ok || !data.success || !data.configured) {
-        setupNote.textContent = "AI সার্ভার প্রস্তুত নয়। ফোন বা WhatsApp-এ সহায়তা নিন।";
-        return;
-      }
-      setupNote.textContent = "সংযুক্ত · " + (data.model || "Gemini AI");
-    } catch (_error) {
-      setupNote.textContent = "AI সার্ভারের সঙ্গে সংযোগ করা যাচ্ছে না। ফোন বা WhatsApp-এ সহায়তা নিন।";
-    }
+    return "দুঃখিত, এই মুহূর্তে উত্তর তৈরি করতে সমস্যা হচ্ছে। অনুগ্রহ করে আবার চেষ্টা করুন।";
   }
   async function submitQuestion(question) {
     const text = String(question || "").trim();
     if (!text || busy) return;
     appendMessage(text, "user");
     input.value = "";
-    const humanRequest = /(মানুষ|মানব|প্রতিনিধি|কাস্টমার\s*কেয়ার|কাস্টমার\s*কেয়ার|সরাসরি\s*কথা|এজেন্ট|human|real person|representative|customer support|customer care|live agent|talk to (a )?person|speak to (a )?person|whatsapp|হোয়াটসঅ্যাপ|হোয়াটসঅ্যাপ|ফোনে কথা)/i.test(text);
-    if (humanRequest) {
-      appendHumanSupport(appendMessage("", "assistant"));
-      return;
-    }
-
-    const pending = appendMessage("উত্তর তৈরি হচ্ছে…", "assistant", "hf-ai-message-pending");
+    const pending = appendMessage("একটু দেখছি", "assistant", "hf-ai-message-pending");
     busy = true;
     input.disabled = true;
     sendButton.disabled = true;
@@ -230,7 +200,7 @@
       }
     } catch (_error) {
       pending.remove();
-      appendMessage("সার্ভারের সঙ্গে সংযোগ বিচ্ছিন্ন হয়েছে। ইন্টারনেট পরীক্ষা করে আবার চেষ্টা করুন।", "assistant");
+      appendMessage("এই মুহূর্তে সংযোগে সমস্যা হচ্ছে। একটু পর আবার চেষ্টা করবেন?", "assistant");
     } finally {
       busy = false;
       input.disabled = false;
