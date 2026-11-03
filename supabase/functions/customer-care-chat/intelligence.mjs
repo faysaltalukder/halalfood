@@ -152,7 +152,7 @@ function rankProductCandidates(products, profiles, message, decision={}, imageMa
   const sizeMedians=new Map();
   sizeGroups.forEach((values,key)=>{
     const sorted=[...values].sort((a,b)=>a-b);
-    sizeMedians.set(key,sorted[Math.floor((sorted.length-1)/2)]);
+    sizeMedians.set(key,sorted.length%2?sorted[Math.floor(sorted.length/2)]:(sorted[sorted.length/2-1]+sorted[sorted.length/2])/2);
   });
   const scored=[];
   for(const product of products){
