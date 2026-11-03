@@ -9,12 +9,12 @@ function classifyCustomerIntent(message, hasImage = false) {
   const categoryBrowse = hasCategory && /(কী\s*কী|কি\s*কি|কোন\s*কোন|কয়েকটি|কিছু|সবগুলো|তালিকা|\p{L}+(?:গুলো|গুলি)|what .{0,40}(?:oil|ghee|honey|rice|tea|product)|what (?:kind|types|kinds)|show me (?:some|all|the)?\s*(?:oils?|ghee|honey|products?)|list)/iu.test(text);
   const availability = /(স্টকে|মজুত|উপলভ্য|available|in stock|আছে কি না|আছে কিনা|do you have|have you got)/iu.test(text) && !categoryBrowse;
   const storePolicy = /(ডেলিভারি|delivery|পেমেন্ট|payment|ক্যাশ অন ডেলিভারি|cash on delivery|রিফান্ড|refund|রিটার্ন|return policy|কাজের সময়|খোলা থাকে|যোগাযোগের নম্বর)/iu.test(text);
-  const orderSupport = /(অর্ডার|order|ট্র্যাক|track|shipment|শিপমেন্ট|কুরিয়ার|courier|checkout|আমার অর্ডার)/iu.test(text);
+  const orderSupport = /(অর্ডারের অবস্থা|অর্ডার কোথায়|অর্ডার কোথায়|অর্ডার ট্র্যাক|ট্র্যাক.*অর্ডার|আমার অর্ডার|order status|track order|my order|shipment|শিপমেন্ট|কুরিয়ার|courier|checkout)/iu.test(text);
   const complaint = /(অভিযোগ|সমস্যা হয়েছে|সমস্যা হয়েছে|ভুল হয়েছে|ভুল হয়েছে|খারাপ অভিজ্ঞতা|complain|complaint|issue|damaged|ভাঙা পণ্য)/iu.test(text);
   const humanSupport = /(মানুষের সঙ্গে কথা|মানুষের সাথে কথা|কাস্টমার কেয়ার|কাস্টমার কেয়ার|লাইভ এজেন্ট|মানব সহায়তা|মানব সহায়তা|human support|talk to (?:a )?(?:person|human|agent))/iu.test(text);
   const casual = /^(হ্যালো|হাই|আসসালামু আলাইকুম|সালাম|ধন্যবাদ|অনেক ধন্যবাদ|hi|hello|hey|thanks|thank you|good morning|good afternoon|good evening)[!.\s]*$/iu.test(text);
   const info = /(কীভাবে|কিভাবে|কেন|কী জিনিস|কি জিনিস|মানে কী|কী দিয়ে তৈরি|কি দিয়ে তৈরি|তৈরি হয়|তৈরি করা হয়|উপকারিতা|ব্যবহার কী|what is|how is|how are|why does|made from|ingredients|benefits of)/iu.test(text);
-  const exactLookup = hasCategory && /(একটা|একটি|এক\s|দেখাও|দেখতে চাই|আছে|পাওয়া|পাওয়া|খুঁজছি|চাই|show|find|available|do you have)/iu.test(text);
+  const exactLookup = hasCategory && /(একটা|একটি|এক\s|দেখাও|দেখতে চাই|আছে|পাওয়া|পাওয়া|খুঁজছি|চাই|show|find|available|do you have|want|buy|purchase|order)/iu.test(text);
   const rejection = /(চাই না|পছন্দ হয়নি|পছন্দ হয়নি|ভালো লাগেনি|অন্যটা চাই|not this|don't want|do not want|not interested)/iu.test(text);
   let primary = "general_information", permission = "none", maxCards = 0, matchMode = "none", confidence = "medium", clarification = false;
   if (complaint) { primary = "complaint_or_problem"; confidence = "high"; }
