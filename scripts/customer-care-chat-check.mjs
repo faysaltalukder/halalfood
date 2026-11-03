@@ -41,6 +41,7 @@ assert.match(edge, /buildDeterministicFallbackReply/);
 assert.match(edge, /customer_care_model_network_fallback/);
 assert.match(edge, /hany|honey/);
 assert.match(edge, /Hello! Welcome to Halal Food/);
+assert.match(edge, /Thanks for your message\. I can help with Halal Food/);
 assert.match(edge, /ওয়ালাইকুম আসসালাম/);
 assert.match(edge, /ageRestricted: false/);
 assert.match(edge, /analyzeCustomerNeed/);
