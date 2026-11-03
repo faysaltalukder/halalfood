@@ -497,11 +497,11 @@ function buildKnowledgeContext(knowledge: Awaited<ReturnType<typeof loadKnowledg
   if (knowledge.imageSearch && knowledge.products.length) {
     sections.push("IMAGE SEARCH CANDIDATES FROM THE LIVE CATALOG (candidate slugs are exact matching IDs; visual attributes are present only when owner-verified):\n" +
       JSON.stringify(knowledge.products.map((product: Record<string, unknown>) => ({
-        slug: product.slug, name: product.name, category: product.category, unit_type: product.unit_type,
+        slug: product.slug, name: product.name, category: product.category, unit_type: product.unit_type, price: product.price, availability: product.availability,
         verified_visual_profile: product.verified_search_profile || null,
       }))));
   }
-  if (knowledge.products.length) {
+  if (knowledge.products.length && !knowledge.imageSearch) {
     sections.push("LIVE PRODUCT CANDIDATES (current catalog facts; price and availability are current; numeric stock is intentionally excluded):\n" +
       JSON.stringify(knowledge.products));
   } else {
@@ -519,6 +519,13 @@ function buildDeterministicFallbackReply(
 ): string | null {
   const normalized = message.toLowerCase().normalize("NFKC");
   const products = knowledge.products;
+  if (knowledge.customerNeed?.no_budget_match) {
+    const budget = Number(knowledge.customerNeed.budget_bdt || 0);
+    return "আপনার উল্লেখ করা ৳" + budget.toLocaleString("en-BD") + " বাজেটের মধ্যে বর্তমানে নির্ভরযোগ্য মিল খুঁজে পাইনি। চাইলে বাজেট সামান্য বাড়িয়ে বিকল্প দেখতে পারেন।";
+  }
+  if (knowledge.customerNeed?.search_not_found && !knowledge.imageSearch) {
+    return "আপনার চাওয়া পণ্যটি বর্তমান লাইভ ক্যাটালগে খুঁজে পাচ্ছি না। আপনি চাইলে পণ্যের নাম বা ধরন একটু অন্যভাবে বলতে পারেন।";
+  }
   const wantsProductLink = /(পণ্যের লিংক|প্রোডাক্ট লিংক|পণ্যের পেজ|পণ্যের url|product\s*(?:page\s*)?(?:link|url)|product page|link to (?:this|that|the) product)/iu.test(message);
   const productLine = (product: Record<string, unknown>) => {
     const availability = product.availability === "available" ? "তালিকায় উপলভ্য"
