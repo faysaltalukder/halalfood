@@ -51,7 +51,7 @@ assert.match(edge, /CUSTOMER NEED PROFILE/);
 assert.match(chat, /appendProductCards/);
 assert.match(chat, /hf-ai-product-card/);
 assert.match(edge, /verified-knowledge-fallback/);
-assert.match(chat, /maxlength="12000"/);
+assert.doesNotMatch(chat, /maxlength=/);
 assert.match(edge, /customer_care_incomplete_response_retry/);
 assert.match(edge, /INCOMPLETE_AI_RESPONSE/);
 assert.match(chat, /INCOMPLETE_AI_RESPONSE/);
@@ -78,3 +78,6 @@ assert.match(aiKnowledgeMigration, /aal.*aal2/);
 assert.match(aiKnowledgeMigration, /halalfoodbd\.official@gmail\.com/);
 
 console.log("Gemini customer-care frontend/backend checks passed.");
+assert.match(edge, /do not impose an arbitrary item-count limit/);
+assert.match(edge, /ordinary general questions/);
+assert.match(chat, /conversation.length > 40/);
