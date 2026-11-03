@@ -632,14 +632,14 @@ async function loadKnowledge(
   const blogTerms = expandTerms(searchText).map((term) => term.toLocaleLowerCase());
   const publicArticles = rawBlogPosts.map((article) => {
     const clean = (value: unknown) => String(value || "")
-      .replace(/<script[\\s\\S]*?<\\/script>/giu, " ")
-      .replace(/<style[\\s\\S]*?<\\/style>/giu, " ")
+      .replace(/<script[\s\S]*?<\/script>/giu, " ")
+      .replace(/<style[\s\S]*?<\/style>/giu, " ")
       .replace(/<[^>]+>/gu, " ")
       .replace(/&nbsp;/giu, " ")
       .replace(/&amp;/giu, "&")
       .replace(/&quot;/giu, '"')
       .replace(/&#39;/giu, "'")
-      .replace(/\\s+/gu, " ").trim();
+      .replace(/\s+/gu, " ").trim();
     const cleanedArticle = {
       title: clean(article.title).slice(0, 240),
       category: clean(article.category).slice(0, 80),
@@ -769,11 +769,11 @@ function buildKnowledgeContext(knowledge: Awaited<ReturnType<typeof loadKnowledg
     sections.push("LIVE PRODUCT CATEGORIES:\n" + knowledge.categoryNames.join(", "));
   }
   if (knowledge.publicArticles?.length) {
-    sections.push("PUBLISHED PUBLIC WEBSITE ARTICLES (educational reference content; summarize for general questions only. Do not treat an article as proof of the ingredients, origin, certification, purity, health effects, or quality of a specific Halal Food product):\\n" +
+    sections.push("PUBLISHED PUBLIC WEBSITE ARTICLES (educational reference content; summarize for general questions only. Do not treat an article as proof of the ingredients, origin, certification, purity, health effects, or quality of a specific Halal Food product):\n" +
       knowledge.publicArticles.map((article: Record<string, unknown>) =>
-        "[" + String(article.category || "Guide") + "] " + String(article.title || "") + "\\n" +
-        String(article.excerpt || "") + "\\n" + String(article.content || "")
-      ).join("\\n\\n"));
+        "[" + String(article.category || "Guide") + "] " + String(article.title || "") + "\n" +
+        String(article.excerpt || "") + "\n" + String(article.content || "")
+      ).join("\n\n"));
   }
   if (knowledge.customerNeed) {
     sections.push("CUSTOMER NEED PROFILE (only explicit conversation details; null means unknown):\\n" + JSON.stringify(knowledge.customerNeed) +
