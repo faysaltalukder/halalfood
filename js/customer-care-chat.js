@@ -501,7 +501,10 @@
         }
       }
       renderOrderConfirmation(confirmedOrderId, total, result.heldForReview === true);
-      if (result.heldForReview !== true) { shoppingCart.length = 0; updateCartBadge(); }
+      // A saved order or manual-review queue entry has already consumed this checkout.
+      // Clear the chat cart in both cases so a second click cannot create a duplicate order.
+      shoppingCart.length = 0;
+      updateCartBadge();
       pendingOrderId = ""; checkoutQuote = null; checkoutValues = {}; chatCheckoutStartedAt = 0;
     } catch (error) {
       if (error.code === "PRICE_CHANGED" || error.code === "DELIVERY_CHANGED") {
