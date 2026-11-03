@@ -11,7 +11,7 @@ assert.match(main, /js\/customer-care-chat\.js\?v=20261103-ai-chat-direct-v1/);
 assert.match(chat, /functions\/v1\/customer-care-chat/);
 assert.doesNotMatch(chat, /ageConfirmed|hf-ai-chat-age-gate|hf-ai-age-confirm|প্রাপ্তবয়স্কদের জন্য AI সহায়তা/);
 assert.match(chat, /if \(!text \|\| busy\) return;/);
-assert.match(chat, /serverCheckStarted/);
+assert.match(chat, /cleanAssistantText/);\nassert.doesNotMatch(chat, /serverCheckStarted|সংযুক্ত ·|GEMINI_MODEL|appendHumanSupport|humanRequest/);
 assert.doesNotMatch(chat, /আমি নিশ্চিত করছি, আমার বয়স ১৮ বছর বা তার বেশি|১৮ বছর বা তার বেশি/);
 assert.match(chat, /GEMINI_QUOTA/);
 assert.doesNotMatch(chat, /RATE_LIMITED|status === 429/);
@@ -78,8 +78,8 @@ assert.match(aiKnowledgeMigration, /aal.*aal2/);
 assert.match(aiKnowledgeMigration, /halalfoodbd\.official@gmail\.com/);
 
 console.log("Gemini customer-care frontend/backend checks passed.");
-assert.match(edge, /do not impose an arbitrary item-count limit/);
-assert.match(edge, /ordinary general questions/);
+assert.match(edge, /do not impose an arbitrary item-count limit/);\nassert.doesNotMatch(edge, /\\*\\*/);
+assert.match(edge, /real operating business/);\nassert.match(edge, /Do not volunteer phone numbers/);\nassert.match(edge, /owner’s current confirmation overrides older demo\/test-status text/);\nassert.doesNotMatch(edge, /demo project|ডেমো প্রকল্প|ডেমো\/টেস্ট/);
 assert.match(chat, /conversation.length > 40/);
 
 assert.match(edge, /MAX_HISTORY_ITEMS = 20/);
