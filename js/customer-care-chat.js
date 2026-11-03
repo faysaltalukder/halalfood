@@ -77,19 +77,22 @@
   const sendButton = panel.querySelector(".hf-ai-chat-send");
   const conversation = [];
   let busy = false, minimized = false, savedScrollY = 0;
-  let previousBodyOverflow = "", previousHtmlOverflow = "";
+  let previousBodyOverflow = "", previousHtmlOverflow = "", previousBodyPosition = "", previousBodyTop = "", previousBodyWidth = "";
   function isMobileChat() { return window.matchMedia("(max-width: 900px)").matches; }
   function lockMobilePage() {
     if (!isMobileChat()) return;
     savedScrollY = window.scrollY || window.pageYOffset || 0;
     previousBodyOverflow = document.body.style.overflow; previousHtmlOverflow = document.documentElement.style.overflow;
+    previousBodyPosition = document.body.style.position; previousBodyTop = document.body.style.top; previousBodyWidth = document.body.style.width;
     document.documentElement.classList.add("hf-ai-chat-open"); document.body.classList.add("hf-ai-chat-open");
     document.body.style.overflow = "hidden"; document.documentElement.style.overflow = "hidden";
+    document.body.style.position = "fixed"; document.body.style.top = "-" + savedScrollY + "px"; document.body.style.width = "100%";
   }
   function unlockMobilePage() {
     document.documentElement.classList.remove("hf-ai-chat-open"); document.body.classList.remove("hf-ai-chat-open");
     document.body.style.overflow = previousBodyOverflow; document.documentElement.style.overflow = previousHtmlOverflow;
-    if (isMobileChat()) window.scrollTo({ top: savedScrollY, behavior: "instant" });
+    document.body.style.position = previousBodyPosition; document.body.style.top = previousBodyTop; document.body.style.width = previousBodyWidth;
+    window.scrollTo({ top: savedScrollY, behavior: "instant" });
   }
   function openChat() {
     panel.hidden = false; minimized = false; panel.classList.remove("is-minimized"); lockMobilePage();
@@ -261,7 +264,12 @@
     const max = messages.scrollHeight - messages.clientHeight;
     if (max <= 0 || (event.deltaY < 0 && messages.scrollTop <= 0) || (event.deltaY > 0 && messages.scrollTop >= max - 1)) event.preventDefault();
   }, { passive: false });
-  panel.addEventListener("wheel", event => { if (!event.target.closest("#hf-ai-chat-messages")) event.preventDefault(); }, { passive: false });
+  panel.addEventListener("wheel", event => {
+    if (event.target.closest("#hf-ai-chat-messages")) return;
+    const editor = event.target.closest("#hf-ai-chat-input");
+    if (editor && editor.scrollHeight > editor.clientHeight && ((event.deltaY < 0 && editor.scrollTop > 0) || (event.deltaY > 0 && editor.scrollTop < editor.scrollHeight - editor.clientHeight))) return;
+    event.preventDefault();
+  }, { passive: false });
   let touchStartY = 0;
   messages.addEventListener("touchstart", event => { touchStartY = event.touches[0]?.clientY || 0; }, { passive: true });
   messages.addEventListener("touchmove", event => {
