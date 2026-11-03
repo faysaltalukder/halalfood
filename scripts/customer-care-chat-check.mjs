@@ -79,7 +79,8 @@ assert.match(aiKnowledgeMigration, /halalfoodbd\.official@gmail\.com/);
 
 assert.doesNotMatch(chat, /serverCheckStarted|সংযুক্ত ·|GEMINI_MODEL|appendHumanSupport|humanRequest/);
 assert.match(chat, /cleanAssistantText/);
-assert.match(edge, /Do not volunteer phone numbers/);\nassert.match(edge, /human customer care is available/);
+assert.match(edge, /Do not volunteer phone numbers/);
+assert.match(edge, /human customer care is available/);
 assert.doesNotMatch(edge, /demo project|ডেমো প্রকল্প|ডেমো\/টেস্ট/);
 assert.doesNotMatch(edge, /\*\*/);
 console.log("Customer-care friendly conversation checks passed.");
