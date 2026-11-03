@@ -151,7 +151,7 @@ function analyzeCustomerNeed(
   hasImage = false,
 ): Record<string, unknown> {
   const userMessages = history.filter((item) => item.role === "user").map((item) => item.parts[0]?.text || "").filter(Boolean);
-  const followUp = /(আরেকটা|আরও একটি|ওইটা|সেটা|আগেরটা|একইটা|same one|another one|more options|those)/iu.test(message);
+  const followUp = /(আরেকটা|আরও একটি|অন্যটা|বিকল্প|ওইটা|সেটা|আগেরটা|একইটা|same one|another one|more options|those)/iu.test(message);
   const recentContext = followUp ? userMessages.slice(-5).join(" ") + " " + message : message;
   const normalized = toEnglishDigits(recentContext.normalize("NFKC")).toLowerCase();
   const decision = classifyCustomerIntent(message, hasImage);
@@ -167,8 +167,16 @@ function analyzeCustomerNeed(
   const purpose = purposeMap.find(([pattern]) => pattern.test(normalized))?.[1] || null;
   const packPreference = /(ছোট প্যাক|ছোট প্যাকেট|small pack|small size)/iu.test(normalized) ? "small_pack"
     : /(বড় প্যাক|বড় প্যাক|বাল্ক|bulk|large pack|বেশি পরিমাণ)/iu.test(normalized) ? "large_pack" : null;
+  const rejectionPattern = /(চাই না|পছন্দ হয়নি|পছন্দ হয়নি|ভালো লাগেনি|অন্যটা চাই|not this|don't want|do not want|not interested)/iu;
+  const userEntries = history.map((item, index) => ({ item, index })).filter(({ item }) => item.role === "user");
+  const lastRejection = [...userEntries].reverse().find(({ item }) => rejectionPattern.test(item.parts[0]?.text || ""));
+  const rejectionIsRecent = Boolean(lastRejection && userEntries.slice(-3).some(({ index }) => index === lastRejection.index));
+  const assistantBeforeRejection = lastRejection
+    ? history.slice(0, lastRejection.index).reverse().find((item) => item.role === "model")?.parts.map((part) => part.text || "").join(" ") || ""
+    : "";
   const previousAssistant = [...history].reverse().find((item) => item.role === "model")?.parts.map((part) => part.text || "").join(" ") || "";
-  const rejectionContext = decision.rejection_detected === true ? previousAssistant.slice(0, 3000) : "";
+  const rejectionContext = decision.rejection_detected ? previousAssistant.slice(0, 3000)
+    : followUp && rejectionIsRecent ? assistantBeforeRejection.slice(0, 3000) : "";
   return { ...decision, budget_bdt: Number.isFinite(budgetBdt) && budgetBdt! > 0 ? budgetBdt : null,
     purpose, pack_preference: packPreference, explicit_context: message.slice(0, 1200), rejection_context: rejectionContext };
 }
@@ -273,10 +281,24 @@ async function loadKnowledge(message: string, history: Array<{ role: "user" | "m
   const broadCatalogQuestion = customerNeed.primary_intent === "broad_catalog_browse";
   const categoryCatalogQuestion = customerNeed.primary_intent === "category_browse";
   const rejectedText = String(customerNeed.rejection_context || "").toLocaleLowerCase();
+  const rejectedProducts = rejectedText
+    ? customerFacingProducts.filter((product) => {
+      const name = String(product.name || "").trim().toLocaleLowerCase();
+      return name.length > 2 && rejectedText.includes(name);
+    })
+    : [];
+  if (rejectedProducts.length > 1 && customerNeed.rejection_context) {
+    customerNeed.primary_intent = "ambiguous_product_request";
+    customerNeed.recommendation_permission = "none";
+    customerNeed.allow_product_cards = false;
+    customerNeed.max_product_cards = 0;
+    customerNeed.clarification_needed = true;
+  }
+  const rejectedProductIds = new Set(rejectedProducts.length === 1 ? [String(rejectedProducts[0].id)] : []);
   const rankedAll = customerFacingProducts
     .map((product) => ({ product, score: productScore(product, terms) }))
     .filter((item) => broadCatalogQuestion || item.score > 0)
-    .filter((item) => !rejectedText || !String(item.product.name || "").trim() || !rejectedText.includes(String(item.product.name || "").trim().toLocaleLowerCase()))
+    .filter((item) => !rejectedProductIds.has(String(item.product.id || "")))
     .sort((a, b) => {
       if (b.score !== a.score) return b.score - a.score;
       const categoryOrder = String(a.product.category || "").localeCompare(String(b.product.category || ""));
