@@ -8,7 +8,7 @@
   const style = document.createElement("link");
   style.id = "hf-customer-care-chat-styles";
   style.rel = "stylesheet";
-  style.href = ASSET_BASE + "css/customer-care-chat.css?v=20261103-shopping-chat-v3";
+  style.href = ASSET_BASE + "css/customer-care-chat.css?v=20261103-shopping-chat-v4";
   document.head.appendChild(style);
 
   let root = document.getElementById("hf-contact-widget");
@@ -60,8 +60,15 @@
         '</div>' +
       '</div>' +
       '<form class="hf-ai-chat-composer" id="hf-ai-chat-form">' +
-        '<label class="hf-ai-chat-input-wrap"><span class="hf-ai-visually-hidden">আপনার প্রশ্ন লিখুন</span><textarea id="hf-ai-chat-input" name="message" rows="1" autocomplete="off" placeholder="আপনার প্রশ্ন লিখুন..." required></textarea></label>' +
-        '<button class="hf-ai-chat-send" type="submit" aria-label="মেসেজ পাঠান"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21 3-7.2 18-3.7-7.1L3 10.2 21 3Z"></path><path d="M10.1 13.9 21 3"></path></svg></button>' +
+        '<div class="hf-ai-chat-attachment-preview" id="hf-ai-chat-attachment-preview" hidden><img id="hf-ai-chat-attachment-image" alt="আপলোড করা ছবির প্রিভিউ"><span id="hf-ai-chat-attachment-name"></span><button type="button" id="hf-ai-chat-remove-image" aria-label="ছবি সরান">×</button></div>' +
+        '<div class="hf-ai-chat-composer-row">' +
+          '<button class="hf-ai-chat-tool hf-ai-chat-attach" id="hf-ai-chat-attach" type="button" aria-label="ছবি যোগ করুন" title="ছবি দিয়ে পণ্য খুঁজুন"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></button>' +
+          '<input id="hf-ai-chat-image-file" type="file" accept="image/jpeg,image/png,image/webp" hidden>' +
+          '<label class="hf-ai-chat-input-wrap"><span class="hf-ai-visually-hidden">আপনার প্রশ্ন লিখুন</span><textarea id="hf-ai-chat-input" name="message" rows="1" autocomplete="off" placeholder="লিখুন বা ছবি যোগ করুন..."></textarea></label>' +
+          '<button class="hf-ai-chat-tool hf-ai-chat-mic" id="hf-ai-chat-mic" type="button" aria-label="ভয়েসে প্রশ্ন করুন" title="ভয়েসে প্রশ্ন করুন"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0M12 18v3M9 21h6"></path></svg></button>' +
+          '<button class="hf-ai-chat-send" type="submit" aria-label="মেসেজ পাঠান"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21 3-7.2 18-3.7-7.1L3 10.2 21 3Z"></path><path d="M10.1 13.9 21 3"></path></svg></button>' +
+        '</div>' +
+        '<span class="hf-ai-chat-input-hint" id="hf-ai-chat-input-hint" aria-live="polite">ছবি বা ভয়েস—দুটিই ঐচ্ছিক</span>' +
       '</form>' +
       '<div class="hf-ai-chat-footnote"><span>Powered by Halal Food AI</span><span>Enter পাঠান · Shift + Enter নতুন লাইন</span></div>' +
     '</div>';
@@ -78,6 +85,15 @@
   const form = panel.querySelector("#hf-ai-chat-form");
   const input = panel.querySelector("#hf-ai-chat-input");
   const sendButton = panel.querySelector(".hf-ai-chat-send");
+  const attachButton = panel.querySelector("#hf-ai-chat-attach");
+  const imageInput = panel.querySelector("#hf-ai-chat-image-file");
+  const imagePreview = panel.querySelector("#hf-ai-chat-attachment-preview");
+  const previewImage = panel.querySelector("#hf-ai-chat-attachment-image");
+  const previewName = panel.querySelector("#hf-ai-chat-attachment-name");
+  const removeImageButton = panel.querySelector("#hf-ai-chat-remove-image");
+  const micButton = panel.querySelector("#hf-ai-chat-mic");
+  const inputHint = panel.querySelector("#hf-ai-chat-input-hint");
+  let selectedImageFile = null, selectedImageUrl = "", speechRecognition = null, speechActive = false;
   const conversation = [];
   const productCatalog = new Map();
   const shoppingCart = [];
@@ -629,27 +645,92 @@
     if (code === "INCOMPLETE_AI_RESPONSE") return "উত্তরটি সম্পূর্ণ তৈরি হয়নি। অনুগ্রহ করে প্রশ্নটি আরেকবার পাঠান।";
     return "দুঃখিত, এই মুহূর্তে উত্তর তৈরি করতে সমস্যা হচ্ছে। অনুগ্রহ করে আবার চেষ্টা করুন।";
   }
-  async function submitQuestion(question) {
+  function clearSelectedImage() {
+    selectedImageFile = null;
+    if (selectedImageUrl) URL.revokeObjectURL(selectedImageUrl);
+    selectedImageUrl = "";
+    imageInput.value = "";
+    imagePreview.hidden = true;
+    previewImage.removeAttribute("src");
+    previewName.textContent = "";
+  }
+  function setSelectedImage(file) {
+    if (!file) return;
+    if (!/^image\/(jpeg|png|webp)$/i.test(file.type)) {
+      appendMessage("অনুগ্রহ করে JPG, PNG অথবা WebP ছবি নির্বাচন করুন।", "assistant");
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      appendMessage("ছবির আকার ৮ MB-এর মধ্যে রাখুন।", "assistant");
+      return;
+    }
+    clearSelectedImage();
+    selectedImageFile = file;
+    selectedImageUrl = URL.createObjectURL(file);
+    previewImage.src = selectedImageUrl;
+    previewName.textContent = file.name || "আপলোড করা ছবি";
+    imagePreview.hidden = false;
+    inputHint.textContent = "ছবির সঙ্গে কী জানতে চান লিখুন, অথবা শুধু ছবিটিই পাঠান";
+    input.focus({ preventScroll: true });
+  }
+  async function prepareImageForUpload(file) {
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, 1100 / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+    const context = canvas.getContext("2d", { alpha: false });
+    if (!context) throw new Error("IMAGE_PROCESSING_FAILED");
+    context.fillStyle = "#ffffff";
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    bitmap.close?.();
+    for (const quality of [0.78, 0.68, 0.58, 0.48]) {
+      const dataUrl = canvas.toDataURL("image/jpeg", quality);
+      const base64 = dataUrl.split(",")[1] || "";
+      if (base64.length <= 190000) return { mimeType: "image/jpeg", data: base64 };
+    }
+    throw new Error("IMAGE_TOO_LARGE");
+  }
+  function appendUserImage(bubble, file) {
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    const image = document.createElement("img");
+    image.className = "hf-ai-user-image";
+    image.alt = "আপনার পাঠানো পণ্যের ছবি";
+    image.src = url;
+    image.onload = () => URL.revokeObjectURL(url);
+    bubble.appendChild(image);
+  }
+  async function submitQuestion(question, options) {
     const text = String(question || "").trim();
-    if (!text || busy) return;
-    appendMessage(text, "user");
+    const imageFile = options?.image || selectedImageFile;
+    if ((!text && !imageFile) || busy) return;
+    const userText = text || "এই ছবির মতো বা ছবিতে থাকা পণ্যটি কি Halal Food-এ পাওয়া যায়? ছবিটি দেখে কাছাকাছি পণ্য খুঁজে দিন।";
+    const userBubble = appendMessage(userText, "user");
+    appendUserImage(userBubble, imageFile);
     input.value = ""; resizeComposer();
+    clearSelectedImage();
     const pending = appendMessage("উত্তর তৈরি হচ্ছে", "assistant", "hf-ai-message-pending");
     busy = true;
     input.disabled = true;
     sendButton.disabled = true;
+    attachButton.disabled = true;
+    micButton.disabled = true;
     const requestController = new AbortController();
     const requestTimeout = window.setTimeout(() => requestController.abort(), 52000);
     try {
+      const requestBody = {
+        message: userText,
+        history: conversation.slice(-20)
+      };
+      if (imageFile) requestBody.image = await prepareImageForUpload(imageFile);
       const response = await fetch(CHAT_API, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         cache: "no-store",
         signal: requestController.signal,
-        body: JSON.stringify({
-          message: text,
-          history: conversation.slice(-20)
-        })
+        body: JSON.stringify(requestBody)
       });
       let data = {};
       try { data = await response.json(); } catch (_parseError) {}
@@ -674,6 +755,8 @@
       busy = false;
       input.disabled = false;
       sendButton.disabled = false;
+      attachButton.disabled = false;
+      micButton.disabled = false;
       resizeComposer();
       if (!panel.hidden && !minimized) input.focus({ preventScroll: true });
     }
@@ -691,6 +774,56 @@
   input.addEventListener("input", resizeComposer);
   input.addEventListener("keydown", event => { if (event.key === "Enter" && !event.shiftKey && !event.isComposing) { event.preventDefault(); form.requestSubmit(); } });
   form.addEventListener("submit", event => { event.preventDefault(); submitQuestion(input.value); });
+  attachButton.addEventListener("click", () => imageInput.click());
+  imageInput.addEventListener("change", () => setSelectedImage(imageInput.files?.[0]));
+  removeImageButton.addEventListener("click", clearSelectedImage);
+  const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (SpeechRecognitionAPI) {
+    speechRecognition = new SpeechRecognitionAPI();
+    speechRecognition.lang = "bn-BD";
+    speechRecognition.continuous = false;
+    speechRecognition.interimResults = true;
+    speechRecognition.onstart = () => {
+      speechActive = true;
+      micButton.classList.add("is-listening");
+      micButton.setAttribute("aria-label", "ভয়েস রেকর্ডিং বন্ধ করুন");
+      inputHint.textContent = "শুনছি... কথা শেষ হলে মাইক্রোফোনে আবার চাপ দিন";
+    };
+    speechRecognition.onresult = event => {
+      let transcript = "";
+      for (let index = 0; index < event.results.length; index++) transcript += event.results[index][0]?.transcript || "";
+      input.value = transcript.trim();
+      resizeComposer();
+    };
+    speechRecognition.onerror = event => {
+      inputHint.textContent = event.error === "not-allowed"
+        ? "মাইক্রোফোন ব্যবহারের অনুমতি দিন, তারপর আবার চেষ্টা করুন"
+        : "ভয়েস শনাক্ত করা যায়নি। আবার চেষ্টা করুন";
+    };
+    speechRecognition.onend = () => {
+      const shouldSubmit = speechActive;
+      speechActive = false;
+      micButton.classList.remove("is-listening");
+      micButton.setAttribute("aria-label", "ভয়েসে প্রশ্ন করুন");
+      if (shouldSubmit && input.value.trim()) {
+        inputHint.textContent = "আপনার কথাটি পাঠানো হচ্ছে";
+        submitQuestion(input.value);
+      } else if (!selectedImageFile) inputHint.textContent = "ছবি বা ভয়েস—দুটিই ঐচ্ছিক";
+    };
+    micButton.addEventListener("click", () => {
+      if (speechActive) {
+        speechRecognition.stop();
+        return;
+      }
+      try { speechRecognition.start(); }
+      catch (_) { inputHint.textContent = "মাইক্রোফোন চালু করা যাচ্ছে না। আবার চেষ্টা করুন"; }
+    });
+  } else {
+    micButton.disabled = true;
+    micButton.title = "এই ব্রাউজারে ভয়েস ইনপুট সমর্থিত নয়";
+    micButton.setAttribute("aria-label", "এই ব্রাউজারে ভয়েস ইনপুট সমর্থিত নয়");
+    inputHint.textContent = "ছবি বা ভয়েস ব্যবহার ঐচ্ছিক · ভয়েস ইনপুটের জন্য Chrome ব্যবহার করুন";
+  }
   messages.addEventListener("wheel", event => {
     const max = messages.scrollHeight - messages.clientHeight;
     if (max <= 0 || (event.deltaY < 0 && messages.scrollTop <= 0) || (event.deltaY > 0 && messages.scrollTop >= max - 1)) event.preventDefault();
