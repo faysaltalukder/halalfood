@@ -8,7 +8,7 @@
   const style = document.createElement("link");
   style.id = "hf-customer-care-chat-styles";
   style.rel = "stylesheet";
-  style.href = ASSET_BASE + "css/customer-care-chat.css?v=20261103-ai-chat-direct-v1";
+  style.href = ASSET_BASE + "css/customer-care-chat.css?v=20261103-ai-chat-friendly-v1";
   document.head.appendChild(style);
 
   let root = document.getElementById("hf-contact-widget");
@@ -50,7 +50,6 @@
       '</div>' +
       '<button class="hf-ai-chat-close" type="button" aria-label="Close chat">×</button>' +
     '</header>' +
-    '<div class="hf-ai-chat-setup-note" role="status">AI সহকারীর সংযোগ যাচাই করা হচ্ছে…</div>' +
     '<div class="hf-ai-chat-content" id="hf-ai-chat-content">' +
       '<div class="hf-ai-chat-messages" id="hf-ai-chat-messages" aria-live="polite">' +
         '<div class="hf-ai-message hf-ai-message-assistant"><p>আসসালামু আলাইকুম! আমি Halal Food-এর AI সহকারী। পণ্য, ওয়েবসাইট বা সাধারণ সেবা সম্পর্কে কী জানতে চান?</p><span class="hf-ai-message-time">Halal Food Assistant</span></div>' +
@@ -69,25 +68,18 @@
   document.body.appendChild(panel);
 
   const closeButton = panel.querySelector(".hf-ai-chat-close");
-  const setupNote = panel.querySelector(".hf-ai-chat-setup-note");
   const chatContent = panel.querySelector("#hf-ai-chat-content");
   const messages = panel.querySelector("#hf-ai-chat-messages");
   const form = panel.querySelector("#hf-ai-chat-form");
   const input = panel.querySelector("#hf-ai-chat-input");
   const sendButton = panel.querySelector(".hf-ai-chat-send");
   const conversation = [];
-  let serverCheckStarted = false;
   let busy = false;
 
   function openChat() {
     panel.hidden = false;
     launcher.setAttribute("aria-expanded", "true");
     launcher.setAttribute("aria-label", "Close Halal Food AI chat");
-    if (!serverCheckStarted) {
-      serverCheckStarted = true;
-      setupNote.textContent = "AI সহকারীর সঙ্গে সংযোগ করা হচ্ছে…";
-      checkServer();
-    }
     window.setTimeout(() => input?.focus({ preventScroll: true }), 50);
   }
   function closeChat() {
@@ -95,11 +87,24 @@
     launcher.setAttribute("aria-expanded", "false");
     launcher.setAttribute("aria-label", "Open Halal Food AI chat");
   }
+  function cleanAssistantText(value) {
+    return String(value || "")
+      .replace(/^\\s{0,3}#{1,6}\\s+/gm, "")
+      .replace(/^\\s*[-*•]+\\s+/gm, "")
+      .replace(/^\\s*\\d+[.)]\\s+/gm, "")
+      .replace(/\\*\\*(.*?)\\*\\*/g, "$1")
+      .replace(/__(.*?)__/g, "$1")
+      .replace(/(?<!\\*)\\*(?!\\s)(.*?)(?<!\\s)\\*(?!\\*)/g, "$1")
+      .replace(/`([^`]+)`/g, "$1")
+      .replace(/^\\s*[-_]{3,}\\s*$/gm, "")
+      .replace(/\\n{3,}/g, "\\n\\n")
+      .trim();
+  }
   function appendMessage(text, sender, extraClass) {
     const bubble = document.createElement("div");
     bubble.className = "hf-ai-message " + (sender === "user" ? "hf-ai-message-user" : "hf-ai-message-assistant") + (extraClass ? " " + extraClass : "");
     const paragraph = document.createElement("p");
-    paragraph.textContent = text;
+    paragraph.textContent = sender === "assistant" ? cleanAssistantText(text) : text;
     bubble.appendChild(paragraph);
     messages.appendChild(bubble);
     messages.scrollTop = messages.scrollHeight;
@@ -176,19 +181,6 @@
     if (code === "GEMINI_TIMEOUT") return "উত্তর পেতে বেশি সময় লাগছে। অনুগ্রহ করে আবার চেষ্টা করুন.";
     if (code === "INCOMPLETE_AI_RESPONSE") return "উত্তরটি সম্পূর্ণ তৈরি হয়নি। অনুগ্রহ করে প্রশ্নটি আরেকবার পাঠান।";
     return "দুঃখিত, AI সহকারীর সঙ্গে সাময়িক সংযোগ সমস্যা হয়েছে। আবার চেষ্টা করুন অথবা ফোন/WhatsApp-এ যোগাযোগ করুন।";
-  }
-  async function checkServer() {
-    try {
-      const response = await fetch(CHAT_API, { method: "GET", cache: "no-store" });
-      const data = await response.json();
-      if (!response.ok || !data.success || !data.configured) {
-        setupNote.textContent = "AI সার্ভার প্রস্তুত নয়। ফোন বা WhatsApp-এ সহায়তা নিন।";
-        return;
-      }
-      setupNote.textContent = "সংযুক্ত · " + (data.model || "Gemini AI");
-    } catch (_error) {
-      setupNote.textContent = "AI সার্ভারের সঙ্গে সংযোগ করা যাচ্ছে না। ফোন বা WhatsApp-এ সহায়তা নিন।";
-    }
   }
   async function submitQuestion(question) {
     const text = String(question || "").trim();
