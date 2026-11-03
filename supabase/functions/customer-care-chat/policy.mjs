@@ -25,9 +25,9 @@ function classifyCustomerIntent(message, hasImage = false) {
   else if (rejection) { primary = "ambiguous_product_request"; clarification = true; confidence = "high"; }
   else if (price) { primary = "product_price_inquiry"; confidence = "high"; }
   else if (comparison) { primary = "product_comparison"; permission = "explicit"; maxCards = 2; matchMode = "requested_items"; confidence = "high"; }
-  else if (recommendation) { primary = "recommendation_request"; permission = "explicit"; maxCards = 3; matchMode = "ranked_recommendations"; confidence = "high"; }
+  else if (recommendation) { primary = "recommendation_request"; permission = "explicit"; maxCards = 4; matchMode = "ranked_recommendations"; confidence = "high"; }
   else if (broad) { primary = "broad_catalog_browse"; permission = "explicit"; maxCards = 2; matchMode = "broad_catalog"; confidence = "high"; }
-  else if (categoryBrowse) { primary = "category_browse"; permission = "explicit"; maxCards = 3; matchMode = "category"; confidence = "high"; }
+  else if (categoryBrowse) { primary = "category_browse"; permission = "explicit"; maxCards = 4; matchMode = "category"; confidence = "high"; }
   else if (availability && hasCategory) { primary = "product_availability_inquiry"; confidence = "high"; }
   else if (info) { primary = "general_information"; confidence = "high"; }
   else if (hasImage && !text) { primary = "image_product_search"; permission = "limited"; maxCards = 1; matchMode = "exact_or_same_product"; confidence = "medium"; }
