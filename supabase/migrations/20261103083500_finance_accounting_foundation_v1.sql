@@ -176,7 +176,7 @@ create index if not exists admin_finance_journal_events_date_idx
 -- exposed by the Data API in current Supabase projects. No public/anon access is granted.
 revoke all on public.admin_finance_chart_of_accounts,public.admin_finance_periods,
   public.admin_finance_journal_entries,public.admin_finance_journal_lines,
-  public.admin_finance_journal_events from public,anon;
+  public.admin_finance_journal_events from public,anon,authenticated;
 grant select on public.admin_finance_chart_of_accounts to authenticated;
 grant select,insert,update on public.admin_finance_periods to authenticated;
 grant select,insert,update on public.admin_finance_journal_entries to authenticated;
@@ -878,8 +878,8 @@ join public.admin_finance_journal_lines jl on jl.journal_entry_id=je.id
 join public.admin_finance_chart_of_accounts coa on coa.id=jl.account_id
 where je.status in ('posted','reversed');
 
+revoke all on public.admin_finance_trial_balance,public.admin_finance_general_ledger from public,anon,authenticated;
 grant select on public.admin_finance_trial_balance,public.admin_finance_general_ledger to authenticated;
-revoke all on public.admin_finance_trial_balance,public.admin_finance_general_ledger from anon;
 
 create or replace function public.admin_finance_guard_chart_account()
 returns trigger
