@@ -116,6 +116,8 @@ function rankProductCandidates(products, profiles, message, decision={}, imageMa
     /(whole|আস্ত|পুরো)/u.test(query)?"whole":
     /(কাটা|cut)/u.test(query)?"cut":null;
   const visualSlug=typeof imageMatch?.candidate_slug==="string"?imageMatch.candidate_slug:"";
+  const visualSlugs=Array.isArray(imageMatch?.candidate_slugs)?imageMatch.candidate_slugs.filter(x=>typeof x==="string"):[];
+
   const visualObject=String(imageMatch?.image_object||"");
   const visibleText=String(imageMatch?.visible_text||"");
   const visualBrand=String(imageMatch?.brand||"");
@@ -156,7 +158,7 @@ function rankProductCandidates(products, profiles, message, decision={}, imageMa
     const qTerms=terms.filter(t=>t.length>1);
     const overlap=qTerms.length?qTerms.filter(t=>docText.includes(t)).length/qTerms.length:0;
     const semanticScore=Math.min(1,overlap*1.35);
-    const visualScore=visualSlug && visualSlug===doc.slug?1:
+    const visualScore=visualSlug && visualSlug===doc.slug || visualSlugs.includes(doc.slug)?1:
       visualObject && (hasAny(doc.name+" "+doc.slug+" "+doc.derived_from, [visualObject])||hasAny(doc.attributes,[visualObject]))?0.75:0;
     const packagingScore=visualPackaging && doc.packaging_type && normalizeText(visualPackaging)===normalizeText(doc.packaging_type)?1:0;
     const visibleTextScore=visibleText && (name.includes(normalizeText(visibleText))||slug.includes(normalizeText(visibleText)))?1:0;
@@ -207,6 +209,7 @@ function extractImageMatch(reply) {
     imageMatch={
       image_object:typeof raw.image_object==="string"?raw.image_object.slice(0,80):"",
       candidate_slug:typeof raw.candidate_slug==="string"&&/^[a-z0-9-]{1,100}$/i.test(raw.candidate_slug)?raw.candidate_slug:"",
+      candidate_slugs:Array.isArray(raw.candidate_slugs)?raw.candidate_slugs.filter(x=>typeof x==="string"&&/^[a-z0-9-]{1,100}$/i.test(x)).slice(0,4):[],
       brand:typeof raw.brand==="string"?raw.brand.slice(0,80):"",
       packaging_type:typeof raw.packaging_type==="string"?raw.packaging_type.slice(0,60):"",
       visible_text:typeof raw.visible_text==="string"?raw.visible_text.slice(0,100):"",
@@ -220,7 +223,7 @@ function applyConfidencePolicy(ranked, decision, imageMatch=null) {
   if(!Array.isArray(ranked)||!ranked.length)return [];
   if(decision?.primary_intent?.startsWith("image_")){
     if(!imageMatch || imageMatch.match_type==="uncertain" || imageMatch.confidence==="low")return [];
-    if(imageMatch.candidate_slug)return ranked.filter(x=>String(x.product.slug)===imageMatch.candidate_slug);
+    if(imageMatch.candidate_slug)return ranked.filter(x=>String(x.product.slug)===imageMatch.candidate_slug);\n    if(imageMatch.candidate_slugs?.length)return ranked.filter(x=>imageMatch.candidate_slugs.includes(String(x.product.slug))).slice(0,Math.min(3,Number(decision.max_product_cards||0)));
     if(imageMatch.match_type==="derived_product"||imageMatch.match_type==="similar")return ranked.filter(x=>x.confidence_level==="high"||x.confidence_level==="medium").slice(0,Math.min(3,Number(decision.max_product_cards||0)));
     return [];
   }
