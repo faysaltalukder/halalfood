@@ -10,14 +10,11 @@ const JSON_HEADERS = {
 const MAX_MESSAGE_CHARS = 1000;
 const MAX_HISTORY_ITEMS = 8;
 const MAX_REQUEST_BYTES = 12000;
-const RATE_LIMIT = 10;
-const RATE_WINDOW_MS = 60_000;
-const rateBuckets = new Map<string, { count: number; resetAt: number }>();
-
 const SYSTEM_INSTRUCTION = [
   "You are Halal Food's polite, capable customer-care assistant for a Bangladesh-based grocery and food e-commerce demonstration project.",
-  "Reply in natural Bengali by default. If the customer writes in English, answer in English. Be warm, practical, specific, and honest. Usually use 2–6 short sentences and stay under 150 words unless the customer asks for detail.",
-  "Understand the customer's need before suggesting products. If relevant live products are supplied in the context, you may explain and recommend up to 3 suitable items. Use only the exact product names, prices, availability states, and URLs supplied in the context. Never invent a product, price, discount, package size, stock count, or URL.",
+  "Reply in natural Bengali by default. If the customer writes in English, answer in English. Be warm, clear, practical, creative in presentation, and honest. Do not impose an arbitrary short-answer limit: simple questions can receive concise answers, while difficult, critical, or multi-part questions should receive a careful, well-structured explanation with examples or trade-offs when useful.",
+  "For complex questions, identify each part of the customer's actual concern, answer the important parts in order, explain what is verified versus general guidance, and ask at most one focused follow-up question when an essential detail is missing. Do not reject or oversimplify a question merely because it is unusual, technical, detailed, or critical.",
+  "Understand the customer's need before suggesting products. When asked for recommendations, suggest up to 3 suitable items. When asked what products or varieties exist in a category, list the relevant matching live catalog items supplied in context. Use only exact product names, prices, availability states, and URLs supplied in context. Never invent a product, price, discount, package size, stock count, or URL.",
   "For product prices, use the current live catalog price supplied in the context. Do not disclose numeric stock quantity. You may say a product is currently listed as available, unavailable, or that availability needs confirmation, based only on the supplied availability state.",
   "Only describe ingredients, origin, quality attributes, production method, taste, texture, storage, allergens, certifications, or special suitability when an owner-published product knowledge profile explicitly supplies that fact. A missing detail is unknown; do not fill gaps with assumptions.",
   "Existing storefront descriptions may contain generic or outdated claims about delivery and payment. Do not treat those claims as current policy. The owner-curated project status and policy documents in the knowledge context take precedence over product-description boilerplate.",
@@ -40,27 +37,6 @@ function response(body: unknown, status = 200, origin = ALLOWED_ORIGIN) {
       "Access-Control-Allow-Headers": "content-type",
     },
   });
-}
-
-function getClientKey(req: Request): string {
-  const forwarded = req.headers.get("x-forwarded-for") || "";
-  const firstForwarded = forwarded.split(",")[0].trim();
-  return firstForwarded || req.headers.get("cf-connecting-ip") || req.headers.get("x-real-ip") || "unknown";
-}
-
-function checkRateLimit(key: string): boolean {
-  const now = Date.now();
-  for (const [bucketKey, bucket] of rateBuckets) {
-    if (bucket.resetAt <= now) rateBuckets.delete(bucketKey);
-  }
-  const current = rateBuckets.get(key);
-  if (!current || current.resetAt <= now) {
-    rateBuckets.set(key, { count: 1, resetAt: now + RATE_WINDOW_MS });
-    return true;
-  }
-  if (current.count >= RATE_LIMIT) return false;
-  current.count += 1;
-  return true;
 }
 
 function getSupabaseCredentials(): { url: string; key: string; isSecretKey: boolean } | null {
@@ -149,6 +125,19 @@ function expandTerms(message: string): string[] {
   return Array.from(terms).slice(0, 24);
 }
 
+function isBroadCatalogQuestion(message: string): boolean {
+  return /(কী\s*কী\s*পণ্য|কি\s*কি\s*পণ্য|কোন\s*কোন\s*পণ্য|সব\s*পণ্য|পণ্যের\s*তালিকা|ক্যাটালগ|catalog|product\s*list|list\s*(all\s*)?products|what\s+products|which\s+products|available\s+products)/iu.test(message);
+}
+
+function isCategoryCatalogQuestion(message: string): boolean {
+  return /(ঘি|ghee|মধু|honey|বাদাম|nuts?|almond|তেল|oil|চাল|rice|মসলা|মশলা|masala|spice|খেজুর|dates?|চা|tea|মাংস|গরু|beef|meat|chicken|মুরগি|ড্রাই\s*ফুড|dry\s*food)/iu.test(message);
+}
+
+function isTestOrPlaceholderProduct(product: Record<string, unknown>): boolean {
+  const identity = String(product.name || "") + " " + String(product.slug || "");
+  return /(?:^|[\s_-])(test|sample|demo|draft|placeholder)(?:$|[\s_-])/iu.test(identity);
+}
+
 function productScore(product: Record<string, unknown>, terms: string[]): number {
   const name = String(product.name || "").toLowerCase();
   const category = String(product.category || "").toLowerCase();
@@ -200,13 +189,19 @@ async function loadKnowledge(message: string, history: Array<{ role: "user" | "m
     ? documentsResult.value.filter((item) => !item.expires_at || new Date(String(item.expires_at)).getTime() > Date.now())
     : [];
   const allProducts = productsResult.status === "fulfilled" ? productsResult.value : [];
-  const categoryNames = Array.from(new Set(allProducts.map((item) => String(item.category || "")).filter(Boolean))).sort();
-
-  const ranked = allProducts
+  const customerFacingProducts = allProducts.filter((product) => !isTestOrPlaceholderProduct(product));
+  const categoryNames = Array.from(new Set(customerFacingProducts.map((item) => String(item.category || "")).filter(Boolean))).sort();
+  const broadCatalogQuestion = isBroadCatalogQuestion(searchText);
+  const categoryCatalogQuestion = isCategoryCatalogQuestion(searchText);
+  const ranked = customerFacingProducts
     .map((product) => ({ product, score: productScore(product, terms) }))
-    .filter((item) => item.score > 0)
-    .sort((a, b) => b.score - a.score || String(a.product.name || "").localeCompare(String(b.product.name || "")))
-    .slice(0, 5);
+    .filter((item) => broadCatalogQuestion || item.score > 0)
+    .sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      const categoryOrder = String(a.product.category || "").localeCompare(String(b.product.category || ""));
+      return categoryOrder || String(a.product.name || "").localeCompare(String(b.product.name || ""));
+    })
+    .slice(0, broadCatalogQuestion ? 15 : categoryCatalogQuestion ? 12 : 5);
 
   let productKnowledge: Record<string, unknown>[] = [];
   if (ranked.length) {
@@ -262,11 +257,14 @@ async function loadKnowledge(message: string, history: Array<{ role: "user" | "m
   });
 
   return {
-    available: documentsResult.status === "fulfilled" || productsResult.status === "fulfilled",
+    available: documentsResult.status === "fulfilled" && productsResult.status === "fulfilled",
     documents,
     products,
     productKnowledge,
     categoryNames,
+    catalogCount: customerFacingProducts.length,
+    broadCatalogQuestion,
+    categoryCatalogQuestion,
   };
 }
 
@@ -279,6 +277,10 @@ function buildKnowledgeContext(knowledge: Awaited<ReturnType<typeof loadKnowledg
   if (knowledge.categoryNames.length) {
     sections.push("LIVE PRODUCT CATEGORIES:\n" + knowledge.categoryNames.join(", "));
   }
+  if (knowledge.broadCatalogQuestion) {
+    sections.push("GENERAL CATALOG QUESTION: The store currently has " + knowledge.catalogCount +
+      " customer-facing active products across the listed categories. The matched items below are examples, not the complete catalog. Invite the customer to name a category to see more.");
+  }
   if (knowledge.products.length) {
     sections.push("MATCHED LIVE PRODUCTS (current catalog fields; numeric stock is intentionally excluded):\n" +
       JSON.stringify(knowledge.products));
@@ -286,7 +288,7 @@ function buildKnowledgeContext(knowledge: Awaited<ReturnType<typeof loadKnowledg
     sections.push("No matching live products were found for this message. Do not invent or guess a product.");
   }
   if (!knowledge.available) {
-    sections.push("LIVE KNOWLEDGE DATABASE IS UNAVAILABLE FOR THIS REQUEST. Do not claim current price, stock, or product details.");
+    sections.push("LIVE KNOWLEDGE DATABASE OR PRODUCT CATALOG IS UNAVAILABLE FOR THIS REQUEST. Do not claim current price, availability, or product details.");
   }
   return sections.join("\n\n---\n\n");
 }
@@ -325,11 +327,49 @@ async function callGemini(
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: systemInstruction }] },
         contents,
-        generationConfig: { maxOutputTokens: 1200, temperature: 0.35 },
+        generationConfig: { maxOutputTokens: 1800, temperature: 0.35 },
       }),
       signal,
     },
   );
+}
+
+const FALLBACK_MODELS = ["gemini-3.7-flash", "gemini-3.6-flash"];
+
+async function callGeminiWithFallback(
+  primaryModel: string,
+  requestId: string,
+  apiKey: string,
+  contents: Array<{ role: "user" | "model"; parts: Array<{ text: string }> }>,
+  systemInstruction: string,
+  signal: AbortSignal,
+): Promise<{ response: Response; modelUsed: string }> {
+  const modelCandidates = Array.from(new Set([primaryModel, ...FALLBACK_MODELS]));
+  let lastResponse: Response | null = null;
+  let modelUsed = primaryModel;
+
+  for (let index = 0; index < modelCandidates.length; index += 1) {
+    modelUsed = modelCandidates[index];
+    const upstream = await callGemini(modelUsed, apiKey, contents, systemInstruction, signal);
+    lastResponse = upstream;
+    if (upstream.ok || (upstream.status !== 429 && upstream.status !== 503)) {
+      return { response: upstream, modelUsed };
+    }
+
+    const nextModel = modelCandidates[index + 1];
+    if (nextModel) {
+      console.warn(JSON.stringify({
+        event: "customer_care_model_fallback",
+        requestId,
+        primaryModel,
+        fallbackModel: nextModel,
+        upstreamStatus: upstream.status,
+      }));
+    }
+  }
+
+  if (!lastResponse) throw new Error("Gemini request did not return a response.");
+  return { response: lastResponse, modelUsed };
 }
 
 Deno.serve(async (req: Request) => {
@@ -395,10 +435,6 @@ Deno.serve(async (req: Request) => {
     return response({ success: false, code: "INVALID_MESSAGE", requestId }, 400);
   }
 
-  if (!checkRateLimit(getClientKey(req))) {
-    return response({ success: false, code: "RATE_LIMITED", requestId }, 429);
-  }
-
   const apiKey = Deno.env.get("GEMINI_API_KEY");
   const model = (Deno.env.get("GEMINI_MODEL") || "gemini-3.8-flash").trim();
   if (!apiKey) {
@@ -441,26 +477,9 @@ Deno.serve(async (req: Request) => {
       databaseAvailable: knowledge.available,
     }));
 
-    let upstream: Response | null = null;
-    for (let attempt = 0; attempt < 2; attempt += 1) {
-      upstream = await callGemini(model, apiKey, contents, systemInstruction, controller.signal);
-      if (upstream.status !== 503 || attempt === 1) break;
-      await new Promise((resolve) => setTimeout(resolve, 900));
-    }
-
-    if (!upstream) throw new Error("Gemini request did not return a response.");
-
-    let modelUsed = model;
-    if ((upstream.status === 503 || upstream.status === 429) && model !== "gemini-3.6-flash") {
-      modelUsed = "gemini-3.6-flash";
-      console.warn(JSON.stringify({
-        event: "customer_care_model_fallback",
-        requestId,
-        primaryModel: model,
-        fallbackModel: modelUsed,
-      }));
-      upstream = await callGemini(modelUsed, apiKey, contents, systemInstruction, controller.signal);
-    }
+    const initialResult = await callGeminiWithFallback(model, requestId, apiKey, contents, systemInstruction, controller.signal);
+    let upstream = initialResult.response;
+    let modelUsed = initialResult.modelUsed;
 
     if (!upstream.ok) {
       const providerPayload = await upstream.json().catch(() => null);
@@ -497,9 +516,7 @@ Deno.serve(async (req: Request) => {
         candidateTokenCount: Number(result?.usageMetadata?.candidatesTokenCount || 0),
       }));
 
-      const retryModel = modelUsed === model && modelUsed !== "gemini-3.6-flash"
-        ? "gemini-3.6-flash"
-        : modelUsed;
+      const retryModel = modelUsed;
       const retryContents = [
         ...contents,
         ...(reply ? [{ role: "model" as const, parts: [{ text: reply }] }] : []),
@@ -510,7 +527,8 @@ Deno.serve(async (req: Request) => {
           }]
         }
       ];
-      const retryResponse = await callGemini(retryModel, apiKey, retryContents, systemInstruction, controller.signal);
+      const retryResult = await callGeminiWithFallback(retryModel, requestId, apiKey, retryContents, systemInstruction, controller.signal);
+      const retryResponse = retryResult.response;
 
       if (retryResponse.ok) {
         result = await retryResponse.json();
@@ -523,7 +541,7 @@ Deno.serve(async (req: Request) => {
         if (isCompleteReply(retriedReply, retryFinishReason)) {
           reply = retriedReply;
           finishReason = retryFinishReason;
-          modelUsed = retryModel;
+          modelUsed = retryResult.modelUsed;
         } else {
           console.warn(JSON.stringify({
             event: "customer_care_incomplete_retry_failed",
