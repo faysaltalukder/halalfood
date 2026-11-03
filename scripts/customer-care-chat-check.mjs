@@ -1,4 +1,5 @@
 import { classifyCustomerIntent } from "../supabase/functions/customer-care-chat/policy.mjs";
+import { rankProductCandidates, extractConversationState, extractImageMatch, applyConfidencePolicy, normalizeText } from "../supabase/functions/customer-care-chat/intelligence.mjs";
 import fs from "node:fs";
 import assert from "node:assert/strict";
 
@@ -7,6 +8,14 @@ const chat = fs.readFileSync("js/customer-care-chat.js", "utf8");
 const css = fs.readFileSync("css/customer-care-chat.css", "utf8");
 const home = fs.readFileSync("index.html", "utf8");
 const edge = fs.readFileSync("supabase/functions/customer-care-chat/index.ts", "utf8");
+const intelligence = fs.readFileSync("supabase/functions/customer-care-chat/intelligence.mjs", "utf8");
+const analyticsIngest = fs.readFileSync("supabase/functions/analytics-ingest/index.ts", "utf8");
+const knowledgeAdmin = fs.readFileSync("admin/ai-knowledge.js", "utf8");
+const knowledgePage = fs.readFileSync("admin/ai-knowledge.html", "utf8");
+const analyticsPage = fs.readFileSync("admin/analytics.html", "utf8");
+const adminApp = fs.readFileSync("admin/app.js", "utf8");
+const stageTwoMigration = fs.readFileSync("supabase/migrations/20261103143000_ai_customer_intelligence_stage_two.sql", "utf8");
+const golden = JSON.parse(fs.readFileSync("scripts/customer-care-intelligence-golden.json", "utf8"));
 
 assert.match(main, /js\/customer-care-chat\.js\?v=20261103-stage1-intelligence-v1/);
 assert.match(chat, /functions\/v1\/customer-care-chat/);
@@ -185,3 +194,80 @@ assert.equal(imageMaterial.max_product_cards, 1);
 const rejected = classifyCustomerIntent("এই ঘি চাই না");
 assert.equal(rejected.primary_intent, "ambiguous_product_request");
 assert.equal(rejected.max_product_cards, 0);
+
+assert.match(edge, /from "\.\/intelligence\\.mjs"/);
+assert.match(edge, /rankProductCandidates/);
+assert.match(edge, /extractImageMatch/);
+assert.match(edge, /buildCatalogImageParts/);
+assert.match(edge, /logAiCustomerCareEvents/);
+assert.match(edge, /HF_IMAGE_MATCH/);
+assert.match(edge, /suppressed_rejected_product_count/);
+assert.match(chat, /appendProductCards\\(bubble, products, maxCards, matchType\\)/);
+assert.match(chat, /const safeLimit = Math\\.min\\(4/);
+assert.match(chat, /ai_product_card_shown/);
+assert.match(chat, /ai_product_clicked/);
+assert.match(main, /ai_product_card_shown/);
+assert.match(main, /ai_product_clicked/);
+assert.match(analyticsIngest, /ai_intent_detected/);
+assert.match(analyticsIngest, /ai_product_clicked/);
+assert.match(analyticsIngest, /primary_intent/);
+assert.match(knowledgePage, /aiKbSearchSynonyms/);
+assert.match(knowledgePage, /aiKbSearchAttributes/);
+assert.match(knowledgeAdmin, /search_synonyms/);
+assert.match(knowledgeAdmin, /search_attributes/);
+assert.match(analyticsPage, /analyticsAiIntelligenceSection/);
+assert.match(analyticsPage, /aiAnalyticsIntentBody/);
+assert.match(adminApp, /aiAnalyticsConversations/);
+assert.match(stageTwoMigration, /search_synonyms text\\[\\]/);
+assert.match(stageTwoMigration, /search_attributes jsonb/);
+assert.match(stageTwoMigration, /ai_recommendation_suppressed/);
+assert.doesNotMatch(stageTwoMigration, /DROP TABLE|DELETE FROM|TRUNCATE/);
+assert.equal(golden.cases.length, 120);
+for (const item of golden.cases) {
+  const decision = classifyCustomerIntent(item.message, item.has_image);
+  assert.equal(decision.primary_intent, item.expected_intent, item.message || "[image only]");
+  assert.equal(decision.max_product_cards, item.expected_max_cards, item.message || "[image only]");
+}
+
+const catalogFixtures = [
+  {id:"p1",name:"Pure Mustard Oil (Sorisha Tel)",slug:"mustard-oil",category:"Oil",category_slug:"oil",is_active:true,unit_type:"1L",price:950},
+  {id:"p2",name:"Virgin Coconut Oil",slug:"coconut-oil",category:"Oil",category_slug:"oil",is_active:true,unit_type:"500ml",price:650},
+  {id:"p3",name:"Pure Cow Ghee",slug:"cow-ghee",category:"Ghee",category_slug:"ghee",is_active:true,unit_type:"500g",price:1200},
+  {id:"p4",name:"Black Seed Honey",slug:"black-seed-honey",category:"Honey",category_slug:"honey",is_active:true,unit_type:"1kg",price:800},
+  {id:"p5",name:"Basmati Rice",slug:"basmati-rice",category:"Dry Food",category_slug:"dry-food",is_active:true,unit_type:"1kg",price:850},
+  {id:"p6",name:"Inactive Mustard Oil",slug:"inactive-oil",category:"Oil",category_slug:"oil",is_active:false,unit_type:"1L",price:500},
+  {id:"p7",name:"Ghee Test Product 7",slug:"ghee-test-product-7",category:"Ghee",category_slug:"ghee",is_active:true,unit_type:"500g",price:10}
+];
+const verifiedProfiles = [
+  {product_id:"p2",status:"published",search_synonyms:["narkel tel","coconut tel"],product_form:"liquid",derived_from:["coconut"],related_terms:["cooking"],brand:"Verified Coconut Brand",packaging_type:"glass bottle",visual_description:"clear glass bottle with white label",size_label:"500ml",search_attributes:{usage:["cooking"],material:["coconut"]}},
+  {product_id:"p3",status:"published",search_synonyms:["gawa ghi"],product_form:"semi-solid",derived_from:["milk fat"],related_terms:["cooking","dessert"],brand:"Verified Ghee Brand",packaging_type:"jar",visual_description:"golden ghee in a sealed jar",size_label:"500g",search_attributes:{usage:["cooking","dessert"]}},
+  {product_id:"p4",status:"published",search_synonyms:["kalo jira modhu"],product_form:"liquid",derived_from:["honey"],related_terms:["sweetener"],brand:null,packaging_type:"jar",visual_description:"dark honey in a glass jar",size_label:"1kg",search_attributes:{taste:["sweet"]}}
+];
+assert.match(normalizeText("বাংলা ১০০০ টাকা"), /বাংলা 1000 টাকা/);
+assert.equal(rankProductCandidates(catalogFixtures, [], "সরিষার তেল", {primary_intent:"exact_product_lookup"})[0].product.slug, "mustard-oil");
+assert.equal(rankProductCandidates(catalogFixtures, [], "Sorishar Tel", {primary_intent:"exact_product_lookup"})[0].product.slug, "mustard-oil");
+assert.equal(rankProductCandidates(catalogFixtures, [], "নারিকেল তেল", {primary_intent:"exact_product_lookup"})[0].product.slug, "coconut-oil");
+assert.equal(rankProductCandidates(catalogFixtures, [], "ঘি", {primary_intent:"exact_product_lookup"})[0].product.slug, "cow-ghee");
+assert.ok(rankProductCandidates(catalogFixtures, [], "কী কী তেল আছে", {primary_intent:"category_browse"}).every(item => item.product.category_slug === "oil"));
+assert.equal(rankProductCandidates(catalogFixtures, [], "dragonfruit juice", {primary_intent:"exact_product_lookup"}).length, 0);
+assert.ok(!rankProductCandidates(catalogFixtures, [], "inactive mustard oil", {primary_intent:"exact_product_lookup"}).some(item => item.product.slug === "inactive-oil"));
+assert.ok(!rankProductCandidates(catalogFixtures, [], "ghee", {primary_intent:"exact_product_lookup"}).some(item => item.product.slug === "ghee-test-product-7"));
+assert.equal(rankProductCandidates(catalogFixtures, verifiedProfiles, "kalo jira modhu", {primary_intent:"exact_product_lookup"})[0].product.slug, "black-seed-honey");
+assert.equal(rankProductCandidates(catalogFixtures, verifiedProfiles, "নারিকেল তেল jar", {primary_intent:"exact_product_lookup"}).some(item => item.product.slug === "coconut-oil"), false);
+assert.equal(rankProductCandidates(catalogFixtures, verifiedProfiles, "নারিকেল তেল 500ml", {primary_intent:"exact_product_lookup"})[0].product.slug, "coconut-oil");
+assert.equal(rankProductCandidates(catalogFixtures, verifiedProfiles, "brand UnknownBrand coconut oil", {primary_intent:"exact_product_lookup"}).length, 0);
+assert.equal(rankProductCandidates(catalogFixtures, verifiedProfiles, "cooking", {primary_intent:"general_information"})[0].product.slug, "coconut-oil");
+const state = extractConversationState("এখন ২০০০ টাকার মধ্যে উপহারের জন্য বড় প্যাক চাই", [{role:"user",parts:[{text:"আগে ১০০০ টাকার মধ্যে রান্নার জন্য ছোট প্যাক চাই"}]}]);
+assert.equal(state.budget_bdt, 2000);
+assert.equal(state.purpose, "gift");
+assert.equal(state.pack_preference, "large");
+assert.equal(extractConversationState("এইটা চাই না", []).rejection_detected, true);
+assert.equal(extractConversationState("না, আমি অন্য পণ্য বলেছি", []).correction_detected, true);
+const parsedImage = extractImageMatch('Matched. [[HF_IMAGE_MATCH]]{"candidate_slug":"coconut-oil","candidate_slugs":["coconut-oil"],"match_type":"exact","confidence":"high"}[[/HF_IMAGE_MATCH]]');
+assert.equal(parsedImage.reply, "Matched.");
+assert.equal(parsedImage.imageMatch.candidate_slug, "coconut-oil");
+const imageCandidates = rankProductCandidates(catalogFixtures, verifiedProfiles, "নারিকেল তেল", {primary_intent:"image_product_search",image_search:true});
+assert.equal(applyConfidencePolicy(imageCandidates, {primary_intent:"image_product_search",max_product_cards:1}, {candidate_slug:"coconut-oil",match_type:"exact",confidence:"high"}).length, 1);
+assert.equal(applyConfidencePolicy(imageCandidates, {primary_intent:"image_product_search",max_product_cards:1}, {candidate_slug:"coconut-oil",match_type:"exact",confidence:"low"}).length, 0);
+assert.equal(applyConfidencePolicy(imageCandidates, {primary_intent:"image_similar_product_search",max_product_cards:3}, {candidate_slugs:["coconut-oil","mustard-oil"],match_type:"similar",confidence:"medium"}).length, 2);
+console.log("Stage 2 customer-intelligence regression checks passed.");
