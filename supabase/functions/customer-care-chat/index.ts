@@ -739,7 +739,8 @@ Deno.serve(async (req: Request) => {
       documents: knowledge.documents.length,
       matchedProducts: knowledge.products.length,
       publishedProductProfiles: knowledge.productKnowledge.length,
-      databaseAvailable: knowledge.available,\n      imageSearch: hasImage,
+      databaseAvailable: knowledge.available,
+      imageSearch: hasImage,
     }));
 
     if (!apiKey) {
