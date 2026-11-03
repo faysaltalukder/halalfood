@@ -179,7 +179,7 @@
         item_id: String(item.slug || item.id || ""),
         item_name: String(item.name || ""),
         item_category: String(item.category || ""),
-        price: Number(item.unitPrice != null ? item.unitPrice : item.price) || 0,
+        price: Number(item.unitPrice != null ? item.unitPrice : item.price_value != null ? item.price_value : item.price) || 0,
         quantity: Math.max(1, Number(item.quantity != null ? item.quantity : item.qty) || 1)
       };
     });
@@ -298,9 +298,9 @@
       setView("product");
     }
   }
-  function renderCart() {
+  function renderCart(trackView) {
     updateCartBadge();
-    trackChatEvent("view_cart", cartItemsForTracking(), cartSubtotal(), { cart_source:"ai_chat" });
+    if (trackView !== false) trackChatEvent("view_cart", cartItemsForTracking(), cartSubtotal(), { cart_source:"ai_chat" });
     let body = "";
     if (!shoppingCart.length) body = '<div class="hf-ai-empty-state"><strong>আপনার কার্ট এখন খালি</strong><p>কথোপকথন থেকে পছন্দের পণ্য বেছে নিতে পারেন।</p><button type="button" class="hf-ai-primary-button" data-hf-view-back>পণ্য খুঁজুন</button></div>';
     else {
@@ -335,7 +335,7 @@
       '<label><input type="radio" name="deliveryZone" value="inside_dhaka" required ' + (v.deliveryZone === "inside_dhaka" ? "checked" : "") + '><span>ঢাকার ভেতরে</span><strong>৳ ৭০</strong></label>' +
       '<label><input type="radio" name="deliveryZone" value="outside_dhaka" required ' + (v.deliveryZone === "outside_dhaka" ? "checked" : "") + '><span>ঢাকার বাইরে</span><strong>৳ ১২০</strong></label></fieldset>' +
       '<div class="hf-ai-payment-choice"><strong>পেমেন্ট: Cash on Delivery</strong><span>পণ্য হাতে পেয়ে নগদ মূল্য পরিশোধ করবেন।</span></div>' +
-      '<p class="hf-ai-form-note">অর্ডার নিশ্চিত করার আগে পণ্য ও ডেলিভারি চার্জের সর্বশেষ হিসাব দেখানো হবে।</p>' +
+      '<p class="hf-ai-form-note">অর্ডার নিশ্চিত করার আগে পণ্য ও ডেলিভারি চার্জের সর্বশেষ হিসাব দেখানো হবে। আপনার তথ্য অর্ডার প্রক্রিয়া ও প্রয়োজনীয় যোগাযোগের জন্য ব্যবহৃত হবে। <a href="https://faysaltalukder.github.io/halalfood/privacy.html" target="_blank" rel="noopener noreferrer">গোপনীয়তা নীতি</a></p>' +
       '<div class="hf-ai-form-error" id="hf-ai-checkout-error" role="alert" hidden></div><button type="submit" class="hf-ai-primary-button">হিসাব দেখুন</button></form>';
   }
   async function requestChatQuote(deliveryZone) {
@@ -573,12 +573,12 @@
     if (remove) {
       const item = shoppingCart[Number(remove.dataset.hfCartRemove)];
       if (item) trackChatEvent("remove_from_cart", [{ id:item.id, slug:item.slug, name:item.name, category:item.category, unitPrice:item.unitPrice, qty:item.qty }], item.unitPrice * item.qty, { action:"remove_item" });
-      shoppingCart.splice(Number(remove.dataset.hfCartRemove),1); renderCart(); return;
+      shoppingCart.splice(Number(remove.dataset.hfCartRemove),1); renderCart(false); return;
     }
     const dec = target.closest("[data-hf-cart-minus]");
-    if (dec) { const item = shoppingCart[Number(dec.dataset.hfCartMinus)]; if (item) { item.qty = Math.max(1,item.qty-1); trackChatEvent("remove_from_cart", [{ id:item.id, slug:item.slug, name:item.name, category:item.category, unitPrice:item.unitPrice, qty:1 }], item.unitPrice, { action:"decrease_quantity" }); } renderCart(); return; }
+    if (dec) { const item = shoppingCart[Number(dec.dataset.hfCartMinus)]; if (item) { item.qty = Math.max(1,item.qty-1); trackChatEvent("remove_from_cart", [{ id:item.id, slug:item.slug, name:item.name, category:item.category, unitPrice:item.unitPrice, qty:1 }], item.unitPrice, { action:"decrease_quantity" }); } renderCart(false); return; }
     const inc = target.closest("[data-hf-cart-plus]");
-    if (inc) { const item = shoppingCart[Number(inc.dataset.hfCartPlus)]; if (item) { item.qty = Math.min(1000,item.qty+1); trackChatEvent("add_to_cart", [{ id:item.id, slug:item.slug, name:item.name, category:item.category, unitPrice:item.unitPrice, qty:1 }], item.unitPrice, { action:"increase_quantity" }); } renderCart(); return; }
+    if (inc) { const item = shoppingCart[Number(inc.dataset.hfCartPlus)]; if (item) { item.qty = Math.min(1000,item.qty+1); trackChatEvent("add_to_cart", [{ id:item.id, slug:item.slug, name:item.name, category:item.category, unitPrice:item.unitPrice, qty:1 }], item.unitPrice, { action:"increase_quantity" }); } renderCart(false); return; }
   });
   messages.addEventListener("click", function (event) {
     const detail = event.target.closest("[data-hf-product-view]");
