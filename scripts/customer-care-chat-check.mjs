@@ -1,3 +1,4 @@
+import { classifyCustomerIntent } from "../supabase/functions/customer-care-chat/policy.mjs";
 import fs from "node:fs";
 import assert from "node:assert/strict";
 
@@ -7,7 +8,7 @@ const css = fs.readFileSync("css/customer-care-chat.css", "utf8");
 const home = fs.readFileSync("index.html", "utf8");
 const edge = fs.readFileSync("supabase/functions/customer-care-chat/index.ts", "utf8");
 
-assert.match(main, /js\/customer-care-chat\.js\?v=20261103-shopping-chat-v4/);
+assert.match(main, /js\/customer-care-chat\.js\?v=20261103-stage1-intelligence-v1/);
 assert.match(chat, /functions\/v1\/customer-care-chat/);
 assert.doesNotMatch(chat, /ageConfirmed|hf-ai-chat-age-gate|hf-ai-age-confirm|প্রাপ্তবয়স্কদের জন্য AI সহায়তা/);
 assert.match(chat, /if \(\(!text && !imageFile\) \|\| busy\) return;/);
@@ -106,7 +107,7 @@ assert.match(fs.readFileSync("supabase/functions/analytics-ingest/index.ts", "ut
 assert.doesNotMatch(edge, /demo project|ডেমো প্রকল্প|ডেমো\/টেস্ট/);
 assert.doesNotMatch(edge, /\*\*/);
 console.log("Customer-care friendly conversation checks passed.");
-assert.match(edge, /do not impose an arbitrary item-count limit/);
+assert.match(edge, /classifyCustomerIntent/);\nassert.match(edge, /recommendation_permission/);\nassert.match(edge, /buildRecommendationContract/);\nassert.match(edge, /SERVER-ENFORCED RECOMMENDATION POLICY/);\nassert.match(edge, /max_product_cards/);\nassert.match(edge, /rejection_context/);\nassert.match(chat, /appendProductCards\\(answerBubble, data.products, data.recommendation/);\nassert.match(chat, /safeLimit/);\nassert.doesNotMatch(chat, /products\\.slice\\(0, 4\\)/);
 assert.match(edge, /real operating business/);
 assert.match(chat, /conversation.length > 40/);
 
@@ -120,7 +121,7 @@ assert.match(edge, /maxOutputTokens: 4096/);
 assert.match(edge, /temperature: 0\.6/);
 assert.match(edge, /45_000/);
 assert.ok(edge.includes("return Boolean(reply.trim())"));
-assert.match(main, /customer-care-chat\.js\?v=20261103-shopping-chat-v4/);
+assert.match(main, /customer-care-chat\.js\?v=20261103-stage1-intelligence-v1/);
 
 assert.match(chat, /textarea id="hf-ai-chat-input"/);
 assert.match(chat, /messages.addEventListener\("wheel"/);
@@ -145,3 +146,27 @@ assert.match(edge, /imageSearch/);
 assert.match(edge, /INVALID_IMAGE/);
 assert.match(css, /hf-ai-chat-attachment-preview/);
 assert.match(css, /hf-ai-chat-mic/);
+
+const intentCases = [
+  ["একটা সরিষার তেল দেখাও", "exact_product_lookup", 1],
+  ["কী কী তেল পাওয়া যায়", "category_browse", 4],
+  ["সরিষার তেলের দাম কত?", "product_price_inquiry", 0],
+  ["ডেলিভারি কত?", "store_policy_question", 0],
+  ["ধন্যবাদ", "casual_conversation", 0],
+  ["কয়েকটি ঘি সাজেস্ট করো", "recommendation_request", 4],
+  ["এই ঘিগুলোর তুলনা করো", "product_comparison", 4],
+];
+for (const [query, expectedIntent, expectedCards] of intentCases) {
+  const decision = classifyCustomerIntent(query);
+  assert.equal(decision.primary_intent, expectedIntent, query);
+  assert.equal(decision.max_product_cards, expectedCards, query);
+}
+const imageOnly = classifyCustomerIntent("", true);
+assert.equal(imageOnly.primary_intent, "ambiguous_product_request");
+assert.equal(imageOnly.max_product_cards, 0);
+const imageSimilar = classifyCustomerIntent("এই নারিকেলের ছবির মতো তেল আছে?", true);
+assert.equal(imageSimilar.primary_intent, "image_similar_product_search");
+assert.equal(imageSimilar.max_product_cards, 3);
+const imageMaterial = classifyCustomerIntent("নারিকেলের তেল আছে?", true);
+assert.equal(imageMaterial.primary_intent, "image_material_search");
+assert.equal(imageMaterial.max_product_cards, 1);
