@@ -16,7 +16,7 @@ assert.doesNotMatch(chat, /আমি নিশ্চিত করছি, আম�
 assert.match(chat, /GEMINI_QUOTA/);
 assert.doesNotMatch(chat, /RATE_LIMITED|status === 429/);
 assert.doesNotMatch(chat, /status === 429\) return "আপনি অল্প সময়ে অনেকগুলো প্রশ্ন পাঠিয়েছেন/);
-assert.match(chat, /উত্তর তৈরি হচ্ছে/);
+assert.match(chat, /একটু দেখছি/);
 assert.doesNotMatch(chat, /GEMINI_API_KEY|AIza[0-9A-Za-z_-]{20,}/, "Gemini API credentials must never reach storefront code");
 assert.match(edge, /Deno\.env\.get\("GEMINI_API_KEY"\)/);
 assert.match(edge, /Deno\.env\.get\("GEMINI_MODEL"\)/);
@@ -79,7 +79,7 @@ assert.match(aiKnowledgeMigration, /halalfoodbd\.official@gmail\.com/);
 
 assert.doesNotMatch(chat, /serverCheckStarted|সংযুক্ত ·|GEMINI_MODEL|appendHumanSupport|humanRequest/);
 assert.match(chat, /cleanAssistantText/);
-assert.match(edge, /Do not volunteer phone numbers/);
+assert.match(edge, /Do not volunteer phone numbers/);\nassert.match(edge, /human customer care is available/);
 assert.doesNotMatch(edge, /demo project|ডেমো প্রকল্প|ডেমো\/টেস্ট/);
 assert.doesNotMatch(edge, /\*\*/);
 console.log("Customer-care friendly conversation checks passed.");
