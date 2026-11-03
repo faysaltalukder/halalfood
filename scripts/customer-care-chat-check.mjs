@@ -31,7 +31,7 @@ assert.match(edge, /callGeminiWithFallback/);
 assert.match(edge, /isBroadCatalogQuestion/);
 assert.match(edge, /isTestOrPlaceholderProduct/);
 assert.match(edge, /customer_care_model_fallback/);
-assert.match(edge, /upstream\.status === 503 \|\| upstream\.status === 429/);
+assert.match(edge, /upstream\.status !== 429 && upstream\.status !== 503/);
 assert.match(edge, /isCompleteReply/);
 assert.match(edge, /customer_care_incomplete_response_retry/);
 assert.match(edge, /INCOMPLETE_AI_RESPONSE/);
