@@ -8,7 +8,7 @@
   const style = document.createElement("link");
   style.id = "hf-customer-care-chat-styles";
   style.rel = "stylesheet";
-  style.href = ASSET_BASE + "css/customer-care-chat.css?v=20261103-business-chat-v3";
+  style.href = ASSET_BASE + "css/customer-care-chat.css?v=20261103-business-chat-v4";
   document.head.appendChild(style);
 
   let root = document.getElementById("hf-contact-widget");
