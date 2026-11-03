@@ -2,7 +2,7 @@
  "use strict";
  const ready = window.HFAdminReady;
  if (!ready) return;
- ready.then(admin => {
+ ready.then(async admin => {
   if (!admin || document.body.dataset.page !== "ai-knowledge") return;
   const {client,toast,audit,esc,dateTime} = admin;
   const $ = id => document.getElementById(id);
