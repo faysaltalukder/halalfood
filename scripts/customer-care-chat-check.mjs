@@ -267,7 +267,8 @@ const parsedImage = extractImageMatch('Matched. [[HF_IMAGE_MATCH]]{"candidate_sl
 assert.equal(parsedImage.reply, "Matched.");
 assert.equal(parsedImage.imageMatch.candidate_slug, "coconut-oil");
 const imageCandidates = rankProductCandidates(catalogFixtures, verifiedProfiles, "নারিকেল তেল", {primary_intent:"image_product_search",image_search:true});
+const similarCandidates = rankProductCandidates(catalogFixtures, verifiedProfiles, "oil", {primary_intent:"image_similar_product_search",image_search:true});
 assert.equal(applyConfidencePolicy(imageCandidates, {primary_intent:"image_product_search",max_product_cards:1}, {candidate_slug:"coconut-oil",match_type:"exact",confidence:"high"}).length, 1);
 assert.equal(applyConfidencePolicy(imageCandidates, {primary_intent:"image_product_search",max_product_cards:1}, {candidate_slug:"coconut-oil",match_type:"exact",confidence:"low"}).length, 0);
-assert.equal(applyConfidencePolicy(imageCandidates, {primary_intent:"image_similar_product_search",max_product_cards:3}, {candidate_slugs:["coconut-oil","mustard-oil"],match_type:"similar",confidence:"medium"}).length, 2);
+assert.equal(applyConfidencePolicy(similarCandidates, {primary_intent:"image_similar_product_search",max_product_cards:3}, {candidate_slugs:["coconut-oil","mustard-oil"],match_type:"similar",confidence:"medium"}).length, 2);
 console.log("Stage 2 customer-intelligence regression checks passed.");
