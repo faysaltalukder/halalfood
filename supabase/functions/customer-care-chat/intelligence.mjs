@@ -179,8 +179,10 @@ function rankProductCandidates(products, profiles, message, decision={}, imageMa
 function extractConversationState(message, history=[]) {
   const recent=history.slice(-12).map(item=>String(item?.parts?.map?.(p=>p.text||"").join(" ")||"")).join(" ");
   const text=normalizeText(recent+" "+message);
-  const budgetMatches=[...text.matchAll(/(?:৳|টাকা|টাকার|budget|under|within|maximum|max|বাজেট|সর্বোচ্চ)\s*([0-9][0-9,]*)/giu)];
-  const budget=budgetMatches.length?Number(budgetMatches[budgetMatches.length-1][1].replace(/,/g,"")):null;
+  const budgetMatches=[...text.matchAll(/(?:৳|টাকা|টাকার|budget|under|within|maximum|max|বাজেট|সর্বোচ্চ)\\s*([0-9][0-9,]*)/giu)];
+  const trailingBudget=[...text.matchAll(/([0-9][0-9,]*)\\s*(?:টাকা|টাকার|bdt)/giu)];
+  const budgetRaw=budgetMatches.length?budgetMatches[budgetMatches.length-1][1]:trailingBudget.length?trailingBudget[trailingBudget.length-1][1]:null;
+  const budget=budgetRaw?Number(budgetRaw.replace(/,/g,"")):null;
   const purpose=/রান্না|ভাজি|cooking|fry|baking|বেকিং/u.test(text)?"cooking":
     /উপহার|গিফট|gift|present/u.test(text)?"gift":
     /পরিবার|বাসা|ঘর|family|household|প্রতিদিন/u.test(text)?"household":
