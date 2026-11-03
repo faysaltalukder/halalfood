@@ -525,7 +525,7 @@ async function callGeminiWithFallback(
   primaryModel: string,
   requestId: string,
   apiKey: string,
-  contents: Array<{ role: "user" | "model"; parts: Array<{ text: string }> }>,
+  contents: Array<{ role: "user" | "model"; parts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> }>,
   systemInstruction: string,
   signal: AbortSignal,
 ): Promise<{ response: Response; modelUsed: string }> {
