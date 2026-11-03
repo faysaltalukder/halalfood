@@ -77,7 +77,7 @@ function isCompleteReply(reply: string, finishReason: string): boolean {
 
 Deno.serve(async (req: Request) => {
   const origin = req.headers.get("origin") || "";
-  if (origin && origin !== ALLOWED_ORIGIN) {
+  if (origin !== ALLOWED_ORIGIN) {
     return response({ success: false, code: "ORIGIN_NOT_ALLOWED" }, 403);
   }
 
