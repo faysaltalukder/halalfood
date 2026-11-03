@@ -87,3 +87,9 @@ assert.match(edge, /MAX_HISTORY_CHARS = 48000/);
 assert.match(edge, /MAX_REQUEST_BYTES = 262144/);
 assert.doesNotMatch(edge, /MAX_MESSAGE_CHARS/);
 assert.match(chat, /history: conversation\.slice\(-20\)/);
+
+assert.match(edge, /maxOutputTokens: 4096/);
+assert.match(edge, /temperature: 0\.6/);
+assert.match(edge, /45_000/);
+assert.ok(edge.includes("return Boolean(reply.trim())"));
+assert.match(main, /customer-care-chat\.js\?v=20261103-ai-chat-relaxed-v1/);
