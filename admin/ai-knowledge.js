@@ -14,7 +14,7 @@
   };
   const lines = value => String(value||"").split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
   const text = id => $(id)?.value?.trim() || "";
-  const setText = (id,value) => { if($(id)) $(id).value=value??""; };
+  const setText = (id,value) => { const el=$(id); if(!el)return; if("value" in el)el.value=value??""; else el.textContent=value??""; };
   const statusPill = status => '<span class="hf-status hf-status-'+esc(status==='published'?'active':status==='draft'?'review':'muted')+'">'+esc(status||'unknown')+'</span>';
   function switchTab(tab){
    document.querySelectorAll("[data-ai-kb-tab]").forEach(b=>{const active=b.dataset.aiKbTab===tab;b.classList.toggle("is-active",active);b.setAttribute("aria-selected",String(active));});
@@ -98,7 +98,7 @@
    if(status==="published"&&!Object.entries(fields).some(([key])=>payload[key]))throw new Error("Add at least one verified product fact before publishing.");
    if(existing){const r=await client.from("ai_product_knowledge").update(payload).eq("product_id",id);if(r.error)throw r.error;}
    else{const r=await client.from("ai_product_knowledge").insert(payload);if(r.error)throw r.error;}
-   await audit("ai_product_knowledge_"+status,"product",id,p.selectedProduct?.name||selectedProduct?.name||"Product profile",{status,version:payload.version});
+   await audit("ai_product_knowledge_"+status,"product",id,selectedProduct?.name||"Product profile",{status,version:payload.version});
    await loadAll();editProduct(id);toast(status==="published"?"Verified product profile published.":"Product profile draft saved.");
   }
   $("aiKbDocForm").addEventListener("submit",async e=>{e.preventDefault();try{await saveDoc("published");}catch(err){$("aiKbDocError").textContent=err.message||"Could not publish document.";toast("Could not publish knowledge.","error");}});
