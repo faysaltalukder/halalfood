@@ -446,12 +446,24 @@ async function loadKnowledge(
   const categoryNames = Array.from(new Set(customerFacingProducts.map((item) => String(item.category || "")).filter(Boolean))).sort();
   const customerNeed = analyzeCustomerNeed(message, history, imageSearch);
   const productKnowledge = profilesResult.status === "fulfilled" ? profilesResult.value : [];
-  const rankedAll = rankProductCandidates(
+  const rankedBeforeRejection = rankProductCandidates(
     customerFacingProducts,
     productKnowledge,
     searchText,
     { ...customerNeed, image_search: imageSearch },
   );
+  const rejectedText = String(customerNeed.rejection_context || "").toLocaleLowerCase();
+  const rejectedProductIds = new Set(
+    rejectedText
+      ? customerFacingProducts.filter((product) => {
+        const name = String(product.name || "").trim().toLocaleLowerCase();
+        return name.length > 2 && rejectedText.includes(name);
+      }).map((product) => String(product.id || ""))
+      : [],
+  );
+  const rankedAll = rankedBeforeRejection.filter((item: Record<string, unknown>) =>
+    !rejectedProductIds.has(String((item.product as Record<string, unknown>)?.id || "")));
+  customerNeed.suppressed_rejected_product_count = rejectedProductIds.size;
   const budget = Number(customerNeed.budget_bdt || 0);
   const budgetMatches = budget > 0
     ? rankedAll.filter((item: Record<string, unknown>) => {
