@@ -460,6 +460,7 @@ as $$
 declare
   v_email text:=lower(coalesce((select auth.jwt()->>'email'),''));
   v_aal text:=coalesce((select auth.jwt()->>'aal'),'aal1');
+  v_receipt public.admin_purchase_receipts%rowtype;
   v_po public.admin_purchase_orders%rowtype;
   v_item public.admin_purchase_order_items%rowtype;
   v_total_qty numeric(14,3);
@@ -484,9 +485,17 @@ begin
   for share;
   if not found then raise exception 'Purchase order item for GRN cost layer was not found.'; end if;
 
+  select * into v_receipt
+  from public.admin_purchase_receipts
+  where id=new.receipt_id
+  for share;
+  if not found or v_receipt.status<>'confirmed' then
+    raise exception 'A landed-cost layer can be created only for an existing Confirmed Goods Received Note.';
+  end if;
+
   select * into v_po
   from public.admin_purchase_orders
-  where id=(select purchase_order_id from public.admin_purchase_receipts where id=new.receipt_id)
+  where id=v_receipt.purchase_order_id
   for share;
   if not found then raise exception 'Purchase order for GRN cost layer was not found.'; end if;
   if v_item.purchase_order_id<>v_po.id or v_item.product_id is distinct from new.product_id then
