@@ -31,20 +31,26 @@ alter table public.admin_finance_accounts
   add column if not exists opening_offset_account_id uuid;
 
 alter table public.admin_finance_entries
-  add column if not exists accounting_journal_id uuid;
+  add column if not exists accounting_journal_id uuid,
+  add column if not exists reversal_journal_id uuid;
 
 alter table public.admin_finance_transfers
   add column if not exists accounting_journal_id uuid,
   add column if not exists reversal_journal_id uuid;
 
 alter table public.admin_cod_settlements
-  add column if not exists accounting_journal_id uuid;
+  add column if not exists accounting_journal_id uuid,
+  add column if not exists reversal_journal_id uuid,
+  add column if not exists order_sale_reversal_journal_id uuid,
+  add column if not exists order_cogs_reversal_journal_id uuid;
 
 alter table public.admin_supplier_bills
-  add column if not exists accounting_journal_id uuid;
+  add column if not exists accounting_journal_id uuid,
+  add column if not exists reversal_journal_id uuid;
 
 alter table public.admin_supplier_payments
-  add column if not exists accounting_journal_id uuid;
+  add column if not exists accounting_journal_id uuid,
+  add column if not exists reversal_journal_id uuid;
 
 do $fk$
 begin
@@ -64,6 +70,10 @@ begin
     alter table public.admin_finance_entries add constraint admin_finance_entries_accounting_journal_id_fkey
       foreign key (accounting_journal_id) references public.admin_finance_journal_entries(id) on delete restrict;
   end if;
+  if not exists(select 1 from pg_constraint where conname='admin_finance_entries_reversal_journal_id_fkey') then
+    alter table public.admin_finance_entries add constraint admin_finance_entries_reversal_journal_id_fkey
+      foreign key (reversal_journal_id) references public.admin_finance_journal_entries(id) on delete restrict;
+  end if;
   if not exists(select 1 from pg_constraint where conname='admin_finance_transfers_accounting_journal_id_fkey') then
     alter table public.admin_finance_transfers add constraint admin_finance_transfers_accounting_journal_id_fkey
       foreign key (accounting_journal_id) references public.admin_finance_journal_entries(id) on delete restrict;
@@ -76,13 +86,25 @@ begin
     alter table public.admin_cod_settlements add constraint admin_cod_settlements_accounting_journal_id_fkey
       foreign key (accounting_journal_id) references public.admin_finance_journal_entries(id) on delete restrict;
   end if;
+  if not exists(select 1 from pg_constraint where conname='admin_cod_settlements_reversal_journal_id_fkey') then
+    alter table public.admin_cod_settlements add constraint admin_cod_settlements_reversal_journal_id_fkey
+      foreign key (reversal_journal_id) references public.admin_finance_journal_entries(id) on delete restrict;
+  end if;
   if not exists(select 1 from pg_constraint where conname='admin_supplier_bills_accounting_journal_id_fkey') then
     alter table public.admin_supplier_bills add constraint admin_supplier_bills_accounting_journal_id_fkey
       foreign key (accounting_journal_id) references public.admin_finance_journal_entries(id) on delete restrict;
   end if;
+  if not exists(select 1 from pg_constraint where conname='admin_supplier_bills_reversal_journal_id_fkey') then
+    alter table public.admin_supplier_bills add constraint admin_supplier_bills_reversal_journal_id_fkey
+      foreign key (reversal_journal_id) references public.admin_finance_journal_entries(id) on delete restrict;
+  end if;
   if not exists(select 1 from pg_constraint where conname='admin_supplier_payments_accounting_journal_id_fkey') then
     alter table public.admin_supplier_payments add constraint admin_supplier_payments_accounting_journal_id_fkey
       foreign key (accounting_journal_id) references public.admin_finance_journal_entries(id) on delete restrict;
+  end if;
+  if not exists(select 1 from pg_constraint where conname='admin_supplier_payments_reversal_journal_id_fkey') then
+    alter table public.admin_supplier_payments add constraint admin_supplier_payments_reversal_journal_id_fkey
+      foreign key (reversal_journal_id) references public.admin_finance_journal_entries(id) on delete restrict;
   end if;
 end
 $fk$;
@@ -154,8 +176,13 @@ begin
     new.updated_at:=now();
     return new;
   elsif tg_table_name='admin_finance_entries' then
-    if tg_op='UPDATE' then
-      if new.accounting_journal_id is distinct from old.accounting_journal_id and not v_sync then
+    if tg_op='INSERT' then
+      if (new.accounting_journal_id is not null or new.reversal_journal_id is not null) and not v_sync then
+        raise exception 'Accounting journal links are workflow-managed.';
+      end if;
+    elsif tg_op='UPDATE' then
+      if (new.accounting_journal_id is distinct from old.accounting_journal_id
+          or new.reversal_journal_id is distinct from old.reversal_journal_id) and not v_sync then
         raise exception 'Accounting journal links are workflow-managed.';
       end if;
       if old.accounting_journal_id is not null and not v_sync and (
@@ -172,8 +199,8 @@ begin
     if tg_op='DELETE' then
       raise exception 'Transfers are retained for audit history; void a transfer instead.';
     end if;
-    if tg_op='INSERT' and new.status<>'draft' then
-      raise exception 'A new transfer must start as Draft.';
+    if tg_op='INSERT' and (new.status<>'draft' or new.accounting_journal_id is not null or new.reversal_journal_id is not null) then
+      raise exception 'A new transfer must start as Draft without accounting links.';
     end if;
     if tg_op='UPDATE' then
       if (new.status is distinct from old.status
@@ -193,27 +220,56 @@ begin
     new.updated_at:=now();
     return new;
   elsif tg_table_name='admin_cod_settlements' then
-    if tg_op='UPDATE' and old.accounting_journal_id is not null and not v_sync then
-      raise exception 'This COD settlement is posted to accounting. Reverse its journal before changing settlement values.';
-    end if;
-    if tg_op='UPDATE' and new.accounting_journal_id is distinct from old.accounting_journal_id and not v_sync then
-      raise exception 'COD accounting links are workflow-managed.';
+    if tg_op='INSERT' then
+      if (new.accounting_journal_id is not null or new.reversal_journal_id is not null
+          or new.order_sale_reversal_journal_id is not null or new.order_cogs_reversal_journal_id is not null) and not v_sync then
+        raise exception 'COD accounting links are workflow-managed.';
+      end if;
+    else
+      if old.accounting_journal_id is not null and not v_sync and (
+        new.status is distinct from old.status or new.cod_amount is distinct from old.cod_amount
+        or new.collected_amount is distinct from old.collected_amount or new.courier_fee is distinct from old.courier_fee
+        or new.adjustment_amount is distinct from old.adjustment_amount or new.remitted_amount is distinct from old.remitted_amount
+        or new.remitted_account_id is distinct from old.remitted_account_id or new.remitted_at is distinct from old.remitted_at
+      ) then
+        raise exception 'This COD settlement is posted to accounting. Reverse its journals before changing settlement values.';
+      end if;
+      if (new.accounting_journal_id is distinct from old.accounting_journal_id
+          or new.reversal_journal_id is distinct from old.reversal_journal_id
+          or new.order_sale_reversal_journal_id is distinct from old.order_sale_reversal_journal_id
+          or new.order_cogs_reversal_journal_id is distinct from old.order_cogs_reversal_journal_id) and not v_sync then
+        raise exception 'COD accounting links are workflow-managed.';
+      end if;
     end if;
     return new;
   elsif tg_table_name='admin_supplier_bills' then
-    if tg_op='UPDATE' and old.accounting_journal_id is not null and not v_sync then
-      raise exception 'This supplier bill is posted to accounting. Reverse the journal before correcting the bill.';
-    end if;
-    if tg_op='UPDATE' and new.accounting_journal_id is distinct from old.accounting_journal_id and not v_sync then
-      raise exception 'Supplier bill accounting links are workflow-managed.';
+    if tg_op='INSERT' then
+      if (new.accounting_journal_id is not null or new.reversal_journal_id is not null) and not v_sync then
+        raise exception 'Supplier bill accounting links are workflow-managed.';
+      end if;
+    else
+      if old.accounting_journal_id is not null and not v_sync then
+        raise exception 'This supplier bill is posted to accounting. Reverse the journal before correcting the bill.';
+      end if;
+      if (new.accounting_journal_id is distinct from old.accounting_journal_id
+          or new.reversal_journal_id is distinct from old.reversal_journal_id) and not v_sync then
+        raise exception 'Supplier bill accounting links are workflow-managed.';
+      end if;
     end if;
     return new;
   elsif tg_table_name='admin_supplier_payments' then
-    if tg_op='UPDATE' and old.accounting_journal_id is not null and not v_sync then
-      raise exception 'This supplier payment is posted to accounting. Reverse the journal before correcting the payment.';
-    end if;
-    if tg_op='UPDATE' and new.accounting_journal_id is distinct from old.accounting_journal_id and not v_sync then
-      raise exception 'Supplier payment accounting links are workflow-managed.';
+    if tg_op='INSERT' then
+      if (new.accounting_journal_id is not null or new.reversal_journal_id is not null) and not v_sync then
+        raise exception 'Supplier payment accounting links are workflow-managed.';
+      end if;
+    else
+      if old.accounting_journal_id is not null and not v_sync then
+        raise exception 'This supplier payment is posted to accounting. Reverse the journal before correcting the payment.';
+      end if;
+      if (new.accounting_journal_id is distinct from old.accounting_journal_id
+          or new.reversal_journal_id is distinct from old.reversal_journal_id) and not v_sync then
+        raise exception 'Supplier payment accounting links are workflow-managed.';
+      end if;
     end if;
     return new;
   end if;
@@ -227,7 +283,7 @@ before insert or update or delete on public.admin_finance_accounts
 for each row execute function public.admin_finance_guard_operations_links();
 drop trigger if exists admin_finance_entries_operations_guard on public.admin_finance_entries;
 create trigger admin_finance_entries_operations_guard
-before update on public.admin_finance_entries
+before insert or update on public.admin_finance_entries
 for each row execute function public.admin_finance_guard_operations_links();
 drop trigger if exists admin_finance_transfers_operations_guard on public.admin_finance_transfers;
 create trigger admin_finance_transfers_operations_guard
@@ -235,16 +291,143 @@ before insert or update or delete on public.admin_finance_transfers
 for each row execute function public.admin_finance_guard_operations_links();
 drop trigger if exists admin_cod_settlements_operations_guard on public.admin_cod_settlements;
 create trigger admin_cod_settlements_operations_guard
-before update on public.admin_cod_settlements
+before insert or update on public.admin_cod_settlements
 for each row execute function public.admin_finance_guard_operations_links();
 drop trigger if exists admin_supplier_bills_operations_guard on public.admin_supplier_bills;
 create trigger admin_supplier_bills_operations_guard
-before update on public.admin_supplier_bills
+before insert or update on public.admin_supplier_bills
 for each row execute function public.admin_finance_guard_operations_links();
 drop trigger if exists admin_supplier_payments_operations_guard on public.admin_supplier_payments;
 create trigger admin_supplier_payments_operations_guard
-before update on public.admin_supplier_payments
+before insert or update on public.admin_supplier_payments
 for each row execute function public.admin_finance_guard_operations_links();
+
+
+create table if not exists public.admin_inventory_cost_layers (
+  id uuid primary key default gen_random_uuid(),
+  receipt_item_id uuid not null unique references public.admin_purchase_receipt_items(id) on delete restrict,
+  receipt_id uuid not null references public.admin_purchase_receipts(id) on delete restrict,
+  purchase_order_id uuid not null references public.admin_purchase_orders(id) on delete restrict,
+  purchase_order_item_id uuid not null references public.admin_purchase_order_items(id) on delete restrict,
+  product_id uuid references public.products(id) on delete restrict,
+  product_name_snapshot text not null,
+  unit text not null default 'piece',
+  accepted_quantity numeric(14,3) not null check (accepted_quantity>0),
+  po_item_unit_cost numeric(14,4) not null check (po_item_unit_cost>=0),
+  item_discount_allocated numeric(14,2) not null default 0 check (item_discount_allocated>=0),
+  order_discount_allocated numeric(14,2) not null default 0 check (order_discount_allocated>=0),
+  inbound_charges_allocated numeric(14,2) not null default 0 check (inbound_charges_allocated>=0),
+  landed_unit_cost numeric(14,4) not null check (landed_unit_cost>=0),
+  created_by text not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists admin_inventory_cost_layers_product_date_idx
+  on public.admin_inventory_cost_layers(product_id,created_at desc) where product_id is not null;
+create index if not exists admin_inventory_cost_layers_po_idx
+  on public.admin_inventory_cost_layers(purchase_order_id,product_id);
+
+grant select on public.admin_inventory_cost_layers to authenticated;
+revoke all on public.admin_inventory_cost_layers from public,anon;
+alter table public.admin_inventory_cost_layers enable row level security;
+
+drop policy if exists "Finance inventory cost layers admin read" on public.admin_inventory_cost_layers;
+create policy "Finance inventory cost layers admin read"
+on public.admin_inventory_cost_layers as permissive for select to authenticated
+using (lower(coalesce((select auth.jwt()->>'email'),''))='halalfoodbd.official@gmail.com');
+
+drop policy if exists "Finance inventory cost layers require MFA" on public.admin_inventory_cost_layers;
+create policy "Finance inventory cost layers require MFA"
+on public.admin_inventory_cost_layers as restrictive for select to authenticated
+using (
+  lower(coalesce((select auth.jwt()->>'email'),''))='halalfoodbd.official@gmail.com'
+  and coalesce((select auth.jwt()->>'aal'),'aal1')='aal2'
+);
+
+create or replace function private.capture_admin_inventory_cost_layer()
+returns trigger
+language plpgsql
+security definer
+set search_path=''
+as $$
+declare
+  v_email text:=lower(coalesce((select auth.jwt()->>'email'),''));
+  v_aal text:=coalesce((select auth.jwt()->>'aal'),'aal1');
+  v_po public.admin_purchase_orders%rowtype;
+  v_item public.admin_purchase_order_items%rowtype;
+  v_total_qty numeric(14,3);
+  v_weight numeric(14,8);
+  v_item_discount numeric(14,2);
+  v_order_discount numeric(14,2);
+  v_inbound numeric(14,2);
+  v_landed_total numeric(14,2);
+begin
+  if v_email<>'halalfoodbd.official@gmail.com' or v_aal<>'aal2' or auth.uid() is null then
+    raise exception 'Verified admin MFA is required to create an inventory cost layer.' using errcode='42501';
+  end if;
+  if new.quantity_accepted<=0 or new.product_id is null then
+    return new;
+  end if;
+
+  select * into v_item
+  from public.admin_purchase_order_items
+  where id=new.purchase_order_item_id
+  for share;
+  if not found then raise exception 'Purchase order item for GRN cost layer was not found.'; end if;
+
+  select * into v_po
+  from public.admin_purchase_orders
+  where id=(select purchase_order_id from public.admin_purchase_receipts where id=new.receipt_id)
+  for share;
+  if not found then raise exception 'Purchase order for GRN cost layer was not found.'; end if;
+  if v_item.purchase_order_id<>v_po.id or v_item.product_id is distinct from new.product_id then
+    raise exception 'GRN product and Purchase Order item do not match.';
+  end if;
+  if v_po.subtotal<0 or v_item.quantity<=0 then
+    raise exception 'Purchase order quantities or subtotal are invalid for landed-cost allocation.';
+  end if;
+
+  select coalesce(sum(quantity),0) into v_total_qty
+  from public.admin_purchase_order_items where purchase_order_id=v_po.id;
+
+  if v_po.subtotal>0 then
+    v_weight:=v_item.line_total/v_po.subtotal;
+  elsif v_total_qty>0 then
+    v_weight:=v_item.quantity/v_total_qty;
+  else
+    raise exception 'Cannot allocate purchase freight because the purchase order has no allocatable quantity.';
+  end if;
+
+  v_item_discount:=round(coalesce(v_item.discount_amount,0),2);
+  v_order_discount:=round(coalesce(v_po.discount_amount,0)*v_weight,2);
+  -- Transport, handling and other inbound charges are capitalized proportionally.
+  -- Tax is intentionally excluded until the invoice tax is classified as recoverable or non-recoverable.
+  v_inbound:=round((coalesce(v_po.transport_cost,0)+coalesce(v_po.handling_cost,0)+coalesce(v_po.other_charges,0))*v_weight,2);
+  v_landed_total:=round(v_item.line_total-v_order_discount+v_inbound,2);
+  if v_landed_total<0 then raise exception 'Allocated landed cost cannot be negative.'; end if;
+
+  insert into public.admin_inventory_cost_layers(
+    receipt_item_id,receipt_id,purchase_order_id,purchase_order_item_id,product_id,
+    product_name_snapshot,unit,accepted_quantity,po_item_unit_cost,item_discount_allocated,
+    order_discount_allocated,inbound_charges_allocated,landed_unit_cost,created_by
+  ) values (
+    new.id,new.receipt_id,v_po.id,v_item.id,new.product_id,new.product_name_snapshot,
+    new.unit,new.quantity_accepted,
+    round(v_item.line_total/nullif(v_item.quantity,0),4),
+    v_item_discount,v_order_discount,v_inbound,
+    round(v_landed_total/nullif(v_item.quantity,0),4),v_email
+  )
+  on conflict(receipt_item_id) do nothing;
+  return new;
+end;
+$$;
+revoke all on function private.capture_admin_inventory_cost_layer() from public,anon,authenticated;
+drop trigger if exists admin_purchase_receipt_item_capture_cost_layer on public.admin_purchase_receipt_items;
+create trigger admin_purchase_receipt_item_capture_cost_layer
+after insert on public.admin_purchase_receipt_items
+for each row execute function private.capture_admin_inventory_cost_layer();
+
+comment on table public.admin_inventory_cost_layers is
+'Immutable per-GRN accepted inventory layers with proportional purchase discount, freight, handling and other inbound charges. Tax is excluded pending accountant classification.';
 
 create or replace function public.admin_finance_post_cashbook_entry(
   p_entry_id uuid,
@@ -288,8 +471,14 @@ begin
   if not found or not v_counter.is_active or not v_counter.is_postable then
     raise exception 'Choose an active, postable General Ledger account.';
   end if;
-  if v_counter.id=v_cash_coa_id or v_counter.account_type='asset' then
-    raise exception 'Use the Account Transfer workflow for asset-to-asset movements. Choose the correct income, expense, equity or liability account here.';
+  if v_counter.id=v_cash_coa_id then
+    raise exception 'The cash/bank account cannot also be its own counter-account.';
+  end if;
+  if v_counter.account_type='asset' and not (
+    (v_entry.entry_type='income' and v_counter.account_code in ('1100','1040','1110'))
+    or (v_entry.entry_type='expense' and v_counter.account_code in ('1200','1110'))
+  ) then
+    raise exception 'Do not record asset-to-asset movements as Income or Expense. Use Account Transfer or the appropriate Receivable, Inventory or Supplier Advance account.';
   end if;
 
   if v_entry.entry_type='income' then
@@ -472,7 +661,10 @@ $$;
 revoke all on function public.admin_finance_void_transfer(uuid,text) from public,anon;
 grant execute on function public.admin_finance_void_transfer(uuid,text) to authenticated;
 
-create or replace function public.admin_finance_recognize_cod_order_sale(p_order_id uuid)
+create or replace function public.admin_finance_recognize_delivered_order_sale(
+ p_order_id uuid,
+ p_debit_account_id uuid default null
+)
 returns uuid
 language plpgsql
 security invoker
@@ -484,6 +676,9 @@ declare
  v_order public.orders%rowtype;
  v_item_subtotal numeric(14,2);
  v_net_sales numeric(14,2);
+ v_debit_account_id uuid;
+ v_debit_account_code text;
+ v_debit_account_type text;
  v_lines jsonb;
  v_journal_id uuid;
  v_existing uuid;
@@ -493,17 +688,18 @@ begin
  end if;
  select * into v_order from public.orders where id=p_order_id for update;
  if not found then raise exception 'Order was not found.'; end if;
- if v_order.status<>'delivered' or v_order.payment_method<>'cash_on_delivery' then
-  raise exception 'Only a Delivered Cash-on-Delivery order can be recognized in this workflow.';
- end if;
+ if v_order.status<>'delivered' then raise exception 'Sales can be recognized only after the order is Delivered.'; end if;
+
  select id into v_existing from public.admin_finance_journal_entries
- where source_type='order_sale' and source_key=p_order_id::text and status in ('posted','reversed');
+ where source_type='order_sale' and source_key=p_order_id::text;
  if v_existing is not null then return v_existing; end if;
  if exists(select 1 from public.admin_finance_entries
    where related_order_id=p_order_id and status='confirmed' and related_cod_settlement_id is null) then
   raise exception 'A manual confirmed income entry already references this order. Review it before recognizing sales to prevent double counting.';
  end if;
- select coalesce(sum(line_total),0) into v_item_subtotal from public.order_items where order_id=p_order_id;
+
+ select coalesce(sum(line_total),0) into v_item_subtotal
+ from public.order_items where order_id=p_order_id;
  if v_item_subtotal<=0 or abs(v_item_subtotal-v_order.subtotal)>0.01 then
   raise exception 'Order item totals do not match the saved order subtotal. Review the order before posting.';
  end if;
@@ -512,8 +708,24 @@ begin
    or abs(v_net_sales+v_order.delivery_charge-v_order.total)>0.01 then
   raise exception 'Order total, discount and delivery charge do not reconcile. Review the order before posting.';
  end if;
+
+ if v_order.payment_method='cash_on_delivery' then
+  if p_debit_account_id is not null then raise exception 'COD sales must debit Courier Clearing. Post the actual remittance separately.'; end if;
+  select id,account_code,account_type into v_debit_account_id,v_debit_account_code,v_debit_account_type
+  from public.admin_finance_chart_of_accounts where account_code='1040' and is_active and is_postable;
+ else
+  v_debit_account_id:=coalesce(p_debit_account_id,(select id from public.admin_finance_chart_of_accounts where account_code='1100'));
+  select account_code,account_type into v_debit_account_code,v_debit_account_type
+  from public.admin_finance_chart_of_accounts
+  where id=v_debit_account_id and is_active and is_postable;
+  if v_debit_account_type is distinct from 'asset' then
+    raise exception 'Choose an Asset account, such as Accounts Receivable, Cash, Bank or Mobile Wallet.';
+  end if;
+ end if;
+ if v_debit_account_id is null then raise exception 'The required debit account is not configured in the Chart of Accounts.'; end if;
+
  v_lines:=jsonb_build_array(
-  jsonb_build_object('account_id',(select id from public.admin_finance_chart_of_accounts where account_code='1040'),'description','COD sale receivable · '||v_order.order_number,'party_name',v_order.customer_name,'debit',v_order.total,'credit',0),
+  jsonb_build_object('account_id',v_debit_account_id,'description','Delivered sale receivable / collection · '||v_order.order_number,'party_name',v_order.customer_name,'debit',v_order.total,'credit',0),
   jsonb_build_object('account_id',(select id from public.admin_finance_chart_of_accounts where account_code='4010'),'description','Net product sales · '||v_order.order_number,'party_name',v_order.customer_name,'debit',0,'credit',v_net_sales)
  );
  if v_order.delivery_charge>0 then
@@ -525,12 +737,15 @@ begin
  end if;
  v_journal_id:=public.admin_finance_save_journal_entry(
   null,(v_order.ordered_at at time zone 'Asia/Dhaka')::date,
-  'Recognized delivered COD sale · '||v_order.order_number,
+  'Recognized delivered sale · '||v_order.order_number,
   v_lines,'order_sale',p_order_id::text,true
  );
  return v_journal_id;
 end;
 $$;
+revoke all on function public.admin_finance_recognize_delivered_order_sale(uuid,uuid) from public,anon;
+grant execute on function public.admin_finance_recognize_delivered_order_sale(uuid,uuid) to authenticated;
+
 revoke all on function public.admin_finance_recognize_cod_order_sale(uuid) from public,anon;
 grant execute on function public.admin_finance_recognize_cod_order_sale(uuid) to authenticated;
 
@@ -558,7 +773,7 @@ begin
  if v_settlement.accounting_journal_id is not null then return v_settlement.accounting_journal_id; end if;
  if v_settlement.status<>'reconciled' then raise exception 'Only a Reconciled COD settlement can be posted.'; end if;
  if v_settlement.order_id is null then raise exception 'The COD settlement must be linked to its original order.'; end if;
- v_sale_journal_id:=public.admin_finance_recognize_cod_order_sale(v_settlement.order_id);
+ v_sale_journal_id:=public.admin_finance_recognize_delivered_order_sale(v_settlement.order_id,null);
  if v_settlement.collected_amount<=0 or v_settlement.collected_amount>v_settlement.cod_amount then
   raise exception 'Collected amount must be positive and cannot exceed the COD order value.';
  end if;
@@ -604,7 +819,8 @@ grant execute on function public.admin_finance_post_cod_settlement(uuid) to auth
 
 create or replace function public.admin_finance_post_supplier_bill(
  p_bill_id uuid,
- p_debit_account_id uuid
+ p_debit_account_id uuid,
+ p_tax_account_id uuid default null
 )
 returns uuid
 language plpgsql
@@ -615,8 +831,11 @@ declare
  v_email text:=lower(coalesce((select auth.jwt()->>'email'),''));
  v_aal text:=coalesce((select auth.jwt()->>'aal'),'aal1');
  v_bill public.admin_supplier_bills%rowtype;
- v_debit public.admin_finance_chart_of_accounts%rowtype;
+ v_cost public.admin_finance_chart_of_accounts%rowtype;
+ v_tax public.admin_finance_chart_of_accounts%rowtype;
  v_grn_quantity numeric;
+ v_base_amount numeric(14,2);
+ v_lines jsonb:='[]'::jsonb;
  v_journal_id uuid;
 begin
  if v_email<>'halalfoodbd.official@gmail.com' or v_aal<>'aal2' or auth.uid() is null then
@@ -626,29 +845,58 @@ begin
  if not found then raise exception 'Supplier bill was not found.'; end if;
  if v_bill.accounting_journal_id is not null then return v_bill.accounting_journal_id; end if;
  if v_bill.status<>'confirmed' then raise exception 'Only a Confirmed supplier bill can be posted.'; end if;
- if v_bill.purchase_order_id is null then raise exception 'Link the bill to its approved Purchase Order and confirmed Goods Received Note before posting.';
+ if v_bill.purchase_order_id is null then
+  raise exception 'Link the bill to its approved Purchase Order and confirmed Goods Received Note before posting.';
  end if;
+
  select coalesce(sum(ri.quantity_accepted),0) into v_grn_quantity
  from public.admin_purchase_receipts r
  join public.admin_purchase_receipt_items ri on ri.receipt_id=r.id
  where r.purchase_order_id=v_bill.purchase_order_id and r.supplier_id=v_bill.supplier_id
    and r.status='confirmed';
  if v_grn_quantity<=0 then
-  raise exception 'No accepted Goods Received Note quantity exists for this purchase order. Verify receipt before posting the supplier bill.';
+  raise exception 'No accepted Goods Received Note quantity exists for this purchase order. Verify receipt before posting.';
  end if;
- select * into v_debit from public.admin_finance_chart_of_accounts where id=p_debit_account_id;
- if not found or not v_debit.is_active or not v_debit.is_postable
-   or v_debit.account_type not in ('asset','expense','cost_of_sales') then
-  raise exception 'Choose an active Asset, Expense or Cost of Sales account for the supplier bill.';
+
+ select * into v_cost from public.admin_finance_chart_of_accounts where id=p_debit_account_id;
+ if not found or not v_cost.is_active or not v_cost.is_postable
+   or v_cost.account_type not in ('asset','expense','cost_of_sales') then
+  raise exception 'Choose an active Asset, Expense or Cost of Sales account for the bill subtotal and additional charges.';
  end if;
+
+ v_base_amount:=round(v_bill.total_amount-v_bill.tax_amount,2);
+ if v_bill.tax_amount>0 then
+  select * into v_tax from public.admin_finance_chart_of_accounts where id=p_tax_account_id;
+  if not found or not v_tax.is_active or not v_tax.is_postable
+    or v_tax.account_type not in ('asset','expense') then
+   raise exception 'This invoice includes tax. Choose an Asset account only when the tax is verified as recoverable; otherwise choose an Expense account.';
+  end if;
+ end if;
+
+ if v_base_amount>0 then
+  v_lines:=v_lines||jsonb_build_array(jsonb_build_object(
+   'account_id',p_debit_account_id,
+   'description','Supplier purchase value and inbound charges · '||v_bill.bill_number,
+   'party_name',v_bill.supplier_invoice_number,'debit',v_base_amount,'credit',0
+  ));
+ end if;
+ if v_bill.tax_amount>0 then
+  v_lines:=v_lines||jsonb_build_array(jsonb_build_object(
+   'account_id',p_tax_account_id,
+   'description','Invoice tax classification · '||v_bill.bill_number,
+   'party_name',v_bill.supplier_invoice_number,'debit',v_bill.tax_amount,'credit',0
+  ));
+ end if;
+ v_lines:=v_lines||jsonb_build_array(jsonb_build_object(
+  'account_id',(select id from public.admin_finance_chart_of_accounts where account_code='2010'),
+  'description','Accounts payable · '||v_bill.bill_number,
+  'party_name',v_bill.supplier_invoice_number,'debit',0,'credit',v_bill.total_amount
+ ));
+
  v_journal_id:=public.admin_finance_save_journal_entry(
   null,v_bill.invoice_date,
   'Supplier bill · '||v_bill.bill_number||' · '||v_bill.supplier_invoice_number,
-  jsonb_build_array(
-   jsonb_build_object('account_id',p_debit_account_id,'description','Supplier invoice total; classify tax and landed costs per supporting documents','party_name',v_bill.supplier_invoice_number,'debit',v_bill.total_amount,'credit',0),
-   jsonb_build_object('account_id',(select id from public.admin_finance_chart_of_accounts where account_code='2010'),'description','Accounts payable · '||v_bill.bill_number,'party_name',v_bill.supplier_invoice_number,'debit',0,'credit',v_bill.total_amount)
-  ),
-  'supplier_bill',p_bill_id::text,true
+  v_lines,'supplier_bill',p_bill_id::text,true
  );
  perform pg_catalog.set_config('app.finance_operations_sync','on',true);
  update public.admin_supplier_bills set accounting_journal_id=v_journal_id,updated_at=now()
@@ -656,6 +904,9 @@ begin
  return v_journal_id;
 end;
 $$;
+revoke all on function public.admin_finance_post_supplier_bill(uuid,uuid,uuid) from public,anon;
+grant execute on function public.admin_finance_post_supplier_bill(uuid,uuid,uuid) to authenticated;
+
 revoke all on function public.admin_finance_post_supplier_bill(uuid,uuid) from public,anon;
 grant execute on function public.admin_finance_post_supplier_bill(uuid,uuid) to authenticated;
 
@@ -760,17 +1011,22 @@ begin
  select * into v_order from public.orders where id=p_order_id for update;
  if not found or v_order.status<>'delivered' then raise exception 'COGS can be posted only for a Delivered order.'; end if;
  if not exists(select 1 from public.admin_finance_journal_entries where source_type='order_sale' and source_key=p_order_id::text and status='posted') then
-  raise exception 'Recognize the delivered COD sale before posting its COGS.';
+  raise exception 'Recognize the delivered sale before posting its COGS.';
  end if;
  select id into v_existing from public.admin_finance_journal_entries
  where source_type='order_cogs' and source_key=p_order_id::text;
  if v_existing is not null then return v_existing; end if;
  select count(*),
-        count(*) filter(where oi.product_id is null or pc.cost_price is null),
-        coalesce(sum(oi.quantity*(coalesce(pc.cost_price,0)+coalesce(pc.packaging_cost,0))),0)
+        count(*) filter(where oi.product_id is null or coalesce(pc.cost_price,layer.weighted_cost) is null),
+        coalesce(sum(oi.quantity*(coalesce(pc.cost_price,layer.weighted_cost,0)+coalesce(pc.packaging_cost,0))),0)
  into v_line_count,v_missing,v_total
  from public.order_items oi
  left join public.admin_product_costs pc on pc.product_id=oi.product_id
+ left join lateral (
+   select sum(cl.accepted_quantity*cl.landed_unit_cost)/nullif(sum(cl.accepted_quantity),0) as weighted_cost
+   from public.admin_inventory_cost_layers cl
+   where cl.product_id=oi.product_id
+ ) layer on true
  where oi.order_id=p_order_id;
  if v_line_count=0 or v_missing>0 then
   raise exception 'COGS cannot be posted: % order line(s) have no linked product or verified unit cost.',v_missing;
@@ -805,25 +1061,31 @@ with item_rows as (
   o.subtotal,
   coalesce(o.coupon_discount_amount,0) as coupon_discount_amount,
   pc.cost_price,
-  pc.packaging_cost
+  coalesce(pc.packaging_cost,0) as packaging_cost,
+  layer.weighted_cost
  from public.order_items oi
  join public.orders o on o.id=oi.order_id
  left join public.admin_product_costs pc on pc.product_id=oi.product_id
+ left join lateral (
+   select sum(cl.accepted_quantity*cl.landed_unit_cost)/nullif(sum(cl.accepted_quantity),0) as weighted_cost
+   from public.admin_inventory_cost_layers cl
+   where cl.product_id=oi.product_id
+ ) layer on true
  where o.status='delivered'
 ),
 aggregated as (
  select
-  product_key,
-  product_id,
-  max(product_name) as product_name,
-  max(unit) as unit,
+  product_key,product_id,max(product_name) as product_name,max(unit) as unit,
   sum(quantity)::numeric(14,3) as delivered_quantity,
   sum(line_total)::numeric(14,2) as gross_product_sales,
   sum(case when subtotal>0 then coupon_discount_amount*(line_total/subtotal) else 0 end)::numeric(14,2) as allocated_discount,
-  sum(case when cost_price is not null then quantity*(cost_price+packaging_cost) else 0 end)::numeric(14,2) as known_cogs,
+  sum(case when coalesce(cost_price,weighted_cost) is not null
+      then quantity*(coalesce(cost_price,weighted_cost)+packaging_cost) else 0 end)::numeric(14,2) as known_cogs,
   count(*)::bigint as order_lines,
-  count(*) filter(where product_id is null or cost_price is null)::bigint as missing_cost_lines,
-  count(distinct product_id)::bigint as product_id_count
+  count(*) filter(where product_id is null or coalesce(cost_price,weighted_cost) is null)::bigint as missing_cost_lines,
+  case when bool_or(cost_price is not null) then 'manual'
+       when bool_or(weighted_cost is not null) then 'weighted_average'
+       else 'cost_missing' end as cost_method
  from item_rows
  group by product_key,product_id
 )
@@ -837,7 +1099,7 @@ select
  case when missing_cost_lines=0 and (gross_product_sales-allocated_discount)>0
    then round(((gross_product_sales-allocated_discount)-known_cogs)/(gross_product_sales-allocated_discount)*100,2)
    else null end as gross_margin_percent,
- missing_cost_lines,
+ missing_cost_lines,cost_method,
  case when missing_cost_lines=0 then 'complete' else 'cost_missing' end as cost_coverage
 from aggregated;
 
