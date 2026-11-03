@@ -103,6 +103,12 @@ function productSearchDocument(product, profile) {
     size_label:String(profile?.size_label||product.unit_type||""),attributes:search,
   };
 }
+function parseSizeValue(value) {
+  const match=normalizeText(value).match(/([0-9]+(?:\\.[0-9]+)?)\\s*(kg|g|ml|l)/iu);
+  if(!match)return null;
+  const unit=match[2].toLowerCase();
+  return {kind:unit==="kg"||unit==="g"?"weight":"volume",value:Number(match[1])*(unit==="kg"||unit==="l"?1000:1)};
+}
 function hasAny(text, values) {
   const n=normalizeText(text);
   return (Array.isArray(values)?values:[]).some(v=>{const x=normalizeText(v);return x.length>1&&n.includes(x);});
@@ -132,6 +138,21 @@ function rankProductCandidates(products, profiles, message, decision={}, imageMa
   const genericBudgetBrowse=decision.primary_intent==="recommendation_request" && /(?:৳|টাকা|টাকার|budget|under|within|বাজেট|সর্বোচ্চ)\s*[0-9]/iu.test(query);
   const broadBrowse=decision.primary_intent==="broad_catalog_browse" || decision.primary_intent==="category_browse";
   const imageContext=decision.image_search===true;
+  const sizeGroups=new Map();
+  for(const product of products){
+    const profile=profileFor(product,profiles);
+    const doc=productSearchDocument(product,profile);
+    const size=parseSizeValue(doc.size_label);
+    if(!size)continue;
+    const groupKey=normalizeText(product.category_slug||product.category||"")+"|"+size.kind;
+    if(!sizeGroups.has(groupKey))sizeGroups.set(groupKey,[]);
+    sizeGroups.get(groupKey).push(size.value);
+  }
+  const sizeMedians=new Map();
+  sizeGroups.forEach((values,key)=>{
+    const sorted=[...values].sort((a,b)=>a-b);
+    sizeMedians.set(key,sorted[Math.floor((sorted.length-1)/2)]);
+  });
   const scored=[];
   for(const product of products){
     if(product.is_active!==true)continue;
@@ -176,11 +197,16 @@ function rankProductCandidates(products, profiles, message, decision={}, imageMa
     const visualScore=visualSlug && visualSlug===doc.slug || visualSlugs.includes(doc.slug)?1:
       visualObject && (hasAny(doc.name+" "+doc.slug+" "+doc.derived_from, [visualObject])||hasAny(doc.attributes,[visualObject]))?0.75:0;
     const packagingScore=visualPackaging && doc.packaging_type && normalizeText(visualPackaging)===normalizeText(doc.packaging_type)?1:0;
+    const sizeInfo=parseSizeValue(doc.size_label);
+    const sizeGroupKey=normalizeText(product.category_slug||product.category||"")+"|"+(sizeInfo?.kind||"");
+    const medianSize=sizeMedians.get(sizeGroupKey);
+    const packPreferenceScore=packPreference&&sizeInfo&&medianSize
+      ? (packPreference==="small"?(sizeInfo.value<=medianSize?1:0):(sizeInfo.value>=medianSize?1:0)) : 0;
     const visibleTextScore=visibleText && (name.includes(normalizeText(visibleText))||slug.includes(normalizeText(visibleText)))?1:0;
-    const weights={identity:30,intent:20,category:15,attribute:15,semantic:10,visual:5,packaging:5};
+    const weights={identity:30,intent:20,category:15,attribute:15,semantic:8,visual:5,packaging:5,pack_preference:2};
     const raw=identityScore*weights.identity+intentScore*weights.intent+categoryScore*weights.category+
-      attributeScore*weights.attribute+semanticScore*weights.semantic+visualScore*weights.visual+packagingScore*weights.packaging;
-    const hasRelevanceEvidence=identityScore>0||categoryScore>0||attributeScore>0||semanticScore>0||visualScore>0||packagingScore>0||visibleTextScore>0;
+      attributeScore*weights.attribute+semanticScore*weights.semantic+visualScore*weights.visual+packagingScore*weights.packaging+packPreferenceScore*weights.pack_preference;
+    const hasRelevanceEvidence=identityScore>0||categoryScore>0||attributeScore>0||semanticScore>0||visualScore>0||packagingScore>0||packPreferenceScore>0||visibleTextScore>0;
     if(!hasRelevanceEvidence && !genericBudgetBrowse && !broadBrowse && !imageContext)continue;
     const score=Math.min(100,raw+(visibleTextScore*10));
     let matchType=identityScore>=0.9?"exact":visualScore>0?"visual":attributeScore>0?"attribute":categoryScore>0?"category":semanticScore>0.25?"semantic":"alternative";
@@ -189,7 +215,7 @@ function rankProductCandidates(products, profiles, message, decision={}, imageMa
     const confidenceScore=Math.max(identityScore*0.92,Math.min(0.99,score/100));
     const confidenceLevel=confidenceScore>=0.9?"high":confidenceScore>=0.75?"medium":confidenceScore>=0.5?"low":"very_low";
     scored.push({product,profile,score,confidence_score:confidenceScore,confidence_level:confidenceLevel,match_type:matchType,
-      evidence:{identity:identityScore,intent:intentScore,category:categoryScore,attribute:attributeScore,semantic:semanticScore,visual:visualScore,packaging:packagingScore}});
+      evidence:{identity:identityScore,intent:intentScore,category:categoryScore,attribute:attributeScore,semantic:semanticScore,visual:visualScore,packaging:packagingScore,pack_preference:packPreferenceScore}});
   }
   return scored.sort((a,b)=>b.score-a.score||String(a.product.name||"").localeCompare(String(b.product.name||"")));
 }
