@@ -12,6 +12,10 @@
    taste_aroma_profile:"aiKbTaste",texture_profile:"aiKbTexture",usage_instructions:"aiKbUsage",
    storage_instructions:"aiKbStorage",allergen_info:"aiKbAllergen",certification_info:"aiKbCertification"
   };
+  const searchFields = {
+   product_form:"aiKbProductFormType",brand:"aiKbBrand",packaging_type:"aiKbPackaging",
+   visual_description:"aiKbVisual",size_label:"aiKbSizeLabel"
+  };
   const lines = value => String(value||"").split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
   const text = id => $(id)?.value?.trim() || "";
   const setText = (id,value) => { const el=$(id); if(!el)return; if("value" in el)el.value=value??""; else el.textContent=value??""; };
@@ -84,7 +88,13 @@
    setText("aiKbFit",Array.isArray(k.customer_fit)?k.customer_fit.join("\n"):"");
    setText("aiKbFaq",Array.isArray(k.faq)?k.faq.map(x=>(x.question||"")+" | "+(x.answer||"")).join("\n"):"");
    setText("aiKbProhibited",Array.isArray(k.prohibited_claims)?k.prohibited_claims.join("\n"):"");
-   setText("aiKbSourceNotes",k.source_notes||"");$("aiKbProductError").textContent="";
+   setText("aiKbSourceNotes",k.source_notes||"");
+   setText("aiKbSearchSynonyms",Array.isArray(k.search_synonyms)?k.search_synonyms.join("\n"):"");
+   setText("aiKbDerivedFrom",Array.isArray(k.derived_from)?k.derived_from.join("\n"):"");
+   setText("aiKbRelatedTerms",Array.isArray(k.related_terms)?k.related_terms.join("\n"):"");
+   Object.entries(searchFields).forEach(([key,id])=>setText(id,k[key]||""));
+   setText("aiKbSearchAttributes",k.search_attributes&&typeof k.search_attributes==="object"?JSON.stringify(k.search_attributes,null,2):"");
+   $("aiKbProductError").textContent="";
    renderProducts();$("aiKbProductForm").scrollIntoView({behavior:"smooth",block:"start"});
   }
   async function saveProduct(status){
@@ -95,7 +105,19 @@
    payload.verified_claims=lines(text("aiKbClaims"));payload.customer_fit=lines(text("aiKbFit"));
    payload.faq=lines(text("aiKbFaq")).map(line=>{const i=line.indexOf("|");return i<0?null:{question:line.slice(0,i).trim(),answer:line.slice(i+1).trim()};}).filter(x=>x&&x.question&&x.answer);
    payload.prohibited_claims=lines(text("aiKbProhibited"));payload.source_notes=text("aiKbSourceNotes")||null;
-   if(status==="published"&&!Object.entries(fields).some(([key])=>payload[key]))throw new Error("Add at least one verified product fact before publishing.");
+   payload.search_synonyms=lines(text("aiKbSearchSynonyms"));
+   payload.derived_from=lines(text("aiKbDerivedFrom"));
+   payload.related_terms=lines(text("aiKbRelatedTerms"));
+   Object.entries(searchFields).forEach(([key,id])=>payload[key]=text(id)||null);
+   const rawAttributes=text("aiKbSearchAttributes");
+   try{
+    payload.search_attributes=rawAttributes?JSON.parse(rawAttributes):{};
+   }catch(_error){throw new Error("Search attributes must be valid JSON.");}
+   if(!payload.search_attributes||typeof payload.search_attributes!=="object"||Array.isArray(payload.search_attributes))throw new Error("Search attributes must be a JSON object.");
+   const hasSearchProfile=payload.search_synonyms.length||payload.derived_from.length||payload.related_terms.length||
+    Object.entries(searchFields).some(([key])=>payload[key])||Object.keys(payload.search_attributes).length;
+   if(status==="published"&&!Object.entries(fields).some(([key])=>payload[key])&&!hasSearchProfile)throw new Error("Add at least one verified product fact or search attribute before publishing.");
+   if(status==="published"&&hasSearchProfile&&!payload.source_notes)throw new Error("Add an internal source / verification note before publishing search metadata.");
    if(existing){const r=await client.from("ai_product_knowledge").update(payload).eq("product_id",id);if(r.error)throw r.error;}
    else{const r=await client.from("ai_product_knowledge").insert(payload);if(r.error)throw r.error;}
    await audit("ai_product_knowledge_"+status,"product",id,selectedProduct?.name||"Product profile",{status,version:payload.version});
