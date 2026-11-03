@@ -506,15 +506,19 @@ begin
     raise exception 'The cash/bank account cannot also be its own counter-account.';
   end if;
   if v_counter.account_type='asset' and not (
-    (v_entry.entry_type='income' and v_counter.account_code in ('1100','1040','1110'))
+    (v_entry.entry_type='income' and v_counter.account_code in ('1100','1110'))
     or (v_entry.entry_type='expense' and v_counter.account_code in ('1200','1110'))
   ) then
     raise exception 'Do not record asset-to-asset movements as Income or Expense. Use Account Transfer or the appropriate Receivable, Inventory or Supplier Advance account.';
   end if;
 
   if v_entry.entry_type='income' then
-    if v_counter.account_type not in ('revenue','other_income','equity','liability','contra_revenue','expense') then
+    if v_counter.account_type not in ('revenue','other_income','equity','liability','contra_revenue','expense')
+       and not (v_counter.account_type='asset' and v_counter.account_code='1100' and v_entry.related_order_id is not null) then
       raise exception 'The selected counter-account is not appropriate for a money-in transaction.';
+    end if;
+    if v_counter.account_code='1100' and v_entry.related_order_id is null then
+      raise exception 'Accounts Receivable receipts must be linked to their original customer order.';
     end if;
     v_lines:=jsonb_build_array(
       jsonb_build_object('account_id',v_cash_coa_id,'description',v_entry.category,'party_name',v_entry.party_name,'debit',v_entry.amount,'credit',0),
@@ -880,6 +884,7 @@ begin
  select * into v_bill from public.admin_supplier_bills where id=p_bill_id for update;
  if not found then raise exception 'Supplier bill was not found.'; end if;
  if v_bill.reversal_journal_id is not null or v_bill.status='void' then raise exception 'This supplier bill was reversed or voided and cannot be posted again.'; end if;
+ if v_bill.reversal_journal_id is not null or v_bill.status='void' then raise exception 'This supplier bill was reversed or voided and cannot be posted again.'; end if;
  if v_bill.accounting_journal_id is not null then return v_bill.accounting_journal_id; end if;
  if v_bill.status<>'confirmed' then raise exception 'Only a Confirmed supplier bill can be posted.'; end if;
  if v_bill.purchase_order_id is null then
@@ -971,6 +976,7 @@ begin
  end if;
  select * into v_payment from public.admin_supplier_payments where id=p_payment_id for update;
  if not found then raise exception 'Supplier payment was not found.'; end if;
+ if v_payment.reversal_journal_id is not null or v_payment.status='void' then raise exception 'This supplier payment was reversed or voided and cannot be posted again.'; end if;
  if v_payment.reversal_journal_id is not null or v_payment.status='void' then raise exception 'This supplier payment was reversed or voided and cannot be posted again.'; end if;
  if v_payment.accounting_journal_id is not null then return v_payment.accounting_journal_id; end if;
  if v_payment.status<>'confirmed' then raise exception 'Only a Confirmed supplier payment can be posted.'; end if;
