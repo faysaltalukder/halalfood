@@ -3178,3 +3178,39 @@ html body #related-grid .product-card .product-foot > div.cart-qty-control:focus
     text-align: center !important;
   }
 }
+
+/* Dates category and product information — lightweight, responsive and dependency-free */
+.date-category-intro{max-width:850px;margin:10px auto 0;padding:0 18px 18px;color:var(--navy-soft);line-height:1.8}
+.date-category-reference{padding:38px 0 58px;background:var(--cream)}
+.date-category-reference>.wrap>p{max-width:900px;color:var(--navy-soft);line-height:1.8}
+.date-reference-panel{margin:22px 0;padding:22px;border:1px solid var(--line);border-radius:16px;background:var(--white)}
+.date-reference-panel h3{margin:0 0 10px;font-size:1.25rem;color:var(--navy)}
+.date-reference-intro,.date-reference-source,.date-chart-note{color:var(--navy-soft);font-size:.9rem;line-height:1.7}
+.date-reference-chart{margin:18px 0;padding:18px;border-radius:12px;background:var(--cream)}
+.date-reference-chart h4{margin:0 0 14px;font-size:1rem;color:var(--navy)}
+.date-bar-row{display:grid;grid-template-columns:minmax(110px,150px) minmax(60px,1fr) 68px;align-items:center;gap:10px;margin:10px 0;font-size:.86rem;color:var(--navy-soft)}
+.date-bar-row b{text-align:right;color:var(--navy);font-variant-numeric:tabular-nums}
+.date-bar-track{height:10px;overflow:hidden;border-radius:20px;background:#e7e2d8}
+.date-bar-track i{display:block;height:100%;border-radius:20px;background:var(--orange)}
+.date-chart-note{margin:12px 0 0;font-size:.8rem}
+.date-table-wrap{max-width:100%;overflow-x:auto;margin:18px 0}
+.date-nutrition-table{width:100%;border-collapse:collapse;font-size:.9rem;min-width:420px}
+.date-nutrition-table caption{text-align:left;padding:0 0 9px;font-weight:700;color:var(--navy)}
+.date-nutrition-table th,.date-nutrition-table td{padding:9px 11px;border-bottom:1px solid var(--line);text-align:left}
+.date-nutrition-table thead th{background:var(--cream);color:var(--navy)}
+.date-nutrition-table tbody th{font-weight:600;color:var(--navy-soft)}
+.date-reference-source{margin:12px 0 0;font-size:.82rem}
+.date-reference-source a{color:var(--navy);text-decoration:underline;text-underline-offset:3px}
+.product-more-details{margin-top:18px;border:1px solid var(--line);border-radius:12px;background:var(--white);overflow:hidden}
+.product-more-details>summary{cursor:pointer;list-style:none;padding:15px 18px;font-weight:700;color:var(--navy);background:var(--cream)}
+.product-more-details>summary::-webkit-details-marker{display:none}
+.product-more-details>summary:after{content:"+";float:right;color:var(--orange);font-size:1.2rem}
+.product-more-details[open]>summary:after{content:"−"}
+.product-more-content{padding:18px}
+.product-more-content h3{margin:20px 0 8px;font-size:1.08rem;color:var(--navy)}
+.product-more-content h3:first-child{margin-top:0}
+.product-more-content p,.product-more-content li{color:var(--navy-soft);line-height:1.8}
+.product-more-content ul{padding-left:22px}
+.product-more-content .date-reference-panel{margin:18px 0;padding:16px}
+.date-information-disclaimer,.date-category-note{padding:12px 14px;border-left:3px solid var(--orange);background:var(--cream);border-radius:0 8px 8px 0}
+@media(max-width:600px){.date-reference-panel{padding:14px;margin:16px 0}.date-bar-row{grid-template-columns:100px minmax(36px,1fr) 60px;gap:7px;font-size:.76rem}.date-bar-row b{font-size:.75rem}.date-reference-chart{padding:13px}.product-more-content{padding:14px}.date-category-reference{padding:28px 0 40px}}
