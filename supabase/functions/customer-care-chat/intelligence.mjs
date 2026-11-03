@@ -112,9 +112,14 @@ function rankProductCandidates(products, profiles, message, decision={}, imageMa
   const requestedCategory=detectCategory(message);
   const requestedBrand=detectBrand(message,profiles);
   const requestedForm=/(গুঁড়া|গুঁড়া|পাউডার|powder)/u.test(query)?"powder":
-    /(তরল|liquid|oil)/u.test(query)?"liquid":
+    /(তরল|liquid)/u.test(query)?"liquid":
     /(whole|আস্ত|পুরো)/u.test(query)?"whole":
     /(কাটা|cut)/u.test(query)?"cut":null;
+  const requestedPackaging=/(বোতল|bottle)/u.test(query)?"bottle":
+    /(জার|jar)/u.test(query)?"jar":
+    /(টিন|tin)/u.test(query)?"tin":
+    /(প্যাকেট|packet|pouch|পাউচ)/u.test(query)?"packet":null;
+  const requestedSize=(query.match(/(?:^|\\s)([0-9]+\\s?(?:ml|l|g|kg))(?=\\s|$)/u)||[])[1]||"";
   const visualSlug=typeof imageMatch?.candidate_slug==="string"?imageMatch.candidate_slug:"";
   const visualSlugs=Array.isArray(imageMatch?.candidate_slugs)?imageMatch.candidate_slugs.filter(x=>typeof x==="string"):[];
 
@@ -137,7 +142,7 @@ function rankProductCandidates(products, profiles, message, decision={}, imageMa
       if(!categoryAliases.some(a=>normalizeText(product.category).includes(normalizeText(a))||normalizeText(product.category_slug).includes(normalizeText(a).replace(/\s+/g,"-"))))continue;
     }
     if(requestedBrand && (!doc.brand || normalizeText(doc.brand)!==normalizeText(requestedBrand)))continue;
-    if(requestedForm && doc.product_form && normalizeText(doc.product_form)!==requestedForm)continue;
+    if(requestedForm && doc.product_form && !normalizeText(doc.product_form).includes(requestedForm))continue;\n    if(requestedPackaging && doc.packaging_type && !normalizeText(doc.packaging_type).includes(requestedPackaging))continue;\n    if(requestedSize && doc.size_label && normalizeText(doc.size_label).replace(/\\s+/g,"")!==normalizeText(requestedSize).replace(/\\s+/g,""))continue;
     const name=normalizeText(doc.name),slug=normalizeText(doc.slug),category=normalizeText(doc.category+" "+doc.category_slug);
     const aliasText=doc.synonyms.join(" ");
     const exactName=Boolean(name && (query===name || query.includes(name) || name.includes(query)));
