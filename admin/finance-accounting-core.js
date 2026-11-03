@@ -780,9 +780,11 @@ window.HFAdminReady.then(async H => {
       const id = operation.dataset.financeOperationId;
       if (kind === "cashbook_post") {
         const source = cashbookEntries.find(e=>e.id===id);
-        const defaultAccount = source?.entry_type === "income"
-          ? accounts.find(a=>a.account_code==="4010")?.id
-          : accounts.find(a=>a.account_code==="6095")?.id;
+        const defaultAccount = source?.related_order_id
+          ? accounts.find(a=>a.account_code==="1100")?.id
+          : source?.entry_type === "income"
+            ? accounts.find(a=>a.account_code==="4010")?.id
+            : accounts.find(a=>a.account_code==="6095")?.id;
         openOperationalPosting(kind,id,{
           title:"Post cashbook transaction",
           description:"Select the counter-account that explains why this money was received or paid. For an order-linked receipt, Accounts Receivable (1100) is mandatory.",
