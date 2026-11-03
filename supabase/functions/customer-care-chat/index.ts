@@ -183,9 +183,15 @@ function numericProductPrice(product: Record<string, unknown>): number | null {
   return Number.isFinite(value) ? value : null;
 }
 
-function publicProductCards(knowledge: Awaited<ReturnType<typeof loadKnowledge>>, message: string): Record<string, unknown>[] {
+function publicProductCards(knowledge: Awaited<ReturnType<typeof loadKnowledge>>, message: string, reply = ""): Record<string, unknown>[] {
   if (!knowledge.products.length) return [];
-  return knowledge.products.slice(0, knowledge.broadCatalogQuestion ? 6 : 4).map((product) => {
+  const sourceProducts = knowledge.imageSearch && reply
+    ? knowledge.products.filter((product) => {
+      const name = String(product.name || "").trim().toLocaleLowerCase();
+      return name.length > 2 && reply.toLocaleLowerCase().includes(name);
+    })
+    : knowledge.products;
+  return sourceProducts.slice(0, knowledge.broadCatalogQuestion ? 6 : 4).map((product) => {
     const profile = product.verified_product_knowledge && typeof product.verified_product_knowledge === "object"
       ? product.verified_product_knowledge as Record<string, unknown> : null;
     return {
@@ -353,6 +359,7 @@ async function loadKnowledge(message: string, history: Array<{ role: "user" | "m
     productKnowledge,
     categoryNames,
     catalogCount: customerFacingProducts.length,
+    imageSearch,
     customerNeed,
     budgetMatchedCount: budgetMatches.length,
     broadCatalogQuestion,
@@ -868,7 +875,7 @@ Deno.serve(async (req: Request) => {
     return response({
       success: true,
       reply,
-      products: publicProductCards(knowledge, message),
+      products: publicProductCards(knowledge, message, reply),
       requestId,
       model: modelUsed,
       knowledge: {
