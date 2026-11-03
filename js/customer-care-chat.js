@@ -8,7 +8,7 @@
   const style = document.createElement("link");
   style.id = "hf-customer-care-chat-styles";
   style.rel = "stylesheet";
-  style.href = ASSET_BASE + "css/customer-care-chat.css?v=20261103-product-card-cta-v8";
+  style.href = ASSET_BASE + "css/customer-care-chat.css?v=20261103-ai-feedback-v1";
   document.head.appendChild(style);
 
   let root = document.getElementById("hf-contact-widget");
@@ -164,6 +164,49 @@
     const time = document.createElement("span"); time.className = "hf-ai-message-time";
     time.textContent = (sender === "user" ? "আপনি · " : "Halal Food AI · ") + new Intl.DateTimeFormat("bn-BD", {hour:"2-digit",minute:"2-digit"}).format(new Date());
     bubble.appendChild(time); group.appendChild(bubble); messages.appendChild(group); if (shouldStickToBottom) scrollToLatest(true); return bubble;
+  }
+  async function saveAssistantFeedback(payload, rating, reason, controls) {
+    controls.querySelectorAll("button").forEach(function (button) { button.disabled = true; });
+    const status = controls.querySelector(".hf-ai-feedback-status");
+    if (status) status.textContent = "মতামত সংরক্ষণ হচ্ছে…";
+    try {
+      const response = await fetch(CHAT_API, { method: "POST", headers: { "Content-Type": "application/json" }, cache: "no-store",
+        body: JSON.stringify({ action: "feedback", requestId: payload.requestId, rating: rating, reason: reason || null,
+          question: payload.question, answer: payload.answer, productIds: payload.products.map(function (item) { return item.id; }),
+          productNames: payload.products.map(function (item) { return item.name; }), model: payload.model }),
+        signal: AbortSignal.timeout(10000) });
+      const data = await response.json().catch(function () { return {}; });
+      if (!response.ok || data.success !== true) throw new Error(data.code || "FEEDBACK_SAVE_FAILED");
+      controls.innerHTML = '<span class="hf-ai-feedback-thanks" role="status">ধন্যবাদ! আপনার মতামত সংরক্ষণ করা হয়েছে।</span>';
+    } catch (_) {
+      if (status) status.textContent = "মতামত সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন।";
+      controls.querySelectorAll("button").forEach(function (button) { button.disabled = false; });
+    }
+  }
+  function appendFeedbackControls(bubble, payload) {
+    if (!payload.requestId) return;
+    const controls = document.createElement("div");
+    controls.className = "hf-ai-feedback-controls";
+    const prompt = document.createElement("span"); prompt.className = "hf-ai-feedback-prompt"; prompt.textContent = "উত্তরটি কেমন হলো?";
+    const actions = document.createElement("div"); actions.className = "hf-ai-feedback-actions";
+    const like = document.createElement("button"); like.type = "button"; like.className = "hf-ai-feedback-button"; like.textContent = "👍 ভালো হয়েছে";
+    const dislike = document.createElement("button"); dislike.type = "button"; dislike.className = "hf-ai-feedback-button"; dislike.textContent = "👎 একমত নই";
+    const status = document.createElement("span"); status.className = "hf-ai-feedback-status"; status.setAttribute("aria-live", "polite");
+    actions.append(like, dislike); controls.append(prompt, actions, status); bubble.appendChild(controls);
+    like.addEventListener("click", function () { saveAssistantFeedback(payload, "helpful", null, controls); });
+    dislike.addEventListener("click", function () {
+      actions.innerHTML = "";
+      const reasons = [
+        ["wrong_product", "ভুল পণ্য"], ["misunderstood", "প্রশ্ন বোঝেনি"],
+        ["incorrect_information", "ভুল তথ্য"], ["irrelevant", "অপ্রাসঙ্গিক"], ["unclear", "অস্পষ্ট উত্তর"], ["other", "অন্য কারণ"]
+      ];
+      reasons.forEach(function (entry) {
+        const button = document.createElement("button"); button.type = "button"; button.className = "hf-ai-feedback-reason"; button.textContent = entry[1];
+        button.addEventListener("click", function () { saveAssistantFeedback(payload, "not_helpful", entry[0], controls); });
+        actions.appendChild(button);
+      });
+      status.textContent = "কী সমস্যা হয়েছে? একটি কারণ বেছে নিন।";
+    });
   }
   function bindPromptButtons() { panel.querySelectorAll("[data-hf-chat-prompt]").forEach(button => button.addEventListener("click", () => submitQuestion(button.getAttribute("data-hf-chat-prompt")))); }
   function resetConversation() {
@@ -764,6 +807,8 @@
         const reply = data.reply.trim();
         const answerBubble = appendMessage(reply || "দুঃখিত, এবার উত্তর তৈরি করা যায়নি। আবার চেষ্টা করুন।", "assistant");
         appendProductCards(answerBubble, data.products, data.recommendation && data.recommendation.max_product_cards, data.recommendation && data.recommendation.match_type);
+        appendFeedbackControls(answerBubble, { requestId: data.requestId, question: userText, answer: reply,
+          products: Array.isArray(data.products) ? data.products : [], model: data.model || "unknown" });
         conversation.push({ role: "user", text: text });
         conversation.push({ role: "assistant", text: reply + (Array.isArray(data.products) && data.products.length ? "\\n[Products shown: " + data.products.map(function (item) { return String(item.name || ""); }).filter(Boolean).join(", ") + "]" : "") });
         if (conversation.length > 40) conversation.splice(0, conversation.length - 40);
