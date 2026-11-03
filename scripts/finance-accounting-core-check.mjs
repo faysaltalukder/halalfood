@@ -39,7 +39,7 @@ for (const token of [
   "admin_finance_set_period_status"
 ]) assert.ok(js.includes(token), "Accounting UI must use " + token + ".");
 
-assert.ok(js.includes("Not yet journalized") && js.includes("No test record or unverified opening balance was imported"), "UI must disclose operational records excluded from the ledger.");
+assert.ok(html.includes("Not yet journalized") && js.includes("No test record or unverified opening balance was imported"), "UI must disclose operational records excluded from the ledger.");
 assert.ok(js.includes("Validate & Post") || html.includes("Validate & Post"), "Journal posting action must be present.");
 assert.ok(js.includes("finance_journal_posted") && js.includes("finance_journal_reversed"), "Journal lifecycle must be audit logged.");
 assert.ok(js.includes("The original journal remains in history") || js.includes("reversal journal"), "Corrections must use reversal, not destructive editing.");
