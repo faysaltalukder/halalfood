@@ -147,7 +147,7 @@ function analyzeCustomerNeed(
   const userHistory = history.filter((item) => item.role === "user").map((item) => item.parts[0]?.text || "");
   const combined = [...userHistory, message].join(" ").normalize("NFKC");
   const normalized = toEnglishDigits(combined).toLowerCase();
-  const compare = /(তুলনা|পার্থক্য|তফাৎ|compare|comparison|difference|versus|\bvs\b)/iu.test(normalized);
+  const compare = /(তুলনা|পার্থক্য|তফাৎ|দুটোর মধ্যে|দুটির মধ্যে|which is better|compare|comparison|difference|versus|\bvs\b)/iu.test(normalized);
   const recommend = /(পরামর্শ|সাজেস্ট|suggest|recommend|কোনটা.*ভালো|কোনটি.*ভালো|কোন.*নেব|কোন.*কিনব|কী.*কিনব|কি.*কিনব|আমার.*জন্য|ভালো.*হবে)/iu.test(normalized);
   const broad = isBroadCatalogQuestion(message);
   const category = isCategoryCatalogQuestion(message);
