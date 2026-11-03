@@ -1,7 +1,7 @@
 /* Compact, opt-in product information: keeps product media and purchase controls prominent. */
 .product-description-section .product-description-inner{max-width:920px}
 .product-description-section .product-description-inner>p:first-of-type{max-width:70ch;margin:8px 0 0;font-size:.98rem;line-height:1.55}
-.product-see-more{display:inline-flex;align-items:center;gap:5px;margin:8px 0 0;padding:0;border:0;background:transparent;color:#a45f2d;font:600 .94rem/1.4 inherit;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.product-see-more{display:inline-flex;align-items:center;gap:5px;margin:8px 0 0;padding:0;border:0;background:transparent;color:#a45f2d;font-family:inherit;font-size:.94rem;font-weight:600;line-height:1.4;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
 .product-see-more:hover{color:#75431f}
 .product-see-more:focus-visible{outline:2px solid #c97b3d;outline-offset:4px;border-radius:3px}
 .product-more-content[hidden]{display:none!important}
