@@ -182,6 +182,9 @@ grant select,insert,update on public.admin_finance_periods to authenticated;
 grant select,insert,update on public.admin_finance_journal_entries to authenticated;
 grant select,insert,update,delete on public.admin_finance_journal_lines to authenticated;
 grant select on public.admin_finance_journal_events to authenticated;
+-- Identity sequences are separately permissioned in PostgreSQL. The invoker-secure
+-- journal RPC inserts headers as the authenticated administrator.
+grant usage,select on sequence public.admin_finance_journal_entries_journal_number_seq to authenticated;
 
 alter table public.admin_finance_chart_of_accounts enable row level security;
 alter table public.admin_finance_periods enable row level security;
