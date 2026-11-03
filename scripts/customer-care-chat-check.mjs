@@ -9,7 +9,9 @@ const edge = fs.readFileSync("supabase/functions/customer-care-chat/index.ts", "
 
 assert.match(main, /js\/customer-care-chat\.js\?v=20261103-ai-stage2-v1/);
 assert.match(chat, /functions\/v1\/customer-care-chat/);
-assert.match(chat, /ageConfirmed:\s*true/);
+assert.doesNotMatch(chat, /ageConfirmed|hf-ai-chat-age-gate|hf-ai-age-confirm|প্রাপ্তবয়স্কদের জন্য AI সহায়তা/);
+assert.match(chat, /if \(!text \|\| busy\) return;/);
+assert.match(chat, /serverCheckStarted/);
 assert.match(chat, /আমি নিশ্চিত করছি, আমার বয়স ১৮ বছর বা তার বেশি/);
 assert.match(chat, /GEMINI_QUOTA/);
 assert.doesNotMatch(chat, /RATE_LIMITED|status === 429/);
@@ -19,7 +21,7 @@ assert.doesNotMatch(chat, /GEMINI_API_KEY|AIza[0-9A-Za-z_-]{20,}/, "Gemini API c
 assert.match(edge, /Deno\.env\.get\("GEMINI_API_KEY"\)/);
 assert.match(edge, /Deno\.env\.get\("GEMINI_MODEL"\)/);
 assert.match(edge, /x-goog-api-key/);
-assert.match(edge, /ageConfirmed !== true/);
+assert.doesNotMatch(edge, /ageConfirmed !== true|ADULT_CONFIRMATION_REQUIRED/);
 assert.doesNotMatch(edge, /checkRateLimit|getClientKey|RATE_LIMIT =/);
 assert.match(edge, /AbortController/);
 assert.match(edge, /ALLOWED_ORIGIN/);
@@ -51,7 +53,7 @@ assert.doesNotMatch(edge, /console\.(log|error)\([^)]*message/);
 assert.match(css, /\.hf-ai-chat-panel\[hidden\]\s*\{\s*display:\s*none\s*!important/);
 assert.match(css, /@media \(max-width: 900px\)/);
 assert.match(css, /prefers-reduced-motion/);
-assert.match(css, /\.hf-ai-chat-age-gate/);
+assert.doesNotMatch(css, /hf-ai-chat-age-gate|hf-ai-age-confirm|hf-ai-age-support/);
 assert.match(css, /\.hf-ai-product-cards/);
 assert.match(home, /id="hf-contact-widget"/);
 assert.match(home, /id="hf-contact-launcher"/);
