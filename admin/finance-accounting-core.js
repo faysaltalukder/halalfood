@@ -235,6 +235,253 @@ window.HFAdminReady.then(async H => {
     }
   }
 
+
+  const accountById = id => financeAccounts.find(a => a.id === id);
+  const operationButton = (kind,id,label,danger=false) =>
+    '<button class="hf-button ' + (danger ? "hf-button-danger" : "hf-button-primary") +
+    ' hf-button-small" data-finance-operation="' + esc(kind) + '" data-finance-operation-id="' + esc(id) + '">' +
+    esc(label) + "</button>";
+  const emptyOperationRow = (columns,message) => '<tr><td colspan="' + columns + '">' + esc(message) + "</td></tr>";
+  const sourceJournal = (type,key) => journals.find(j => j.source_type===type && j.source_key===String(key));
+
+  function renderOperationalIntegration() {
+    const standaloneCashbook = cashbookEntries.filter(e => e.status==="confirmed"
+      && !e.related_cod_settlement_id && !e.related_supplier_payment_id);
+    const sales = deliveredOrders.map(o => ({order:o,journal:sourceJournal("order_sale",o.id)}));
+    const cod = codRows.filter(s => s.status==="reconciled" && !s.reversal_journal_id);
+    const bills = supplierBills.filter(b => (b.status==="confirmed" && !b.reversal_journal_id)
+      || (b.accounting_journal_id && !b.reversal_journal_id));
+    const payments = supplierPayments.filter(p => (p.status==="confirmed" && !p.reversal_journal_id)
+      || (p.accounting_journal_id && !p.reversal_journal_id));
+    const openings = financeAccounts.filter(a => a.is_active && Number(a.opening_balance||0)>0
+      && !a.opening_balance_journal_id);
+    const cogs = deliveredOrders.filter(o => {
+      const sale=sourceJournal("order_sale",o.id), cost=sourceJournal("order_cogs",o.id);
+      return sale?.status==="posted" && !cost;
+    });
+
+    const cashPending=standaloneCashbook.filter(e=>!e.accounting_journal_id).length;
+    const salePending=sales.filter(x=>!x.journal).length;
+    const codPending=cod.filter(s=>!s.accounting_journal_id).length;
+    const supplierPending=bills.filter(b=>!b.accounting_journal_id).length
+      +payments.filter(p=>!p.accounting_journal_id).length;
+
+    $("financeOpsCashbookCount").textContent=cashPending.toLocaleString("en-BD");
+    $("financeOpsSalesCount").textContent=salePending.toLocaleString("en-BD");
+    $("financeOpsCodCount").textContent=codPending.toLocaleString("en-BD");
+    $("financeOpsSupplierCount").textContent=supplierPending.toLocaleString("en-BD");
+    $("financeOpsOpeningCount").textContent=openings.length.toLocaleString("en-BD");
+    $("financeOpsCogsCount").textContent=cogs.length.toLocaleString("en-BD");
+
+    $("financeOpsCashbookBody").innerHTML=standaloneCashbook.length?standaloneCashbook.map(e=>{
+      const action=e.accounting_journal_id
+        ?operationButton("cashbook_reverse",e.id,"Reverse",true)
+        :operationButton("cashbook_post",e.id,"Post to GL");
+      return "<tr><td>"+dateOnly(e.entry_date)+"<small>"+esc(e.entry_type)+"</small></td><td><strong>"+
+        esc(e.category)+"</strong><small>"+esc(e.party_name||e.description||"—")+"</small></td><td>"+
+        esc(accountById(e.account_id)?.name||"Unassigned")+"</td><td><strong>"+money(e.amount)+
+        "</strong></td><td>"+action+"</td></tr>";
+    }).join(""):emptyOperationRow(5,"No Confirmed standalone cashbook entries require posting or reversal.");
+
+    $("financeOpsSalesBody").innerHTML=sales.length?sales.map(({order,journal})=>{
+      const action=journal
+        ?(journal.status==="posted"?'<span class="hf-finance-status hf-finance-status-success">Recognized · '+esc("JE-"+String(journal.journal_number).padStart(6,"0"))+'</span>':'<span class="hf-finance-status hf-finance-status-warning">Sale journal reversed · review source</span>')
+        :operationButton("order_sale",order.id,"Recognize sale");
+      const settlementType=order.payment_method==="cash_on_delivery"?"COD → Courier Clearing":"Customer Receivable";
+      return "<tr><td><strong>"+esc(order.order_number||String(order.id).slice(0,8))+"</strong><small>"+
+        esc(order.customer_name||"Customer")+"</small></td><td>"+esc(settlementType)+"</td><td><strong>"+
+        money(order.total)+"</strong></td><td>"+action+"</td></tr>";
+    }).join(""):emptyOperationRow(4,"No Delivered orders are awaiting sales recognition.");
+
+    $("financeOpsCodBody").innerHTML=cod.length?cod.map(s=>{
+      const action=s.accounting_journal_id
+        ?operationButton("cod_reverse",s.id,"Reverse",true)
+        :operationButton("cod_post",s.id,"Post remittance");
+      return "<tr><td><strong>"+esc(s.order_number||"Order")+"</strong><small>"+esc(s.courier_name||"Courier")+
+        (s.tracking_reference?" · "+esc(s.tracking_reference):"")+"</small></td><td>"+money(s.collected_amount)+
+        "</td><td>"+money(s.courier_fee)+"</td><td><strong>"+money(s.remitted_amount)+
+        "</strong></td><td>"+action+"</td></tr>";
+    }).join(""):emptyOperationRow(5,"No Reconciled COD remittance is waiting for accounting.");
+
+    const supplierRows=[
+      ...bills.map(b=>({
+        id:b.id,kind:"supplier_bill",title:"Supplier bill · "+(b.bill_number||""),
+        date:b.invoice_date,party:"Invoice "+(b.supplier_invoice_number||"—"),
+        amount:b.total_amount,journal:b.accounting_journal_id
+      })),
+      ...payments.map(p=>({
+        id:p.id,kind:"supplier_payment",title:"Supplier payment · "+(p.payment_number||""),
+        date:p.payment_date,party:p.paid_from_account||"Payment account",
+        amount:p.amount,journal:p.accounting_journal_id
+      }))
+    ];
+    $("financeOpsSupplierBody").innerHTML=supplierRows.length?supplierRows.map(row=>{
+      const action=row.journal?operationButton(row.kind+"_reverse",row.id,"Reverse",true):
+        operationButton(row.kind+"_post",row.id,row.kind==="supplier_bill"?"Post bill":"Post payment");
+      return "<tr><td><strong>"+esc(row.title)+"</strong></td><td>"+dateOnly(row.date)+
+        "</td><td>"+esc(row.party)+"</td><td><strong>"+money(row.amount)+
+        "</strong></td><td>"+action+"</td></tr>";
+    }).join(""):emptyOperationRow(5,"No Confirmed Supplier Bills or Payments are waiting for accounting.");
+
+    $("financeOpsOpeningBody").innerHTML=openings.length?openings.map(a=>
+      "<tr><td><strong>"+esc(a.name)+"</strong><small>"+esc(a.account_type)+"</small></td><td>"+
+      dateOnly(a.opening_date)+"</td><td><strong>"+money(a.opening_balance)+"</strong></td><td>"+
+      esc(accountMap().get(a.ledger_account_id)?.account_code||"Not mapped")+"</td><td>"+
+      (a.ledger_account_id?operationButton("opening_post",a.id,"Post verified"):
+        '<span class="hf-finance-status hf-finance-status-warning">Map account</span>')+"</td></tr>"
+    ).join(""):emptyOperationRow(5,"No positive, unjournalized Finance opening balance is waiting.");
+
+    $("financeOpsCogsBody").innerHTML=cogs.length?cogs.map(o=>
+      "<tr><td><strong>"+esc(o.order_number||String(o.id).slice(0,8))+"</strong></td><td>—</td><td>"+
+      "Cost validated before posting</td><td>"+operationButton("order_cogs",o.id,"Post COGS")+"</td></tr>"
+    ).join(""):emptyOperationRow(4,"No Delivered order with a posted sale is waiting for COGS.");
+
+    $("financeOpsProfitCount").textContent=profitabilityRows.length.toLocaleString("en-BD")+" products";
+    $("financeOpsProfitBody").innerHTML=profitabilityRows.length?profitabilityRows.map(row=>
+      "<tr><td><strong>"+esc(row.product_name||"Product")+"</strong><small>"+esc(row.unit||"")+
+      "</small></td><td>"+Number(row.delivered_quantity||0).toLocaleString("en-BD")+
+      "</td><td>"+money(row.net_product_sales)+"</td><td>"+(row.verified_cogs==null?"—":money(row.verified_cogs))+
+      "</td><td><strong>"+(row.gross_profit==null?"—":money(row.gross_profit))+"</strong></td><td>"+
+      (row.gross_margin_percent==null?"—":Number(row.gross_margin_percent).toFixed(2)+"%")+
+      "</td><td>"+esc(row.cost_method||row.cost_coverage||"—")+
+      (Number(row.missing_cost_lines||0)?'<small class="hf-finance-status hf-finance-status-warning">Cost missing</small>':"")+
+      "</td></tr>"
+    ).join(""):emptyOperationRow(7,"No Delivered product sales are available for margin analysis.");
+
+    const integrity=$("financeOperationsIntegrity");
+    if(integrity)integrity.textContent="Only Confirmed source events appear here. Delivered sales, customer receipts, COD remittances, supplier bills, supplier payments and COGS post as separate journal events. Historical test records are not automatically posted.";
+  }
+
+  function fillOperationalAccounts(kind,selectedId) {
+    const select=$("financeOperationalAccount");
+    const taxSelect=$("financeOperationalTaxAccount");
+    const field=$("financeOperationalAccountField");
+    const taxField=$("financeOperationalTaxField");
+    const allowed=accounts.filter(a=>a.is_active&&a.is_postable&&(
+      kind==="cashbook_post"?true:
+      kind==="supplier_bill_post"?["asset","expense","cost_of_sales"].includes(a.account_type):
+      kind==="opening_post"?["equity","liability"].includes(a.account_type):false
+    ));
+    select.innerHTML='<option value="">Choose account</option>'+allowed.map(a=>
+      '<option value="'+esc(a.id)+'"'+(a.id===selectedId?" selected":"")+">"+
+      esc(a.account_code+" · "+a.name)+"</option>").join("");
+    field.hidden=!(["cashbook_post","supplier_bill_post","opening_post"].includes(kind));
+    select.required=!field.hidden;
+    const tax=accounts.filter(a=>a.is_active&&a.is_postable&&["asset","expense"].includes(a.account_type));
+    taxSelect.innerHTML='<option value="">Choose tax classification</option>'+tax.map(a=>
+      '<option value="'+esc(a.id)+'"'+(a.account_code==="1210"?" selected":"")+">"+
+      esc(a.account_code+" · "+a.name)+"</option>").join("");
+    taxField.hidden=kind!=="supplier_bill_post";
+  }
+
+  function openOperationalPosting(kind,id,meta={}) {
+    operationalPostContext={kind,id,meta};
+    $("financeOperationalPostKind").value=kind;
+    $("financeOperationalPostId").value=id;
+    $("financeOperationalPostError").textContent="";
+    $("financeOperationalPostTitle").textContent=meta.title||"Post source event";
+    $("financeOperationalPostDescription").textContent=meta.description||"Choose the appropriate General Ledger account.";
+    $("financeOperationalWarning").textContent=meta.warning||"Posting is permanent. Corrections must use a linked reversal journal.";
+    fillOperationalAccounts(kind,meta.defaultAccount||"");
+    $("financeOperationalTaxField").hidden=!(kind==="supplier_bill_post"&&Number(meta.taxAmount||0)>0);
+    $("financeOperationalTaxAccount").required=kind==="supplier_bill_post"&&Number(meta.taxAmount||0)>0;
+    $("financeOperationalPostDialog").showModal();
+  }
+
+  async function runOperationalAction(kind,id) {
+    const config={
+      order_sale:{
+        message:"Recognize this Delivered sale? COD will debit Courier Clearing; other orders will debit Customer Receivable. This is not proof of cash received.",
+        rpc:"admin_finance_recognize_delivered_order_sale",args:{p_order_id:id}
+      },
+      cod_post:{
+        message:"Post the reconciled COD remittance and courier fee? Revenue will not be counted again.",
+        rpc:"admin_finance_post_cod_settlement",args:{p_settlement_id:id}
+      },
+      supplier_payment_post:{
+        message:"Post this Confirmed supplier payment? Allocations reduce Accounts Payable; unallocated money becomes Supplier Advances.",
+        rpc:"admin_finance_post_supplier_payment",args:{p_payment_id:id}
+      },
+      order_cogs:{
+        message:"Post COGS using verified manual product costs or weighted-average landed GRN costs? Missing costs will block posting.",
+        rpc:"admin_finance_post_order_cogs",args:{p_order_id:id}
+      }
+    };
+    const item=config[kind];
+    if(!item||!confirm(item.message))return;
+    try{
+      const {data,error}=await client.rpc(item.rpc,item.args);
+      if(error)throw error;
+      await audit("finance_"+kind,"finance_source",id,"Operational source posted to accounting",{journal_id:data});
+      toast("Source event posted to the General Ledger.");
+      await refreshAll();
+    }catch(error){toast(error.message||"Operational source could not be posted.","error");}
+  }
+
+  async function reverseOperationalSource(kind,id) {
+    const reason=window.prompt("Reason for reversing this source transaction (at least five characters):");
+    if(reason===null)return;
+    if(reason.trim().length<5){toast("Enter a reversal reason of at least five characters.","error");return;}
+    if(!confirm("Reverse this source transaction through its linked accounting Journal? The original record and reversal will remain in history."))return;
+    const config={
+      cashbook_reverse:["admin_finance_reverse_cashbook_entry",{p_entry_id:id,p_reversal_date:todayDhaka(),p_reason:reason.trim()}],
+      cod_reverse:["admin_finance_reverse_cod_settlement",{p_settlement_id:id,p_reversal_date:todayDhaka(),p_reason:reason.trim()}],
+      supplier_bill_reverse:["admin_finance_reverse_supplier_bill",{p_bill_id:id,p_reversal_date:todayDhaka(),p_reason:reason.trim()}],
+      supplier_payment_reverse:["admin_finance_reverse_supplier_payment",{p_payment_id:id,p_reversal_date:todayDhaka(),p_reason:reason.trim()}]
+    };
+    const [rpc,args]=config[kind]||[];
+    if(!rpc)return;
+    try{
+      const {data,error}=await client.rpc(rpc,args);
+      if(error)throw error;
+      await audit("finance_"+kind,"finance_source",id,"Operational source reversed",{reversal_journal_id:data});
+      toast("Source transaction reversed. Original and reversal Journals remain in history.");
+      await refreshAll();
+    }catch(error){toast(error.message||"Source transaction could not be reversed.","error");}
+  }
+
+  async function submitOperationalPosting(event) {
+    event.preventDefault();
+    if(!operationalPostContext)return;
+    const {kind,id,meta}=operationalPostContext;
+    const button=$("financeOperationalPostSubmit");
+    button.disabled=true;
+    $("financeOperationalPostError").textContent="";
+    try{
+      let rpc,args;
+      if(kind==="cashbook_post"){
+        const counter=$("financeOperationalAccount").value;
+        if(!counter)throw new Error("Choose a General Ledger counter-account.");
+        const source=cashbookEntries.find(e=>e.id===id);
+        if(source?.related_order_id&&counter!==accounts.find(a=>a.account_code==="1100")?.id)
+          throw new Error("Customer receipts linked to an order must credit Accounts Receivable (1100).");
+        rpc="admin_finance_post_cashbook_entry";
+        args={p_entry_id:id,p_counter_account_id:counter};
+      }else if(kind==="supplier_bill_post"){
+        const debit=$("financeOperationalAccount").value;
+        if(!debit)throw new Error("Choose Inventory, Cost of Sales or an Expense account.");
+        const tax=Number(meta.taxAmount||0)>0?$("financeOperationalTaxAccount").value:null;
+        if(Number(meta.taxAmount||0)>0&&!tax)throw new Error("Choose the supplier invoice tax classification.");
+        rpc="admin_finance_post_supplier_bill";
+        args={p_bill_id:id,p_debit_account_id:debit,p_tax_account_id:tax};
+      }else if(kind==="opening_post"){
+        const offset=$("financeOperationalAccount").value;
+        if(!offset)throw new Error("Choose an Equity or Liability offset account.");
+        if(!confirm("Confirm this opening balance matches a real statement and is not test data."))return;
+        rpc="admin_finance_post_account_opening_balance";
+        args={p_account_id:id,p_offset_account_id:offset};
+      }else throw new Error("Unsupported operational posting action.");
+      const {data,error}=await client.rpc(rpc,args);
+      if(error)throw error;
+      await audit("finance_"+kind,"finance_source",id,"Source event posted to double-entry accounting",{journal_id:data});
+      $("financeOperationalPostDialog").close();
+      operationalPostContext=null;
+      toast("Source event posted to the General Ledger.");
+      await refreshAll();
+    }catch(error){$("financeOperationalPostError").textContent=error.message||"Source event could not be posted.";}
+    finally{button.disabled=false;}
+  }
+
   function showTab(name) {
     root.querySelectorAll("[data-finance-accounting-tab]").forEach(button => {
       const active = button.dataset.financeAccountingTab === name;
