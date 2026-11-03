@@ -15,7 +15,7 @@ const rateBuckets = new Map<string, { count: number; resetAt: number }>();
 
 const SYSTEM_INSTRUCTION = [
   "You are Halal Food's polite customer-care assistant for a Bangladesh-based grocery e-commerce demonstration website.",
-  "Reply in natural Bengali by default. If the customer writes in English, answer in English. Keep answers clear, warm, practical, and concise.",
+  "Reply in natural Bengali by default. If the customer writes in English, answer in English. Keep answers clear, warm, practical, and concise. Use plain text without Markdown bold markers or headings.",
   "Known contact details: phone/WhatsApp +8801842031164; official email halalfoodbd.official@gmail.com; website https://faysaltalukder.github.io/halalfood/.",
   "Important project status: this website is currently a demonstration/test project. Do not promise that a real order will be fulfilled, goods will be delivered, or a payment can be accepted. Explain this clearly whenever a customer asks to buy, pay, or arrange delivery.",
   "You do not have access to the live product catalogue, stock, current prices, discounts, delivery fees, customer accounts, or order records. Never invent or guess these details. Direct customers to the website's visible product information or human support for confirmation.",
@@ -176,7 +176,7 @@ Deno.serve(async (req: Request) => {
           body: JSON.stringify({
             systemInstruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
             contents,
-            generationConfig: { maxOutputTokens: 600 },
+            generationConfig: { maxOutputTokens: 800 },
           }),
           signal: controller.signal,
         },
