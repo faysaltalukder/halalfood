@@ -502,9 +502,9 @@ window.HFAdminReady.then(async H => {
         const source=cashbookEntries.find(e=>e.id===id);
         if(source?.related_order_id){
           const delivered=deliveredOrders.some(order=>order.id===source.related_order_id);
-          const requiredCode=delivered?"1100":"2020";
+          const requiredCode=source.entry_type==="expense"?"2020":delivered?"1100":"2020";
           if(counter!==accounts.find(a=>a.account_code===requiredCode)?.id)
-            throw new Error(delivered?"Post-delivery receipts must credit Accounts Receivable (1100).":"Pre-delivery customer payments must credit Customer Advances (2020).");
+            throw new Error(source.entry_type==="expense"?"Pre-delivery advance refunds must debit Customer Advances (2020).":delivered?"Post-delivery receipts must credit Accounts Receivable (1100).":"Pre-delivery customer payments must credit Customer Advances (2020).");
         }
         rpc="admin_finance_post_cashbook_entry";
         args={p_entry_id:id,p_counter_account_id:counter};
@@ -787,13 +787,13 @@ window.HFAdminReady.then(async H => {
         const source = cashbookEntries.find(e=>e.id===id);
         const linkedOrderDelivered = source?.related_order_id && deliveredOrders.some(order=>order.id===source.related_order_id);
         const defaultAccount = source?.related_order_id
-          ? accounts.find(a=>a.account_code===(linkedOrderDelivered?"1100":"2020"))?.id
+          ? accounts.find(a=>a.account_code===(source.entry_type==="expense"?"2020":linkedOrderDelivered?"1100":"2020"))?.id
           : source?.entry_type === "income"
             ? accounts.find(a=>a.account_code==="4010")?.id
             : accounts.find(a=>a.account_code==="6095")?.id;
         openOperationalPosting(kind,id,{
           title:"Post cashbook transaction",
-          description:"Select why this money was received or paid. Customer receipts before delivery credit Customer Advances (2020); after delivery they credit Accounts Receivable (1100). COD uses the courier settlement workflow.",
+          description:"Select why this money was received or paid. Before delivery, receipts credit Customer Advances (2020) and advance refunds debit it; after delivery, collections credit Accounts Receivable (1100). COD uses the courier settlement workflow.",
           defaultAccount,
           warning:"Only Confirmed entries can be posted. Posting creates a permanent, balanced Journal linked to the cashbook source."
         });
