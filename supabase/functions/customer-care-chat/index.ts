@@ -97,6 +97,25 @@ async function fetchSupabaseRows(
   }
 }
 
+async function insertSupabaseRow(table: string, row: Record<string, unknown>, credentials: { url: string; key: string; isSecretKey: boolean }): Promise<void> {
+  const headers: Record<string, string> = { apikey: credentials.key, "Content-Type": "application/json", Prefer: "return=minimal" };
+  if (!credentials.isSecretKey) headers.Authorization = "Bearer " + credentials.key;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 4500);
+  try {
+    const result = await fetch(credentials.url + "/rest/v1/" + table, {
+      method: "POST", headers, body: JSON.stringify(row), cache: "no-store", signal: controller.signal,
+    });
+    if (!result.ok) throw new Error("Supabase insert failed for " + table + " (" + result.status + ")");
+  } finally { clearTimeout(timeout); }
+}
+
+function redactFeedbackText(value: unknown, maxLength: number): string {
+  return String(value || "").slice(0, maxLength)
+    .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/giu, "[email]")
+    .replace(/(?:\+?88)?01[3-9]\d{8}/gu, "[phone]");
+}
+
 async function buildCatalogImageParts(
   knowledge: Awaited<ReturnType<typeof loadKnowledge>>,
 ): Promise<Array<{ text: string } | { inlineData: { mimeType: string; data: string } }>> {
@@ -853,6 +872,36 @@ Deno.serve(async (req: Request) => {
     payload = JSON.parse(rawBody);
   } catch {
     return response({ success: false, code: "INVALID_JSON", requestId }, 400);
+  }
+
+  if (payload.action === "feedback") {
+    const feedbackRequestId = String(payload.requestId || "");
+    const rating = String(payload.rating || "");
+    const allowedReasons = new Set(["wrong_product", "misunderstood", "incorrect_information", "irrelevant", "unclear", "other"]);
+    const reason = typeof payload.reason === "string" && allowedReasons.has(payload.reason) ? payload.reason : null;
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(feedbackRequestId) || !["helpful", "not_helpful"].includes(rating)) {
+      return response({ success: false, code: "INVALID_FEEDBACK" }, 400);
+    }
+    const credentials = getSupabaseCredentials();
+    if (!credentials) return response({ success: false, code: "FEEDBACK_UNAVAILABLE" }, 503);
+    const rawProductIds = Array.isArray(payload.productIds) ? payload.productIds : [];
+    const productIds = rawProductIds.map((value: unknown) => String(value || "")).filter((value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)).slice(0, 4);
+    const productNames = Array.isArray(payload.productNames) ? payload.productNames.filter((value: unknown) => typeof value === "string").slice(0, 4).map((value: unknown) => redactFeedbackText(value, 120)) : [];
+    try {
+      await insertSupabaseRow("ai_customer_care_feedback", {
+        request_id: feedbackRequestId, rating, feedback_reason: reason,
+        question: redactFeedbackText(payload.question, 2000),
+        answer: redactFeedbackText(payload.answer, 8000),
+        product_ids: productIds, product_names: productNames,
+        model: redactFeedbackText(payload.model, 80), source: "storefront",
+      }, credentials);
+      return response({ success: true, saved: true });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "unknown";
+      if (message.includes("(409)") || message.includes("(23505)")) return response({ success: true, saved: true, duplicate: true });
+      console.warn(JSON.stringify({ event: "customer_care_feedback_save_failed", requestId: feedbackRequestId }));
+      return response({ success: false, code: "FEEDBACK_SAVE_FAILED" }, 503);
+    }
   }
 
   if (payload.action === "quote") {
