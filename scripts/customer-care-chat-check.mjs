@@ -127,6 +127,10 @@ assert.doesNotMatch(edge, /demo project|ডেমো প্রকল্প|ড�
 assert.doesNotMatch(edge, /\*\*/);
 console.log("Customer-care friendly conversation checks passed.");
 assert.match(edge, /classifyCustomerIntent/);
+assert.match(edge, /resolveCustomerOrderTracking/);
+assert.match(edge, /server-order-tracking/);
+assert.match(edge, /admin_shipments/);
+assert.match(edge, /order_number/);
 assert.match(edge, /recommendation_permission/);
 assert.match(edge, /buildRecommendationContract/);
 assert.match(edge, /SERVER-ENFORCED RECOMMENDATION POLICY/);
@@ -182,6 +186,8 @@ const intentCases = [
   ["সরিষার তেলের দাম কত?", "product_price_inquiry", 0],
   ["ডেলিভারি কত?", "store_policy_question", 0],
   ["ধন্যবাদ", "casual_conversation", 0],
+  ["can you track this prodack", "order_support", 0],
+  ["আমার অর্ডার করা এই পণ্য টাকে ট্র্যাক করতে হবে", "order_support", 0],
   ["কয়েকটি ঘি সাজেস্ট করো", "recommendation_request", 4],
   ["অন্যটা দেখাও", "recommendation_request", 4],
   ["এই ঘিগুলোর তুলনা করো", "product_comparison", 2],
