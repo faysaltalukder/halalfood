@@ -1,12 +1,12 @@
 function classifyCustomerIntent(message, hasImage = false) {
   const toDigits = (value) => value.replace(/[০-৯]/g, (digit) => String("০১২৩৪৫৬৭৮৯".indexOf(digit)));
   const text = toDigits(String(message || "").normalize("NFKC")).toLowerCase().trim();
-  const hasCategory = /(ঘি|ghee|মধু|honey|বাদাম|কাজু|kaju|পেস্তা|pistachios?|আখরোট|walnuts?|nuts?|almond|তেল|oil|চাল|rice|মসলা|মশলা|masala|spice|খেজুর|dates?|চা(?![\p{L}])|tea\b|মাংস|গরু|beef|meat|chicken|চিকেন|মুরগি|ডাল|lentils?|chickpeas?|ছোলা|toor|arhar|ড্রাই\s*ফুড|dry\s*food)/iu.test(text);
-  const broad = /(কী\s*কী\s*পণ্য|কি\s*কি\s*পণ্য|কোন\s*কোন\s*পণ্য|সব\s*পণ্য|পণ্যের\s*তালিকা|ক্যাটালগ|catalog|product\s*list|list\s*(all\s*)?products|what\s+products|which\s+products|available\s+products)/iu.test(text);
+  const hasCategory = /(ঘি|ghee|মধু|honey|বাদাম|কাজু|kaju|পেস্তা|pistachios?|আখরোট|walnuts?|nuts?|almond|তেল|oil|চাল|rice|মসলা|মশলা|masala|spice|খেজুর|dates?|চা(?![\\p{L}])|tea\\b|মাংস|গরু|beef|meat|chicken|চিকেন|মুরগি|ডাল|lentils?|chickpeas?|ছোলা|toor|arhar|ড্রাই\\s*ফুড|শুকনো\\s*খাবার|শুকনা\\s*খাবার|dry\\s*food|মিক্স\\s*ফুড|মিশ্র\\s*খাবার|mix\\s*food)/iu.test(text);
+  const broad = /(কী\\s*কী(?:\\s*পণ্য)?|কি\\s*কি(?:\\s*পণ্য)?|কোন\\s*কোন\\s*পণ্য|সব\\s*পণ্য|পণ্যের\\s*তালিকা|আপনাদের\\s*(?:কী|কি)\\s*(?:কী|কি)\\s*আছে|ক্যাটালগ|catalog|product\\s*list|list\\s*(all\\s*)?products|what\\s+products|which\\s+products|available\\s+products)/iu.test(text);
   const comparison = /(তুলনা|পার্থক্য|তফাৎ|দুটোর মধ্যে|দুটির মধ্যে|compare|comparison|difference|versus|\bvs\b)/iu.test(text);
   const recommendation = /(সাজেস্ট|সাজেশন|পরামর্শ|recommend|suggest|কোনটা.{0,30}ভালো|কোনটি.{0,30}ভালো|কোন.{0,20}(?:ভালো|উপযুক্ত|নেব)|আমার জন্য.{0,30}(?:ভালো|উপযুক্ত)|কোনটা নেব|কোনটি নেব|কি নেব|কী নেব|কী নিতে পারি|কি নিতে পারি|বাজেট.{0,30}(?:মধ্যে|ভিতরে)|within.{0,20}budget|under.{0,20}budget|which .{0,30}(?:choose|should i pick)|আরেকটা দেখাও|আরও একটি দেখাও|আরেকটি বিকল্প|অন্যটা দেখাও)/iu.test(text);
   const price = /(?<![\p{L}\p{M}])(?:দাম(?:ের)?|মূল্য)(?![\p{L}\p{M}])|কত টাকা|কত দাম|price|cost|how much/iu.test(text);
-  const categoryBrowse = hasCategory && /(কী\s*কী|কি\s*কি|কোন\s*কোন|কয়েকটি|কয়েকটি|কিছু|সবগুলো|তালিকা|\p{L}+(?:গুলো|গুলি)|what .{0,40}(?:oil|ghee|honey|rice|tea|product)|what (?:kind|types|kinds)|show me (?:some|all|the)?\s*(?:oils?|ghee|honey|products?)|list)/iu.test(text);
+  const categoryBrowse = hasCategory && /(কী\\s*কী|কি\\s*কি|কোন\\s*কোন|কয়েকটি|কয়েকটি|কিছু|সবগুলো|তালিকা|\\p{L}+(?:গুলো|গুলি)|কোন\\s*ধরনের|কী\\s*ধরনের|কি\\s*ধরনের|what .{0,40}(?:oil|ghee|honey|rice|tea|dates|nuts|masala|meat|product)|what (?:kind|types|kinds)|show me (?:some|all|the)?\\s*(?:oils?|ghee|honey|dates?|nuts?|tea|masala|meat|products?)|list)/iu.test(text);
   const availability = /(স্টকে|মজুত|উপলভ্য|available|in stock|আছে কি না|আছে কিনা|do you have|have you got)/iu.test(text) && !categoryBrowse;
   const storePolicy = /(ডেলিভারি|delivery|কুরিয়ার চার্জ|কুরিয়ার চার্জ|courier charge|পেমেন্ট|payment|ক্যাশ অন ডেলিভারি|cash on delivery|রিফান্ড|refund|রিটার্ন|return policy|ফেরত|কাজের সময়|খোলা থাকে|যোগাযোগের নম্বর)/iu.test(text);
   const orderSupport = /(অর্ডারের অবস্থা|অর্ডার কোথায়|অর্ডার কোথায়|অর্ডার ট্র্যাক|ট্র্যাক.*অর্ডার|আমার অর্ডার|order status|track order|my order|shipment|শিপমেন্ট|কুরিয়ার|কুরিয়ার|courier|tracking|checkout)/iu.test(text);
@@ -24,10 +24,10 @@ function classifyCustomerIntent(message, hasImage = false) {
   else if (casual) { primary = "casual_conversation"; confidence = "high"; }
   else if (rejection) { primary = "ambiguous_product_request"; clarification = true; confidence = "high"; }
   else if (price) { primary = "product_price_inquiry"; confidence = "high"; }
-  else if (comparison) { primary = "product_comparison"; permission = "explicit"; maxCards = 4; matchMode = "requested_items"; confidence = "high"; }
-  else if (recommendation) { primary = "recommendation_request"; permission = "explicit"; maxCards = 4; matchMode = "ranked_recommendations"; confidence = "high"; }
-  else if (broad) { primary = "broad_catalog_browse"; permission = "explicit"; maxCards = 4; matchMode = "broad_catalog"; confidence = "high"; }
-  else if (categoryBrowse) { primary = "category_browse"; permission = "explicit"; maxCards = 4; matchMode = "category"; confidence = "high"; }
+  else if (comparison) { primary = "product_comparison"; permission = "explicit"; maxCards = 2; matchMode = "requested_items"; confidence = "high"; }
+  else if (recommendation) { primary = "recommendation_request"; permission = "explicit"; maxCards = 3; matchMode = "ranked_recommendations"; confidence = "high"; }
+  else if (broad) { primary = "broad_catalog_browse"; permission = "explicit"; maxCards = 2; matchMode = "broad_catalog"; confidence = "high"; }
+  else if (categoryBrowse) { primary = "category_browse"; permission = "explicit"; maxCards = 3; matchMode = "category"; confidence = "high"; }
   else if (availability && hasCategory) { primary = "product_availability_inquiry"; confidence = "high"; }
   else if (info) { primary = "general_information"; confidence = "high"; }
   else if (hasImage && !text) { primary = "ambiguous_product_request"; clarification = true; confidence = "low"; }
