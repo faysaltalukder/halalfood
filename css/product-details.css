@@ -16,7 +16,7 @@
 .oil-data-row{display:grid;grid-template-columns:105px minmax(70px,1fr) 82px;gap:9px;align-items:center;margin:9px 0}
 .oil-data-label{font-size:.8rem;color:#514e5b}
 .oil-data-track{height:9px;border-radius:99px;background:#f0eee8;overflow:hidden;position:relative}
-.oil-data-fill{height:100%;display:block;border-radius:99px;background:#c97b3d}
+.oil-data-fill{position:absolute;top:0;height:100%;display:block;border-radius:99px;background:#c97b3d}
 .oil-data-fill.gold{background:#d6ad4e}.oil-data-fill.sage{background:#82946a}.oil-data-fill.blue{background:#7798ae}.oil-data-fill.rose{background:#bd8290}.oil-data-fill.plum{background:#8f7ca8}
 .oil-data-value{text-align:right;font-size:.78rem;font-weight:650;color:#494653;font-variant-numeric:tabular-nums}
 .oil-data-footnote{margin:8px 0 0!important;font-size:.76rem!important;color:#777482!important}
