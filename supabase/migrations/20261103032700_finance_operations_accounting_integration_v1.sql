@@ -618,6 +618,12 @@ begin
       end if;
     else
       if v_entry.entry_type='income' then
+        if v_order_status='cancelled' then
+          raise exception 'Customer receipts cannot be posted against a cancelled order.';
+        end if;
+        if v_order_status not in ('pending','processing','shipped') then
+          raise exception 'Customer Advances are available only before delivery on an active order.';
+        end if;
         if p_counter_account_id is distinct from (select id from public.admin_finance_chart_of_accounts where account_code='2020') then
           raise exception 'A customer receipt before delivery must credit Customer Advances (2020), not Sales Revenue.';
         end if;
