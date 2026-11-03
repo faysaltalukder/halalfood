@@ -22,7 +22,7 @@ function classifyCustomerIntent(message, hasImage = false) {
   else if (storePolicy) { primary = "store_policy_question"; confidence = "high"; }
   else if (orderSupport) { primary = "order_support"; confidence = "high"; }
   else if (casual) { primary = "casual_conversation"; confidence = "high"; }
-  else if (price) { primary = "product_price_inquiry"; confidence = "high"; }
+  else if (rejection) { primary = "ambiguous_product_request"; clarification = true; confidence = "high"; }\n  else if (price) { primary = "product_price_inquiry"; confidence = "high"; }
   else if (comparison) { primary = "product_comparison"; permission = "explicit"; maxCards = 4; matchMode = "requested_items"; confidence = "high"; }
   else if (recommendation) { primary = "recommendation_request"; permission = "explicit"; maxCards = 4; matchMode = "ranked_recommendations"; confidence = "high"; }
   else if (broad) { primary = "broad_catalog_browse"; permission = "explicit"; maxCards = 4; matchMode = "broad_catalog"; confidence = "high"; }
@@ -30,7 +30,7 @@ function classifyCustomerIntent(message, hasImage = false) {
   else if (availability && hasCategory) { primary = "product_availability_inquiry"; confidence = "high"; }
   else if (info) { primary = "general_information"; confidence = "high"; }
   else if (hasImage && !text) { primary = "ambiguous_product_request"; clarification = true; confidence = "low"; }
-  else if (hasImage && /(এর মতো|এটার মতো|এই ধরনের|একই রকম|similar|like this|same type)/iu.test(text)) {
+  else if (hasImage && /(এর মতো|এটার মতো|এই ধরনের|একই রকম|ছবির মতো|প্যাকেটের মতো|বোতলের মতো|similar|like this|same type)/iu.test(text)) {
     primary = "image_similar_product_search"; permission = "limited"; maxCards = 3; matchMode = "visual_similarity"; confidence = "medium";
   } else if (hasImage && hasCategory && /(নারিকেল|নারকেল|coconut|সরিষা|mustard|দুধ|milk|বাদাম|nut|কাঁচামাল|raw material)/iu.test(text)) {
     primary = "image_material_search"; permission = "limited"; maxCards = 1; matchMode = "derived_product"; confidence = "medium";
