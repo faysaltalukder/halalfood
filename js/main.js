@@ -2098,7 +2098,7 @@ document.addEventListener("DOMContentLoaded", () => {
 /* AI Customer Care launcher — loaded as a separately cache-busted asset. */
 (() => {
   const script = document.createElement("script");
-  script.src = "https://faysaltalukder.github.io/halalfood/js/customer-care-chat.js?v=20261103-ai-chat-relaxed-v1";
+  script.src = "https://faysaltalukder.github.io/halalfood/js/customer-care-chat.js?v=20261103-ai-chat-friendly-v1";
   script.async = true;
   document.head.appendChild(script);
 })();
