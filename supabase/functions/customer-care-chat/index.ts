@@ -406,12 +406,24 @@ async function resolveCustomerOrderTracking(
   if (lines.length) parts.push("অর্ডারের পণ্য: " + lines.join("; "));
   const courier = String(shipment?.courier_name || "").trim();
   const trackingId = String(shipment?.tracking_id || "").trim();
-  if (trackingId) {
-    parts.push("কুরিয়ার: " + (courier || "নির্ধারিত কুরিয়ার") + "। ট্র্যাকিং নম্বর: " + trackingId + "।");
+  const shipmentStatus = String(shipment?.shipment_status || "").toLowerCase();
+  const bookingState = String(shipment?.booking_state || "").toLowerCase();
+  const activeTracking = Boolean(trackingId) && bookingState === "succeeded" &&
+    shipmentStatus !== "cancelled" && statusCode !== "cancelled";
+  if (activeTracking) {
+    if (shipmentStatus === "booked") {
+      parts.push("কুরিয়ার বুকিং সম্পন্ন হয়েছে (" + (courier || "নির্ধারিত কুরিয়ার") + ")। ট্র্যাকিং নম্বর: " + trackingId + "। কুরিয়ার পার্সেলটি পিকআপ করার পর ট্র্যাকিং আপডেট দেখা যেতে পারে।");
+    } else if (shipmentStatus === "picked_up" || statusCode === "shipped") {
+      parts.push("কুরিয়ার পার্সেলটি গ্রহণ করেছে (" + (courier || "নির্ধারিত কুরিয়ার") + ")। ট্র্যাকিং নম্বর: " + trackingId + "।");
+    } else if (shipmentStatus === "delivered" || statusCode === "delivered") {
+      parts.push("কুরিয়ার রেকর্ডে ডেলিভারি সম্পন্ন দেখাচ্ছে। ট্র্যাকিং নম্বর: " + trackingId + "।");
+    } else {
+      parts.push("কুরিয়ার: " + (courier || "নির্ধারিত কুরিয়ার") + "। ট্র্যাকিং নম্বর: " + trackingId + "।");
+    }
   } else if (statusCode === "shipped") {
-    parts.push("কুরিয়ারের ট্র্যাকিং নম্বর এখনো সিস্টেমে যুক্ত হয়নি।");
+    parts.push("অর্ডারটি পাঠানো হয়েছে, তবে সক্রিয় কুরিয়ার ট্র্যাকিং নম্বর এখনো সিস্টেমে পাওয়া যাচ্ছে না।");
   } else if (statusCode !== "delivered" && statusCode !== "cancelled") {
-    parts.push("কুরিয়ারে হস্তান্তর হলে ট্র্যাকিং নম্বর এখানে দেখানো হবে।");
+    parts.push("অর্ডারটি কুরিয়ারে হস্তান্তর হলে সক্রিয় ট্র্যাকিং তথ্য এখানে দেখানো হবে।");
   }
   return {
     reply: parts.join("\n"),
