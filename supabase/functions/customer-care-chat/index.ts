@@ -1,6 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { classifyCustomerIntent } from "./policy.mjs";
 import { rankProductCandidates, extractConversationState, extractImageMatch, applyConfidencePolicy, expandSearchTerms } from "./intelligence.mjs";
+import { isOrderTrackingRequest, getOrderTrackingCredentials, normalizeTrackingPhone } from "./tracking.mjs";
 
 const ALLOWED_ORIGIN = "https://faysaltalukder.github.io";
 const SITE_ROOT = "https://faysaltalukder.github.io/halalfood/";
@@ -342,52 +343,14 @@ function toEnglishDigits(value: string): string {
   return value.replace(/[০-৯]/g, (digit) => String("০১২৩৪৫৬৭৮৯".indexOf(digit)));
 }
 
-function normalizeTrackingPhone(value: string): string {
-  const digits = toEnglishDigits(String(value || "")).replace(/[^0-9]/g, "");
-  if (/^01[3-9][0-9]{8}$/.test(digits)) return digits;
-  if (/^8801[3-9][0-9]{8}$/.test(digits)) return "0" + digits.slice(3);
-  return "";
-}
-
-function extractTrackingOrderId(value: string): string {
-  const matches = Array.from(String(value || "").toUpperCase().matchAll(/\\bHF\\s*-?\\s*(\\d{4,6})\\b/g));
-  const last = matches[matches.length - 1];
-  return last ? "HF-" + last[1] : "";
-}
-
-function extractTrackingPhone(value: string): string {
-  const compact = toEnglishDigits(String(value || "")).replace(/[\\s().-]/g, "");
-  const matches = Array.from(compact.matchAll(/(?:8801[3-9][0-9]{8}|01[3-9][0-9]{8})/g));
-  return matches.length ? normalizeTrackingPhone(matches[matches.length - 1][0]) : "";
-}
-
-function isOrderTrackingRequest(message: string, historyInput: unknown[] = []): boolean {
-  const trackingPattern = /(ট্র্যাক|track(?:ing)?|অর্ডারের অবস্থা|অর্ডার কোথায়|অর্ডার কোথায়|অর্ডার ট্র্যাক|আমার অর্ডার|order status|my order|shipment|শিপমেন্ট|কুরিয়ার|কুরিয়ার|courier)/iu;
-  if (trackingPattern.test(message)) return true;
-  const recentUserMessages = historyInput.slice(-8).flatMap((item) => {
-    if (!item || typeof item !== "object") return [];
-    const record = item as Record<string, unknown>;
-    return record.role === "user" && typeof record.text === "string" ? [record.text] : [];
-  });
-  const hasRecentTrackingRequest = recentUserMessages.some((text) => trackingPattern.test(text));
-  return hasRecentTrackingRequest && Boolean(extractTrackingOrderId(message) || extractTrackingPhone(message));
-}
-
 async function resolveCustomerOrderTracking(
   message: string,
   historyInput: unknown[],
 ): Promise<{ reply: string; orderTracking?: Record<string, unknown> }> {
-  const historyText = historyInput.flatMap((item) => {
-    if (!item || typeof item !== "object") return [];
-    const record = item as Record<string, unknown>;
-    return record.role === "user" && typeof record.text === "string" ? [record.text] : [];
-  });
-  const combined = [...historyText, message].join("\\n");
-  const orderId = extractTrackingOrderId(combined);
+  const { orderId, mobile } = getOrderTrackingCredentials(message, historyInput);
   if (!orderId) {
     return { reply: "অবশ্যই, অর্ডারটি খুঁজে দিতে পারব। আপনার Order ID-টি দিন (যেমন HF-1234)।" };
   }
-  const mobile = extractTrackingPhone(combined);
   if (!mobile) {
     return { reply: "আপনার অর্ডারটি নিরাপদে যাচাই করতে অর্ডার করার সময় যে মোবাইল নম্বরটি দিয়েছিলেন, সেটি লিখুন। Order ID পেয়েছি; শুধু নম্বরটি মিলিয়ে নিলেই বর্তমান অবস্থা জানাতে পারব।" };
   }
