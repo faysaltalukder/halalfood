@@ -8,7 +8,7 @@
   const style = document.createElement("link");
   style.id = "hf-customer-care-chat-styles";
   style.rel = "stylesheet";
-  style.href = ASSET_BASE + "css/customer-care-chat.css?v=20261103-gemini-chat-v4";
+  style.href = ASSET_BASE + "css/customer-care-chat.css?v=20261103-ai-stage2-v1";
   document.head.appendChild(style);
 
   let root = document.getElementById("hf-contact-widget");
@@ -132,6 +132,48 @@
     bubble.appendChild(links);
     messages.scrollTop = messages.scrollHeight;
   }
+  function appendProductCards(bubble, products) {
+    if (!Array.isArray(products) || !products.length) return;
+    const wrap = document.createElement("div");
+    wrap.className = "hf-ai-product-cards";
+    products.slice(0, 3).forEach(product => {
+      if (!product || typeof product.name !== "string" || typeof product.product_url !== "string") return;
+      let url;
+      try { url = new URL(product.product_url, ASSET_BASE); } catch (_) { return; }
+      const site = new URL(ASSET_BASE);
+      if (url.origin !== site.origin || !url.pathname.startsWith("/halalfood/")) return;
+      const link = document.createElement("a");
+      link.className = "hf-ai-product-card";
+      link.href = url.href;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      const imageUrl = typeof product.image_url === "string" ? product.image_url : "";
+      if (/^https:\/\//i.test(imageUrl)) {
+        const image = document.createElement("img");
+        image.src = imageUrl;
+        image.alt = "";
+        image.loading = "lazy";
+        image.referrerPolicy = "no-referrer";
+        link.appendChild(image);
+      }
+      const copy = document.createElement("span");
+      copy.className = "hf-ai-product-card-copy";
+      const name = document.createElement("strong");
+      name.textContent = product.name;
+      const price = document.createElement("span");
+      price.textContent = String(product.price || "দাম যাচাই প্রয়োজন");
+      const meta = document.createElement("small");
+      meta.textContent = [product.category, product.availability === "available" ? "তালিকায় উপলভ্য" : product.availability === "unavailable" ? "বর্তমানে অনুপলব্ধ" : "স্টক নিশ্চিত করতে হবে"].filter(Boolean).join(" · ");
+      copy.append(name, price, meta);
+      link.appendChild(copy);
+      wrap.appendChild(link);
+    });
+    if (wrap.children.length) {
+      bubble.appendChild(wrap);
+      messages.scrollTop = messages.scrollHeight;
+    }
+  }
+
   function friendlyError(data, status) {
     const code = data && data.code;
     if (code === "AI_NOT_CONFIGURED") return "AI সার্ভারে API key সেট করা নেই। আমাদের টিমকে জানান।";
@@ -190,7 +232,8 @@
         appendMessage(friendlyError(data, response.status), "assistant");
       } else {
         const reply = data.reply.trim();
-        appendMessage(reply || "দুঃখিত, এবার উত্তর তৈরি করা যায়নি। আবার চেষ্টা করুন।", "assistant");
+        const answerBubble = appendMessage(reply || "দুঃখিত, এবার উত্তর তৈরি করা যায়নি। আবার চেষ্টা করুন।", "assistant");
+        appendProductCards(answerBubble, data.products);
         conversation.push({ role: "user", text: text });
         conversation.push({ role: "assistant", text: reply });
         if (conversation.length > 12) conversation.splice(0, conversation.length - 12);
