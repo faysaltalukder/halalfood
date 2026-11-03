@@ -1888,18 +1888,18 @@ with item_rows as (
  join public.orders o on o.id=oi.order_id
  left join public.admin_product_costs pc on pc.product_id=oi.product_id
  left join lateral (
-   select sum(cl.accepted_quantity*cl.landed_unit_cost)/nullif(sum(cl.accepted_quantity),0) as weighted_cost
-   from public.admin_inventory_cost_layers cl
-   where cl.product_id=oi.product_id
-     and cl.created_at<=coalesce(sale_recognition.created_at,o.updated_at,o.ordered_at)
- ) layer on true
- left join lateral (
    select je.created_at
    from public.admin_finance_journal_entries je
    where je.source_type='order_sale' and je.source_key=o.id::text and je.status='posted'
    order by je.created_at
    limit 1
  ) sale_recognition on true
+ left join lateral (
+   select sum(cl.accepted_quantity*cl.landed_unit_cost)/nullif(sum(cl.accepted_quantity),0) as weighted_cost
+   from public.admin_inventory_cost_layers cl
+   where cl.product_id=oi.product_id
+     and cl.created_at<=coalesce(sale_recognition.created_at,o.updated_at,o.ordered_at)
+ ) layer on true
  where o.status='delivered'
 ),
 aggregated as (
