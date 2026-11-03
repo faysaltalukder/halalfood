@@ -378,7 +378,6 @@ function buildDeterministicFallbackReply(
   message: string,
   knowledge: Awaited<ReturnType<typeof loadKnowledge>>,
 ): string | null {
-  if (!knowledge.available) return null;
   const normalized = message.toLowerCase().normalize("NFKC");
   const products = knowledge.products;
   const productLine = (product: Record<string, unknown>) => {
@@ -414,6 +413,11 @@ function buildDeterministicFallbackReply(
       : "ওয়ালাইকুম আসসালাম! Halal Food-এ স্বাগতম। পণ্য, দাম, উপলভ্যতা বা ওয়েবসাইট সম্পর্কে জানতে চাইলে বলুন—আমি সাহায্য করছি।";
   }
   if (/(honey|honi|hany|huni|মধু)/iu.test(normalized)) {
+    if (!knowledge.available) {
+      return /[A-Za-z]/u.test(message)
+        ? "I understood that you are looking for honey, but I cannot verify the live catalog right now. Please check the product catalog on our website or try again shortly."
+        : "আপনি মধু খুঁজছেন বুঝতে পেরেছি, তবে এই মুহূর্তে লাইভ ক্যাটালগ যাচাই করা যাচ্ছে না। ওয়েবসাইটের পণ্য তালিকা দেখুন অথবা কিছুক্ষণ পর আবার চেষ্টা করুন।";
+    }
     const found = products.filter((p) => /মধু|honey/iu.test(String(p.name || "") + " " + String(p.category || "")));
     if (found.length) {
       return (/[A-Za-z]/u.test(message) ? "Here are the honey products currently listed in our live catalog:" : "আমাদের লাইভ ক্যাটালগে বর্তমানে মধুর তালিকাভুক্ত পণ্যগুলো হলো:")
@@ -426,6 +430,7 @@ function buildDeterministicFallbackReply(
       ? "I understood that you are looking for honey. I cannot find a honey item in the currently published catalog. Would you like to explore another product category?"
       : "আপনি মধু খুঁজছেন বুঝতে পেরেছি। বর্তমানে প্রকাশিত ক্যাটালগে মধুর পণ্য খুঁজে পাচ্ছি না। অন্য কোনো পণ্যের ক্যাটাগরি দেখতে চান?";
   }
+  if (!knowledge.available) return null;
   if (/(ঘি|ghee)/iu.test(normalized)) {
     const found = products.filter((p) => /ঘি|ghee/iu.test(String(p.name || "") + " " + String(p.category || "")));
     if (found.length) {
