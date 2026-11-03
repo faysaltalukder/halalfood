@@ -241,10 +241,12 @@
     return '<div class="hf-ai-view-header"><button type="button" class="hf-ai-view-back" data-hf-view-back>← ' +
       escapeHtml(backLabel || "চ্যাটে ফিরুন") + '</button><strong>' + escapeHtml(title) + '</strong></div>';
   }
-  function appendProductCards(bubble, products) {
-    if (!Array.isArray(products) || !products.length) return;
+  function appendProductCards(bubble, products, maxCards, matchType) {
+    const safeLimit = Math.min(4, Math.max(0, Math.floor(Number(maxCards) || 0)));
+    if (!Array.isArray(products) || !products.length || safeLimit < 1) return;
     const wrap = document.createElement("div");
     wrap.className = "hf-ai-product-cards";
+    const shownItems = [];
     products.slice(0, safeLimit).forEach(function (product) {
       if (!product || typeof product.id !== "string" || typeof product.slug !== "string" || !product.name) return;
       productCatalog.set(product.id, product);
@@ -266,11 +268,13 @@
       const details = document.createElement("button"); details.type = "button"; details.textContent = "বিস্তারিত"; details.dataset.hfProductView = product.id;
       const order = document.createElement("button"); order.type = "button"; order.textContent = "অর্ডার নিন"; order.dataset.hfProductOrder = product.id; order.disabled = product.availability === "unavailable";
       actions.append(details, order); card.append(copy, actions); wrap.appendChild(card);
+      shownItems.push(product);
     });
     if (wrap.children.length) {
-      trackChatEvent("view_item_list", products.slice(0,4), null, { list_name:"ai_chat_recommendations" });
       const shouldStick = messages.scrollHeight - messages.scrollTop - messages.clientHeight < 100;
       bubble.appendChild(wrap);
+      trackChatEvent("view_item_list", shownItems, null, { list_name:"ai_chat_recommendations" });
+      trackChatEvent("ai_product_card_shown", shownItems, null, { match_type:matchType || "unknown", interaction_source:"ai_chat" });
       if (shouldStick) scrollToLatest(true);
     }
   }
@@ -280,6 +284,7 @@
     const viewedItem = { id:product.id, slug:product.slug, name:product.name, category:product.category, unitPrice:product.price_value, qty:1 };
     trackChatEvent("select_item", [viewedItem], Number(product.price_value) || 0, { view:"product_card" });
     trackChatEvent("view_item", [viewedItem], Number(product.price_value) || 0, { interaction_source:"ai_chat" });
+    trackChatEvent("ai_product_clicked", [viewedItem], Number(product.price_value) || 0, { view:"product_card", match_type:product.match_type || "unknown", confidence_level:product.confidence_level || "unknown" });
     renderProductDetail(); setView("product");
     if (orderNow) addCurrentProductToCart(true);
   }
@@ -740,7 +745,7 @@
       } else {
         const reply = data.reply.trim();
         const answerBubble = appendMessage(reply || "দুঃখিত, এবার উত্তর তৈরি করা যায়নি। আবার চেষ্টা করুন।", "assistant");
-        appendProductCards(answerBubble, data.products, data.recommendation && data.recommendation.max_product_cards);
+        appendProductCards(answerBubble, data.products, data.recommendation && data.recommendation.max_product_cards, data.recommendation && data.recommendation.match_type);
         conversation.push({ role: "user", text: text });
         conversation.push({ role: "assistant", text: reply });
         if (conversation.length > 40) conversation.splice(0, conversation.length - 40);
