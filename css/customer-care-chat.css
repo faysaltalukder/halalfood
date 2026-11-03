@@ -173,76 +173,34 @@ html.dark-mode .hf-ai-delivery-options label,html.dark-mode .hf-ai-payment-choic
 }
 
 
-/* Final product recommendation CTA: warm brand brown, no clipped labels. */
+/* Final product recommendation CTA: wider two-line order action. */
 .hf-ai-product-card-actions{
-  display:flex!important;
-  flex-wrap:nowrap!important;
-  align-items:stretch;
-  gap:8px!important;
-  width:100%;
-  min-width:0;
-  margin-top:9px;
+  display:flex!important;flex-wrap:nowrap!important;align-items:stretch;gap:8px!important;
+  width:100%;min-width:0;margin-top:9px;
 }
 .hf-ai-product-card-actions button{
-  display:inline-flex;
-  flex:1 1 0!important;
-  width:0;
-  min-width:0;
-  min-height:42px!important;
-  align-items:center;
-  justify-content:center;
-  padding:8px 5px!important;
-  border:1px solid #d8d4c9!important;
-  border-radius:10px!important;
-  background:#fffdf8!important;
-  color:#725239!important;
-  font:inherit;
-  font-size:10px!important;
-  font-weight:700!important;
-  line-height:1.3!important;
-  letter-spacing:0;
-  white-space:nowrap;
-  overflow:visible;
-  text-overflow:clip;
-  cursor:pointer;
+  display:inline-flex;flex:1 1 0!important;width:auto!important;min-width:0;min-height:44px!important;
+  align-items:center;justify-content:center;padding:7px 5px!important;border:1px solid #d8d4c9!important;
+  border-radius:10px!important;background:#fffdf8!important;color:#725239!important;font:inherit;
+  font-size:9.5px!important;font-weight:700!important;line-height:1.2!important;letter-spacing:0;
+  white-space:normal!important;overflow:visible;text-overflow:clip;cursor:pointer;
+}
+.hf-ai-product-card-actions button:first-child{
+  flex:0.78 1 0!important;min-height:40px!important;font-size:9px!important;padding:6px 3px!important;
 }
 .hf-ai-product-card-actions button:last-child{
-  border-color:#c97b3d!important;
-  background:#c97b3d!important;
-  color:#fffdf8!important;
-  box-shadow:0 2px 6px rgba(201,123,61,.16);
+  flex:1.22 1 0!important;min-height:48px!important;padding:6px 8px!important;
+  border-color:#c97b3d!important;background:#c97b3d!important;color:#fffdf8!important;
+  font-size:11px!important;font-weight:800!important;line-height:1.12!important;
+  white-space:normal!important;box-shadow:0 2px 6px rgba(201,123,61,.16);
 }
-.hf-ai-product-card-actions button:last-child:hover{
-  border-color:#ad642f!important;
-  background:#ad642f!important;
-}
-.hf-ai-product-card-actions button:disabled{
-  opacity:.48!important;
-  cursor:not-allowed;
-}
-html.dark-mode .hf-ai-product-card-actions button:first-child{
-  border-color:#d8d4c9!important;
-  background:#fffdf8!important;
-  color:#725239!important;
-}
-html.dark-mode .hf-ai-product-card-actions button:last-child{
-  border-color:#c97b3d!important;
-  background:#c97b3d!important;
-  color:#fffdf8!important;
-}
+.hf-ai-product-card-actions button:last-child:hover{border-color:#ad642f!important;background:#ad642f!important}
+.hf-ai-product-card-actions button:disabled{opacity:.48!important;cursor:not-allowed}
+html.dark-mode .hf-ai-product-card-actions button:first-child{border-color:#d8d4c9!important;background:#fffdf8!important;color:#725239!important}
+html.dark-mode .hf-ai-product-card-actions button:last-child{border-color:#c97b3d!important;background:#c97b3d!important;color:#fffdf8!important}
 .hf-ai-product-page-link{display:none!important}
 @media(max-width:430px){
-  .hf-ai-product-card-actions{
-    grid-column:1/-1;
-    display:flex!important;
-    flex-wrap:nowrap!important;
-    gap:7px!important;
-  }
-  .hf-ai-product-card-actions button{
-    flex:1 1 0!important;
-    min-width:0;
-    min-height:40px!important;
-    padding-inline:4px!important;
-    font-size:9.5px!important;
-  }
+  .hf-ai-product-card-actions{grid-column:1/-1;display:flex!important;flex-wrap:nowrap!important;gap:7px!important}
+  .hf-ai-product-card-actions button:first-child{flex:0.72 1 0!important;min-width:0;min-height:38px!important;padding-inline:3px!important;font-size:8.5px!important}
+  .hf-ai-product-card-actions button:last-child{flex:1.28 1 0!important;min-width:0;min-height:48px!important;padding:5px 7px!important;font-size:10.5px!important}
 }
