@@ -96,6 +96,79 @@ async function fetchSupabaseRows(
   }
 }
 
+async function logAiCustomerCareEvents(
+  knowledge: Awaited<ReturnType<typeof loadKnowledge>>,
+  requestId: string,
+  imageMatch: Record<string, unknown> | null,
+  resultCount: number,
+  outcome: string,
+): Promise<void> {
+  const credentials = getSupabaseCredentials();
+  if (!credentials || !knowledge.customerNeed) return;
+  const need = knowledge.customerNeed;
+  const metadata = {
+    primary_intent: String(need.primary_intent || "general_information").slice(0, 48),
+    recommendation_permission: String(need.recommendation_permission || "none").slice(0, 24),
+    match_mode: String(need.match_mode || "none").slice(0, 40),
+    confidence_level: String(imageMatch?.confidence || need.search_confidence || need.intent_confidence || "unknown").slice(0, 16),
+    match_type: String(imageMatch?.match_type || need.match_type || "none").slice(0, 32),
+    result_count: Math.max(0, Math.min(100, resultCount)),
+    image_search: knowledge.imageSearch === true,
+    clarification_needed: need.clarification_needed === true,
+    policy_version: "stage2-v1",
+    outcome: outcome.slice(0, 32),
+  };
+  const names = new Set<string>(["ai_intent_detected"]);
+  if (need.allow_product_cards === true && Number(need.max_product_cards || 0) > 0) names.add("ai_recommendation_allowed");
+  else names.add("ai_recommendation_suppressed");
+  if (knowledge.imageSearch) {
+    names.add("ai_image_search_started");
+    names.add("ai_image_search_completed");
+  }
+  if (need.clarification_needed === true) names.add("ai_clarification_requested");
+  if (need.rejection_detected === true) names.add("ai_recommendation_rejected");
+  if (need.correction_detected === true) names.add("ai_customer_corrected");
+  if (resultCount === 0 && /product|category|image|recommendation|comparison/iu.test(String(need.primary_intent || ""))) {
+    names.add("ai_product_match_failed");
+  }
+  if (resultCount > 0 && need.match_type === "exact") names.add("ai_exact_product_match");
+  if (resultCount > 0) names.add("ai_search_resolved");
+  const now = new Date().toISOString();
+  const rows = Array.from(names).map((eventName) => ({
+    event_id: crypto.randomUUID(),
+    event_name: eventName,
+    occurred_at: now,
+    page_path: "/customer-care",
+    page_title: "Halal Food Customer Care",
+    source: "ai_chat",
+    metadata,
+  }));
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 900);
+  try {
+    const headers: Record<string, string> = {
+      apikey: credentials.key,
+      "Content-Type": "application/json",
+      Prefer: "return=minimal",
+    };
+    if (!credentials.isSecretKey) headers.Authorization = "Bearer " + credentials.key;
+    const result = await fetch(credentials.url + "/rest/v1/analytics_events", {
+      method: "POST",
+      headers,
+      body: JSON.stringify(rows),
+      cache: "no-store",
+      signal: controller.signal,
+    });
+    if (!result.ok) {
+      console.warn(JSON.stringify({ event: "customer_care_ai_analytics_write_failed", requestId, status: result.status }));
+    }
+  } catch (error) {
+    console.warn(JSON.stringify({ event: "customer_care_ai_analytics_write_failed", requestId, kind: error instanceof DOMException && error.name === "AbortError" ? "timeout" : "network" }));
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 function tokenize(value: string): string[] {
   const stopWords = new Set([
     "ami", "আমि", "আমি", "আমার", "আমাদের", "আপনি", "আপনার", "একটা", "একটি", "কোন", "কী", "কি",
@@ -479,9 +552,7 @@ function buildDeterministicFallbackReply(
   if (knowledge.customerNeed?.intent === "recommend" && products.length) {
     const budget = Number(knowledge.customerNeed.budget_bdt || 0);
     if (budget > 0 && knowledge.budgetMatchedCount === 0) {
-      return "আপনার উল্লেখ করা ৳" + budget.toLocaleString("en-BD") + " বাজেটের মধ্যে যাচাইকৃত লাইভ ক্যাটালগে কোনো নির্ভুল মিল পাইনি। কাছাকাছি তালিকাভুক্ত বিকল্পগুলো হলো:\n\n" +
-        permittedProducts.slice(0, 3).map(productLine).join("\n") +
-        "\n\nকোনো পণ্যের উপাদান বা বিশেষ উপযোগিতা প্রকাশিত প্রোফাইলে না থাকলে তা অনুমান করে বলছি না।";
+      return "আপনার উল্লেখ করা ৳" + budget.toLocaleString("en-BD") + " বাজেটের মধ্যে বর্তমানে নির্ভরযোগ্য মিল খুঁজে পাইনি। চাইলে বাজেট সামান্য বাড়িয়ে বিকল্প দেখতে পারেন।";
     }
     return (budget > 0 ? "আপনার উল্লেখ করা বাজেটের মধ্যে পাওয়া বিকল্পগুলো:" : "আপনার প্রয়োজন অনুযায়ী বিবেচনা করতে পারেন:") +
       "\n\n" + products.slice(0, 3).map(productLine).join("\n") +
