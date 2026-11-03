@@ -409,20 +409,20 @@ function buildDeterministicFallbackReply(
       "\n\nকোনটি বেশি উপযোগী তা নির্দিষ্টভাবে বলতে আপনার ব্যবহার বা প্যাকের পছন্দ জানাতে পারেন।";
   }
   if (/(হ্যালো|হ্যালোও|আসসালামু|সালাম|^hi[!. ]*$|^hello[!. ]*$|^hey[!. ]*$|^good\s+(morning|afternoon|evening)[!. ]*$)/iu.test(normalized.trim())) {
-    return /[\\p{Script=Latin}]/u.test(message)
+    return /[A-Za-z]/u.test(message)
       ? "Hello! Welcome to Halal Food. I can help you explore products, prices, availability, and website information. What would you like to know?"
       : "ওয়ালাইকুম আসসালাম! Halal Food-এ স্বাগতম। পণ্য, দাম, উপলভ্যতা বা ওয়েবসাইট সম্পর্কে জানতে চাইলে বলুন—আমি সাহায্য করছি।";
   }
   if (/(honey|honi|hany|huni|মধু)/iu.test(normalized)) {
     const found = products.filter((p) => /মধু|honey/iu.test(String(p.name || "") + " " + String(p.category || "")));
     if (found.length) {
-      return (/[\\p{Script=Latin}]/u.test(message) ? "Here are the honey products currently listed in our live catalog:" : "আমাদের লাইভ ক্যাটালগে বর্তমানে মধুর তালিকাভুক্ত পণ্যগুলো হলো:")
-        + "\\n\\n" + found.map(productLine).join("\\n")
-        + "\\n\\n" + (/[\\p{Script=Latin}]/u.test(message)
+      return (/[A-Za-z]/u.test(message) ? "Here are the honey products currently listed in our live catalog:" : "আমাদের লাইভ ক্যাটালগে বর্তমানে মধুর তালিকাভুক্ত পণ্যগুলো হলো:")
+        + "\n\n" + found.map(productLine).join("\n")
+        + "\n\n" + (/[A-Za-z]/u.test(message)
           ? "Please note: this is a demo project; real orders and delivery are not active."
           : "নোট: এটি একটি ডেমো প্রকল্প; বাস্তব অর্ডার ও ডেলিভারি চালু নেই।");
     }
-    return /[\\p{Script=Latin}]/u.test(message)
+    return /[A-Za-z]/u.test(message)
       ? "I understood that you are looking for honey. I cannot find a honey item in the currently published catalog. Would you like to explore another product category?"
       : "আপনি মধু খুঁজছেন বুঝতে পেরেছি। বর্তমানে প্রকাশিত ক্যাটালগে মধুর পণ্য খুঁজে পাচ্ছি না। অন্য কোনো পণ্যের ক্যাটাগরি দেখতে চান?";
   }
