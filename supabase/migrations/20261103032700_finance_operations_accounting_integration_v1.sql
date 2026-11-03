@@ -1344,9 +1344,9 @@ begin
    select 1 from public.admin_finance_journal_lines jl
    where jl.journal_entry_id=v_entry.accounting_journal_id
      and jl.account_id=(select id from public.admin_finance_chart_of_accounts where account_code='2020')
-     and jl.credit>0
+     and (jl.credit>0 or jl.debit>0)
  ) then
-  raise exception 'This customer advance has already been applied to a posted sale. Reverse the sale journal or post an audited correction before reversing the cash receipt.';
+  raise exception 'This customer advance or advance refund has already been applied to a posted sale. Reverse the sale journal or post an audited correction before reversing the source cash movement.';
  end if;
  if v_entry.status not in ('confirmed','draft') then raise exception 'Only Draft or Confirmed cashbook entries can be voided.'; end if;
 
