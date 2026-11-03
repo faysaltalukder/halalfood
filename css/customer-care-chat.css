@@ -111,3 +111,24 @@ html.dark-mode .hf-ai-chat-prompts button, html.dark-mode .hf-ai-human-links a {
 html.dark-mode .hf-ai-chat-prompts button:hover, html.dark-mode .hf-ai-human-links a:hover { background: #3a3540; }
 @keyframes hf-ai-chat-enter { from { opacity: 0; transform: translateY(9px) scale(.99); } to { opacity: 1; transform: translateY(0) scale(1); } }
 @media (prefers-reduced-motion: reduce) { .hf-ai-chat-panel { animation: none; } }
+
+
+/* Adult-only AI gate and live request states. */
+.hf-ai-chat-age-gate { display: flex; flex: 1 1 auto; flex-direction: column; justify-content: center; gap: 12px; overflow-y: auto; padding: 24px 22px; background: #fffdf8; color: #2b2a3d; }
+.hf-ai-age-icon { display: grid; width: 54px; height: 54px; place-items: center; border-radius: 16px; background: #f5e8da; color: #8b522d; font-size: 20px; font-weight: 800; }
+.hf-ai-chat-age-gate h3 { margin: 2px 0 0; color: #2b2a3d; font-size: 17px; line-height: 1.4; }
+.hf-ai-chat-age-gate p { margin: 0; color: #74695f; font-size: 12px; line-height: 1.75; }
+.hf-ai-age-confirm { width: 100%; min-height: 46px; padding: 10px 14px; border: 0; border-radius: 11px; background: #c97b3d; color: #fffdf8; font: inherit; font-size: 12px; font-weight: 750; line-height: 1.45; cursor: pointer; }
+.hf-ai-age-confirm:hover { background: #ad642f; }
+.hf-ai-age-support { margin-top: 8px; padding-top: 13px; border-top: 1px solid #e8e3d9; color: #82796f; font-size: 11px; }
+.hf-ai-chat-content { display: flex; min-height: 0; flex: 1 1 auto; flex-direction: column; }
+.hf-ai-chat-content[hidden], .hf-ai-chat-age-gate[hidden] { display: none !important; }
+.hf-ai-message-pending { opacity: .72; }
+.hf-ai-chat-send:disabled { cursor: wait; opacity: .55; transform: none; }
+.hf-ai-chat-input-wrap input:disabled { cursor: wait; opacity: .7; }
+.hf-ai-age-support .hf-ai-human-links { margin-top: 8px; }
+html.dark-mode .hf-ai-chat-age-gate { background: #22212e; color: #f3efe5; }
+html.dark-mode .hf-ai-age-icon { background: #3a3540; color: #f3dec9; }
+html.dark-mode .hf-ai-chat-age-gate h3 { color: #f3efe5; }
+html.dark-mode .hf-ai-chat-age-gate p, html.dark-mode .hf-ai-age-support { color: #c9c3b8; }
+html.dark-mode .hf-ai-age-support { border-color: #444251; }
