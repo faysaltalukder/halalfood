@@ -9,8 +9,8 @@ const js = read("admin/finance-accounting-core.js");
 const css = read("admin/finance-accounting-core.css");
 const migration = read("supabase/migrations/20261103024455_finance_accounting_foundation_v1.sql");
 
-assert.ok(html.includes('finance-accounting-core.css?v=20261103-accounting-core-v1'), "Accounting CSS must be cache-busted.");
-assert.ok(html.includes('finance-accounting-core.js?v=20261103-accounting-core-v1'), "Accounting JS must be cache-busted.");
+assert.ok(html.includes('finance-accounting-core.css?v=20261103-phase2-operations-v2'), "Accounting CSS must be cache-busted.");
+assert.ok(html.includes('finance-accounting-core.js?v=20261103-phase2-operations-v2'), "Accounting JS must be cache-busted.");
 assert.ok(html.includes('id="financeAccountingCore"'), "Accounting core must live inside the existing Finance page.");
 assert.ok(html.includes('id="financeTransactionsSection"'), "The existing Transactions workspace must remain.");
 assert.equal((html.match(/class="hf-workspace-nav-item"/g) || []).length, 5, "Finance must retain exactly five primary workspaces.");

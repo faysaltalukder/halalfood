@@ -12,7 +12,7 @@
 <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js"></script>
 <link rel="stylesheet" href="./workspace-global-theme.css?v=20261101-merchant-fieldbook-v1">
 <link rel="stylesheet" href="./finance-cashflow-workspace.css?v=20261102-finance-cashflow-v1">
-<link rel="stylesheet" href="./finance-accounting-core.css?v=20261103-accounting-core-v1">
+<link rel="stylesheet" href="./finance-accounting-core.css?v=20261103-phase2-operations-v2">
 </head>
 <body data-page="finance">
 <div id="authGate" class="auth-gate"><div class="auth-gate-card"><strong>Checking secure admin access…</strong><p>Your dashboard data will load only after the authorized account and two-step verification are confirmed.</p></div></div>
@@ -35,8 +35,8 @@
 <section id="financeOverviewSection" class="hf-finance-section hf-anchor-section">
  <div class="hf-finance-section-heading"><div><p class="page-eyebrow">01 · BUSINESS POSITION</p><h2>Financial overview</h2><p>Choose a period for operating activity. Account balances always show the latest recorded position.</p></div><label class="hf-finance-period">Reporting period<select id="financePeriodFilter" class="hf-select"><option value="this-month">This month</option><option value="today">Today</option><option value="7">Last 7 days</option><option value="30" selected>Last 30 days</option><option value="90">Last 90 days</option><option value="this-year">This year</option><option value="all">All time</option></select></label></div>
  <div class="hf-kpi-grid hf-finance-kpi-grid">
-  <section class="hf-card hf-kpi"><div class="hf-kpi-head"><span class="hf-kpi-label">Operating income</span><span class="hf-kpi-icon kpi-icon-green">＋</span></div><strong class="hf-kpi-value" id="financeIncomeTotal">—</strong><span class="hf-kpi-note">Confirmed operating receipts in period</span></section>
-  <section class="hf-card hf-kpi"><div class="hf-kpi-head"><span class="hf-kpi-label">Operating expenses</span><span class="hf-kpi-icon kpi-icon-orange">−</span></div><strong class="hf-kpi-value" id="financeExpenseTotal">—</strong><span class="hf-kpi-note">Confirmed operating outflows in period</span></section>
+  <section class="hf-card hf-kpi"><div class="hf-kpi-head"><span class="hf-kpi-label">Confirmed cash receipts</span><span class="hf-kpi-icon kpi-icon-green">＋</span></div><strong class="hf-kpi-value" id="financeIncomeTotal">—</strong><span class="hf-kpi-note">Cashbook money-in records, including posted customer receipts and courier remittances</span></section>
+  <section class="hf-card hf-kpi"><div class="hf-kpi-head"><span class="hf-kpi-label">Confirmed cash payments</span><span class="hf-kpi-icon kpi-icon-orange">−</span></div><strong class="hf-kpi-value" id="financeExpenseTotal">—</strong><span class="hf-kpi-note">Cashbook money-out records, including supplier payments; not the Profit & Loss statement</span></section>
   <section class="hf-card hf-kpi"><div class="hf-kpi-head"><span class="hf-kpi-label">Net cash movement</span><span class="hf-kpi-icon kpi-icon-blue">৳</span></div><strong class="hf-kpi-value" id="financeNetTotal">—</strong><span class="hf-kpi-note">All confirmed ledger inflows less outflows</span></section>
   <section class="hf-card hf-kpi"><div class="hf-kpi-head"><span class="hf-kpi-label">Available account balance</span><span class="hf-kpi-icon kpi-icon-purple">◈</span></div><strong class="hf-kpi-value" id="financeAvailableBalance">—</strong><span class="hf-kpi-note">Assigned confirmed movements after opening date</span></section>
   <section class="hf-card hf-kpi"><div class="hf-kpi-head"><span class="hf-kpi-label">COD in pipeline</span><span class="hf-kpi-icon kpi-icon-orange">⇄</span></div><strong class="hf-kpi-value" id="financeOutstandingCod">—</strong><span class="hf-kpi-note">Manual tracking value, not verified cash</span></section>
@@ -72,6 +72,7 @@
    <button type="button" role="tab" aria-selected="false" data-finance-accounting-tab="journals">Journal Entries</button>
    <button type="button" role="tab" aria-selected="false" data-finance-accounting-tab="ledger">General Ledger</button>
    <button type="button" role="tab" aria-selected="false" data-finance-accounting-tab="trial">Trial Balance & Periods</button>
+   <button type="button" role="tab" aria-selected="false" data-finance-accounting-tab="operations">Operational Integration</button>
   </div>
   <div class="hf-finance-accounting-panel" data-finance-accounting-panel="chart">
    <div class="hf-finance-accounting-panel-head"><div><strong>Chart of Accounts</strong><p>Standard account groups for a small trading and grocery business. Seeded accounts are protected; no opening balances are assumed.</p></div><span class="hf-finance-accounting-count" id="financeAccCoaCount">— accounts</span></div>
@@ -97,6 +98,58 @@
    <div class="hf-finance-accounting-periods"><div><strong>Accounting periods</strong><p>Posting automatically opens a monthly period. Close is blocked while Draft journals remain; Locked periods cannot be reopened.</p></div>
     <div class="hf-table-wrap" tabindex="0" role="region" aria-label="Accounting periods"><table class="hf-table"><thead><tr><th>Month</th><th>Period</th><th>Status</th><th>Closed / locked at</th><th>Action</th></tr></thead><tbody id="financeAccPeriodsBody"><tr><td colspan="5" class="hf-loading">Loading accounting periods…</td></tr></tbody></table></div>
    </div>
+  </div>
+  <div class="hf-finance-accounting-panel" data-finance-accounting-panel="operations" hidden>
+   <div class="hf-finance-accounting-panel-head"><div><strong>Operational posting centre</strong><p>Post verified source events into the General Ledger. Cash receipts, revenue, courier clearing, supplier liabilities and inventory cost are different accounting events.</p></div><button class="hf-button hf-button-secondary hf-button-small" id="financeOperationsRefresh" type="button">↻ Refresh queues</button></div>
+   <div class="hf-finance-operations-note" id="financeOperationsIntegrity" role="status">Source events are being checked. No historical transaction is automatically posted.</div>
+   <div class="hf-finance-accounting-metrics hf-finance-operations-metrics">
+    <div><span>Cashbook awaiting posting</span><strong id="financeOpsCashbookCount">—</strong><small>Confirmed, standalone entries</small></div>
+    <div><span>Delivered sales awaiting recognition</span><strong id="financeOpsSalesCount">—</strong><small>Revenue / receivable recognition</small></div>
+    <div><span>COD remittances awaiting posting</span><strong id="financeOpsCodCount">—</strong><small>Reconciled and verified only</small></div>
+    <div><span>Supplier items awaiting posting</span><strong id="financeOpsSupplierCount">—</strong><small>Confirmed bills and payments</small></div>
+    <div><span>Opening balances awaiting posting</span><strong id="financeOpsOpeningCount">—</strong><small>Must be independently verified</small></div>
+    <div><span>COGS awaiting posting</span><strong id="financeOpsCogsCount">—</strong><small>Requires verified product cost</small></div>
+    <div><span>Customer refunds awaiting posting</span><strong id="financeOpsRefundCount">—</strong><small>Processed refunds only</small></div>
+   </div>
+   <div class="hf-finance-operations-grid">
+    <section class="hf-finance-operations-card">
+     <div class="hf-finance-accounting-panel-head"><div><strong>Confirmed cashbook entries</strong><p>Choose the correct counter-account. Order-linked receipts credit Accounts Receivable, not Sales Revenue.</p></div></div>
+     <div class="hf-table-wrap" tabindex="0" role="region" aria-label="Cashbook entries awaiting accounting"><table class="hf-table"><thead><tr><th>Date / type</th><th>Category / party</th><th>Cash account</th><th>Amount</th><th>Action</th></tr></thead><tbody id="financeOpsCashbookBody"><tr><td colspan="5" class="hf-loading">Loading…</td></tr></tbody></table></div>
+    </section>
+    <section class="hf-finance-operations-card">
+     <div class="hf-finance-accounting-panel-head"><div><strong>Delivered orders awaiting sales recognition</strong><p>COD is debited to Courier Clearing. Other payment types first create Customer Receivable until a verified receipt is posted.</p></div></div>
+     <div class="hf-table-wrap" tabindex="0" role="region" aria-label="Delivered orders awaiting sales recognition"><table class="hf-table"><thead><tr><th>Order / customer</th><th>Payment</th><th>Total</th><th>Action</th></tr></thead><tbody id="financeOpsSalesBody"><tr><td colspan="4" class="hf-loading">Loading…</td></tr></tbody></table></div>
+    </section>
+    <section class="hf-finance-operations-card">
+     <div class="hf-finance-accounting-panel-head"><div><strong>Reconciled COD remittances</strong><p>Dr destination account and courier fee; Cr Courier Clearing. This does not create sales revenue a second time.</p></div></div>
+     <div class="hf-table-wrap" tabindex="0" role="region" aria-label="COD settlement posting queue"><table class="hf-table"><thead><tr><th>Order / courier</th><th>Collected</th><th>Fee</th><th>Remitted</th><th>Action</th></tr></thead><tbody id="financeOpsCodBody"><tr><td colspan="5" class="hf-loading">Loading…</td></tr></tbody></table></div>
+    </section>
+    <section class="hf-finance-operations-card">
+     <div class="hf-finance-accounting-panel-head"><div><strong>Supplier bills & payments</strong><p>Bill posting increases Accounts Payable. Payment posting reduces Payables or records a Supplier Advance; it is not a second expense.</p></div></div>
+     <div class="hf-table-wrap" tabindex="0" role="region" aria-label="Supplier bills awaiting posting"><table class="hf-table"><thead><tr><th>Source</th><th>Date</th><th>Supplier / reference</th><th>Amount</th><th>Action</th></tr></thead><tbody id="financeOpsSupplierBody"><tr><td colspan="5" class="hf-loading">Loading…</td></tr></tbody></table></div>
+    </section>
+    <section class="hf-finance-operations-card">
+     <div class="hf-finance-accounting-panel-head"><div><strong>Verified Finance account opening balances</strong><p>Post only after checking actual cash, bank or wallet statements. Offset must be an Equity or Liability account.</p></div></div>
+     <div class="hf-table-wrap" tabindex="0" role="region" aria-label="Opening balances awaiting posting"><table class="hf-table"><thead><tr><th>Account</th><th>Opening date</th><th>Amount</th><th>GL mapping</th><th>Action</th></tr></thead><tbody id="financeOpsOpeningBody"><tr><td colspan="5" class="hf-loading">Loading…</td></tr></tbody></table></div>
+    </section>
+    <section class="hf-finance-operations-card">
+     <div class="hf-finance-accounting-panel-head"><div><strong>Supplier credit notes</strong><p>Credit notes reduce Accounts Payable or create a Supplier Advance when the original bill has already been paid.</p></div></div>
+     <div class="hf-table-wrap" tabindex="0" role="region" aria-label="Supplier credit notes awaiting accounting"><table class="hf-table"><thead><tr><th>Credit note</th><th>Date</th><th>Supplier bill</th><th>Amount</th><th>Action</th></tr></thead><tbody id="financeOpsCreditNotesBody"><tr><td colspan="5" class="hf-loading">Loading…</td></tr></tbody></table></div>
+    </section>
+    <section class="hf-finance-operations-card">
+     <div class="hf-finance-accounting-panel-head"><div><strong>Customer returns & refunds</strong><p>Only processed refunds are posted. Stock restocking and COGS reversal require verified returned item quantities and are not inferred from a return request alone.</p></div></div>
+     <div class="hf-table-wrap" tabindex="0" role="region" aria-label="Customer refunds awaiting accounting"><table class="hf-table"><thead><tr><th>Return</th><th>Order</th><th>Item condition</th><th>Refund</th><th>Action</th></tr></thead><tbody id="financeOpsRefundBody"><tr><td colspan="5" class="hf-loading">Loading…</td></tr></tbody></table></div>
+    </section>
+    <section class="hf-finance-operations-card">
+     <div class="hf-finance-accounting-panel-head"><div><strong>Delivered order Cost of Goods Sold</strong><p>Requires a posted sale journal and verified manual or weighted-average landed unit costs.</p></div></div>
+     <div class="hf-table-wrap" tabindex="0" role="region" aria-label="COGS posting queue"><table class="hf-table"><thead><tr><th>Order</th><th>Items</th><th>Cost coverage</th><th>Action</th></tr></thead><tbody id="financeOpsCogsBody"><tr><td colspan="4" class="hf-loading">Loading…</td></tr></tbody></table></div>
+    </section>
+   </div>
+   <section class="hf-finance-operations-card hf-finance-profitability-card">
+    <div class="hf-finance-accounting-panel-head"><div><strong>Product profitability · Delivered orders</strong><p>Uses manually maintained product costs first, then weighted-average GRN landed costs. Gross profit is withheld when any delivered line lacks a verified cost.</p></div><span class="hf-finance-accounting-count" id="financeOpsProfitCount">— products</span></div>
+    <div class="hf-table-wrap" tabindex="0" role="region" aria-label="Product profitability"><table class="hf-table"><thead><tr><th>Product</th><th>Quantity</th><th>Net product sales</th><th>Verified COGS</th><th>Gross profit</th><th>Margin</th><th>Cost source</th></tr></thead><tbody id="financeOpsProfitBody"><tr><td colspan="7" class="hf-loading">Loading…</td></tr></tbody></table></div>
+   </section>
+   <p class="hf-finance-accounting-error" id="financeOperationsError" role="alert" hidden></p>
   </div>
   <p class="hf-finance-accounting-error" id="financeAccountingError" role="alert" hidden></p>
  </section>
@@ -143,6 +196,24 @@
  <div class="hf-table-wrap" tabindex="0" role="region" aria-label="Journal audit history"><table class="hf-table"><thead><tr><th>Time</th><th>Action</th><th>Actor</th><th>Details</th></tr></thead><tbody id="financeJournalHistoryBody"><tr><td colspan="4" class="hf-loading">Loading history…</td></tr></tbody></table></div>
  <div class="hf-dialog-actions"><button class="hf-button hf-button-secondary" id="financeJournalHistoryDone" type="button">Close</button></div>
 </div></dialog>
+<dialog id="financeOperationalPostDialog" class="hf-dialog hf-finance-operational-dialog"><form id="financeOperationalPostForm" class="hf-dialog-inner">
+ <div class="hf-dialog-head"><div><p class="hf-dialog-title-tag">OPERATIONAL ACCOUNTING</p><h2 id="financeOperationalPostTitle">Post source event</h2><p id="financeOperationalPostDescription">Choose the appropriate General Ledger counter-account and verify the source details.</p></div><button class="hf-button hf-button-secondary hf-dialog-close" id="financeOperationalPostClose" type="button">×</button></div>
+ <input type="hidden" id="financeOperationalPostKind"><input type="hidden" id="financeOperationalPostId">
+ <label class="hf-field" id="financeOperationalAccountField">General Ledger account *
+  <select id="financeOperationalAccount" class="hf-select" required><option value="">Choose account</option></select>
+ </label>
+ <label class="hf-field" id="financeOperationalTaxField" hidden>Invoice tax account *
+  <select id="financeOperationalTaxAccount" class="hf-select"><option value="">Choose tax classification</option></select>
+  <small class="hf-help">Select VAT / Tax Recoverable only when the invoice and applicable tax treatment support recovery; otherwise select the appropriate Expense account.</small>
+ </label>
+ <label class="hf-field" id="financeOperationalCashAccountField" hidden>Refund paid from Finance account *
+  <select id="financeOperationalCashAccount" class="hf-select"><option value="">Choose cash, bank or wallet</option></select>
+  <small class="hf-help">Select the account from which the refund was actually paid. The journal will credit its mapped Asset account.</small>
+ </label>
+ <div class="hf-finance-operational-warning" id="financeOperationalWarning">Posting is permanent. Corrections use a linked reversal journal.</div>
+ <p class="hf-form-error" id="financeOperationalPostError" role="alert"></p>
+ <div class="hf-dialog-actions"><button class="hf-button hf-button-secondary" id="financeOperationalPostCancel" type="button">Cancel</button><button class="hf-button hf-button-primary" id="financeOperationalPostSubmit" type="submit">Validate & Post</button></div>
+</form></dialog>
 <dialog id="financeDialog" class="hf-dialog"><form id="financeForm" class="hf-dialog-inner">
  <div class="hf-dialog-head"><div><p class="hf-dialog-title-tag">TRANSACTION LEDGER</p><h2 id="financeDialogTitle">Record a transaction</h2><p>Only mark Confirmed after verifying the real cash movement.</p></div><button class="hf-button hf-button-secondary hf-dialog-close" data-close-dialog="financeDialog" type="button">×</button></div>
  <input id="financeId" type="hidden">
@@ -171,6 +242,7 @@
   <label class="hf-field">Provider / bank<input id="financeAccountProvider" class="hf-input" maxlength="100" placeholder="Bank or provider name"></label>
   <label class="hf-field">Account reference<input id="financeAccountReference" class="hf-input" maxlength="120" placeholder="Optional masked number / wallet reference"></label>
   <label class="hf-field">Verified opening balance (৳)<input id="financeAccountOpening" class="hf-input" type="number" min="0" step="0.01" value="0" required></label>
+  <label class="hf-field">General Ledger mapping *<select id="financeAccountLedgerId" class="hf-select" required><option value="">Choose Asset account</option></select></label>
   <label class="hf-field">Opening balance date<input id="financeAccountOpeningDate" class="hf-input" type="date" required></label>
  </div>
  <p id="financeAccountFormError" class="hf-form-error" role="alert"></p><div class="hf-dialog-actions"><button class="hf-button hf-button-secondary" data-close-dialog="financeAccountDialog" type="button">Cancel</button><button class="hf-button hf-button-primary" type="submit">Save account</button></div>
@@ -216,5 +288,5 @@
 <script defer src="../js/store-config.js?v=20261101-store-config-v1"></script>
 <script defer src="./shared.js?v=20261102-reports-navigation-v3"></script>
 <script defer src="./app.js?v=20261102-dashboard-speed-v2"></script>
-<script defer src="./finance-accounting-core.js?v=20261103-accounting-core-v1"></script>
+<script defer src="./finance-accounting-core.js?v=20261103-phase2-operations-v2"></script>
 </body></html>

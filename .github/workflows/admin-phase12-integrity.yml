@@ -14,6 +14,7 @@ on:
       - "scripts/admin-pos-check.mjs"
       - "scripts/finance-workspace-check.mjs"
       - "scripts/finance-accounting-core-check.mjs"
+      - "scripts/finance-operations-integration-check.mjs"
       - "scripts/analytics-workspace-check.mjs"
       - ".github/workflows/admin-phase12-integrity.yml"
   pull_request:
@@ -63,6 +64,8 @@ jobs:
         run: node scripts/finance-workspace-check.mjs
       - name: Run Finance Accounting Foundation checks
         run: node scripts/finance-accounting-core-check.mjs
+      - name: Run Finance Operations Integration checks
+        run: node scripts/finance-operations-integration-check.mjs
       - name: Run Analytics workspace checks
         run: node scripts/analytics-workspace-check.mjs
       - name: Run Business Health workspace checks

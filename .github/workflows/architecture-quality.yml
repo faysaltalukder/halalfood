@@ -35,6 +35,8 @@ jobs:
         run: node scripts/finance-workspace-check.mjs
       - name: Run Finance Accounting Foundation checks
         run: node scripts/finance-accounting-core-check.mjs
+      - name: Run Finance Operations Integration checks
+        run: node scripts/finance-operations-integration-check.mjs
       - name: Run Part 1 Financial Reports checks
         run: node scripts/report-financial-part1-check.mjs
       - name: Run Part 2 Operational Reports checks
