@@ -150,6 +150,7 @@ assert.match(css, /hf-ai-chat-mic/);
 const intentCases = [
   ["একটা সরিষার তেল দেখাও", "exact_product_lookup", 1],
   ["কী কী তেল পাওয়া যায়", "category_browse", 4],
+  ["তেলগুলো দেখাও", "category_browse", 4],
   ["সরিষার তেলের দাম কত?", "product_price_inquiry", 0],
   ["ডেলিভারি কত?", "store_policy_question", 0],
   ["ধন্যবাদ", "casual_conversation", 0],
