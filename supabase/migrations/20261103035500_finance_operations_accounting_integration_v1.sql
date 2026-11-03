@@ -119,7 +119,6 @@ declare
   v_aal text := coalesce((select auth.jwt()->>'aal'),'aal1');
   v_sync boolean := coalesce(current_setting('app.finance_operations_sync',true),'')='on';
   v_account_type text;
-  v_account_active boolean;
 begin
   if v_email <> 'halalfoodbd.official@gmail.com' or v_aal <> 'aal2' then
     raise exception 'Finance operations changes require the authorized admin account and MFA.' using errcode='42501';
@@ -132,8 +131,7 @@ begin
     if new.ledger_account_id is null then
       raise exception 'Choose a General Ledger account mapping before saving this Finance account.';
     end if;
-    select account_type,is_postable,is_active
-      into v_account_type, v_account_active, v_account_active
+    select account_type into v_account_type
     from public.admin_finance_chart_of_accounts where id=new.ledger_account_id;
     if v_account_type is distinct from 'asset' then
       raise exception 'A cash, bank or wallet must map to an Asset account in the Chart of Accounts.';
@@ -564,6 +562,9 @@ begin
  if v_settlement.collected_amount<=0 or v_settlement.collected_amount>v_settlement.cod_amount then
   raise exception 'Collected amount must be positive and cannot exceed the COD order value.';
  end if;
+ if abs(v_settlement.cod_amount-(select total from public.orders where id=v_settlement.order_id))>0.01 then
+  raise exception 'COD amount does not match the linked order total. Review the courier statement and order before posting.';
+ end if;
  if abs((v_settlement.remitted_amount+v_settlement.courier_fee-v_settlement.collected_amount)-v_settlement.adjustment_amount)>0.01 then
   raise exception 'Remitted amount, courier fee, collection and adjustment do not reconcile. Review the courier statement.';
  end if;
@@ -684,7 +685,7 @@ begin
  if not found then raise exception 'Supplier payment was not found.'; end if;
  if v_payment.accounting_journal_id is not null then return v_payment.accounting_journal_id; end if;
  if v_payment.status<>'confirmed' then raise exception 'Only a Confirmed supplier payment can be posted.'; end if;
- select id into v_cash_coa_id
+ select ledger_account_id into v_cash_coa_id
  from public.admin_finance_accounts
  where id=(select account_id from public.admin_finance_entries where related_supplier_payment_id=p_payment_id)
    and ledger_account_id is not null and is_active;
