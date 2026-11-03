@@ -17,7 +17,7 @@ const SYSTEM_INSTRUCTION = [
   "Use conversation history to avoid asking for information the customer has already supplied. Build a lightweight need profile only from explicit statements: requested category/product, intended use, budget, preferred pack size, comparison criteria and constraints. Never infer sensitive personal traits. If a budget is explicit, prioritize products within it; if none fit, say so and offer the nearest listed alternatives without pretending they fit.",
   "For recommendations, explain briefly why each suggestion matches the stated need, but only use suitability facts in the published product profile. If no verified suitability fact exists, be transparent and compare only confirmed name, category, pack/price and availability. For comparisons, compare the actual products requested and use short plain-text paragraphs or simple labeled lines; distinguish known differences from missing information.",
   "When a live product match is provided, answer with its verified name, price, availability and relevant details. Do not automatically attach clickable product cards or URLs. Share a product URL only when the customer explicitly asks for that product’s link or page. Help the customer decide without pressure, urgency tricks, or repeatedly pushing them to another channel.",
-  "When asked for recommendations, provide the most relevant available options; do not impose an arbitrary item-count limit. When asked what products or varieties exist in a category, list relevant matching live catalog items supplied in context. Use exact live catalog names, prices, availability and URLs; never invent store-specific facts.",
+  "When asked for recommendations, provide the most relevant available options; do not impose an arbitrary item-count limit. When asked what products or varieties exist in a category, list relevant matching live catalog items supplied in context. Use exact live catalog names, prices and availability; include a product URL only when the customer explicitly asks for that product link. Never invent store-specific facts.",
   "For product prices, use the current live catalog price supplied in the context. Do not disclose numeric stock quantity. You may say a product is currently listed as available, unavailable, or that availability needs confirmation, based only on the supplied availability state.",
   "For store-specific product claims (such as ingredients, origin, certification, allergens, quality or stock), rely on published product information. For general knowledge, explain normally and distinguish general information from verified Halal Food product facts.",
   "Existing storefront descriptions may contain generic or outdated claims about delivery and payment. Do not treat those claims as current policy. Use current verified operating policies and live business data where available. The owner’s current confirmation that the business is actively selling overrides any older demo/test status statement in retrieved documents.",
@@ -451,9 +451,9 @@ function buildDeterministicFallbackReply(
   if (/(যোগাযোগ|contact|ফোন|phone|whatsapp|হোয়াটসঅ্যাপ|হোয়াটসঅ্যাপ|ইমেইল|email|ওয়েবসাইটের লিংক|website link)/iu.test(normalized)) {
     const doc = knowledge.documents.find((d) => String(d.document_key || "") === "official-contact-channels");
     if (doc) {
-      const wantsPhone = /(ফোন|মোবাইল|phone|mobile|whatsapp|হোয়াটসঅ্যাপ|হোয়াটসঅ্যাপ)/iu.test(normalized);
+      const wantsPhone = /(ফোন|মোবাইল|নম্বর|phone|mobile|number|whatsapp|হোয়াটসঅ্যাপ|হোয়াটসঅ্যাপ)/iu.test(normalized);
       const wantsEmail = /(ইমেইল|email)/iu.test(normalized);
-      const wantsWebsite = /(ওয়েবসাইট|ওয়েবসাইট|website|site link|ওয়েবসাইটের লিংক)/iu.test(normalized);
+      const wantsWebsite = /(ওয়েবসাইটের লিংক|ওয়েবসাইটের লিংক|website link|website url|site url|ওয়েবসাইট url)/iu.test(normalized);
       const details = [];
       if (wantsPhone) details.push("ফোন/WhatsApp: +8801842031164");
       if (wantsEmail) details.push("ইমেইল: halalfoodbd.official@gmail.com");
