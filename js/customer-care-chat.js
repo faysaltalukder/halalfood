@@ -8,7 +8,7 @@
   const style = document.createElement("link");
   style.id = "hf-customer-care-chat-styles";
   style.rel = "stylesheet";
-  style.href = ASSET_BASE + "css/customer-care-chat.css?v=20261103-ai-stage2-v1";
+  style.href = ASSET_BASE + "css/customer-care-chat.css?v=20261103-ai-chat-direct-v1";
   document.head.appendChild(style);
 
   let root = document.getElementById("hf-contact-widget");
@@ -51,16 +51,7 @@
       '<button class="hf-ai-chat-close" type="button" aria-label="Close chat">×</button>' +
     '</header>' +
     '<div class="hf-ai-chat-setup-note" role="status">AI সহকারীর সংযোগ যাচাই করা হচ্ছে…</div>' +
-    '<div class="hf-ai-chat-age-gate" id="hf-ai-chat-age-gate">' +
-      '<div class="hf-ai-age-icon" aria-hidden="true">18+</div>' +
-      '<h3>প্রাপ্তবয়স্কদের জন্য AI সহায়তা</h3>' +
-      '<p>AI চ্যাট ব্যবহার করতে নিশ্চিত করুন যে আপনার বয়স ১৮ বছর বা তার বেশি। এখানে ব্যক্তিগত, অর্ডার, পেমেন্ট বা OTP-সংক্রান্ত তথ্য লিখবেন না।</p>' +
-      '<button class="hf-ai-age-confirm" type="button">আমি নিশ্চিত করছি, আমার বয়স ১৮ বছর বা তার বেশি</button>' +
-      '<div class="hf-ai-age-support"><span>AI চ্যাট ব্যবহার করতে না চাইলে</span><div class="hf-ai-human-links">' +
-        '<a href="tel:+8801842031164">ফোন করুন</a><a href="https://wa.me/8801842031164" target="_blank" rel="noopener noreferrer">WhatsApp</a>' +
-      '</div></div>' +
-    '</div>' +
-    '<div class="hf-ai-chat-content" id="hf-ai-chat-content" hidden>' +
+    '<div class="hf-ai-chat-content" id="hf-ai-chat-content">' +
       '<div class="hf-ai-chat-messages" id="hf-ai-chat-messages" aria-live="polite">' +
         '<div class="hf-ai-message hf-ai-message-assistant"><p>আসসালামু আলাইকুম! আমি Halal Food-এর AI সহকারী। পণ্য, ওয়েবসাইট বা সাধারণ সেবা সম্পর্কে কী জানতে চান?</p><span class="hf-ai-message-time">Halal Food Assistant</span></div>' +
         '<div class="hf-ai-chat-prompts" aria-label="সাধারণ প্রশ্ন">' +
@@ -79,25 +70,25 @@
 
   const closeButton = panel.querySelector(".hf-ai-chat-close");
   const setupNote = panel.querySelector(".hf-ai-chat-setup-note");
-  const ageGate = panel.querySelector("#hf-ai-chat-age-gate");
-  const ageConfirm = panel.querySelector(".hf-ai-age-confirm");
   const chatContent = panel.querySelector("#hf-ai-chat-content");
   const messages = panel.querySelector("#hf-ai-chat-messages");
   const form = panel.querySelector("#hf-ai-chat-form");
   const input = panel.querySelector("#hf-ai-chat-input");
   const sendButton = panel.querySelector(".hf-ai-chat-send");
   const conversation = [];
-  let ageConfirmed = false;
+  let serverCheckStarted = false;
   let busy = false;
 
   function openChat() {
     panel.hidden = false;
     launcher.setAttribute("aria-expanded", "true");
     launcher.setAttribute("aria-label", "Close Halal Food AI chat");
-    window.setTimeout(() => {
-      if (!ageConfirmed) ageConfirm?.focus({ preventScroll: true });
-      else input?.focus({ preventScroll: true });
-    }, 50);
+    if (!serverCheckStarted) {
+      serverCheckStarted = true;
+      setupNote.textContent = "AI সহকারীর সঙ্গে সংযোগ করা হচ্ছে…";
+      checkServer();
+    }
+    window.setTimeout(() => input?.focus({ preventScroll: true }), 50);
   }
   function closeChat() {
     panel.hidden = true;
@@ -194,14 +185,14 @@
         setupNote.textContent = "AI সার্ভার প্রস্তুত নয়। ফোন বা WhatsApp-এ সহায়তা নিন।";
         return;
       }
-      setupNote.textContent = "সংযুক্ত · " + (data.model || "Gemini AI") + " · ১৮+ ব্যবহারকারীদের জন্য";
+      setupNote.textContent = "সংযুক্ত · " + (data.model || "Gemini AI") + " · ";
     } catch (_error) {
       setupNote.textContent = "AI সার্ভারের সঙ্গে সংযোগ করা যাচ্ছে না। ফোন বা WhatsApp-এ সহায়তা নিন।";
     }
   }
   async function submitQuestion(question) {
     const text = String(question || "").trim();
-    if (!text || busy || !ageConfirmed) return;
+    if (!text || busy) return;
     appendMessage(text, "user");
     input.value = "";
     const humanRequest = /(মানুষ|মানব|প্রতিনিধি|কাস্টমার\s*কেয়ার|কাস্টমার\s*কেয়ার|সরাসরি\s*কথা|এজেন্ট|human|real person|representative|customer support|customer care|live agent|talk to (a )?person|speak to (a )?person|whatsapp|হোয়াটসঅ্যাপ|হোয়াটসঅ্যাপ|ফোনে কথা)/i.test(text);
@@ -221,8 +212,7 @@
         cache: "no-store",
         body: JSON.stringify({
           message: text,
-          history: conversation.slice(-8),
-          ageConfirmed: true
+          history: conversation.slice(-8)
         })
       });
       let data = {};
@@ -254,14 +244,6 @@
     else closeChat();
   });
   closeButton.addEventListener("click", closeChat);
-  ageConfirm.addEventListener("click", () => {
-    ageConfirmed = true;
-    ageGate.hidden = true;
-    chatContent.hidden = false;
-    setupNote.textContent = "AI সার্ভারের সঙ্গে সংযোগ করা হচ্ছে…";
-    checkServer();
-    input.focus();
-  });
   panel.querySelectorAll("[data-hf-chat-prompt]").forEach(button => {
     button.addEventListener("click", () => submitQuestion(button.getAttribute("data-hf-chat-prompt")));
   });
