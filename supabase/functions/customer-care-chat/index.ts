@@ -566,7 +566,6 @@ Deno.serve(async (req: Request) => {
       event: "customer_care_upstream_fetch_failed",
       requestId,
       kind: timedOut ? "timeout" : "network_or_knowledge",
-      message: String(error).slice(0, 140),
     }));
     return response({
       success: false,
