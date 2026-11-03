@@ -2829,8 +2829,8 @@ async function refresh(){
     const reason=window.prompt("Why must this COD settlement be reversed? (at least five characters)");
     if(reason===null)return;
     if(reason.trim().length<5){toast("Enter a reversal reason of at least five characters.","error");return;}
-    if(!confirm("Reverse the remittance, recognized COD sale and any posted COGS for this order?"))return;
-    try{const {data,error}=await client.rpc("admin_finance_reverse_cod_settlement",{p_settlement_id:item.id,p_reversal_date:todayISO(),p_reason:reason.trim()});if(error)throw error;await audit("finance_cod_reversed","cod_settlement",item.id,"COD remittance, sale and COGS journals reversed",{reversal_journal_id:data});toast("COD journals reversed; the settlement is flagged for review.");await refresh();}
+    if(!confirm("Reverse only the COD remittance journal? The delivered sale and any posted COGS remain valid unless separately corrected through their own business workflows?"))return;
+    try{const {data,error}=await client.rpc("admin_finance_reverse_cod_settlement",{p_settlement_id:item.id,p_reversal_date:todayISO(),p_reason:reason.trim()});if(error)throw error;await audit("finance_cod_reversed","cod_settlement",item.id,"COD remittance journal reversed; delivered sale and COGS retained",{reversal_journal_id:data});toast("COD remittance reversed; the delivered sale remains in the ledger and the settlement is flagged for review.");await refresh();}
     catch(err){toast(err.message||"COD settlement could not be reversed.","error");}
    }
   });
