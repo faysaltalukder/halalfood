@@ -1649,7 +1649,7 @@ document.addEventListener("DOMContentLoaded", () => {
       quantity:Number.isInteger(quantity)&&quantity>0?Math.min(quantity,100000):1
     };
   }
-  function sendFirstPartyEvent(eventName,params,metaParams,eventId){
+  function sendFirstPartyEvent(eventName,params,metaParams,eventId,firstPartyMetadata){
     if(!firstPartyEvents.has(eventName))return;
     var p=params||{};
     var items=(Array.isArray(p.items)?p.items:[]).slice(0,30).map(safeItem);
@@ -1667,6 +1667,7 @@ document.addEventListener("DOMContentLoaded", () => {
       value:typeof p.value==="number"&&Number.isFinite(p.value)?p.value:null,
       quantity:typeof first.quantity==="number"?first.quantity:null,
       search_term:typeof p.search_term==="string"?p.search_term.slice(0,120):null,
+      metadata:firstPartyMetadata&&typeof firstPartyMetadata==="object"?firstPartyMetadata:{},
       items:items,
       meta_params:metaParams&&typeof metaParams==="object"?metaParams:{},
       fbp:cookieValue("_fbp"),
@@ -1839,8 +1840,11 @@ document.addEventListener("DOMContentLoaded", () => {
   window.halalTrack=function(eventName,params,metaEvent,metaParams,eventId){
     var safeParams=params||{};
     var id=eventId||createEventId();
-    sendFirstPartyEvent(eventName,safeParams,metaParams,id);
-    var externalItem={eventName:eventName,params:safeParams,metaEvent:metaEvent||null,metaParams:metaParams||safeParams,eventId:id};
+    var firstPartyMetadata=safeParams.first_party_metadata&&typeof safeParams.first_party_metadata==="object"?safeParams.first_party_metadata:{};
+    var externalParams=Object.assign({},safeParams);
+    delete externalParams.first_party_metadata;
+    sendFirstPartyEvent(eventName,externalParams,metaParams,id,firstPartyMetadata);
+    var externalItem={eventName:eventName,params:externalParams,metaEvent:metaEvent||null,metaParams:metaParams||externalParams,eventId:id};
     if(configReady)dispatchExternal(externalItem);else queuedExternal.push(externalItem);
   };
   window.halalFireConfirmedMetaPurchase=function(params,metaParams,eventId){
