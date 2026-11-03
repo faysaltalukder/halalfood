@@ -21,6 +21,7 @@ assert.match(edge, /ageConfirmed !== true/);
 assert.match(edge, /checkRateLimit/);
 assert.match(edge, /AbortController/);
 assert.match(edge, /ALLOWED_ORIGIN/);
+assert.match(edge, /origin !== ALLOWED_ORIGIN/);
 assert.match(edge, /generateContent/);
 assert.match(edge, /gemini-3\.6-flash/);
 assert.match(edge, /customer_care_model_fallback/);
