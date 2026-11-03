@@ -23,7 +23,11 @@ const ALLOWED_EVENTS = new Set([
   "search", "add_to_cart", "remove_from_cart", "view_cart", "begin_checkout",
   "add_shipping_info", "add_payment_info", "order_submit", "order_success",
   "purchase", "track_order", "whatsapp_click", "phone_click", "sign_up",
-  "login", "generate_lead", "refund"
+  "login", "generate_lead", "refund",
+  "ai_intent_detected", "ai_recommendation_allowed", "ai_recommendation_suppressed",
+  "ai_product_card_shown", "ai_exact_product_match", "ai_product_match_failed",
+  "ai_image_search_started", "ai_image_search_completed", "ai_clarification_requested",
+  "ai_customer_corrected", "ai_recommendation_rejected", "ai_product_clicked", "ai_search_resolved"
 ]);
 
 const META_EVENT_MAP: Record<string, string> = {
@@ -205,10 +209,30 @@ function safeEvent(input: Record<string, unknown>) {
       const orderChannel = textValue(raw.order_channel, 40);
       const view = textValue(raw.view, 40);
       const step = textValue(raw.step, 40);
+      const primaryIntent = textValue(raw.primary_intent, 48);
+      const permission = textValue(raw.recommendation_permission, 24);
+      const matchMode = textValue(raw.match_mode, 40);
+      const matchType = textValue(raw.match_type, 32);
+      const confidence = textValue(raw.confidence_level, 16);
+      const outcome = textValue(raw.outcome, 32);
+      const resultCount = typeof raw.result_count === "number" && Number.isInteger(raw.result_count) ? Math.max(0, Math.min(100, raw.result_count)) : null;
+      const imageSearch = typeof raw.image_search === "boolean" ? raw.image_search : null;
+      const clarificationNeeded = typeof raw.clarification_needed === "boolean" ? raw.clarification_needed : null;
+      const policyVersion = textValue(raw.policy_version, 32);
       if (interactionSource === "ai_chat" || interactionSource === "website") safe.interaction_source = interactionSource;
       if (orderChannel === "ai_chat" || orderChannel === "website") safe.order_channel = orderChannel;
       if (view) safe.view = view;
       if (step) safe.step = step;
+      if (primaryIntent) safe.primary_intent = primaryIntent;
+      if (permission && ["none","limited","explicit"].includes(permission)) safe.recommendation_permission = permission;
+      if (matchMode) safe.match_mode = matchMode;
+      if (matchType) safe.match_type = matchType;
+      if (confidence && ["high","medium","low","very_low","unknown"].includes(confidence)) safe.confidence_level = confidence;
+      if (outcome) safe.outcome = outcome;
+      if (resultCount !== null) safe.result_count = resultCount;
+      if (imageSearch !== null) safe.image_search = imageSearch;
+      if (clarificationNeeded !== null) safe.clarification_needed = clarificationNeeded;
+      if (policyVersion) safe.policy_version = policyVersion;
       return safe;
     })()
   };
