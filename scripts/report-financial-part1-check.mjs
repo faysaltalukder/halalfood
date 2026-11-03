@@ -82,7 +82,7 @@ const reportPages = [
 for (const path of reportPages) {
   const html = read(path);
   assert.ok(html.includes("app.js?v=20261103-operational-reports-v1"), path + " must load the updated report app.");
-  assert.ok(html.includes("reports-settings.css?v=20261103-financial-reports-v2"), path + " must load the theme-aware report CSS.");
+  assert.ok(html.includes("reports-settings.css?v=20261103-full-color-report-buttons-v2"), path + " must load the theme-aware report CSS.");
 }
 
 console.log("Financial Reports Part 1 checks passed: paginated source loading, reconciled COD, supplier payables, account balances, monthly budget analysis, distinct transfers, six financial report views, Business Insights, four workspace tabs, responsive theme tokens and cache-busted report pages.");
