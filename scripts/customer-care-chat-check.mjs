@@ -32,6 +32,11 @@ assert.deepEqual(
 );
 assert.match(edge, /from "\.\/tracking\.mjs"/);
 assert.match(edge, /getOrderTrackingCredentials\(message, historyInput\)/);
+assert.match(edge, /activeTracking/);
+assert.match(edge, /bookingState === "succeeded"/);
+assert.match(edge, /shipmentStatus !== "cancelled"/);
+assert.match(edge, /STRICT PRIVATE-DATA BOUNDARY/);
+assert.match(edge, /PUBLIC KNOWLEDGE ACCESS/);
 assert.match(edge, /parts\.join\("\\n"\)/);
 
 
