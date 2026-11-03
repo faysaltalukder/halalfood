@@ -423,8 +423,8 @@ create index if not exists admin_inventory_cost_layers_product_date_idx
 create index if not exists admin_inventory_cost_layers_po_idx
   on public.admin_inventory_cost_layers(purchase_order_id,product_id);
 
+revoke all on public.admin_inventory_cost_layers from public,anon,authenticated;
 grant select on public.admin_inventory_cost_layers to authenticated;
-revoke all on public.admin_inventory_cost_layers from public,anon;
 alter table public.admin_inventory_cost_layers enable row level security;
 
 drop policy if exists "Finance inventory cost layers admin read" on public.admin_inventory_cost_layers;
@@ -1062,7 +1062,15 @@ declare
  v_ap_id uuid;
  v_advances_id uuid;
  v_allocated numeric(14,2);
- v_unallocated numeric(14,2);
+ v_ap_debit numeric(14,2):=0;
+ v_advance_debit numeric(14,2):=0;
+ v_current_allocation numeric(14,2);
+ v_prior_payments numeric(14,2);
+ v_prior_credits numeric(14,2);
+ v_outstanding numeric(14,2);
+ v_apply numeric(14,2);
+ v_bill public.admin_supplier_bills%rowtype;
+ v_allocation record;
  v_lines jsonb:='[]'::jsonb;
  v_journal_id uuid;
 begin
@@ -1071,10 +1079,12 @@ begin
  end if;
  select * into v_payment from public.admin_supplier_payments where id=p_payment_id for update;
  if not found then raise exception 'Supplier payment was not found.'; end if;
- if v_payment.reversal_journal_id is not null or v_payment.status='void' then raise exception 'This supplier payment was reversed or voided and cannot be posted again.'; end if;
- if v_payment.reversal_journal_id is not null or v_payment.status='void' then raise exception 'This supplier payment was reversed or voided and cannot be posted again.'; end if;
+ if v_payment.reversal_journal_id is not null or v_payment.status='void' then
+  raise exception 'This supplier payment was reversed or voided and cannot be posted again.';
+ end if;
  if v_payment.accounting_journal_id is not null then return v_payment.accounting_journal_id; end if;
  if v_payment.status<>'confirmed' then raise exception 'Only a Confirmed supplier payment can be posted.'; end if;
+
  select ledger_account_id into v_cash_coa_id
  from public.admin_finance_accounts
  where id=(select account_id from public.admin_finance_entries where related_supplier_payment_id=p_payment_id)
@@ -1088,31 +1098,80 @@ begin
   order by case when lower(btrim(a.name))=lower(btrim(v_payment.paid_from_account)) then 0 else 1 end
   limit 1;
  end if;
- if v_cash_coa_id is null then raise exception 'The Supplier Payment account must match an active Finance account with a General Ledger mapping.'; end if;
+ if v_cash_coa_id is null then
+  raise exception 'The Supplier Payment account must match an active Finance account with a General Ledger mapping.';
+ end if;
+
  select name into v_supplier_name from public.admin_suppliers where id=v_payment.supplier_id;
  select coalesce(sum(a.allocated_amount),0) into v_allocated
  from public.admin_supplier_payment_allocations a
- join public.admin_supplier_bills b on b.id=a.supplier_bill_id
- where a.payment_id=p_payment_id and b.supplier_id=v_payment.supplier_id and b.status='confirmed';
+ where a.payment_id=p_payment_id;
+ if v_allocated>v_payment.amount+0.01 then
+  raise exception 'Allocated amount cannot exceed the supplier payment amount.';
+ end if;
  if exists(
   select 1 from public.admin_supplier_payment_allocations a
   join public.admin_supplier_bills b on b.id=a.supplier_bill_id
   where a.payment_id=p_payment_id and b.supplier_id<>v_payment.supplier_id
- ) then raise exception 'A supplier payment allocation references a bill belonging to another supplier.'; end if;
- if v_allocated>v_payment.amount+0.01 then raise exception 'Allocated amount cannot exceed the supplier payment amount.'; end if;
- v_unallocated:=round(greatest(0,v_payment.amount-v_allocated),2);
+ ) then
+  raise exception 'A supplier payment allocation references a bill belonging to another supplier.';
+ end if;
+
  v_ap_id:=(select id from public.admin_finance_chart_of_accounts where account_code='2010');
  v_advances_id:=(select id from public.admin_finance_chart_of_accounts where account_code='1110');
- if v_allocated>0 then
-  v_lines:=v_lines||jsonb_build_array(jsonb_build_object('account_id',v_ap_id,'description','Payment allocated to confirmed supplier bills','party_name',v_supplier_name,'debit',v_allocated,'credit',0));
+
+ for v_allocation in
+   select a.supplier_bill_id,a.allocated_amount
+   from public.admin_supplier_payment_allocations a
+   where a.payment_id=p_payment_id
+   order by a.supplier_bill_id
+ loop
+  select * into v_bill from public.admin_supplier_bills
+  where id=v_allocation.supplier_bill_id and supplier_id=v_payment.supplier_id
+  for update;
+  if not found or v_bill.status<>'confirmed' then
+   raise exception 'Every allocated supplier bill must belong to this supplier and be Confirmed.';
+  end if;
+  if v_bill.accounting_journal_id is null or v_bill.reversal_journal_id is not null then
+   raise exception 'Post the linked supplier bill before applying a payment allocation.';
+  end if;
+
+  select coalesce(sum(a.allocated_amount),0) into v_prior_payments
+  from public.admin_supplier_payment_allocations a
+  join public.admin_supplier_payments p on p.id=a.payment_id
+  where a.supplier_bill_id=v_bill.id and a.payment_id<>p_payment_id
+    and p.status='confirmed' and p.accounting_journal_id is not null
+    and p.reversal_journal_id is null;
+
+  select coalesce(sum(cn.amount),0) into v_prior_credits
+  from public.admin_supplier_credit_notes cn
+  where cn.supplier_bill_id=v_bill.id and cn.status='confirmed'
+    and cn.accounting_journal_id is not null and cn.reversal_journal_id is null;
+
+  v_outstanding:=greatest(0,round(v_bill.total_amount-v_prior_payments-v_prior_credits,2));
+  v_apply:=least(round(v_allocation.allocated_amount,2),v_outstanding);
+  v_ap_debit:=v_ap_debit+v_apply;
+  v_advance_debit:=v_advance_debit+(round(v_allocation.allocated_amount,2)-v_apply);
+ end loop;
+
+ v_advance_debit:=v_advance_debit+greatest(0,round(v_payment.amount-v_allocated,2));
+ if v_ap_debit>0 then
+  v_lines:=v_lines||jsonb_build_array(jsonb_build_object(
+   'account_id',v_ap_id,'description','Payment applied to confirmed supplier bill balances',
+   'party_name',v_supplier_name,'debit',round(v_ap_debit,2),'credit',0
+  ));
  end if;
- if v_unallocated>0 then
-  v_lines:=v_lines||jsonb_build_array(jsonb_build_object('account_id',v_advances_id,'description','Unallocated supplier advance','party_name',v_supplier_name,'debit',v_unallocated,'credit',0));
+ if v_advance_debit>0 then
+  v_lines:=v_lines||jsonb_build_array(jsonb_build_object(
+   'account_id',v_advances_id,'description','Unallocated or overpaid supplier advance',
+   'party_name',v_supplier_name,'debit',round(v_advance_debit,2),'credit',0
+  ));
  end if;
  v_lines:=v_lines||jsonb_build_array(jsonb_build_object(
   'account_id',v_cash_coa_id,'description','Supplier payment · '||v_payment.payment_number,
   'party_name',v_supplier_name,'debit',0,'credit',v_payment.amount
  ));
+
  v_journal_id:=public.admin_finance_save_journal_entry(
   null,v_payment.payment_date,'Supplier payment · '||v_payment.payment_number||' · '||v_supplier_name,
   v_lines,'supplier_payment',p_payment_id::text,true
@@ -1243,6 +1302,8 @@ declare
  v_status text;
  v_reversal uuid;
  v_allocations numeric(14,2);
+ v_credits numeric(14,2);
+ v_received numeric(14,3);
 begin
  if v_email<>'halalfoodbd.official@gmail.com' or v_aal<>'aal2' or auth.uid() is null then
   raise exception 'Authorized admin account and MFA are required.' using errcode='42501';
@@ -1267,6 +1328,20 @@ begin
  where a.supplier_bill_id=p_bill_id and p.status='confirmed';
  if v_allocations>0 then
   raise exception 'This bill has confirmed payment allocations. Reverse or reallocate those payments before voiding the bill.';
+ end if;
+ select coalesce(sum(cn.amount),0) into v_credits
+ from public.admin_supplier_credit_notes cn
+ where cn.supplier_bill_id=p_bill_id and cn.status='confirmed'
+   and cn.accounting_journal_id is not null and cn.reversal_journal_id is null;
+ if v_credits>0 then
+  raise exception 'This bill has posted supplier credit notes. Reverse those credit notes before reversing the bill.';
+ end if;
+ select coalesce(sum(ri.quantity_accepted),0) into v_received
+ from public.admin_purchase_receipts r
+ join public.admin_purchase_receipt_items ri on ri.receipt_id=r.id
+ where r.purchase_order_id=v_bill.purchase_order_id and r.status='confirmed';
+ if v_received>0 then
+  raise exception 'Accepted GRN stock and its landed cost layer exist. Process a supplier return/credit note or correct inventory before reversing this bill.';
  end if;
  select status into v_status from public.admin_finance_journal_entries where id=v_bill.accounting_journal_id;
  if v_status='posted' then
@@ -1522,6 +1597,9 @@ begin
  if not found or v_finance_account.ledger_account_id is null then
   raise exception 'The refund account must be active and mapped to an Asset account in the General Ledger.';
  end if;
+ if current_date<v_finance_account.opening_date then
+  raise exception 'Refund date cannot be earlier than the selected Finance account opening date.';
+ end if;
 
  v_journal:=public.admin_finance_save_journal_entry(
   null,current_date,'Customer refund · '||v_return.return_number,
@@ -1710,6 +1788,7 @@ from aggregated;
 revoke all on public.admin_finance_product_profitability from public,anon,authenticated;
 grant select on public.admin_finance_product_profitability to authenticated;
 
+comment on table public.admin_inventory_cost_layers is 'Private-trigger-created GRN landed-cost layers. Accessible only to the verified admin through MFA.';
 comment on column public.admin_finance_entries.reversal_journal_id is 'Reversal journal for a manual cashbook entry that was previously posted.';
 comment on column public.admin_cod_settlements.reversal_journal_id is 'Reversal journal for the reconciled COD remittance.';
 comment on column public.admin_cod_settlements.order_sale_reversal_journal_id is 'Reversal journal for recognized sales associated with a voided or corrected COD settlement.';
