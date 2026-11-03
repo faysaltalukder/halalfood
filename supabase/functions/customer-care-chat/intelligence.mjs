@@ -186,23 +186,29 @@ function rankProductCandidates(products, profiles, message, decision={}, imageMa
   return scored.sort((a,b)=>b.score-a.score||String(a.product.name||"").localeCompare(String(b.product.name||"")));
 }
 function extractConversationState(message, history=[]) {
-  const recent=history.filter(item=>item?.role==="user").slice(-10).map(item=>String(item?.parts?.map?.(p=>p.text||"").join(" ")||"")).join(" ");
-  const text=normalizeText(recent+" "+message);
-  const budgetMatches=[...text.matchAll(/(?:৳|টাকা|টাকার|budget|under|within|maximum|max|বাজেট|সর্বোচ্চ)\s*([0-9][0-9,]*)/giu)];
-  const trailingBudget=[...text.matchAll(/([0-9][0-9,]*)\s*(?:টাকা|টাকার|bdt)/giu)];
-  const budgetRaw=budgetMatches.length?budgetMatches[budgetMatches.length-1][1]:trailingBudget.length?trailingBudget[trailingBudget.length-1][1]:null;
-  const budget=budgetRaw?Number(budgetRaw.replace(/,/g,"")):null;
-  const purpose=/রান্না|ভাজি|cooking|fry|baking|বেকিং/u.test(text)?"cooking":
-    /উপহার|গিফট|gift|present/u.test(text)?"gift":
-    /পরিবার|বাসা|ঘর|family|household|প্রতিদিন/u.test(text)?"household":
-    /ব্যবসা|রিসেল|resell|wholesale|পাইকারি/u.test(text)?"business":null;
-  const pack=/ছোট প্যাক|small pack|small size/u.test(text)?"small":
-    /বড় প্যাক|বড় প্যাক|large pack|bulk|বাল্ক/u.test(text)?"large":null;
-  const rejected=/(চাই না|পছন্দ হয়নি|পছন্দ হয়নি|ভালো লাগেনি|not this|don't want|do not want|not interested)/u.test(message);
-  const correction=/(না,? আমি|ভুল পণ্য|এটা নয়|এটা না|ওটা নয়|not what i asked|wrong product|i meant)/u.test(message);
-  const preference=/ঝাল|spicy/u.test(text)?"spicy":/মিষ্টি|sweet/u.test(text)?"sweet":null;
-  return {budget_bdt:Number.isFinite(budget)&&budget>0?budget:null,purpose,pack_preference:pack,preference,rejection_detected:rejected,correction_detected:correction,
-    recent_turns:Math.min(12,history.length)};
+  const turns=history.filter(item=>item?.role==="user").slice(-10)
+    .map(item=>String(item?.parts?.map?.(p=>p.text||"").join(" ")||"")).concat(String(message||""));
+  let budget=null,purpose=null,pack=null,preference=null;
+  for(const turn of turns){
+    const text=normalizeText(turn);
+    const budgetMatches=[...text.matchAll(/(?:৳|টাকা|টাকার|budget|under|within|maximum|max|বাজেট|সর্বোচ্চ)\s*([0-9][0-9,]*)/giu)];
+    const trailingBudget=[...text.matchAll(/([0-9][0-9,]*)\s*(?:টাকা|টাকার|bdt)/giu)];
+    const budgetRaw=budgetMatches.length?budgetMatches[budgetMatches.length-1][1]:trailingBudget.length?trailingBudget[trailingBudget.length-1][1]:null;
+    if(budgetRaw){const value=Number(budgetRaw.replace(/,/g,""));if(Number.isFinite(value)&&value>0)budget=value;}
+    if(/রান্না|ভাজি|cooking|fry|baking|বেকিং/u.test(text))purpose="cooking";
+    if(/উপহার|গিফট|gift|present/u.test(text))purpose="gift";
+    if(/পরিবার|বাসা|ঘর|family|household|প্রতিদিন/u.test(text))purpose="household";
+    if(/ব্যবসা|রিসেল|resell|wholesale|পাইকারি/u.test(text))purpose="business";
+    if(/ছোট প্যাক|small pack|small size/u.test(text))pack="small";
+    if(/বড় প্যাক|বড় প্যাক|large pack|bulk|বাল্ক/u.test(text))pack="large";
+    if(/ছোট প্যাক.{0,12}(?:চাই না|নয়|না)|not small pack/u.test(text))pack=null;
+    if(/ঝাল|spicy/u.test(text))preference="spicy";
+    if(/মিষ্টি|sweet/u.test(text))preference="sweet";
+  }
+  const current=normalizeText(message);
+  const rejected=/(চাই না|পছন্দ হয়নি|পছন্দ হয়নি|ভালো লাগেনি|not this|don't want|do not want|not interested)/u.test(current);
+  const correction=/(না,? আমি|ভুল পণ্য|এটা নয়|এটা না|ওটা নয়|not what i asked|wrong product|i meant)/u.test(current);
+  return {budget_bdt:budget,purpose,pack_preference:pack,preference,rejection_detected:rejected,correction_detected:correction,recent_turns:Math.min(10,history.length)};
 }
 function extractImageMatch(reply) {
   const marker=/\[\[HF_IMAGE_MATCH\]\]([\s\S]*?)\[\[\/HF_IMAGE_MATCH\]\]/u;
