@@ -7,7 +7,7 @@ const read = path => readFileSync(join(root, path), "utf8");
 const html = read("admin/finance.html");
 const js = read("admin/finance-accounting-core.js");
 const css = read("admin/finance-accounting-core.css");
-const migration = read("supabase/migrations/20261103083500_finance_accounting_foundation_v1.sql");
+const migration = read("supabase/migrations/20261103024455_finance_accounting_foundation_v1.sql");
 
 assert.ok(html.includes('finance-accounting-core.css?v=20261103-accounting-core-v1'), "Accounting CSS must be cache-busted.");
 assert.ok(html.includes('finance-accounting-core.js?v=20261103-accounting-core-v1'), "Accounting JS must be cache-busted.");
