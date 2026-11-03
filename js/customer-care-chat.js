@@ -8,7 +8,7 @@
   const style = document.createElement("link");
   style.id = "hf-customer-care-chat-styles";
   style.rel = "stylesheet";
-  style.href = ASSET_BASE + "css/customer-care-chat.css?v=20261103-ai-chat-friendly-v1";
+  style.href = ASSET_BASE + "css/customer-care-chat.css?v=20261103-ai-chat-layout-timeout-v2";
   document.head.appendChild(style);
 
   let root = document.getElementById("hf-contact-widget");
@@ -175,11 +175,14 @@
     busy = true;
     input.disabled = true;
     sendButton.disabled = true;
+    const requestController = new AbortController();
+    const requestTimeout = window.setTimeout(() => requestController.abort(), 52000);
     try {
       const response = await fetch(CHAT_API, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         cache: "no-store",
+        signal: requestController.signal,
         body: JSON.stringify({
           message: text,
           history: conversation.slice(-20)
@@ -200,8 +203,11 @@
       }
     } catch (_error) {
       pending.remove();
-      appendMessage("এই মুহূর্তে সংযোগে সমস্যা হচ্ছে। একটু পর আবার চেষ্টা করবেন?", "assistant");
+      appendMessage(requestController.signal.aborted
+        ? "উত্তর পেতে বেশি সময় লাগছে। সংযোগটি বন্ধ করেছি, আপনি আবার প্রশ্নটি পাঠাতে পারেন।"
+        : "এই মুহূর্তে সংযোগে সমস্যা হচ্ছে। একটু পর আবার চেষ্টা করবেন?", "assistant");
     } finally {
+      window.clearTimeout(requestTimeout);
       busy = false;
       input.disabled = false;
       sendButton.disabled = false;
