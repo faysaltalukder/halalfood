@@ -8,7 +8,7 @@
   const style = document.createElement("link");
   style.id = "hf-customer-care-chat-styles";
   style.rel = "stylesheet";
-  style.href = ASSET_BASE + "css/customer-care-chat.css?v=20261103-visual-catalog-v3";
+  style.href = ASSET_BASE + "css/customer-care-chat.css?v=20261103-product-card-cta-v4";
   document.head.appendChild(style);
 
   let root = document.getElementById("hf-contact-widget");
@@ -282,26 +282,8 @@
       copy.append(name, price, meta);
       const actions = document.createElement("span"); actions.className = "hf-ai-product-card-actions";
       const details = document.createElement("button"); details.type = "button"; details.textContent = "বিস্তারিত"; details.dataset.hfProductView = product.id;
-      const order = document.createElement("button"); order.type = "button"; order.textContent = "অর্ডার নিন"; order.dataset.hfProductOrder = product.id; order.disabled = product.availability === "unavailable";
+      const order = document.createElement("button"); order.type = "button"; order.textContent = "অর্ডার করুন"; order.dataset.hfProductOrder = product.id; order.disabled = product.availability === "unavailable";
       actions.append(details, order);
-      const productUrl = (function () {
-        try {
-          const url = new URL(String(product.product_url || ""));
-          if (url.protocol !== "https:" || url.hostname !== "faysaltalukder.github.io" || !url.pathname.startsWith("/halalfood/")) return "";
-          if (!url.pathname.includes("/products/") && !url.pathname.endsWith("/cms-product.html")) return "";
-          return url.href;
-        } catch (_) { return ""; }
-      })();
-      if (productUrl) {
-        const pageLink = document.createElement("a");
-        pageLink.className = "hf-ai-product-page-link";
-        pageLink.href = productUrl;
-        pageLink.target = "_blank";
-        pageLink.rel = "noopener noreferrer";
-        pageLink.textContent = "পণ্যের পেজ";
-        pageLink.style.cssText = "display:inline-flex;align-items:center;justify-content:center;padding:7px 10px;border:1px solid #d8d4c9;border-radius:8px;color:#2b2a3d;text-decoration:none;font-size:12px;font-weight:700;background:#fffdf8";
-        actions.appendChild(pageLink);
-      }
       card.append(copy, actions);
       wrap.appendChild(card);
       shownItems.push(product);
