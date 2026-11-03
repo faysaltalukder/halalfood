@@ -7,7 +7,7 @@ const css = fs.readFileSync("css/customer-care-chat.css", "utf8");
 const home = fs.readFileSync("index.html", "utf8");
 const edge = fs.readFileSync("supabase/functions/customer-care-chat/index.ts", "utf8");
 
-assert.match(main, /js\/customer-care-chat\.js\?v=20261103-gemini-chat-v5/);
+assert.match(main, /js\/customer-care-chat\.js\?v=20261103-ai-stage2-v1/);
 assert.match(chat, /functions\/v1\/customer-care-chat/);
 assert.match(chat, /ageConfirmed:\s*true/);
 assert.match(chat, /আমি নিশ্চিত করছি, আমার বয়স ১৮ বছর বা তার বেশি/);
@@ -54,5 +54,18 @@ assert.match(css, /prefers-reduced-motion/);
 assert.match(css, /\.hf-ai-chat-age-gate/);
 assert.match(home, /id="hf-contact-widget"/);
 assert.match(home, /id="hf-contact-launcher"/);
+const aiKnowledge = fs.readFileSync("admin/ai-knowledge.js", "utf8");
+const aiKnowledgePage = fs.readFileSync("admin/ai-knowledge.html", "utf8");
+const adminShell = fs.readFileSync("admin/shared.js", "utf8");
+const aiKnowledgeMigration = fs.readFileSync("supabase/migrations/20261103120000_ai_customer_care_stage_two_admin_access.sql", "utf8");
+assert.match(aiKnowledgePage, /data-page="ai-knowledge"/);
+assert.match(aiKnowledge, /ai_knowledge_documents/);
+assert.match(aiKnowledge, /ai_product_knowledge/);
+assert.match(aiKnowledge, /verified_claims/);
+assert.match(aiKnowledge, /customer_fit/);
+assert.match(aiKnowledge, /source_notes/);
+assert.match(adminShell, /AI Knowledge Center/);
+assert.match(aiKnowledgeMigration, /aal.*aal2/);
+assert.match(aiKnowledgeMigration, /halalfoodbd\\.official@gmail\\.com/);
 
 console.log("Gemini customer-care frontend/backend checks passed.");
