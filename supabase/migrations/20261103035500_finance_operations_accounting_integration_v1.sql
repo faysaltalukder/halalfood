@@ -90,6 +90,14 @@ begin
     alter table public.admin_cod_settlements add constraint admin_cod_settlements_reversal_journal_id_fkey
       foreign key (reversal_journal_id) references public.admin_finance_journal_entries(id) on delete restrict;
   end if;
+  if not exists(select 1 from pg_constraint where conname='admin_cod_settlements_order_sale_reversal_journal_id_fkey') then
+    alter table public.admin_cod_settlements add constraint admin_cod_settlements_order_sale_reversal_journal_id_fkey
+      foreign key (order_sale_reversal_journal_id) references public.admin_finance_journal_entries(id) on delete restrict;
+  end if;
+  if not exists(select 1 from pg_constraint where conname='admin_cod_settlements_order_cogs_reversal_journal_id_fkey') then
+    alter table public.admin_cod_settlements add constraint admin_cod_settlements_order_cogs_reversal_journal_id_fkey
+      foreign key (order_cogs_reversal_journal_id) references public.admin_finance_journal_entries(id) on delete restrict;
+  end if;
   if not exists(select 1 from pg_constraint where conname='admin_supplier_bills_accounting_journal_id_fkey') then
     alter table public.admin_supplier_bills add constraint admin_supplier_bills_accounting_journal_id_fkey
       foreign key (accounting_journal_id) references public.admin_finance_journal_entries(id) on delete restrict;
@@ -355,7 +363,9 @@ declare
   v_po public.admin_purchase_orders%rowtype;
   v_item public.admin_purchase_order_items%rowtype;
   v_total_qty numeric(14,3);
+  v_total_lines numeric(14,2);
   v_weight numeric(14,8);
+  v_accept_ratio numeric(14,8);
   v_item_discount numeric(14,2);
   v_order_discount numeric(14,2);
   v_inbound numeric(14,2);
@@ -386,23 +396,26 @@ begin
     raise exception 'Purchase order quantities or subtotal are invalid for landed-cost allocation.';
   end if;
 
-  select coalesce(sum(quantity),0) into v_total_qty
+  select coalesce(sum(quantity),0),coalesce(sum(line_total),0)
+    into v_total_qty,v_total_lines
   from public.admin_purchase_order_items where purchase_order_id=v_po.id;
 
-  if v_po.subtotal>0 then
-    v_weight:=v_item.line_total/v_po.subtotal;
+  if v_total_lines>0 then
+    v_weight:=v_item.line_total/v_total_lines;
   elsif v_total_qty>0 then
     v_weight:=v_item.quantity/v_total_qty;
   else
     raise exception 'Cannot allocate purchase freight because the purchase order has no allocatable quantity.';
   end if;
+  v_accept_ratio:=new.quantity_accepted/v_item.quantity;
 
-  v_item_discount:=round(coalesce(v_item.discount_amount,0),2);
-  v_order_discount:=round(coalesce(v_po.discount_amount,0)*v_weight,2);
-  -- Transport, handling and other inbound charges are capitalized proportionally.
+  -- Item discount, order-level discount and inbound charges are allocated only to
+  -- the accepted quantity on this GRN, so partial receipts do not duplicate costs.
+  v_item_discount:=round(coalesce(v_item.discount_amount,0)*v_accept_ratio,2);
+  v_order_discount:=round(coalesce(v_po.discount_amount,0)*v_weight*v_accept_ratio,2);
   -- Tax is intentionally excluded until the invoice tax is classified as recoverable or non-recoverable.
-  v_inbound:=round((coalesce(v_po.transport_cost,0)+coalesce(v_po.handling_cost,0)+coalesce(v_po.other_charges,0))*v_weight,2);
-  v_landed_total:=round(v_item.line_total-v_order_discount+v_inbound,2);
+  v_inbound:=round((coalesce(v_po.transport_cost,0)+coalesce(v_po.handling_cost,0)+coalesce(v_po.other_charges,0))*v_weight*v_accept_ratio,2);
+  v_landed_total:=round(v_item.line_total*v_accept_ratio-v_order_discount+v_inbound,2);
   if v_landed_total<0 then raise exception 'Allocated landed cost cannot be negative.'; end if;
 
   insert into public.admin_inventory_cost_layers(
@@ -412,9 +425,9 @@ begin
   ) values (
     new.id,new.receipt_id,v_po.id,v_item.id,new.product_id,new.product_name_snapshot,
     new.unit,new.quantity_accepted,
-    round(v_item.line_total/nullif(v_item.quantity,0),4),
+    round(v_item.unit_cost,4),
     v_item_discount,v_order_discount,v_inbound,
-    round(v_landed_total/nullif(v_item.quantity,0),4),v_email
+    round(v_landed_total/nullif(new.quantity_accepted,0),4),v_email
   )
   on conflict(receipt_item_id) do nothing;
   return new;
