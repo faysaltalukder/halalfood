@@ -54,6 +54,7 @@ assert.match(chat, /hf-ai-chat-view/);
 assert.match(chat, /data-hf-product-view/);
 assert.match(chat, /data-hf-product-order/);
 assert.match(chat, /requestChatQuote/);
+assert.match(chat, /বর্তমান মূল্য যাচাই করা যাচ্ছে না/);
 assert.match(chat, /functions\/v1\/order-sync/);
 assert.match(chat, /turnstileToken/);
 assert.match(chat, /chatCheckoutStartedAt/);
