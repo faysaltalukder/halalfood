@@ -120,6 +120,9 @@ function rankProductCandidates(products, profiles, message, decision={}, imageMa
   const visibleText=String(imageMatch?.visible_text||"");
   const visualBrand=String(imageMatch?.brand||"");
   const visualPackaging=String(imageMatch?.packaging_type||"");
+  const genericBudgetBrowse=decision.primary_intent==="recommendation_request" && /(?:৳|টাকা|টাকার|budget|under|within|বাজেট|সর্বোচ্চ)\s*[0-9]/iu.test(message);
+  const broadBrowse=decision.primary_intent==="broad_catalog_browse" || decision.primary_intent==="category_browse";
+  const imageContext=decision.image_search===true;
   const scored=[];
   for(const product of products){
     if(product.is_active!==true)continue;
@@ -160,8 +163,9 @@ function rankProductCandidates(products, profiles, message, decision={}, imageMa
     const weights={identity:30,intent:20,category:15,attribute:15,semantic:10,visual:5,packaging:5};
     const raw=identityScore*weights.identity+intentScore*weights.intent+categoryScore*weights.category+
       attributeScore*weights.attribute+semanticScore*weights.semantic+visualScore*weights.visual+packagingScore*weights.packaging;
+    const hasRelevanceEvidence=identityScore>0||categoryScore>0||attributeScore>0||semanticScore>0||visualScore>0||packagingScore>0||visibleTextScore>0;
+    if(!hasRelevanceEvidence && !genericBudgetBrowse && !broadBrowse && !imageContext)continue;
     const score=Math.min(100,raw+(visibleTextScore*10));
-    if(score<=0)continue;
     let matchType=identityScore>=0.9?"exact":visualScore>0?"visual":attributeScore>0?"attribute":categoryScore>0?"category":semanticScore>0.25?"semantic":"alternative";
     const derivedMatch=hasAny(visualObject,doc.derived_from)||RELATIONS.some(r=>hasAny(visualObject,r.source)&&hasAny(doc.name+" "+doc.slug,r.target));
     if(derivedMatch)matchType="relationship";
