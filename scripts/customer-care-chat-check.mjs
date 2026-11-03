@@ -91,5 +91,5 @@ assert.match(chat, /history: conversation\.slice\(-20\)/);
 assert.match(edge, /maxOutputTokens: 4096/);
 assert.match(edge, /temperature: 0\.6/);
 assert.match(edge, /45_000/);
-assert.doesNotMatch(edge, /\.\?\|।/);
+assert.match(edge, /return Boolean\\(reply\\.trim\\(\\)\\)/);
 assert.match(main, /customer-care-chat\.js\?v=20261103-ai-chat-relaxed-v1/);
