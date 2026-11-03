@@ -64,7 +64,7 @@
         '<label class="hf-ai-chat-input-wrap"><span class="hf-ai-visually-hidden">আপনার প্রশ্ন লিখুন</span><input id="hf-ai-chat-input" name="message" type="text" maxlength="12000" autocomplete="off" placeholder="আপনার প্রশ্ন লিখুন..." required></label>' +
         '<button class="hf-ai-chat-send" type="submit" aria-label="Send message"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21 3-7.2 18-3.7-7.1L3 10.2 21 3Z"></path><path d="M10.1 13.9 21 3"></path></svg></button>' +
       '</form>' +
-      '<div class="hf-ai-chat-footnote">AI উত্তর ভুল হতে পারে। বর্তমান মূল্য, স্টক, অর্ডার ও ডেলিভারি মানব সহায়তায় নিশ্চিত করুন। ব্যক্তিগত বা পেমেন্ট-সংক্রান্ত তথ্য পাঠাবেন না।</div>' +
+      '<div class="hf-ai-chat-footnote">পণ্য, মূল্য, স্টক ও সেবা সম্পর্কে যেকোনো প্রশ্ন করুন।</div>' +
     '</div>';
   document.body.appendChild(panel);
 
