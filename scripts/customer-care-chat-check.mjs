@@ -31,7 +31,7 @@ assert.match(edge, /callGeminiWithFallback/);
 assert.match(edge, /isBroadCatalogQuestion/);
 assert.match(edge, /isTestOrPlaceholderProduct/);
 assert.match(edge, /customer_care_model_fallback/);
-assert.match(edge, /upstream\\.status === 429/);
+assert.match(edge, /upstream\.status === 429/);
 assert.match(edge, /isCompleteReply/);
 assert.match(edge, /gemini-3\.5-flash-lite/);
 assert.match(edge, /gemini-3\.1-flash-lite/);
@@ -52,7 +52,7 @@ assert.match(css, /\.hf-ai-chat-panel\[hidden\]\s*\{\s*display:\s*none\s*!import
 assert.match(css, /@media \(max-width: 900px\)/);
 assert.match(css, /prefers-reduced-motion/);
 assert.match(css, /\.hf-ai-chat-age-gate/);
-assert.match(css, /\\.hf-ai-product-cards/);
+assert.match(css, /\.hf-ai-product-cards/);
 assert.match(home, /id="hf-contact-widget"/);
 assert.match(home, /id="hf-contact-launcher"/);
 const aiKnowledge = fs.readFileSync("admin/ai-knowledge.js", "utf8");
@@ -67,6 +67,6 @@ assert.match(aiKnowledge, /customer_fit/);
 assert.match(aiKnowledge, /source_notes/);
 assert.match(adminShell, /AI Knowledge Center/);
 assert.match(aiKnowledgeMigration, /aal.*aal2/);
-assert.match(aiKnowledgeMigration, /halalfoodbd\\.official@gmail\\.com/);
+assert.match(aiKnowledgeMigration, /halalfoodbd\.official@gmail\.com/);
 
 console.log("Gemini customer-care frontend/backend checks passed.");
