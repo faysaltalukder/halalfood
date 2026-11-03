@@ -204,3 +204,23 @@ html.dark-mode .hf-ai-product-card-actions button:last-child{border-color:#c97b3
   .hf-ai-product-card-actions button:first-child{flex:0.72 1 0!important;min-width:0;min-height:38px!important;padding-inline:3px!important;font-size:8.5px!important}
   .hf-ai-product-card-actions button:last-child{flex:1.28 1 0!important;min-width:0;min-height:48px!important;padding:5px 7px!important;font-size:10.5px!important}
 }
+
+/* Keep the Details action on one line; only the Order action is intentionally two-line. */
+.hf-ai-product-card-actions button:first-child{
+  white-space:nowrap!important;
+  word-break:keep-all!important;
+  overflow-wrap:normal!important;
+  flex:0.9 1 0!important;
+  padding-inline:5px!important;
+  font-size:9px!important;
+  line-height:1!important;
+}
+@media(max-width:430px){
+  .hf-ai-product-card-actions button:first-child{
+    white-space:nowrap!important;
+    flex:0.82 1 0!important;
+    min-width:0!important;
+    padding-inline:4px!important;
+    font-size:9px!important;
+  }
+}
