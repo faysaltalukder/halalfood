@@ -208,7 +208,7 @@ assert.doesNotMatch(edge, /MAX_MESSAGE_CHARS/);
 assert.match(chat, /history: imageFile \? \[\] : conversation\.slice\(-20\)/);
 
 assert.match(edge, /maxOutputTokens: 8192/);
-assert.match(edge, /thinkingConfig: \{ thinkingLevel: "HIGH" \}/);
+assert.match(edge, /thinkingLevel: modelName\.includes\("flash-lite"\) \? "LOW" : modelName === "gemini-3\.8-flash" \? "HIGH" : "MEDIUM"/);
 assert.match(edge, /45_000/);
 assert.ok(edge.includes("return Boolean(reply.trim())"));
 assert.match(main, /customer-care-chat\.js\?v=\d{8}-[a-z0-9-]+/);
