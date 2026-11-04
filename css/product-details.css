@@ -583,3 +583,54 @@
     padding: 7px !important;
   }
 }
+
+
+/* HALAL FOOD RELATED PRODUCT IMAGE BOX v6
+   Product-detail recommendation cards only. The 4:5 frame is a stable,
+   portrait product stage; the original image is contained without cropping. */
+#related-grid > .product-card > .product-image-link {
+  display: block !important;
+  width: 100% !important;
+  aspect-ratio: 4 / 5 !important;
+  height: auto !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+#related-grid > .product-card > .product-image-link > .product-image {
+  position: relative !important;
+  display: grid !important;
+  place-items: center !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  aspect-ratio: auto !important;
+  box-sizing: border-box !important;
+  padding: 10px !important;
+  overflow: hidden !important;
+  background: var(--cream, #f2f0ea) !important;
+}
+#related-grid > .product-card > .product-image-link > .product-image > img {
+  position: relative !important;
+  inset: auto !important;
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  transform: none !important;
+}
+@media (max-width: 600px) {
+  #related-grid > .product-card > .product-image-link {
+    aspect-ratio: 4 / 5 !important;
+  }
+  #related-grid > .product-card > .product-image-link > .product-image {
+    padding: 8px !important;
+  }
+}
