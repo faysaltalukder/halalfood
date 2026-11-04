@@ -146,6 +146,11 @@
     line-height: 1.3 !important;
   }
   .product-detail-actions > .cart-detail-add {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    flex: 1 1 auto !important;
+    align-self: stretch !important;
     height: 44px !important;
     min-height: 44px !important;
     max-height: 44px !important;
@@ -163,6 +168,23 @@
   }
   .product-detail-actions > .cart-detail-add .btn-icon {
     flex: 0 0 17px !important;
+  }
+  /* The cart script swaps the button for a div stepper after the first click.
+     Match the grid-cell width so both states keep identical outer geometry. */
+  .product-detail-actions > .cart-qty-control.cart-detail-add {
+    display: grid !important;
+    grid-template-columns: 32px minmax(0, 1fr) 32px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    flex: 1 1 auto !important;
+    align-self: stretch !important;
+    height: 44px !important;
+    min-height: 44px !important;
+    max-height: 44px !important;
+    box-sizing: border-box !important;
+    padding: 3px !important;
+    margin: 0 !important;
   }
 }
 @media (max-width: 380px) {
