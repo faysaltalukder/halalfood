@@ -14,7 +14,10 @@ function classifyCustomerIntent(message, hasImage = false) {
   const humanSupport = /(মানুষের সঙ্গে কথা|মানুষের সাথে কথা|কাস্টমার কেয়ার|কাস্টমার কেয়ার|লাইভ এজেন্ট|মানব সহায়তা|মানব সহায়তা|human support|talk to (?:a |an )?(?:person|human|agent)|connect me to (?:a|an )?(?:person|human|agent)|speak to (?:a|an )?(?:person|human|agent))/iu.test(text);
   const casual = /^(হ্যালো|হাই|আসসালামু আলাইকুম|সালাম|ধন্যবাদ|অনেক ধন্যবাদ|hi|hello|hey|thanks|thank you|good morning|good afternoon|good evening)[!.\s]*$/iu.test(text);
   const info = /(কীভাবে|কিভাবে|(?<![\p{L}\p{M}])কেন(?![\p{L}\p{M}])|কী জিনিস|কি জিনিস|মানে কী|কী দিয়ে তৈরি|কি দিয়ে তৈরি|তৈরি হয়|তৈরি করা হয়|উপকারিতা|ব্যবহার কী|what is|how is|how are|why does|made from|ingredients|benefits of)/iu.test(text);
-  const exactLookup = hasCategory && /(একটা|একটি|এক\s|দেখাও|দেখতে চাই|আছে|পাওয়া|পাওয়া|খুঁজছি|চাই|show|find|available|do you have|want|buy|purchase|order)/iu.test(text);
+  // A named product remains an exact lookup even when the customer uses a recommendation verb.
+  // "সুন্দরবনের মধু সাজেস্ট করো" means that specific honey, not four category recommendations.
+  const namedSpecificProduct = /(?:সুন্দরবন(?:ের)?\s*(?:মধু|honey)|sundarban\s*(?:honey|modhu)?)/iu.test(text);
+  const exactLookup = hasCategory && (namedSpecificProduct || /(একটা|একটি|এক\s|দেখাও|দেখতে চাই|আছে|পাওয়া|পাওয়া|খুঁজছি|চাই|show|find|available|do you have|want|buy|purchase|order)/iu.test(text));
   const rejection = /(চাই না|পছন্দ হয়নি|পছন্দ হয়নি|ভালো লাগেনি|এটা নয়|এটা না|ওটা নয়|ভুল পণ্য|not this|don't want|do not want|not interested|wrong product|not what i asked)/iu.test(text);
   let primary = "general_information", permission = "none", maxCards = 0, matchMode = "none", confidence = "medium", clarification = false;
   if (complaint) { primary = "complaint_or_problem"; confidence = "high"; }
@@ -25,7 +28,7 @@ function classifyCustomerIntent(message, hasImage = false) {
   else if (rejection) { primary = "ambiguous_product_request"; clarification = true; confidence = "high"; }
   else if (price) { primary = "product_price_inquiry"; confidence = "high"; }
   else if (comparison) { primary = "product_comparison"; permission = "explicit"; maxCards = 2; matchMode = "requested_items"; confidence = "high"; }
-  else if (recommendation) { primary = "recommendation_request"; permission = "explicit"; maxCards = 4; matchMode = "ranked_recommendations"; confidence = "high"; }
+  else if (recommendation && !namedSpecificProduct) { primary = "recommendation_request"; permission = "explicit"; maxCards = 4; matchMode = "ranked_recommendations"; confidence = "high"; }
   else if (broad) { primary = "broad_catalog_browse"; permission = "explicit"; maxCards = 2; matchMode = "broad_catalog"; confidence = "high"; }
   else if (categoryBrowse) { primary = "category_browse"; permission = "explicit"; maxCards = 4; matchMode = "category"; confidence = "high"; }
   else if (availability && hasCategory) { primary = "product_availability_inquiry"; confidence = "high"; }
