@@ -2093,7 +2093,7 @@ document.addEventListener("DOMContentLoaded", () => {
  const isProductRoute=(path.includes("/products/")&&path.endsWith(".html"))||path.endsWith("/product.html")||path.endsWith("/cms-product.html");
  if(!isProductRoute)return;
  const reviews=document.createElement("script");
- reviews.src="https://faysaltalukder.github.io/halalfood/js/product-reviews.js?v=20261104-compact-reviews-v6";
+ reviews.src="https://faysaltalukder.github.io/halalfood/js/product-reviews.js?v=20261104-review-visual-v7";
  reviews.async=true;
  document.head.appendChild(reviews);
 })();
