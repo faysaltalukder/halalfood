@@ -45,7 +45,7 @@
     grid.innerHTML = items.map(item => {
       const href = itemHref(item);
       const price = displayPrice(item);
-      return '<article class="product-card"><a class="product-image-link" href="' + esc(href) + '"><div class="product-image"><img src="' + esc(item.image_url || "") + '" alt="' + esc(item.name) + '" loading="lazy" decoding="async"></div></a>' +
+      return '<article class="product-card"><a class="product-image-link" href="' + esc(href) + '"><div class="product-image"><img class="product-card-image" src="' + esc(item.image_url || "") + '" alt="' + esc(item.name) + '" loading="lazy" decoding="async"></div></a>' +
         '<div class="product-body"><span class="tag">' + esc(item.category || "") + '</span><a class="product-name-link" href="' + esc(href) + '"><h3>' + esc(item.name) + '</h3></a>' +
         '<p>' + esc(item.short_description || "") + '</p><div class="product-foot"><span class="price">' + esc(price) + '</span>' +
         '<button type="button" class="cart-add-btn related-cart-btn" data-add-to-cart data-slug="' + esc(item.slug) + '" data-name="' + esc(item.name) + '" data-price="' + esc(item.price) + '" data-display-price="' + esc(price) + '" data-image="' + esc(item.image_url || "") + '" data-category="' + esc(item.category || "") + '">Add to Cart</button></div></div></article>';
@@ -73,7 +73,7 @@
     box.innerHTML =
       '<article class="product-detail"><div class="product-detail-grid">' +
         '<div class="product-detail-image-wrap"><button class="product-detail-image" type="button" aria-label="View ' + esc(item.name) + ' image in full screen">' +
-          '<img src="' + esc(image) + '" alt="' + esc(item.name) + '" decoding="async" fetchpriority="high"><span class="image-zoom-hint">Click image to enlarge</span></button></div>' +
+          '<img class="product-main-image" src="' + esc(image) + '" alt="' + esc(item.name) + '" decoding="async" fetchpriority="high"><span class="image-zoom-hint">Click image to enlarge</span></button></div>' +
         '<div class="product-detail-info"><span class="tag">' + esc(item.category || "") + '</span><h1>' + esc(item.name) + '</h1><p class="product-detail-price">' + esc(price) + '</p>' +
           '<div class="product-detail-actions"><a class="btn-primary order-btn" href="' + esc(orderLink) + '">Order Now</a>' +
           '<button type="button" class="btn-secondary cart-detail-add" data-add-to-cart data-slug="' + esc(item.slug) + '" data-name="' + esc(item.name) + '" data-price="' + esc(item.price) + '" data-display-price="' + esc(price) + '" data-image="' + esc(image) + '" data-category="' + esc(item.category || "") + '">Add to Cart</button>' +
