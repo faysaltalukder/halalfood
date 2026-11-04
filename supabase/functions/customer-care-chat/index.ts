@@ -268,7 +268,7 @@ async function verifyCustomerIdentity(
   for (const candidate of candidates) {
     if (typeof candidate !== "string") continue;
     const value = candidate.trim();
-    if (value.length <= 2048 && /^https:\/\/\//i.test(value) && !/[\s<>"']/u.test(value)) {
+    if (value.length <= 2048 && value.startsWith("https://")) {
       avatarUrl = value;
       break;
     }
