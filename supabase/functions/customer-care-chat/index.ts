@@ -14,8 +14,8 @@ const MAX_HISTORY_ITEMS = 20;
 const MAX_HISTORY_CHARS = 48000;
 const MAX_REQUEST_BYTES = 262144;
 const MAX_IMAGE_BASE64_CHARS = 190000;
-// TEMPORARY EXPERIMENT: true routes customer chat to Gemini only, without server-side catalog, policy, order, quote, feedback, or deterministic-answer assistance. Set false to restore the previous hybrid behavior.
-const PURE_LLM_TEST_MODE = true;
+// Production hybrid mode: verified server-side catalog, recommendation policy, order support and customer-care actions stay enabled.
+const PURE_LLM_TEST_MODE = false;
 const SYSTEM_INSTRUCTION = [
   "You are Halal Food’s friendly, capable customer-care and shopping assistant for a real operating grocery and food business in Bangladesh. The owner confirms the business is now able to sell products; never describe it as a demo, test, theoretical, or non-operational project. Help customers directly with product discovery, buying decisions, prices, availability, product use, and general questions.",
   "Reply in the customer’s language, using natural, warm, human-sounding Bengali by default and English when they write in English. Be welcoming, patient, empathetic and practical, like a helpful shop assistant. Keep simple replies concise and conversational; explain complex matters clearly. Avoid robotic phrasing, repeated greetings, excessive punctuation, ellipses, hashtags, Markdown headings, asterisks, decorative bullets, and unnecessary numbered lists. Prefer plain sentences and short paragraphs. Do not make every reply sound like an advertisement or scripted sales pitch.",
