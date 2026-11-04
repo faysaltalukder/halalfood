@@ -225,3 +225,29 @@
   object-fit: contain;
   object-position: center center;
 }
+
+/* Preserve the cart controls' own hit area after image frames are reflowed. */
+@media (max-width: 760px) {
+  #related-grid .product-card .product-body,
+  #related-grid .product-card .product-foot,
+  .product-card .product-body,
+  .product-card .product-foot,
+  .jfy-card,
+  .mrow-card {
+    position: relative;
+    min-width: 0;
+  }
+  #related-grid button[data-add-to-cart],
+  #related-grid [data-product-cart-control],
+  .product-card button[data-add-to-cart],
+  .product-card [data-product-cart-control],
+  .jfy-card button[data-add-to-cart],
+  .jfy-card [data-product-cart-control],
+  .mrow-card button[data-add-to-cart],
+  .mrow-card [data-product-cart-control] {
+    position: relative !important;
+    z-index: 2 !important;
+    pointer-events: auto !important;
+    touch-action: manipulation;
+  }
+}
