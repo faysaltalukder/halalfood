@@ -5,7 +5,7 @@
 <title>AI Conversations · Halal Food Admin</title>
 <link rel="stylesheet" href="./shared.css?v=20261102-reports-navigation-v3">
 <link rel="stylesheet" href="./workspace-global-theme.css?v=20261101-merchant-fieldbook-v1">
-<link rel="stylesheet" href="./ai-conversations.css?v=20261104-aiconversations-v2">
+<link rel="stylesheet" href="./ai-conversations.css?v=20261104-aiconversations-v3">
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
 </head>
 <body data-page="ai-conversations">
@@ -24,7 +24,7 @@
 </section>
 <section class="aic-workspace" id="aicWorkspace">
  <div class="aic-inbox hf-card hf-card-pad" id="aicInboxPanel">
-  <div class="aic-inbox-heading"><div><p class="page-eyebrow">CUSTOMER MESSAGES</p><h2>Inbox</h2><p>Select a thread to read the full exchange.</p></div><span class="aic-count" id="aicInboxCount">—</span></div>
+  <div class="aic-inbox-heading"><div><p class="page-eyebrow">CUSTOMER MESSAGES</p><h2>Inbox</h2><p>Threads are linked to anonymous browser IDs, not verified people. One person may appear more than once across devices or cleared browser storage.</p></div><span class="aic-count" id="aicInboxCount">—</span></div>
   <div class="aic-filters">
    <input class="hf-input" id="aicSearch" type="search" placeholder="Search messages…" aria-label="Search conversations">
    <select class="hf-select" id="aicStatusFilter" aria-label="Filter conversation status"><option value="">All statuses</option><option value="open">Open</option><option value="reviewed">Reviewed</option><option value="archived">Archived</option></select>
@@ -58,6 +58,6 @@
 <script defer src="./i18n.js?v=20261102-dashboard-speed-v2"></script>
 <script defer src="../js/store-config.js?v=20261101-store-config-v1"></script>
 <script defer src="./shared.js?v=20261104-aiconversations-v1"></script>
-<script defer src="./app.js?v=20261102-dashboard-speed-v2"></script>
-<script defer src="./ai-conversations.js?v=20261104-aiconversations-v2"></script>
+<script defer src="./app.js?v=20261104-ai-conversations-page-v1"></script>
+<script defer src="./ai-conversations.js?v=20261104-aiconversations-v3"></script>
 </body></html>
