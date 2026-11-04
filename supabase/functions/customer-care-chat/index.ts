@@ -1495,12 +1495,34 @@ Deno.serve(async (req: Request) => {
   const conversationCredentials = getSupabaseCredentials();
   // Backward-compatible identity: older cached storefront bundles may omit IDs.
   // Issue stable IDs once and return them so the browser can persist/reuse them.
-  const effectiveConversationId = isValidUuid(payload.conversationId)
+  let effectiveConversationId = isValidUuid(payload.conversationId)
     ? String(payload.conversationId)
     : crypto.randomUUID();
   const effectiveVisitorId = isValidUuid(payload.visitorId)
     ? String(payload.visitorId)
     : crypto.randomUUID();
+  // One persistent thread per visitor. A UI "new chat" or a regenerated
+  // conversation ID must not split the same customer's history.
+  if (conversationCredentials) {
+    try {
+      const priorThreads = await fetchSupabaseRows("ai_customer_care_conversations", {
+        select: "id",
+        visitor_id: "eq." + effectiveVisitorId,
+        store_id: "eq.halal-food",
+        order: "created_at.asc",
+        limit: "1",
+      }, conversationCredentials);
+      if (priorThreads.length && isValidUuid(priorThreads[0].id)) {
+        effectiveConversationId = String(priorThreads[0].id);
+      }
+    } catch (error) {
+      console.warn(JSON.stringify({
+        event: "customer_care_conversation_identity_lookup_failed",
+        requestId,
+        kind: error instanceof Error ? error.name : "unknown",
+      }));
+    }
+  }
   let conversationContext: ConversationContext | null = null;
   if (conversationCredentials) {
     try {
