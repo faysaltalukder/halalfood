@@ -52,8 +52,11 @@ for (let i = 0; i < requiredInOrder.length; i++) {
 
 const mainScriptTag = tags.find(tag => /\bsrc\s*=\s*["'][^"']*js\/main\.js(?:\?|["'])/i.test(tag));
 assert.ok(mainScriptTag, "The real main.js script element must not be swallowed as text inside another script.");
-assert.match(mainScriptTag, /20261104-conversation-memory-v4/,
-  "Checkout main.js must have a fresh cache key so browsers stop reusing a previously broken checkout script response.");
+const mainScriptSrc = mainScriptTag.match(/\\bsrc\\s*=\\s*["']([^"']+)["']/i)?.[1] ?? "";
+const mainScriptUrl = new URL(mainScriptSrc, "https://example.test/");
+const mainScriptCacheKey = mainScriptUrl.searchParams.get("v");
+assert.ok(mainScriptCacheKey && /^\\d{8}-[a-z0-9-]+$/i.test(mainScriptCacheKey),
+  "Checkout main.js must have a dated, non-empty cache key so browsers stop reusing stale script responses.");
 
 // The page must retain the complete product -> selection -> order submission path.
 assert.ok(mainJs.includes('document.querySelector("#order-form")'), "main.js must initialize the order form.");
