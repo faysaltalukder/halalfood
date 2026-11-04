@@ -2094,7 +2094,7 @@ document.addEventListener("DOMContentLoaded", () => {
     || path.endsWith("/product.html") || path.endsWith("/cms-product.html");
   if(!isProductRoute)return;
   const script=document.createElement("script");
-  script.src="https://faysaltalukder.github.io/halalfood/js/product-reviews.js?v=20261104-review-experience-v2";
+  script.src="https://faysaltalukder.github.io/halalfood/js/product-reviews.js?v=20261104-review-experience-v3";
   script.async=true;
   document.head.appendChild(script);
 })();
