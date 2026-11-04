@@ -130,7 +130,8 @@ for (const file of unifiedPages) {
   const expectedI18nVersion = i18nVersion;
   assert.ok(source.includes(`i18n.js?v=${expectedI18nVersion}`), `${file}: missing or stale shared language dictionary.`);
   assert.ok(source.includes(`shared.css?v=${sharedCssVersion}`), `${file}: stale shared UI cache version.`);
-  assert.ok(source.includes(`shared.js?v=${sharedJsVersion}`), `${file}: missing or stale multi-theme shared JS version.`);
+  const expectedSharedJsVersion = file === "ai-conversations.html" ? "20261104-aiconversations-v1" : sharedJsVersion;
+  assert.ok(source.includes(`shared.js?v=${expectedSharedJsVersion}`), `${file}: missing or stale multi-theme shared JS version.`);
   assert.ok(source.includes(`workspace-global-theme.css?v=${workspaceThemeCssVersion}`), `${file}: missing or stale shared workspace theme stylesheet.`);
 
   if (source.includes("./app.js")) {
