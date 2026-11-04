@@ -472,3 +472,66 @@
     padding: 0 !important;
   }
 }
+
+
+/* HALAL FOOD RECOMMENDATION IMAGE SYSTEM v4
+   Every recommendation frame on a product page follows that page's main
+   product-image ratio. All sibling cards therefore share one fixed frame;
+   images fill it with a centered cover crop instead of shrinking inside it. */
+.product-card .product-image,
+#related-grid .product-card .product-image,
+.featured-grid-4 .product-card .product-image,
+.jfy-grid .product-card .product-image {
+  aspect-ratio: var(--recommendation-image-ratio, 4 / 3) !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  display: block !important;
+  position: relative !important;
+  isolation: isolate;
+  background: var(--cream, #f2f0ea) !important;
+}
+.product-card .product-image img,
+#related-grid .product-card .product-image img,
+.featured-grid-4 .product-card .product-image img,
+.jfy-grid .product-card .product-image img {
+  position: relative !important;
+  z-index: 1 !important;
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 100% !important;
+  min-height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  object-fit: cover !important;
+  object-position: center center !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+  transform: none !important;
+}
+.product-card .product-image::before,
+#related-grid .product-card .product-image::before,
+.featured-grid-4 .product-card .product-image::before,
+.jfy-grid .product-card .product-image::before {
+  opacity: .18 !important;
+}
+.product-card .product-image::after,
+#related-grid .product-card .product-image::after,
+.featured-grid-4 .product-card .product-image::after,
+.jfy-grid .product-card .product-image::after {
+  background: linear-gradient(145deg, rgba(255,253,248,.08), rgba(242,240,234,.12)) !important;
+}
+@media (max-width: 600px) {
+  #related-grid.product-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 12px !important;
+  }
+  #related-grid .product-card .product-image {
+    aspect-ratio: var(--recommendation-image-ratio, 4 / 3) !important;
+    padding: 0 !important;
+  }
+}
