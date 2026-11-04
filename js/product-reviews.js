@@ -109,16 +109,6 @@ async function init() {
       <h2 id="hfReviewsTitle">Product Reviews</h2>
       <button class="hf-review-write" id="hfReviewWrite" type="button" aria-expanded="false" aria-controls="hfReviewFormWrap"><span aria-hidden="true">✎</span> Write a Review</button>
     </div>
-    <div class="hf-review-summary" id="hfReviewSummary" aria-live="polite">Loading reviews…</div>
-    <div id="hfReviewLatest"></div>
-    <div class="hf-review-actions" id="hfReviewActions" hidden>
-      <button class="hf-review-link" id="hfReviewToggle" type="button" aria-expanded="false" aria-controls="hfReviewAll">View all reviews</button>
-    </div>
-    <div class="hf-review-all" id="hfReviewAll" hidden></div>
-    <div class="hf-review-pagination" id="hfReviewPagination" hidden>
-      <button class="hf-review-link" id="hfReviewMore" type="button">Load 5 more reviews</button>
-      <span class="hf-review-count" id="hfReviewPageCount"></span>
-    </div>
     <div class="hf-review-form-wrap" id="hfReviewFormWrap" hidden>
       <form class="hf-review-form" id="hfReviewForm">
         <strong class="hf-review-form-title">Share your experience</strong>
@@ -135,7 +125,18 @@ async function init() {
         <p class="hf-review-message" id="hfReviewMessage">Your review will be checked before it appears publicly.</p>
         <button class="hf-review-submit" type="submit">Submit Review</button>
       </form>
-    </div>`;
+    </div>`
+    <div class="hf-review-summary" id="hfReviewSummary" aria-live="polite">Loading reviews…</div>
+    <div id="hfReviewLatest"></div>
+    <div class="hf-review-actions" id="hfReviewActions" hidden>
+      <button class="hf-review-link" id="hfReviewToggle" type="button" aria-expanded="false" aria-controls="hfReviewAll">Show more reviews</button>
+    </div>
+    <div class="hf-review-all" id="hfReviewAll" hidden></div>
+    <div class="hf-review-pagination" id="hfReviewPagination" hidden>
+      <button class="hf-review-link" id="hfReviewMore" type="button">Load 5 more reviews</button>
+      <span class="hf-review-count" id="hfReviewPageCount"></span>
+    </div>
+;
   if (related) related.insertAdjacentElement("beforebegin", section);
   else detail.insertAdjacentElement("afterend", section);
 
