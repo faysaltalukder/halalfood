@@ -242,3 +242,10 @@ html.dark-mode .hf-ai-feedback-button,html.dark-mode .hf-ai-feedback-reason{bord
 .hf-ai-message-avatar{width:34px;height:34px;flex:0 0 34px;border-radius:50%;overflow:hidden;border:1px solid #e5c5a7;background:#f7e9d9;box-shadow:0 2px 6px rgba(43,42,61,.08)}
 .hf-ai-message-avatar img{display:block;width:100%;height:100%;object-fit:cover}
 .hf-ai-message-assistant .hf-ai-message-time{color:#928679}
+
+
+/* Cache-v2: ensure exactly one visual avatar marker per assistant message. */
+.hf-ai-message-avatar{display:block!important;position:relative;width:34px;height:34px;flex:0 0 34px;min-width:34px;min-height:34px;padding:0!important;font-size:0!important;line-height:0!important;overflow:hidden;border-radius:50%;}
+.hf-ai-message-avatar::before,.hf-ai-message-avatar::after{content:none!important;display:none!important;}
+.hf-ai-message-avatar>img{display:block!important;width:100%;height:100%;margin:0;padding:0;object-fit:cover;border:0;border-radius:inherit;}
+.hf-ai-message-group-assistant>.hf-ai-message-avatar~.hf-ai-message-avatar{display:none!important;}
