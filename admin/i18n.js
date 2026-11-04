@@ -48,6 +48,8 @@
     "Last activity": "সর্বশেষ কার্যক্রম",
     "Live store operations": "লাইভ স্টোর পরিচালনা",
     "Customer care, orders and catalog are connected to the live store workspace.": "গ্রাহকসেবা, অর্ডার ও পণ্যতালিকা লাইভ স্টোর কর্মক্ষেত্রের সঙ্গে সংযুক্ত।",
+    "Loading conversation…": "কথোপকথন লোড হচ্ছে…",
+    "Conversation summary": "কথোপকথনের সারসংক্ষেপ",
     "POS Management": "কাউন্টার বিক্রয় (POS) ব্যবস্থাপনা",
     "POS Management": "কাউন্টার বিক্রয় (POS) ব্যবস্থাপনা",
     "Incomplete Orders": "অসম্পূর্ণ অর্ডার",
