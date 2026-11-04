@@ -32,15 +32,23 @@ function render(){
  }).join(""):'<tr><td colspan="7">'+H.makeEmpty("No reviews found","New customer reviews will appear here as Pending.")+'</td></tr>';
 }
 async function refresh(){
- const [reviewRows,productRows]=await Promise.all([
-  H.signedQuery(H.client.from("product_reviews").select("id,product_id,reviewer_name,rating,review_text,source,status,verified_purchase,published_at,created_at,updated_at").order("created_at",{ascending:false}).limit(2000)),
-  H.fetchProducts()
- ]);
- reviews=reviewRows;products=productRows;productById=new Map(products.map(p=>[p.id,p]));
- const productOptions='<option value="">All products</option>'+products.map(p=>'<option value="'+esc(p.id)+'">'+esc(p.name)+'</option>').join("");
- $("reviewProductFilter").innerHTML=productOptions;
- $("manualReviewProduct").innerHTML='<option value="">Choose product</option>'+products.map(p=>'<option value="'+esc(p.id)+'">'+esc(p.name)+'</option>').join("");
- render();
+ try{
+  // Keep the moderation queue independent from the full product-cost workspace.
+  const [reviewRows,productRows]=await Promise.all([
+   H.signedQuery(H.client.from("product_reviews").select("id,product_id,reviewer_name,rating,review_text,source,status,verified_purchase,published_at,created_at,updated_at").order("created_at",{ascending:false}).limit(2000)),
+   H.signedQuery(H.client.from("products").select("id,name").order("name",{ascending:true}).limit(2000))
+  ]);
+  reviews=reviewRows;products=productRows;productById=new Map(products.map(p=>[p.id,p]));
+  const productOptions='<option value="">All products</option>'+products.map(p=>'<option value="'+esc(p.id)+'">'+esc(p.name)+'</option>').join("");
+  $("reviewProductFilter").innerHTML=productOptions;
+  $("manualReviewProduct").innerHTML='<option value="">Choose product</option>'+products.map(p=>'<option value="'+esc(p.id)+'">'+esc(p.name)+'</option>').join("");
+  render();
+ }catch(error){
+  const cell=document.createElement("td");cell.colSpan=7;cell.className="hf-loading";
+  cell.textContent="Reviews could not be loaded: "+(error?.message||"Check the admin connection and refresh.");
+  $("reviewTableBody").replaceChildren(Object.assign(document.createElement("tr"),{appendChild:cell}));
+  throw error;
+ }
 }
 function openReview(review=null){
  $("manualReviewForm").reset();
@@ -118,7 +126,7 @@ async function init(){
   }catch(error){$("manualReviewError").textContent=error.message||"Review could not be saved.";}
   finally{submit.disabled=false;}
  });
- await refresh();
+ try{await refresh();}catch(error){H.toast(error.message||"Reviews could not be loaded. Please refresh.", "error");}
  const refreshButton=document.querySelector("[data-refresh-page]");
  refreshButton?.addEventListener("click",()=>refresh().catch(error=>H.toast(error.message||"Refresh failed.","error")));
 }
