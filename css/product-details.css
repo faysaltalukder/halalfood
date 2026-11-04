@@ -634,3 +634,58 @@
     padding: 8px !important;
   }
 }
+
+
+/* HALAL FOOD RELATED PRODUCT IMAGE FIT v7
+   Use each source image's natural aspect ratio instead of an arbitrary tall
+   frame. This removes artificial blank space around recommendation images
+   without cropping or stretching the product. Scoped to related cards only. */
+#related-grid > .product-card > .product-image-link {
+  display: block !important;
+  width: 100% !important;
+  height: auto !important;
+  aspect-ratio: auto !important;
+  overflow: hidden !important;
+}
+#related-grid > .product-card > .product-image-link > .product-image {
+  display: block !important;
+  position: relative !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  aspect-ratio: auto !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  background: transparent !important;
+}
+#related-grid > .product-card > .product-image-link > .product-image::before,
+#related-grid > .product-card > .product-image-link > .product-image::after {
+  content: none !important;
+  display: none !important;
+}
+#related-grid > .product-card > .product-image-link > .product-image > img {
+  position: static !important;
+  display: block !important;
+  width: 100% !important;
+  height: auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: 100% !important;
+  max-height: none !important;
+  aspect-ratio: auto !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  transform: none !important;
+  background: transparent !important;
+}
+@media (max-width: 600px) {
+  #related-grid > .product-card > .product-image-link,
+  #related-grid > .product-card > .product-image-link > .product-image {
+    height: auto !important;
+    aspect-ratio: auto !important;
+    padding: 0 !important;
+  }
+}
