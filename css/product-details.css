@@ -385,3 +385,21 @@
   #related-section #related-grid .product-foot > .cart-add-btn,
   #related-section #related-grid .product-foot > .order-btn { font-size: .61rem !important; }
 }
+
+
+/* Final mobile override: image element and frame must share the same height. */
+@media (max-width: 760px) {
+  .product-detail-image {
+    height: clamp(190px, 62vw, 260px) !important;
+    max-height: 260px !important;
+    overflow: hidden !important;
+  }
+  .product-detail-image img {
+    display: block !important;
+    width: 100% !important;
+    height: clamp(190px, 62vw, 260px) !important;
+    max-height: 260px !important;
+    object-fit: contain !important;
+    object-position: center !important;
+  }
+}
