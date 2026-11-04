@@ -4,7 +4,7 @@
  if(!ready)return;
  ready.then(async admin=>{
   if(!admin||document.body.dataset.page!=="ai-conversations")return;
-  const {client,toast,dateTime,downloadFile,audit}=admin;
+  const {client,esc,toast,dateTime,downloadFile,audit}=admin;
   const $=id=>document.getElementById(id);
   const cfg=window.HALAL_STORE_CONFIG||{};
   const endpoint=String(cfg.supabase?.url||"https://qfwvrcfkrsydycbfjsxf.supabase.co").replace(/\/$/,"")+"/functions/v1/customer-care-chat";
