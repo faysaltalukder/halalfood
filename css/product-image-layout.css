@@ -1,8 +1,14 @@
-/* HALAL FOOD — universal mobile product photography contract.
-   Keep complete source images at their native aspect ratio. Main product media
-   uses the full phone viewport; card media uses the full card width. */
+/* HALAL FOOD — responsive product-media system.
+   Phone rules are intentionally scoped here so desktop layouts stay unchanged.
+   Main photos use viewport width and intrinsic height; product cards use their
+   own width and the source image's native ratio. No product photo is cropped. */
+
 @media (max-width: 760px) {
-  /* Main product image: full-width, intrinsic-height, never clipped. */
+  /* Main product-detail photo: full phone width, natural height, no clipping. */
+  main .product-detail-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+    align-items: start !important;
+  }
   main .product-detail-grid > .product-detail-image-wrap,
   main .product-detail > .product-detail-grid > .product-detail-image-wrap {
     display: block !important;
@@ -37,9 +43,11 @@
     border-radius: 0 !important;
     background: transparent !important;
     line-height: 0 !important;
+    box-shadow: none !important;
   }
   main .product-detail-grid > .product-detail-image-wrap > .product-detail-image > img,
-  main .product-detail > .product-detail-grid > .product-detail-image-wrap > .product-detail-image > img {
+  main .product-detail > .product-detail-grid > .product-detail-image-wrap > .product-detail-image > img,
+  main .product-detail-image-wrap > img.product-main-image {
     display: block !important;
     position: static !important;
     inset: auto !important;
@@ -60,14 +68,13 @@
     background: transparent !important;
   }
   main .product-detail-image .image-zoom-hint { display: none !important; }
+  main .product-detail-info { min-width: 0 !important; }
 
-  /* All category, home, search and related product cards use native image ratio. */
+  /* Standard cards: homepage, category pages, featured rows and related items. */
   .product-card .product-image,
   .product-grid .product-card .product-image,
   .featured-grid-4 .product-card .product-image,
   #related-grid .product-card .product-image,
-  .jfy-grid .jfy-image,
-  .mrow-grid .mrow-image,
   .product-image-link > .product-image {
     display: block !important;
     position: relative !important;
@@ -84,9 +91,8 @@
   .product-grid .product-card .product-image > img,
   .featured-grid-4 .product-card .product-image > img,
   #related-grid .product-card .product-image > img,
-  .jfy-grid .jfy-image > img,
-  .mrow-grid .mrow-image > img,
-  .product-image-link > .product-image > img {
+  .product-image-link > .product-image > img,
+  .product-card img.product-card-image {
     display: block !important;
     position: static !important;
     width: 100% !important;
@@ -103,7 +109,49 @@
     padding: 0 !important;
   }
 
-  /* Explicitly defeat the former square related-product frame and 1.1x zoom. */
+  /* Horizontal recommendation rail and Just For You cards use the same rule.
+     Their container names differ; do not depend on a particular parent class. */
+  .mrow-image,
+  .jfy-image,
+  .mrow-card .mrow-image,
+  .jfy-card .jfy-image {
+    display: block !important;
+    position: relative !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    aspect-ratio: auto !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    background: transparent !important;
+  }
+  .mrow-image > img,
+  .jfy-image > img,
+  .mrow-card .mrow-image img,
+  .jfy-card .jfy-image img {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    aspect-ratio: auto !important;
+    object-fit: contain !important;
+    object-position: center center !important;
+    transform: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  .mrow-card:hover .mrow-image img,
+  .jfy-card:hover .jfy-image img,
+  .product-card:hover .product-image img {
+    transform: none !important;
+  }
+
+  /* Legacy related-products frame used a square crop and 1.1x zoom. */
   #related-grid > article.product-card > a.product-image-link,
   #related-grid > article.product-card > a.product-image-link > div.product-image {
     display: block !important;
@@ -124,4 +172,56 @@
     object-fit: contain !important;
     transform: none !important;
   }
+
+  /* Lookup/scan result uses an image directly, not a .product-card wrapper. */
+  main .product-grid > div > img.product-image,
+  main img.product-main-image {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    aspect-ratio: auto !important;
+    object-fit: contain !important;
+    object-position: center center !important;
+    transform: none !important;
+  }
+
+  /* Live child-category tiles can also contain category photography. */
+  .live-category-child-link img {
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    object-fit: contain !important;
+    object-position: center center !important;
+  }
+
+  /* Cart and checkout intentionally remain small thumbnails, but show the
+     complete pack/product inside the thumbnail rather than cutting it off. */
+  .cart-item-image,
+  .cart-checkout-list .checkout-cart-item .cart-item-image {
+    overflow: hidden !important;
+  }
+  .cart-item-image img,
+  .cart-checkout-list .checkout-cart-item .cart-item-image img,
+  .cart-product-thumbnail {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+    object-position: center center !important;
+    transform: none !important;
+  }
+}
+
+/* The full-screen viewer must always fit the entire product photo. */
+.product-image-modal img,
+.product-viewer-full-image {
+  width: auto;
+  height: auto;
+  max-width: min(96vw, 1400px);
+  max-height: 92vh;
+  object-fit: contain;
+  object-position: center center;
 }
