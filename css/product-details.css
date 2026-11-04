@@ -425,3 +425,50 @@
 @media (prefers-reduced-motion: reduce) {
   .product-card .product-image::before { filter: blur(12px); }
 }
+
+
+/* IMAGE SYSTEM v3 — consistent landscape media stage for recommendation cards.
+   The frame matches the native 4:3 product photography; square assets remain
+   centered and fully visible inside the same universal stage. */
+.product-card .product-image,
+#related-grid .product-card .product-image,
+.featured-grid-4 .product-card .product-image,
+.jfy-grid .product-card .product-image {
+  aspect-ratio: 4 / 3 !important;
+  height: auto !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  display: grid !important;
+  place-items: center !important;
+}
+.product-card .product-image img,
+#related-grid .product-card .product-image img,
+.featured-grid-4 .product-card .product-image img,
+.jfy-grid .product-card .product-image img {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: contain !important;
+  object-position: center !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+.product-card .product-image::before,
+#related-grid .product-card .product-image::before,
+.featured-grid-4 .product-card .product-image::before,
+.jfy-grid .product-card .product-image::before {
+  opacity: .42;
+}
+.product-card .product-image::after,
+#related-grid .product-card .product-image::after,
+.featured-grid-4 .product-card .product-image::after,
+.jfy-grid .product-card .product-image::after {
+  background: linear-gradient(145deg, rgba(255,253,248,.24), rgba(242,240,234,.38));
+}
+@media (max-width: 600px) {
+  #related-grid .product-card .product-image {
+    aspect-ratio: 4 / 3 !important;
+    padding: 0 !important;
+  }
+}
