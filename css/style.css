@@ -3214,3 +3214,36 @@ html body #related-grid .product-card .product-foot > div.cart-qty-control:focus
 .product-more-content .date-reference-panel{margin:18px 0;padding:16px}
 .date-information-disclaimer,.date-category-note{padding:12px 14px;border-left:3px solid var(--orange);background:var(--cream);border-radius:0 8px 8px 0}
 @media(max-width:600px){.date-reference-panel{padding:14px;margin:16px 0}.date-bar-row{grid-template-columns:100px minmax(36px,1fr) 60px;gap:7px;font-size:.76rem}.date-bar-row b{font-size:.75rem}.date-reference-chart{padding:13px}.product-more-content{padding:14px}.date-category-reference{padding:28px 0 40px}}
+
+
+/* HALAL FOOD — product photography must never be cropped.
+   Let each product image keep its native aspect ratio in every product-card grid. */
+.product-card .product-image,
+.product-grid .product-card .product-image,
+.featured-grid-4 .product-card .product-image,
+#related-grid .product-card .product-image,
+.jfy-grid .product-card .product-image,
+body.category-products-page .product-card .product-image {
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  aspect-ratio: auto !important;
+  display: block !important;
+  overflow: visible !important;
+  background: var(--cream, #f2f0ea) !important;
+}
+.product-card .product-image img,
+.product-grid .product-card .product-image img,
+.featured-grid-4 .product-card .product-image img,
+#related-grid .product-card .product-image img,
+.jfy-grid .product-card .product-image img,
+body.category-products-page .product-card .product-image img {
+  display: block !important;
+  width: 100% !important;
+  height: auto !important;
+  max-width: 100% !important;
+  max-height: none !important;
+  aspect-ratio: auto !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+}
