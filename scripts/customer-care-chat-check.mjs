@@ -45,7 +45,7 @@ assert.match(edge, /PUBLIC KNOWLEDGE ACCESS/);
 assert.match(edge, /parts\.join\("\\n"\)/);
 
 
-assert.match(main, /js\/customer-care-chat\.js\?v=20261103-product-card-cta-v7/);
+assert.match(main, /js\/customer-care-chat\.js\?v=20261104-conversation-memory-v2/);
 assert.match(chat, /functions\/v1\/customer-care-chat/);
 assert.doesNotMatch(chat, /ageConfirmed|hf-ai-chat-age-gate|hf-ai-age-confirm|প্রাপ্তবয়স্কদের জন্য AI সহায়তা/);
 assert.match(chat, /if \(\(!text && !imageFile\) \|\| busy\) return;/);
@@ -183,7 +183,7 @@ assert.match(edge, /maxOutputTokens: 8192/);
 assert.match(edge, /thinkingConfig: \{ thinkingLevel: "HIGH" \}/);
 assert.match(edge, /45_000/);
 assert.ok(edge.includes("return Boolean(reply.trim())"));
-assert.match(main, /customer-care-chat\.js\?v=20261103-product-card-cta-v7/);
+assert.match(main, /customer-care-chat\.js\?v=20261104-conversation-memory-v2/);
 
 assert.match(chat, /textarea id="hf-ai-chat-input"/);
 assert.match(chat, /messages.addEventListener\("wheel"/);
