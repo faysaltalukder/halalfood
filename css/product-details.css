@@ -195,3 +195,20 @@
     font-size: .76rem !important;
   }
 }
+
+
+/* Mobile product detail spacing: consistent on every page using this shared stylesheet. */
+@media (max-width: 760px) {
+  .product-detail-info h1 {
+    margin-bottom: 1px !important;
+  }
+  .product-detail-info .product-detail-price {
+    display: block;
+    width: 100%;
+    margin: 0 0 13px !important;
+    text-align: left !important;
+  }
+  .product-detail-info .product-detail-actions {
+    margin-top: 0 !important;
+  }
+}
