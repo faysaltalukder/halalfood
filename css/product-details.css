@@ -250,19 +250,22 @@
 }
 
 
-/* HALAL FOOD — MOBILE MAIN PRODUCT IMAGE: NATURAL SIZE
-   Keep the primary product image independent from recommendation-card frames.
-   Let its intrinsic source ratio determine its height; never constrain it to
-   a viewport-height box, crop it, or force it into a fixed-height container. */
+/* HALAL FOOD — MOBILE MAIN PRODUCT IMAGE: FULL-VIEWPORT NATURAL SIZE
+   The main image is not a recommendation card. Let the source file's own
+   intrinsic ratio define its height, and let it use the full phone viewport
+   width instead of being boxed inside the padded content wrapper. */
 @media (max-width: 760px) {
   .product-detail-grid {
     grid-template-columns: minmax(0, 1fr) !important;
     gap: 12px !important;
   }
   .product-detail-image-wrap {
-    width: 100% !important;
-    max-width: none !important;
-    margin: 0 auto !important;
+    position: relative !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+    margin-left: calc(50% - 50vw) !important;
+    margin-right: calc(50% - 50vw) !important;
+    padding: 0 !important;
     overflow: visible !important;
   }
   .product-detail-image {
@@ -274,23 +277,27 @@
     min-height: 0 !important;
     max-height: none !important;
     aspect-ratio: auto !important;
-    margin: 0 auto !important;
+    margin: 0 !important;
     padding: 0 !important;
     overflow: visible !important;
     border: 0 !important;
+    border-radius: 0 !important;
     background: transparent !important;
+    line-height: 0 !important;
   }
   .product-detail-image img {
     display: block !important;
+    position: static !important;
     width: 100% !important;
     max-width: 100% !important;
     height: auto !important;
     min-height: 0 !important;
     max-height: none !important;
     aspect-ratio: auto !important;
-    object-fit: contain !important;
+    object-fit: initial !important;
     object-position: center center !important;
     margin: 0 !important;
     padding: 0 !important;
+    transform: none !important;
   }
 }
