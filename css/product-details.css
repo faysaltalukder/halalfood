@@ -301,3 +301,64 @@
     transform: none !important;
   }
 }
+
+
+/* MOBILE ONLY — let the primary product photo render uncropped at its natural ratio.
+   This intentionally targets the hero image only; recommendation cards and desktop are untouched. */
+@media (max-width: 760px) {
+  .product-detail > .product-detail-grid > .product-detail-image-wrap {
+    display: block !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+    min-width: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    margin-left: calc(50% - 50vw) !important;
+    margin-right: calc(50% - 50vw) !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    aspect-ratio: auto !important;
+  }
+  .product-detail > .product-detail-grid > .product-detail-image-wrap > .product-detail-image {
+    display: block !important;
+    position: relative !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    aspect-ratio: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    line-height: 0 !important;
+    cursor: zoom-in;
+  }
+  .product-detail > .product-detail-grid > .product-detail-image-wrap > .product-detail-image > img {
+    display: block !important;
+    position: static !important;
+    inset: auto !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    aspect-ratio: auto !important;
+    object-fit: contain !important;
+    object-position: center center !important;
+    transform: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+  }
+  .product-detail > .product-detail-grid > .product-detail-image-wrap .image-zoom-hint {
+    display: none !important;
+  }
+}
