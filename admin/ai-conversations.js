@@ -71,10 +71,10 @@
    $("aicReviewedInfo").textContent=c.reviewed_at?(isBn()?"পর্যালোচিত "+dateTime(c.reviewed_at)+(c.reviewed_by?" · "+c.reviewed_by+" কর্তৃক":""):"Reviewed "+dateTime(c.reviewed_at)+(c.reviewed_by?" by "+c.reviewed_by:"")):(isBn()?"এই থ্রেডকে এখনো পর্যালোচিত হিসেবে চিহ্নিত করা হয়নি।":"This thread has not been marked as reviewed.");
    $("aicSaveError").textContent="";$("aicReviewDetails").open=false;renderMessages();
   }
-  async function selectConversation(id){
+  async function selectConversation(id,openOnMobile=true){
    const seq=++detailSequence;selectedId=id;selectedConversation=null;messages=[];feedback=[];renderList();renderDetail();
    $("aicDetailPlaceholder").hidden=false;$("aicDetailPlaceholder").innerHTML='<div class="hf-loading">Loading conversation…</div>';
-   $("aicWorkspace").classList.add("is-thread-open");
+   if(openOnMobile||!window.matchMedia("(max-width:760px)").matches)$("aicWorkspace").classList.add("is-thread-open");
    try{
     const data=await api({action:"admin_conversation_detail",conversationId:id});
     if(seq!==detailSequence)return;
@@ -94,8 +94,8 @@
     const result=await api({action:"admin_conversations_list",limit:400});
     rows=Array.isArray(result.rows)?result.rows:[];
     renderMetrics();applyFilters();
-    if(selectedId&&rows.some(r=>r.id===selectedId))await selectConversation(selectedId);
-    else if(rows.length)await selectConversation(rows[0].id);
+    if(selectedId&&rows.some(r=>r.id===selectedId))await selectConversation(selectedId,false);
+    else if(rows.length)await selectConversation(rows[0].id,false);
     else{selectedId=null;selectedConversation=null;messages=[];feedback=[];$("aicWorkspace").classList.remove("is-thread-open");renderDetail();}
    }catch(error){
     $("aicConversationList").innerHTML='<div class="aic-no-results">Conversations could not be loaded. '+esc(error.message)+'</div>';
