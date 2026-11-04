@@ -9,6 +9,8 @@ const chat = fs.readFileSync("js/customer-care-chat.js", "utf8");
 const css = fs.readFileSync("css/customer-care-chat.css", "utf8");
 const home = fs.readFileSync("index.html", "utf8");
 const edge = fs.readFileSync("supabase/functions/customer-care-chat/index.ts", "utf8");
+const aiConversations = fs.readFileSync("admin/ai-conversations.js", "utf8");
+const aiConversationsPage = fs.readFileSync("admin/ai-conversations.html", "utf8");
 const intelligence = fs.readFileSync("supabase/functions/customer-care-chat/intelligence.mjs", "utf8");
 const analyticsIngest = fs.readFileSync("supabase/functions/analytics-ingest/index.ts", "utf8");
 const knowledgeAdmin = fs.readFileSync("admin/ai-knowledge.js", "utf8");
@@ -45,7 +47,7 @@ assert.match(edge, /PUBLIC KNOWLEDGE ACCESS/);
 assert.match(edge, /parts\.join\("\\n"\)/);
 
 
-assert.match(main, /js\/customer-care-chat\.js\?v=20261104-conversation-memory-v4/);
+assert.match(main, /js\/customer-care-chat\.js\?v=20261104-customer-account-chat-v1/);
 assert.match(chat, /functions\/v1\/customer-care-chat/);
 assert.doesNotMatch(chat, /ageConfirmed|hf-ai-chat-age-gate|hf-ai-age-confirm|প্রাপ্তবয়স্কদের জন্য AI সহায়তা/);
 assert.match(chat, /if \(\(!text && !imageFile\) \|\| busy\) return;/);
@@ -61,6 +63,17 @@ assert.match(edge, /Deno\.env\.get\("GEMINI_MODEL"\)/);
 assert.match(edge, /isSecretKey: legacyKey\.startsWith\("sb_secret_"\)/);
 assert.match(edge, /class SupabaseRestError/);
 assert.match(edge, /customer_care_conversation_user_saved/);
+assert.match(edge, /async function verifyCustomerIdentity/);
+assert.match(edge, /customer_user_id/);
+assert.match(edge, /customer_profile_updated_at/);
+assert.match(edge, /customer_profiles/);
+assert.match(chat, /function getCustomerAuthorizationHeaders/);
+assert.match(chat, /session\.access_token/);
+assert.match(aiConversations, /function customerDisplayName/);
+assert.match(aiConversations, /customerAvatarMarkup/);
+assert.match(aiConversationsPage, /id="aicThreadAvatar"/);
+assert.match(aiConversationsPage, /20261104-aiconversations-v5/);
+
 assert.match(edge, /customer_care_conversation_assistant_saved/);
 assert.match(edge, /assistantMessageSaved/);
 assert.match(edge, /x-goog-api-key/);
@@ -191,7 +204,7 @@ assert.match(edge, /maxOutputTokens: 8192/);
 assert.match(edge, /thinkingConfig: \{ thinkingLevel: "HIGH" \}/);
 assert.match(edge, /45_000/);
 assert.ok(edge.includes("return Boolean(reply.trim())"));
-assert.match(main, /customer-care-chat\.js\?v=20261104-conversation-memory-v4/);
+assert.match(main, /customer-care-chat\.js\?v=20261104-customer-account-chat-v1/);
 
 assert.match(chat, /textarea id="hf-ai-chat-input"/);
 assert.match(chat, /messages.addEventListener\("wheel"/);
