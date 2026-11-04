@@ -23,6 +23,25 @@
   const value=id=>$(id)?.value||"";
   function statusClass(status){return status==="reviewed"?"hf-status-active":status==="open"?"hf-status-review":"hf-status-muted";}
   function statusPill(status){return '<span class="hf-status '+statusClass(status)+'">'+esc(labels[status]||status)+'</span>';}
+  function customerDisplayName(row){
+   const name=String(row?.customer_name||"").trim();
+   if(name)return name;
+   return row?.customer_user_id?"Registered customer":"Guest customer";
+  }
+  function customerAvatarUrl(row){
+   const value=String(row?.customer_avatar_url||"").trim();
+   return value.length<=2048&&/^https:\/\//i.test(value)&&!/[\\s<>"']/u.test(value)?value:"";
+  }
+  function customerAvatarMarkup(row,className){
+   const name=customerDisplayName(row),initial=Array.from(name)[0]?.toLocaleUpperCase("en-US")||"G",url=customerAvatarUrl(row);
+   return '<span class="'+className+'" aria-hidden="true">'+(url?'<img class="aic-avatar-image" src="'+esc(url)+'" alt="" loading="lazy" referrerpolicy="no-referrer" data-fallback="'+esc(initial)+'">':esc(initial))+'</span>';
+  }
+  function bindAvatarFallbacks(root){
+   root?.querySelectorAll("img.aic-avatar-image").forEach(img=>img.addEventListener("error",()=>{
+    img.replaceWith(document.createTextNode(img.dataset.fallback||"G"));
+   },{once:true}));
+  }
+
   function renderMetrics(){
    $("aicTotal").textContent=rows.length.toLocaleString("en-BD");
    $("aicOpen").textContent=rows.filter(r=>r.status==="open").length.toLocaleString("en-BD");
@@ -40,9 +59,11 @@
   function renderList(){
    $("aicListNote").textContent=isBn()?"মোট "+filtered.length+"টি কথোপকথন":"Showing "+filtered.length+" conversations";
    $("aicConversationList").innerHTML=filtered.length?filtered.map(r=>{
-    const selected=r.id===selectedId;
-    return '<button type="button" class="aic-row '+(selected?"is-selected":"")+'" data-conversation-id="'+esc(r.id)+'"><span class="aic-row-avatar" aria-hidden="true">C</span><span class="aic-row-main"><span class="aic-row-top"><span class="aic-row-title">'+esc(r.title||"Customer conversation")+'</span><time class="aic-row-time">'+esc(shortTime(r.last_message_at))+'</time></span><span class="aic-row-preview">'+esc(r.last_message_preview||"No message preview")+'</span><span class="aic-row-meta"><span>'+(isBn()?"থ্রেড ":"Thread ")+esc(String(r.id).slice(0,8))+'</span></span></span><span class="aic-row-status">'+statusPill(r.status)+'</span></button>';
+    const selected=r.id===selectedId,name=customerDisplayName(r);
+    const accountLabel=r.customer_user_id?(isBn()?"নিবন্ধিত অ্যাকাউন্ট":"Registered account"):(isBn()?"অতিথি":"Guest");
+    return '<button type="button" class="aic-row '+(selected?"is-selected":"")+'" data-conversation-id="'+esc(r.id)+'">'+customerAvatarMarkup(r,"aic-row-avatar")+'<span class="aic-row-main"><span class="aic-row-top"><span class="aic-row-title">'+esc(name)+'</span><time class="aic-row-time">'+esc(shortTime(r.last_message_at))+'</time></span><span class="aic-row-preview">'+esc(r.last_message_preview||"No message preview")+'</span><span class="aic-row-meta"><span>'+esc(accountLabel)+'</span><span>'+(isBn()?"থ্রেড ":"Thread ")+esc(String(r.id).slice(0,8))+'</span></span></span><span class="aic-row-status">'+statusPill(r.status)+'</span></button>';
    }).join(""):'<div class="aic-no-results">No conversations match this filter.</div>';
+   bindAvatarFallbacks($("aicConversationList"));
   }
   function dayLabel(raw){if(!raw)return "";const d=new Date(raw);if(Number.isNaN(d.getTime()))return "";return d.toLocaleDateString([],{weekday:"long",month:"short",day:"numeric",year:"numeric"});}
   function renderMessages(){
@@ -63,8 +84,11 @@
    $("aicDetailContent").hidden=!c;
    $("aicDetailError").hidden=true;
    if(!c){$("aicDetailTitle").textContent="Select a conversation";return;}
-   $("aicDetailTitle").textContent=c.title||"Customer conversation";
-   $("aicDetailSubtitle").textContent=isBn()?"শুরু "+dateTime(c.created_at)+" · সর্বশেষ কার্যক্রম "+dateTime(c.last_message_at):"Started "+dateTime(c.created_at)+" · Last activity "+dateTime(c.last_message_at);
+   $("aicDetailTitle").textContent=customerDisplayName(c);
+   $("aicThreadAvatar").innerHTML=customerAvatarMarkup(c,"aic-avatar aic-avatar-customer").replace(/^<span[^>]*>|<\/span>$/g,"");
+   bindAvatarFallbacks($("aicThreadAvatar"));
+   const identityLabel=c.customer_user_id?(isBn()?"নিবন্ধিত কাস্টমার অ্যাকাউন্ট":"Verified customer account"):(isBn()?"অতিথি ব্রাউজার":"Guest browser");
+   $("aicDetailSubtitle").textContent=identityLabel+" · "+(isBn()?"শুরু ":"Started ")+dateTime(c.created_at)+" · "+(isBn()?"সর্বশেষ কার্যক্রম ":"Last activity ")+dateTime(c.last_message_at);
    $("aicDetailBadge").innerHTML=statusPill(c.status);
    $("aicThreadMeta").textContent=isBn()?"থ্রেড আইডি: "+c.id+" · "+messages.length+"টি বার্তা সংরক্ষিত"+(c.reviewed_by?" · সর্বশেষ পর্যালোচনা: "+c.reviewed_by+" কর্তৃক":""):"Thread ID: "+c.id+" · "+messages.length+" saved messages"+(c.reviewed_by?" · Last reviewed by "+c.reviewed_by:"");
    $("aicReviewStatus").value=c.status||"open";$("aicAdminNotes").value=c.admin_notes||"";
