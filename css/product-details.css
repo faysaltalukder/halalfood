@@ -689,3 +689,72 @@
     padding: 0 !important;
   }
 }
+
+
+/* HALAL FOOD RELATED PRODUCT IMAGE FIT v8
+   Exact markup: article.product-card > a.product-image-link >
+   div.product-image > img. Let the image's intrinsic ratio define the frame.
+   No fixed-height crop box, no artificial inner padding, no cover behavior. */
+#related-grid > article.product-card > a.product-image-link {
+  display: block !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  aspect-ratio: auto !important;
+  overflow: visible !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+#related-grid > article.product-card > a.product-image-link > div.product-image {
+  display: block !important;
+  position: relative !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  aspect-ratio: auto !important;
+  overflow: visible !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+}
+#related-grid > article.product-card > a.product-image-link > div.product-image::before,
+#related-grid > article.product-card > a.product-image-link > div.product-image::after {
+  content: none !important;
+  display: none !important;
+  opacity: 0 !important;
+  background: none !important;
+}
+#related-grid > article.product-card > a.product-image-link > div.product-image > img {
+  position: static !important;
+  inset: auto !important;
+  display: block !important;
+  width: 100% !important;
+  height: auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: 100% !important;
+  max-height: none !important;
+  aspect-ratio: auto !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  transform: none !important;
+  background: transparent !important;
+}
+@media (max-width: 600px) {
+  #related-grid > article.product-card > a.product-image-link,
+  #related-grid > article.product-card > a.product-image-link > div.product-image {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    aspect-ratio: auto !important;
+    padding: 0 !important;
+  }
+  #related-grid > article.product-card > a.product-image-link > div.product-image > img {
+    width: 100% !important;
+    height: auto !important;
+    object-fit: contain !important;
+  }
+}
