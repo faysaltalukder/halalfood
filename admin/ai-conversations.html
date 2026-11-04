@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="robots" content="noindex,nofollow"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI Conversations · Halal Food Admin</title>
+<link rel="stylesheet" href="./shared.css?v=20261102-reports-navigation-v3">
+<link rel="stylesheet" href="./workspace-global-theme.css?v=20261101-merchant-fieldbook-v1">
+<link rel="stylesheet" href="./ai-conversations.css?v=20261104-aiconversations-v1">
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
+</head>
+<body data-page="ai-conversations">
+<div id="authGate" class="auth-gate"><div class="auth-gate-card"><strong>Checking secure admin access…</strong><p>This workspace requires the authorized admin account and two-step verification.</p></div></div>
+<div id="adminApp" hidden><main id="pageContent" tabindex="-1">
+<section class="aic-hero">
+ <div><p class="page-eyebrow">CUSTOMER CARE INTELLIGENCE</p><h1>AI Conversations</h1><p>Read complete customer-care threads, understand the context behind each answer and keep private review notes for the team.</p></div>
+ <div class="aic-hero-actions"><span class="hf-status hf-status-active">AAL2 protected</span><button class="hf-button hf-button-secondary" id="aicRefresh" type="button">↻ Refresh</button></div>
+</section>
+<div class="hf-banner hf-banner-info"><span>ⓘ</span><div><strong>Private conversation workspace</strong>Threads are stored securely for authorized review. Uploaded image files and raw network identifiers are not stored. Email addresses and mobile numbers are masked in saved message text.</div></div>
+<section class="aic-metrics" aria-label="Conversation summary">
+ <article class="hf-card"><span>Total conversations</span><strong id="aicTotal">—</strong><small>Latest records loaded</small></article>
+ <article class="hf-card"><span>Open reviews</span><strong id="aicOpen">—</strong><small>Threads awaiting review</small></article>
+ <article class="hf-card"><span>Reviewed</span><strong id="aicReviewed">—</strong><small>Reviewed conversation threads</small></article>
+ <article class="hf-card"><span>Archived</span><strong id="aicArchived">—</strong><small>Archived for reference</small></article>
+</section>
+<section class="aic-workspace">
+ <div class="aic-inbox hf-card hf-card-pad">
+  <div class="hf-section-head"><div><h2>Conversation inbox</h2><p>Select a customer thread to read the full exchange.</p></div><span class="aic-muted" id="aicUpdated">Not refreshed yet</span></div>
+  <div class="aic-filters">
+   <input class="hf-input" id="aicSearch" type="search" placeholder="Search customer questions and replies…" aria-label="Search conversations">
+   <select class="hf-select" id="aicStatusFilter" aria-label="Filter conversation status">
+    <option value="">All statuses</option><option value="open">Open</option><option value="reviewed">Reviewed</option><option value="archived">Archived</option>
+   </select>
+  </div>
+  <p class="aic-note" id="aicListNote">Loading conversations…</p>
+  <div id="aicConversationList" class="aic-conversation-list"><div class="hf-loading">Loading customer conversations…</div></div>
+ </div>
+ <aside class="aic-detail hf-card hf-card-pad" id="aicDetailPanel">
+  <div class="hf-section-head aic-detail-head"><div><p class="page-eyebrow">THREAD REVIEW</p><h2 id="aicDetailTitle">Select a conversation</h2><p id="aicDetailSubtitle">The complete customer and assistant messages will appear here.</p></div><span class="aic-thread-status" id="aicDetailBadge"></span></div>
+  <div id="aicDetailEmpty" class="aic-empty">Choose a conversation from the inbox to inspect the full thread.</div>
+  <div id="aicDetailContent" hidden>
+   <div class="aic-thread-meta" id="aicThreadMeta"></div>
+   <div id="aicMessages" class="aic-messages" aria-label="Conversation messages"></div>
+   <div class="aic-review-tools">
+    <label class="hf-field">Review status
+     <select class="hf-select" id="aicReviewStatus"><option value="open">Open — needs review</option><option value="reviewed">Reviewed — checked by admin</option><option value="archived">Archived — keep for reference</option></select>
+    </label>
+    <label class="hf-field">Private admin notes
+     <textarea class="hf-textarea" id="aicAdminNotes" rows="4" maxlength="3000" placeholder="Record the issue, context, or any follow-up needed. These notes are not shown to customers."></textarea>
+    </label>
+    <p class="aic-note" id="aicReviewedInfo"></p>
+    <p class="hf-form-error" id="aicSaveError" role="alert"></p>
+    <div class="hf-dialog-actions"><button type="button" class="hf-button hf-button-secondary" id="aicExportThread">Export thread</button><button type="button" class="hf-button hf-button-primary" id="aicSaveReview">Save review</button></div>
+   </div>
+  </div>
+ </aside>
+</section>
+</main></div>
+<script defer src="./i18n.js?v=20261102-dashboard-speed-v2"></script>
+<script defer src="../js/store-config.js?v=20261101-store-config-v1"></script>
+<script defer src="./shared.js?v=20261104-aiconversations-v1"></script>
+<script defer src="./app.js?v=20261102-dashboard-speed-v2"></script>
+<script defer src="./ai-conversations.js?v=20261104-aiconversations-v1"></script>
+</body></html>
