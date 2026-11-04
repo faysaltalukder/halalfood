@@ -14,6 +14,8 @@ const MAX_HISTORY_ITEMS = 20;
 const MAX_HISTORY_CHARS = 48000;
 const MAX_REQUEST_BYTES = 262144;
 const MAX_IMAGE_BASE64_CHARS = 190000;
+// TEMPORARY EXPERIMENT: true routes customer chat to Gemini only, without server-side catalog, policy, order, quote, feedback, or deterministic-answer assistance. Set false to restore the previous hybrid behavior.
+const PURE_LLM_TEST_MODE = true;
 const SYSTEM_INSTRUCTION = [
   "You are Halal Food’s friendly, capable customer-care and shopping assistant for a real operating grocery and food business in Bangladesh. The owner confirms the business is now able to sell products; never describe it as a demo, test, theoretical, or non-operational project. Help customers directly with product discovery, buying decisions, prices, availability, product use, and general questions.",
   "Reply in the customer’s language, using natural, warm, human-sounding Bengali by default and English when they write in English. Be welcoming, patient, empathetic and practical, like a helpful shop assistant. Keep simple replies concise and conversational; explain complex matters clearly. Avoid robotic phrasing, repeated greetings, excessive punctuation, ellipses, hashtags, Markdown headings, asterisks, decorative bullets, and unnecessary numbered lists. Prefer plain sentences and short paragraphs. Do not make every reply sound like an advertisement or scripted sales pitch.",
@@ -1102,6 +1104,10 @@ Deno.serve(async (req: Request) => {
     }
   }
 
+  if (PURE_LLM_TEST_MODE && (payload.action === "feedback" || payload.action === "quote")) {
+    return response({ success: false, code: "PURE_LLM_TEST_MODE", message: "Customer-care backend actions are temporarily paused for a pure language-model test." }, 423);
+  }
+
   if (payload.action === "feedback") {
     const feedbackRequestId = String(payload.requestId || "");
     const rating = String(payload.rating || "");
@@ -1219,7 +1225,7 @@ Deno.serve(async (req: Request) => {
   }
 
   const historyInput = Array.isArray(payload.history) ? payload.history.slice(-MAX_HISTORY_ITEMS) : [];
-  if (isOrderTrackingRequest(message, historyInput)) {
+  if (!PURE_LLM_TEST_MODE && isOrderTrackingRequest(message, historyInput)) {
     try {
       const tracking = await resolveCustomerOrderTracking(message, historyInput);
       return response({
@@ -1259,6 +1265,46 @@ Deno.serve(async (req: Request) => {
   if (hasImage) userParts.push({ inlineData: { mimeType: imageMimeType, data: imageData } });
   userParts.push({ text: message || "গ্রাহক একটি পণ্যের ছবি পাঠিয়েছেন। ছবিটি দেখে লাইভ ক্যাটালগের সঙ্গে তুলনা করুন এবং সঠিক বা কাছাকাছি পণ্য আছে কি না জানান।" });
   contents.push({ role: "user", parts: userParts });
+
+  // Pure language-model experiment: deliberately do not load Supabase knowledge/catalog,
+  // run intent classification, attach catalog images, perform order lookups, or use fallbacks.
+  if (PURE_LLM_TEST_MODE) {
+    if (!apiKey) return response({ success: false, code: "AI_NOT_CONFIGURED", requestId }, 503);
+    const pureInstruction = [
+      "You are a general-purpose language model being tested without access to Halal Food server data or business tools.",
+      "Reply naturally in the customer's language. Be friendly, clear, thoughtful, and helpful. Avoid robotic phrasing.",
+      "You have no live access to Halal Food products, prices, stock, delivery policy, orders, payments, or customer records in this test. Never pretend that you checked or changed any of them. If asked for current store-specific facts, clearly say you cannot verify them in this test.",
+      "Do not claim to place, edit, cancel, track, or confirm orders. Do not invent contact details, prices, stock, delivery fees, certifications, or product ingredients.",
+      "Answer general knowledge and conversational questions normally. You may inspect an uploaded image and describe what is visibly present, but do not claim to match it to the store catalog.",
+    ].join(" ");
+    const pureController = new AbortController();
+    const pureTimeout = setTimeout(() => pureController.abort(), 45000);
+    try {
+      const pureResult = await callGeminiWithFallback(model, requestId, apiKey, contents, pureInstruction, pureController.signal);
+      if (!pureResult.response.ok) {
+        const status = pureResult.response.status;
+        console.warn(JSON.stringify({ event: "customer_care_pure_llm_upstream_error", requestId, status }));
+        return response({ success: false, code: friendlyErrorCode(status), requestId }, status === 429 ? 429 : 502);
+      }
+      const purePayload = await pureResult.response.json();
+      const pureCandidate = purePayload?.candidates?.[0];
+      const pureParts = pureCandidate?.content?.parts;
+      const pureReply = Array.isArray(pureParts)
+        ? pureParts.map((part: Record<string, unknown>) => typeof part.text === "string" ? part.text : "").join("").trim()
+        : "";
+      const pureFinishReason = String(pureCandidate?.finishReason || "EMPTY");
+      if (!pureReply || !isCompleteReply(pureReply, pureFinishReason)) {
+        return response({ success: false, code: "INCOMPLETE_AI_RESPONSE", requestId }, 502);
+      }
+      return response({ success: true, reply: pureReply, products: [], recommendation: null, image_match: null, requestId, model: pureResult.modelUsed, test_mode: "pure_llm" });
+    } catch (error) {
+      const timedOut = error instanceof DOMException && error.name === "AbortError";
+      console.error(JSON.stringify({ event: "customer_care_pure_llm_failed", requestId, kind: timedOut ? "timeout" : "upstream" }));
+      return response({ success: false, code: timedOut ? "GEMINI_TIMEOUT" : "GEMINI_UNAVAILABLE", requestId }, timedOut ? 504 : 502);
+    } finally {
+      clearTimeout(pureTimeout);
+    }
+  }
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 45_000);
