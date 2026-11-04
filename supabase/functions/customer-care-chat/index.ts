@@ -906,6 +906,23 @@ function buildDeterministicFallbackReply(
     : "অবশ্যই, আমি সাহায্য করছি। আপনার প্রয়োজনটা একটু বলুন, আমি এখানেই যতটা সম্ভব সমাধান করে দিচ্ছি।";
 }
 
+function selectCustomerCareModel(message: string, hasImage: boolean, complexModel: string): string {
+  const text = String(message || "").trim().toLowerCase();
+  if (hasImage) return "gemini-3.6-flash";
+  const complexPatterns = [
+    /\\b(compare|comparison|analy[sz]e|analysis|investigate|troubleshoot|calculate|strategy|detailed|step[- ]by[- ]step|multiple|why exactly|how does .* work)\\b/i,
+    /(তুলনা|বিশ্লেষণ|সমাধান করে বুঝিয়ে|ধাপে ধাপে|বিস্তারিত ব্যাখ্যা|কারণগুলো|কেন এমন হচ্ছে|হিসাব করে|পরিকল্পনা তৈরি|একাধিক বিষয়)/u,
+  ];
+  const mediumPatterns = [
+    /\\b(recommend|recommendation|suggest|which one|difference|explain|help me choose|best option)\\b/i,
+    /(কোনটা ভালো|কোনটি ভালো|পরামর্শ|সাজেস্ট|পার্থক্য|বুঝিয়ে বল|কীভাবে ব্যবহার|কেনার জন্য)/u,
+  ];
+  const isComplex = text.length > 650 || (text.match(/[?؟]/g) || []).length >= 3 || complexPatterns.some((pattern) => pattern.test(text));
+  if (isComplex) return complexModel;
+  if (text.length > 180 || mediumPatterns.some((pattern) => pattern.test(text))) return "gemini-3.6-flash";
+  return "gemini-3.5-flash-lite";
+}
+
 function friendlyErrorCode(status: number): string {
   if (status === 401) return "GEMINI_AUTH";
   if (status === 403) return "GEMINI_PERMISSION";
@@ -975,69 +992,25 @@ async function callGemini(
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: systemInstruction }] },
         contents,
-        generationConfig: { maxOutputTokens: 8192, thinkingConfig: { thinkingLevel: "HIGH" } },
+        generationConfig: { maxOutputTokens: 8192, thinkingConfig: { thinkingLevel: modelName.includes("flash-lite") ? "LOW" : modelName === "gemini-3.8-flash" ? "HIGH" : "MEDIUM" } },
       }),
       signal,
     },
   );
 }
 
-const FALLBACK_MODELS = ["gemini-3.7-flash", "gemini-3.6-flash"];
-
-async function callGeminiWithFallback(
-  primaryModel: string,
+async function callGeminiOnce(
+  selectedModel: string,
   requestId: string,
   apiKey: string,
   contents: Array<{ role: "user" | "model"; parts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> }>,
   systemInstruction: string,
   signal: AbortSignal,
 ): Promise<{ response: Response; modelUsed: string }> {
-  const modelCandidates = Array.from(new Set([primaryModel, ...FALLBACK_MODELS]));
-  let lastResponse: Response | null = null;
-  let lastError: unknown = null;
-  let modelUsed = primaryModel;
-
-  for (let index = 0; index < modelCandidates.length; index += 1) {
-    modelUsed = modelCandidates[index];
-    try {
-      const upstream = await callGemini(modelUsed, apiKey, contents, systemInstruction, signal);
-      lastResponse = upstream;
-      if (upstream.ok) return { response: upstream, modelUsed };
-
-      // Quota and transient provider failures may be model-specific. Try the
-      // remaining stable Flash variants before giving up on the whole request.
-      const retryable = [500, 502, 503, 504].includes(upstream.status);
-      if (!retryable) return { response: upstream, modelUsed };
-
-      const nextModel = modelCandidates[index + 1];
-      if (nextModel) {
-        console.warn(JSON.stringify({
-          event: "customer_care_model_fallback",
-          requestId,
-          primaryModel,
-          fallbackModel: nextModel,
-          upstreamStatus: upstream.status,
-        }));
-      }
-    } catch (error) {
-      if (signal.aborted) throw error;
-      if (error instanceof Error && ["AI_RATE_LIMITED", "AI_RATE_GUARD_UNAVAILABLE"].includes(error.message)) throw error;
-      lastError = error;
-      const nextModel = modelCandidates[index + 1];
-      if (nextModel) {
-        console.warn(JSON.stringify({
-          event: "customer_care_model_network_fallback",
-          requestId,
-          primaryModel,
-          fallbackModel: nextModel,
-        }));
-      }
-    }
-  }
-
-  if (lastResponse) return { response: lastResponse, modelUsed };
-  if (lastError) throw lastError;
-  throw new Error("Gemini request did not return a response.");
+  // Exactly one provider attempt per customer message. No model cascade or retry.
+  const upstream = await callGemini(selectedModel, apiKey, contents, systemInstruction, signal);
+  console.info(JSON.stringify({ event: "customer_care_single_model_attempt", requestId, model: selectedModel }));
+  return { response: upstream, modelUsed: selectedModel };
 }
 
 Deno.serve(async (req: Request) => {
@@ -1256,8 +1229,9 @@ Deno.serve(async (req: Request) => {
   }
 
   const apiKey = Deno.env.get("GEMINI_API_KEY");
-  const model = (Deno.env.get("GEMINI_MODEL") || "gemini-3.8-flash").trim();
-  if (apiKey && !/^gemini-[a-z0-9.-]+$/i.test(model)) {
+  const configuredModel = (Deno.env.get("GEMINI_MODEL") || "gemini-3.8-flash").trim();
+  const model = selectCustomerCareModel(message, hasImage, configuredModel);
+  if (apiKey && !/^gemini-[a-z0-9.-]+$/i.test(configuredModel)) {
     console.error(JSON.stringify({ event: "customer_care_invalid_model_config", requestId }));
     return response({ success: false, code: "AI_MODEL_CONFIG_INVALID", requestId }, 500);
   }
@@ -1321,7 +1295,7 @@ Deno.serve(async (req: Request) => {
       // Try the configured model first, then alternate Flash models only for transient
       // provider/network failures. 429 quota errors are never retried.
       // Every provider attempt reserves a shared DB-backed slot (max 4 per 60 seconds).
-      const pureResult = await callGeminiWithFallback(
+      const pureResult = await callGeminiOnce(
         model,
         requestId,
         apiKey,
@@ -1423,7 +1397,7 @@ Deno.serve(async (req: Request) => {
         knowledge: { documents: knowledge.documents.length, matchedProducts: knowledge.products.length } });
       return response({ success: false, code: "AI_NOT_CONFIGURED", requestId }, 503);
     }
-    const initialResult = await callGeminiWithFallback(model, requestId, apiKey, contents, systemInstruction, controller.signal);
+    const initialResult = await callGeminiOnce(model, requestId, apiKey, contents, systemInstruction, controller.signal);
     let upstream = initialResult.response;
     let modelUsed = initialResult.modelUsed;
 
@@ -1459,61 +1433,7 @@ Deno.serve(async (req: Request) => {
     let finishReason = String(candidate?.finishReason || "EMPTY");
 
     if (!reply || !isCompleteReply(reply, finishReason)) {
-      console.warn(JSON.stringify({
-        event: "customer_care_incomplete_response_retry",
-        requestId,
-        model: modelUsed,
-        finishReason,
-        responseLength: reply.length,
-        candidateTokenCount: Number(result?.usageMetadata?.candidatesTokenCount || 0),
-      }));
-
-      const retryModel = modelUsed;
-      const retryContents = [
-        ...contents,
-        ...(reply ? [{ role: "model" as const, parts: [{ text: reply }] }] : []),
-        {
-          role: "user" as const,
-          parts: [{
-            text: "আপনার আগের উত্তরটি অসম্পূর্ণ ছিল। গ্রাহকের মূল প্রশ্নের সম্পূর্ণ উত্তর স্বাভাবিকভাবে আবার দিন। প্রয়োজন অনুযায়ী বিস্তারিত ব্যাখ্যা দিন এবং উত্তরটি সম্পূর্ণ করুন।"
-          }]
-        }
-      ];
-      const retryResult = await callGeminiWithFallback(retryModel, requestId, apiKey, retryContents, systemInstruction, controller.signal);
-      const retryResponse = retryResult.response;
-
-      if (retryResponse.ok) {
-        result = await retryResponse.json();
-        candidate = result?.candidates?.[0];
-        parts = candidate?.content?.parts;
-        const retriedReply = Array.isArray(parts)
-          ? parts.map((part: Record<string, unknown>) => typeof part.text === "string" ? part.text : "").join("").trim()
-          : "";
-        const retryFinishReason = String(candidate?.finishReason || "EMPTY");
-        if (isCompleteReply(retriedReply, retryFinishReason)) {
-          reply = retriedReply;
-          finishReason = retryFinishReason;
-          modelUsed = retryResult.modelUsed;
-        } else {
-          console.warn(JSON.stringify({
-            event: "customer_care_incomplete_retry_failed",
-            requestId,
-            model: retryModel,
-            finishReason: retryFinishReason,
-            responseLength: retriedReply.length,
-          }));
-          reply = "";
-          finishReason = retryFinishReason;
-        }
-      } else {
-        console.warn(JSON.stringify({
-          event: "customer_care_incomplete_retry_upstream_error",
-          requestId,
-          model: retryModel,
-          upstreamStatus: retryResponse.status,
-        }));
-        reply = "";
-      }
+      console.warn(JSON.stringify({ event: "customer_care_incomplete_response_no_retry", requestId, model: modelUsed, finishReason, responseLength: reply.length }));
     }
 
     if (!reply || !isCompleteReply(reply, finishReason)) {
