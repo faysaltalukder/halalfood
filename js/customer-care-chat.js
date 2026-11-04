@@ -890,6 +890,15 @@
       });
       let data = {};
       try { data = await response.json(); } catch (_parseError) {}
+      if (data && /^[0-9a-f-]{36}$/i.test(String(data.conversationId || "")) &&
+          /^[0-9a-f-]{36}$/i.test(String(data.visitorId || ""))) {
+        currentConversationId = String(data.conversationId);
+        visitorId = String(data.visitorId);
+        try {
+          localStorage.setItem(CHAT_CONVERSATION_STORAGE_KEY, currentConversationId);
+          localStorage.setItem(CHAT_VISITOR_STORAGE_KEY, visitorId);
+        } catch (_) {}
+      }
       pending.remove();
       if (!response.ok || !data.success || typeof data.reply !== "string") {
         appendMessage(friendlyError(data, response.status), "assistant");
