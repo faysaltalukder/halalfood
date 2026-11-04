@@ -30,7 +30,7 @@
   }
   function customerAvatarUrl(row){
    const value=String(row?.customer_avatar_url||"").trim();
-   return value.length<=2048&&/^https:\/\//i.test(value)&&!/[\\s<>"']/u.test(value)?value:"";
+   return value.length<=2048&&value.startsWith("https://")&&!/\s/u.test(value)?value:"";
   }
   function customerAvatarMarkup(row,className){
    const name=customerDisplayName(row),initial=Array.from(name)[0]?.toLocaleUpperCase("en-US")||"G",url=customerAvatarUrl(row);
