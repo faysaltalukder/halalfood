@@ -55,10 +55,35 @@ function response(body: unknown, status = 200, origin = ALLOWED_ORIGIN) {
   });
 }
 
+class SupabaseRestError extends Error {
+  constructor(
+    readonly operation: string,
+    readonly table: string,
+    readonly httpStatus: number,
+    readonly databaseCode: string | null,
+  ) {
+    super("Supabase " + operation + " failed for " + table + " (" + httpStatus + (databaseCode ? ", " + databaseCode : "") + ")");
+    this.name = "SupabaseRestError";
+  }
+}
+
+async function makeSupabaseRestError(operation: string, table: string, response: Response): Promise<SupabaseRestError> {
+  let payload: Record<string, unknown> | null = null;
+  try {
+    const value = await response.clone().json();
+    if (value && typeof value === "object" && !Array.isArray(value)) payload = value as Record<string, unknown>;
+  } catch { /* PostgREST may return an empty or non-JSON error body. */ }
+  const rawCode = typeof payload?.code === "string" ? payload.code.trim() : "";
+  const databaseCode = /^[A-Z0-9_]{1,32}$/.test(rawCode) ? rawCode : null;
+  return new SupabaseRestError(operation, table, response.status, databaseCode);
+}
+
 function getSupabaseCredentials(): { url: string; key: string; isSecretKey: boolean } | null {
   const url = (Deno.env.get("SUPABASE_URL") || "").replace(/\/$/, "");
   const legacyKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
-  if (url && legacyKey) return { url, key: legacyKey, isSecretKey: false };
+  if (url && legacyKey) {
+    return { url, key: legacyKey, isSecretKey: legacyKey.startsWith("sb_secret_") };
+  }
 
   const rawSecretKeys = Deno.env.get("SUPABASE_SECRET_KEYS") || "";
   if (url && rawSecretKeys) {
@@ -94,9 +119,7 @@ async function fetchSupabaseRows(
       cache: "no-store",
       signal: controller.signal,
     });
-    if (!result.ok) {
-      throw new Error("Supabase read failed for " + table + " (" + result.status + ")");
-    }
+    if (!result.ok) throw await makeSupabaseRestError("read", table, result);
     const data = await result.json();
     if (!Array.isArray(data)) throw new Error("Unexpected Supabase response for " + table);
     return data as Record<string, unknown>[];
@@ -105,17 +128,31 @@ async function fetchSupabaseRows(
   }
 }
 
-async function insertSupabaseRow(table: string, row: Record<string, unknown>, credentials: { url: string; key: string; isSecretKey: boolean }): Promise<void> {
-  const headers: Record<string, string> = { apikey: credentials.key, "Content-Type": "application/json", Prefer: "return=minimal" };
+async function insertSupabaseRow(
+  table: string,
+  row: Record<string, unknown>,
+  credentials: { url: string; key: string; isSecretKey: boolean },
+): Promise<void> {
+  const headers: Record<string, string> = {
+    apikey: credentials.key,
+    "Content-Type": "application/json",
+    Prefer: "return=minimal",
+  };
   if (!credentials.isSecretKey) headers.Authorization = "Bearer " + credentials.key;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 4500);
   try {
     const result = await fetch(credentials.url + "/rest/v1/" + table, {
-      method: "POST", headers, body: JSON.stringify(row), cache: "no-store", signal: controller.signal,
+      method: "POST",
+      headers,
+      body: JSON.stringify(row),
+      cache: "no-store",
+      signal: controller.signal,
     });
-    if (!result.ok) throw new Error("Supabase insert failed for " + table + " (" + result.status + ")");
-  } finally { clearTimeout(timeout); }
+    if (!result.ok) throw await makeSupabaseRestError("insert", table, result);
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 async function patchSupabaseRow(
@@ -125,12 +162,30 @@ async function patchSupabaseRow(
   credentials: { url: string; key: string; isSecretKey: boolean },
 ): Promise<void> {
   const query = new URLSearchParams(filters);
-  const headers: Record<string, string> = { apikey: credentials.key, "Content-Type": "application/json", Prefer: "return=minimal" };
+  const headers: Record<string, string> = {
+    apikey: credentials.key,
+    "Content-Type": "application/json",
+    Prefer: "return=representation",
+  };
   if (!credentials.isSecretKey) headers.Authorization = "Bearer " + credentials.key;
-  const result = await fetch(credentials.url + "/rest/v1/" + table + "?" + query.toString(), {
-    method: "PATCH", headers, body: JSON.stringify(row), cache: "no-store",
-  });
-  if (!result.ok) throw new Error("Supabase update failed for " + table + " (" + result.status + ")");
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 4500);
+  try {
+    const result = await fetch(credentials.url + "/rest/v1/" + table + "?" + query.toString(), {
+      method: "PATCH",
+      headers,
+      body: JSON.stringify(row),
+      cache: "no-store",
+      signal: controller.signal,
+    });
+    if (!result.ok) throw await makeSupabaseRestError("update", table, result);
+    const updated = await result.json().catch(() => null);
+    if (!Array.isArray(updated) || updated.length === 0) {
+      throw new Error("Supabase update affected no rows for " + table + " (NO_ROWS)");
+    }
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 function decodeJwtPayload(token: string): Record<string, unknown> | null {
@@ -183,9 +238,15 @@ async function beginConversationTurn(
   hasImage: boolean,
   credentials: { url: string; key: string; isSecretKey: boolean },
 ): Promise<ConversationContext | null> {
-  if (!isValidUuid(conversationId) || !isValidUuid(visitorId)) return null;
+  if (!isValidUuid(conversationId) || !isValidUuid(visitorId)) {
+    console.warn(JSON.stringify({ event: "customer_care_conversation_identity_invalid", requestId }));
+    return null;
+  }
   const safeMessage = redactFeedbackText(message || (hasImage ? "Customer attached a product image." : ""), 4000);
-  if (!safeMessage) return null;
+  if (!safeMessage) {
+    console.warn(JSON.stringify({ event: "customer_care_conversation_empty_user_message", requestId }));
+    return null;
+  }
 
   let threadId = String(conversationId);
   const existing = await fetchSupabaseRows("ai_customer_care_conversations", {
@@ -199,7 +260,9 @@ async function beginConversationTurn(
   const now = new Date().toISOString();
   const preview = safeMessage.replace(/\s+/g, " ").slice(0, 260);
   if (existing.length) {
-    if (String(existing[0].visitor_id || "") !== visitorId || !isValidUuid(existing[0].id)) return null;
+    if (String(existing[0].visitor_id || "") !== visitorId || !isValidUuid(existing[0].id)) {
+      throw new Error("Existing customer conversation identity did not match the visitor.");
+    }
     threadId = String(existing[0].id);
   } else {
     const title = safeMessage.replace(/\s+/g, " ").slice(0, 100) || "Customer conversation";
@@ -214,8 +277,9 @@ async function beginConversationTurn(
         status: "open",
       }, credentials);
     } catch (error) {
-      const messageText = error instanceof Error ? error.message : "";
-      if (!messageText.includes("(409)") && !messageText.includes("(23505)")) throw error;
+      const conflict = error instanceof SupabaseRestError &&
+        (error.httpStatus === 409 || error.databaseCode === "23505");
+      if (!conflict) throw error;
       const retry = await fetchSupabaseRows("ai_customer_care_conversations", {
         select: "id,visitor_id",
         visitor_id: "eq." + visitorId,
@@ -223,7 +287,9 @@ async function beginConversationTurn(
         order: "created_at.asc",
         limit: "1",
       }, credentials);
-      if (!retry.length || String(retry[0].visitor_id || "") !== visitorId || !isValidUuid(retry[0].id)) return null;
+      if (!retry.length || String(retry[0].visitor_id || "") !== visitorId || !isValidUuid(retry[0].id)) {
+        throw error;
+      }
       threadId = String(retry[0].id);
     }
   }
@@ -238,16 +304,38 @@ async function beginConversationTurn(
     created_at: now,
   }, credentials);
 
-  await patchSupabaseRow("ai_customer_care_conversations", {
-    id: "eq." + threadId,
-    visitor_id: "eq." + visitorId,
-    store_id: "eq.halal-food",
-  }, {
-    last_message_preview: preview,
-    last_message_at: now,
-    status: "open",
-    updated_at: now,
-  }, credentials);
+  console.info(JSON.stringify({
+    event: "customer_care_conversation_user_saved",
+    requestId,
+    conversationId: threadId,
+    messageRole: "user",
+  }));
+
+  try {
+    await patchSupabaseRow("ai_customer_care_conversations", {
+      id: "eq." + threadId,
+      visitor_id: "eq." + visitorId,
+      store_id: "eq.halal-food",
+    }, {
+      last_message_preview: preview,
+      last_message_at: now,
+      status: "open",
+      updated_at: now,
+    }, credentials);
+  } catch (error) {
+    console.warn(JSON.stringify({
+      event: "customer_care_conversation_preview_update_failed",
+      requestId,
+      stage: "after_user_insert",
+      kind: error instanceof Error ? error.name : "unknown",
+      ...(error instanceof SupabaseRestError ? {
+        operation: error.operation,
+        table: error.table,
+        httpStatus: error.httpStatus,
+        databaseCode: error.databaseCode,
+      } : {}),
+    }));
+  }
 
   return { id: threadId, visitorId, requestId, credentials };
 }
@@ -258,8 +346,8 @@ async function saveConversationAssistantTurn(
   model: string,
   hasImage: boolean,
   products: unknown[] = [],
-): Promise<void> {
-  if (!context || !reply) return;
+): Promise<boolean> {
+  if (!context || !reply) return false;
   try {
     const now = new Date().toISOString();
     const safeReply = redactFeedbackText(reply, 8000);
@@ -278,22 +366,53 @@ async function saveConversationAssistantTurn(
       product_names: productNames,
       created_at: now,
     }, context.credentials);
-    await patchSupabaseRow("ai_customer_care_conversations", {
-      id: "eq." + context.id,
-      visitor_id: "eq." + context.visitorId,
-      store_id: "eq.halal-food",
-    }, {
-      last_message_preview: safeReply.replace(/\s+/g, " ").slice(0, 260),
-      last_message_at: now,
-      updated_at: now,
-    }, context.credentials);
+    console.info(JSON.stringify({
+      event: "customer_care_conversation_assistant_saved",
+      requestId: context.requestId,
+      conversationId: context.id,
+      messageRole: "assistant",
+    }));
   } catch (error) {
     console.warn(JSON.stringify({
       event: "customer_care_conversation_assistant_log_failed",
       requestId: context.requestId,
       kind: error instanceof Error ? error.name : "unknown",
+      ...(error instanceof SupabaseRestError ? {
+        operation: error.operation,
+        table: error.table,
+        httpStatus: error.httpStatus,
+        databaseCode: error.databaseCode,
+      } : {}),
+    }));
+    return false;
+  }
+
+  try {
+    const now = new Date().toISOString();
+    await patchSupabaseRow("ai_customer_care_conversations", {
+      id: "eq." + context.id,
+      visitor_id: "eq." + context.visitorId,
+      store_id: "eq.halal-food",
+    }, {
+      last_message_preview: redactFeedbackText(reply, 8000).replace(/\s+/g, " ").slice(0, 260),
+      last_message_at: now,
+      updated_at: now,
+    }, context.credentials);
+  } catch (error) {
+    console.warn(JSON.stringify({
+      event: "customer_care_conversation_preview_update_failed",
+      requestId: context.requestId,
+      stage: "after_assistant_insert",
+      kind: error instanceof Error ? error.name : "unknown",
+      ...(error instanceof SupabaseRestError ? {
+        operation: error.operation,
+        table: error.table,
+        httpStatus: error.httpStatus,
+        databaseCode: error.databaseCode,
+      } : {}),
     }));
   }
+  return true;
 }
 
 function redactFeedbackText(value: unknown, maxLength: number): string {
@@ -1533,14 +1652,16 @@ Deno.serve(async (req: Request) => {
     conversationId: effectiveConversationId,
     visitorId: effectiveVisitorId,
     conversationSaved: Boolean(conversationContext),
+    assistantMessageSaved: false,
   };
   if (!PURE_LLM_TEST_MODE && isOrderTrackingRequest(message, historyInput)) {
     try {
       const tracking = await resolveCustomerOrderTracking(message, historyInput);
-      await saveConversationAssistantTurn(conversationContext, tracking.reply, "server-order-tracking", hasImage);
+      const assistantMessageSaved = await saveConversationAssistantTurn(conversationContext, tracking.reply, "server-order-tracking", hasImage);
       return response({
         success: true,
         ...conversationIdentity,
+        assistantMessageSaved,
         reply: tracking.reply,
         products: [],
         recommendation: null,
@@ -1550,10 +1671,11 @@ Deno.serve(async (req: Request) => {
       });
     } catch (error) {
       console.error(JSON.stringify({ event: "customer_care_order_tracking_failed", requestId, kind: error instanceof Error ? error.name : "unknown" }));
-      await saveConversationAssistantTurn(conversationContext, "দুঃখিত, এই মুহূর্তে অর্ডারের তথ্য যাচাই করা যাচ্ছে না। একটু পরে আবার চেষ্টা করুন।", "server-order-tracking", hasImage);
+      const assistantMessageSaved = await saveConversationAssistantTurn(conversationContext, "দুঃখিত, এই মুহূর্তে অর্ডারের তথ্য যাচাই করা যাচ্ছে না। একটু পরে আবার চেষ্টা করুন।", "server-order-tracking", hasImage);
       return response({
         success: true,
         ...conversationIdentity,
+        assistantMessageSaved,
         reply: "দুঃখিত, এই মুহূর্তে অর্ডারের তথ্য যাচাই করা যাচ্ছে না। একটু পরে আবার চেষ্টা করুন।",
         products: [],
         recommendation: null,
@@ -1696,9 +1818,9 @@ Deno.serve(async (req: Request) => {
       const offlineReply = buildDeterministicFallbackReply(message, knowledge);
       if (offlineReply) {
         const cards = publicProductCards(knowledge, message);
-        await saveConversationAssistantTurn(conversationContext, offlineReply, "verified-knowledge-fallback", hasImage, cards);
+        const assistantMessageSaved = await saveConversationAssistantTurn(conversationContext, offlineReply, "verified-knowledge-fallback", hasImage, cards);
         return response({ success: true,
-        ...conversationIdentity, reply: offlineReply, products: cards, recommendation: buildRecommendationContract(knowledge), requestId,
+        ...conversationIdentity, assistantMessageSaved, reply: offlineReply, products: cards, recommendation: buildRecommendationContract(knowledge), requestId,
           model: "verified-knowledge-fallback",
           knowledge: { documents: knowledge.documents.length, matchedProducts: knowledge.products.length } });
       }
@@ -1726,9 +1848,9 @@ Deno.serve(async (req: Request) => {
       if (offlineReply) {
         console.info(JSON.stringify({ event: "customer_care_verified_knowledge_fallback", requestId, providerCode: errorCode }));
         const cards = publicProductCards(knowledge, message);
-        await saveConversationAssistantTurn(conversationContext, offlineReply, "verified-knowledge-fallback", hasImage, cards);
+        const assistantMessageSaved = await saveConversationAssistantTurn(conversationContext, offlineReply, "verified-knowledge-fallback", hasImage, cards);
         return response({ success: true,
-        ...conversationIdentity, reply: offlineReply, products: cards, recommendation: buildRecommendationContract(knowledge), requestId, model: "verified-knowledge-fallback",
+        ...conversationIdentity, assistantMessageSaved, reply: offlineReply, products: cards, recommendation: buildRecommendationContract(knowledge), requestId, model: "verified-knowledge-fallback",
           knowledge: { documents: knowledge.documents.length, matchedProducts: knowledge.products.length } });
       }
       return response({ success: false, code: errorCode, requestId }, upstream.status === 429 ? 429 : 502);
@@ -1756,9 +1878,9 @@ Deno.serve(async (req: Request) => {
       const offlineReply = buildDeterministicFallbackReply(message, knowledge);
       if (offlineReply) {
         const cards = publicProductCards(knowledge, message);
-        await saveConversationAssistantTurn(conversationContext, offlineReply, "verified-knowledge-fallback", hasImage, cards);
+        const assistantMessageSaved = await saveConversationAssistantTurn(conversationContext, offlineReply, "verified-knowledge-fallback", hasImage, cards);
         return response({ success: true,
-        ...conversationIdentity, reply: offlineReply, products: cards, recommendation: buildRecommendationContract(knowledge), requestId, model: "verified-knowledge-fallback",
+        ...conversationIdentity, assistantMessageSaved, reply: offlineReply, products: cards, recommendation: buildRecommendationContract(knowledge), requestId, model: "verified-knowledge-fallback",
           knowledge: { documents: knowledge.documents.length, matchedProducts: knowledge.products.length } });
       }
       return response({ success: false, code: "INCOMPLETE_AI_RESPONSE", requestId }, 502);
@@ -1785,10 +1907,11 @@ Deno.serve(async (req: Request) => {
       customerNeed.search_confidence = approvedCards[0].confidence_level || customerNeed.search_confidence;
     }
     await logAiCustomerCareEvents(knowledge, requestId, imageMatch, approvedCards.length, approvedCards.length ? "resolved" : "answered_or_clarified");
-    await saveConversationAssistantTurn(conversationContext, reply, modelUsed, hasImage, approvedCards);
+    const assistantMessageSaved = await saveConversationAssistantTurn(conversationContext, reply, modelUsed, hasImage, approvedCards);
     return response({
       success: true,
         ...conversationIdentity,
+      assistantMessageSaved,
       reply,
       products: approvedCards,
       recommendation: buildRecommendationContract(knowledge),
@@ -1809,9 +1932,9 @@ Deno.serve(async (req: Request) => {
     const offlineReply = loadedKnowledge ? buildDeterministicFallbackReply(message, loadedKnowledge) : null;
     if (offlineReply && loadedKnowledge) {
       const cards = publicProductCards(loadedKnowledge, message);
-      await saveConversationAssistantTurn(conversationContext, offlineReply, "verified-knowledge-fallback", hasImage, cards);
+      const assistantMessageSaved = await saveConversationAssistantTurn(conversationContext, offlineReply, "verified-knowledge-fallback", hasImage, cards);
       return response({ success: true,
-        ...conversationIdentity, reply: offlineReply, products: cards, recommendation: buildRecommendationContract(loadedKnowledge), requestId,
+        ...conversationIdentity, assistantMessageSaved, reply: offlineReply, products: cards, recommendation: buildRecommendationContract(loadedKnowledge), requestId,
         model: "verified-knowledge-fallback",
         knowledge: { documents: loadedKnowledge.documents.length, matchedProducts: loadedKnowledge.products.length } });
     }
