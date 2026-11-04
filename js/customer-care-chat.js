@@ -327,7 +327,7 @@
         if (time && row.created_at) {
           const date = new Date(row.created_at);
           if (!Number.isNaN(date.getTime())) {
-            time.textContent = (sender === "user" ? "আপনি · " : "Halal Food AI · ") +
+            time.textContent = (sender === "user" ? "আপনি · " : "") +
               new Intl.DateTimeFormat("bn-BD", { day:"numeric", month:"short", hour:"2-digit", minute:"2-digit" }).format(date);
           }
         }
