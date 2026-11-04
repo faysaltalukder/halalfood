@@ -237,3 +237,8 @@ html.dark-mode .hf-ai-product-card-actions button:last-child{border-color:#c97b3
 .hf-ai-feedback-thanks{font-size:10px;color:#58724f}
 html.dark-mode .hf-ai-feedback-controls{border-color:#484756}
 html.dark-mode .hf-ai-feedback-button,html.dark-mode .hf-ai-feedback-reason{border-color:#514e60;background:#302e3d;color:#f3dfca}
+
+/* One compact brand marker per assistant reply: the Halal Food robot avatar. */
+.hf-ai-message-avatar{width:34px;height:34px;flex:0 0 34px;border-radius:50%;overflow:hidden;border:1px solid #e5c5a7;background:#f7e9d9;box-shadow:0 2px 6px rgba(43,42,61,.08)}
+.hf-ai-message-avatar img{display:block;width:100%;height:100%;object-fit:cover}
+.hf-ai-message-assistant .hf-ai-message-time{color:#928679}
