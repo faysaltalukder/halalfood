@@ -1,9 +1,8 @@
 (() => {
 "use strict";
-const H=window.HFAdmin;
-if(!H)return;
+let H=window.HFAdmin;
 const $=id=>document.getElementById(id);
-const esc=H.esc;
+const esc=value=>H.esc(value);
 let reviews=[],products=[],productById=new Map();
 const statusBadge=status=>'<span class="hf-status hf-status-'+esc(status)+'">'+esc(status)+'</span>';
 function render(){
@@ -72,6 +71,8 @@ async function setStatus(id,status){
  await refresh();
 }
 async function init(){
+ H=H||await window.HFAdminReady;
+ if(!H)throw new Error("Secure admin session is not ready.");
  ["reviewSearch","reviewProductFilter","reviewStatusFilter","reviewRatingFilter"].forEach(id=>{
   $(id).addEventListener(id==="reviewSearch"?"input":"change",render);
  });
