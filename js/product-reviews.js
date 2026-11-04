@@ -43,51 +43,51 @@ const dateLabel = value => {
 
 const style = document.createElement("style");
 style.textContent = `
-.hf-public-reviews{--hf-copper:#c97b3d;--hf-ink:#2b2a3d;--hf-muted:#77716a;--hf-line:#e9e1d6;max-width:1120px;margin:22px auto 28px;padding:18px 20px;background:#fffdf8;border:1px solid var(--hf-line);border-radius:15px;color:var(--hf-ink);box-shadow:0 5px 18px rgba(43,42,61,.035)}
-.hf-reviews-kicker{margin:0 0 4px;color:#a96d36;font-size:9px;font-weight:850;letter-spacing:.16em;text-transform:uppercase}
-.hf-reviews-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.hf-reviews-heading h2{margin:0;font-size:20px;line-height:1.25;font-weight:800;color:var(--hf-ink)}
-.hf-review-summary{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:10px 0 12px;color:var(--hf-muted);font-size:12px}
-.hf-review-average{font-size:22px;font-weight:850;line-height:1;color:#9c632f}
-.hf-review-stars{color:#c58a3b;letter-spacing:1.5px;white-space:nowrap}
-.hf-review-count{font-size:12px}
-.hf-review-empty{margin:0;padding:10px 12px;border-radius:10px;background:#f8f5ef;color:#77716a;font-size:12px;line-height:1.55}
-.hf-review-item{padding:12px 13px;border:1px solid #eee7dc;border-radius:11px;background:#fbf9f4}
-.hf-review-item-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
-.hf-review-item-head strong{font-size:13px}
-.hf-review-item small{display:block;margin-top:4px;color:#858078;font-size:10px}
-.hf-review-item p{margin:7px 0 0;font-size:13px;line-height:1.6;white-space:pre-line;overflow-wrap:anywhere}
-.hf-review-admin{font-size:9px;font-weight:800;color:#8b5c36;background:#f7eadf;padding:3px 7px;border-radius:99px}
-.hf-review-verified{font-size:9px;font-weight:800;color:#45664f;background:#edf3ed;padding:3px 7px;border-radius:99px}
-.hf-review-actions{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:11px}
-.hf-review-link{appearance:none;border:0;background:transparent;padding:4px 0;color:#985b2e;font-family:inherit;font-size:12px;font-weight:700;line-height:1.4;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
-.hf-review-link:focus-visible,.hf-review-submit:focus-visible,.hf-review-write:focus-visible{outline:3px solid rgba(201,123,61,.28);outline-offset:3px}
-.hf-review-write{appearance:none;border:1px solid #d8b08e;border-radius:9px;background:#fffaf4;color:#87512c;padding:8px 12px;font-family:inherit;font-size:12px;font-weight:750;line-height:1.2;cursor:pointer}
-.hf-review-form-wrap{margin-top:13px;padding-top:13px;border-top:1px solid var(--hf-line)}
-.hf-review-form{display:grid;gap:10px}
+.hf-public-reviews{--hf-copper:#c97b3d;--hf-ink:#2b2a3d;--hf-muted:#77716a;--hf-line:#e9e1d6;max-width:1120px;margin:14px auto 18px;padding:12px 15px;background:#fffdf8;border:1px solid var(--hf-line);border-radius:12px;color:var(--hf-ink);box-shadow:0 3px 12px rgba(43,42,61,.025)}
+.hf-reviews-kicker{margin:0 0 2px;color:#a96d36;font-size:9px;font-weight:800;letter-spacing:.13em;text-transform:uppercase}
+.hf-reviews-heading{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.hf-reviews-heading h2{margin:0;font-size:17px;line-height:1.25;font-weight:800;color:var(--hf-ink)}
+.hf-review-write{display:inline-flex;align-items:center;gap:6px;border:1px solid #d8b08e;border-radius:8px;background:#fff8f0;color:#87512c;padding:7px 10px;font-family:inherit;font-size:11px;font-weight:750;cursor:pointer;white-space:nowrap}
+.hf-review-summary{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:7px 0 8px;color:var(--hf-muted);font-size:11px}
+.hf-review-average{font-size:20px;font-weight:850;line-height:1;color:#9c632f}
+.hf-review-stars{color:#c58a3b;letter-spacing:1px;white-space:nowrap}
+.hf-review-count{font-size:11px}
+.hf-review-empty{margin:0;padding:9px 10px;border-radius:8px;background:#f8f5ef;color:#77716a;font-size:12px;line-height:1.45}
+.hf-review-item{padding:9px 11px;border:1px solid #eee7dc;border-radius:9px;background:#fbf9f4}
+.hf-review-item-head{display:flex;align-items:center;justify-content:space-between;gap:7px;flex-wrap:wrap}
+.hf-review-item-head strong{font-size:12px}
+.hf-review-item small{display:block;margin-top:2px;color:#858078;font-size:10px}
+.hf-review-item p{margin:5px 0 0;font-size:12px;line-height:1.5;white-space:pre-line;overflow-wrap:anywhere}
+.hf-review-verified{font-size:9px;font-weight:750;color:#45664f;background:#edf3ed;padding:2px 6px;border-radius:99px}
+.hf-review-actions{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:7px}
+.hf-review-link{border:0;background:transparent;padding:4px 6px;color:#985b2e;font-family:inherit;font-size:11px;font-weight:750;cursor:pointer}
+.hf-review-form-wrap{margin-top:10px;padding-top:10px;border-top:1px solid var(--hf-line)}
+.hf-review-form{display:grid;gap:8px}
 .hf-review-form[hidden],.hf-review-form-wrap[hidden],.hf-review-all[hidden]{display:none!important}
-.hf-review-form-title{font-size:14px;font-weight:800}
-.hf-review-product{margin:-5px 0 0;color:var(--hf-muted);font-size:11px}
-.hf-review-form label{display:grid;gap:5px;font-size:11px;font-weight:750;color:#514d49}
-.hf-review-form input,.hf-review-form textarea{box-sizing:border-box;width:100%;padding:10px 11px;border:1px solid #ded7cc;border-radius:9px;background:#fff;color:var(--hf-ink);font:inherit;font-size:13px}
-.hf-review-form textarea{resize:vertical;min-height:86px}
-.hf-review-form input:focus,.hf-review-form textarea:focus{outline:2px solid rgba(201,123,61,.2);border-color:var(--hf-copper)}
-.hf-review-rating{display:flex;flex-direction:row-reverse;justify-content:flex-end;gap:3px;width:max-content}
+.hf-review-form-title{font-size:13px;font-weight:800}
+.hf-review-product{margin:-4px 0 0;color:var(--hf-muted);font-size:10px}
+.hf-review-form label{display:grid;gap:4px;font-size:11px;font-weight:750;color:#514d49}
+.hf-review-form input,.hf-review-form textarea{box-sizing:border-box;width:100%;padding:8px 10px;border:1px solid #ded7cc;border-radius:8px;background:#fff;color:var(--hf-ink);font:inherit;font-size:12px}
+.hf-review-form textarea{resize:vertical;min-height:66px}
+.hf-review-rating{display:flex;flex-direction:row-reverse;justify-content:flex-end;gap:2px;width:max-content}
 .hf-review-rating input{position:absolute;opacity:0;width:1px;height:1px;clip:rect(0,0,0,0);overflow:hidden}
-.hf-review-rating label{display:block;cursor:pointer;color:#cfc7bc;font-size:28px;line-height:1;padding:1px}
+.hf-review-rating label{display:block;cursor:pointer;color:#cfc7bc;font-size:25px;line-height:1;padding:0 1px}
 .hf-review-rating label:hover,.hf-review-rating label:hover~label,.hf-review-rating input:checked+label,.hf-review-rating input:checked~label{color:#c58a3b}
-.hf-review-rating input:focus-visible+label{outline:3px solid rgba(201,123,61,.3);outline-offset:2px;border-radius:4px}
 .hf-review-rating-hint{font-size:10px;color:var(--hf-muted)}
-.hf-review-submit{justify-self:start;border:0;border-radius:9px;background:var(--hf-copper);color:#fff;padding:10px 16px;font-family:inherit;font-size:12px;font-weight:800;line-height:1.2;cursor:pointer;box-shadow:0 3px 8px rgba(201,123,61,.15)}
+.hf-review-submit{justify-self:start;border:0;border-radius:8px;background:var(--hf-copper);color:#fff;padding:9px 14px;font-size:11px;font-weight:800;cursor:pointer}
 .hf-review-submit:disabled{opacity:.6;cursor:wait}
-.hf-review-message{margin:0;color:#77716a;font-size:11px;line-height:1.5}
+.hf-review-message{margin:0;color:#77716a;font-size:10px;line-height:1.45}
 .hf-review-message.error{color:#a33e32}
-.hf-review-all{display:grid;gap:9px;margin-top:10px}
-.hf-review-pagination{display:flex;align-items:center;gap:10px;margin-top:10px}
+.hf-review-all{display:grid;gap:7px;margin-top:7px}
+.hf-review-pagination{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:5px}
 .hf-review-pagination[hidden]{display:none}
-@media(max-width:600px){.hf-public-reviews{margin:16px 12px 22px;padding:14px;border-radius:13px}.hf-reviews-heading h2{font-size:18px}.hf-review-summary{margin:8px 0 10px}.hf-review-item{padding:10px}.hf-review-rating label{font-size:27px}}
-`;
-document.head.appendChild(style);
+@media(max-width:600px){.hf-public-reviews{margin:10px 10px 14px;padding:10px 11px;border-radius:10px}.hf-reviews-heading h2{font-size:16px}.hf-review-summary{margin:6px 0 7px;gap:6px}.hf-review-item{padding:8px 9px}.hf-review-item p{font-size:11px;line-height:1.45}.hf-review-write{padding:6px 8px;font-size:10px}.hf-review-rating label{font-size:24px}}
+:root[data-theme="dark"] .hf-public-reviews,html[data-theme="dark"] .hf-public-reviews,body.dark .hf-public-reviews,body.dark-mode .hf-public-reviews,body.theme-dark .hf-public-reviews{--hf-ink:#f2f0ea;--hf-muted:#b6b1bf;--hf-line:#454253;background:#242333;border-color:#454253;color:#f2f0ea;box-shadow:none}
+:root[data-theme="dark"] .hf-review-item,html[data-theme="dark"] .hf-review-item,body.dark .hf-review-item,body.dark-mode .hf-review-item,body.theme-dark .hf-review-item{background:#2d2b3c;border-color:#464354}
+:root[data-theme="dark"] .hf-review-empty,html[data-theme="dark"] .hf-review-empty,body.dark .hf-review-empty,body.dark-mode .hf-review-empty,body.theme-dark .hf-review-empty{background:#302e40;color:#c5c0cc}
+:root[data-theme="dark"] .hf-review-item p,html[data-theme="dark"] .hf-review-item p,body.dark .hf-review-item p,body.dark-mode .hf-review-item p,body.theme-dark .hf-review-item p{color:#e5e1e9}
+:root[data-theme="dark"] .hf-review-write,html[data-theme="dark"] .hf-review-write,body.dark .hf-review-write,body.dark-mode .hf-review-write,body.theme-dark .hf-review-write{background:#3a3140;color:#f2d4b8;border-color:#755337}
+`;document.head.appendChild(style);
 
 async function init() {
   const productParams = new URLSearchParams({select:"id,name,slug,sku", slug:"eq." + slug, is_active:"eq.true", limit:"1"});
@@ -107,7 +107,7 @@ async function init() {
     <p class="hf-reviews-kicker">CUSTOMER FEEDBACK</p>
     <div class="hf-reviews-heading">
       <h2 id="hfReviewsTitle">Product Reviews</h2>
-      <button class="hf-review-write" id="hfReviewWrite" type="button" aria-expanded="false" aria-controls="hfReviewFormWrap">Write a Review</button>
+      <button class="hf-review-write" id="hfReviewWrite" type="button" aria-expanded="false" aria-controls="hfReviewFormWrap"><span aria-hidden="true">✎</span> Write a Review</button>
     </div>
     <div class="hf-review-summary" id="hfReviewSummary" aria-live="polite">Loading reviews…</div>
     <div id="hfReviewLatest"></div>
@@ -157,10 +157,10 @@ async function init() {
   let expanded = false;
 
   const renderReview = row => {
-    const source = row.source === "admin" ? '<span class="hf-review-admin">Halal Food note</span>' : "";
+    
     const verified = row.verified_purchase === true ? '<span class="hf-review-verified">Verified purchase</span>' : "";
     return `<article class="hf-review-item">
-      <div class="hf-review-item-head"><strong>${esc(row.reviewer_name || "Customer")}</strong><span><span class="hf-review-stars" aria-label="${Number(row.rating)||0} out of 5 stars">${stars(row.rating)}</span> ${source} ${verified}</span></div>
+      <div class="hf-review-item-head"><strong>${esc(row.reviewer_name || "Customer")}</strong><span><span class="hf-review-stars" aria-label="${Number(row.rating)||0} out of 5 stars">${stars(row.rating)}</span> ${verified}</span></div>
       <small>${esc(dateLabel(row.created_at))}</small>
       <p>${esc(row.review_text)}</p>
     </article>`;
@@ -218,7 +218,7 @@ async function init() {
     const open = formWrap.hidden;
     formWrap.hidden = !open;
     write.setAttribute("aria-expanded", String(open));
-    write.textContent = open ? "Close Review Form" : "Write a Review";
+    write.innerHTML = open ? '<span aria-hidden="true">×</span> Close' : '<span aria-hidden="true">✎</span> Write a Review';
     if (open) $("#hfReviewName").focus({preventScroll:true});
   });
   toggle.addEventListener("click", async () => {
@@ -226,7 +226,7 @@ async function init() {
     all.hidden = !expanded;
     pagination.hidden = !expanded || loadedRows >= publishedCount - 1;
     toggle.setAttribute("aria-expanded", String(expanded));
-    toggle.textContent = expanded ? "Show latest review only" : "View all reviews";
+    toggle.textContent = expanded ? "Show fewer reviews" : "Show more reviews";
     if (expanded && loadedRows === 0) {
       try { await loadMore(); } catch (_) { pageCount.textContent = "Could not load more reviews. Please try again."; }
     }
@@ -262,7 +262,7 @@ async function init() {
       form.reset();
       $("#hfReviewRatingHint").textContent = "Select 1 to 5 stars";
       message.textContent = "Thank you! Your review has been received and will appear after approval.";
-      write.textContent = "Write another Review";
+      write.innerHTML = '<span aria-hidden="true">✎</span> Write a Review';
     } catch (error) {
       message.className = "hf-review-message error";
       message.textContent = error.message || "Review submission failed. Please try again.";
