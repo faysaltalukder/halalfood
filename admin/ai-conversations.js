@@ -99,6 +99,7 @@
     // Do not auto-open the first thread: render the inbox independently so a slow or
     // failed detail request can never leave the whole conversation list in a loading state.
     if(selectedId&&!rows.some(r=>r.id===selectedId)){selectedId=null;selectedConversation=null;messages=[];feedback=[];$("aicWorkspace").classList.remove("is-thread-open");renderDetail();}
+    else if(!selectedId&&rows.length&&!window.matchMedia("(max-width:760px)").matches){selectConversation(rows[0].id,false);}
     if(!rows.length){
      $("aicConversationList").innerHTML='<div class="aic-no-results">No saved conversations yet. New customer chats will appear here after they are stored.</div>';
     }
