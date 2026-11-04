@@ -125,7 +125,7 @@ async function init() {
         <p class="hf-review-message" id="hfReviewMessage">Your review will be checked before it appears publicly.</p>
         <button class="hf-review-submit" type="submit">Submit Review</button>
       </form>
-    </div>`
+    </div>
     <div class="hf-review-summary" id="hfReviewSummary" aria-live="polite">Loading reviews…</div>
     <div id="hfReviewLatest"></div>
     <div class="hf-review-actions" id="hfReviewActions" hidden>
@@ -135,8 +135,7 @@ async function init() {
     <div class="hf-review-pagination" id="hfReviewPagination" hidden>
       <button class="hf-review-link" id="hfReviewMore" type="button">Load 5 more reviews</button>
       <span class="hf-review-count" id="hfReviewPageCount"></span>
-    </div>
-;
+    </div>`;
   if (related) related.insertAdjacentElement("beforebegin", section);
   else detail.insertAdjacentElement("afterend", section);
 
