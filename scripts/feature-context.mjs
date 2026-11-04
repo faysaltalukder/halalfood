@@ -75,7 +75,7 @@ const FEATURES = {
       { file: "admin/products-barcode.js", names: ["renderScanResult", "printLabels", "startCamera", "init"] },
       { file: "admin/products-reviews.js", names: ["openReview", "setStatus", "refresh", "init"] },
       { file: "js/product-lookup.js", names: ["loadProduct"] },
-      { file: "js/product-reviews.js", names: ["refreshReviews", "init"] }
+      { file: "js/product-reviews.js", names: ["loadSummary", "init"] }
     ],
     tables: ["products", "product_reviews", "categories", "inventory_movements", "order_items"],
     functions: [],
