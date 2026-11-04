@@ -758,3 +758,69 @@
     object-fit: contain !important;
   }
 }
+
+
+/* HALAL FOOD RELATED PRODUCT IMAGE FRAME v9
+   Universal recommendation frame: identical 4:5 box on every product page.
+   Product images scale down inside the frame; never crop or stretch them.
+   Scoped only to the four related-product cards, not the main product image. */
+#related-grid > article.product-card > a.product-image-link {
+  display: block !important;
+  position: relative !important;
+  width: 100% !important;
+  height: auto !important;
+  aspect-ratio: 4 / 5 !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+}
+#related-grid > article.product-card > a.product-image-link > div.product-image {
+  display: grid !important;
+  position: absolute !important;
+  inset: 0 !important;
+  place-items: center !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  aspect-ratio: auto !important;
+  overflow: hidden !important;
+  padding: 8px !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  background: var(--cream, #f2f0ea) !important;
+}
+#related-grid > article.product-card > a.product-image-link > div.product-image::before,
+#related-grid > article.product-card > a.product-image-link > div.product-image::after {
+  content: none !important;
+  display: none !important;
+}
+#related-grid > article.product-card > a.product-image-link > div.product-image > img {
+  position: static !important;
+  inset: auto !important;
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  aspect-ratio: auto !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  transform: none !important;
+  background: transparent !important;
+}
+@media (max-width: 600px) {
+  #related-grid > article.product-card > a.product-image-link {
+    aspect-ratio: 4 / 5 !important;
+  }
+  #related-grid > article.product-card > a.product-image-link > div.product-image {
+    padding: 6px !important;
+  }
+}
