@@ -1,0 +1,124 @@
+/* HALAL FOOD — universal mobile product photography rules.
+   Source images retain their intrinsic proportions. No fixed image frame,
+   forced height, cover crop, zoom transform, or clipping is allowed. */
+@media (max-width: 760px) {
+  /* Main product image on static, CMS and legacy product-detail pages. */
+  main .product-detail-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+    align-items: start !important;
+  }
+  main .product-detail-image-wrap {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    aspect-ratio: auto !important;
+  }
+  main .product-detail-image {
+    display: block !important;
+    position: relative !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    aspect-ratio: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    line-height: 0 !important;
+  }
+  main .product-detail-image > img,
+  main .product-detail-image-wrap > img {
+    display: block !important;
+    position: static !important;
+    inset: auto !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    aspect-ratio: auto !important;
+    object-fit: contain !important;
+    object-position: center center !important;
+    transform: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+  }
+  main .product-detail-image .image-zoom-hint { display: none !important; }
+
+  /* Product/category cards: use each image's real ratio, not a square crop box. */
+  .product-card .product-image,
+  .product-grid .product-card .product-image,
+  .featured-grid-4 .product-card .product-image,
+  #related-grid .product-card .product-image,
+  .jfy-grid .jfy-image,
+  .mrow-grid .mrow-image,
+  .product-image-link > .product-image {
+    display: block !important;
+    position: relative !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    aspect-ratio: auto !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    background: transparent !important;
+  }
+  .product-card .product-image > img,
+  .product-grid .product-card .product-image > img,
+  .featured-grid-4 .product-card .product-image > img,
+  #related-grid .product-card .product-image > img,
+  .jfy-grid .jfy-image > img,
+  .mrow-grid .mrow-image > img,
+  .product-image-link > .product-image > img {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    aspect-ratio: auto !important;
+    object-fit: contain !important;
+    object-position: center center !important;
+    transform: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Undo the legacy 1:1 related-product frame and 1.1x image zoom. */
+  #related-grid > article.product-card > a.product-image-link,
+  #related-grid > article.product-card > a.product-image-link > .product-image {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    aspect-ratio: auto !important;
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+  #related-grid > article.product-card > a.product-image-link > .product-image > img {
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    aspect-ratio: auto !important;
+    object-fit: contain !important;
+    transform: none !important;
+  }
+}
