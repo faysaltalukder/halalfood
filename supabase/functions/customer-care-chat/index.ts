@@ -1641,12 +1641,24 @@ Deno.serve(async (req: Request) => {
         event: "customer_care_conversation_user_log_failed",
         requestId,
         kind: error instanceof Error ? error.name : "unknown",
+        ...(error instanceof SupabaseRestError ? {
+          operation: error.operation,
+          table: error.table,
+          httpStatus: error.httpStatus,
+          databaseCode: error.databaseCode,
+        } : {}),
       }));
     }
   }
   if (conversationContext) effectiveConversationId = conversationContext.id;
   else if (!conversationCredentials) {
-    console.error(JSON.stringify({ event: "customer_care_conversation_storage_not_configured", requestId }));
+    console.error(JSON.stringify({
+      event: "customer_care_conversation_storage_not_configured",
+      requestId,
+      supabaseUrlConfigured: Boolean(Deno.env.get("SUPABASE_URL")),
+      legacyServiceRoleKeyConfigured: Boolean(Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")),
+      secretKeysConfigured: Boolean(Deno.env.get("SUPABASE_SECRET_KEYS")),
+    }));
   }
   const conversationIdentity = {
     conversationId: effectiveConversationId,
