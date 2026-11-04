@@ -8,7 +8,7 @@
   const style = document.createElement("link");
   style.id = "hf-customer-care-chat-styles";
   style.rel = "stylesheet";
-  style.href = ASSET_BASE + "css/customer-care-chat.css?v=20261104-ai-robot-avatar-v1";
+  style.href = ASSET_BASE + "css/customer-care-chat.css?v=20261104-ai-avatar-v2";
   document.head.appendChild(style);
 
   let root = document.getElementById("hf-contact-widget");
@@ -52,7 +52,7 @@
     '</header>' +
     '<div class="hf-ai-chat-content" id="hf-ai-chat-content">' +
       '<div class="hf-ai-chat-context"><span class="hf-ai-chat-context-dot"></span><span>পণ্য, অর্ডার ও ডেলিভারি সহায়তা</span><span class="hf-ai-chat-context-separator">•</span><span>বাংলা / English</span><button class="hf-ai-chat-cart-link" type="button" data-hf-chat-cart>কার্ট <b id="hf-ai-cart-count">0</b></button><button class="hf-ai-chat-human-link" type="button" data-hf-human-support>মানব সহায়তা</button></div><section class="hf-ai-chat-view" id="hf-ai-chat-view" role="region" aria-label="পণ্য ও অর্ডার" aria-live="polite" hidden></section><div class="hf-ai-chat-messages" id="hf-ai-chat-messages" aria-live="polite" aria-relevant="additions text">' +
-        '<div class="hf-ai-chat-day-divider"><span>কথোপকথন শুরু</span></div><div class="hf-ai-message-group hf-ai-message-group-assistant"><div class="hf-ai-message-avatar" aria-hidden="true"><img src="https://faysaltalukder.github.io/halalfood/images/ai-assistant/halal-food-ai-robot.svg" alt="" loading="lazy"></div><div class="hf-ai-message hf-ai-message-assistant"><p>আসসালামু আলাইকুম! Halal Food-এ স্বাগতম। কী খুঁজছেন বা কীভাবে সাহায্য করতে পারি?</p><span class="hf-ai-message-time">স্বাগতম</span></div></div>' +
+        '<div class="hf-ai-chat-day-divider"><span>কথোপকথন শুরু</span></div><div class="hf-ai-message-group hf-ai-message-group-assistant"><div class="hf-ai-message-avatar" aria-hidden="true"><img src="https://faysaltalukder.github.io/halalfood/images/ai-assistant/halal-food-ai-robot.svg?v=20261104-ai-avatar-v2" alt="" loading="lazy"></div><div class="hf-ai-message hf-ai-message-assistant"><p>আসসালামু আলাইকুম! Halal Food-এ স্বাগতম। কী খুঁজছেন বা কীভাবে সাহায্য করতে পারি?</p><span class="hf-ai-message-time">স্বাগতম</span></div></div>' +
         '<div class="hf-ai-chat-prompts" aria-label="সাধারণ প্রশ্ন">' +
           '<button type="button" data-hf-chat-prompt="আমি কী কী পণ্য পেতে পারি?">কী কী পণ্য পাওয়া যায়?</button>' +
           '<button type="button" data-hf-chat-prompt="ডেলিভারি সম্পর্কে জানতে চাই।">ডেলিভারি সম্পর্কে জানতে চাই</button>' +
@@ -283,7 +283,7 @@
     const shouldStickToBottom = sender === "user" || wasNearBottom;
     const group = document.createElement("div");
     group.className = "hf-ai-message-group " + (sender === "user" ? "hf-ai-message-group-user" : "hf-ai-message-group-assistant");
-    if (sender === "assistant") { const avatar = document.createElement("div"); avatar.className = "hf-ai-message-avatar"; avatar.setAttribute("aria-hidden", "true"); avatar.innerHTML = '<img src="https://faysaltalukder.github.io/halalfood/images/ai-assistant/halal-food-ai-robot.svg" alt="" loading="lazy">'; group.appendChild(avatar); }
+    if (sender === "assistant") { const avatar = document.createElement("div"); avatar.className = "hf-ai-message-avatar"; avatar.setAttribute("aria-hidden", "true"); avatar.innerHTML = '<img src="https://faysaltalukder.github.io/halalfood/images/ai-assistant/halal-food-ai-robot.svg?v=20261104-ai-avatar-v2" alt="" loading="lazy">'; group.appendChild(avatar); }
     const bubble = document.createElement("div");
     bubble.className = "hf-ai-message " + (sender === "user" ? "hf-ai-message-user" : "hf-ai-message-assistant") + (extraClass ? " " + extraClass : "");
     const paragraph = document.createElement("p"); paragraph.textContent = sender === "assistant" ? cleanAssistantText(text) : text; bubble.appendChild(paragraph);
@@ -404,7 +404,7 @@
     historyLoadSequence++;
     historyLoaded = true;
     historyReady = Promise.resolve();
-    messages.innerHTML = '<div class="hf-ai-chat-day-divider"><span>নতুন কথোপকথন</span></div><div class="hf-ai-message-group hf-ai-message-group-assistant"><div class="hf-ai-message-avatar" aria-hidden="true"><img src="https://faysaltalukder.github.io/halalfood/images/ai-assistant/halal-food-ai-robot.svg" alt="" loading="lazy"></div><div class="hf-ai-message hf-ai-message-assistant"><p>আসসালামু আলাইকুম! Halal Food-এ স্বাগতম। কীভাবে সাহায্য করতে পারি?</p><span class="hf-ai-message-time">স্বাগতম</span></div></div><div class="hf-ai-chat-prompts" aria-label="সাধারণ প্রশ্ন"><button type="button" data-hf-chat-prompt="আমি কী কী পণ্য পেতে পারি?">কী কী পণ্য পাওয়া যায়?</button><button type="button" data-hf-chat-prompt="ডেলিভারি সম্পর্কে জানতে চাই।">ডেলিভারি সম্পর্কে জানতে চাই</button><button type="button" data-hf-chat-prompt="ওয়েবসাইটে কীভাবে অর্ডার করব?">কীভাবে অর্ডার করব?</button></div>';
+    messages.innerHTML = '<div class="hf-ai-chat-day-divider"><span>নতুন কথোপকথন</span></div><div class="hf-ai-message-group hf-ai-message-group-assistant"><div class="hf-ai-message-avatar" aria-hidden="true"><img src="https://faysaltalukder.github.io/halalfood/images/ai-assistant/halal-food-ai-robot.svg?v=20261104-ai-avatar-v2" alt="" loading="lazy"></div><div class="hf-ai-message hf-ai-message-assistant"><p>আসসালামু আলাইকুম! Halal Food-এ স্বাগতম। কীভাবে সাহায্য করতে পারি?</p><span class="hf-ai-message-time">স্বাগতম</span></div></div><div class="hf-ai-chat-prompts" aria-label="সাধারণ প্রশ্ন"><button type="button" data-hf-chat-prompt="আমি কী কী পণ্য পেতে পারি?">কী কী পণ্য পাওয়া যায়?</button><button type="button" data-hf-chat-prompt="ডেলিভারি সম্পর্কে জানতে চাই।">ডেলিভারি সম্পর্কে জানতে চাই</button><button type="button" data-hf-chat-prompt="ওয়েবসাইটে কীভাবে অর্ডার করব?">কীভাবে অর্ডার করব?</button></div>';
     bindPromptButtons(); messages.scrollTop = 0;
   }
   function resizeComposer() { input.style.height = "auto"; input.style.height = Math.min(input.scrollHeight, 112) + "px"; input.style.overflowY = input.scrollHeight > 112 ? "auto" : "hidden"; }
