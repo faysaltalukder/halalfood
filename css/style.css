@@ -3247,3 +3247,123 @@ body.category-products-page .product-card .product-image img {
   object-fit: contain !important;
   object-position: center center !important;
 }
+
+
+
+/* =====================================================================
+   HALAL FOOD — UNIVERSAL PRODUCT CARD FRAME (DESKTOP + MOBILE)
+   Reference: Nuts & Seeds Mix photo geometry, 4:3.
+   This is intentionally the final product-card image rule so it overrides
+   older intrinsic-height, square-frame and mobile-only crop declarations.
+   Keep the full product photo visible inside the common frame.
+   ===================================================================== */
+.product-card .product-image-link {
+  display: block !important;
+  position: relative !important;
+  width: 100% !important;
+  height: auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  aspect-ratio: 4 / 3 !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  line-height: 0 !important;
+}
+
+.product-card .product-image-link > .product-image {
+  display: grid !important;
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  aspect-ratio: auto !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  place-items: center !important;
+  background: var(--cream, #f2f0ea) !important;
+}
+
+.product-card .product-image-link > .product-image::before,
+.product-card .product-image-link > .product-image::after {
+  content: none !important;
+  display: none !important;
+}
+
+.product-card .product-image-link > .product-image > img,
+.product-card .product-image-link > img,
+.product-card > .product-image > img {
+  display: block !important;
+  position: static !important;
+  inset: auto !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  aspect-ratio: auto !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+  transform: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+}
+
+/* Also normalize cards that use a direct .product-image wrapper. */
+.product-card > .product-image {
+  display: grid !important;
+  position: relative !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  aspect-ratio: 4 / 3 !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  place-items: center !important;
+  background: var(--cream, #f2f0ea) !important;
+}
+
+/* Product titles stay on one line on both desktop and phone.
+   Narrow cards use an ellipsis instead of wrapping into extra rows. */
+.product-card .product-body .product-name-link {
+  display: block !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+
+.product-card .product-body .product-name-link h3 {
+  display: block !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 1.35em !important;
+  min-height: 1.35em !important;
+  max-height: 1.35em !important;
+  margin: 0 !important;
+  font-size: clamp(11px, 1.2vw, 16px) !important;
+  line-height: 1.35 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  overflow-wrap: normal !important;
+  word-break: normal !important;
+}
+
+@media (max-width: 760px) {
+  .product-card .product-image-link {
+    aspect-ratio: 4 / 3 !important;
+  }
+  .product-card .product-body .product-name-link h3 {
+    font-size: clamp(11px, 3vw, 14px) !important;
+  }
+}
