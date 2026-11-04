@@ -1323,7 +1323,23 @@ Deno.serve(async (req: Request) => {
       const pureResponse = await callGemini(model, apiKey, contents, pureInstruction, pureController.signal);
       if (!pureResponse.ok) {
         const status = pureResponse.status;
-        console.warn(JSON.stringify({ event: "customer_care_pure_llm_upstream_error", requestId, status }));
+        let providerStatus = "";
+        let providerMessage = "";
+        try {
+          const providerBody = await pureResponse.clone().json();
+          providerStatus = typeof providerBody?.error?.status === "string" ? providerBody.error.status.slice(0, 80) : "";
+          providerMessage = typeof providerBody?.error?.message === "string" ? providerBody.error.message.slice(0, 240) : "";
+        } catch {
+          providerMessage = "Provider returned a non-JSON error response";
+        }
+        console.warn(JSON.stringify({
+          event: "customer_care_pure_llm_upstream_error",
+          requestId,
+          status,
+          model,
+          providerStatus,
+          providerMessage,
+        }));
         return response({ success: false, code: friendlyErrorCode(status), requestId }, status === 429 ? 429 : 502);
       }
       const purePayload = await pureResponse.json();
