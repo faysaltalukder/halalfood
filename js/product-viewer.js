@@ -8,7 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
       modal.setAttribute("role", "dialog");
       modal.setAttribute("aria-modal", "true");
       modal.setAttribute("aria-label", `${img.alt || "Product"} image viewer`);
-      modal.innerHTML = `<button class="product-image-modal-close" type="button" aria-label="Close image viewer">&times;</button><img class="product-viewer-full-image" decoding="async" src="${img.currentSrc || img.src}" alt="${img.alt || "Product"}">`;
+      modal.innerHTML = `<button class="product-image-modal-close" type="button" aria-label="Close image viewer">&times;</button><img src="${img.currentSrc || img.src}" alt="${img.alt || "Product"}">`;
       document.body.appendChild(modal);
       document.body.classList.add("image-modal-open");
       const closeModal = () => { modal.remove(); document.body.classList.remove("image-modal-open"); document.removeEventListener("keydown", onKeyDown); };
