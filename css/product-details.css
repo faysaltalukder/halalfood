@@ -535,3 +535,51 @@
     padding: 0 !important;
   }
 }
+
+
+/* HALAL FOOD RECOMMENDATION IMAGE SYSTEM v5
+   Product-page recommendations only: compact portrait frames with the
+   complete original product image visible, never cropped or enlarged. */
+#related-grid .product-card .product-image {
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  aspect-ratio: 4 / 5 !important;
+  display: grid !important;
+  place-items: center !important;
+  box-sizing: border-box !important;
+  padding: 9px !important;
+  overflow: hidden !important;
+  background: var(--cream, #f2f0ea) !important;
+}
+#related-grid .product-card .product-image img {
+  position: relative !important;
+  z-index: 1 !important;
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+  transform: none !important;
+}
+#related-grid .product-card .product-image-link {
+  display: block !important;
+  overflow: hidden !important;
+}
+@media (max-width: 600px) {
+  #related-grid.product-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 12px !important;
+  }
+  #related-grid .product-card .product-image {
+    aspect-ratio: 4 / 5 !important;
+    padding: 7px !important;
+  }
+}
