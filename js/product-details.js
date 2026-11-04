@@ -85,3 +85,29 @@
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init);
   else init();
 })();
+
+
+/* Recommendation frame geometry: derive one compact, consistent frame shape
+   from the primary product image on this page, then apply it to every related
+   card. The image itself fills the frame with a centered, non-distorting crop. */
+(function(){
+  function applyRecommendationFrameRatio(){
+    var main=document.querySelector('.product-detail-image img');
+    var grid=document.querySelector('#related-grid');
+    if(!main||!grid) return;
+    function apply(){
+      var w=main.naturalWidth||main.width;
+      var h=main.naturalHeight||main.height;
+      if(!w||!h) return;
+      var ratio=w/h;
+      /* Keep extreme portrait/landscape hero assets within practical
+         e-commerce card proportions; square hero assets remain square. */
+      ratio=Math.max(.82,Math.min(1.42,ratio));
+      grid.style.setProperty('--recommendation-image-ratio',String(ratio));
+    }
+    if(main.complete&&main.naturalWidth) apply();
+    else main.addEventListener('load',apply,{once:true});
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',applyRecommendationFrameRatio);
+  else applyRecommendationFrameRatio();
+})();
