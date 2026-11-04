@@ -50,3 +50,38 @@
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init);
   else init();
 })();
+
+
+/* Use the page's full-resolution source for small recommendation thumbnails.
+   This avoids mislabeled/undersized responsive derivatives on legacy images. */
+(function(){
+  function upgradeRecommendationImages(root){
+    (root||document).querySelectorAll('.product-card .product-image img').forEach(function(img){
+      if(img.dataset.fullSourceReady==='1') return;
+      var original=img.getAttribute('src');
+      if(!original) return;
+      img.dataset.fullSourceReady='1';
+      img.removeAttribute('srcset');
+      img.removeAttribute('sizes');
+      img.src=original;
+      var frame=img.closest('.product-image');
+      if(frame){
+        frame.style.setProperty('--product-image-backdrop','url("'+String(img.src).replace(/["\\\\]/g,'\\\\$&')+'")');
+        frame.dataset.backdropReady='1';
+      }
+    });
+  }
+  function init(){
+    upgradeRecommendationImages(document);
+    if(!window.MutationObserver) return;
+    new MutationObserver(function(records){
+      records.forEach(function(record){
+        record.addedNodes.forEach(function(node){
+          if(node.nodeType===1) upgradeRecommendationImages(node);
+        });
+      });
+    }).observe(document.body,{childList:true,subtree:true});
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init);
+  else init();
+})();
