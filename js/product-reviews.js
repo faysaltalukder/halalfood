@@ -307,8 +307,7 @@ async function init() {
         reviewer_name:$("#hfReviewName").value.trim(),
         rating:Number(rating.value),
         review_text:$("#hfReviewText").value.trim(),
-        source:"customer",
-        status:"pending",
+        source:"customer",status:"pending",
         verified_purchase:false
       });
       form.reset();
