@@ -49,6 +49,7 @@
 .aic-thread-meta{margin:11px 17px 0;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--nested-bg);font-size:9px;line-height:1.6;color:var(--muted);overflow-wrap:anywhere}
 .aic-message-stage{display:flex;flex:1;min-height:360px;padding:13px 17px 8px;background:var(--nested-bg);border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-top:11px}
 .aic-messages{display:flex;flex-direction:column;align-items:stretch;gap:10px;width:100%;max-height:540px;overflow:auto;padding:4px 5px 12px;overscroll-behavior:contain;scrollbar-gutter:stable}
+.aic-day-separator{display:flex;justify-content:center;align-items:center;margin:5px 0 2px;color:var(--muted);font-size:9px}.aic-day-separator span{padding:4px 9px;border-radius:20px;background:var(--card-bg);border:1px solid var(--border)}
 .aic-message{position:relative;display:flex;flex-direction:column;max-width:min(78%,620px);width:max-content;min-width:100px;padding:10px 12px;border:1px solid transparent;border-radius:15px;box-shadow:0 1px 2px rgba(30,35,45,.06)}
 .aic-message.user{align-self:flex-start;background:#eaf1fb;border-color:#d7e3f5;border-bottom-left-radius:4px;color:#20334e}
 .aic-message.assistant{align-self:flex-end;background:#f8ead9;border-color:#efd8bc;border-bottom-right-radius:4px;color:#49321e}
