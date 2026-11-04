@@ -187,22 +187,25 @@ async function beginConversationTurn(
   const safeMessage = redactFeedbackText(message || (hasImage ? "Customer attached a product image." : ""), 4000);
   if (!safeMessage) return null;
 
+  let threadId = String(conversationId);
   const existing = await fetchSupabaseRows("ai_customer_care_conversations", {
     select: "id,visitor_id",
-    id: "eq." + conversationId,
+    visitor_id: "eq." + visitorId,
     store_id: "eq.halal-food",
+    order: "created_at.asc",
     limit: "1",
   }, credentials);
 
   const now = new Date().toISOString();
   const preview = safeMessage.replace(/\s+/g, " ").slice(0, 260);
   if (existing.length) {
-    if (String(existing[0].visitor_id || "") !== visitorId) return null;
+    if (String(existing[0].visitor_id || "") !== visitorId || !isValidUuid(existing[0].id)) return null;
+    threadId = String(existing[0].id);
   } else {
     const title = safeMessage.replace(/\s+/g, " ").slice(0, 100) || "Customer conversation";
     try {
       await insertSupabaseRow("ai_customer_care_conversations", {
-        id: conversationId,
+        id: threadId,
         visitor_id: visitorId,
         store_id: "halal-food",
         title,
@@ -215,16 +218,18 @@ async function beginConversationTurn(
       if (!messageText.includes("(409)") && !messageText.includes("(23505)")) throw error;
       const retry = await fetchSupabaseRows("ai_customer_care_conversations", {
         select: "id,visitor_id",
-        id: "eq." + conversationId,
+        visitor_id: "eq." + visitorId,
         store_id: "eq.halal-food",
+        order: "created_at.asc",
         limit: "1",
       }, credentials);
-      if (!retry.length || String(retry[0].visitor_id || "") !== visitorId) return null;
+      if (!retry.length || String(retry[0].visitor_id || "") !== visitorId || !isValidUuid(retry[0].id)) return null;
+      threadId = String(retry[0].id);
     }
   }
 
   await insertSupabaseRow("ai_customer_care_messages", {
-    conversation_id: conversationId,
+    conversation_id: threadId,
     request_id: requestId,
     role: "user",
     content: safeMessage,
@@ -234,7 +239,7 @@ async function beginConversationTurn(
   }, credentials);
 
   await patchSupabaseRow("ai_customer_care_conversations", {
-    id: "eq." + conversationId,
+    id: "eq." + threadId,
     visitor_id: "eq." + visitorId,
     store_id: "eq.halal-food",
   }, {
@@ -244,7 +249,7 @@ async function beginConversationTurn(
     updated_at: now,
   }, credentials);
 
-  return { id: conversationId, visitorId, requestId, credentials };
+  return { id: threadId, visitorId, requestId, credentials };
 }
 
 async function saveConversationAssistantTurn(
