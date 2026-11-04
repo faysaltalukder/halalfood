@@ -218,6 +218,64 @@ async function verifyAdminRequest(req: Request, credentials: { url: string; key:
 }
 
 
+
+type VerifiedCustomerIdentity = {
+  userId: string;
+  name: string;
+  avatarUrl: string | null;
+};
+
+async function verifyCustomerIdentity(
+  req: Request,
+  credentials: { url: string; key: string; isSecretKey: boolean },
+): Promise<VerifiedCustomerIdentity | null> {
+  const token = (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "").trim();
+  if (!token) return null;
+  const claims = decodeJwtPayload(token);
+  if (!claims || !isValidUuid(claims.sub) || Number(claims.exp || 0) <= Math.floor(Date.now() / 1000)) return null;
+  const audience = claims.aud;
+  if (audience !== "authenticated" && !(Array.isArray(audience) && audience.includes("authenticated"))) return null;
+
+  const authKey = Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY") || credentials.key;
+  const check = await fetch(credentials.url + "/auth/v1/user", {
+    method: "GET",
+    headers: { apikey: authKey, Authorization: "Bearer " + token },
+    cache: "no-store",
+  });
+  if (!check.ok) return null;
+  const user = await check.json();
+  const userId = String(user?.id || "");
+  if (!isValidUuid(userId) || userId !== claims.sub) return null;
+
+  let profile: Record<string, unknown> = {};
+  try {
+    const profiles = await fetchSupabaseRows("customer_profiles", {
+      select: "user_id,full_name,avatar_url",
+      user_id: "eq." + userId,
+      limit: "1",
+    }, credentials);
+    profile = profiles[0] || {};
+  } catch {
+    // Verified Auth metadata is the fallback if the profile row is unavailable.
+  }
+
+  const metadata = user?.user_metadata && typeof user.user_metadata === "object"
+    ? user.user_metadata as Record<string, unknown> : {};
+  const rawName = String(profile.full_name || metadata.full_name || metadata.name || metadata.given_name || "Registered customer")
+    .replace(/[<>\r\n\t]/g, " ").replace(/\s+/g, " ").trim().slice(0, 100);
+  const candidates = [profile.avatar_url, metadata.avatar_url, metadata.picture, metadata.photo_url, metadata.profile_image];
+  let avatarUrl: string | null = null;
+  for (const candidate of candidates) {
+    if (typeof candidate !== "string") continue;
+    const value = candidate.trim();
+    if (value.length <= 2048 && /^https:\/\/\//i.test(value) && !/[\s<>"']/u.test(value)) {
+      avatarUrl = value;
+      break;
+    }
+  }
+  return { userId, name: rawName || "Registered customer", avatarUrl };
+}
+
 function isValidUuid(value: unknown): value is string {
   return typeof value === "string" &&
     /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
@@ -227,6 +285,7 @@ type ConversationContext = {
   id: string;
   visitorId: string;
   requestId: string;
+  customerUserId: string | null;
   credentials: { url: string; key: string; isSecretKey: boolean };
 };
 
@@ -237,6 +296,7 @@ async function beginConversationTurn(
   message: string,
   hasImage: boolean,
   credentials: { url: string; key: string; isSecretKey: boolean },
+  customer: VerifiedCustomerIdentity | null,
 ): Promise<ConversationContext | null> {
   if (!isValidUuid(conversationId) || !isValidUuid(visitorId)) {
     console.warn(JSON.stringify({ event: "customer_care_conversation_identity_invalid", requestId }));
@@ -248,48 +308,95 @@ async function beginConversationTurn(
     return null;
   }
 
-  let threadId = String(conversationId);
-  const existing = await fetchSupabaseRows("ai_customer_care_conversations", {
-    select: "id,visitor_id",
-    visitor_id: "eq." + visitorId,
-    store_id: "eq.halal-food",
-    order: "created_at.asc",
-    limit: "1",
-  }, credentials);
-
   const now = new Date().toISOString();
   const preview = safeMessage.replace(/\s+/g, " ").slice(0, 260);
-  if (existing.length) {
-    if (String(existing[0].visitor_id || "") !== visitorId || !isValidUuid(existing[0].id)) {
-      throw new Error("Existing customer conversation identity did not match the visitor.");
+  let existing: Record<string, unknown>[] = [];
+
+  // Reuse one durable conversation thread for the same verified customer account.
+  if (customer) {
+    existing = await fetchSupabaseRows("ai_customer_care_conversations", {
+      select: "id,visitor_id,customer_user_id",
+      customer_user_id: "eq." + customer.userId,
+      store_id: "eq.halal-food",
+      order: "created_at.asc",
+      limit: "1",
+    }, credentials);
+  }
+
+  // On first login, attach this browser's existing guest thread to the verified account.
+  if (!existing.length) {
+    const byVisitor = await fetchSupabaseRows("ai_customer_care_conversations", {
+      select: "id,visitor_id,customer_user_id",
+      visitor_id: "eq." + visitorId,
+      store_id: "eq.halal-food",
+      order: "created_at.asc",
+      limit: "1",
+    }, credentials);
+    if (byVisitor.length) {
+      const ownerId = String(byVisitor[0].customer_user_id || "");
+      if (customer && ownerId && ownerId !== customer.userId) {
+        throw new Error("This browser conversation is linked to a different customer account.");
+      }
+      existing = byVisitor;
+      if (customer && !ownerId) {
+        await patchSupabaseRow("ai_customer_care_conversations", {
+          id: "eq." + String(byVisitor[0].id),
+          visitor_id: "eq." + visitorId,
+          store_id: "eq.halal-food",
+        }, {
+          customer_user_id: customer.userId,
+          customer_name: customer.name,
+          customer_avatar_url: customer.avatarUrl,
+          customer_profile_updated_at: now,
+          updated_at: now,
+        }, credentials);
+      }
     }
+  }
+
+  let threadId = String(conversationId);
+  if (existing.length) {
+    if (!isValidUuid(existing[0].id)) throw new Error("Existing conversation identity is invalid.");
     threadId = String(existing[0].id);
   } else {
     const title = safeMessage.replace(/\s+/g, " ").slice(0, 100) || "Customer conversation";
+    const row: Record<string, unknown> = {
+      id: threadId,
+      visitor_id: visitorId,
+      store_id: "halal-food",
+      title,
+      last_message_preview: preview,
+      last_message_at: now,
+      status: "open",
+    };
+    if (customer) {
+      row.customer_user_id = customer.userId;
+      row.customer_name = customer.name;
+      row.customer_avatar_url = customer.avatarUrl;
+      row.customer_profile_updated_at = now;
+    }
     try {
-      await insertSupabaseRow("ai_customer_care_conversations", {
-        id: threadId,
-        visitor_id: visitorId,
-        store_id: "halal-food",
-        title,
-        last_message_preview: preview,
-        last_message_at: now,
-        status: "open",
-      }, credentials);
+      await insertSupabaseRow("ai_customer_care_conversations", row, credentials);
     } catch (error) {
       const conflict = error instanceof SupabaseRestError &&
         (error.httpStatus === 409 || error.databaseCode === "23505");
       if (!conflict) throw error;
-      const retry = await fetchSupabaseRows("ai_customer_care_conversations", {
-        select: "id,visitor_id",
-        visitor_id: "eq." + visitorId,
-        store_id: "eq.halal-food",
-        order: "created_at.asc",
-        limit: "1",
-      }, credentials);
-      if (!retry.length || String(retry[0].visitor_id || "") !== visitorId || !isValidUuid(retry[0].id)) {
-        throw error;
-      }
+      const retry = customer
+        ? await fetchSupabaseRows("ai_customer_care_conversations", {
+          select: "id,visitor_id,customer_user_id",
+          customer_user_id: "eq." + customer.userId,
+          store_id: "eq.halal-food",
+          order: "created_at.asc",
+          limit: "1",
+        }, credentials)
+        : await fetchSupabaseRows("ai_customer_care_conversations", {
+          select: "id,visitor_id,customer_user_id",
+          visitor_id: "eq." + visitorId,
+          store_id: "eq.halal-food",
+          order: "created_at.asc",
+          limit: "1",
+        }, credentials);
+      if (!retry.length || !isValidUuid(retry[0].id)) throw error;
       threadId = String(retry[0].id);
     }
   }
@@ -308,20 +415,26 @@ async function beginConversationTurn(
     event: "customer_care_conversation_user_saved",
     requestId,
     conversationId: threadId,
+    customerLinked: Boolean(customer),
     messageRole: "user",
   }));
 
+  const previewFilters: Record<string, string> = { id: "eq." + threadId, store_id: "eq.halal-food" };
+  if (!customer) previewFilters.visitor_id = "eq." + visitorId;
+  const update: Record<string, unknown> = {
+    last_message_preview: preview,
+    last_message_at: now,
+    status: "open",
+    updated_at: now,
+  };
+  if (customer) {
+    update.customer_user_id = customer.userId;
+    update.customer_name = customer.name;
+    update.customer_avatar_url = customer.avatarUrl;
+    update.customer_profile_updated_at = now;
+  }
   try {
-    await patchSupabaseRow("ai_customer_care_conversations", {
-      id: "eq." + threadId,
-      visitor_id: "eq." + visitorId,
-      store_id: "eq.halal-food",
-    }, {
-      last_message_preview: preview,
-      last_message_at: now,
-      status: "open",
-      updated_at: now,
-    }, credentials);
+    await patchSupabaseRow("ai_customer_care_conversations", previewFilters, update, credentials);
   } catch (error) {
     console.warn(JSON.stringify({
       event: "customer_care_conversation_preview_update_failed",
@@ -337,7 +450,7 @@ async function beginConversationTurn(
     }));
   }
 
-  return { id: threadId, visitorId, requestId, credentials };
+  return { id: threadId, visitorId, requestId, customerUserId: customer?.userId || null, credentials };
 }
 
 async function saveConversationAssistantTurn(
@@ -389,11 +502,12 @@ async function saveConversationAssistantTurn(
 
   try {
     const now = new Date().toISOString();
-    await patchSupabaseRow("ai_customer_care_conversations", {
+    const previewFilters: Record<string, string> = {
       id: "eq." + context.id,
-      visitor_id: "eq." + context.visitorId,
       store_id: "eq.halal-food",
-    }, {
+    };
+    if (!context.customerUserId) previewFilters.visitor_id = "eq." + context.visitorId;
+    await patchSupabaseRow("ai_customer_care_conversations", previewFilters, {
       last_message_preview: redactFeedbackText(reply, 8000).replace(/\s+/g, " ").slice(0, 260),
       last_message_at: now,
       updated_at: now,
@@ -1335,21 +1449,61 @@ Deno.serve(async (req: Request) => {
       return response({ success: false, code: "INVALID_CONVERSATION" }, 400);
     }
     try {
-      const owned = await fetchSupabaseRows("ai_customer_care_conversations", {
-        select: "id,visitor_id",
-        id: "eq." + conversationId,
-        visitor_id: "eq." + visitorId,
-        store_id: "eq.halal-food",
-        limit: "1",
-      }, credentials);
+      let owned: Record<string, unknown>[] = [];
+      let customer: VerifiedCustomerIdentity | null = null;
+      try { customer = await verifyCustomerIdentity(req, credentials); } catch { customer = null; }
+
+      if (customer) {
+        owned = await fetchSupabaseRows("ai_customer_care_conversations", {
+          select: "id,visitor_id,customer_user_id",
+          customer_user_id: "eq." + customer.userId,
+          store_id: "eq.halal-food",
+          order: "last_message_at.desc",
+          limit: "1",
+        }, credentials);
+        if (!owned.length) {
+          const guestRows = await fetchSupabaseRows("ai_customer_care_conversations", {
+            select: "id,visitor_id,customer_user_id",
+            id: "eq." + conversationId,
+            visitor_id: "eq." + visitorId,
+            store_id: "eq.halal-food",
+            limit: "1",
+          }, credentials);
+          if (guestRows.length && !guestRows[0].customer_user_id) {
+            const now = new Date().toISOString();
+            await patchSupabaseRow("ai_customer_care_conversations", {
+              id: "eq." + String(guestRows[0].id),
+              visitor_id: "eq." + visitorId,
+              store_id: "eq.halal-food",
+            }, {
+              customer_user_id: customer.userId,
+              customer_name: customer.name,
+              customer_avatar_url: customer.avatarUrl,
+              customer_profile_updated_at: now,
+              updated_at: now,
+            }, credentials);
+            owned = guestRows;
+          }
+        }
+      } else {
+        owned = await fetchSupabaseRows("ai_customer_care_conversations", {
+          select: "id,visitor_id,customer_user_id",
+          id: "eq." + conversationId,
+          visitor_id: "eq." + visitorId,
+          store_id: "eq.halal-food",
+          limit: "1",
+        }, credentials);
+      }
+
       if (!owned.length) return response({ success: true, rows: [] });
+      const canonicalId = String(owned[0].id);
       const rows = await fetchSupabaseRows("ai_customer_care_messages", {
         select: "role,content,model,has_image,product_names,created_at",
-        conversation_id: "eq." + conversationId,
+        conversation_id: "eq." + canonicalId,
         order: "created_at.desc",
         limit: "40",
       }, credentials);
-      return response({ success: true, rows: rows.reverse() });
+      return response({ success: true, conversationId: canonicalId, rows: rows.reverse() });
     } catch {
       return response({ success: false, code: "CONVERSATION_HISTORY_FAILED" }, 503);
     }
@@ -1369,7 +1523,7 @@ Deno.serve(async (req: Request) => {
     if (payload.action === "admin_conversations_list") {
       const status = String(payload.status || "");
       const params: Record<string, string> = {
-        select: "id,title,last_message_preview,last_message_at,status,admin_notes,reviewed_at,reviewed_by,created_at,updated_at",
+        select: "id,title,last_message_preview,last_message_at,status,admin_notes,reviewed_at,reviewed_by,created_at,updated_at,customer_user_id,customer_name,customer_avatar_url,customer_profile_updated_at",
         store_id: "eq.halal-food",
         order: "last_message_at.desc",
         limit: String(Math.max(1, Math.min(500, Number(payload.limit) || 300))),
@@ -1388,7 +1542,7 @@ Deno.serve(async (req: Request) => {
     if (payload.action === "admin_conversation_detail") {
       try {
         const conversations = await fetchSupabaseRows("ai_customer_care_conversations", {
-          select: "id,title,last_message_preview,last_message_at,status,admin_notes,reviewed_at,reviewed_by,created_at,updated_at",
+          select: "id,title,last_message_preview,last_message_at,status,admin_notes,reviewed_at,reviewed_by,created_at,updated_at,customer_user_id,customer_name,customer_avatar_url,customer_profile_updated_at",
           id: "eq." + conversationId,
           store_id: "eq.halal-food",
           limit: "1",
@@ -1626,7 +1780,13 @@ Deno.serve(async (req: Request) => {
     ? String(payload.visitorId)
     : crypto.randomUUID();
   let conversationContext: ConversationContext | null = null;
+  let verifiedCustomer: VerifiedCustomerIdentity | null = null;
   if (conversationCredentials) {
+    try {
+      verifiedCustomer = await verifyCustomerIdentity(req, conversationCredentials);
+    } catch {
+      verifiedCustomer = null;
+    }
     try {
       conversationContext = await beginConversationTurn(
         effectiveConversationId,
@@ -1635,6 +1795,7 @@ Deno.serve(async (req: Request) => {
         message || "Customer attached a product image.",
         hasImage,
         conversationCredentials,
+        verifiedCustomer,
       );
     } catch (error) {
       console.warn(JSON.stringify({
