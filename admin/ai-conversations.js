@@ -89,18 +89,24 @@
    }
   }
   async function load(){
+   const refresh=$("aicRefresh");if(refresh)refresh.disabled=true;
    $("aicConversationList").innerHTML='<div class="hf-loading">Loading customer conversations…</div>';
+   $("aicListNote").textContent="Connecting to conversation storage…";
    try{
     const result=await api({action:"admin_conversations_list",limit:400});
     rows=Array.isArray(result.rows)?result.rows:[];
     renderMetrics();applyFilters();
-    if(selectedId&&rows.some(r=>r.id===selectedId))await selectConversation(selectedId,false);
-    else if(rows.length)await selectConversation(rows[0].id,false);
-    else{selectedId=null;selectedConversation=null;messages=[];feedback=[];$("aicWorkspace").classList.remove("is-thread-open");renderDetail();}
+    // Do not auto-open the first thread: render the inbox independently so a slow or
+    // failed detail request can never leave the whole conversation list in a loading state.
+    if(selectedId&&!rows.some(r=>r.id===selectedId)){selectedId=null;selectedConversation=null;messages=[];feedback=[];$("aicWorkspace").classList.remove("is-thread-open");renderDetail();}
+    if(!rows.length){
+     $("aicConversationList").innerHTML='<div class="aic-no-results">No saved conversations yet. New customer chats will appear here after they are stored.</div>';
+    }
    }catch(error){
-    $("aicConversationList").innerHTML='<div class="aic-no-results">Conversations could not be loaded. '+esc(error.message)+'</div>';
+    $("aicListNote").textContent="Could not load conversations";
+    $("aicConversationList").innerHTML='<div class="aic-no-results">Conversations could not be loaded. '+esc(error.message)+' <button type="button" class="hf-button hf-button-secondary" id="aicRetryLoad">Try again</button></div>';
     toast(error.message||"Could not load conversations.","error");
-   }
+   }finally{if(refresh)refresh.disabled=false;}
   }
   async function saveReview(){
    if(!selectedId||!selectedConversation){toast("Select a conversation first.","error");return;}
@@ -125,7 +131,7 @@
    downloadFile("halal-food-ai-thread-"+String(selectedConversation.id).slice(0,8)+".txt",header.join("\n")+body.join("\n\n")+notes,"text/plain;charset=utf-8");
   }
   $("aicRefresh").addEventListener("click",load);$("aicSearch").addEventListener("input",applyFilters);$("aicStatusFilter").addEventListener("change",applyFilters);
-  $("aicConversationList").addEventListener("click",event=>{const item=event.target.closest("[data-conversation-id]");if(item)selectConversation(item.dataset.conversationId);});
+  $("aicConversationList").addEventListener("click",event=>{if(event.target.closest("#aicRetryLoad")){load();return;}const item=event.target.closest("[data-conversation-id]");if(item)selectConversation(item.dataset.conversationId);});
   $("aicBackToInbox").addEventListener("click",()=>{$("aicWorkspace").classList.remove("is-thread-open");});
   $("aicSaveReview").addEventListener("click",saveReview);$("aicExportThread").addEventListener("click",exportThread);
   await load();
