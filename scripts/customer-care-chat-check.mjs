@@ -147,7 +147,7 @@ assert.match(edge, /price_value/);
 assert.match(fs.readFileSync("supabase/functions/order-sync/index.ts", "utf8"), /expectedSubtotal/);
 assert.match(edge, /verified-knowledge-fallback/);
 assert.doesNotMatch(chat, /textarea id="hf-ai-chat-input"[^>]*maxlength=/);
-assert.match(edge, /customer_care_incomplete_response_retry/);
+assert.match(edge, /customer_care_incomplete_response_no_retry/);
 assert.match(edge, /INCOMPLETE_AI_RESPONSE/);
 assert.match(chat, /INCOMPLETE_AI_RESPONSE/);
 assert.doesNotMatch(edge, /console\.(log|error)\([^)]*message/);
