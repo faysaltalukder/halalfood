@@ -293,8 +293,7 @@
   function resetConversation() {
     if (busy) return;
     conversation.length = 0;
-    currentConversationId = makeChatUuid();
-    try { localStorage.setItem(CHAT_CONVERSATION_STORAGE_KEY, currentConversationId); } catch (_) {}
+    // Keep the visitor's single persistent server-side thread when the UI is reset.
     historyLoadSequence++;
     historyLoaded = true;
     historyReady = Promise.resolve();
