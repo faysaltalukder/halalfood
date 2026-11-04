@@ -28,7 +28,7 @@ async function loadProduct(){
  const availability=outOfStock?"Currently out of stock":stockKnown?"Available":"Contact us for availability";
  const price=product.display_price||money(product.price)+" / "+(product.unit_type||"unit");
  const image=product.image_url
-  ?'<img class="product-image" src="'+esc(product.image_url)+'" alt="'+esc(product.name)+'">'
+  ?'<img class="product-image product-main-image" src="'+esc(product.image_url)+'" alt="'+esc(product.name)+'" decoding="async" fetchpriority="high">'
   :'<div class="product-image" aria-label="No product image"></div>';
  const productPage=product.cms_created
   ?SITE+"cms-product.html?slug="+encodeURIComponent(product.slug)
