@@ -362,3 +362,64 @@
     display: none !important;
   }
 }
+
+
+/* MOBILE FIX — related product suggestions must show the complete source image.
+   Previous square frames + overflow clipping + scale(1.1) caused mobile-only
+   edges to disappear. Keep this rule last in the product-detail stylesheet so
+   it wins over the legacy desktop square-frame rules above. */
+@media (max-width: 760px) {
+  #related-grid > article.product-card > a.product-image-link {
+    display: block !important;
+    position: relative !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    aspect-ratio: auto !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    line-height: 0 !important;
+  }
+
+  #related-grid > article.product-card > a.product-image-link > div.product-image {
+    display: block !important;
+    position: relative !important;
+    inset: auto !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    aspect-ratio: auto !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+  }
+
+  #related-grid > article.product-card > a.product-image-link > div.product-image::before,
+  #related-grid > article.product-card > a.product-image-link > div.product-image::after {
+    content: none !important;
+    display: none !important;
+  }
+
+  #related-grid > article.product-card > a.product-image-link > div.product-image > img {
+    display: block !important;
+    position: static !important;
+    inset: auto !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    aspect-ratio: auto !important;
+    object-fit: contain !important;
+    object-position: center center !important;
+    transform: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+  }
+}
