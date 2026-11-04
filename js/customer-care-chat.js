@@ -98,6 +98,12 @@
   const CHAT_VISITOR_STORAGE_KEY = "hf_ai_visitor_id_v1";
   const CHAT_CONVERSATION_STORAGE_KEY = "hf_ai_conversation_id_v1";
   function readOrCreateChatId(key) {
+    const valid = value => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value || ""));
+    let value = "";
+    try { value = localStorage.getItem(key) || ""; } catch (_) {}
+    if (!valid(value)) {
+      try {
+        const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, "\\  function readOrCreateChatId(key) {
     try {
       let value = localStorage.getItem(key) || "";
       if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)) {
@@ -106,6 +112,19 @@
       }
       return value;
     } catch (_) { return makeChatUuid(); }
+  }");
+        const match = document.cookie.match(new RegExp("(?:^|;\\s*)" + escaped + "=([^;]*)"));
+        value = match ? decodeURIComponent(match[1]) : "";
+      } catch (_) { value = ""; }
+    }
+    if (!valid(value)) value = makeChatUuid();
+    // Keep the anonymous browser identity stable if localStorage is unavailable
+    // or cleared by a restrictive browser. These IDs contain no customer PII.
+    try { localStorage.setItem(key, value); } catch (_) {}
+    try {
+      document.cookie = encodeURIComponent(key) + "=" + encodeURIComponent(value) + "; Max-Age=31536000; Path=/halalfood/; SameSite=Lax; Secure";
+    } catch (_) {}
+    return value;
   }
   let visitorId = readOrCreateChatId(CHAT_VISITOR_STORAGE_KEY);
   let currentConversationId = readOrCreateChatId(CHAT_CONVERSATION_STORAGE_KEY);
