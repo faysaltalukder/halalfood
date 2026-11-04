@@ -284,3 +284,144 @@
   }
   .product-detail-info .product-detail-actions { margin: 0 0 12px !important; gap: 8px !important; }
 }
+
+
+/* HALAL FOOD PRODUCT IMAGE SYSTEM v2
+   Main gallery: native image ratio, no fixed-height viewport and no crop.
+   Related cards: fixed visual stage with a soft same-image backdrop and a
+   complete, contained foreground image. */
+.product-detail-image-wrap {
+  min-width: 0;
+}
+.product-detail-image {
+  display: block !important;
+  width: 100% !important;
+  max-width: 620px;
+  height: auto !important;
+  max-height: none !important;
+  margin-inline: auto;
+  padding: 0;
+  overflow: visible !important;
+  background: transparent !important;
+  border: 0 !important;
+}
+.product-detail-image img {
+  display: block !important;
+  width: 100% !important;
+  height: auto !important;
+  max-height: none !important;
+  aspect-ratio: auto !important;
+  object-fit: contain !important;
+  object-position: center !important;
+  background: transparent !important;
+}
+@media (max-width: 760px) {
+  .product-detail-grid { gap: 12px !important; }
+  .product-detail-image { max-width: 100%; }
+  .product-detail-image img {
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+  }
+}
+
+/* Related / recommendation cards: a consistent stage, never crop the product.
+   Backdrop is decorative only; the foreground remains the original full image. */
+.product-card .product-image,
+#related-grid .product-card .product-image,
+.featured-grid-4 .product-card .product-image,
+.jfy-grid .product-card .product-image {
+  position: relative !important;
+  isolation: isolate;
+  display: grid !important;
+  place-items: center !important;
+  width: 100% !important;
+  height: auto !important;
+  aspect-ratio: 1 / 1 !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  padding: 7% !important;
+  background: var(--cream, #f2f0ea) !important;
+  border-radius: 0;
+}
+.product-card .product-image::before,
+#related-grid .product-card .product-image::before,
+.featured-grid-4 .product-card .product-image::before,
+.jfy-grid .product-card .product-image::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: -10%;
+  background-image: var(--product-image-backdrop, none);
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  filter: blur(18px) saturate(.78);
+  opacity: .34;
+  transform: scale(1.08);
+}
+.product-card .product-image::after,
+#related-grid .product-card .product-image::after,
+.featured-grid-4 .product-card .product-image::after,
+.jfy-grid .product-card .product-image::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background: linear-gradient(145deg, rgba(255,253,248,.46), rgba(242,240,234,.76));
+}
+.product-card .product-image img,
+#related-grid .product-card .product-image img,
+.featured-grid-4 .product-card .product-image img,
+.jfy-grid .product-card .product-image img {
+  position: relative !important;
+  z-index: 1;
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0;
+  min-height: 0;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+  background: transparent !important;
+  filter: none !important;
+  transform: none !important;
+}
+.product-card .product-image-link {
+  display: block;
+  overflow: hidden;
+}
+#related-grid .product-card .product-body,
+#related-grid .product-card .product-foot {
+  min-width: 0;
+}
+#related-grid .product-card .product-foot > .cart-add-btn,
+#related-grid .product-card .product-foot > .cart-qty-control {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+@media (max-width: 600px) {
+  #related-grid.product-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 12px !important;
+  }
+  #related-grid .product-card .product-image {
+    aspect-ratio: 1 / 1 !important;
+    padding: 6% !important;
+  }
+  #related-grid .product-card .product-body {
+    padding: 12px !important;
+  }
+  #related-grid .product-card .product-foot {
+    align-items: stretch !important;
+  }
+  #related-grid .product-card .product-foot > .cart-add-btn,
+  #related-grid .product-card .product-foot > .cart-qty-control {
+    min-height: 42px !important;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .product-card .product-image::before { filter: blur(12px); }
+}
