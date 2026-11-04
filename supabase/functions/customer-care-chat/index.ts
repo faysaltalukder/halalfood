@@ -162,6 +162,135 @@ async function verifyAdminRequest(req: Request, credentials: { url: string; key:
   return adminEmail;
 }
 
+
+function isValidUuid(value: unknown): value is string {
+  return typeof value === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+
+type ConversationContext = {
+  id: string;
+  visitorId: string;
+  requestId: string;
+  credentials: { url: string; key: string; isSecretKey: boolean };
+};
+
+async function beginConversationTurn(
+  conversationId: unknown,
+  visitorId: unknown,
+  requestId: string,
+  message: string,
+  hasImage: boolean,
+  credentials: { url: string; key: string; isSecretKey: boolean },
+): Promise<ConversationContext | null> {
+  if (!isValidUuid(conversationId) || !isValidUuid(visitorId)) return null;
+  const safeMessage = redactFeedbackText(message || (hasImage ? "Customer attached a product image." : ""), 4000);
+  if (!safeMessage) return null;
+
+  const existing = await fetchSupabaseRows("ai_customer_care_conversations", {
+    select: "id,visitor_id",
+    id: "eq." + conversationId,
+    store_id: "eq.halal-food",
+    limit: "1",
+  }, credentials);
+
+  const now = new Date().toISOString();
+  const preview = safeMessage.replace(/\s+/g, " ").slice(0, 260);
+  if (existing.length) {
+    if (String(existing[0].visitor_id || "") !== visitorId) return null;
+  } else {
+    const title = safeMessage.replace(/\s+/g, " ").slice(0, 100) || "Customer conversation";
+    try {
+      await insertSupabaseRow("ai_customer_care_conversations", {
+        id: conversationId,
+        visitor_id: visitorId,
+        store_id: "halal-food",
+        title,
+        last_message_preview: preview,
+        last_message_at: now,
+        status: "open",
+      }, credentials);
+    } catch (error) {
+      const messageText = error instanceof Error ? error.message : "";
+      if (!messageText.includes("(409)") && !messageText.includes("(23505)")) throw error;
+      const retry = await fetchSupabaseRows("ai_customer_care_conversations", {
+        select: "id,visitor_id",
+        id: "eq." + conversationId,
+        store_id: "eq.halal-food",
+        limit: "1",
+      }, credentials);
+      if (!retry.length || String(retry[0].visitor_id || "") !== visitorId) return null;
+    }
+  }
+
+  await insertSupabaseRow("ai_customer_care_messages", {
+    conversation_id: conversationId,
+    request_id: requestId,
+    role: "user",
+    content: safeMessage,
+    has_image: hasImage,
+    product_names: [],
+    created_at: now,
+  }, credentials);
+
+  await patchSupabaseRow("ai_customer_care_conversations", {
+    id: "eq." + conversationId,
+    visitor_id: "eq." + visitorId,
+    store_id: "eq.halal-food",
+  }, {
+    last_message_preview: preview,
+    last_message_at: now,
+    status: "open",
+    updated_at: now,
+  }, credentials);
+
+  return { id: conversationId, visitorId, requestId, credentials };
+}
+
+async function saveConversationAssistantTurn(
+  context: ConversationContext | null,
+  reply: string,
+  model: string,
+  hasImage: boolean,
+  products: unknown[] = [],
+): Promise<void> {
+  if (!context || !reply) return;
+  try {
+    const now = new Date().toISOString();
+    const safeReply = redactFeedbackText(reply, 8000);
+    const productNames = products
+      .filter((item) => item && typeof item === "object")
+      .map((item) => String((item as Record<string, unknown>).name || "").trim())
+      .filter(Boolean)
+      .slice(0, 8);
+    await insertSupabaseRow("ai_customer_care_messages", {
+      conversation_id: context.id,
+      request_id: context.requestId,
+      role: "assistant",
+      content: safeReply,
+      model: redactFeedbackText(model, 80),
+      has_image: hasImage,
+      product_names: productNames,
+      created_at: now,
+    }, context.credentials);
+    await patchSupabaseRow("ai_customer_care_conversations", {
+      id: "eq." + context.id,
+      visitor_id: "eq." + context.visitorId,
+      store_id: "eq.halal-food",
+    }, {
+      last_message_preview: safeReply.replace(/\s+/g, " ").slice(0, 260),
+      last_message_at: now,
+      updated_at: now,
+    }, context.credentials);
+  } catch (error) {
+    console.warn(JSON.stringify({
+      event: "customer_care_conversation_assistant_log_failed",
+      requestId: context.requestId,
+      kind: error instanceof Error ? error.name : "unknown",
+    }));
+  }
+}
+
 function redactFeedbackText(value: unknown, maxLength: number): string {
   return String(value || "").slice(0, maxLength)
     .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/giu, "[email]")
@@ -1072,6 +1201,125 @@ Deno.serve(async (req: Request) => {
     return response({ success: false, code: "INVALID_JSON", requestId }, 400);
   }
 
+
+  if (payload.action === "conversation_history") {
+    const credentials = getSupabaseCredentials();
+    const conversationId = payload.conversationId;
+    const visitorId = payload.visitorId;
+    if (!credentials) return response({ success: false, code: "CONVERSATION_UNAVAILABLE" }, 503);
+    if (!isValidUuid(conversationId) || !isValidUuid(visitorId)) {
+      return response({ success: false, code: "INVALID_CONVERSATION" }, 400);
+    }
+    try {
+      const owned = await fetchSupabaseRows("ai_customer_care_conversations", {
+        select: "id,visitor_id",
+        id: "eq." + conversationId,
+        visitor_id: "eq." + visitorId,
+        store_id: "eq.halal-food",
+        limit: "1",
+      }, credentials);
+      if (!owned.length) return response({ success: true, rows: [] });
+      const rows = await fetchSupabaseRows("ai_customer_care_messages", {
+        select: "role,content,model,has_image,product_names,created_at",
+        conversation_id: "eq." + conversationId,
+        order: "created_at.desc",
+        limit: "40",
+      }, credentials);
+      return response({ success: true, rows: rows.reverse() });
+    } catch {
+      return response({ success: false, code: "CONVERSATION_HISTORY_FAILED" }, 503);
+    }
+  }
+
+  if (
+    payload.action === "admin_conversations_list" ||
+    payload.action === "admin_conversation_detail" ||
+    payload.action === "admin_conversation_update"
+  ) {
+    const credentials = getSupabaseCredentials();
+    if (!credentials) return response({ success: false, code: "CONVERSATION_UNAVAILABLE" }, 503);
+    let adminEmail: string | null = null;
+    try { adminEmail = await verifyAdminRequest(req, credentials); } catch { adminEmail = null; }
+    if (!adminEmail) return response({ success: false, code: "ADMIN_AUTH_REQUIRED" }, 401);
+
+    if (payload.action === "admin_conversations_list") {
+      const status = String(payload.status || "");
+      const params: Record<string, string> = {
+        select: "id,title,last_message_preview,last_message_at,status,admin_notes,reviewed_at,reviewed_by,created_at,updated_at",
+        store_id: "eq.halal-food",
+        order: "last_message_at.desc",
+        limit: String(Math.max(1, Math.min(500, Number(payload.limit) || 300))),
+      };
+      if (["open", "reviewed", "archived"].includes(status)) params.status = "eq." + status;
+      try {
+        const rows = await fetchSupabaseRows("ai_customer_care_conversations", params, credentials);
+        return response({ success: true, rows, admin: adminEmail });
+      } catch {
+        return response({ success: false, code: "CONVERSATION_LIST_FAILED" }, 503);
+      }
+    }
+
+    const conversationId = payload.conversationId;
+    if (!isValidUuid(conversationId)) return response({ success: false, code: "INVALID_CONVERSATION" }, 400);
+    if (payload.action === "admin_conversation_detail") {
+      try {
+        const conversations = await fetchSupabaseRows("ai_customer_care_conversations", {
+          select: "id,title,last_message_preview,last_message_at,status,admin_notes,reviewed_at,reviewed_by,created_at,updated_at",
+          id: "eq." + conversationId,
+          store_id: "eq.halal-food",
+          limit: "1",
+        }, credentials);
+        if (!conversations.length) return response({ success: false, code: "CONVERSATION_NOT_FOUND" }, 404);
+        const messages = await fetchSupabaseRows("ai_customer_care_messages", {
+          select: "id,request_id,role,content,model,has_image,product_names,created_at",
+          conversation_id: "eq." + conversationId,
+          order: "created_at.asc",
+          limit: "500",
+        }, credentials);
+        const requestIds = Array.from(new Set(messages.map((item) => String(item.request_id || "")).filter(isValidUuid)));
+        let feedback: Record<string, unknown>[] = [];
+        if (requestIds.length) {
+          feedback = await fetchSupabaseRows("ai_customer_care_feedback", {
+            select: "request_id,rating,feedback_reason,review_status,created_at",
+            request_id: "in.(" + requestIds.join(",") + ")",
+            limit: "200",
+          }, credentials);
+        }
+        return response({ success: true, conversation: conversations[0], messages, feedback, admin: adminEmail });
+      } catch {
+        return response({ success: false, code: "CONVERSATION_DETAIL_FAILED" }, 503);
+      }
+    }
+
+    const status = String(payload.status || "");
+    if (!["open", "reviewed", "archived"].includes(status)) {
+      return response({ success: false, code: "INVALID_CONVERSATION_STATUS" }, 400);
+    }
+    const adminNotes = typeof payload.adminNotes === "string" ? payload.adminNotes.trim().slice(0, 3000) : "";
+    try {
+      const exists = await fetchSupabaseRows("ai_customer_care_conversations", {
+        select: "id",
+        id: "eq." + conversationId,
+        store_id: "eq.halal-food",
+        limit: "1",
+      }, credentials);
+      if (!exists.length) return response({ success: false, code: "CONVERSATION_NOT_FOUND" }, 404);
+      await patchSupabaseRow("ai_customer_care_conversations", {
+        id: "eq." + conversationId,
+        store_id: "eq.halal-food",
+      }, {
+        status,
+        admin_notes: adminNotes || null,
+        reviewed_by: status === "reviewed" ? adminEmail : null,
+        reviewed_at: status === "reviewed" ? new Date().toISOString() : null,
+        updated_at: new Date().toISOString(),
+      }, credentials);
+      return response({ success: true, saved: true });
+    } catch {
+      return response({ success: false, code: "CONVERSATION_UPDATE_FAILED" }, 503);
+    }
+  }
+
   if (payload.action === "admin_feedback_list" || payload.action === "admin_feedback_update") {
     const credentials = getSupabaseCredentials();
     if (!credentials) return response({ success: false, code: "FEEDBACK_UNAVAILABLE" }, 503);
@@ -1244,11 +1492,45 @@ Deno.serve(async (req: Request) => {
   }
 
   const historyInput = Array.isArray(payload.history) ? payload.history.slice(-MAX_HISTORY_ITEMS) : [];
+  const conversationCredentials = getSupabaseCredentials();
+  // Backward-compatible identity: older cached storefront bundles may omit IDs.
+  // Issue stable IDs once and return them so the browser can persist/reuse them.
+  const effectiveConversationId = isValidUuid(payload.conversationId)
+    ? String(payload.conversationId)
+    : crypto.randomUUID();
+  const effectiveVisitorId = isValidUuid(payload.visitorId)
+    ? String(payload.visitorId)
+    : crypto.randomUUID();
+  let conversationContext: ConversationContext | null = null;
+  if (conversationCredentials) {
+    try {
+      conversationContext = await beginConversationTurn(
+        effectiveConversationId,
+        effectiveVisitorId,
+        requestId,
+        message || "Customer attached a product image.",
+        hasImage,
+        conversationCredentials,
+      );
+    } catch (error) {
+      console.warn(JSON.stringify({
+        event: "customer_care_conversation_user_log_failed",
+        requestId,
+        kind: error instanceof Error ? error.name : "unknown",
+      }));
+    }
+  }
+  const conversationIdentity = {
+    conversationId: effectiveConversationId,
+    visitorId: effectiveVisitorId,
+  };
   if (!PURE_LLM_TEST_MODE && isOrderTrackingRequest(message, historyInput)) {
     try {
       const tracking = await resolveCustomerOrderTracking(message, historyInput);
+      await saveConversationAssistantTurn(conversationContext, tracking.reply, "server-order-tracking", hasImage);
       return response({
         success: true,
+        ...conversationIdentity,
         reply: tracking.reply,
         products: [],
         recommendation: null,
@@ -1258,8 +1540,10 @@ Deno.serve(async (req: Request) => {
       });
     } catch (error) {
       console.error(JSON.stringify({ event: "customer_care_order_tracking_failed", requestId, kind: error instanceof Error ? error.name : "unknown" }));
+      await saveConversationAssistantTurn(conversationContext, "দুঃখিত, এই মুহূর্তে অর্ডারের তথ্য যাচাই করা যাচ্ছে না। একটু পরে আবার চেষ্টা করুন।", "server-order-tracking", hasImage);
       return response({
         success: true,
+        ...conversationIdentity,
         reply: "দুঃখিত, এই মুহূর্তে অর্ডারের তথ্য যাচাই করা যাচ্ছে না। একটু পরে আবার চেষ্টা করুন।",
         products: [],
         recommendation: null,
@@ -1343,7 +1627,8 @@ Deno.serve(async (req: Request) => {
       if (!pureReply || !isCompleteReply(pureReply, pureFinishReason)) {
         return response({ success: false, code: "INCOMPLETE_AI_RESPONSE", requestId }, 502);
       }
-      return response({ success: true, reply: pureReply, products: [], recommendation: null, image_match: null, requestId, model: pureModelUsed, test_mode: "pure_llm" });
+      return response({ success: true,
+        ...conversationIdentity, reply: pureReply, products: [], recommendation: null, image_match: null, requestId, model: pureModelUsed, test_mode: "pure_llm" });
     } catch (error) {
       const timedOut = error instanceof DOMException && error.name === "AbortError";
       const errorCode = error instanceof Error ? error.message : "";
@@ -1399,9 +1684,14 @@ Deno.serve(async (req: Request) => {
     }
     if (!apiKey) {
       const offlineReply = buildDeterministicFallbackReply(message, knowledge);
-      if (offlineReply) return response({ success: true, reply: offlineReply, products: publicProductCards(knowledge, message), recommendation: buildRecommendationContract(knowledge), requestId,
-        model: "verified-knowledge-fallback",
-        knowledge: { documents: knowledge.documents.length, matchedProducts: knowledge.products.length } });
+      if (offlineReply) {
+        const cards = publicProductCards(knowledge, message);
+        await saveConversationAssistantTurn(conversationContext, offlineReply, "verified-knowledge-fallback", hasImage, cards);
+        return response({ success: true,
+        ...conversationIdentity, reply: offlineReply, products: cards, recommendation: buildRecommendationContract(knowledge), requestId,
+          model: "verified-knowledge-fallback",
+          knowledge: { documents: knowledge.documents.length, matchedProducts: knowledge.products.length } });
+      }
       return response({ success: false, code: "AI_NOT_CONFIGURED", requestId }, 503);
     }
     const initialResult = await callGeminiOnce(model, requestId, apiKey, contents, systemInstruction, controller.signal);
@@ -1425,7 +1715,10 @@ Deno.serve(async (req: Request) => {
       const offlineReply = buildDeterministicFallbackReply(message, knowledge);
       if (offlineReply) {
         console.info(JSON.stringify({ event: "customer_care_verified_knowledge_fallback", requestId, providerCode: errorCode }));
-        return response({ success: true, reply: offlineReply, products: publicProductCards(knowledge, message), recommendation: buildRecommendationContract(knowledge), requestId, model: "verified-knowledge-fallback",
+        const cards = publicProductCards(knowledge, message);
+        await saveConversationAssistantTurn(conversationContext, offlineReply, "verified-knowledge-fallback", hasImage, cards);
+        return response({ success: true,
+        ...conversationIdentity, reply: offlineReply, products: cards, recommendation: buildRecommendationContract(knowledge), requestId, model: "verified-knowledge-fallback",
           knowledge: { documents: knowledge.documents.length, matchedProducts: knowledge.products.length } });
       }
       return response({ success: false, code: errorCode, requestId }, upstream.status === 429 ? 429 : 502);
@@ -1451,8 +1744,13 @@ Deno.serve(async (req: Request) => {
 
     if (!reply || !isCompleteReply(reply, finishReason)) {
       const offlineReply = buildDeterministicFallbackReply(message, knowledge);
-      if (offlineReply) return response({ success: true, reply: offlineReply, products: publicProductCards(knowledge, message), recommendation: buildRecommendationContract(knowledge), requestId, model: "verified-knowledge-fallback",
-        knowledge: { documents: knowledge.documents.length, matchedProducts: knowledge.products.length } });
+      if (offlineReply) {
+        const cards = publicProductCards(knowledge, message);
+        await saveConversationAssistantTurn(conversationContext, offlineReply, "verified-knowledge-fallback", hasImage, cards);
+        return response({ success: true,
+        ...conversationIdentity, reply: offlineReply, products: cards, recommendation: buildRecommendationContract(knowledge), requestId, model: "verified-knowledge-fallback",
+          knowledge: { documents: knowledge.documents.length, matchedProducts: knowledge.products.length } });
+      }
       return response({ success: false, code: "INCOMPLETE_AI_RESPONSE", requestId }, 502);
     }
 
@@ -1477,8 +1775,10 @@ Deno.serve(async (req: Request) => {
       customerNeed.search_confidence = approvedCards[0].confidence_level || customerNeed.search_confidence;
     }
     await logAiCustomerCareEvents(knowledge, requestId, imageMatch, approvedCards.length, approvedCards.length ? "resolved" : "answered_or_clarified");
+    await saveConversationAssistantTurn(conversationContext, reply, modelUsed, hasImage, approvedCards);
     return response({
       success: true,
+        ...conversationIdentity,
       reply,
       products: approvedCards,
       recommendation: buildRecommendationContract(knowledge),
@@ -1497,9 +1797,14 @@ Deno.serve(async (req: Request) => {
   } catch (error) {
     const timedOut = error instanceof DOMException && error.name === "AbortError";
     const offlineReply = loadedKnowledge ? buildDeterministicFallbackReply(message, loadedKnowledge) : null;
-    if (offlineReply && loadedKnowledge) return response({ success: true, reply: offlineReply, products: publicProductCards(loadedKnowledge, message), recommendation: buildRecommendationContract(loadedKnowledge), requestId,
-      model: "verified-knowledge-fallback",
-      knowledge: { documents: loadedKnowledge.documents.length, matchedProducts: loadedKnowledge.products.length } });
+    if (offlineReply && loadedKnowledge) {
+      const cards = publicProductCards(loadedKnowledge, message);
+      await saveConversationAssistantTurn(conversationContext, offlineReply, "verified-knowledge-fallback", hasImage, cards);
+      return response({ success: true,
+        ...conversationIdentity, reply: offlineReply, products: cards, recommendation: buildRecommendationContract(loadedKnowledge), requestId,
+        model: "verified-knowledge-fallback",
+        knowledge: { documents: loadedKnowledge.documents.length, matchedProducts: loadedKnowledge.products.length } });
+    }
     console.error(JSON.stringify({
       event: "customer_care_upstream_fetch_failed",
       requestId,
