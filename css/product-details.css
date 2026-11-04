@@ -426,10 +426,10 @@
 
 
 /* HALAL FOOD — mobile universal related-product image frame.
-   Walnuts is the approved reference: 1200 × 800 source ratio (3:2).
-   Every related-product photo receives the same 3:2 display frame.
-   Images already using 3:2 keep their current fit; other ratios are cropped
-   only within the frame, never allowed to shrink the frame itself. */
+   Walnuts is the approved reference: 1254 × 1254 source ratio (1:1).
+   Every related-product photo receives the same square display frame.
+   Images already using 1:1 remain visually unchanged; wider ratios are cropped
+   inside the frame so the product fills the same standard image area. */
 @media (max-width: 760px) {
   #related-grid > article.product-card > a.product-image-link {
     display: block !important;
@@ -438,7 +438,7 @@
     height: auto !important;
     min-height: 0 !important;
     max-height: none !important;
-    aspect-ratio: 3 / 2 !important;
+    aspect-ratio: 1 / 1 !important;
     overflow: hidden !important;
     padding: 0 !important;
     margin: 0 !important;
