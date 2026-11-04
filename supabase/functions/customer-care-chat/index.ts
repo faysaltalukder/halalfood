@@ -1547,9 +1547,14 @@ Deno.serve(async (req: Request) => {
       }));
     }
   }
+  if (conversationContext) effectiveConversationId = conversationContext.id;
+  else if (!conversationCredentials) {
+    console.error(JSON.stringify({ event: "customer_care_conversation_storage_not_configured", requestId }));
+  }
   const conversationIdentity = {
     conversationId: effectiveConversationId,
     visitorId: effectiveVisitorId,
+    conversationSaved: Boolean(conversationContext),
   };
   if (!PURE_LLM_TEST_MODE && isOrderTrackingRequest(message, historyInput)) {
     try {
