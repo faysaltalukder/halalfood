@@ -2087,22 +2087,15 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 })();
 
-/* Product reviews and clearly separated brand/founder editorial notes load only on product pages. */
+/* Shared compact customer reviews on every product page. */
 (() => {
-  const path=window.location.pathname||"";
-  const isProductRoute=(path.includes("/products/")&&path.endsWith(".html"))
-    || path.endsWith("/product.html") || path.endsWith("/cms-product.html");
-  if(!isProductRoute)return;
-  const reviews=document.createElement("script");
-  reviews.src="https://faysaltalukder.github.io/halalfood/js/product-reviews.js?v=20261104-review-experience-v4";
-  reviews.async=true;
-  reviews.onload=() => {
-    const editorial=document.createElement("script");
-    editorial.src="https://faysaltalukder.github.io/halalfood/js/product-editorial-reviews.js?v=20261104-editorial-notes-v1";
-    editorial.async=true;
-    document.head.appendChild(editorial);
-  };
-  document.head.appendChild(reviews);
+ const path=window.location.pathname||"";
+ const isProductRoute=(path.includes("/products/")&&path.endsWith(".html"))||path.endsWith("/product.html")||path.endsWith("/cms-product.html");
+ if(!isProductRoute)return;
+ const reviews=document.createElement("script");
+ reviews.src="https://faysaltalukder.github.io/halalfood/js/product-reviews.js?v=20261104-compact-reviews-v5";
+ reviews.async=true;
+ document.head.appendChild(reviews);
 })();
 
 
