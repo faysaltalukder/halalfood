@@ -110,6 +110,7 @@
   let visitorId = readOrCreateChatId(CHAT_VISITOR_STORAGE_KEY);
   let currentConversationId = readOrCreateChatId(CHAT_CONVERSATION_STORAGE_KEY);
   let historyLoadSequence = 0;
+  let historyLoaded = false;
   let historyReady = Promise.resolve();
   const productCatalog = new Map();
   const shoppingCart = [];
@@ -134,7 +135,15 @@
     document.body.style.position = previousBodyPosition; document.body.style.top = previousBodyTop; document.body.style.width = previousBodyWidth;
     window.scrollTo({ top: savedScrollY, behavior: "auto" });
   }
+  function ensureConversationReady() {
+    if (!historyLoaded) {
+      historyLoaded = true;
+      historyReady = restoreConversation();
+    }
+    return historyReady;
+  }
   function openChat() {
+    ensureConversationReady();
     panel.hidden = false; minimized = false; panel.classList.remove("is-minimized"); lockMobilePage();
     launcher.setAttribute("aria-expanded", "true"); launcher.setAttribute("aria-label", "Close Halal Food AI chat");
     window.setTimeout(() => input?.focus({ preventScroll: true }), 80);
@@ -287,6 +296,7 @@
     currentConversationId = makeChatUuid();
     try { localStorage.setItem(CHAT_CONVERSATION_STORAGE_KEY, currentConversationId); } catch (_) {}
     historyLoadSequence++;
+    historyLoaded = true;
     historyReady = Promise.resolve();
     messages.innerHTML = '<div class="hf-ai-chat-day-divider"><span>নতুন কথোপকথন</span></div><div class="hf-ai-message-group hf-ai-message-group-assistant"><div class="hf-ai-message-avatar" aria-hidden="true">H</div><div class="hf-ai-message hf-ai-message-assistant"><p>আসসালামু আলাইকুম! Halal Food-এ স্বাগতম। কীভাবে সাহায্য করতে পারি?</p><span class="hf-ai-message-time">Halal Food Assistant</span></div></div><div class="hf-ai-chat-prompts" aria-label="সাধারণ প্রশ্ন"><button type="button" data-hf-chat-prompt="আমি কী কী পণ্য পেতে পারি?">কী কী পণ্য পাওয়া যায়?</button><button type="button" data-hf-chat-prompt="ডেলিভারি সম্পর্কে জানতে চাই।">ডেলিভারি সম্পর্কে জানতে চাই</button><button type="button" data-hf-chat-prompt="ওয়েবসাইটে কীভাবে অর্ডার করব?">কীভাবে অর্ডার করব?</button></div>';
     bindPromptButtons(); messages.scrollTop = 0;
@@ -846,7 +856,7 @@
     bubble.appendChild(image);
   }
   async function submitQuestion(question, options) {
-    await historyReady;
+    await ensureConversationReady();
     const text = String(question || "").trim();
     const imageFile = options?.image || selectedImageFile;
     if ((!text && !imageFile) || busy) return;
@@ -999,8 +1009,6 @@
     const label = link.querySelector("span:last-child");
     if (label) label.textContent = "Chat";
   });
-
-  historyReady = restoreConversation();
 
   document.addEventListener("click", event => {
     const mobileChatLink = event.target.closest("[data-hf-ai-chat-link]");
