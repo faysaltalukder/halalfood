@@ -347,7 +347,7 @@
   object-position: center center !important;
   padding: 0 !important;
   margin: 0 !important;
-  transform: none !important;
+  transform: scale(1.1) !important;
   background: transparent !important;
 }
 
