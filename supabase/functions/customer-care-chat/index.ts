@@ -909,6 +909,7 @@ function buildDeterministicFallbackReply(
 function selectCustomerCareModel(message: string, hasImage: boolean, complexModel: string): string {
   const text = String(message || "").trim().toLowerCase();
   if (hasImage) return "gemini-3.6-flash";
+
   const complexPatterns = [
     /\\b(compare|comparison|analy[sz]e|analysis|investigate|troubleshoot|calculate|strategy|detailed|step[- ]by[- ]step|multiple|why exactly|how does .* work)\\b/i,
     /(তুলনা|বিশ্লেষণ|সমাধান করে বুঝিয়ে|ধাপে ধাপে|বিস্তারিত ব্যাখ্যা|কারণগুলো|কেন এমন হচ্ছে|হিসাব করে|পরিকল্পনা তৈরি|একাধিক বিষয়)/u,
@@ -992,7 +993,12 @@ async function callGemini(
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: systemInstruction }] },
         contents,
-        generationConfig: { maxOutputTokens: 8192, thinkingConfig: { thinkingLevel: modelName.includes("flash-lite") ? "LOW" : modelName === "gemini-3.8-flash" ? "HIGH" : "MEDIUM" } },
+        generationConfig: {
+          maxOutputTokens: 8192,
+          thinkingConfig: {
+            thinkingLevel: modelName.includes("flash-lite") ? "LOW" : modelName === "gemini-3.8-flash" ? "HIGH" : "MEDIUM",
+          },
+        },
       }),
       signal,
     },
@@ -1433,7 +1439,13 @@ Deno.serve(async (req: Request) => {
     let finishReason = String(candidate?.finishReason || "EMPTY");
 
     if (!reply || !isCompleteReply(reply, finishReason)) {
-      console.warn(JSON.stringify({ event: "customer_care_incomplete_response_no_retry", requestId, model: modelUsed, finishReason, responseLength: reply.length }));
+      console.warn(JSON.stringify({
+        event: "customer_care_incomplete_response_no_retry",
+        requestId,
+        model: modelUsed,
+        finishReason,
+        responseLength: reply.length,
+      }));
     }
 
     if (!reply || !isCompleteReply(reply, finishReason)) {
