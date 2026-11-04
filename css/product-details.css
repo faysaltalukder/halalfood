@@ -21,3 +21,103 @@
 .oil-data-value{text-align:right;font-size:.78rem;font-weight:650;color:#494653;font-variant-numeric:tabular-nums}
 .oil-data-footnote{margin:8px 0 0!important;font-size:.76rem!important;color:#777482!important}
 @media(max-width:520px){.product-more-content{padding:12px}.oil-data-row{grid-template-columns:82px minmax(45px,1fr) 76px;gap:7px}.oil-data-label,.oil-data-value{font-size:.74rem}}
+
+/* Halal Food — mobile product-page conversion layout.
+   Shared by all product pages; desktop layout remains unchanged. */
+@media (max-width: 760px) {
+  main > .section.products-bg {
+    padding-top: 10px !important;
+    padding-bottom: 30px !important;
+  }
+  .product-detail {
+    padding-top: 0 !important;
+  }
+  .product-detail-grid {
+    gap: 12px !important;
+  }
+  .product-detail-image-wrap {
+    width: 100%;
+    margin: 0 auto;
+  }
+  .product-detail-image {
+    width: 100%;
+    max-width: 620px;
+    max-height: min(34svh, 270px);
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--cream);
+  }
+  .product-detail-image img {
+    display: block;
+    width: 100%;
+    height: min(34svh, 270px);
+    max-height: min(34svh, 270px);
+    object-fit: contain;
+    object-position: center;
+  }
+  .image-zoom-hint { display: none; }
+  .product-detail-info { padding-top: 0 !important; }
+  .product-detail-info > .tag {
+    display: inline-flex;
+    margin-bottom: 2px;
+  }
+  .product-detail-info h1 {
+    margin: 5px 0 4px !important;
+    font-size: clamp(1.45rem, 6vw, 1.9rem) !important;
+    line-height: 1.14 !important;
+  }
+  .product-detail-price {
+    margin: 0 0 11px !important;
+    font-size: 1.25rem !important;
+    line-height: 1.25;
+  }
+  /* Row 1: Order Now + Add to Cart. Row 2: Message Us + Call Us. */
+  .product-detail-actions {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px !important;
+    align-items: stretch;
+    margin: 0 0 14px !important;
+  }
+  .product-detail-actions > a,
+  .product-detail-actions > button {
+    width: 100% !important;
+    min-width: 0;
+    min-height: 44px;
+    margin: 0 !important;
+    padding: 10px 8px !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    box-sizing: border-box;
+    border-radius: 10px;
+    font-size: clamp(.78rem, 3.2vw, .9rem) !important;
+    line-height: 1.15;
+    white-space: nowrap;
+  }
+  .product-detail-actions .btn-icon {
+    width: 17px;
+    height: 17px;
+    flex: 0 0 17px;
+  }
+  .product-short-note {
+    padding-top: 10px !important;
+    font-size: .82rem !important;
+    line-height: 1.6 !important;
+  }
+  .product-description-section {
+    margin-top: 24px !important;
+    padding-top: 22px !important;
+  }
+}
+@media (max-width: 380px) {
+  .product-detail-actions { gap: 7px !important; }
+  .product-detail-actions > a,
+  .product-detail-actions > button {
+    padding-inline: 5px !important;
+    font-size: .76rem !important;
+  }
+}
