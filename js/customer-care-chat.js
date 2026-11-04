@@ -95,6 +95,22 @@
   const inputHint = panel.querySelector("#hf-ai-chat-input-hint");
   let selectedImageFile = null, selectedImageUrl = "", speechRecognition = null, speechActive = false;
   const conversation = [];
+  const CHAT_VISITOR_STORAGE_KEY = "hf_ai_visitor_id_v1";
+  const CHAT_CONVERSATION_STORAGE_KEY = "hf_ai_conversation_id_v1";
+  function readOrCreateChatId(key) {
+    try {
+      let value = localStorage.getItem(key) || "";
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)) {
+        value = makeChatUuid();
+        localStorage.setItem(key, value);
+      }
+      return value;
+    } catch (_) { return makeChatUuid(); }
+  }
+  let visitorId = readOrCreateChatId(CHAT_VISITOR_STORAGE_KEY);
+  let currentConversationId = readOrCreateChatId(CHAT_CONVERSATION_STORAGE_KEY);
+  let historyLoadSequence = 0;
+  let historyReady = Promise.resolve();
   const productCatalog = new Map();
   const shoppingCart = [];
   let currentProduct = null, detailQuantity = 1, activeView = "conversation";
@@ -165,6 +181,62 @@
     time.textContent = (sender === "user" ? "আপনি · " : "Halal Food AI · ") + new Intl.DateTimeFormat("bn-BD", {hour:"2-digit",minute:"2-digit"}).format(new Date());
     bubble.appendChild(time); group.appendChild(bubble); messages.appendChild(group); if (shouldStickToBottom) scrollToLatest(true); return bubble;
   }
+
+  async function restoreConversation() {
+    const conversationId = currentConversationId;
+    const sequence = ++historyLoadSequence;
+    try {
+      const response = await fetch(CHAT_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        cache: "no-store",
+        body: JSON.stringify({
+          action: "conversation_history",
+          conversationId,
+          visitorId
+        }),
+        signal: AbortSignal.timeout(12000)
+      });
+      const data = await response.json().catch(function () { return {}; });
+      if (!response.ok || data.success !== true || !Array.isArray(data.rows)) return;
+      if (sequence !== historyLoadSequence || conversationId !== currentConversationId || !data.rows.length) return;
+
+      messages.innerHTML = '<div class="hf-ai-chat-day-divider"><span>আগের কথোপকথন</span></div>';
+      conversation.length = 0;
+      data.rows.forEach(function (row) {
+        if (!row || !["user", "assistant"].includes(row.role) || typeof row.content !== "string") return;
+        const sender = row.role === "user" ? "user" : "assistant";
+        const bubble = appendMessage(row.content, sender);
+        const time = bubble.querySelector(".hf-ai-message-time");
+        if (time && row.created_at) {
+          const date = new Date(row.created_at);
+          if (!Number.isNaN(date.getTime())) {
+            time.textContent = (sender === "user" ? "আপনি · " : "Halal Food AI · ") +
+              new Intl.DateTimeFormat("bn-BD", { day:"numeric", month:"short", hour:"2-digit", minute:"2-digit" }).format(date);
+          }
+        }
+        const names = Array.isArray(row.product_names) ? row.product_names.map(function (name) { return String(name || "").trim(); }).filter(Boolean).slice(0, 8) : [];
+        const historyText = sender === "assistant" && names.length
+          ? row.content + "\\n[Products shown: " + names.join(", ") + "]"
+          : row.content;
+        conversation.push({ role: sender, text: historyText });
+      });
+      if (conversation.length > 40) conversation.splice(0, conversation.length - 40);
+      const prompts = document.createElement("div");
+      prompts.className = "hf-ai-chat-prompts";
+      prompts.setAttribute("aria-label", "সাধারণ প্রশ্ন");
+      prompts.innerHTML =
+        '<button type="button" data-hf-chat-prompt="আমি কী কী পণ্য পেতে পারি?">কী কী পণ্য পাওয়া যায়?</button>' +
+        '<button type="button" data-hf-chat-prompt="ডেলিভারি সম্পর্কে জানতে চাই।">ডেলিভারি সম্পর্কে জানতে চাই</button>' +
+        '<button type="button" data-hf-chat-prompt="ওয়েবসাইটে কীভাবে অর্ডার করব?">কীভাবে অর্ডার করব?</button>';
+      messages.appendChild(prompts);
+      bindPromptButtons();
+      scrollToLatest(true);
+    } catch (_) {
+      // A history restore failure must never prevent a customer from starting a fresh chat.
+    }
+  }
+
   async function saveAssistantFeedback(payload, rating, reason, controls) {
     controls.querySelectorAll("button").forEach(function (button) { button.disabled = true; });
     const status = controls.querySelector(".hf-ai-feedback-status");
@@ -210,7 +282,12 @@
   }
   function bindPromptButtons() { panel.querySelectorAll("[data-hf-chat-prompt]").forEach(button => button.addEventListener("click", () => submitQuestion(button.getAttribute("data-hf-chat-prompt")))); }
   function resetConversation() {
-    if (busy) return; conversation.length = 0;
+    if (busy) return;
+    conversation.length = 0;
+    currentConversationId = makeChatUuid();
+    try { localStorage.setItem(CHAT_CONVERSATION_STORAGE_KEY, currentConversationId); } catch (_) {}
+    historyLoadSequence++;
+    historyReady = Promise.resolve();
     messages.innerHTML = '<div class="hf-ai-chat-day-divider"><span>নতুন কথোপকথন</span></div><div class="hf-ai-message-group hf-ai-message-group-assistant"><div class="hf-ai-message-avatar" aria-hidden="true">H</div><div class="hf-ai-message hf-ai-message-assistant"><p>আসসালামু আলাইকুম! Halal Food-এ স্বাগতম। কীভাবে সাহায্য করতে পারি?</p><span class="hf-ai-message-time">Halal Food Assistant</span></div></div><div class="hf-ai-chat-prompts" aria-label="সাধারণ প্রশ্ন"><button type="button" data-hf-chat-prompt="আমি কী কী পণ্য পেতে পারি?">কী কী পণ্য পাওয়া যায়?</button><button type="button" data-hf-chat-prompt="ডেলিভারি সম্পর্কে জানতে চাই।">ডেলিভারি সম্পর্কে জানতে চাই</button><button type="button" data-hf-chat-prompt="ওয়েবসাইটে কীভাবে অর্ডার করব?">কীভাবে অর্ডার করব?</button></div>';
     bindPromptButtons(); messages.scrollTop = 0;
   }
@@ -769,6 +846,7 @@
     bubble.appendChild(image);
   }
   async function submitQuestion(question, options) {
+    await historyReady;
     const text = String(question || "").trim();
     const imageFile = options?.image || selectedImageFile;
     if ((!text && !imageFile) || busy) return;
@@ -788,6 +866,8 @@
     try {
       const requestBody = {
         message: userText,
+        conversationId: currentConversationId,
+        visitorId,
         history: imageFile ? [] : conversation.slice(-20)
       };
       if (imageFile) requestBody.image = await prepareImageForUpload(imageFile);
@@ -809,7 +889,7 @@
         appendProductCards(answerBubble, data.products, data.recommendation && data.recommendation.max_product_cards, data.recommendation && data.recommendation.match_type);
         appendFeedbackControls(answerBubble, { requestId: data.requestId, question: userText, answer: reply,
           products: Array.isArray(data.products) ? data.products : [], model: data.model || "unknown" });
-        conversation.push({ role: "user", text: text });
+        conversation.push({ role: "user", text: userText });
         conversation.push({ role: "assistant", text: reply + (Array.isArray(data.products) && data.products.length ? "\\n[Products shown: " + data.products.map(function (item) { return String(item.name || ""); }).filter(Boolean).join(", ") + "]" : "") });
         if (conversation.length > 40) conversation.splice(0, conversation.length - 40);
       }
@@ -919,6 +999,8 @@
     const label = link.querySelector("span:last-child");
     if (label) label.textContent = "Chat";
   });
+
+  historyReady = restoreConversation();
 
   document.addEventListener("click", event => {
     const mobileChatLink = event.target.closest("[data-hf-ai-chat-link]");
