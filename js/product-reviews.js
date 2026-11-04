@@ -231,6 +231,92 @@ style.textContent = `
  .hf-public-reviews,.hf-review-item{transition:box-shadow .2s ease,border-color .2s ease}
  .hf-review-item:hover{box-shadow:0 7px 18px rgba(40,34,28,.06);border-color:#d2c2ad}
 }
+
+/* Clear desktop/mobile art direction — v8 */
+.hf-public-reviews{
+ --hf-review-surface:#eee7dc;
+ --hf-review-card:#e6dccf;
+ --hf-review-field:#f5efe6;
+ --hf-review-border:#d8cbbb;
+ --hf-review-ink:#302d3b;
+ --hf-review-muted:#70695f;
+ --hf-review-accent:#a76532;
+ background:var(--hf-review-surface)!important;
+ border:1px solid var(--hf-review-border)!important;
+ color:var(--hf-review-ink)!important;
+}
+.hf-review-item{background:var(--hf-review-card)!important;border-color:#d7cabb!important}
+.hf-review-empty{background:var(--hf-review-card)!important;color:var(--hf-review-muted)!important}
+.hf-review-form-wrap{background:#e9e0d4;border:1px solid #d8cbbb;border-radius:12px}
+.hf-review-form input,.hf-review-form textarea{background:var(--hf-review-field)!important;border-color:#d5c9b9!important;color:var(--hf-review-ink)!important}
+.hf-review-write{background:#e5d5c2!important;border-color:#cdb18f!important;color:#704523!important}
+.hf-review-submit{background:#98602f!important}
+.hf-review-link{color:#87552f!important}
+@media(min-width:761px){
+ .hf-public-reviews{
+  width:min(calc(100% - 72px),1180px)!important;
+  max-width:1180px!important;
+  margin:34px auto 42px!important;
+  padding:30px 34px 32px!important;
+  border-radius:20px!important;
+  display:grid!important;
+  grid-template-columns:minmax(220px,.72fr) minmax(0,1.8fr)!important;
+  grid-template-rows:auto auto auto auto!important;
+  align-items:stretch!important;
+  column-gap:26px!important;
+  row-gap:17px!important;
+  background:linear-gradient(145deg,#eee7dc 0%,#e8dfd2 100%)!important;
+  box-shadow:0 15px 38px rgba(50,42,32,.09)!important;
+ }
+ .hf-reviews-kicker{grid-column:1/-1!important;margin:0!important;color:#8b633f!important;font-size:10px!important;letter-spacing:.2em!important}
+ .hf-reviews-heading{grid-column:1/-1!important;padding:0 0 18px!important;border-bottom:1px solid #d5c8b7!important}
+ .hf-reviews-heading h2{font-size:27px!important;letter-spacing:-.035em!important}
+ .hf-review-write{padding:11px 17px!important;font-size:12px!important;border-radius:10px!important;background:#dfcfbb!important}
+ .hf-review-summary{
+  grid-column:1!important;grid-row:3!important;
+  align-self:stretch!important;display:flex!important;flex-direction:column!important;
+  align-items:flex-start!important;justify-content:center!important;gap:12px!important;
+  margin:0!important;padding:25px 24px!important;
+  border:1px solid #d5c6b3!important;border-radius:16px!important;
+  background:linear-gradient(160deg,#e1d3c0 0%,#e9dfd2 100%)!important;
+  box-shadow:inset 0 1px rgba(255,255,255,.42)!important;
+ }
+ .hf-review-average{font-size:52px!important;line-height:1!important;color:#87552e!important;letter-spacing:-.06em!important}
+ .hf-review-summary .hf-review-stars{font-size:21px!important;letter-spacing:3px!important}
+ .hf-review-count{font-size:12px!important;color:#706354!important}
+ #hfReviewLatest{grid-column:2!important;grid-row:3!important;align-self:stretch!important}
+ .hf-review-item{height:100%;box-sizing:border-box;grid-template-columns:minmax(145px,.42fr) minmax(0,1fr)!important;column-gap:23px!important;align-content:center!important;padding:25px 26px!important;border-radius:16px!important;background:#e3d8c9!important;border-color:#d3c5b4!important}
+ .hf-review-item-head{gap:10px!important}
+ .hf-review-item-head strong{font-size:15px!important;color:#353140!important}
+ .hf-review-item-head .hf-review-stars{font-size:16px!important}
+ .hf-review-item small{font-size:11px!important;color:#776d61!important}
+ .hf-review-item p{font-size:15px!important;line-height:1.85!important;padding-left:25px!important;border-left:1px solid #cdbda9!important;color:#49433e!important}
+ .hf-review-actions{grid-column:2!important;grid-row:4!important;justify-content:flex-start!important;margin:0!important}
+ .hf-review-link{font-size:12px!important;padding:9px 13px!important;border-radius:8px!important;background:#e1d5c5!important}
+ .hf-review-all{grid-column:1/-1!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:14px!important;margin-top:2px!important}
+ .hf-review-all .hf-review-item{height:auto!important;padding:18px!important;grid-template-columns:minmax(110px,.42fr) minmax(0,1fr)!important}
+ .hf-review-all .hf-review-item p{font-size:13px!important}
+ .hf-review-pagination{grid-column:1/-1!important}
+ .hf-review-form-wrap{grid-column:1/-1!important;grid-row:5!important;margin:2px 0 0!important;padding:22px 24px!important;background:#e8dfd3!important;border-color:#d5c8b8!important;border-radius:15px!important}
+ .hf-review-form{grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;gap:15px 22px!important}
+ .hf-review-form-title,.hf-review-product,.hf-review-message,.hf-review-submit{grid-column:1/-1!important}
+ .hf-review-form input,.hf-review-form textarea{padding:12px 14px!important;font-size:14px!important}
+}
+@media(max-width:760px){
+ .hf-public-reviews{
+  width:calc(100% - 20px)!important;margin:10px auto 14px!important;padding:11px!important;
+  border-radius:11px!important;background:#f0e9df!important;border-color:#dfd4c6!important;
+  box-shadow:0 2px 8px rgba(58,48,38,.035)!important;display:block!important;
+ }
+ .hf-reviews-heading h2{font-size:15px!important}
+ .hf-review-summary{margin:7px 0!important;padding:0!important;background:transparent!important;border:0!important;box-shadow:none!important;flex-direction:row!important;align-items:center!important}
+ .hf-review-average{font-size:19px!important}
+ .hf-review-item{height:auto!important;padding:9px 10px!important;background:#e8dfd3!important;border-color:#ded2c3!important}
+ .hf-review-item p{padding:0!important;border:0!important;font-size:11px!important;line-height:1.5!important;color:#504940!important}
+ .hf-review-form-wrap{background:#ebe2d6!important;padding:10px!important}
+ .hf-review-form input,.hf-review-form textarea{background:#f6f0e7!important}
+ .hf-review-write{min-height:34px!important}
+}
 `;document.head.appendChild(style);
 
 async function init() {
