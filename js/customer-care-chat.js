@@ -116,6 +116,100 @@
   }
   let visitorId = readOrCreateChatId(CHAT_VISITOR_STORAGE_KEY);
   let currentConversationId = readOrCreateChatId(CHAT_CONVERSATION_STORAGE_KEY);
+  const CHAT_AUTH_STORAGE_KEY = "sb-qfwvrcfkrsydycbfjsxf-auth-token";
+  const CHAT_LAST_ACCOUNT_KEY = "hf_ai_chat_last_customer_id_v1";
+  let chatAuthClientPromise = null;
+
+  function persistChatIdentity() {
+    try {
+      localStorage.setItem(CHAT_CONVERSATION_STORAGE_KEY, currentConversationId);
+      localStorage.setItem(CHAT_VISITOR_STORAGE_KEY, visitorId);
+    } catch (_) {}
+    try {
+      document.cookie = encodeURIComponent(CHAT_CONVERSATION_STORAGE_KEY) + "=" + encodeURIComponent(currentConversationId) + "; Max-Age=31536000; Path=/halalfood/; SameSite=Lax; Secure";
+      document.cookie = encodeURIComponent(CHAT_VISITOR_STORAGE_KEY) + "=" + encodeURIComponent(visitorId) + "; Max-Age=31536000; Path=/halalfood/; SameSite=Lax; Secure";
+    } catch (_) {}
+  }
+
+  function resetChatIdentity() {
+    visitorId = makeChatUuid();
+    currentConversationId = makeChatUuid();
+    persistChatIdentity();
+    conversation.length = 0;
+    historyLoaded = false;
+    historyReady = Promise.resolve();
+    messages.replaceChildren();
+  }
+
+  function loadSupabaseAuthClient() {
+    if (window.halalSupabaseClient?.auth) return Promise.resolve(window.halalSupabaseClient);
+    if (chatAuthClientPromise) return chatAuthClientPromise;
+    const config = window.HALAL_STORE_CONFIG?.supabase || {};
+    const supabaseUrl = String(config.url || "https://qfwvrcfkrsydycbfjsxf.supabase.co").replace(/\/$/, "");
+    const publishableKey = String(config.publishableKey || "sb_publishable_X32Rb8W-axGIfgFuppdfZQ_jbc38pcL");
+    chatAuthClientPromise = (async function () {
+      if (!window.supabase?.createClient) {
+        await new Promise(function (resolve, reject) {
+          const script = document.createElement("script");
+          script.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4";
+          script.async = true;
+          script.onload = resolve;
+          script.onerror = function () { reject(new Error("Customer account service could not load.")); };
+          document.head.appendChild(script);
+        });
+      }
+      if (!window.supabase?.createClient) throw new Error("Customer account service is unavailable.");
+      const client = window.supabase.createClient(supabaseUrl, publishableKey, {
+        auth: {
+          persistSession: true,
+          autoRefreshToken: true,
+          detectSessionInUrl: false,
+          storageKey: CHAT_AUTH_STORAGE_KEY
+        }
+      });
+      window.halalSupabaseClient = client;
+      return client;
+    })().catch(function (error) {
+      chatAuthClientPromise = null;
+      throw error;
+    });
+    return chatAuthClientPromise;
+  }
+
+  async function getCustomerAuthorizationHeaders() {
+    let hasStoredSession = false;
+    try { hasStoredSession = Boolean(localStorage.getItem(CHAT_AUTH_STORAGE_KEY)); } catch (_) {}
+    const hasExistingClient = Boolean(window.halalSupabaseClient?.auth || window.supabase?.createClient);
+    if (!hasStoredSession && !hasExistingClient) {
+      let previous = "";
+      try { previous = localStorage.getItem(CHAT_LAST_ACCOUNT_KEY) || ""; } catch (_) {}
+      if (previous && previous !== "guest") resetChatIdentity();
+      try { localStorage.setItem(CHAT_LAST_ACCOUNT_KEY, "guest"); } catch (_) {}
+      return {};
+    }
+
+    try {
+      const client = await loadSupabaseAuthClient();
+      const { data, error } = await client.auth.getSession();
+      if (error) throw error;
+      const session = data?.session || null;
+      const userId = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(session?.user?.id || ""))
+        ? String(session.user.id) : "";
+      let previous = "";
+      try { previous = localStorage.getItem(CHAT_LAST_ACCOUNT_KEY) || ""; } catch (_) {}
+      if (previous && previous !== "guest" && previous !== userId) resetChatIdentity();
+      if (userId) {
+        try { localStorage.setItem(CHAT_LAST_ACCOUNT_KEY, userId); } catch (_) {}
+        return session?.access_token ? { Authorization: "Bearer " + session.access_token } : {};
+      }
+      if (previous && previous !== "guest") resetChatIdentity();
+      try { localStorage.setItem(CHAT_LAST_ACCOUNT_KEY, "guest"); } catch (_) {}
+      return {};
+    } catch (_) {
+      return {};
+    }
+  }
+
   let historyLoadSequence = 0;
   let historyLoaded = false;
   let historyReady = Promise.resolve();
@@ -199,12 +293,13 @@
   }
 
   async function restoreConversation() {
+    const customerHeaders = await getCustomerAuthorizationHeaders();
     const conversationId = currentConversationId;
     const sequence = ++historyLoadSequence;
     try {
       const response = await fetch(CHAT_API, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: Object.assign({ "Content-Type": "application/json" }, customerHeaders),
         cache: "no-store",
         body: JSON.stringify({
           action: "conversation_history",
@@ -215,7 +310,12 @@
       });
       const data = await response.json().catch(function () { return {}; });
       if (!response.ok || data.success !== true || !Array.isArray(data.rows)) return;
-      if (sequence !== historyLoadSequence || conversationId !== currentConversationId || !data.rows.length) return;
+      if (sequence !== historyLoadSequence) return;
+      if (/^[0-9a-f-]{36}$/i.test(String(data.conversationId || ""))) {
+        currentConversationId = String(data.conversationId);
+        persistChatIdentity();
+      }
+      if (!data.rows.length) return;
 
       messages.innerHTML = '<div class="hf-ai-chat-day-divider"><span>আগের কথোপকথন</span></div>';
       conversation.length = 0;
@@ -880,6 +980,7 @@
     const requestController = new AbortController();
     const requestTimeout = window.setTimeout(() => requestController.abort(), 52000);
     try {
+      const customerHeaders = await getCustomerAuthorizationHeaders();
       const requestBody = {
         message: userText,
         conversationId: currentConversationId,
@@ -889,7 +990,7 @@
       if (imageFile) requestBody.image = await prepareImageForUpload(imageFile);
       const response = await fetch(CHAT_API, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: Object.assign({ "Content-Type": "application/json" }, customerHeaders),
         cache: "no-store",
         signal: requestController.signal,
         body: JSON.stringify(requestBody)
