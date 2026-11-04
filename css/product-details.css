@@ -35,28 +35,6 @@
   .product-detail-grid {
     gap: 12px !important;
   }
-  .product-detail-image-wrap {
-    width: 100%;
-    margin: 0 auto;
-  }
-  .product-detail-image {
-    width: 100%;
-    max-width: 620px;
-    max-height: min(34svh, 270px);
-    margin: 0 auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--cream);
-  }
-  .product-detail-image img {
-    display: block;
-    width: 100%;
-    height: min(34svh, 270px);
-    max-height: min(34svh, 270px);
-    object-fit: contain;
-    object-position: center;
-  }
   .image-zoom-hint { display: none; }
   .product-detail-info { padding-top: 0 !important; }
   .product-detail-info > .tag {
@@ -115,21 +93,6 @@
 }
 /* Mobile refinement: restore the natural, uncropped product image and keep cart control geometry stable. */
 @media (max-width: 760px) {
-  .product-detail-image {
-    display: block !important;
-    height: auto !important;
-    max-height: none !important;
-    overflow: hidden;
-  }
-  .product-detail-image img {
-    display: block;
-    width: 100% !important;
-    height: auto !important;
-    max-height: none !important;
-    aspect-ratio: auto !important;
-    object-fit: contain !important;
-    object-position: center;
-  }
   .product-detail-info > .tag {
     margin-bottom: 3px !important;
     font-size: .74rem !important;
@@ -214,77 +177,6 @@
 }
 
 
-/* Mobile-first refinement: keep the complete product image visible while reducing
-   the vertical footprint and tightening the purchase information group. */
-@media (max-width: 760px) {
-  .product-detail-grid {
-    gap: 8px !important;
-  }
-  .product-detail-image {
-    width: 100% !important;
-    height: clamp(190px, 62vw, 260px) !important;
-    max-height: 260px !important;
-    display: grid !important;
-    place-items: center !important;
-  }
-  .product-detail-image img {
-    width: 100% !important;
-    height: 100% !important;
-    max-height: 260px !important;
-    object-fit: contain !important;
-    object-position: center !important;
-  }
-  .product-detail-info {
-    padding-top: 0 !important;
-  }
-  .product-detail-info > .tag {
-    margin: 0 0 2px !important;
-  }
-  .product-detail-info h1 {
-    margin: 2px 0 1px !important;
-    line-height: 1.14 !important;
-  }
-  .product-detail-info .product-detail-price {
-    margin: 0 0 12px !important;
-    text-align: left !important;
-    line-height: 1.2 !important;
-  }
-  .product-detail-info .product-detail-actions {
-    margin: 0 0 12px !important;
-    gap: 8px !important;
-  }
-}
-
-
-/* Mobile-first refinement: keep the full product image visible while reducing
-   its vertical footprint and tightening the purchase information group. */
-@media (max-width: 760px) {
-  .product-detail-grid { gap: 8px !important; }
-  .product-detail-image {
-    width: 100% !important;
-    height: clamp(190px, 62vw, 260px) !important;
-    max-height: 260px !important;
-    display: grid !important;
-    place-items: center !important;
-  }
-  .product-detail-image img {
-    width: 100% !important;
-    height: 100% !important;
-    max-height: 260px !important;
-    object-fit: contain !important;
-    object-position: center !important;
-  }
-  .product-detail-info { padding-top: 0 !important; }
-  .product-detail-info > .tag { margin: 0 0 2px !important; }
-  .product-detail-info h1 { margin: 2px 0 1px !important; line-height: 1.14 !important; }
-  .product-detail-info .product-detail-price {
-    margin: 0 0 12px !important;
-    text-align: left !important;
-    line-height: 1.2 !important;
-  }
-  .product-detail-info .product-detail-actions { margin: 0 0 12px !important; gap: 8px !important; }
-}
-
 /* HALAL FOOD — UNIVERSAL RELATED-PRODUCT IMAGE BOX
    Recommendation assets across the catalogue are square (1:1). Use one shared
    square frame to match their real image geometry and remove side gutters.
@@ -354,5 +246,51 @@
 @media (max-width: 600px) {
   #related-grid > article.product-card > a.product-image-link {
     aspect-ratio: 1 / 1 !important;
+  }
+}
+
+
+/* HALAL FOOD — MOBILE MAIN PRODUCT IMAGE: NATURAL SIZE
+   Keep the primary product image independent from recommendation-card frames.
+   Let its intrinsic source ratio determine its height; never constrain it to
+   a viewport-height box, crop it, or force it into a fixed-height container. */
+@media (max-width: 760px) {
+  .product-detail-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 12px !important;
+  }
+  .product-detail-image-wrap {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 auto !important;
+    overflow: visible !important;
+  }
+  .product-detail-image {
+    display: block !important;
+    position: relative !important;
+    width: 100% !important;
+    max-width: none !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    aspect-ratio: auto !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    border: 0 !important;
+    background: transparent !important;
+  }
+  .product-detail-image img {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    aspect-ratio: auto !important;
+    object-fit: contain !important;
+    object-position: center center !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 }
