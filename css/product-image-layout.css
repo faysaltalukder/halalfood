@@ -1,26 +1,26 @@
-/* HALAL FOOD — universal mobile product photography rules.
-   Source images retain their intrinsic proportions. No fixed image frame,
-   forced height, cover crop, zoom transform, or clipping is allowed. */
+/* HALAL FOOD — universal mobile product photography contract.
+   Keep complete source images at their native aspect ratio. Main product media
+   uses the full phone viewport; card media uses the full card width. */
 @media (max-width: 760px) {
-  /* Main product image on static, CMS and legacy product-detail pages. */
-  main .product-detail-grid {
-    grid-template-columns: minmax(0, 1fr) !important;
-    align-items: start !important;
-  }
-  main .product-detail-image-wrap {
+  /* Main product image: full-width, intrinsic-height, never clipped. */
+  main .product-detail-grid > .product-detail-image-wrap,
+  main .product-detail > .product-detail-grid > .product-detail-image-wrap {
     display: block !important;
-    width: 100% !important;
+    position: relative !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
     min-width: 0 !important;
-    max-width: none !important;
     height: auto !important;
     min-height: 0 !important;
     max-height: none !important;
-    margin: 0 !important;
+    margin-left: calc(50% - 50vw) !important;
+    margin-right: calc(50% - 50vw) !important;
     padding: 0 !important;
     overflow: visible !important;
     aspect-ratio: auto !important;
   }
-  main .product-detail-image {
+  main .product-detail-grid > .product-detail-image-wrap > .product-detail-image,
+  main .product-detail > .product-detail-grid > .product-detail-image-wrap > .product-detail-image {
     display: block !important;
     position: relative !important;
     width: 100% !important;
@@ -38,8 +38,8 @@
     background: transparent !important;
     line-height: 0 !important;
   }
-  main .product-detail-image > img,
-  main .product-detail-image-wrap > img {
+  main .product-detail-grid > .product-detail-image-wrap > .product-detail-image > img,
+  main .product-detail > .product-detail-grid > .product-detail-image-wrap > .product-detail-image > img {
     display: block !important;
     position: static !important;
     inset: auto !important;
@@ -56,11 +56,12 @@
     margin: 0 !important;
     padding: 0 !important;
     border: 0 !important;
+    border-radius: 0 !important;
     background: transparent !important;
   }
   main .product-detail-image .image-zoom-hint { display: none !important; }
 
-  /* Product/category cards: use each image's real ratio, not a square crop box. */
+  /* All category, home, search and related product cards use native image ratio. */
   .product-card .product-image,
   .product-grid .product-card .product-image,
   .featured-grid-4 .product-card .product-image,
@@ -102,9 +103,10 @@
     padding: 0 !important;
   }
 
-  /* Undo the legacy 1:1 related-product frame and 1.1x image zoom. */
+  /* Explicitly defeat the former square related-product frame and 1.1x zoom. */
   #related-grid > article.product-card > a.product-image-link,
-  #related-grid > article.product-card > a.product-image-link > .product-image {
+  #related-grid > article.product-card > a.product-image-link > div.product-image {
+    display: block !important;
     width: 100% !important;
     height: auto !important;
     min-height: 0 !important;
@@ -113,7 +115,8 @@
     overflow: visible !important;
     padding: 0 !important;
   }
-  #related-grid > article.product-card > a.product-image-link > .product-image > img {
+  #related-grid > article.product-card > a.product-image-link > div.product-image > img {
+    display: block !important;
     width: 100% !important;
     height: auto !important;
     max-height: none !important;
