@@ -9,6 +9,7 @@
   const cfg=window.HALAL_STORE_CONFIG||{};
   const endpoint=String(cfg.supabase?.url||"https://qfwvrcfkrsydycbfjsxf.supabase.co").replace(/\/$/,"")+"/functions/v1/customer-care-chat";
   const labels={open:"Open",reviewed:"Reviewed",archived:"Archived"};
+  const isBn=()=>window.HFAdminLanguage?.language()==="bn";
   const feedbackLabels={helpful:"Appreciate",not_helpful:"Disagree"};
   let rows=[],filtered=[],selectedId=null,selectedConversation=null,messages=[],feedback=[],detailSequence=0;
   async function api(payload){
@@ -35,10 +36,10 @@
    renderList();
   }
   function renderList(){
-   $("aicListNote").textContent="Showing "+filtered.length+" of "+rows.length+" loaded conversations.";
+   $("aicListNote").textContent=isBn()?"মোট "+filtered.length+"টি থেকে "+rows.length+"টি সর্বশেষ কথোপকথনের মধ্যে দেখানো হচ্ছে।":"Showing "+filtered.length+" of "+rows.length+" loaded conversations.";
    $("aicConversationList").innerHTML=filtered.length?filtered.map(r=>{
     const selected=r.id===selectedId;
-    return '<button type="button" class="aic-row '+(selected?"is-selected":"")+'" data-conversation-id="'+esc(r.id)+'"><span class="aic-row-main"><span class="aic-row-title">'+esc(r.title||"Customer conversation")+'</span><span class="aic-row-preview">'+esc(r.last_message_preview||"No message preview")+'</span><span class="aic-row-meta"><span>'+esc(dateTime(r.last_message_at))+'</span><span>Thread '+esc(String(r.id).slice(0,8))+'</span></span></span><span class="aic-row-status">'+statusPill(r.status)+'</span></button>';
+    return '<button type="button" class="aic-row '+(selected?"is-selected":"")+'" data-conversation-id="'+esc(r.id)+'"><span class="aic-row-main"><span class="aic-row-title">'+esc(r.title||"Customer conversation")+'</span><span class="aic-row-preview">'+esc(r.last_message_preview||"No message preview")+'</span><span class="aic-row-meta"><span>'+esc(dateTime(r.last_message_at))+'</span><span>'+(isBn()?"থ্রেড ":"Thread ")+esc(String(r.id).slice(0,8))+'</span></span></span><span class="aic-row-status">'+statusPill(r.status)+'</span></button>';
    }).join(""):'<div class="aic-no-results">No conversations match this filter.</div>';
   }
   function renderMessages(){
@@ -47,7 +48,7 @@
     const user=message.role==="user",productNames=Array.isArray(message.product_names)?message.product_names.filter(Boolean).slice(0,8):[];
     const f=byRequest.get(message.request_id);
     const when=message.created_at?dateTime(message.created_at):"";
-    const foot=[message.model?"Model: "+message.model:"",message.has_image?"Customer image attached (image file not retained)":""].filter(Boolean).join(" · ");
+    const foot=[message.model?(isBn()?"মডেল: ":"Model: ")+message.model:"",message.has_image?(isBn()?"গ্রাহক ছবি সংযুক্ত করেছিলেন (ছবির ফাইল রাখা হয়নি)":"Customer image attached (image file not retained)"):""].filter(Boolean).join(" · ");
     return '<article class="aic-message '+(user?"user":"assistant")+'"><div class="aic-message-head"><span>'+(user?"CUSTOMER":"HALAL FOOD AI")+'</span><time>'+esc(when)+'</time></div><div class="aic-message-content">'+esc(message.content||"")+'</div>'+(productNames.length?'<div class="aic-product-chips">'+productNames.map(name=>'<span class="aic-product-chip">'+esc(name)+'</span>').join("")+'</div>':"")+(f?'<div class="aic-message-foot"><span class="aic-feedback-chip">'+esc(feedbackLabels[f.rating]||f.rating)+' feedback'+(f.feedback_reason?" · "+esc(f.feedback_reason.replace(/_/g," ")):"")+'</span></div>':"")+(foot?'<div class="aic-message-foot">'+esc(foot)+'</div>':"")+'</article>';
    }).join(""):'<div class="aic-no-results">No messages were saved for this thread.</div>';
   }
@@ -56,18 +57,18 @@
    if(!c){$("aicDetailContent").hidden=true;$("aicDetailEmpty").hidden=false;$("aicDetailTitle").textContent="Select a conversation";$("aicDetailSubtitle").textContent="The complete customer and assistant messages will appear here.";$("aicDetailBadge").innerHTML="";return;}
    $("aicDetailEmpty").hidden=true;$("aicDetailContent").hidden=false;
    $("aicDetailTitle").textContent=c.title||"Customer conversation";
-   $("aicDetailSubtitle").textContent="Started "+dateTime(c.created_at)+" · Last activity "+dateTime(c.last_message_at);
+   $("aicDetailSubtitle").textContent=isBn()?"শুরু "+dateTime(c.created_at)+" · সর্বশেষ কার্যক্রম "+dateTime(c.last_message_at):"Started "+dateTime(c.created_at)+" · Last activity "+dateTime(c.last_message_at);
    $("aicDetailBadge").innerHTML=statusPill(c.status);
-   $("aicThreadMeta").textContent="Thread ID: "+c.id+" · "+messages.length+" saved messages"+(c.reviewed_by?" · Last reviewed by "+c.reviewed_by:"");
+   $("aicThreadMeta").textContent=isBn()?"থ্রেড আইডি: "+c.id+" · "+messages.length+"টি বার্তা সংরক্ষিত"+(c.reviewed_by?" · সর্বশেষ পর্যালোচনা: "+c.reviewed_by+" কর্তৃক":""):"Thread ID: "+c.id+" · "+messages.length+" saved messages"+(c.reviewed_by?" · Last reviewed by "+c.reviewed_by:"");
    $("aicReviewStatus").value=c.status||"open";
    $("aicAdminNotes").value=c.admin_notes||"";
-   $("aicReviewedInfo").textContent=c.reviewed_at?"Reviewed "+dateTime(c.reviewed_at)+(c.reviewed_by?" by "+c.reviewed_by:""):"This thread has not been marked as reviewed.";
+   $("aicReviewedInfo").textContent=c.reviewed_at?(isBn()?"পর্যালোচিত "+dateTime(c.reviewed_at)+(c.reviewed_by?" · "+c.reviewed_by+" কর্তৃক":""):"Reviewed "+dateTime(c.reviewed_at)+(c.reviewed_by?" by "+c.reviewed_by:"")):(isBn()?"এই থ্রেডকে এখনো পর্যালোচিত হিসেবে চিহ্নিত করা হয়নি।":"This thread has not been marked as reviewed.");
    $("aicSaveError").textContent="";
    renderMessages();
   }
   async function selectConversation(id){
    const seq=++detailSequence;selectedId=id;selectedConversation=null;messages=[];feedback=[];renderList();renderDetail();
-   $("aicDetailTitle").textContent="Loading conversation…";
+   $("aicDetailTitle").textContent=isBn()?"কথোপকথন লোড হচ্ছে…":"Loading conversation…";
    try{
     const data=await api({action:"admin_conversation_detail",conversationId:id});
     if(seq!==detailSequence)return;
