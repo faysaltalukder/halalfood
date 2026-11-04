@@ -486,3 +486,95 @@
     background: transparent !important;
   }
 }
+
+
+
+/* HALAL FOOD — one universal product-card image frame.
+   Reference geometry: Nuts & Seeds Mix hero image (900 × 675 = 4:3).
+   Keep every related-product photo inside the same 4:3 frame on desktop
+   and mobile. "contain" preserves the complete product photo without crop. */
+#related-grid > article.product-card:has(img[src]) > a.product-image-link {
+  display: block !important;
+  position: relative !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  aspect-ratio: 4 / 3 !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  border-radius: 8px 8px 0 0 !important;
+  line-height: 0 !important;
+}
+
+#related-grid > article.product-card:has(img[src]) > a.product-image-link > div.product-image {
+  display: grid !important;
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  aspect-ratio: auto !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  place-items: center !important;
+  background: var(--cream, #f2f0ea) !important;
+}
+
+#related-grid > article.product-card:has(img[src]) > a.product-image-link > div.product-image::before,
+#related-grid > article.product-card:has(img[src]) > a.product-image-link > div.product-image::after {
+  content: none !important;
+  display: none !important;
+}
+
+#related-grid > article.product-card:has(img[src]) > a.product-image-link > div.product-image > img {
+  display: block !important;
+  position: static !important;
+  inset: auto !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  aspect-ratio: auto !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+  transform: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+}
+
+/* Keep every related-product name on one clean line. Long names remain
+   available in the text; the visual line uses an ellipsis when space is tight. */
+#related-grid .product-body .product-name-link {
+  display: block !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+
+#related-grid .product-body .product-name-link h3 {
+  display: block !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 1.35em !important;
+  min-height: 1.35em !important;
+  max-height: 1.35em !important;
+  margin: 0 !important;
+  font-size: clamp(11px, 2.8vw, 15px) !important;
+  line-height: 1.35 !important;
+  letter-spacing: -.015em;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  overflow-wrap: normal !important;
+  word-break: normal !important;
+}
