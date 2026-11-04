@@ -112,15 +112,6 @@
   function setPictureImage(img, url, name) {
     if (!img || !url) return;
     const differs = imageNeedsReplace(img, url);
-    const isMainProductImage = Boolean(img.closest(".product-detail-image"));
-    img.classList.add(isMainProductImage ? "product-main-image" : "product-card-image");
-    img.decoding = "async";
-    if (isMainProductImage) {
-      img.loading = "eager";
-      img.fetchPriority = "high";
-    } else if (!img.hasAttribute("loading")) {
-      img.loading = "lazy";
-    }
     img.alt = name || "";
     if (!differs) return; // Keep existing responsive WebP/JPG srcsets when the source is unchanged.
     const picture = img.closest("picture");
