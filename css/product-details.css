@@ -285,519 +285,53 @@
   .product-detail-info .product-detail-actions { margin: 0 0 12px !important; gap: 8px !important; }
 }
 
-
-/* HALAL FOOD PRODUCT IMAGE SYSTEM v2
-   Main gallery: native image ratio, no fixed-height viewport and no crop.
-   Related cards: fixed visual stage with a soft same-image backdrop and a
-   complete, contained foreground image. */
-.product-detail-image-wrap {
-  min-width: 0;
-}
-.product-detail-image {
-  display: block !important;
-  width: 100% !important;
-  max-width: 620px;
-  height: auto !important;
-  max-height: none !important;
-  margin-inline: auto;
-  padding: 0;
-  overflow: visible !important;
-  background: transparent !important;
-  border: 0 !important;
-}
-.product-detail-image img {
-  display: block !important;
-  width: 100% !important;
-  height: auto !important;
-  max-height: none !important;
-  aspect-ratio: auto !important;
-  object-fit: contain !important;
-  object-position: center !important;
-  background: transparent !important;
-}
-@media (max-width: 760px) {
-  .product-detail-grid { gap: 12px !important; }
-  .product-detail-image { max-width: 100%; }
-  .product-detail-image img {
-    width: 100% !important;
-    height: auto !important;
-    max-height: none !important;
-  }
-}
-
-/* Related / recommendation cards: a consistent stage, never crop the product.
-   Backdrop is decorative only; the foreground remains the original full image. */
-.product-card .product-image,
-#related-grid .product-card .product-image,
-.featured-grid-4 .product-card .product-image,
-.jfy-grid .product-card .product-image {
-  position: relative !important;
-  isolation: isolate;
-  display: grid !important;
-  place-items: center !important;
-  width: 100% !important;
-  height: auto !important;
-  aspect-ratio: 1 / 1 !important;
-  min-height: 0 !important;
-  overflow: hidden !important;
-  padding: 7% !important;
-  background: var(--cream, #f2f0ea) !important;
-  border-radius: 0;
-}
-.product-card .product-image::before,
-#related-grid .product-card .product-image::before,
-.featured-grid-4 .product-card .product-image::before,
-.jfy-grid .product-card .product-image::before {
-  content: "";
-  position: absolute;
-  z-index: 0;
-  inset: -10%;
-  background-image: var(--product-image-backdrop, none);
-  background-position: center;
-  background-size: cover;
-  background-repeat: no-repeat;
-  filter: blur(18px) saturate(.78);
-  opacity: .34;
-  transform: scale(1.08);
-}
-.product-card .product-image::after,
-#related-grid .product-card .product-image::after,
-.featured-grid-4 .product-card .product-image::after,
-.jfy-grid .product-card .product-image::after {
-  content: "";
-  position: absolute;
-  z-index: 0;
-  inset: 0;
-  background: linear-gradient(145deg, rgba(255,253,248,.46), rgba(242,240,234,.76));
-}
-.product-card .product-image img,
-#related-grid .product-card .product-image img,
-.featured-grid-4 .product-card .product-image img,
-.jfy-grid .product-card .product-image img {
-  position: relative !important;
-  z-index: 1;
-  display: block !important;
-  width: 100% !important;
-  height: 100% !important;
-  min-width: 0;
-  min-height: 0;
-  max-width: 100% !important;
-  max-height: 100% !important;
-  object-fit: contain !important;
-  object-position: center center !important;
-  background: transparent !important;
-  filter: none !important;
-  transform: none !important;
-}
-.product-card .product-image-link {
-  display: block;
-  overflow: hidden;
-}
-#related-grid .product-card .product-body,
-#related-grid .product-card .product-foot {
-  min-width: 0;
-}
-#related-grid .product-card .product-foot > .cart-add-btn,
-#related-grid .product-card .product-foot > .cart-qty-control {
-  width: 100% !important;
-  max-width: 100% !important;
-}
-@media (max-width: 600px) {
-  #related-grid.product-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 12px !important;
-  }
-  #related-grid .product-card .product-image {
-    aspect-ratio: 1 / 1 !important;
-    padding: 6% !important;
-  }
-  #related-grid .product-card .product-body {
-    padding: 12px !important;
-  }
-  #related-grid .product-card .product-foot {
-    align-items: stretch !important;
-  }
-  #related-grid .product-card .product-foot > .cart-add-btn,
-  #related-grid .product-card .product-foot > .cart-qty-control {
-    min-height: 42px !important;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .product-card .product-image::before { filter: blur(12px); }
-}
-
-
-/* IMAGE SYSTEM v3 — consistent landscape media stage for recommendation cards.
-   The frame matches the native 4:3 product photography; square assets remain
-   centered and fully visible inside the same universal stage. */
-.product-card .product-image,
-#related-grid .product-card .product-image,
-.featured-grid-4 .product-card .product-image,
-.jfy-grid .product-card .product-image {
-  aspect-ratio: 4 / 3 !important;
-  height: auto !important;
-  padding: 0 !important;
-  overflow: hidden !important;
-  display: grid !important;
-  place-items: center !important;
-}
-.product-card .product-image img,
-#related-grid .product-card .product-image img,
-.featured-grid-4 .product-card .product-image img,
-.jfy-grid .product-card .product-image img {
-  width: 100% !important;
-  height: 100% !important;
-  max-width: 100% !important;
-  max-height: 100% !important;
-  object-fit: contain !important;
-  object-position: center !important;
-  padding: 0 !important;
-  margin: 0 !important;
-}
-.product-card .product-image::before,
-#related-grid .product-card .product-image::before,
-.featured-grid-4 .product-card .product-image::before,
-.jfy-grid .product-card .product-image::before {
-  opacity: .42;
-}
-.product-card .product-image::after,
-#related-grid .product-card .product-image::after,
-.featured-grid-4 .product-card .product-image::after,
-.jfy-grid .product-card .product-image::after {
-  background: linear-gradient(145deg, rgba(255,253,248,.24), rgba(242,240,234,.38));
-}
-@media (max-width: 600px) {
-  #related-grid .product-card .product-image {
-    aspect-ratio: 4 / 3 !important;
-    padding: 0 !important;
-  }
-}
-
-
-/* HALAL FOOD RECOMMENDATION IMAGE SYSTEM v4
-   Every recommendation frame on a product page follows that page's main
-   product-image ratio. All sibling cards therefore share one fixed frame;
-   images fill it with a centered cover crop instead of shrinking inside it. */
-.product-card .product-image,
-#related-grid .product-card .product-image,
-.featured-grid-4 .product-card .product-image,
-.jfy-grid .product-card .product-image {
-  aspect-ratio: var(--recommendation-image-ratio, 4 / 3) !important;
-  width: 100% !important;
-  height: auto !important;
-  min-height: 0 !important;
-  padding: 0 !important;
-  overflow: hidden !important;
-  display: block !important;
-  position: relative !important;
-  isolation: isolate;
-  background: var(--cream, #f2f0ea) !important;
-}
-.product-card .product-image img,
-#related-grid .product-card .product-image img,
-.featured-grid-4 .product-card .product-image img,
-.jfy-grid .product-card .product-image img {
-  position: relative !important;
-  z-index: 1 !important;
-  display: block !important;
-  width: 100% !important;
-  height: 100% !important;
-  min-width: 100% !important;
-  min-height: 100% !important;
-  max-width: none !important;
-  max-height: none !important;
-  object-fit: cover !important;
-  object-position: center center !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  background: transparent !important;
-  transform: none !important;
-}
-.product-card .product-image::before,
-#related-grid .product-card .product-image::before,
-.featured-grid-4 .product-card .product-image::before,
-.jfy-grid .product-card .product-image::before {
-  opacity: .18 !important;
-}
-.product-card .product-image::after,
-#related-grid .product-card .product-image::after,
-.featured-grid-4 .product-card .product-image::after,
-.jfy-grid .product-card .product-image::after {
-  background: linear-gradient(145deg, rgba(255,253,248,.08), rgba(242,240,234,.12)) !important;
-}
-@media (max-width: 600px) {
-  #related-grid.product-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 12px !important;
-  }
-  #related-grid .product-card .product-image {
-    aspect-ratio: var(--recommendation-image-ratio, 4 / 3) !important;
-    padding: 0 !important;
-  }
-}
-
-
-/* HALAL FOOD RECOMMENDATION IMAGE SYSTEM v5
-   Product-page recommendations only: compact portrait frames with the
-   complete original product image visible, never cropped or enlarged. */
-#related-grid .product-card .product-image {
-  width: 100% !important;
-  height: auto !important;
-  min-height: 0 !important;
-  aspect-ratio: 4 / 5 !important;
-  display: grid !important;
-  place-items: center !important;
-  box-sizing: border-box !important;
-  padding: 9px !important;
-  overflow: hidden !important;
-  background: var(--cream, #f2f0ea) !important;
-}
-#related-grid .product-card .product-image img {
-  position: relative !important;
-  z-index: 1 !important;
-  display: block !important;
-  width: 100% !important;
-  height: 100% !important;
-  min-width: 0 !important;
-  min-height: 0 !important;
-  max-width: 100% !important;
-  max-height: 100% !important;
-  object-fit: contain !important;
-  object-position: center center !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  background: transparent !important;
-  transform: none !important;
-}
-#related-grid .product-card .product-image-link {
-  display: block !important;
-  overflow: hidden !important;
-}
-@media (max-width: 600px) {
-  #related-grid.product-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 12px !important;
-  }
-  #related-grid .product-card .product-image {
-    aspect-ratio: 4 / 5 !important;
-    padding: 7px !important;
-  }
-}
-
-
-/* HALAL FOOD RELATED PRODUCT IMAGE BOX v6
-   Product-detail recommendation cards only. The 4:5 frame is a stable,
-   portrait product stage; the original image is contained without cropping. */
-#related-grid > .product-card > .product-image-link {
-  display: block !important;
-  width: 100% !important;
-  aspect-ratio: 4 / 5 !important;
-  height: auto !important;
-  min-width: 0 !important;
-  overflow: hidden !important;
-}
-#related-grid > .product-card > .product-image-link > .product-image {
-  position: relative !important;
-  display: grid !important;
-  place-items: center !important;
-  width: 100% !important;
-  height: 100% !important;
-  min-width: 0 !important;
-  min-height: 0 !important;
-  aspect-ratio: auto !important;
-  box-sizing: border-box !important;
-  padding: 10px !important;
-  overflow: hidden !important;
-  background: var(--cream, #f2f0ea) !important;
-}
-#related-grid > .product-card > .product-image-link > .product-image > img {
-  position: relative !important;
-  inset: auto !important;
-  display: block !important;
-  width: 100% !important;
-  height: 100% !important;
-  min-width: 0 !important;
-  min-height: 0 !important;
-  max-width: 100% !important;
-  max-height: 100% !important;
-  object-fit: contain !important;
-  object-position: center center !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  transform: none !important;
-}
-@media (max-width: 600px) {
-  #related-grid > .product-card > .product-image-link {
-    aspect-ratio: 4 / 5 !important;
-  }
-  #related-grid > .product-card > .product-image-link > .product-image {
-    padding: 8px !important;
-  }
-}
-
-
-/* HALAL FOOD RELATED PRODUCT IMAGE FIT v7
-   Use each source image's natural aspect ratio instead of an arbitrary tall
-   frame. This removes artificial blank space around recommendation images
-   without cropping or stretching the product. Scoped to related cards only. */
-#related-grid > .product-card > .product-image-link {
-  display: block !important;
-  width: 100% !important;
-  height: auto !important;
-  aspect-ratio: auto !important;
-  overflow: hidden !important;
-}
-#related-grid > .product-card > .product-image-link > .product-image {
-  display: block !important;
-  position: relative !important;
-  width: 100% !important;
-  height: auto !important;
-  min-height: 0 !important;
-  aspect-ratio: auto !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  overflow: hidden !important;
-  background: transparent !important;
-}
-#related-grid > .product-card > .product-image-link > .product-image::before,
-#related-grid > .product-card > .product-image-link > .product-image::after {
-  content: none !important;
-  display: none !important;
-}
-#related-grid > .product-card > .product-image-link > .product-image > img {
-  position: static !important;
-  display: block !important;
-  width: 100% !important;
-  height: auto !important;
-  min-width: 0 !important;
-  min-height: 0 !important;
-  max-width: 100% !important;
-  max-height: none !important;
-  aspect-ratio: auto !important;
-  object-fit: contain !important;
-  object-position: center center !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  transform: none !important;
-  background: transparent !important;
-}
-@media (max-width: 600px) {
-  #related-grid > .product-card > .product-image-link,
-  #related-grid > .product-card > .product-image-link > .product-image {
-    height: auto !important;
-    aspect-ratio: auto !important;
-    padding: 0 !important;
-  }
-}
-
-
-/* HALAL FOOD RELATED PRODUCT IMAGE FIT v8
-   Exact markup: article.product-card > a.product-image-link >
-   div.product-image > img. Let the image's intrinsic ratio define the frame.
-   No fixed-height crop box, no artificial inner padding, no cover behavior. */
-#related-grid > article.product-card > a.product-image-link {
-  display: block !important;
-  width: 100% !important;
-  height: auto !important;
-  min-height: 0 !important;
-  aspect-ratio: auto !important;
-  overflow: visible !important;
-  padding: 0 !important;
-  margin: 0 !important;
-}
-#related-grid > article.product-card > a.product-image-link > div.product-image {
-  display: block !important;
-  position: relative !important;
-  width: 100% !important;
-  height: auto !important;
-  min-height: 0 !important;
-  max-height: none !important;
-  aspect-ratio: auto !important;
-  overflow: visible !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  background: transparent !important;
-}
-#related-grid > article.product-card > a.product-image-link > div.product-image::before,
-#related-grid > article.product-card > a.product-image-link > div.product-image::after {
-  content: none !important;
-  display: none !important;
-  opacity: 0 !important;
-  background: none !important;
-}
-#related-grid > article.product-card > a.product-image-link > div.product-image > img {
-  position: static !important;
-  inset: auto !important;
-  display: block !important;
-  width: 100% !important;
-  height: auto !important;
-  min-width: 0 !important;
-  min-height: 0 !important;
-  max-width: 100% !important;
-  max-height: none !important;
-  aspect-ratio: auto !important;
-  object-fit: contain !important;
-  object-position: center center !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  transform: none !important;
-  background: transparent !important;
-}
-@media (max-width: 600px) {
-  #related-grid > article.product-card > a.product-image-link,
-  #related-grid > article.product-card > a.product-image-link > div.product-image {
-    width: 100% !important;
-    height: auto !important;
-    min-height: 0 !important;
-    aspect-ratio: auto !important;
-    padding: 0 !important;
-  }
-  #related-grid > article.product-card > a.product-image-link > div.product-image > img {
-    width: 100% !important;
-    height: auto !important;
-    object-fit: contain !important;
-  }
-}
-
-
-/* HALAL FOOD RELATED PRODUCT IMAGE FRAME v9
-   Universal recommendation frame: identical 4:5 box on every product page.
-   Product images scale down inside the frame; never crop or stretch them.
-   Scoped only to the four related-product cards, not the main product image. */
+/* HALAL FOOD — UNIVERSAL RELATED-PRODUCT IMAGE BOX
+   Recommendation assets across the product catalogue use a 3:2 landscape
+   canvas (1200 × 800). Keep one shared frame for every product page.
+   The complete source image stays visible: no cover crop, no stretch,
+   no artificial inner padding, and no decorative backdrop layer. */
 #related-grid > article.product-card > a.product-image-link {
   display: block !important;
   position: relative !important;
   width: 100% !important;
   height: auto !important;
-  aspect-ratio: 4 / 5 !important;
+  aspect-ratio: 3 / 2 !important;
   min-height: 0 !important;
   max-height: none !important;
   overflow: hidden !important;
   padding: 0 !important;
   margin: 0 !important;
   box-sizing: border-box !important;
+  background: var(--cream, #f2f0ea) !important;
+  border-radius: 8px 8px 0 0;
+  line-height: 0;
 }
+
 #related-grid > article.product-card > a.product-image-link > div.product-image {
-  display: grid !important;
   position: absolute !important;
   inset: 0 !important;
+  display: grid !important;
   place-items: center !important;
   width: 100% !important;
   height: 100% !important;
+  min-width: 0 !important;
   min-height: 0 !important;
   max-height: none !important;
   aspect-ratio: auto !important;
   overflow: hidden !important;
-  padding: 8px !important;
+  padding: 0 !important;
   margin: 0 !important;
   box-sizing: border-box !important;
   background: var(--cream, #f2f0ea) !important;
 }
+
 #related-grid > article.product-card > a.product-image-link > div.product-image::before,
 #related-grid > article.product-card > a.product-image-link > div.product-image::after {
   content: none !important;
   display: none !important;
+  background: none !important;
 }
+
 #related-grid > article.product-card > a.product-image-link > div.product-image > img {
   position: static !important;
   inset: auto !important;
@@ -816,11 +350,9 @@
   transform: none !important;
   background: transparent !important;
 }
+
 @media (max-width: 600px) {
   #related-grid > article.product-card > a.product-image-link {
-    aspect-ratio: 4 / 5 !important;
-  }
-  #related-grid > article.product-card > a.product-image-link > div.product-image {
-    padding: 6px !important;
+    aspect-ratio: 3 / 2 !important;
   }
 }
