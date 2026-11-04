@@ -46,7 +46,7 @@ async function refresh(){
  }catch(error){
   const cell=document.createElement("td");cell.colSpan=7;cell.className="hf-loading";
   cell.textContent="Reviews could not be loaded: "+(error?.message||"Check the admin connection and refresh.");
-  $("reviewTableBody").replaceChildren(Object.assign(document.createElement("tr"),{appendChild:cell}));
+  const row=document.createElement("tr");row.appendChild(cell);$("reviewTableBody").replaceChildren(row);
   throw error;
  }
 }
