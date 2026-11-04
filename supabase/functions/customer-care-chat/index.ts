@@ -1318,9 +1318,19 @@ Deno.serve(async (req: Request) => {
     const pureController = new AbortController();
     const pureTimeout = setTimeout(() => pureController.abort(), 45000);
     try {
-      // One customer message makes exactly one Gemini model request in Pure LLM mode.
-      // A shared database-backed sliding window limits all concurrent instances to 4 requests per 60 seconds.
-      const pureResponse = await callGemini(model, apiKey, contents, pureInstruction, pureController.signal);
+      // Try the configured model first, then alternate Flash models only for transient
+      // provider/network failures. 429 quota errors are never retried.
+      // Every provider attempt reserves a shared DB-backed slot (max 4 per 60 seconds).
+      const pureResult = await callGeminiWithFallback(
+        model,
+        requestId,
+        apiKey,
+        contents,
+        pureInstruction,
+        pureController.signal,
+      );
+      const pureResponse = pureResult.response;
+      const pureModelUsed = pureResult.modelUsed;
       if (!pureResponse.ok) {
         const status = pureResponse.status;
         let providerStatus = "";
@@ -1336,7 +1346,7 @@ Deno.serve(async (req: Request) => {
           event: "customer_care_pure_llm_upstream_error",
           requestId,
           status,
-          model,
+          model: pureModelUsed,
           providerStatus,
           providerMessage,
         }));
@@ -1352,7 +1362,7 @@ Deno.serve(async (req: Request) => {
       if (!pureReply || !isCompleteReply(pureReply, pureFinishReason)) {
         return response({ success: false, code: "INCOMPLETE_AI_RESPONSE", requestId }, 502);
       }
-      return response({ success: true, reply: pureReply, products: [], recommendation: null, image_match: null, requestId, model, test_mode: "pure_llm" });
+      return response({ success: true, reply: pureReply, products: [], recommendation: null, image_match: null, requestId, model: pureModelUsed, test_mode: "pure_llm" });
     } catch (error) {
       const timedOut = error instanceof DOMException && error.name === "AbortError";
       const errorCode = error instanceof Error ? error.message : "";
