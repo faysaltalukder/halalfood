@@ -6,7 +6,9 @@ const GROUPS = [
   { canonical:"soybean oil", category:"oil", aliases:["soybean oil","সয়াবিন তেল","সয়াবিন তেল","soyabin tel","soya bean oil"] },
   { canonical:"sunflower oil", category:"oil", aliases:["sunflower oil","সূর্যমুখী তেল","surjomukhi tel"] },
   { canonical:"ghee", category:"ghee", aliases:["ghee","ঘি","গাওয়া ঘি","গাওয়া ঘি","গাওয়া","gawa ghee","gawa ghi","clarified butter"] },
-  { canonical:"honey", category:"honey", aliases:["honey","মধু","modhu","modhu"] },
+  // Keep this named variety distinct from generic honey browsing.
+  { canonical:"sundarban honey", category:"honey", aliases:["sundarban honey","sundarban","sundarban modhu","সুন্দরবন","সুন্দরবনের","সুন্দরবনের মধু","সুন্দরবন মধু"] },
+  { canonical:"honey", category:"honey", aliases:["honey","মধু","modhu"] },
   { canonical:"almonds", category:"nuts-seeds", aliases:["almond","almonds","বাদাম","কাঠবাদাম","kath badam","badam"] },
   { canonical:"cashews", category:"nuts-seeds", aliases:["cashew","cashews","কাজু","কাজুবাদাম","kaju badam","kaju"] },
   { canonical:"pistachios", category:"nuts-seeds", aliases:["pistachio","pistachios","পেস্তা","pesta badam"] },
