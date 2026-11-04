@@ -425,13 +425,13 @@
 }
 
 
-/* HALAL FOOD — mobile universal related-product image frame.
-   Walnuts is the approved reference: 1254 × 1254 source ratio (1:1).
-   Every related-product photo receives the same square display frame.
-   Images already using 1:1 remain visually unchanged; wider ratios are cropped
-   inside the frame so the product fills the same standard image area. */
+/* HALAL FOOD — mobile square reference frame for the small recommendation images.
+   Walnuts is the approved reference: 1254 × 1254 (1:1).
+   Apply only to Nuts & Seeds, Dry Food and Mix Food recommendation cards.
+   The square source images in these groups remain visually unchanged; wider
+   4:3 assets are cropped at the sides to occupy the same standard frame. */
 @media (max-width: 760px) {
-  #related-grid > article.product-card > a.product-image-link {
+  #related-grid > article.product-card:has(img[src*="nuts-seeds/"], img[src*="dry-food/"], img[src*="mix-food/"]) > a.product-image-link {
     display: block !important;
     position: relative !important;
     width: 100% !important;
@@ -446,7 +446,7 @@
     line-height: 0 !important;
   }
 
-  #related-grid > article.product-card > a.product-image-link > div.product-image {
+  #related-grid > article.product-card:has(img[src*="nuts-seeds/"], img[src*="dry-food/"], img[src*="mix-food/"]) > a.product-image-link > div.product-image {
     display: block !important;
     position: absolute !important;
     inset: 0 !important;
@@ -462,13 +462,13 @@
     background: var(--cream, #f2f0ea) !important;
   }
 
-  #related-grid > article.product-card > a.product-image-link > div.product-image::before,
-  #related-grid > article.product-card > a.product-image-link > div.product-image::after {
+  #related-grid > article.product-card:has(img[src*="nuts-seeds/"], img[src*="dry-food/"], img[src*="mix-food/"]) > a.product-image-link > div.product-image::before,
+  #related-grid > article.product-card:has(img[src*="nuts-seeds/"], img[src*="dry-food/"], img[src*="mix-food/"]) > a.product-image-link > div.product-image::after {
     content: none !important;
     display: none !important;
   }
 
-  #related-grid > article.product-card > a.product-image-link > div.product-image > img {
+  #related-grid > article.product-card:has(img[src*="nuts-seeds/"], img[src*="dry-food/"], img[src*="mix-food/"]) > a.product-image-link > div.product-image > img {
     display: block !important;
     position: static !important;
     width: 100% !important;
