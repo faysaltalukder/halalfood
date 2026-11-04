@@ -423,3 +423,66 @@
     background: transparent !important;
   }
 }
+
+
+/* HALAL FOOD — mobile universal related-product image frame.
+   Walnuts is the approved reference: 1200 × 800 source ratio (3:2).
+   Every related-product photo receives the same 3:2 display frame.
+   Images already using 3:2 keep their current fit; other ratios are cropped
+   only within the frame, never allowed to shrink the frame itself. */
+@media (max-width: 760px) {
+  #related-grid > article.product-card > a.product-image-link {
+    display: block !important;
+    position: relative !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    aspect-ratio: 3 / 2 !important;
+    overflow: hidden !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    line-height: 0 !important;
+  }
+
+  #related-grid > article.product-card > a.product-image-link > div.product-image {
+    display: block !important;
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    aspect-ratio: auto !important;
+    overflow: hidden !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    background: var(--cream, #f2f0ea) !important;
+  }
+
+  #related-grid > article.product-card > a.product-image-link > div.product-image::before,
+  #related-grid > article.product-card > a.product-image-link > div.product-image::after {
+    content: none !important;
+    display: none !important;
+  }
+
+  #related-grid > article.product-card > a.product-image-link > div.product-image > img {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    aspect-ratio: auto !important;
+    object-fit: cover !important;
+    object-position: center center !important;
+    transform: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+  }
+}
