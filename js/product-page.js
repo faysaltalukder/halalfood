@@ -45,7 +45,7 @@ document.addEventListener("DOMContentLoaded", () => {
     <div class="product-detail-grid">
       <div class="product-detail-image-wrap">
         <button class="product-detail-image" type="button" aria-label="View ${product.name} image in full screen">
-          <img class="product-main-image" src="${String(product.image).replace(/\.(jpe?g|png)$/i, ".webp")}" alt="${product.name}" decoding="async" fetchpriority="high">
+          <img src="${String(product.image).replace(/\.(jpe?g|png)$/i, ".webp")}" alt="${product.name}">
           <span class="image-zoom-hint">Click image to enlarge</span>
         </button>
       </div>
@@ -124,7 +124,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return `
         <article class="product-card">
           <a href="${url}" class="product-image-link">
-            <div class="product-image"><img class="product-card-image" src="${String(item.image).replace(/\.(jpe?g|png)$/i, ".webp")}" alt="${item.name}" loading="lazy" decoding="async"></div>
+            <div class="product-image"><img src="${String(item.image).replace(/\.(jpe?g|png)$/i, ".webp")}" alt="${item.name}"></div>
           </a>
           <div class="product-body">
             <span class="tag">${item.category}</span>
