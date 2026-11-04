@@ -920,6 +920,38 @@ function isCompleteReply(reply: string, finishReason: string): boolean {
   return Boolean(reply.trim()) && finishReason !== "MAX_TOKENS" && finishReason !== "SAFETY";
 }
 
+
+async function reserveCustomerCareGeminiSlot(): Promise<boolean> {
+  const credentials = getSupabaseCredentials();
+  if (!credentials) throw new Error("AI_RATE_GUARD_UNAVAILABLE");
+  const headers: Record<string, string> = {
+    apikey: credentials.key,
+    "Content-Type": "application/json",
+    Accept: "application/json",
+  };
+  if (!credentials.isSecretKey) headers.Authorization = "Bearer " + credentials.key;
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 3500);
+  try {
+    const result = await fetch(credentials.url + "/rest/v1/rpc/reserve_customer_care_gemini_slot", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ p_limit: 4 }),
+      cache: "no-store",
+      signal: controller.signal,
+    });
+    if (!result.ok) throw new Error("AI_RATE_GUARD_UNAVAILABLE");
+    const allowed = await result.json();
+    if (typeof allowed !== "boolean") throw new Error("AI_RATE_GUARD_UNAVAILABLE");
+    return allowed;
+  } catch {
+    throw new Error("AI_RATE_GUARD_UNAVAILABLE");
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 async function callGemini(
   modelName: string,
   apiKey: string,
@@ -927,6 +959,11 @@ async function callGemini(
   systemInstruction: string,
   signal: AbortSignal,
 ): Promise<Response> {
+  const slotReserved = await reserveCustomerCareGeminiSlot();
+  if (!slotReserved) {
+    console.warn(JSON.stringify({ event: "customer_care_gemini_rate_limited", model: modelName }));
+    throw new Error("AI_RATE_LIMITED");
+  }
   return await fetch(
     "https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(modelName) + ":generateContent",
     {
@@ -969,7 +1006,7 @@ async function callGeminiWithFallback(
 
       // Quota and transient provider failures may be model-specific. Try the
       // remaining stable Flash variants before giving up on the whole request.
-      const retryable = [429, 500, 502, 503, 504].includes(upstream.status);
+      const retryable = [500, 502, 503, 504].includes(upstream.status);
       if (!retryable) return { response: upstream, modelUsed };
 
       const nextModel = modelCandidates[index + 1];
@@ -984,6 +1021,7 @@ async function callGeminiWithFallback(
       }
     } catch (error) {
       if (signal.aborted) throw error;
+      if (error instanceof Error && ["AI_RATE_LIMITED", "AI_RATE_GUARD_UNAVAILABLE"].includes(error.message)) throw error;
       lastError = error;
       const nextModel = modelCandidates[index + 1];
       if (nextModel) {
@@ -1280,13 +1318,15 @@ Deno.serve(async (req: Request) => {
     const pureController = new AbortController();
     const pureTimeout = setTimeout(() => pureController.abort(), 45000);
     try {
-      const pureResult = await callGeminiWithFallback(model, requestId, apiKey, contents, pureInstruction, pureController.signal);
-      if (!pureResult.response.ok) {
-        const status = pureResult.response.status;
+      // One customer message makes exactly one Gemini model request in Pure LLM mode.
+      // A shared database-backed sliding window limits all concurrent instances to 4 requests per 60 seconds.
+      const pureResponse = await callGemini(model, apiKey, contents, pureInstruction, pureController.signal);
+      if (!pureResponse.ok) {
+        const status = pureResponse.status;
         console.warn(JSON.stringify({ event: "customer_care_pure_llm_upstream_error", requestId, status }));
         return response({ success: false, code: friendlyErrorCode(status), requestId }, status === 429 ? 429 : 502);
       }
-      const purePayload = await pureResult.response.json();
+      const purePayload = await pureResponse.json();
       const pureCandidate = purePayload?.candidates?.[0];
       const pureParts = pureCandidate?.content?.parts;
       const pureReply = Array.isArray(pureParts)
@@ -1296,9 +1336,17 @@ Deno.serve(async (req: Request) => {
       if (!pureReply || !isCompleteReply(pureReply, pureFinishReason)) {
         return response({ success: false, code: "INCOMPLETE_AI_RESPONSE", requestId }, 502);
       }
-      return response({ success: true, reply: pureReply, products: [], recommendation: null, image_match: null, requestId, model: pureResult.modelUsed, test_mode: "pure_llm" });
+      return response({ success: true, reply: pureReply, products: [], recommendation: null, image_match: null, requestId, model, test_mode: "pure_llm" });
     } catch (error) {
       const timedOut = error instanceof DOMException && error.name === "AbortError";
+      const errorCode = error instanceof Error ? error.message : "";
+      if (errorCode === "AI_RATE_LIMITED") {
+        return response({ success: false, code: "AI_RATE_LIMITED", message: "অনুগ্রহ করে এক মিনিট পরে আবার চেষ্টা করুন।", requestId }, 429);
+      }
+      if (errorCode === "AI_RATE_GUARD_UNAVAILABLE") {
+        console.error(JSON.stringify({ event: "customer_care_rate_guard_unavailable", requestId }));
+        return response({ success: false, code: "AI_RATE_GUARD_UNAVAILABLE", requestId }, 503);
+      }
       console.error(JSON.stringify({ event: "customer_care_pure_llm_failed", requestId, kind: timedOut ? "timeout" : "upstream" }));
       return response({ success: false, code: timedOut ? "GEMINI_TIMEOUT" : "GEMINI_UNAVAILABLE", requestId }, timedOut ? 504 : 502);
     } finally {
