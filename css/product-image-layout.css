@@ -251,3 +251,55 @@
     touch-action: manipulation;
   }
 }
+
+/* Critical legacy override: old related-card CSS absolutely positioned the
+   inner image frame. With intrinsic-height images that collapses the anchor
+   and can let the image overlap the product body/cart buttons. Put the frame
+   back into normal document flow so its image contributes real height. */
+@media (max-width: 760px) {
+  #related-grid > article.product-card > a.product-image-link {
+    position: relative !important;
+    inset: auto !important;
+    top: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    left: auto !important;
+    height: auto !important;
+    aspect-ratio: auto !important;
+    overflow: visible !important;
+  }
+  #related-grid > article.product-card > a.product-image-link > div.product-image {
+    position: relative !important;
+    inset: auto !important;
+    top: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    left: auto !important;
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    aspect-ratio: auto !important;
+    overflow: visible !important;
+  }
+  #related-grid > article.product-card > a.product-image-link > div.product-image > img {
+    position: static !important;
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    aspect-ratio: auto !important;
+    object-fit: contain !important;
+    transform: none !important;
+  }
+  #related-grid > article.product-card > .product-body {
+    position: relative !important;
+    z-index: 1 !important;
+    min-width: 0 !important;
+  }
+  #related-grid > article.product-card .product-foot {
+    position: relative !important;
+    z-index: 2 !important;
+  }
+}
