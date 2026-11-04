@@ -286,8 +286,8 @@
 }
 
 /* HALAL FOOD — UNIVERSAL RELATED-PRODUCT IMAGE BOX
-   Recommendation assets across the product catalogue use a 3:2 landscape
-   canvas (1200 × 800). Keep one shared frame for every product page.
+   Recommendation assets across the catalogue are square (1:1). Use one shared
+   square frame to match their real image geometry and remove side gutters.
    The complete source image stays visible: no cover crop, no stretch,
    no artificial inner padding, and no decorative backdrop layer. */
 #related-grid > article.product-card > a.product-image-link {
@@ -295,7 +295,7 @@
   position: relative !important;
   width: 100% !important;
   height: auto !important;
-  aspect-ratio: 3 / 2 !important;
+  aspect-ratio: 1 / 1 !important;
   min-height: 0 !important;
   max-height: none !important;
   overflow: hidden !important;
@@ -353,6 +353,6 @@
 
 @media (max-width: 600px) {
   #related-grid > article.product-card > a.product-image-link {
-    aspect-ratio: 3 / 2 !important;
+    aspect-ratio: 1 / 1 !important;
   }
 }
