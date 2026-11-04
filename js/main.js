@@ -1,3 +1,25 @@
+/* Load the shared mobile product-image contract on every page using main.js. */
+(function ensureProductImageStyles() {
+  const mainScript = Array.from(document.scripts).find(script =>
+    /(?:^|\/)js\/main\.js(?:\?|$)/i.test(script.src)
+  );
+  if (!mainScript || !document.head) return;
+  try {
+    const siteRoot = new URL("../", mainScript.src);
+    const styleUrl = new URL("css/product-image-layout.css", siteRoot);
+    styleUrl.searchParams.set("v", "20261105-natural-mobile-v1");
+    const href = styleUrl.href;
+    if (Array.from(document.querySelectorAll('link[rel="stylesheet"]')).some(link => link.href === href)) return;
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = href;
+    link.dataset.halalProductImageLayout = "true";
+    document.head.appendChild(link);
+  } catch (error) {
+    console.warn("Could not load the shared product image layout.", error);
+  }
+})();
+
 // Load the per-store configuration before starting the reusable catalog bridge.
 (function ensureCatalogDependencies() {
   const mainScript = Array.from(document.scripts).find(script =>
