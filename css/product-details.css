@@ -350,7 +350,7 @@
 .jfy-grid .product-card .product-image::before {
   content: "";
   position: absolute;
-  z-index: -1;
+  z-index: 0;
   inset: -10%;
   background-image: var(--product-image-backdrop, none);
   background-position: center;
@@ -366,7 +366,7 @@
 .jfy-grid .product-card .product-image::after {
   content: "";
   position: absolute;
-  z-index: -1;
+  z-index: 0;
   inset: 0;
   background: linear-gradient(145deg, rgba(255,253,248,.46), rgba(242,240,234,.76));
 }
