@@ -1,12 +1,13 @@
-/* HALAL FOOD — DRY FOOD FIRST-FOUR PACKAGE-BORDER FIT EXPERIMENT v2
-   Scope: categories/dry-food.html only; one identical rule for desktop and mobile.
-   Keep the existing 1:1 frame unchanged.
-   The source JPGs are 3:2. Do not impose a different aspect ratio.
-   Uniformly enlarge the original photo by height, letting width follow its
-   intrinsic ratio. This brings the OUTER GOLD PACKAGE BORDER close to the
-   square frame without cutting it; only equal left/right scene background is
-   cropped. A small safety gap is intentionally retained around the package.
-   Reversible by removing this stylesheet link and the page-specific body class. */
+/* HALAL FOOD — DRY FOOD FIRST-FOUR PACKAGE-BORDER FIT EXPERIMENT v3
+   Scope: categories/dry-food.html only; same rule on desktop and mobile.
+   Keep the existing 1:1 product frame unchanged.
+   Source photos are 3:2. Preserve each image's intrinsic aspect ratio.
+   Uniform height enlargement makes the package's OUTER GOLD TRIM approach
+   the frame edges. The image is vertically offset to center the package itself
+   (the source photo has extra loose grains and floor area below the pouch).
+   Only equal left/right outer-scene background is cropped; the package border
+   itself remains fully inside the frame with a small safety margin.
+   Reversible: remove this stylesheet link and the body experiment class. */
 
 html body.category-products-page.category-product-square-display.dry-food-package-zoom-experiment
 .category-page-products .product-grid > article.product-card:nth-child(1)
@@ -22,7 +23,7 @@ html body.category-products-page.category-product-square-display.dry-food-packag
 > a.product-image-link > .product-image > img {
   display: block !important;
   position: absolute !important;
-  top: 50% !important;
+  top: calc(50% - var(--dry-food-package-y-shift, 7.5%)) !important;
   left: 50% !important;
   right: auto !important;
   bottom: auto !important;
@@ -41,35 +42,50 @@ html body.category-products-page.category-product-square-display.dry-food-packag
   padding: 0 !important;
 }
 
-/* Per-image values preserve the full gold package trim with a small breathing
-   margin. Width is automatic: every image keeps its native 3:2 proportion. */
+/* The 3:2 source ratio is retained (width:auto). Zoom amounts are calibrated
+   to make each complete gold package trim nearly fill the vertical frame. */
 html body.category-products-page.category-product-square-display.dry-food-package-zoom-experiment
 .category-page-products .product-grid > article.product-card:nth-child(1)
 > a.product-image-link > .product-image > img {
   --dry-food-package-zoom: 122%;
+  --dry-food-package-y-shift: 7.7%;
 }
 
 html body.category-products-page.category-product-square-display.dry-food-package-zoom-experiment
 .category-page-products .product-grid > article.product-card:nth-child(2)
 > a.product-image-link > .product-image > img {
   --dry-food-package-zoom: 120%;
+  --dry-food-package-y-shift: 7.2%;
 }
 
 html body.category-products-page.category-product-square-display.dry-food-package-zoom-experiment
 .category-page-products .product-grid > article.product-card:nth-child(3)
 > a.product-image-link > .product-image > img {
   --dry-food-package-zoom: 121.5%;
+  --dry-food-package-y-shift: 8.1%;
 }
 
 html body.category-products-page.category-product-square-display.dry-food-package-zoom-experiment
 .category-page-products .product-grid > article.product-card:nth-child(4)
 > a.product-image-link > .product-image > img {
   --dry-food-package-zoom: 122%;
+  --dry-food-package-y-shift: 8%;
 }
 
-/* No extra hover crop: the package border must stay fully visible. */
+/* No extra hover enlargement: it could cut the package trim at the frame edge. */
 html body.category-products-page.category-product-square-display.dry-food-package-zoom-experiment
 .category-page-products .product-grid > article.product-card:nth-child(-n+4)
-> a.product-image-link > .product-image > img:hover {
+> a.product-image-link > .product-image > img:hover,
+html body.category-products-page.category-product-square-display.dry-food-package-zoom-experiment
+.category-page-products .product-grid > article.product-card:nth-child(-n+4)
+> a.product-image-link > .product-image > img:focus {
   transform: translate(-50%, -50%) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html body.category-products-page.category-product-square-display.dry-food-package-zoom-experiment
+  .category-page-products .product-grid > article.product-card:nth-child(-n+4)
+  > a.product-image-link > .product-image > img {
+    transition: none !important;
+  }
 }
