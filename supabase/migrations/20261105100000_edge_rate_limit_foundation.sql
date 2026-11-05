@@ -40,7 +40,7 @@ BEGIN
   END IF;
 
   v_window_start := pg_catalog.to_timestamp(
-    pg_catalog.floor(pg_catalog.extract(epoch FROM pg_catalog.clock_timestamp()) / v_window_seconds) * v_window_seconds
+    pg_catalog.floor(pg_catalog.date_part('epoch', pg_catalog.clock_timestamp()) / v_window_seconds) * v_window_seconds
   );
 
   INSERT INTO private.edge_rate_limit_counters(scope, key_hash, window_start, hits, updated_at)
