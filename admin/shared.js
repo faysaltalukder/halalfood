@@ -1133,7 +1133,7 @@ function makeShell(){
      ["daily","calendar","দৈনিক ব্যবসায়িক রিপোর্ট","Daily business summary","reports-daily","daily business sales summary"]
     ]}
    ]]]},
-  {label:"SYSTEM",items:[["website-publisher","settings","Website Publisher","website publisher deploy code review approve publish"],["tracking","sliders","Tracking Controls","tracking meta pixel conversions api capi google analytics event routing"],["settings","settings","Settings & Security","settings security preferences access"],["wordpress","wordpress","WordPress","wordpress live website preview desktop mobile visual website editor"]]}
+  {label:"SYSTEM",items:[["website-publisher","settings","Website Publisher","website publisher deploy code review approve publish"],["tracking","sliders","Tracking Controls","tracking meta pixel conversions api capi google analytics event routing"],["settings","settings","Settings & Security","settings security preferences access"],["wordpress","layout","Website Studio","website studio live website test sandbox edit website visual builder preview test publish"]]}
  ];
  const allItems=menuGroups.flatMap(group=>group.items.map(item=>({id:item[0],icon:item[1],label:item[2],href:"./"+item[0]+".html",keys:item[3]})));
  const itemById=new Map(allItems.map(item=>[item.id,item]));
