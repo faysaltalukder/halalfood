@@ -31,9 +31,9 @@
   <div class="hf-section-head"><div><h2>Feedback inbox</h2><p>Open a conversation to review the original answer and prepare a correction.</p></div><div class="aif-export-actions"><button class="hf-button hf-button-secondary" id="aifExportCsv" type="button">Export CSV</button><button class="hf-button hf-button-primary" id="aifExportJsonl" type="button">Training JSONL</button></div></div>
   <div class="aif-filters">
    <input class="hf-input" id="aifSearch" type="search" placeholder="Search questions, answers or products…" aria-label="Search feedback">
-   <select class="hf-select" id="aifRating"><option value="">All feedback</option><option value="not_helpful">Disagree</option><option value="helpful">Appreciate</option></select>
-   <select class="hf-select" id="aifStatus"><option value="">All review statuses</option><option value="new">New</option><option value="reviewed">Reviewed</option><option value="applied">Applied</option><option value="dismissed">Dismissed</option></select>
-   <select class="hf-select" id="aifReason"><option value="">All mistake types</option><option value="wrong_product">Wrong product</option><option value="misunderstood">Misunderstood question</option><option value="incorrect_information">Incorrect information</option><option value="irrelevant">Irrelevant answer</option><option value="unclear">Unclear answer</option><option value="other">Other</option></select>
+   <select class="hf-select" id="aifRating" aria-label="Filter by feedback rating"><option value="">All feedback</option><option value="not_helpful">Disagree</option><option value="helpful">Appreciate</option></select>
+   <select class="hf-select" id="aifStatus" aria-label="Filter by review status"><option value="">All review statuses</option><option value="new">New</option><option value="reviewed">Reviewed</option><option value="applied">Applied</option><option value="dismissed">Dismissed</option></select>
+   <select class="hf-select" id="aifReason" aria-label="Filter by feedback reason"><option value="">All mistake types</option><option value="wrong_product">Wrong product</option><option value="misunderstood">Misunderstood question</option><option value="incorrect_information">Incorrect information</option><option value="irrelevant">Irrelevant answer</option><option value="unclear">Unclear answer</option><option value="other">Other</option></select>
   </div>
   <p class="aif-note" id="aifListNote">Loading feedback…</p>
   <div id="aifFeedbackList" class="aif-feedback-list"><div class="hf-loading">Loading feedback records…</div></div>
