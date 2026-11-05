@@ -376,7 +376,7 @@ html body #related-section #related-grid > article.product-card > .product-image
 /* HALAL FOOD — mobile-only Related Products title refinement.
    Slightly larger product names with a balanced two-line limit for long titles.
    The desktop one-line title treatment is intentionally preserved. */
-@media screen and (max-width: 760px) {
+@media screen and (max-width: 600px) {
   html body #related-section #related-grid .product-body .product-name-link {
     display: block !important;
     width: 100% !important;
