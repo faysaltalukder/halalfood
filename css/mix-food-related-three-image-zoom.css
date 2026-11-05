@@ -7,7 +7,7 @@
    The Mix Food category listing page is intentionally untouched.
 */
 
-/* Square 1:1 image frame for the three selected recommendation cards. */
+/* 1:1 recommendation image frame for the three selected products. */
 html body.mix-food-related-suggestion-scope #related-section #related-grid > article.product-card > a.product-image-link[href$="honey-nut-mix.html"],
 html body.mix-food-related-suggestion-scope #related-section #related-grid > article.product-card > a.product-image-link[href$="date-nut-mix.html"],
 html body.mix-food-related-suggestion-scope #related-section #related-grid > article.product-card > a.product-image-link[href$="dry-fruit-mix.html"] {
@@ -30,7 +30,7 @@ html body.mix-food-related-suggestion-scope #related-section #related-grid > art
   background: var(--cream, #f2f0ea) !important;
 }
 
-/* Keep the image viewport aligned with the square frame. */
+/* Inner image viewport fills the square frame. */
 html body.mix-food-related-suggestion-scope #related-section #related-grid > article.product-card > a.product-image-link[href$="honey-nut-mix.html"] > div.product-image,
 html body.mix-food-related-suggestion-scope #related-section #related-grid > article.product-card > a.product-image-link[href$="date-nut-mix.html"] > div.product-image,
 html body.mix-food-related-suggestion-scope #related-section #related-grid > article.product-card > a.product-image-link[href$="dry-fruit-mix.html"] > div.product-image {
@@ -85,7 +85,7 @@ html body.mix-food-related-suggestion-scope #related-section #related-grid > art
   background: transparent !important;
 }
 
-/* Desktop hover and keyboard focus: image-only 4.5% zoom. */
+/* Desktop pointer hover and keyboard focus: 4.5% image-only zoom. */
 @media (hover: hover) and (pointer: fine) {
   html body.mix-food-related-suggestion-scope #related-section #related-grid > article.product-card:hover > a.product-image-link[href$="honey-nut-mix.html"] > div.product-image > img,
 html body.mix-food-related-suggestion-scope #related-section #related-grid > article.product-card:focus-within > a.product-image-link[href$="honey-nut-mix.html"] > div.product-image > img,
@@ -97,7 +97,7 @@ html body.mix-food-related-suggestion-scope #related-section #related-grid > art
   }
 }
 
-/* Touch devices: 3.5% pressed zoom with 150ms response. */
+/* Touch: activate the image link itself, with 3.5% zoom and 150ms feedback. */
 @media (hover: none) and (pointer: coarse) {
   html body.mix-food-related-suggestion-scope #related-section #related-grid > article.product-card > a.product-image-link[href$="honey-nut-mix.html"] > div.product-image > img,
 html body.mix-food-related-suggestion-scope #related-section #related-grid > article.product-card > a.product-image-link[href$="date-nut-mix.html"] > div.product-image > img,
@@ -105,14 +105,14 @@ html body.mix-food-related-suggestion-scope #related-section #related-grid > art
     transition-duration: 150ms !important;
   }
 
-  html body.mix-food-related-suggestion-scope #related-section #related-grid > article.product-card:active > a.product-image-link[href$="honey-nut-mix.html"] > div.product-image > img,
-html body.mix-food-related-suggestion-scope #related-section #related-grid > article.product-card:active > a.product-image-link[href$="date-nut-mix.html"] > div.product-image > img,
-html body.mix-food-related-suggestion-scope #related-section #related-grid > article.product-card:active > a.product-image-link[href$="dry-fruit-mix.html"] > div.product-image > img {
+  html body.mix-food-related-suggestion-scope #related-section #related-grid > article.product-card > a.product-image-link[href$="honey-nut-mix.html"]:active > div.product-image > img,
+html body.mix-food-related-suggestion-scope #related-section #related-grid > article.product-card > a.product-image-link[href$="date-nut-mix.html"]:active > div.product-image > img,
+html body.mix-food-related-suggestion-scope #related-section #related-grid > article.product-card > a.product-image-link[href$="dry-fruit-mix.html"]:active > div.product-image > img {
     scale: 1.035 !important;
   }
 }
 
-/* Respect reduced-motion preferences. */
+/* Respect reduced-motion preferences without changing image framing. */
 @media (prefers-reduced-motion: reduce) {
   html body.mix-food-related-suggestion-scope #related-section #related-grid > article.product-card > a.product-image-link[href$="honey-nut-mix.html"] > div.product-image > img,
 html body.mix-food-related-suggestion-scope #related-section #related-grid > article.product-card > a.product-image-link[href$="date-nut-mix.html"] > div.product-image > img,
