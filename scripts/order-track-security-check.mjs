@@ -32,7 +32,7 @@ assert.match(rateLimit, /HMAC/);
 assert.match(rateLimit, /consume_edge_rate_limit/);
 assert.match(rateLimitMigration, /SECURITY DEFINER/);
 assert.match(rateLimitMigration, /SET search_path = ''/);
-assert.match(rateLimitMigration, /GRANT EXECUTE ON FUNCTION public\\.consume_edge_rate_limit[\\s\\S]+TO service_role/);
+assert.match(rateLimitMigration, /GRANT EXECUTE ON FUNCTION public\.consume_edge_rate_limit[\\s\\S]+TO service_role/);
 assert.match(incomplete, /reserveEdgeRateLimit/);
 assert.match(incomplete, /incomplete-checkout-session/);
 assert.match(analytics, /reserveEdgeRateLimit/);
@@ -40,7 +40,7 @@ assert.match(analytics, /analytics-ingest-ip/);
 assert.match(customerCare, /reserveEdgeRateLimitRest/);
 assert.match(customerCare, /customer-care-visitor/);
 assert.match(marketingEmail, /async function requireAdmin/);
-assert.match(marketingEmail, /claims\\.aal !== "aal2"/);
+assert.match(marketingEmail, /claims\.aal !== "aal2"/);
 assert.match(marketingUnsubscribe, /unsubscribe_token_hash/);
 assert.match(marketingUnsubscribe, /token.length < 80/);
 
