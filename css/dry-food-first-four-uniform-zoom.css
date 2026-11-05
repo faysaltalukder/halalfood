@@ -1,0 +1,71 @@
+/* HALAL FOOD — DRY FOOD FIRST-FOUR UNIFORM ZOOM EXPERIMENT
+   Scope: categories/dry-food.html only; desktop and mobile.
+   The square card frame is NOT changed.
+   Each original 4:3 photo is enlarged uniformly until the package's top/bottom
+   edges nearly touch the 1:1 frame. Equal centered left/right cropping is expected.
+   Reversible: remove the stylesheet link and experiment body class from dry-food.html. */
+
+html body.category-products-page.category-product-square-display.dry-food-package-zoom-experiment
+.category-page-products .product-grid > article.product-card:nth-child(1)
+> a.product-image-link > .product-image > img,
+html body.category-products-page.category-product-square-display.dry-food-package-zoom-experiment
+.category-page-products .product-grid > article.product-card:nth-child(2)
+> a.product-image-link > .product-image > img,
+html body.category-products-page.category-product-square-display.dry-food-package-zoom-experiment
+.category-page-products .product-grid > article.product-card:nth-child(3)
+> a.product-image-link > .product-image > img,
+html body.category-products-page.category-product-square-display.dry-food-package-zoom-experiment
+.category-page-products .product-grid > article.product-card:nth-child(4)
+> a.product-image-link > .product-image > img {
+  display: block !important;
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  right: auto !important;
+  bottom: auto !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  aspect-ratio: 4 / 3 !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+  transform: translate(-50%, -50%) !important;
+  transform-origin: center center !important;
+}
+
+/* Individual uniform zoom values, calibrated to the four source package heights.
+   Width remains automatic so the original 4:3 photo ratio is preserved. */
+html body.category-products-page.category-product-square-display.dry-food-package-zoom-experiment
+.category-page-products .product-grid > article.product-card:nth-child(1)
+> a.product-image-link > .product-image > img {
+  height: 141% !important;
+}
+
+html body.category-products-page.category-product-square-display.dry-food-package-zoom-experiment
+.category-page-products .product-grid > article.product-card:nth-child(2)
+> a.product-image-link > .product-image > img {
+  height: 139% !important;
+}
+
+html body.category-products-page.category-product-square-display.dry-food-package-zoom-experiment
+.category-page-products .product-grid > article.product-card:nth-child(3)
+> a.product-image-link > .product-image > img {
+  height: 141% !important;
+}
+
+html body.category-products-page.category-product-square-display.dry-food-package-zoom-experiment
+.category-page-products .product-grid > article.product-card:nth-child(4)
+> a.product-image-link > .product-image > img {
+  height: 141% !important;
+}
+
+/* The same sizing rules apply at every viewport width; no mobile-only override. */
+@media (prefers-reduced-motion: reduce) {
+  html body.category-products-page.category-product-square-display.dry-food-package-zoom-experiment
+  .category-page-products .product-grid > article.product-card:nth-child(-n+4)
+  > a.product-image-link > .product-image > img {
+    transition: none !important;
+  }
+}
