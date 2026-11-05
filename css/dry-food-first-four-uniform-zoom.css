@@ -1,13 +1,8 @@
-/* HALAL FOOD — DRY FOOD FIRST-FOUR PACKAGE-BORDER TOP-CLEARANCE TUNE v6 — +6PX + MICRO-INTERACTION
-   Scope: categories/dry-food.html only; same rule on desktop and mobile.
-   Keep the existing 1:1 product frame unchanged.
-   Source photos are 3:2. Preserve each image's intrinsic aspect ratio.
-   Uniform height enlargement makes the package's OUTER GOLD TRIM approach
-   the frame edges. The image is vertically offset to center the package itself
-   (the source photo has extra loose grains and floor area below the pouch).
-   Only equal left/right outer-scene background is cropped; the package border
-   itself remains fully inside the frame with a little more top breathing room.
-   Reversible: remove this stylesheet link and the body experiment class. */
+/* HALAL FOOD — DRY FOOD FIRST-FOUR PACKAGE-BORDER ZOOM + HOVER v8
+   Scope: categories/dry-food.html only; first four product cards only.
+   Desktop hover/focus and mobile press zoom are independent from image positioning.
+   Reversible: remove this stylesheet link and the page-only body class.
+   The base package zoom, original 3:2 ratio, square frame and y-position are retained. */
 
 html body.category-products-page.category-product-square-display.dry-food-package-zoom-experiment
 .category-page-products .product-grid > article.product-card:nth-child(1)
@@ -36,14 +31,19 @@ html body.category-products-page.category-product-square-display.dry-food-packag
   aspect-ratio: auto !important;
   object-fit: contain !important;
   object-position: center center !important;
-  transform: translate(-50%, -50%) !important;
+
+  /* Position and zoom are now separate properties.
+     This avoids conflicts with shared rules that set transform:none or scale(). */
+  transform: none !important;
+  translate: -50% -50% !important;
+  scale: 1 !important;
   transform-origin: center center !important;
+  transition: scale 380ms cubic-bezier(.22, .68, .24, 1) !important;
   margin: 0 !important;
   padding: 0 !important;
 }
 
-/* The 3:2 source ratio is retained (width:auto). Zoom amounts are calibrated
-   to make each complete gold package trim nearly fill the vertical frame. */
+/* Preserve the last approved package framing and six-pixel top clearance. */
 html body.category-products-page.category-product-square-display.dry-food-package-zoom-experiment
 .category-page-products .product-grid > article.product-card:nth-child(1)
 > a.product-image-link > .product-image > img {
@@ -72,16 +72,7 @@ html body.category-products-page.category-product-square-display.dry-food-packag
   --dry-food-package-y-shift: calc(5.75% - 3px);
 }
 
-/* Match the existing category-card hover zoom only on these four products.
-   Keep the translate centering and add the same subtle 4.5% enlargement used by
-   the other product cards. The small existing top/bottom breathing space absorbs
-   this interaction without changing the 1:1 frame or the base image placement. */
-html body.category-products-page.category-product-square-display.dry-food-package-zoom-experiment
-.category-page-products .product-grid > article.product-card:nth-child(-n+4)
-> a.product-image-link > .product-image > img {
-  transition: transform 380ms cubic-bezier(.22, .68, .24, 1) !important;
-}
-
+/* Desktop pointer: match the 4.5% zoom used by the other product cards. */
 @media (hover: hover) and (pointer: fine) {
   html body.category-products-page.category-product-square-display.dry-food-package-zoom-experiment
   .category-page-products .product-grid > article.product-card:nth-child(-n+4):hover
@@ -89,32 +80,24 @@ html body.category-products-page.category-product-square-display.dry-food-packag
   html body.category-products-page.category-product-square-display.dry-food-package-zoom-experiment
   .category-page-products .product-grid > article.product-card:nth-child(-n+4):focus-within
   > a.product-image-link > .product-image > img {
-    transform: translate(-50%, -50%) scale(1.045) !important;
+    scale: 1.045 !important;
   }
 }
 
-/* Touch feedback mirrors the existing 3.5% pressed-state image zoom. */
+/* Touch devices: a small zoom while the product card is pressed. */
 html body.category-products-page.category-product-square-display.dry-food-package-zoom-experiment
 .category-page-products .product-grid > article.product-card:nth-child(-n+4):active
 > a.product-image-link > .product-image > img {
-  transform: translate(-50%, -50%) scale(1.035) !important;
+  scale: 1.035 !important;
   transition-duration: 150ms !important;
 }
 
-/* Reduced-motion preference keeps the image centered without animation. */
+/* Respect reduced-motion settings without altering the carefully centered image. */
 @media (prefers-reduced-motion: reduce) {
   html body.category-products-page.category-product-square-display.dry-food-package-zoom-experiment
   .category-page-products .product-grid > article.product-card:nth-child(-n+4)
   > a.product-image-link > .product-image > img {
     transition: none !important;
-    transform: translate(-50%, -50%) !important;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  html body.category-products-page.category-product-square-display.dry-food-package-zoom-experiment
-  .category-page-products .product-grid > article.product-card:nth-child(-n+4)
-  > a.product-image-link > .product-image > img {
-    transition: none !important;
+    scale: 1 !important;
   }
 }
