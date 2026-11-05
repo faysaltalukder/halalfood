@@ -503,7 +503,11 @@ Deno.serve(async (req: Request) => {
   if (contentLength > 32_000) return response({ error: "Payload too large" }, 413);
 
   let body: unknown;
-  try { body = await req.json(); } catch { return response({ error: "Invalid JSON" }, 400); }
+  try {
+    const rawBody = await req.text();
+    if (new TextEncoder().encode(rawBody).byteLength > 32_000) return response({ error: "Payload too large" }, 413);
+    body = JSON.parse(rawBody);
+  } catch { return response({ error: "Invalid JSON" }, 400); }
   const items = Array.isArray(body) ? body : [body];
   if (items.length < 1 || items.length > 20 ||
       items.some((item) => !item || typeof item !== "object" || Array.isArray(item))) {
