@@ -61,13 +61,13 @@ assert.ok(celestialEngine.includes("setInterval(update,60000)") && solarJourneyC
 
 const htmlFiles = readdirSync(adminDir).filter((file) => file.endsWith(".html"));
 const unifiedPages = htmlFiles.filter((file) => /<body[^>]*\bdata-page=/.test(read(join("admin", file))));
-assert.equal(unifiedPages.length, 45, `Expected 45 unified admin pages in the current admin workspace, found ${unifiedPages.length}.`);
+assert.equal(unifiedPages.length, 44, `Expected 44 unified admin pages in the current admin workspace, found ${unifiedPages.length}.`);
 assert.ok(unifiedPages.includes("ai-knowledge.html"), "AI Knowledge Center must use the unified admin shell.");
 assert.ok(unifiedPages.includes("pos.html"), "POS import must use the unified admin shell.");
 assert.ok(unifiedPages.includes("coupons.html"), "Coupon Promotions must use the unified admin shell.");
 assert.ok(unifiedPages.includes("coupon-usage.html"), "Coupon Usage must use the unified admin shell.");
 assert.ok(unifiedPages.includes("categories.html"), "The single Categories workspace must use the unified admin shell.");
-assert.ok(unifiedPages.includes("wordpress.html") && unifiedPages.includes("wordpress-live.html"), "The cache-busted WordPress Studio route must use the unified admin shell.");
+assert.ok(unifiedPages.includes("wordpress-live.html") && !unifiedPages.includes("wordpress.html"), "The sandbox Live Website route must use the unified admin shell; the legacy production preview route must remain a redirect shim.");
 const wordpressPage = read("admin/wordpress-live.html");
 const wordpressNav = read("admin/shared.js");
 const wordpressSandbox = read("admin/wordpress-sandbox.js");
