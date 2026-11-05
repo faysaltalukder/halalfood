@@ -151,7 +151,7 @@
     const caption=document.createElement("span");caption.textContent=label;wrap.append(caption);
     const input=document.createElement(type==="textarea"?"textarea":"input");
     if(type!=="textarea")input.type=type;
-    input.dataset-property=key;
+    input.dataset.property=key;
     if(type==="textarea")input.value=value??"";else input.value=value??"";
     Object.entries(attrs).forEach(([name,val])=>input.setAttribute(name,String(val)));
     wrap.append(input);return wrap;
@@ -159,7 +159,7 @@
   const selectField = (label,key,value,options) => {
     const wrap=document.createElement("label");wrap.className="hf-builder-field";
     const caption=document.createElement("span");caption.textContent=label;wrap.append(caption);
-    const select=document.createElement("select");select.dataset-property=key;
+    const select=document.createElement("select");select.dataset.property=key;
     options.forEach(([val,text])=>{const option=document.createElement("option");option.value=val;option.textContent=text;select.append(option);});
     select.value=value||options[0][0];wrap.append(select);return wrap;
   };
