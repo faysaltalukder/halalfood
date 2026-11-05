@@ -431,11 +431,11 @@
     }
     if (status) status.textContent = message;
     const report = ["Preview state: FAILED BEFORE PREVIEW INITIALIZATION", "Failure: " + message, "Failure stage: secure admin initialization", "Elapsed deadline: " + BOOTSTRAP_TIMEOUT_MS + " ms", "HFAdminReady present: " + Boolean(window.HFAdminReady), "Browser online: " + navigator.onLine, "Page URL: " + location.href, ...details];
-    if (diagnostics) diagnostics.textContent = report.join("\\n");
+    if (diagnostics) diagnostics.textContent = report.join("\n");
     if (adminApp?.hidden && gate) {
       gate.innerHTML = '<div class="auth-gate-card"><strong>WordPress preview could not start</strong><p></p><pre style="white-space:pre-wrap;overflow-wrap:anywhere"></pre><a href="./index.html" class="hf-button hf-button-secondary">Return to sign-in</a></div>';
       gate.querySelector("p").textContent = message;
-      gate.querySelector("pre").textContent = report.join("\\n");
+      gate.querySelector("pre").textContent = report.join("\n");
     }
   };
 
