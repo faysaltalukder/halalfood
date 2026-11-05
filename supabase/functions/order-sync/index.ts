@@ -421,6 +421,10 @@ Deno.serve(async (req: Request) => {
     }
     if (!data || data.success !== true) return json({ success: false, error: "Order could not be placed. Please try again." }, 500);
 
+    // The database may allocate a fresh public reference when the submitted six-digit ID collides.
+    if (typeof data.orderId === "string" && /^HF-[0-9]{4,6}$/.test(data.orderId)) {
+      riskSignal.order_number = data.orderId;
+    }
     if (typeof data.orderId === "string" && /^HF-[0-9]{4,6}$/.test(data.orderId)) {
       const { error: signalError } = await admin
         .from("order_security_signals")
