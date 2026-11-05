@@ -45,7 +45,7 @@
       if (forwardButton) forwardButton.disabled = routeIndex >= routeHistory.length - 1;
     };
 
-    const setDiagnostics = (lines) => { if (diagnostics) diagnostics.textContent = lines.filter(Boolean).join("\\n"); };
+    const setDiagnostics = (lines) => { if (diagnostics) diagnostics.textContent = lines.filter(Boolean).join("\n"); };
 
     const layoutDiagnostics = () => {
       const rect = frame.getBoundingClientRect();
