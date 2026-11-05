@@ -353,7 +353,7 @@ const FEATURES = {
     functions: ["site-publisher"],
     tests: ["scripts/architecture-check.mjs"],
     guardrails: ["Preserve preview, approval, publish and rollback workflow.", "Never publish arbitrary paths or unreviewed user-controlled code.", "Keep GitHub tokens exclusively in server secrets."]
-  }
+  },
   universal_website_builder: {
     title: "Universal visual website builder",
     purpose: "Site-agnostic, schema-driven page editing foundation with isolated draft canvas, reusable components, responsive preview and safe future publishing.",
