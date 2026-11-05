@@ -1,0 +1,65 @@
+/* HALAL FOOD — TEA FIRST-FOUR NATURAL-RATIO PRODUCT ZOOM
+   Scope: categories/tea.html only; first four product cards only.
+   The four source images share a 1000x747 (~1.339:1) landscape canvas.
+   Keep the 1:1 shared frame, enlarge the complete source proportionally,
+   crop only excess side background, and retain visible top/bottom clearance. */
+
+html body.category-products-page.category-product-square-display.tea-first-four-zoom-experiment
+.category-page-products .product-grid > article.product-card:nth-child(-n+4)
+> a.product-image-link > .product-image > img {
+  display: block !important;
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  right: auto !important;
+  bottom: auto !important;
+  width: auto !important;
+  height: calc(118% - 6px) !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: none !important;
+  max-height: none !important;
+  aspect-ratio: auto !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+
+  /* Keep position separate from animated zoom to avoid shared transform
+     overrides cancelling the image centering or the scale transition. */
+  transform: none !important;
+  translate: -50% -50% !important;
+  scale: 1 !important;
+  transform-origin: center center !important;
+  transition: scale 380ms cubic-bezier(.22, .68, .24, 1) !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Desktop hover and keyboard focus: image-only 4.5% zoom. */
+@media (hover: hover) and (pointer: fine) {
+  html body.category-products-page.category-product-square-display.tea-first-four-zoom-experiment
+  .category-page-products .product-grid > article.product-card:nth-child(-n+4):hover
+  > a.product-image-link > .product-image > img,
+  html body.category-products-page.category-product-square-display.tea-first-four-zoom-experiment
+  .category-page-products .product-grid > article.product-card:nth-child(-n+4):focus-within
+  > a.product-image-link > .product-image > img {
+    scale: 1.045 !important;
+  }
+}
+
+/* Touch/press: slightly smaller zoom and quicker feedback. */
+html body.category-products-page.category-product-square-display.tea-first-four-zoom-experiment
+.category-page-products .product-grid > article.product-card:nth-child(-n+4):active
+> a.product-image-link > .product-image > img {
+  scale: 1.035 !important;
+  transition-duration: 150ms !important;
+}
+
+/* Respect reduced-motion preferences without changing image framing. */
+@media (prefers-reduced-motion: reduce) {
+  html body.category-products-page.category-product-square-display.tea-first-four-zoom-experiment
+  .category-page-products .product-grid > article.product-card:nth-child(-n+4)
+  > a.product-image-link > .product-image > img {
+    transition: none !important;
+    scale: 1 !important;
+  }
+}
