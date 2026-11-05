@@ -72,7 +72,7 @@ const wordpressPage = read("admin/wordpress.html");
 const wordpressNav = read("admin/shared.js");
 assert.ok(wordpressNav.includes('["wordpress","wordpress","WordPress"'), "WordPress must be the final System sidebar entry.");
 assert.ok(wordpressPage.includes('data-page="wordpress"') && wordpressPage.includes('id="wordpressLiveFrame"') && wordpressPage.includes('data-preview-src="https://faysaltalukder.github.io/halalfood/"'), "WordPress must embed the canonical live storefront in its authenticated admin page.");
-assert.ok(!/<iframe[^>]+\bsrc=/.test(wordpressPage), "The live iframe URL must be assigned only after its load listener is attached.");
+assert.ok(!/<iframe[^>]+\s+src=/.test(wordpressPage), "The live iframe URL must be assigned only after its load listener is attached.");
 assert.ok(read("admin/wordpress.js").indexOf('frame.addEventListener("load", handleFrameLoad)') < read("admin/wordpress.js").indexOf("frame.src = LIVE_URL"), "The iframe load handler must be registered before the storefront navigation begins.");
 assert.ok(read("admin/wordpress.js").includes("pointer\\s*:\\s*coarse") && read("admin/wordpress.js").includes('source.setAttribute("media", mobileMedia || "all")') && read("admin/wordpress.js").includes("source[data-wp-original-media]"), "Mobile preview must emulate coarse-pointer media and restore responsive image sources when switching devices.");
 assert.ok(read("admin/wordpress.css").includes("width:406px;min-width:406px;max-width:406px") && read("admin/wordpress.css").includes("width:390px"), "Mobile preview must preserve a 390px inner viewport instead of shrinking to the available panel width.");
