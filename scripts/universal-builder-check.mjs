@@ -19,7 +19,7 @@ for (const type of ["section","container","heading","paragraph","image","button"
 assert.ok(js.includes("renderNode") && js.includes("renderInspector") && js.includes("renderLayers"), "Builder must separate rendering, layers and inspector behavior.");
 assert.ok(js.includes("data-builder-viewport") && js.includes('is-"+viewport'), "Desktop, tablet and mobile canvas modes must be implemented.");
 assert.ok(js.includes("state.undo") && js.includes("state.redo") && js.includes("builderUndo") && js.includes("builderRedo"), "Builder must support undo and redo.");
-assert.ok(js.includes("localStorage.setItem(STORAGE_KEY") && js.includes("Export draft JSON"), "Draft persistence must stay browser-local and exportable.");
+assert.ok(js.includes("localStorage.setItem(STORAGE_KEY") && page.includes("Export draft JSON"), "Draft persistence must stay browser-local and exportable.");
 assert.ok(js.includes("not published") && page.includes("Publishing is intentionally disabled"), "The first builder milestone must not publish to the live site.");
 assert.ok(!/\.from\(["']site_pages|\.from\(["']page_revisions|\.rpc\(["']publish/i.test(js), "The starter editor must not write to production CMS tables or publish.");
 assert.ok(!/fetch\s*\(|XMLHttpRequest|supabase/i.test(js), "The isolated editor engine must not make network or Supabase requests.");
