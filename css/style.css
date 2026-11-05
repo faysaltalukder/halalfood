@@ -3487,9 +3487,10 @@ body.category-products-page .category-page-products .product-card > .product-ima
 }
 
 
-/* HALAL FOOD — NON-GHEE CATEGORY IMAGE PRESENTATION
-   4:3 catalogue frame + square image viewport.
-   Source photos remain fully visible: contain prevents distortion and cropping. */
+/* HALAL FOOD — NON-GHEE CATEGORY IMAGE PRESENTATION v2
+   The card remains a 4:3 frame. The inner display window is truly square
+   (75% of the frame width), centered in the frame. The full source photo
+   is shown with contain, without stretching or cropping. */
 body.category-products-page.category-product-square-display .category-page-products .product-card .product-image-link {
   display: grid !important;
   place-items: center !important;
@@ -3504,24 +3505,27 @@ body.category-products-page.category-product-square-display .category-page-produ
   margin: 0 !important;
   line-height: 0 !important;
   background: var(--cream, #f2f0ea) !important;
+  box-sizing: border-box !important;
 }
 
 body.category-products-page.category-product-square-display .category-page-products .product-card .product-image-link > .product-image,
 body.category-products-page.category-product-square-display .category-page-products .product-card > .product-image {
-  display: grid !important;
-  place-items: center !important;
-  position: absolute !important;
-  inset: 0 !important;
-  width: 100% !important;
-  height: 100% !important;
+  display: block !important;
+  position: relative !important;
+  inset: auto !important;
+  width: 75% !important;
+  height: auto !important;
+  min-width: 0 !important;
   min-height: 0 !important;
-  max-height: none !important;
-  aspect-ratio: 4 / 3 !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  aspect-ratio: 1 / 1 !important;
   overflow: hidden !important;
   isolation: auto !important;
   padding: 0 !important;
   margin: 0 !important;
   background: var(--cream, #f2f0ea) !important;
+  box-sizing: border-box !important;
 }
 
 body.category-products-page.category-product-square-display .category-page-products .product-card .product-image-link > .product-image::before,
@@ -3533,13 +3537,11 @@ body.category-products-page.category-product-square-display .category-page-produ
 }
 
 body.category-products-page.category-product-square-display .category-page-products .product-card .product-image-link > .product-image > img,
-body.category-products-page.category-product-square-display .category-page-products .product-card > .product-image > img,
-body.category-products-page.category-product-square-display .category-page-products .product-card .product-image-link > img {
+body.category-products-page.category-product-square-display .category-page-products .product-card > .product-image > img {
   display: block !important;
-  position: relative !important;
+  position: static !important;
   inset: auto !important;
-  z-index: 1 !important;
-  width: auto !important;
+  width: 100% !important;
   height: 100% !important;
   min-width: 0 !important;
   min-height: 0 !important;
