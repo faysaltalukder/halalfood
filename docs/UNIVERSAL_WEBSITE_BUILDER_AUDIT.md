@@ -153,8 +153,30 @@ These require dedicated design, threat modeling, compatibility tests and approva
 
 The repository has a useful starting point: a secure admin shell, a live preview workspace, existing CMS conventions and regression checks. It does **not** yet contain a universal visual builder. The safest route is to evolve the current WordPress Studio area into a separate, generic builder application while retaining the current live preview as a distinct tool.
 
+## 11. Phase 1 foundation implementation status
+
+Implemented on the isolated feature branch:
+- `admin/website-builder.html`, `admin/website-builder.css` and `admin/website-builder.js` add a dedicated three-panel builder workspace.
+- The builder waits for the existing MFA-protected `HFAdminReady` signal and reuses the current admin shell.
+- A version-1 sample JSON document and controlled starter registry support Section, Container, Heading, Paragraph, Image and Button nodes.
+- Canvas selection, layer selection, typed inspector fields, desktop/tablet/mobile viewport controls, undo/redo, browser-local draft autosave and JSON export are implemented.
+- A dedicated entry link was added to the existing WordPress Studio preview. The existing live preview route remains separate.
+- Local draft restoration validates node types, shape, nesting depth and child counts before rendering.
+- `scripts/universal-builder-check.mjs` is wired into Architecture Quality Gate.
+
+### Validation status at this audit revision
+- JavaScript syntax and architecture guard: passed.
+- Storefront checkout regression checks: passed.
+- Customer Care chat regression checks: passed.
+- Feature context map: passed.
+- Universal Website Builder foundation contract checks: passed.
+- Existing admin integrity gate reaches a pre-existing accessibility failure in `admin/ai-feedback.html` for controls `aifRating`, `aifStatus` and `aifReason`. This is outside this builder change and was already present in the base branch; it has not been altered as part of this scope.
+- Supabase Edge Function type-check was still running at the time this note was written.
+- A real browser interaction pass is still required before calling the editor runtime verified.
+
 **Phase 0 result:** source audit documented.  
-**Next gate:** implement the isolated editor shell and in-memory document engine on this feature branch.  
+**Phase 1 result:** isolated local-only editor foundation implemented; contract test passed.  
+**Next gate:** browser QA of the builder, then improve document editing and add drag-and-drop only after the interaction model is verified.  
 **Production impact:** none.  
 **Database impact:** none.  
-**Deployment:** none.
+**Deployment:** none; work remains in draft PR #92.
