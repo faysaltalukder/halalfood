@@ -1,44 +1,56 @@
 /* HALAL FOOD — RELATED PRODUCTS MOBILE COMPACT MODE
-   Purpose:
-   - Apply only inside the four-card Related Products region on product pages.
-   - Left-align each suggested product price.
-   - Reduce excess vertical whitespace without changing product-name typography,
-     title wrapping/line count, image frames, or Add to Cart touch target size.
-   Rollback: remove the single @import for this file from product-details.css.
+   Product-detail pages only: #related-section #related-grid.
+   Safe rollback: remove the single @import for this file from product-details.css.
+   Does not affect category product grids, homepage grids, desktop, or main product image.
 */
 
 @media screen and (max-width: 600px) {
-  /* Slightly tighten only the information area beneath each related image. */
+  /* Compact the lower information panel while preserving its card frame. */
   html body #related-section #related-grid > article.product-card > .product-body {
-    padding: 11px 12px 10px !important;
+    padding: 10px 11px 9px !important;
     min-width: 0 !important;
   }
 
-  /* Keep title font, line-height, width and wrapping unchanged.
-     Only trim the small gap beneath the existing title area. */
+  /* Retain the existing title font size and line-height.
+     One-line titles now occupy one line; genuinely long names may use two. */
   html body #related-section #related-grid > article.product-card > .product-body > .product-name-link {
-    margin-bottom: 0 !important;
+    display: block !important;
+    margin: 0 !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
   }
 
   html body #related-section #related-grid > article.product-card > .product-body > .product-name-link > h3 {
-    margin-bottom: 2px !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: 2.44em !important;
+    margin: 0 0 2px !important;
+    white-space: normal !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    overflow-wrap: break-word !important;
+    word-break: normal !important;
+    -webkit-box-orient: vertical !important;
+    -webkit-line-clamp: 2 !important;
   }
 
-  /* Preserve the existing description; remove only excess outer spacing. */
+  /* Remove only artificial paragraph height; keep the existing text visible. */
   html body #related-section #related-grid > article.product-card > .product-body > p {
-    margin-top: 2px !important;
-    margin-bottom: 5px !important;
+    min-height: 0 !important;
+    height: auto !important;
+    margin: 2px 0 4px !important;
   }
 
-  /* Bring price and cart closer to the description, without stretching the foot. */
+  /* Stop pushing the price/button block to the card bottom.
+     This removes the large auto-margin gap between content and price. */
   html body #related-section #related-grid > article.product-card > .product-body > .product-foot {
-    margin-top: 4px !important;
+    margin-top: 0 !important;
     padding-top: 5px !important;
     gap: 4px !important;
     min-width: 0 !important;
   }
 
-  /* Price: align to the left and remove the oversized empty price row. */
+  /* Price is left-aligned and has only natural one-line height. */
   html body #related-section #related-grid > article.product-card > .product-body > .product-foot > .price {
     display: flex !important;
     align-items: center !important;
@@ -46,7 +58,7 @@
     align-self: stretch !important;
     width: 100% !important;
     min-width: 0 !important;
-    min-height: 1.35em !important;
+    min-height: 1.2em !important;
     height: auto !important;
     margin: 0 !important;
     padding: 0 !important;
@@ -54,9 +66,10 @@
     line-height: 1.2 !important;
   }
 
-  /* Keep Add to Cart and the quantity control at their existing accessible size. */
+  /* Keep Add to Cart usable and consistent: no smaller tap target. */
   html body #related-section #related-grid > article.product-card > .product-body > .product-foot > .cart-add-btn,
   html body #related-section #related-grid > article.product-card > .product-body > .product-foot > .cart-qty-control {
+    width: 100% !important;
     min-height: 44px !important;
     height: 44px !important;
     flex: 0 0 44px !important;
