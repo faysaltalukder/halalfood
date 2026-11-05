@@ -357,3 +357,19 @@ body.category-products-page.category-product-square-display .category-page-produ
   width:100% !important; height:100% !important; max-width:100% !important; max-height:100% !important;
   object-fit:contain !important; object-position:center center !important; transform:none !important;
 }
+
+/* HALAL FOOD — selectively fill only approved small category photos.
+   This final rule intentionally lives after the dynamically-loaded shared
+   image rules. Only explicit data-photo-zoom="cover" cards opt in. */
+html body.category-products-page.category-product-square-display
+.category-page-products .product-grid > article.product-card
+> a.product-image-link > .product-image[data-photo-zoom="cover"] > img {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: cover !important;
+  object-position: 50% 50% !important;
+  transform: none !important;
+}

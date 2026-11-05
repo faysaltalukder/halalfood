@@ -7,7 +7,7 @@
   try {
     const siteRoot = new URL("../", mainScript.src);
     const styleUrl = new URL("css/product-image-layout.css", siteRoot);
-    styleUrl.searchParams.set("v", "20261105-category-square-image-fill-v4");
+    styleUrl.searchParams.set("v", "20261105-selective-photo-fit-v6");
     const href = styleUrl.href;
     if (Array.from(document.querySelectorAll('link[rel="stylesheet"]')).some(link => link.href === href)) return;
     const link = document.createElement("link");
