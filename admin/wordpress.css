@@ -64,3 +64,17 @@
 .hf-wordpress-diagnostics summary{cursor:pointer;font-size:12px;font-weight:750}
 .hf-wordpress-diagnostics pre{max-height:260px;overflow:auto;margin:10px 0 0;padding:12px;border-radius:8px;background:#17212d;color:#e8edf3;font:11px/1.6 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere}
 .hf-wordpress-preview-stage{flex-wrap:wrap}
+
+/* WordPress two-part workspace navigation */
+.hf-wordpress-sections{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:16px 0 2px}
+.hf-wordpress-section{display:flex;align-items:center;gap:11px;min-width:0;padding:13px 15px;border:1px solid var(--border,#dce1e8);border-radius:12px;background:var(--card-bg,#fff);color:var(--text,#344054);text-decoration:none;transition:border-color .16s,background .16s,box-shadow .16s}
+.hf-wordpress-section:hover{border-color:#b7c2d2;box-shadow:0 4px 14px rgba(24,34,48,.06)}
+.hf-wordpress-section.is-active{border-color:#9e784f;background:#fbf8f3;box-shadow:inset 0 0 0 1px rgba(158,120,79,.12)}
+.hf-wordpress-section-icon{display:grid;place-items:center;width:35px;height:35px;flex:0 0 35px;border-radius:10px;background:#f0f2f6;color:#53627d;font-size:18px}
+.hf-wordpress-section.is-active .hf-wordpress-section-icon{background:#eee4d8;color:#8b5b32}
+.hf-wordpress-section>span:nth-child(2){display:flex;flex:1;flex-direction:column;gap:3px;min-width:0}
+.hf-wordpress-section strong{font-size:12px}
+.hf-wordpress-section small{overflow:hidden;color:var(--muted,#687386);font-size:10px;text-overflow:ellipsis;white-space:nowrap}
+.hf-wordpress-section em,.hf-wordpress-section b{flex:0 0 auto;color:#7b8798;font-size:8px;font-style:normal;font-weight:800;letter-spacing:.08em}
+.hf-wordpress-section em{color:#27865b}
+@media(max-width:620px){.hf-wordpress-sections{grid-template-columns:1fr}.hf-wordpress-section{padding:11px 12px}}
