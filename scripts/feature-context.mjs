@@ -353,6 +353,32 @@ const FEATURES = {
     functions: ["site-publisher"],
     tests: ["scripts/architecture-check.mjs"],
     guardrails: ["Preserve preview, approval, publish and rollback workflow.", "Never publish arbitrary paths or unreviewed user-controlled code.", "Keep GitHub tokens exclusively in server secrets."]
+  },
+  universal_website_builder: {
+    title: "Universal visual website builder",
+    purpose: "Site-agnostic, schema-driven page editing foundation with isolated draft canvas, reusable components, responsive preview and safe future publishing.",
+    readFirst: ["docs/UNIVERSAL_WEBSITE_BUILDER_AUDIT.md", "admin/website-builder.html", "admin/website-builder.js"],
+    files: [
+      "docs/UNIVERSAL_WEBSITE_BUILDER_AUDIT.md",
+      "admin/website-builder.html", "admin/website-builder.js", "admin/website-builder.css",
+      "admin/wordpress-live.html", "admin/wordpress-sandbox.js", "admin/shared.js",
+      "scripts/universal-builder-check.mjs", "scripts/admin-phase12-check.mjs",
+      ".github/workflows/architecture-quality.yml"
+    ],
+    anchors: [],
+    tables: [],
+    functions: [],
+    tests: ["scripts/universal-builder-check.mjs", "scripts/admin-phase12-check.mjs", "scripts/architecture-check.mjs"],
+    guardrails: [
+      "Keep the builder site-agnostic; never make Halal Food product, order or brand assumptions part of the core document model.",
+      "The current milestone is browser-local only. Do not write to Supabase, publish, deploy or modify the live storefront.",
+      "Preserve the existing MFA-protected admin gate and the separate live-preview route.",
+      "Persist a versioned JSON document and render only registered component types; do not execute arbitrary HTML or scripts.",
+      "Validate restored documents, clamp style values and allow only HTTP/HTTPS image sources.",
+      "Keep commerce, authentication, checkout, orders, tracking and third-party integrations in protected site adapters.",
+      "Before adding database tables or RLS, reconcile the live schema and migration history and verify backup/restore readiness.",
+      "Publishing must be explicit, revisioned, atomic and rollback-capable; no implicit live writes."
+    ]
   }
 };
 

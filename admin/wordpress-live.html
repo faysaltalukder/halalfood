@@ -7,53 +7,65 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<title>WordPress · Halal Food Admin</title>
+<title>Live Website · Sandbox · Halal Food Admin</title>
 <link rel="stylesheet" href="./shared.css?v=20261102-reports-navigation-v3&hf_sidebar=20261101-warm-jewel-v4">
-<link rel="stylesheet" href="./wordpress.css?v=20261105-preview-diagnostics-v8">
-<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
+<link rel="stylesheet" href="./wordpress.css?v=20261105-sandbox-partitions-v1">
 <link rel="stylesheet" href="./workspace-global-theme.css?v=20261101-merchant-fieldbook-v1">
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
 </head>
 <body data-page="wordpress">
 <div id="authGate" class="auth-gate">
-  <div class="auth-gate-card">
-    <strong>Checking secure admin access…</strong>
-    <p>Your dashboard data will load only after the authorized account and two-step verification are confirmed.</p>
-  </div>
+  <div class="auth-gate-card"><strong>Checking secure admin access…</strong><p>This private sandbox is available only after the authorized account and two-step verification are confirmed.</p></div>
 </div>
 <div id="adminApp" hidden>
-<main id="pageContent" tabindex="-1" class="hf-wordpress-page">
+<main id="pageContent" tabindex="-1" class="hf-wordpress-page hf-sandbox-page">
   <header class="page-heading hf-wordpress-heading">
     <div class="hf-wordpress-heading-copy">
-      <p class="page-eyebrow">WORDPRESS STUDIO</p>
-      <h1>WordPress</h1>
-      <p>View and use the live Halal Food website inside your admin workspace. Switch between desktop and mobile layouts.</p>
+      <p class="page-eyebrow">WEBSITE STUDIO · PRIVATE SANDBOX</p>
+      <h1>Live Website</h1>
+      <p>View the version published inside this admin dashboard. This is not the public Halal Food website.</p>
     </div>
     <div class="page-actions hf-wordpress-heading-actions">
-      <a class="hf-button hf-button-secondary" href="../" target="_blank" rel="noopener noreferrer">
-        <span aria-hidden="true">↗</span> Open live website
-      </a>
-      <button class="hf-button hf-button-secondary" id="wpGoBack" type="button" title="Previous website page" aria-label="Previous website page" disabled>←</button>
-      <button class="hf-button hf-button-secondary" id="wpGoForward" type="button" title="Next website page" aria-label="Next website page" disabled>→</button>
-      <button class="hf-button hf-button-secondary" id="wpGoHome" type="button" title="Return the preview to the website home page">⌂ Home</button>
-      <button class="hf-button hf-button-primary" id="wpRefresh" type="button"><span aria-hidden="true">↻</span> Refresh</button>
+      <a class="hf-button hf-button-primary" href="./website-builder.html">✎ Edit Website</a>
+      <button class="hf-button hf-button-secondary" id="wpSandboxRefresh" type="button">↻ Refresh sandbox</button>
     </div>
   </header>
 
-  <section class="hf-card hf-wordpress-toolbar" aria-label="Website preview controls">
+  <nav class="hf-wordpress-sections" aria-label="Website Studio sections">
+    <a class="hf-wordpress-section is-active" href="./wordpress-live.html" aria-current="page"><span class="hf-wordpress-section-icon">◉</span><span><strong>Live Website</strong><small>Published test version · dashboard only</small></span><em>TEST LIVE</em></a>
+    <a class="hf-wordpress-section" href="./website-builder.html"><span class="hf-wordpress-section-icon">✎</span><span><strong>Edit Website</strong><small>Edit pages and prepare a test version</small></span><b>EDITOR ↗</b></a>
+  </nav>
+
+  <section class="hf-sandbox-safety" role="note">
+    <strong><span aria-hidden="true">▣</span> Isolated testing environment</strong>
+    <span>Changes and Test Publish are stored only in this browser's dashboard storage. No production website, customer data, orders, payment services, live APIs or deployment endpoints are connected.</span>
+  </section>
+
+  <section class="hf-card hf-review-panel hf-sandbox-review" id="wpSandboxReview" aria-label="Test draft review" hidden>
+    <div class="hf-review-heading">
+      <div><span class="hf-review-kicker">TEST REVIEW WORKFLOW</span><h2 id="wpSandboxReviewTitle">Draft awaiting review</h2><p id="wpSandboxReviewMeta">A draft sent from Edit Website will appear here.</p></div>
+      <span class="hf-review-status" id="wpSandboxReviewState">AWAITING REVIEW</span>
+    </div>
+    <div class="hf-sandbox-review-preview">
+      <iframe id="wpSandboxReviewFrame" title="Isolated test draft preview" sandbox="" referrerpolicy="no-referrer"></iframe>
+    </div>
+    <div class="hf-review-actions">
+      <button class="hf-button hf-button-secondary" id="wpSandboxViewDraft" type="button">View submitted draft</button>
+      <button class="hf-button hf-button-primary" id="wpSandboxApprove" type="button">Approve for Test Publish</button>
+      <button class="hf-button hf-button-primary" id="wpSandboxPublish" type="button" disabled>Publish Test Version</button>
+    </div>
+    <p class="hf-review-safety">Approval and Test Publish affect only this dashboard sandbox. They cannot deploy or update the real website.</p>
+  </section>
+
+  <section class="hf-card hf-wordpress-toolbar" aria-label="Test website preview controls">
     <div class="hf-wordpress-toolbar-copy">
-      <div class="hf-wordpress-toolbar-title"><span class="hf-wordpress-live-dot" aria-hidden="true"></span><strong>Live website preview</strong></div>
-      <p id="wpViewDescription">Desktop view · Full responsive website</p>
+      <div class="hf-wordpress-toolbar-title"><span class="hf-sandbox-live-dot" aria-hidden="true"></span><strong>Test Published Version</strong></div>
+      <p id="wpSandboxPublishedMeta">No Test Published Version yet.</p>
     </div>
     <div class="hf-wordpress-toolbar-actions">
-      <div class="hf-wordpress-device-toggle" role="group" aria-label="Choose website preview size">
-        <button class="hf-wordpress-device-button is-active" type="button" data-wp-view="desktop" aria-pressed="true" aria-label="Desktop view" title="Desktop view">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4M9 21h6"/></svg>
-          <span>Desktop</span>
-        </button>
-        <button class="hf-wordpress-device-button" type="button" data-wp-view="mobile" aria-pressed="false" aria-label="Mobile view" title="Mobile view">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="2.5" width="10" height="19" rx="2.2"/><path d="M10 5h4M11 18.5h2"/></svg>
-          <span>Mobile</span>
-        </button>
+      <div class="hf-wordpress-device-toggle" role="group" aria-label="Choose sandbox preview size">
+        <button class="hf-wordpress-device-button is-active" type="button" data-sandbox-view="desktop" aria-pressed="true" aria-label="Desktop view"><span>▰</span> Desktop</button>
+        <button class="hf-wordpress-device-button" type="button" data-sandbox-view="mobile" aria-pressed="false" aria-label="Mobile view"><span>▯</span> Mobile</button>
       </div>
     </div>
   </section>
@@ -61,49 +73,37 @@
   <div class="hf-wordpress-browserbar">
     <div class="hf-wordpress-browser-dots" aria-hidden="true"><i></i><i></i><i></i></div>
     <span class="hf-wordpress-browser-lock" aria-hidden="true">▣</span>
-    <div class="hf-wordpress-address" id="wpPreviewAddress">https://faysaltalukder.github.io/halalfood/</div>
-    <span class="hf-wordpress-browser-label">LIVE</span>
+    <div class="hf-wordpress-address">dashboard://sandbox/published-test-version</div>
+    <span class="hf-wordpress-browser-label hf-sandbox-label">SANDBOX</span>
   </div>
 
-  <section class="hf-wordpress-preview-stage" aria-label="Interactive live website">
-    <div class="hf-wordpress-device-shell is-desktop" id="wpDeviceShell">
-      <div class="hf-wordpress-loading" id="wpLoading" role="status">
-        <span class="hf-wordpress-spinner" aria-hidden="true"></span>
-        <strong>Opening the live website…</strong>
-        <small>The real website is loading inside this workspace.</small>
-      </div>
-      <iframe
-        id="wordpressLiveFrame"
-        title="Halal Food live website — interactive preview"
-        loading="eager"
-        allow="payment"
-        referrerpolicy="strict-origin-when-cross-origin"
-      ></iframe>
-      <div class="hf-wordpress-error" id="wpPreviewError" role="alert" hidden>
-        <strong>The live website could not be confirmed as loaded.</strong>
-        <p>The preview could not complete. The exact diagnostic details are displayed below.</p>
-        <div class="hf-wordpress-error-actions">
-          <button class="hf-button hf-button-primary" id="wpRetry" type="button">Try again</button>
-          <a class="hf-button hf-button-secondary" href="https://faysaltalukder.github.io/halalfood/" target="_blank" rel="noopener noreferrer">Open live website ↗</a>
-        </div>
-      </div>
+  <section class="hf-wordpress-preview-stage hf-sandbox-stage" id="wpSandboxStage" aria-label="Published test version preview">
+    <div class="hf-sandbox-empty" id="wpSandboxEmpty">
+      <span aria-hidden="true">▱</span>
+      <h2>No test version published yet</h2>
+      <p>Open Edit Website, make a change, send it for review, approve it, and publish a test version. It will appear here without touching the public website.</p>
+      <a class="hf-button hf-button-primary" href="./website-builder.html">Start editing</a>
     </div>
-    <details class="hf-wordpress-diagnostics" open>
-      <summary>Preview diagnostics · technical details</summary>
-      <pre id="wpPreviewDiagnostics" aria-live="polite">Waiting for preview diagnostics…</pre>
-    </details>
+    <div class="hf-wordpress-device-shell is-desktop hf-sandbox-device" id="wpSandboxDevice">
+      <iframe id="wpSandboxFrame" title="Dashboard-only published test version" sandbox="" referrerpolicy="no-referrer" hidden></iframe>
+    </div>
+  </section>
+
+  <section class="hf-card hf-sandbox-history-card">
+    <div class="hf-sandbox-history-head"><div><span class="hf-review-kicker">VERSION CONTROL</span><h2>Test Version History</h2><p>Versions saved in this browser only. No production backups or deployments are created.</p></div></div>
+    <ol id="wpSandboxHistory" class="hf-sandbox-history"><li>No test versions yet.</li></ol>
   </section>
 
   <footer class="hf-wordpress-preview-foot">
-    <span id="wpPreviewStatus" role="status" aria-live="polite">Preparing the live website preview…</span>
-    <span>Changes made inside this preview affect the live website only where the website itself provides an editing feature. The Visual Builder will be added in a later stage.</span>
+    <span id="wpSandboxStatus" role="status" aria-live="polite">Sandbox ready</span>
+    <span>“Live Website” means the dashboard's Test Published Version only. The public Halal Food website remains unchanged.</span>
   </footer>
 </main>
 </div>
 <script defer src="./i18n.js?v=20261102-dashboard-speed-v2"></script>
 <script defer src="../js/store-config.js?v=20261101-store-config-v1"></script>
-<script defer src="./shared.js?v=20261105-wordpress-cache-route-v3"></script>
+<script defer src="./shared.js?v=20261105-sandbox-partitions-v1"></script>
 <script defer src="./app.js?v=20261105-wordpress-live-preview-v4"></script>
-<script defer src="./wordpress.js?v=20261105-preview-navigation-v10"></script>
+<script defer src="./wordpress-sandbox.js?v=20261105-sandbox-partitions-v1"></script>
 </body>
 </html>

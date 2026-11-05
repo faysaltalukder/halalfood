@@ -2,7 +2,7 @@ name: Architecture Quality Gate
 
 on:
   push:
-    branches: ["main", "refactor/**"]
+    branches: ["main", "refactor/**", "feature/**"]
   pull_request:
     branches: ["main"]
   workflow_dispatch:
@@ -29,6 +29,8 @@ jobs:
         run: node scripts/customer-care-chat-check.mjs
       - name: Validate task-scoped feature context map
         run: node scripts/feature-context.mjs --check
+      - name: Run Universal Website Builder foundation checks
+        run: node scripts/universal-builder-check.mjs
       - name: Run existing admin integrity checks
         run: node scripts/admin-phase12-check.mjs
       - name: Run simple POS sale-entry contract checks
