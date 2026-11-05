@@ -171,7 +171,7 @@ Implemented on the isolated feature branch:
 - Feature context map: passed.
 - Universal Website Builder foundation contract checks: passed.
 - Existing admin integrity gate reaches a pre-existing accessibility failure in `admin/ai-feedback.html` for controls `aifRating`, `aifStatus` and `aifReason`. This is outside this builder change and was already present in the base branch; it has not been altered as part of this scope.
-- Supabase Edge Function type-check was still running at the time this note was written.
+- Supabase Edge Function type-check: passed.
 - A real browser interaction pass is still required before calling the editor runtime verified.
 
 **Phase 0 result:** source audit documented.  
