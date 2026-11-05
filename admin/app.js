@@ -3972,7 +3972,8 @@ async function refresh(){
    "reports-finance":initReports,
    "reports-daily":initReports,
    settings:initSettings,
-   "website-publisher":()=>{if(typeof window.HFWebsitePublisherInit==="function")return window.HFWebsitePublisherInit();throw new Error("Website Publisher module did not load.");}
+   "website-publisher":()=>{if(typeof window.HFWebsitePublisherInit==="function")return window.HFWebsitePublisherInit();throw new Error("Website Publisher module did not load.");},
+    wordpress:()=>Promise.resolve()
   };
   if(!actions[page]){toast("This section is not available yet.","error");return;}
   actions[page]().catch(err=>{console.error("Admin page failed",page,err);toast("The page could not load its data. "+(err?.message||"Please refresh and try again."),"error");});

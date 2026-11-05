@@ -930,6 +930,7 @@ function navPictureIcon(name){
   "website-publisher":'<rect x="4" y="6" width="28" height="23" rx="4" fill="#EAF0FA" stroke="#5C88BC" stroke-width="1.8"/><path d="M4 12h28" stroke="#5C88BC" stroke-width="1.8"/><circle cx="9" cy="9" r="1" fill="#D4A34E"/><circle cx="13" cy="9" r="1" fill="#79A98B"/><path d="m12 21 4 3 9-8" fill="none" stroke="#438460" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>',
   tracking:'<circle cx="17" cy="17" r="12" fill="#DDEFEF" stroke="#438B91" stroke-width="1.8"/><circle cx="17" cy="17" r="6" fill="#A5D6D5"/><circle cx="17" cy="17" r="2" fill="#438B91"/><path d="M17 2v4M32 17h-4" stroke="#438B91" stroke-width="2" stroke-linecap="round"/>',
   settings:'<path d="M17 4a4 4 0 0 1 4 3l2 1 3-.5 2 4-2 2v3l2 2-2 4-3-.5-2 1a4 4 0 0 1-8 0l-2-1-3 .5-2-4 2-2v-3l-2-2 2-4 3 .5 2-1a4 4 0 0 1 4-3Z" fill="#E9E5DC" stroke="#8B8377" stroke-width="1.7"/><circle cx="17" cy="15.5" r="4.5" fill="#FFFDF8" stroke="#8B8377" stroke-width="1.8"/>'
+  wordpress:'<rect x="3" y="5" width="28" height="23" rx="3.5" fill="#E7EAF5" stroke="#53658F" stroke-width="1.8"/><path d="M3 11h28" stroke="#53658F" stroke-width="1.8"/><circle cx="8" cy="8" r="1" fill="#D4A34E"/><circle cx="12" cy="8" r="1" fill="#79A98B"/><path d="m11 16 3 8 3-6 3 6 3-8" fill="none" stroke="#53658F" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>'
  };
  return '<svg class="hf-nav-art" viewBox="0 0 34 34" aria-hidden="true" focusable="false">'+(art[name]||art.overview)+'</svg>';
 }
@@ -1132,7 +1133,7 @@ function makeShell(){
      ["daily","calendar","দৈনিক ব্যবসায়িক রিপোর্ট","Daily business summary","reports-daily","daily business sales summary"]
     ]}
    ]]]},
-  {label:"SYSTEM",items:[["website-publisher","settings","Website Publisher","website publisher deploy code review approve publish"],["tracking","sliders","Tracking Controls","tracking meta pixel conversions api capi google analytics event routing"],["settings","settings","Settings & Security","settings security preferences access"]]}
+  {label:"SYSTEM",items:[["website-publisher","settings","Website Publisher","website publisher deploy code review approve publish"],["tracking","sliders","Tracking Controls","tracking meta pixel conversions api capi google analytics event routing"],["settings","settings","Settings & Security","settings security preferences access"],["wordpress","wordpress","WordPress","wordpress live website preview desktop mobile visual website editor"]]}
  ];
  const allItems=menuGroups.flatMap(group=>group.items.map(item=>({id:item[0],icon:item[1],label:item[2],href:"./"+item[0]+".html",keys:item[3]})));
  const itemById=new Map(allItems.map(item=>[item.id,item]));

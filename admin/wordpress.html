@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex,nofollow">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<title>WordPress · Halal Food Admin</title>
+<link rel="stylesheet" href="./shared.css?v=20261102-reports-navigation-v3&hf_sidebar=20261101-warm-jewel-v4">
+<link rel="stylesheet" href="./wordpress.css?v=20261105-live-preview-v1">
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
+<link rel="stylesheet" href="./workspace-global-theme.css?v=20261101-merchant-fieldbook-v1">
+</head>
+<body data-page="wordpress">
+<div id="authGate" class="auth-gate">
+  <div class="auth-gate-card">
+    <strong>Checking secure admin access…</strong>
+    <p>Your dashboard data will load only after the authorized account and two-step verification are confirmed.</p>
+  </div>
+</div>
+<div id="adminApp" hidden>
+<main id="pageContent" tabindex="-1" class="hf-wordpress-page">
+  <header class="page-heading hf-wordpress-heading">
+    <div class="hf-wordpress-heading-copy">
+      <p class="page-eyebrow">WORDPRESS STUDIO</p>
+      <h1>WordPress</h1>
+      <p>View and use the live Halal Food website inside your admin workspace. Switch between desktop and mobile layouts.</p>
+    </div>
+    <div class="page-actions hf-wordpress-heading-actions">
+      <a class="hf-button hf-button-secondary" href="../" target="_blank" rel="noopener noreferrer">
+        <span aria-hidden="true">↗</span> Open live website
+      </a>
+      <button class="hf-button hf-button-secondary" id="wpGoHome" type="button" title="Return the preview to the website home page">⌂ Home</button>
+      <button class="hf-button hf-button-primary" id="wpRefresh" type="button"><span aria-hidden="true">↻</span> Refresh</button>
+    </div>
+  </header>
+
+  <section class="hf-card hf-wordpress-toolbar" aria-label="Website preview controls">
+    <div class="hf-wordpress-toolbar-copy">
+      <div class="hf-wordpress-toolbar-title"><span class="hf-wordpress-live-dot" aria-hidden="true"></span><strong>Live website preview</strong></div>
+      <p id="wpViewDescription">Desktop view · Full responsive website</p>
+    </div>
+    <div class="hf-wordpress-toolbar-actions">
+      <div class="hf-wordpress-device-toggle" role="group" aria-label="Choose website preview size">
+        <button class="hf-wordpress-device-button is-active" type="button" data-wp-view="desktop" aria-pressed="true" aria-label="Desktop view" title="Desktop view">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4M9 21h6"/></svg>
+          <span>Desktop</span>
+        </button>
+        <button class="hf-wordpress-device-button" type="button" data-wp-view="mobile" aria-pressed="false" aria-label="Mobile view" title="Mobile view">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="2.5" width="10" height="19" rx="2.2"/><path d="M10 5h4M11 18.5h2"/></svg>
+          <span>Mobile</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <div class="hf-wordpress-browserbar">
+    <div class="hf-wordpress-browser-dots" aria-hidden="true"><i></i><i></i><i></i></div>
+    <span class="hf-wordpress-browser-lock" aria-hidden="true">▣</span>
+    <div class="hf-wordpress-address" id="wpPreviewAddress">https://faysaltalukder.github.io/halalfood/</div>
+    <span class="hf-wordpress-browser-label">LIVE</span>
+  </div>
+
+  <section class="hf-wordpress-preview-stage" aria-label="Interactive live website">
+    <div class="hf-wordpress-device-shell is-desktop" id="wpDeviceShell">
+      <div class="hf-wordpress-loading" id="wpLoading" role="status">
+        <span class="hf-wordpress-spinner" aria-hidden="true"></span>
+        <strong>Opening the live website…</strong>
+        <small>The real website is loading inside this workspace.</small>
+      </div>
+      <iframe
+        id="wordpressLiveFrame"
+        src="../"
+        title="Halal Food live website — interactive preview"
+        loading="eager"
+        referrerpolicy="strict-origin-when-cross-origin"
+        allow="payment"
+      ></iframe>
+    </div>
+  </section>
+
+  <footer class="hf-wordpress-preview-foot">
+    <span id="wpPreviewStatus" role="status" aria-live="polite">Connecting to the live website…</span>
+    <span>Changes made inside this preview affect the live website only where the website itself provides an editing feature. The Visual Builder will be added in a later stage.</span>
+  </footer>
+</main>
+</div>
+<script defer src="./i18n.js?v=20261102-dashboard-speed-v2"></script>
+<script defer src="../js/store-config.js?v=20261101-store-config-v1"></script>
+<script defer src="./shared.js?v=20261105-wordpress-live-preview-v1"></script>
+<script defer src="./app.js?v=20261102-dashboard-speed-v2"></script>
+<script defer src="./wordpress.js?v=20261105-live-preview-v1"></script>
+</body>
+</html>
