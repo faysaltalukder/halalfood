@@ -177,366 +177,77 @@
 }
 
 
-/* HALAL FOOD — UNIVERSAL RELATED-PRODUCT IMAGE BOX
-   Recommendation assets across the catalogue are square (1:1). Use one shared
-   square frame to match their real image geometry and remove side gutters.
-   The complete source image stays visible: no cover crop, no stretch,
-   no artificial inner padding, and no decorative backdrop layer. */
-#related-grid > article.product-card > a.product-image-link {
+/* HALAL FOOD — RELATED PRODUCT IMAGE SYSTEM v3
+   Strictly scoped to the four marketing recommendation cards on product pages.
+   Every recommendation uses a full-width 1:1 frame. The foreground photo always
+   uses contain (no crop/no stretch); a blurred copy fills any unused space for
+   source files whose native ratio is not square. This does not target homepage
+   or category product grids, nor the main product-detail image. */
+html body #related-section #related-grid > article.product-card > a.product-image-link {
   display: block !important;
   position: relative !important;
+  inset: auto !important;
   width: 100% !important;
   height: auto !important;
-  aspect-ratio: 1 / 1 !important;
-  min-height: 0 !important;
-  max-height: none !important;
-  overflow: hidden !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  box-sizing: border-box !important;
-  background: var(--cream, #f2f0ea) !important;
-  border-radius: 8px 8px 0 0;
-  line-height: 0;
-}
-
-#related-grid > article.product-card > a.product-image-link > div.product-image {
-  position: absolute !important;
-  inset: 0 !important;
-  display: grid !important;
-  place-items: center !important;
-  width: 100% !important;
-  height: 100% !important;
-  min-width: 0 !important;
-  min-height: 0 !important;
-  max-height: none !important;
-  aspect-ratio: auto !important;
-  overflow: hidden !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  box-sizing: border-box !important;
-  background: var(--cream, #f2f0ea) !important;
-}
-
-#related-grid > article.product-card > a.product-image-link > div.product-image::before,
-#related-grid > article.product-card > a.product-image-link > div.product-image::after {
-  content: none !important;
-  display: none !important;
-  background: none !important;
-}
-
-#related-grid > article.product-card > a.product-image-link > div.product-image > img {
-  position: static !important;
-  inset: auto !important;
-  display: block !important;
-  width: 100% !important;
-  height: 100% !important;
   min-width: 0 !important;
   min-height: 0 !important;
   max-width: 100% !important;
-  max-height: 100% !important;
-  aspect-ratio: auto !important;
-  object-fit: contain !important;
-  object-position: center center !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  transform: scale(1.1) !important;
-  background: transparent !important;
-}
-
-@media (max-width: 600px) {
-  #related-grid > article.product-card > a.product-image-link {
-    aspect-ratio: 1 / 1 !important;
-  }
-}
-
-
-/* HALAL FOOD — MOBILE MAIN PRODUCT IMAGE: FULL-VIEWPORT NATURAL SIZE
-   The main image is not a recommendation card. Let the source file's own
-   intrinsic ratio define its height, and let it use the full phone viewport
-   width instead of being boxed inside the padded content wrapper. */
-@media (max-width: 760px) {
-  .product-detail-grid {
-    grid-template-columns: minmax(0, 1fr) !important;
-    gap: 12px !important;
-  }
-  .product-detail-image-wrap {
-    position: relative !important;
-    width: 100vw !important;
-    max-width: 100vw !important;
-    margin-left: calc(50% - 50vw) !important;
-    margin-right: calc(50% - 50vw) !important;
-    padding: 0 !important;
-    overflow: visible !important;
-  }
-  .product-detail-image {
-    display: block !important;
-    position: relative !important;
-    width: 100% !important;
-    max-width: none !important;
-    height: auto !important;
-    min-height: 0 !important;
-    max-height: none !important;
-    aspect-ratio: auto !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    overflow: visible !important;
-    border: 0 !important;
-    border-radius: 0 !important;
-    background: transparent !important;
-    line-height: 0 !important;
-  }
-  .product-detail-image img {
-    display: block !important;
-    position: static !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    height: auto !important;
-    min-height: 0 !important;
-    max-height: none !important;
-    aspect-ratio: auto !important;
-    object-fit: initial !important;
-    object-position: center center !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    transform: none !important;
-  }
-}
-
-
-/* MOBILE ONLY — let the primary product photo render uncropped at its natural ratio.
-   This intentionally targets the hero image only; recommendation cards and desktop are untouched. */
-@media (max-width: 760px) {
-  .product-detail > .product-detail-grid > .product-detail-image-wrap {
-    display: block !important;
-    width: 100vw !important;
-    max-width: 100vw !important;
-    min-width: 0 !important;
-    height: auto !important;
-    max-height: none !important;
-    margin-left: calc(50% - 50vw) !important;
-    margin-right: calc(50% - 50vw) !important;
-    padding: 0 !important;
-    overflow: visible !important;
-    aspect-ratio: auto !important;
-  }
-  .product-detail > .product-detail-grid > .product-detail-image-wrap > .product-detail-image {
-    display: block !important;
-    position: relative !important;
-    width: 100% !important;
-    min-width: 0 !important;
-    max-width: none !important;
-    height: auto !important;
-    min-height: 0 !important;
-    max-height: none !important;
-    aspect-ratio: auto !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    overflow: visible !important;
-    border: 0 !important;
-    border-radius: 0 !important;
-    background: transparent !important;
-    line-height: 0 !important;
-    cursor: zoom-in;
-  }
-  .product-detail > .product-detail-grid > .product-detail-image-wrap > .product-detail-image > img {
-    display: block !important;
-    position: static !important;
-    inset: auto !important;
-    width: 100% !important;
-    min-width: 0 !important;
-    max-width: 100% !important;
-    height: auto !important;
-    min-height: 0 !important;
-    max-height: none !important;
-    aspect-ratio: auto !important;
-    object-fit: contain !important;
-    object-position: center center !important;
-    transform: none !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    border: 0 !important;
-    border-radius: 0 !important;
-    background: transparent !important;
-  }
-  .product-detail > .product-detail-grid > .product-detail-image-wrap .image-zoom-hint {
-    display: none !important;
-  }
-}
-
-
-/* MOBILE FIX — related product suggestions must show the complete source image.
-   Previous square frames + overflow clipping + scale(1.1) caused mobile-only
-   edges to disappear. Keep this rule last in the product-detail stylesheet so
-   it wins over the legacy desktop square-frame rules above. */
-@media (max-width: 760px) {
-  #related-grid > article.product-card > a.product-image-link {
-    display: block !important;
-    position: relative !important;
-    width: 100% !important;
-    height: auto !important;
-    min-height: 0 !important;
-    max-height: none !important;
-    aspect-ratio: auto !important;
-    overflow: visible !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    line-height: 0 !important;
-  }
-
-  #related-grid > article.product-card > a.product-image-link > div.product-image {
-    display: block !important;
-    position: relative !important;
-    inset: auto !important;
-    width: 100% !important;
-    height: auto !important;
-    min-height: 0 !important;
-    max-height: none !important;
-    aspect-ratio: auto !important;
-    overflow: visible !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    background: transparent !important;
-  }
-
-  #related-grid > article.product-card > a.product-image-link > div.product-image::before,
-  #related-grid > article.product-card > a.product-image-link > div.product-image::after {
-    content: none !important;
-    display: none !important;
-  }
-
-  #related-grid > article.product-card > a.product-image-link > div.product-image > img {
-    display: block !important;
-    position: static !important;
-    inset: auto !important;
-    width: 100% !important;
-    min-width: 0 !important;
-    max-width: 100% !important;
-    height: auto !important;
-    min-height: 0 !important;
-    max-height: none !important;
-    aspect-ratio: auto !important;
-    object-fit: contain !important;
-    object-position: center center !important;
-    transform: none !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    background: transparent !important;
-  }
-}
-
-
-/* HALAL FOOD — mobile square reference frame for the small recommendation images.
-   Walnuts is the approved reference: 1254 × 1254 (1:1).
-   Apply only to Nuts & Seeds, Dry Food and Mix Food recommendation cards.
-   The square source images in these groups remain visually unchanged; wider
-   4:3 assets are cropped at the sides to occupy the same standard frame. */
-@media (max-width: 760px) {
-  #related-grid > article.product-card:has(img[src*="nuts-seeds/"], img[src*="dry-food/"], img[src*="mix-food/"]) > a.product-image-link {
-    display: block !important;
-    position: relative !important;
-    width: 100% !important;
-    height: auto !important;
-    min-height: 0 !important;
-    max-height: none !important;
-    aspect-ratio: 1 / 1 !important;
-    overflow: hidden !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    box-sizing: border-box !important;
-    line-height: 0 !important;
-  }
-
-  #related-grid > article.product-card:has(img[src*="nuts-seeds/"], img[src*="dry-food/"], img[src*="mix-food/"]) > a.product-image-link > div.product-image {
-    display: block !important;
-    position: absolute !important;
-    inset: 0 !important;
-    width: 100% !important;
-    height: 100% !important;
-    min-height: 0 !important;
-    max-height: none !important;
-    aspect-ratio: auto !important;
-    overflow: hidden !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    box-sizing: border-box !important;
-    background: var(--cream, #f2f0ea) !important;
-  }
-
-  #related-grid > article.product-card:has(img[src*="nuts-seeds/"], img[src*="dry-food/"], img[src*="mix-food/"]) > a.product-image-link > div.product-image::before,
-  #related-grid > article.product-card:has(img[src*="nuts-seeds/"], img[src*="dry-food/"], img[src*="mix-food/"]) > a.product-image-link > div.product-image::after {
-    content: none !important;
-    display: none !important;
-  }
-
-  #related-grid > article.product-card:has(img[src*="nuts-seeds/"], img[src*="dry-food/"], img[src*="mix-food/"]) > a.product-image-link > div.product-image > img {
-    display: block !important;
-    position: static !important;
-    width: 100% !important;
-    height: 100% !important;
-    min-width: 0 !important;
-    min-height: 0 !important;
-    max-width: 100% !important;
-    max-height: 100% !important;
-    aspect-ratio: auto !important;
-    object-fit: cover !important;
-    object-position: center center !important;
-    transform: none !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    background: transparent !important;
-  }
-}
-
-
-
-/* HALAL FOOD — one universal product-card image frame.
-   Reference geometry: Nuts & Seeds Mix hero image (900 × 675 = 4:3).
-   Keep every related-product photo inside the same 4:3 frame on desktop
-   and mobile. "contain" preserves the complete product photo without crop. */
-#related-grid > article.product-card:has(img[src]) > a.product-image-link {
-  display: block !important;
-  position: relative !important;
-  width: 100% !important;
-  height: auto !important;
-  min-height: 0 !important;
   max-height: none !important;
-  aspect-ratio: 4 / 3 !important;
+  aspect-ratio: 1 / 1 !important;
   overflow: hidden !important;
   padding: 0 !important;
   margin: 0 !important;
   box-sizing: border-box !important;
   border-radius: 8px 8px 0 0 !important;
   line-height: 0 !important;
+  background: var(--cream, #f2f0ea) !important;
 }
 
-#related-grid > article.product-card:has(img[src]) > a.product-image-link > div.product-image {
-  display: grid !important;
+html body #related-section #related-grid > article.product-card > a.product-image-link > div.product-image {
+  display: block !important;
   position: absolute !important;
   inset: 0 !important;
   width: 100% !important;
   height: 100% !important;
   min-width: 0 !important;
   min-height: 0 !important;
-  max-height: none !important;
-  aspect-ratio: auto !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  aspect-ratio: 1 / 1 !important;
   overflow: hidden !important;
+  isolation: isolate !important;
   padding: 0 !important;
   margin: 0 !important;
   box-sizing: border-box !important;
-  place-items: center !important;
   background: var(--cream, #f2f0ea) !important;
 }
 
-#related-grid > article.product-card:has(img[src]) > a.product-image-link > div.product-image::before,
-#related-grid > article.product-card:has(img[src]) > a.product-image-link > div.product-image::after {
+html body #related-section #related-grid > article.product-card > a.product-image-link > div.product-image::before {
+  content: "" !important;
+  display: block !important;
+  position: absolute !important;
+  inset: -16px !important;
+  z-index: 0 !important;
+  background-image: var(--product-image-backdrop, none) !important;
+  background-position: center center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  filter: blur(16px) saturate(.84) !important;
+  opacity: .30 !important;
+  transform: scale(1.08) !important;
+  pointer-events: none !important;
+}
+
+html body #related-section #related-grid > article.product-card > a.product-image-link > div.product-image::after {
   content: none !important;
   display: none !important;
 }
 
-#related-grid > article.product-card:has(img[src]) > a.product-image-link > div.product-image > img {
+html body #related-section #related-grid > article.product-card > a.product-image-link > div.product-image > img {
   display: block !important;
-  position: static !important;
+  position: relative !important;
   inset: auto !important;
+  z-index: 1 !important;
   width: 100% !important;
   height: 100% !important;
   min-width: 0 !important;
@@ -549,8 +260,54 @@
   transform: none !important;
   padding: 0 !important;
   margin: 0 !important;
+  border: 0 !important;
   background: transparent !important;
 }
+
+/* Fallback for any related card that contains a direct image wrapper. */
+html body #related-section #related-grid > article.product-card > .product-image {
+  display: block !important;
+  position: relative !important;
+  width: 100% !important;
+  height: auto !important;
+  aspect-ratio: 1 / 1 !important;
+  overflow: hidden !important;
+  isolation: isolate !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  background: var(--cream, #f2f0ea) !important;
+}
+
+html body #related-section #related-grid > article.product-card > .product-image::before {
+  content: "" !important;
+  display: block !important;
+  position: absolute !important;
+  inset: -16px !important;
+  z-index: 0 !important;
+  background-image: var(--product-image-backdrop, none) !important;
+  background-position: center center !important;
+  background-size: cover !important;
+  filter: blur(16px) saturate(.84) !important;
+  opacity: .30 !important;
+  transform: scale(1.08) !important;
+  pointer-events: none !important;
+}
+
+html body #related-section #related-grid > article.product-card > .product-image > img {
+  display: block !important;
+  position: relative !important;
+  z-index: 1 !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+  transform: none !important;
+  background: transparent !important;
+}
+
 
 /* Keep every related-product name on one clean line. Long names remain
    available in the text; the visual line uses an ellipsis when space is tight. */
