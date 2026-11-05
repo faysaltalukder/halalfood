@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <title>WordPress · Halal Food Admin</title>
 <link rel="stylesheet" href="./shared.css?v=20261102-reports-navigation-v3&hf_sidebar=20261101-warm-jewel-v4">
-<link rel="stylesheet" href="./wordpress.css?v=20261105-live-preview-v2">
+<link rel="stylesheet" href="./wordpress.css?v=20261105-srcdoc-live-preview-v3">
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
 <link rel="stylesheet" href="./workspace-global-theme.css?v=20261101-merchant-fieldbook-v1">
 </head>
@@ -32,6 +32,8 @@
       <a class="hf-button hf-button-secondary" href="../" target="_blank" rel="noopener noreferrer">
         <span aria-hidden="true">↗</span> Open live website
       </a>
+      <button class="hf-button hf-button-secondary" id="wpGoBack" type="button" title="Previous website page" aria-label="Previous website page" disabled>←</button>
+      <button class="hf-button hf-button-secondary" id="wpGoForward" type="button" title="Next website page" aria-label="Next website page" disabled>→</button>
       <button class="hf-button hf-button-secondary" id="wpGoHome" type="button" title="Return the preview to the website home page">⌂ Home</button>
       <button class="hf-button hf-button-primary" id="wpRefresh" type="button"><span aria-hidden="true">↻</span> Refresh</button>
     </div>
@@ -72,10 +74,10 @@
       </div>
       <iframe
         id="wordpressLiveFrame"
-        data-preview-src="https://faysaltalukder.github.io/halalfood/"
         title="Halal Food live website — interactive preview"
         loading="eager"
         allow="payment"
+        referrerpolicy="strict-origin-when-cross-origin"
       ></iframe>
       <div class="hf-wordpress-error" id="wpPreviewError" role="alert" hidden>
         <strong>The live website could not be confirmed as loaded.</strong>
@@ -98,6 +100,6 @@
 <script defer src="../js/store-config.js?v=20261101-store-config-v1"></script>
 <script defer src="./shared.js?v=20261105-wordpress-live-preview-v1"></script>
 <script defer src="./app.js?v=20261102-dashboard-speed-v2"></script>
-<script defer src="./wordpress.js?v=20261105-live-preview-v2"></script>
+<script defer src="./wordpress.js?v=20261105-srcdoc-live-preview-v3"></script>
 </body>
 </html>
