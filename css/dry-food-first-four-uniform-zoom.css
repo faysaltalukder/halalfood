@@ -1,4 +1,4 @@
-/* HALAL FOOD — DRY FOOD FIRST-FOUR PACKAGE-BORDER TOP-CLEARANCE TUNE v4
+/* HALAL FOOD — DRY FOOD FIRST-FOUR PACKAGE-BORDER TOP-CLEARANCE TUNE v5
    Scope: categories/dry-food.html only; same rule on desktop and mobile.
    Keep the existing 1:1 product frame unchanged.
    Source photos are 3:2. Preserve each image's intrinsic aspect ratio.
@@ -47,29 +47,29 @@ html body.category-products-page.category-product-square-display.dry-food-packag
 html body.category-products-page.category-product-square-display.dry-food-package-zoom-experiment
 .category-page-products .product-grid > article.product-card:nth-child(1)
 > a.product-image-link > .product-image > img {
-  --dry-food-package-zoom: 119%;
-  --dry-food-package-y-shift: 6.2%;
+  --dry-food-package-zoom: 117.5%;
+  --dry-food-package-y-shift: 5.45%;
 }
 
 html body.category-products-page.category-product-square-display.dry-food-package-zoom-experiment
 .category-page-products .product-grid > article.product-card:nth-child(2)
 > a.product-image-link > .product-image > img {
-  --dry-food-package-zoom: 117%;
-  --dry-food-package-y-shift: 5.7%;
+  --dry-food-package-zoom: 115.5%;
+  --dry-food-package-y-shift: 4.95%;
 }
 
 html body.category-products-page.category-product-square-display.dry-food-package-zoom-experiment
 .category-page-products .product-grid > article.product-card:nth-child(3)
 > a.product-image-link > .product-image > img {
-  --dry-food-package-zoom: 118.5%;
-  --dry-food-package-y-shift: 6.6%;
+  --dry-food-package-zoom: 117%;
+  --dry-food-package-y-shift: 5.85%;
 }
 
 html body.category-products-page.category-product-square-display.dry-food-package-zoom-experiment
 .category-page-products .product-grid > article.product-card:nth-child(4)
 > a.product-image-link > .product-image > img {
-  --dry-food-package-zoom: 119%;
-  --dry-food-package-y-shift: 6.5%;
+  --dry-food-package-zoom: 117.5%;
+  --dry-food-package-y-shift: 5.75%;
 }
 
 /* No extra hover enlargement: it could cut the package trim at the frame edge. */
