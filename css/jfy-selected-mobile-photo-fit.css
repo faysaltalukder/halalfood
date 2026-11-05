@@ -1,0 +1,225 @@
+/* HALAL FOOD — Just For You: selected mobile product photo fit
+   Scope: exactly the 23 approved product links below, inside #just-for-you.
+   The original landscape photos are center-cropped horizontally into square
+   frames. Their full vertical product/package content remains visible.
+   Desktop, Dates reference cards, other Just For You products and all other
+   sections are intentionally excluded. Remove this stylesheet link from
+   index.html to roll back the entire change immediately. */
+
+@media screen and (max-width: 760px) {
+  html body #just-for-you .jfy-card > a.jfy-image-link:is(
+  [href$="basmati-rice.html"],
+  [href$="chickpeas.html"],
+  [href$="red-lentils.html"],
+  [href$="roasted-chana.html"],
+  [href$="beef-cuts.html"],
+  [href$="beef-boneless.html"],
+  [href$="beef-curry-cut.html"],
+  [href$="fresh-mutton.html"],
+  [href$="honey-nut-mix.html"],
+  [href$="date-nut-mix.html"],
+  [href$="dry-fruit-mix.html"],
+  [href$="mixed-roasted-nuts.html"],
+  [href$="almonds.html"],
+  [href$="cashews.html"],
+  [href$="pumpkin-seeds.html"],
+  [href$="house-biryani-masala.html"],
+  [href$="beef-masala.html"],
+  [href$="chicken-masala.html"],
+  [href$="fish-masala.html"],
+  [href$="classic-black-tea.html"],
+  [href$="green-tea.html"],
+  [href$="ginger-tea.html"],
+  [href$="herbal-tea.html"]
+  ) {
+    display: block !important;
+    position: relative !important;
+    width: 100% !important;
+    height: auto !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    aspect-ratio: 1 / 1 !important;
+    overflow: hidden !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border-radius: 8px !important;
+    background: var(--cream, #f2f0ea) !important;
+    line-height: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  html body #just-for-you .jfy-card > a.jfy-image-link:is(
+  [href$="basmati-rice.html"],
+  [href$="chickpeas.html"],
+  [href$="red-lentils.html"],
+  [href$="roasted-chana.html"],
+  [href$="beef-cuts.html"],
+  [href$="beef-boneless.html"],
+  [href$="beef-curry-cut.html"],
+  [href$="fresh-mutton.html"],
+  [href$="honey-nut-mix.html"],
+  [href$="date-nut-mix.html"],
+  [href$="dry-fruit-mix.html"],
+  [href$="mixed-roasted-nuts.html"],
+  [href$="almonds.html"],
+  [href$="cashews.html"],
+  [href$="pumpkin-seeds.html"],
+  [href$="house-biryani-masala.html"],
+  [href$="beef-masala.html"],
+  [href$="chicken-masala.html"],
+  [href$="fish-masala.html"],
+  [href$="classic-black-tea.html"],
+  [href$="green-tea.html"],
+  [href$="ginger-tea.html"],
+  [href$="herbal-tea.html"]
+  ) > span.jfy-image {
+    display: block !important;
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    aspect-ratio: auto !important;
+    overflow: hidden !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border-radius: inherit !important;
+    background: var(--cream, #f2f0ea) !important;
+    box-sizing: border-box !important;
+  }
+
+  html body #just-for-you .jfy-card > a.jfy-image-link:is(
+  [href$="basmati-rice.html"],
+  [href$="chickpeas.html"],
+  [href$="red-lentils.html"],
+  [href$="roasted-chana.html"],
+  [href$="beef-cuts.html"],
+  [href$="beef-boneless.html"],
+  [href$="beef-curry-cut.html"],
+  [href$="fresh-mutton.html"],
+  [href$="honey-nut-mix.html"],
+  [href$="date-nut-mix.html"],
+  [href$="dry-fruit-mix.html"],
+  [href$="mixed-roasted-nuts.html"],
+  [href$="almonds.html"],
+  [href$="cashews.html"],
+  [href$="pumpkin-seeds.html"],
+  [href$="house-biryani-masala.html"],
+  [href$="beef-masala.html"],
+  [href$="chicken-masala.html"],
+  [href$="fish-masala.html"],
+  [href$="classic-black-tea.html"],
+  [href$="green-tea.html"],
+  [href$="ginger-tea.html"],
+  [href$="herbal-tea.html"]
+  ) > span.jfy-image > picture {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  html body #just-for-you .jfy-card > a.jfy-image-link:is(
+  [href$="basmati-rice.html"],
+  [href$="chickpeas.html"],
+  [href$="red-lentils.html"],
+  [href$="roasted-chana.html"],
+  [href$="beef-cuts.html"],
+  [href$="beef-boneless.html"],
+  [href$="beef-curry-cut.html"],
+  [href$="fresh-mutton.html"],
+  [href$="honey-nut-mix.html"],
+  [href$="date-nut-mix.html"],
+  [href$="dry-fruit-mix.html"],
+  [href$="mixed-roasted-nuts.html"],
+  [href$="almonds.html"],
+  [href$="cashews.html"],
+  [href$="pumpkin-seeds.html"],
+  [href$="house-biryani-masala.html"],
+  [href$="beef-masala.html"],
+  [href$="chicken-masala.html"],
+  [href$="fish-masala.html"],
+  [href$="classic-black-tea.html"],
+  [href$="green-tea.html"],
+  [href$="ginger-tea.html"],
+  [href$="herbal-tea.html"]
+  ) > span.jfy-image > img,
+  html body #just-for-you .jfy-card > a.jfy-image-link:is(
+  [href$="basmati-rice.html"],
+  [href$="chickpeas.html"],
+  [href$="red-lentils.html"],
+  [href$="roasted-chana.html"],
+  [href$="beef-cuts.html"],
+  [href$="beef-boneless.html"],
+  [href$="beef-curry-cut.html"],
+  [href$="fresh-mutton.html"],
+  [href$="honey-nut-mix.html"],
+  [href$="date-nut-mix.html"],
+  [href$="dry-fruit-mix.html"],
+  [href$="mixed-roasted-nuts.html"],
+  [href$="almonds.html"],
+  [href$="cashews.html"],
+  [href$="pumpkin-seeds.html"],
+  [href$="house-biryani-masala.html"],
+  [href$="beef-masala.html"],
+  [href$="chicken-masala.html"],
+  [href$="fish-masala.html"],
+  [href$="classic-black-tea.html"],
+  [href$="green-tea.html"],
+  [href$="ginger-tea.html"],
+  [href$="herbal-tea.html"]
+  ) > span.jfy-image > picture > img {
+    display: block !important;
+    position: static !important;
+    inset: auto !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-width: none !important;
+    max-height: none !important;
+    aspect-ratio: auto !important;
+    object-fit: cover !important;
+    object-position: 50% 50% !important;
+    transform: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+  }
+
+  /* Keep selected cards aligned without changing other recommendation cards. */
+  html body #just-for-you .jfy-card:has(> a.jfy-image-link:is(
+  [href$="basmati-rice.html"],
+  [href$="chickpeas.html"],
+  [href$="red-lentils.html"],
+  [href$="roasted-chana.html"],
+  [href$="beef-cuts.html"],
+  [href$="beef-boneless.html"],
+  [href$="beef-curry-cut.html"],
+  [href$="fresh-mutton.html"],
+  [href$="honey-nut-mix.html"],
+  [href$="date-nut-mix.html"],
+  [href$="dry-fruit-mix.html"],
+  [href$="mixed-roasted-nuts.html"],
+  [href$="almonds.html"],
+  [href$="cashews.html"],
+  [href$="pumpkin-seeds.html"],
+  [href$="house-biryani-masala.html"],
+  [href$="beef-masala.html"],
+  [href$="chicken-masala.html"],
+  [href$="fish-masala.html"],
+  [href$="classic-black-tea.html"],
+  [href$="green-tea.html"],
+  [href$="ginger-tea.html"],
+  [href$="herbal-tea.html"]
+  )) {
+    min-width: 0 !important;
+    align-self: stretch !important;
+  }
+}
+
+/* Explicitly leave the four Dates reference products untouched:
+   ajwa-dates, medjool-dates, safawi-dates, date-syrup. */
