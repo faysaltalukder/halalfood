@@ -66,7 +66,7 @@
         const strong = loading.querySelector("strong");
         const small = loading.querySelector("small");
         if (strong) strong.textContent = message;
-        if (small) small.textContent = "Fetching the real page from the live website.";
+        if (small) small.textContent = "Checking the live page and rendering it. If it cannot load, detailed diagnostics appear within 30 seconds.";
       }
       if (errorPanel) errorPanel.hidden = true;
       setStatus("Connecting securely to the live website…");
