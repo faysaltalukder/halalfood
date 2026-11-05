@@ -21,6 +21,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
+      - name: Verify HTML script tag integrity
+        run: node scripts/html-script-integrity-check.mjs
       - name: Check JavaScript syntax and architecture guard
         run: node scripts/architecture-check.mjs
       - name: Run storefront checkout regression checks
