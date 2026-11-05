@@ -29,10 +29,10 @@ jobs:
         run: node scripts/customer-care-chat-check.mjs
       - name: Validate task-scoped feature context map
         run: node scripts/feature-context.mjs --check
-      - name: Run existing admin integrity checks
-        run: node scripts/admin-phase12-check.mjs
       - name: Run Universal Website Builder foundation checks
         run: node scripts/universal-builder-check.mjs
+      - name: Run existing admin integrity checks
+        run: node scripts/admin-phase12-check.mjs
       - name: Run simple POS sale-entry contract checks
         run: node scripts/admin-pos-check.mjs
       - name: Run Product, Barcode and Reviews contract checks
