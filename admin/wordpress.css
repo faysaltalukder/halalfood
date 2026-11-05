@@ -24,13 +24,19 @@
 .hf-wordpress-browser-lock{font-size:12px}
 .hf-wordpress-address{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;padding:5px 10px;border:1px solid var(--border,#e2e6ec);border-radius:7px;background:var(--surface-soft,#f7f8fa);font-size:11px}
 .hf-wordpress-browser-label{font-size:9px;letter-spacing:.12em;font-weight:800;color:#27865b}
-.hf-wordpress-preview-stage{display:flex;align-items:flex-start;justify-content:center;min-width:0;min-height:480px;padding:16px 12px 20px;border:1px solid var(--border,#dce1e8);border-radius:0 0 14px 14px;background:var(--surface-soft,#f2f4f7);overflow:auto}
-.hf-wordpress-device-shell{position:relative;flex:0 0 auto;max-width:100%;height:min(78vh,900px);min-height:560px;background:#fff;box-shadow:0 8px 28px rgba(24,34,48,.12);transition:width .22s ease,border-radius .22s ease,box-shadow .22s ease}
-.hf-wordpress-device-shell.is-desktop{width:100%;border:1px solid #cfd5dd;border-radius:10px;overflow:hidden}
-.hf-wordpress-device-shell.is-mobile{width:406px;max-width:100%;height:780px;min-height:620px;padding:0;border:8px solid #43505e;border-radius:30px;background:#43505e;box-shadow:0 14px 34px rgba(24,34,48,.2);overflow:hidden}
-.hf-wordpress-device-shell iframe{display:block;width:100%;height:100%;min-height:0;border:0;background:#fff}
-.hf-wordpress-device-shell.is-mobile iframe{border-radius:20px}
+.hf-wordpress-preview-stage{display:flex;align-items:flex-start;justify-content:flex-start;min-width:0;min-height:480px;padding:16px 12px 20px;border:1px solid var(--border,#dce1e8);border-radius:0 0 14px 14px;background:var(--surface-soft,#f2f4f7);overflow:auto;overscroll-behavior:contain}
+.hf-wordpress-device-shell{position:relative;flex:0 0 auto;box-sizing:border-box;height:min(78vh,900px);min-height:560px;margin-inline:auto;background:#fff;box-shadow:0 8px 28px rgba(24,34,48,.12);transition:width .22s ease,border-radius .22s ease,box-shadow .22s ease}
+.hf-wordpress-device-shell.is-desktop{width:100%;max-width:100%;min-width:0;border:1px solid #cfd5dd;border-radius:10px;overflow:hidden}
+.hf-wordpress-preview-stage.is-mobile-mode{justify-content:flex-start}
+.hf-wordpress-device-shell.is-mobile{width:406px;min-width:406px;max-width:406px;height:780px;min-height:620px;padding:0;border:8px solid #43505e;border-radius:30px;background:#43505e;box-shadow:0 14px 34px rgba(24,34,48,.2);overflow:hidden}
+.hf-wordpress-device-shell iframe{display:block;box-sizing:border-box;width:100%;height:100%;min-height:0;border:0;background:#fff}
+.hf-wordpress-device-shell.is-mobile iframe{width:390px;border-radius:20px}
 .hf-wordpress-loading{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:var(--card-bg,#fff);color:var(--text,#344054);text-align:center}
+.hf-wordpress-error{position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:24px;background:var(--card-bg,#fff);color:var(--text,#344054);text-align:center}
+.hf-wordpress-error[hidden]{display:none}
+.hf-wordpress-error strong{font-size:14px}
+.hf-wordpress-error p{max-width:440px;margin:0;color:var(--muted,#687386);font-size:12px;line-height:1.55}
+.hf-wordpress-error-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
 .hf-wordpress-loading[hidden]{display:none}
 .hf-wordpress-loading strong{font-size:14px}
 .hf-wordpress-loading small{font-size:12px;color:var(--muted,#687386)}

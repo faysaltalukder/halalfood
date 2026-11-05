@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <title>WordPress · Halal Food Admin</title>
 <link rel="stylesheet" href="./shared.css?v=20261102-reports-navigation-v3&hf_sidebar=20261101-warm-jewel-v4">
-<link rel="stylesheet" href="./wordpress.css?v=20261105-live-preview-v1">
+<link rel="stylesheet" href="./wordpress.css?v=20261105-live-preview-v2">
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
 <link rel="stylesheet" href="./workspace-global-theme.css?v=20261101-merchant-fieldbook-v1">
 </head>
@@ -72,12 +72,19 @@
       </div>
       <iframe
         id="wordpressLiveFrame"
-        src="../"
+        data-preview-src="https://faysaltalukder.github.io/halalfood/"
         title="Halal Food live website — interactive preview"
         loading="eager"
-        referrerpolicy="strict-origin-when-cross-origin"
         allow="payment"
       ></iframe>
+      <div class="hf-wordpress-error" id="wpPreviewError" role="alert" hidden>
+        <strong>The live website could not be confirmed as loaded.</strong>
+        <p>Check your connection, then retry the preview. You can also open the live website separately.</p>
+        <div class="hf-wordpress-error-actions">
+          <button class="hf-button hf-button-primary" id="wpRetry" type="button">Try again</button>
+          <a class="hf-button hf-button-secondary" href="https://faysaltalukder.github.io/halalfood/" target="_blank" rel="noopener noreferrer">Open live website ↗</a>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -91,6 +98,6 @@
 <script defer src="../js/store-config.js?v=20261101-store-config-v1"></script>
 <script defer src="./shared.js?v=20261105-wordpress-live-preview-v1"></script>
 <script defer src="./app.js?v=20261102-dashboard-speed-v2"></script>
-<script defer src="./wordpress.js?v=20261105-live-preview-v1"></script>
+<script defer src="./wordpress.js?v=20261105-live-preview-v2"></script>
 </body>
 </html>

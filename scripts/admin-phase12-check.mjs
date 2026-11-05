@@ -71,7 +71,12 @@ assert.ok(unifiedPages.includes("wordpress.html"), "WordPress live preview must 
 const wordpressPage = read("admin/wordpress.html");
 const wordpressNav = read("admin/shared.js");
 assert.ok(wordpressNav.includes('["wordpress","wordpress","WordPress"'), "WordPress must be the final System sidebar entry.");
-assert.ok(wordpressPage.includes('data-page="wordpress"') && wordpressPage.includes('id="wordpressLiveFrame"') && wordpressPage.includes('src="../"'), "WordPress must embed the real live storefront in its authenticated admin page.");
+assert.ok(wordpressPage.includes('data-page="wordpress"') && wordpressPage.includes('id="wordpressLiveFrame"') && wordpressPage.includes('data-preview-src="https://faysaltalukder.github.io/halalfood/"'), "WordPress must embed the canonical live storefront in its authenticated admin page.");
+assert.ok(!/<iframe[^>]+\\bsrc=/.test(wordpressPage), "The live iframe URL must be assigned only after its load listener is attached.");
+assert.ok(read("admin/wordpress.js").indexOf('frame.addEventListener("load", handleFrameLoad)') < read("admin/wordpress.js").indexOf("frame.src = LIVE_URL"), "The iframe load handler must be registered before the storefront navigation begins.");
+assert.ok(read("admin/wordpress.js").includes("pointer\\\\s*:\\\\s*coarse") && read("admin/wordpress.js").includes("source.setAttribute(\"media\", mobileMedia || \"all\")"), "Mobile preview must emulate coarse-pointer media and use mobile responsive image sources.");
+assert.ok(read("admin/wordpress.css").includes("width:406px;min-width:406px;max-width:406px") && read("admin/wordpress.css").includes("width:390px"), "Mobile preview must preserve a 390px inner viewport instead of shrinking to the available panel width.");
+assert.ok(wordpressPage.includes('id="wpPreviewError"') && wordpressPage.includes('id="wpRetry"'), "The live preview must show a recoverable error state if loading does not complete.");
 assert.ok(wordpressPage.includes('data-wp-view="desktop"') && wordpressPage.includes('data-wp-view="mobile"'), "WordPress live preview must expose desktop and mobile viewport controls.");
 assert.ok(read("admin/wordpress.css").includes(".hf-wordpress-device-shell.is-mobile") && read("admin/wordpress.js").includes('setView("desktop")'), "WordPress device controls must have responsive styling and interactive behavior.");
 for (const page of ["categories-tree.html","categories-sorting.html","categories-settings.html"]) {
