@@ -258,7 +258,8 @@
       if(!window.confirm("Reset this local sample draft? Your current local draft will be replaced."))return;
       state.undo.push(snapshot());state.redo.length=0;state.doc=sampleDocument();state.selected=null;markDirty();renderAll();
     });
-    $("builderExport").addEventListener("click",exportDraft);\n    $("builderSendPreview").addEventListener("click",sendToPreview);
+    $("builderExport").addEventListener("click",exportDraft);
+    $("builderSendPreview").addEventListener("click",sendToPreview);
     changeViewport("desktop");renderAll();
     setStatus(saved?"Restored local draft · not published":"Sample draft ready · not published","saved");
   };
