@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { reserveEdgeRateLimit, trustedClientIp } from "../_shared/rate-limit.ts";
 
 const allowedOrigin = "https://faysaltalukder.github.io";
 const cors = {
@@ -150,9 +151,17 @@ Deno.serve(async (req: Request) => {
   const origin = req.headers.get("origin") || "";
   if (origin && origin !== allowedOrigin) return json({ success: false, error: "Origin not allowed" }, 403);
 
+  const contentLength = Number(req.headers.get("content-length") || 0);
+  if (contentLength > 64000) return json({ success: false, error: "অর্ডারের তথ্য অনেক বড়। কার্ট রিফ্রেশ করে আবার চেষ্টা করুন।" }, 413);
   try {
     let d: Record<string, any>;
-    try { d = await req.json(); } catch { return json({ success: false, error: "Invalid JSON" }, 400); }
+    try {
+      const rawBody = await req.text();
+      if (new TextEncoder().encode(rawBody).byteLength > 64000) return json({ success: false, error: "অর্ডারের তথ্য অনেক বড়। কার্ট রিফ্রেশ করে আবার চেষ্টা করুন।" }, 413);
+      const parsed = JSON.parse(rawBody);
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("Invalid order payload");
+      d = parsed;
+    } catch { return json({ success: false, error: "Invalid JSON" }, 400); }
 
     // Fail closed: validate the one-time browser token before creating an order or
     // allowing the Google Sheets backup to be triggered by the checkout client.
@@ -213,6 +222,10 @@ Deno.serve(async (req: Request) => {
       return json({ success: false, error: "Order service is temporarily unavailable. Please try again." }, 503);
     }
     const admin = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+    const trustedIp = trustedClientIp(req);
+    if (trustedIp && !(await reserveEdgeRateLimit(admin, "order-sync-ip", trustedIp, 30, 600))) {
+      return json({ success: false, code: "ORDER_RATE_LIMITED", error: "এই নেটওয়ার্ক থেকে অল্প সময়ে অনেক অর্ডার এসেছে। কিছুক্ষণ পর আবার চেষ্টা করুন।" }, 429);
+    }
     // Risk checks add up several weak signals; no single IP/device match blocks an order.
     // Raw IP and device identifiers are never stored. Fingerprints are HMACed using the
     // server-only Turnstile secret, with a namespace per identifier type.
