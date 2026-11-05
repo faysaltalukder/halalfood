@@ -96,3 +96,5 @@
 .hf-builder-security-strip strong{color:#43516a;font-size:10px}
 .hf-builder-security-strip span{padding-left:9px;border-left:1px solid #d9dfe8}
 @media(max-width:620px){.hf-builder-security-strip{align-items:flex-start;flex-direction:column;gap:5px}.hf-builder-security-strip span{padding:0;border:0}}
+
+#builderSendPreview{min-height:36px}
