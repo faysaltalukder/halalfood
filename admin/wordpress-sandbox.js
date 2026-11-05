@@ -145,6 +145,7 @@
       const history = readJson(HISTORY_KEY, []);
       const version = (Number(published?.version) || 0) + 1;
       const record = { schemaVersion: 1, version, versionId: "sandbox-v" + version + "-" + Date.now(), publishedAt: new Date().toISOString(), sourceReviewId: review.reviewId, document: review.document };
+      const before = { published: localStorage.getItem(PUBLISHED_KEY), history: localStorage.getItem(HISTORY_KEY), review: localStorage.getItem(REVIEW_KEY) };
       try {
         writeJson(PUBLISHED_KEY, record);
         writeJson(HISTORY_KEY, [record, ...(Array.isArray(history) ? history : [])].slice(0, 20));
@@ -156,8 +157,11 @@
         loadPublished();
         setStatus("Test Version " + version + " published inside this dashboard · Production unchanged");
       } catch (error) {
+        [[PUBLISHED_KEY, before.published], [HISTORY_KEY, before.history], [REVIEW_KEY, before.review]].forEach(([key, value]) => {
+          try { if (value === null) localStorage.removeItem(key); else localStorage.setItem(key, value); } catch (_) {}
+        });
         setStatus("Test Publish failed: " + (error?.message || String(error)));
-        window.alert("Could not save the Test Version in this browser. Check available storage and try again.");
+        window.alert("Could not save the Test Version in this browser. The previous sandbox state was restored. Check available storage and try again.");
       }
     };
     $("wpSandboxApprove")?.addEventListener("click", approve);
