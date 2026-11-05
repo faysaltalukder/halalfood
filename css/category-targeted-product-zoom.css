@@ -1,0 +1,11 @@
+/* HALAL FOOD — TARGETED PRODUCT PHOTO FILL
+   Opt-in only: cards explicitly marked in the four category pages.
+   The square frame dimensions/layout remain owned by the shared stylesheet.
+   Cover scales proportionally and trims only the outer left/right photo margins
+   on the approved landscape assets; the central product pack/tray remains visible. */
+body.category-products-page.category-product-square-display
+.category-page-products .product-card > a.product-image-link > .product-image[data-photo-zoom="cover"] > img {
+  object-fit: cover !important;
+  object-position: 50% 50% !important;
+  transform: none !important;
+}
