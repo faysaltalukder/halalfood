@@ -130,10 +130,10 @@ DECLARE
     v_coupon_id,nullif(v_coupon_code,''''),v_coupon_discount,v_coupon_snapshot,v_checkout_session_id,v_request_hash
   ) RETURNING id INTO v_order_id;';
 BEGIN
-  SELECT pg_catalog.pg_get_functiondef(''public.create_website_order(jsonb)''::regprocedure)
+  SELECT pg_catalog.pg_get_functiondef('public.create_website_order(jsonb)'::regprocedure)
     INTO v_definition;
 
-  IF position(''checkout_session_id'' IN v_definition)>0 THEN
+  IF position('checkout_session_id' IN v_definition)>0 THEN
     RETURN;
   END IF;
   IF position(v_old_declaration IN v_definition)=0
@@ -149,10 +149,10 @@ BEGIN
   v_patched := pg_catalog.replace(v_patched,v_old_insert,v_new_insert);
 
   IF v_patched=v_definition
-     OR position(''v_checkout_session_id'' IN v_patched)=0
-     OR position(''v_request_hash'' IN v_patched)=0
-     OR position(''v_order_number := NULL'' IN v_patched)=0
-     OR position(''checkout_session_id,checkout_request_hash'' IN v_patched)=0 THEN
+     OR position('v_checkout_session_id' IN v_patched)=0
+     OR position('v_request_hash' IN v_patched)=0
+     OR position('v_order_number := NULL' IN v_patched)=0
+     OR position('checkout_session_id,checkout_request_hash' IN v_patched)=0 THEN
     RAISE EXCEPTION ''The checkout idempotency patch did not apply completely; transaction aborted.'';
   END IF;
   EXECUTE v_patched;
