@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { reserveEdgeRateLimit, trustedClientIp } from "../_shared/rate-limit.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -507,6 +508,10 @@ Deno.serve(async (req: Request) => {
   if (items.length < 1 || items.length > 20 ||
       items.some((item) => !item || typeof item !== "object" || Array.isArray(item))) {
     return response({ error: "Invalid event batch" }, 400);
+  }
+  const clientIp = trustedClientIp(req);
+  if (clientIp && !(await reserveEdgeRateLimit(supabase, "analytics-ingest-ip", clientIp, 180, 60))) {
+    return response({ error: "Too many analytics events. Please retry shortly." }, 429);
   }
 
   const hasPurchaseEvent = items.some((item: any) => String(item?.event_name || "") === "purchase");
