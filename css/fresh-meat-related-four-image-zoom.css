@@ -1,0 +1,128 @@
+/* HALAL FOOD — FRESH MEAT RELATED PRODUCT IMAGE ZOOM
+   Category-specific suggestion rule.
+   Loaded ONLY on the six Fresh Meat product-detail pages.
+   Targets four product identities by related-card href, never by card position:
+   Fresh Beef Cuts, Beef Boneless, Beef Curry Cut, and Fresh Mutton.
+   Fresh Chicken, Beef Bone-In, other categories and all category grids are out.
+
+   Reuses the verified compact Related Products framing:
+   1:1 square frame + 120% - 6px natural-ratio image height + contain.
+   Original photo ratio is preserved; only surrounding background is clipped.
+   The package/tray remains complete and centered. */
+
+/* Keep the current compact recommendation box size. Make only the four
+   selected Meat product frames square-cornered and keep them clipped. */
+html body.fresh-meat-related-suggestion-scope #related-section #related-grid > article.product-card > a.product-image-link[href$="beef-cuts.html"],
+html body.fresh-meat-related-suggestion-scope #related-section #related-grid > article.product-card > a.product-image-link[href$="beef-boneless.html"],
+html body.fresh-meat-related-suggestion-scope #related-section #related-grid > article.product-card > a.product-image-link[href$="beef-curry-cut.html"],
+html body.fresh-meat-related-suggestion-scope #related-section #related-grid > article.product-card > a.product-image-link[href$="fresh-mutton.html"] {
+  display: block !important;
+  position: relative !important;
+  inset: auto !important;
+  width: 100% !important;
+  height: auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: 100% !important;
+  max-height: none !important;
+  aspect-ratio: 1 / 1 !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  border-radius: 0 !important;
+  line-height: 0 !important;
+  background: var(--cream, #f2f0ea) !important;
+}
+
+/* Preserve the square viewport above shared mobile intrinsic-height resets. */
+html body.fresh-meat-related-suggestion-scope #related-section #related-grid > article.product-card > a.product-image-link[href$="beef-cuts.html"] > div.product-image,
+html body.fresh-meat-related-suggestion-scope #related-section #related-grid > article.product-card > a.product-image-link[href$="beef-boneless.html"] > div.product-image,
+html body.fresh-meat-related-suggestion-scope #related-section #related-grid > article.product-card > a.product-image-link[href$="beef-curry-cut.html"] > div.product-image,
+html body.fresh-meat-related-suggestion-scope #related-section #related-grid > article.product-card > a.product-image-link[href$="fresh-mutton.html"] > div.product-image {
+  display: block !important;
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  aspect-ratio: 1 / 1 !important;
+  overflow: hidden !important;
+  isolation: isolate !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  border-radius: 0 !important;
+  background: var(--cream, #f2f0ea) !important;
+}
+
+/* Tested compact-card image scale. Width stays automatic so the original
+   1200x896 image ratio is preserved, without stretching or distortion. */
+html body.fresh-meat-related-suggestion-scope #related-section #related-grid > article.product-card > a.product-image-link[href$="beef-cuts.html"] > div.product-image > img,
+html body.fresh-meat-related-suggestion-scope #related-section #related-grid > article.product-card > a.product-image-link[href$="beef-boneless.html"] > div.product-image > img,
+html body.fresh-meat-related-suggestion-scope #related-section #related-grid > article.product-card > a.product-image-link[href$="beef-curry-cut.html"] > div.product-image > img,
+html body.fresh-meat-related-suggestion-scope #related-section #related-grid > article.product-card > a.product-image-link[href$="fresh-mutton.html"] > div.product-image > img {
+  display: block !important;
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  right: auto !important;
+  bottom: auto !important;
+  z-index: 1 !important;
+  width: auto !important;
+  height: calc(120% - 6px) !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: none !important;
+  max-height: none !important;
+  aspect-ratio: auto !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+  transform: none !important;
+  translate: -50% -50% !important;
+  scale: 1 !important;
+  transform-origin: center center !important;
+  transition: scale 380ms cubic-bezier(.22, .68, .24, 1) !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+
+/* Desktop hover / keyboard focus: image-only 4.5% zoom. */
+@media (hover: hover) and (pointer: fine) {
+  html body.fresh-meat-related-suggestion-scope #related-section #related-grid > article.product-card :hover > a.product-image-link[href$="beef-cuts.html"] > div.product-image > img,
+  html body.fresh-meat-related-suggestion-scope #related-section #related-grid > article.product-card :hover > a.product-image-link[href$="beef-boneless.html"] > div.product-image > img,
+  html body.fresh-meat-related-suggestion-scope #related-section #related-grid > article.product-card :hover > a.product-image-link[href$="beef-curry-cut.html"] > div.product-image > img,
+  html body.fresh-meat-related-suggestion-scope #related-section #related-grid > article.product-card :hover > a.product-image-link[href$="fresh-mutton.html"] > div.product-image > img,
+  html body.fresh-meat-related-suggestion-scope #related-section #related-grid > article.product-card :focus-within > a.product-image-link[href$="beef-cuts.html"] > div.product-image > img,
+  html body.fresh-meat-related-suggestion-scope #related-section #related-grid > article.product-card :focus-within > a.product-image-link[href$="beef-boneless.html"] > div.product-image > img,
+  html body.fresh-meat-related-suggestion-scope #related-section #related-grid > article.product-card :focus-within > a.product-image-link[href$="beef-curry-cut.html"] > div.product-image > img,
+  html body.fresh-meat-related-suggestion-scope #related-section #related-grid > article.product-card :focus-within > a.product-image-link[href$="fresh-mutton.html"] > div.product-image > img {
+    scale: 1.045 !important;
+  }
+}
+
+/* Touch/press: matching 3.5% feedback, with the quicker 150ms duration. */
+html body.fresh-meat-related-suggestion-scope #related-section #related-grid > article.product-card :active > a.product-image-link[href$="beef-cuts.html"] > div.product-image > img,
+html body.fresh-meat-related-suggestion-scope #related-section #related-grid > article.product-card :active > a.product-image-link[href$="beef-boneless.html"] > div.product-image > img,
+html body.fresh-meat-related-suggestion-scope #related-section #related-grid > article.product-card :active > a.product-image-link[href$="beef-curry-cut.html"] > div.product-image > img,
+html body.fresh-meat-related-suggestion-scope #related-section #related-grid > article.product-card :active > a.product-image-link[href$="fresh-mutton.html"] > div.product-image > img {
+  scale: 1.035 !important;
+  transition-duration: 150ms !important;
+}
+
+/* Reduced-motion accessibility preference. */
+@media (prefers-reduced-motion: reduce) {
+  html body.fresh-meat-related-suggestion-scope #related-section #related-grid > article.product-card > a.product-image-link[href$="beef-cuts.html"] > div.product-image > img,
+html body.fresh-meat-related-suggestion-scope #related-section #related-grid > article.product-card > a.product-image-link[href$="beef-boneless.html"] > div.product-image > img,
+html body.fresh-meat-related-suggestion-scope #related-section #related-grid > article.product-card > a.product-image-link[href$="beef-curry-cut.html"] > div.product-image > img,
+html body.fresh-meat-related-suggestion-scope #related-section #related-grid > article.product-card > a.product-image-link[href$="fresh-mutton.html"] > div.product-image > img {
+    transition: none !important;
+    scale: 1 !important;
+  }
+}
