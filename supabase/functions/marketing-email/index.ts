@@ -175,7 +175,13 @@ Deno.serve(async (req: Request) => {
   const auth = await requireAdmin(req);
   if ("response" in auth) return auth.response;
   let body: Record<string, unknown>;
-  try { body = await req.json(); } catch { return json({ success: false, error: "Invalid JSON request." }, 400); }
+  try {
+    const rawBody = await req.text();
+    if (new TextEncoder().encode(rawBody).byteLength > 12000) return json({ success: false, error: "Request is too large." }, 413);
+    const parsed = JSON.parse(rawBody);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("Invalid JSON");
+    body = parsed;
+  } catch { return json({ success: false, error: "Invalid JSON request." }, 400); }
   const action = clean(body.action, 40).toLowerCase();
   const readiness = config();
   if (action === "status") {
