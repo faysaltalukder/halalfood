@@ -1,0 +1,34 @@
+/* HALAL FOOD — CATEGORY PRODUCT IMAGE MICRO-INTERACTION
+   Image-only zoom. Card geometry, product text, price and actions do not move. */
+
+html body.category-products-page .category-page-products .product-grid > article.product-card > a.product-image-link {
+  overflow: hidden !important;
+}
+
+html body.category-products-page .category-page-products .product-grid > article.product-card > a.product-image-link > .product-image > img {
+  transform: scale(1) !important;
+  transform-origin: center center !important;
+  transition: transform 380ms cubic-bezier(.22, .68, .24, 1) !important;
+}
+
+/* Desktop and other precise hover pointers: a restrained 4.5% image zoom. */
+@media (hover: hover) and (pointer: fine) {
+  html body.category-products-page .category-page-products .product-grid > article.product-card:hover > a.product-image-link > .product-image > img,
+  html body.category-products-page .category-page-products .product-grid > article.product-card:focus-within > a.product-image-link > .product-image > img {
+    transform: scale(1.045) !important;
+  }
+}
+
+/* Touch and pressed states: smaller, quicker feedback while the card is held. */
+html body.category-products-page .category-page-products .product-grid > article.product-card:active > a.product-image-link > .product-image > img {
+  transform: scale(1.035) !important;
+  transition-duration: 150ms !important;
+}
+
+/* Respect the visitor's reduced-motion accessibility preference. */
+@media (prefers-reduced-motion: reduce) {
+  html body.category-products-page .category-page-products .product-grid > article.product-card > a.product-image-link > .product-image > img {
+    transform: none !important;
+    transition: none !important;
+  }
+}
