@@ -61,12 +61,19 @@ assert.ok(celestialEngine.includes("setInterval(update,60000)") && solarJourneyC
 
 const htmlFiles = readdirSync(adminDir).filter((file) => file.endsWith(".html"));
 const unifiedPages = htmlFiles.filter((file) => /<body[^>]*\bdata-page=/.test(read(join("admin", file))));
-assert.equal(unifiedPages.length, 42, `Expected 42 unified admin pages in the current admin workspace, found ${unifiedPages.length}.`);
+assert.equal(unifiedPages.length, 43, `Expected 43 unified admin pages in the current admin workspace, found ${unifiedPages.length}.`);
 assert.ok(unifiedPages.includes("ai-knowledge.html"), "AI Knowledge Center must use the unified admin shell.");
 assert.ok(unifiedPages.includes("pos.html"), "POS import must use the unified admin shell.");
 assert.ok(unifiedPages.includes("coupons.html"), "Coupon Promotions must use the unified admin shell.");
 assert.ok(unifiedPages.includes("coupon-usage.html"), "Coupon Usage must use the unified admin shell.");
 assert.ok(unifiedPages.includes("categories.html"), "The single Categories workspace must use the unified admin shell.");
+assert.ok(unifiedPages.includes("wordpress.html"), "WordPress live preview must use the unified admin shell.");
+const wordpressPage = read("admin/wordpress.html");
+const wordpressNav = read("admin/shared.js");
+assert.ok(wordpressNav.includes('["wordpress","wordpress","WordPress"'), "WordPress must be the final System sidebar entry.");
+assert.ok(wordpressPage.includes('data-page="wordpress"') && wordpressPage.includes('id="wordpressLiveFrame"') && wordpressPage.includes('src="../"'), "WordPress must embed the real live storefront in its authenticated admin page.");
+assert.ok(wordpressPage.includes('data-wp-view="desktop"') && wordpressPage.includes('data-wp-view="mobile"'), "WordPress live preview must expose desktop and mobile viewport controls.");
+assert.ok(read("admin/wordpress.css").includes(".hf-wordpress-device-shell.is-mobile") && read("admin/wordpress.js").includes('setView("desktop")'), "WordPress device controls must have responsive styling and interactive behavior.");
 for (const page of ["categories-tree.html","categories-sorting.html","categories-settings.html"]) {
   assert.ok(!unifiedPages.includes(page), "Categories must not expose a separate child route: " + page);
 }
@@ -130,7 +137,7 @@ for (const file of unifiedPages) {
   const expectedI18nVersion = i18nVersion;
   assert.ok(source.includes(`i18n.js?v=${expectedI18nVersion}`), `${file}: missing or stale shared language dictionary.`);
   assert.ok(source.includes(`shared.css?v=${sharedCssVersion}`), `${file}: stale shared UI cache version.`);
-  const expectedSharedJsVersion = file === "ai-conversations.html" ? "20261104-aiconversations-v1" : sharedJsVersion;
+  const expectedSharedJsVersion = file === "ai-conversations.html" ? "20261104-aiconversations-v1" : (file === "overview.html" || file === "wordpress.html") ? "20261105-wordpress-live-preview-v1" : sharedJsVersion;
   assert.ok(source.includes(`shared.js?v=${expectedSharedJsVersion}`), `${file}: missing or stale multi-theme shared JS version.`);
   assert.ok(source.includes(`workspace-global-theme.css?v=${workspaceThemeCssVersion}`), `${file}: missing or stale shared workspace theme stylesheet.`);
 
