@@ -371,3 +371,39 @@ html body #related-section #related-grid > article.product-card > .product-image
     text-wrap: pretty;
   }
 }
+
+
+/* HALAL FOOD — mobile-only Related Products title refinement.
+   Slightly larger product names with a balanced two-line limit for long titles.
+   The desktop one-line title treatment is intentionally preserved. */
+@media screen and (max-width: 760px) {
+  html body #related-section #related-grid .product-body .product-name-link {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+  }
+
+  html body #related-section #related-grid .product-body .product-name-link h3 {
+    display: -webkit-box !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    height: auto !important;
+    min-height: 2.44em !important;
+    max-height: 2.44em !important;
+    margin: 0 0 4px !important;
+    font-size: clamp(14px, 3.9vw, 16px) !important;
+    font-weight: 700 !important;
+    line-height: 1.22 !important;
+    letter-spacing: -0.01em !important;
+    text-align: left !important;
+    white-space: normal !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    overflow-wrap: break-word !important;
+    word-break: normal !important;
+    -webkit-box-orient: vertical !important;
+    -webkit-line-clamp: 2 !important;
+    text-wrap: pretty;
+  }
+}
