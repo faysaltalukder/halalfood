@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { reserveEdgeRateLimit, trustedClientIp } from "../_shared/rate-limit.ts";
 
 const ALLOWED_ORIGIN = "https://faysaltalukder.github.io";
 const headers = {
@@ -25,16 +26,22 @@ Deno.serve(async (req: Request) => {
   const origin = req.headers.get("origin") || "";
   if (origin && origin !== ALLOWED_ORIGIN) return json({ success: false, error: "Origin not allowed." }, 403);
   const contentType = req.headers.get("content-type") || "";
+  const contentLength = Number(req.headers.get("content-length") || 0);
+  if (contentLength > 4096) return json({ success: false, error: "Request is too large." }, 413);
   let token = "";
   try {
     if (contentType.includes("application/x-www-form-urlencoded")) {
       const url = new URL(req.url);
-      const body = new URLSearchParams(await req.text());
+      const rawBody = await req.text();
+      if (new TextEncoder().encode(rawBody).byteLength > 4096) return json({ success: false, error: "Request is too large." }, 413);
+      const body = new URLSearchParams(rawBody);
       const oneClick = body.get("List-Unsubscribe");
       if (oneClick && oneClick !== "One-Click") return json({ success: false, error: "Invalid unsubscribe request." }, 400);
       token = clean(url.searchParams.get("t"), 180);
     } else {
-      const body = await req.json();
+      const rawBody = await req.text();
+      if (new TextEncoder().encode(rawBody).byteLength > 4096) return json({ success: false, error: "Request is too large." }, 413);
+      const body = JSON.parse(rawBody);
       token = clean(body?.token, 180);
     }
   } catch {
@@ -48,6 +55,13 @@ Deno.serve(async (req: Request) => {
 
   const db = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
   try {
+    const clientIp = trustedClientIp(req);
+    if (clientIp && !(await reserveEdgeRateLimit(db, "marketing-unsubscribe-ip", clientIp, 20, 60))) {
+      return json({ success: false, error: "Too many requests. Please wait and try again." }, 429);
+    }
+    if (!(await reserveEdgeRateLimit(db, "marketing-unsubscribe-token", tokenHash, 5, 60))) {
+      return json({ success: false, error: "Too many requests for this unsubscribe link. Please wait and try again." }, 429);
+    }
     const { data: recipient, error: recipientError } = await db.from("marketing_campaign_recipients")
       .select("id,campaign_id,customer_id").eq("unsubscribe_token_hash", tokenHash).maybeSingle();
     if (recipientError || !recipient) return json({ success: false, error: "This unsubscribe link is invalid or has expired." }, 404);
