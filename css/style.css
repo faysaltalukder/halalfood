@@ -3367,3 +3367,82 @@ body.category-products-page .product-card .product-image img {
     font-size: clamp(11px, 3vw, 14px) !important;
   }
 }
+
+
+/* HALAL FOOD — CATEGORY PRODUCT IMAGE FRAME 3:2
+   Apply the same 3:2 image box to product cards in all category catalog pages.
+   Category image markup declares 1200x800 source dimensions. Keep the full image visible.
+*/
+body.category-products-page .category-page-products .product-card .product-image-link {
+  display: block !important;
+  position: relative !important;
+  width: 100% !important;
+  height: auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  aspect-ratio: 3 / 2 !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  line-height: 0 !important;
+}
+body.category-products-page .category-page-products .product-card .product-image-link > .product-image {
+  display: grid !important;
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  aspect-ratio: auto !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  place-items: center !important;
+  background: var(--cream, #f2f0ea) !important;
+}
+body.category-products-page .category-page-products .product-card .product-image-link > .product-image > img {
+  display: block !important;
+  position: static !important;
+  inset: auto !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  aspect-ratio: auto !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+  transform: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+}
+/* Cards rendered without the anchor wrapper get the same frame. */
+body.category-products-page .category-page-products .product-card > .product-image {
+  display: grid !important;
+  position: relative !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  aspect-ratio: 3 / 2 !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  place-items: center !important;
+  background: var(--cream, #f2f0ea) !important;
+}
+body.category-products-page .category-page-products .product-card > .product-image > img {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+}
