@@ -119,8 +119,10 @@
     if(node.type==="heading"||node.type==="paragraph")element.textContent=node.text||"";
     else if(node.type==="button"){element.textContent=node.text||"Button";element.href="#";element.addEventListener("click",e=>e.preventDefault());}
     else if(node.type==="image"){
-      if(node.props?.src){const img=document.createElement("img");img.src=node.props.src;img.alt=node.props.alt||"";img.loading="lazy";img.style.width="100%";img.style.height="100%";img.style.objectFit=node.props.fit||"cover";element.append(img);}
-      else {const placeholder=document.createElement("div");placeholder.className="hf-builder-placeholder";placeholder.textContent="Image placeholder · add an image URL in Properties";element.append(placeholder);}
+      let safeSrc="";
+      try{const candidate=new URL(String(node.props?.src||""),location.href);if(["https:","http:"].includes(candidate.protocol))safeSrc=candidate.href;}catch(_error){}
+      if(safeSrc){const img=document.createElement("img");img.src=safeSrc;img.alt=String(node.props.alt||"");img.loading="lazy";img.style.width="100%";img.style.height="100%";img.style.objectFit=node.props.fit||"cover";element.append(img);}
+      else {const placeholder=document.createElement("div");placeholder.className="hf-builder-placeholder";placeholder.textContent="Image placeholder · add a valid HTTP or HTTPS image URL in Properties";element.append(placeholder);}
       element.style.minHeight=(Number(node.props?.height)||220)+"px";
     }
     (node.children||[]).forEach(child=>element.append(renderNode(child)));
