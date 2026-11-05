@@ -1,0 +1,81 @@
+/* HALAL FOOD — MIX FOOD SELECTED THREE NATURAL-RATIO JAR ZOOM
+   Scope: categories/mix-food.html only.
+   Applies ONLY to card positions 2, 3 and 4:
+   Honey Nut Mix, Date & Nut Mix, and Dry Fruit Mix.
+   Card 1 and cards 5+ are intentionally excluded.
+   All three source assets are 1200x896 and use the same jar template. */
+
+html body.category-products-page.category-product-square-display.mix-food-selected-three-zoom-experiment
+.category-page-products .product-grid > article.product-card:nth-child(2) > a.product-image-link > .product-image > img,
+html body.category-products-page.category-product-square-display.mix-food-selected-three-zoom-experiment
+.category-page-products .product-grid > article.product-card:nth-child(3) > a.product-image-link > .product-image > img,
+html body.category-products-page.category-product-square-display.mix-food-selected-three-zoom-experiment
+.category-page-products .product-grid > article.product-card:nth-child(4) > a.product-image-link > .product-image > img {
+  display: block !important;
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  right: auto !important;
+  bottom: auto !important;
+  width: auto !important;
+  height: calc(118% - 6px) !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: none !important;
+  max-height: none !important;
+  aspect-ratio: auto !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+
+  /* Separate centering from scale animation so shared transform rules
+     cannot reset the image position or cancel the zoom. */
+  transform: none !important;
+  translate: -50% -50% !important;
+  scale: 1 !important;
+  transform-origin: center center !important;
+  transition: scale 380ms cubic-bezier(.22, .68, .24, 1) !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Desktop hover and keyboard focus: image-only 4.5% zoom. */
+@media (hover: hover) and (pointer: fine) {
+  html body.category-products-page.category-product-square-display.mix-food-selected-three-zoom-experiment
+.category-page-products .product-grid > article.product-card:nth-child(2):hover > a.product-image-link > .product-image > img,
+html body.category-products-page.category-product-square-display.mix-food-selected-three-zoom-experiment
+.category-page-products .product-grid > article.product-card:nth-child(3):hover > a.product-image-link > .product-image > img,
+html body.category-products-page.category-product-square-display.mix-food-selected-three-zoom-experiment
+.category-page-products .product-grid > article.product-card:nth-child(4):hover > a.product-image-link > .product-image > img,
+  html body.category-products-page.category-product-square-display.mix-food-selected-three-zoom-experiment
+.category-page-products .product-grid > article.product-card:nth-child(2):focus-within > a.product-image-link > .product-image > img,
+html body.category-products-page.category-product-square-display.mix-food-selected-three-zoom-experiment
+.category-page-products .product-grid > article.product-card:nth-child(3):focus-within > a.product-image-link > .product-image > img,
+html body.category-products-page.category-product-square-display.mix-food-selected-three-zoom-experiment
+.category-page-products .product-grid > article.product-card:nth-child(4):focus-within > a.product-image-link > .product-image > img {
+    scale: 1.045 !important;
+  }
+}
+
+/* Touch/press: smaller zoom with quicker feedback. */
+html body.category-products-page.category-product-square-display.mix-food-selected-three-zoom-experiment
+.category-page-products .product-grid > article.product-card:nth-child(2):active > a.product-image-link > .product-image > img,
+html body.category-products-page.category-product-square-display.mix-food-selected-three-zoom-experiment
+.category-page-products .product-grid > article.product-card:nth-child(3):active > a.product-image-link > .product-image > img,
+html body.category-products-page.category-product-square-display.mix-food-selected-three-zoom-experiment
+.category-page-products .product-grid > article.product-card:nth-child(4):active > a.product-image-link > .product-image > img {
+  scale: 1.035 !important;
+  transition-duration: 150ms !important;
+}
+
+/* Respect reduced-motion preferences without changing image framing. */
+@media (prefers-reduced-motion: reduce) {
+  html body.category-products-page.category-product-square-display.mix-food-selected-three-zoom-experiment
+.category-page-products .product-grid > article.product-card:nth-child(2) > a.product-image-link > .product-image > img,
+html body.category-products-page.category-product-square-display.mix-food-selected-three-zoom-experiment
+.category-page-products .product-grid > article.product-card:nth-child(3) > a.product-image-link > .product-image > img,
+html body.category-products-page.category-product-square-display.mix-food-selected-three-zoom-experiment
+.category-page-products .product-grid > article.product-card:nth-child(4) > a.product-image-link > .product-image > img {
+    transition: none !important;
+    scale: 1 !important;
+  }
+}
