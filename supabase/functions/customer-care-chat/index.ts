@@ -1,4 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { reserveEdgeRateLimitRest, trustedClientIp } from "../_shared/rate-limit.ts";
 import { classifyCustomerIntent } from "./policy.mjs";
 import { rankProductCandidates, extractConversationState, extractImageMatch, applyConfidencePolicy, expandSearchTerms } from "./intelligence.mjs";
 import { isOrderTrackingRequest, getOrderTrackingCredentials, normalizeTrackingPhone } from "./tracking.mjs";
@@ -1435,10 +1436,25 @@ Deno.serve(async (req: Request) => {
       return response({ success: false, code: "REQUEST_TOO_LARGE", requestId }, 413);
     }
     payload = JSON.parse(rawBody);
+    if (!payload || typeof payload !== "object" || Array.isArray(payload)) throw new Error("Invalid request payload");
   } catch {
     return response({ success: false, code: "INVALID_JSON", requestId }, 400);
   }
 
+  const rateCredentials = getSupabaseCredentials();
+  if (!rateCredentials) return response({ success: false, code: "RATE_LIMIT_UNAVAILABLE", requestId }, 503);
+  try {
+    const clientIp = trustedClientIp(req);
+    if (clientIp && !(await reserveEdgeRateLimitRest(rateCredentials, "customer-care-ip", clientIp, 30, 60))) {
+      return response({ success: false, code: "RATE_LIMITED", requestId, retryAfterSeconds: 60 }, 429);
+    }
+    if (isValidUuid(payload.visitorId) && !(await reserveEdgeRateLimitRest(rateCredentials, "customer-care-visitor", payload.visitorId, 3, 60))) {
+      return response({ success: false, code: "RATE_LIMITED", requestId, retryAfterSeconds: 60 }, 429);
+    }
+  } catch (error) {
+    console.error(JSON.stringify({ event: "customer_care_rate_limit_unavailable", requestId, error: error instanceof Error ? error.name : "unknown" }));
+    return response({ success: false, code: "RATE_LIMIT_UNAVAILABLE", requestId }, 503);
+  }
 
   if (payload.action === "conversation_history") {
     const credentials = getSupabaseCredentials();
