@@ -24,5 +24,6 @@ assert.ok(js.includes("not published") && page.includes("Publishing is intention
 assert.ok(!/\.from\(["']site_pages|\.from\(["']page_revisions|\.rpc\(["']publish/i.test(js), "The starter editor must not write to production CMS tables or publish.");
 assert.ok(!/fetch\s*\(|XMLHttpRequest|supabase/i.test(js), "The isolated editor engine must not make network or Supabase requests.");
 assert.ok(js.includes("textContent") && !js.includes("innerHTML=node.text") && !js.includes("insertAdjacentHTML(node.text"), "User-authored text must be rendered as text, not executable HTML.");
+assert.ok(js.includes('["https:","http:"]'), "Image nodes must reject non-web URL schemes.");
 assert.ok(css.includes("@media(max-width:900px)") && css.includes("@media(max-width:620px)") && css.includes("prefers-reduced-motion"), "Builder workspace must be responsive and respect reduced motion.");
 console.log("Universal Website Builder foundation checks passed.");
