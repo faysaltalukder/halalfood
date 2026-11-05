@@ -20,6 +20,7 @@ assert.ok(js.includes("renderNode") && js.includes("renderInspector") && js.incl
 assert.ok(js.includes("containsNode") && js.includes("function moveNode"), "Drag/drop must prevent moving a parent into its own descendant.");
 assert.ok(js.includes("objectPosition") && js.includes("aspectRatio") && js.includes("Image crop position") && js.includes('el.style.height="auto"'), "Image boxes must expose crop position and aspect ratio controls.");
 assert.ok(js.includes("const validDoc=d=>") && js.includes("new Set()"), "Restored documents must be validated for duplicate IDs.");
+assert.ok(js.includes("uniquePageSlug") && js.includes("pages.length>=500"), "Page creation and duplication must prevent duplicate slugs and enforce the documented safety cap.");
 assert.ok(js.includes("data-builder-viewport") && js.includes('is-"+viewport'), "Desktop, tablet and mobile canvas modes must be implemented.");
 assert.ok(js.includes("state.undo") && js.includes("state.redo") && js.includes("builderUndo") && js.includes("builderRedo"), "Builder must support undo and redo.");
 assert.ok(js.includes("localStorage.setItem(KEY") && page.includes('id="builderExport"'), "Draft persistence must stay browser-local and exportable.");
