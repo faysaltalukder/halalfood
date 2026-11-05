@@ -83,13 +83,13 @@
     const p=node.props||{};
     if(p.background)element.style.backgroundColor=p.background;
     if(p.color)element.style.color=p.color;
-    if(p.width)element.style.width=p.width==="100%"||p.width==="fit-content"?p.width:/^\d+(px|%)$/.test(p.width)?p.width:"100%";
+    if(node.type==="container"){element.style.width="100%";element.style.maxWidth=/^\d+(px|%)$/.test(String(p.width||""))?p.width:"1100px";element.style.boxSizing="border-box";}
+    else if(p.width)element.style.width=p.width==="100%"||p.width==="fit-content"?p.width:/^\d+(px|%)$/.test(p.width)?p.width:"100%";
     if(Number.isFinite(Number(p.padding)))element.style.padding=Math.max(0,Math.min(160,Number(p.padding)))+"px";
     if(Number.isFinite(Number(p.fontSize)))element.style.fontSize=Math.max(8,Math.min(96,Number(p.fontSize)))+"px";
     if(p.align)element.style.textAlign=["left","center","right"].includes(p.align)?p.align:"left";
     if(p.height)element.style.height=Math.max(40,Math.min(900,Number(p.height)))+"px";
     if(p.fit)element.style.objectFit=["cover","contain","fill"].includes(p.fit)?p.fit:"cover";
-    if(node.type==="container"){element.style.maxWidth=p.width||"1100px";element.style.boxSizing="border-box";}
     if(node.type==="section"){element.style.boxSizing="border-box";}
   };
   const renderNode = (node) => {
