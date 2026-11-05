@@ -1133,7 +1133,7 @@ function makeShell(){
      ["daily","calendar","দৈনিক ব্যবসায়িক রিপোর্ট","Daily business summary","reports-daily","daily business sales summary"]
     ]}
    ]]]},
-  {label:"SYSTEM",items:[["website-publisher","settings","Website Publisher","website publisher deploy code review approve publish"],["tracking","sliders","Tracking Controls","tracking meta pixel conversions api capi google analytics event routing"],["settings","settings","Settings & Security","settings security preferences access"],["wordpress","layout","Website Studio","website studio live website test sandbox edit website visual builder preview test publish"]]}
+  {label:"SYSTEM",items:[["website-publisher","settings","Website Publisher","website publisher deploy code review approve publish"],["tracking","sliders","Tracking Controls","tracking meta pixel conversions api capi google analytics event routing"],["settings","settings","Settings & Security","settings security preferences access"],["wordpress","layout","WordPress","wordpress website studio live website edit website sandbox",[["wordpress","layout","Live Website"],["website-builder","edit","Edit Website"]]]]}
  ];
  const allItems=menuGroups.flatMap(group=>group.items.map(item=>({id:item[0],icon:item[1],label:item[2],href:"./"+item[0]+".html",keys:item[3]})));
  const itemById=new Map(allItems.map(item=>[item.id,item]));
@@ -1158,7 +1158,7 @@ function makeShell(){
  };
  const renderNavigation=()=>menuGroups.map(group=>{
   const links=group.items.map(item=>{
-   if(["products","coupons","suppliers","business-health","reports"].includes(item[0])&&Array.isArray(item[4])){
+   if(["products","coupons","suppliers","business-health","reports","wordpress"].includes(item[0])&&Array.isArray(item[4])){
     const section=item[0],children=item[4];
     if(section==="reports"){
      const reportDefaults={"reports-business":"business","reports-purchase":"purchase","reports-customers":"top-customers","reports-payables":"payable","reports-inventory":"low-stock","reports-finance":"account-payments","reports-daily":"daily"};
@@ -1174,7 +1174,7 @@ function makeShell(){
      return '<div class="admin-nav-item admin-nav-parent-item" data-nav-item data-nav-keys="'+esc(item[3])+'"><div class="admin-nav-parent-row"><button class="admin-nav-link admin-nav-parent-toggle '+(open?"active":"")+'" type="button" data-nav-expand="'+section+'" aria-expanded="'+String(open)+'"><span class="nav-icon nav-icon-'+section+'">'+navPictureIcon(section)+'</span><span class="admin-nav-text">'+esc(item[2])+'</span><span class="admin-nav-expand-icon" aria-hidden="true">'+shellIcon("chevron")+'</span></button>'+favoriteStar(item[0],item[2])+'</div><div class="admin-nav-children admin-nav-report-children" data-nav-children="'+section+'" '+(open?"":"hidden")+'>'+childLinks+'</div></div>';
     }
     const open=children.some(child=>child[0]===pageName)||(section==="categories"&&pageName==="categories");
-    const childLinks=children.map(child=>'<a class="admin-nav-child-link '+(child[0]===pageName?"active":"")+'" href="./'+child[0]+'.html" '+(child[0]===pageName?'aria-current="page"':'')+'><span class="admin-nav-child-icon">'+shellIcon(child[1])+'</span><span>'+esc(child[2])+'</span></a>').join("");
+    const childLinks=children.map(child=>{const href=section==="wordpress"?(child[0]==="wordpress"?"./wordpress-live.html":"./website-builder.html"):"./"+child[0]+".html";return '<a class="admin-nav-child-link '+(child[0]===pageName?"active":"")+'" href="'+href+'" '+(child[0]===pageName?'aria-current="page"':'')+'><span class="admin-nav-child-icon">'+shellIcon(child[1])+'</span><span>'+esc(child[2])+'</span></a>';}).join("");
     return '<div class="admin-nav-item admin-nav-parent-item" data-nav-item data-nav-keys="'+esc(item[3])+'"><div class="admin-nav-parent-row"><button class="admin-nav-link admin-nav-parent-toggle '+(open?"active":"")+'" type="button" data-nav-expand="'+section+'" aria-expanded="'+String(open)+'"><span class="nav-icon nav-icon-'+section+'">'+navPictureIcon(section)+'</span><span class="admin-nav-text">'+esc(item[2])+'</span><span class="admin-nav-expand-icon" aria-hidden="true">'+shellIcon("chevron")+'</span></button>'+favoriteStar(item[0],item[2])+'</div><div class="admin-nav-children" data-nav-children="'+section+'" '+(open?"":"hidden")+'>'+childLinks+'</div></div>';
    }
    return '<div class="admin-nav-item" data-nav-item data-nav-keys="'+esc(item[3])+'"><a class="admin-nav-link '+(item[0]===activePage?"active":"")+'" href="'+(item[0]==="wordpress"?"./wordpress-live.html":"./"+item[0]+".html")+'" '+(item[0]===activePage?'aria-current="page"':'')+'><span class="nav-icon nav-icon-'+esc(item[0]==="marketing-center"?"messages":item[0]==="customer-settings"?"settings":item[0])+'">'+navPictureIcon(item[0]==="marketing-center"?"messages":item[0]==="customer-settings"?"settings":item[0])+'</span><span class="admin-nav-text">'+esc(item[2])+'</span></a>'+favoriteStar(item[0],item[2])+'</div>';
