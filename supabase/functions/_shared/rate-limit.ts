@@ -10,7 +10,13 @@ export function trustedClientIp(req: Request): string | null {
 }
 
 async function hmacKey(scope: string, key: string): Promise<string> {
-  const secret = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || Deno.env.get("SUPABASE_SECRET_KEY") || "";
+  let secret = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || Deno.env.get("SUPABASE_SECRET_KEY") || "";
+  if (!secret) {
+    try {
+      const configured = JSON.parse(Deno.env.get("SUPABASE_SECRET_KEYS") || "{}") as Record<string, unknown>;
+      secret = typeof configured.default === "string" ? configured.default : "";
+    } catch { /* Missing or malformed secret-key map is handled as unavailable below. */ }
+  }
   if (!secret) throw new Error("EDGE_RATE_LIMIT_SECRET_MISSING");
   const cryptoKey = await crypto.subtle.importKey(
     "raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"],
