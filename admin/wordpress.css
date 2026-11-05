@@ -59,3 +59,8 @@
  .hf-wordpress-preview-foot span:last-child{text-align:left}
 }
 @media(prefers-reduced-motion:reduce){.hf-wordpress-device-shell,.hf-wordpress-device-button{transition:none}.hf-wordpress-spinner{animation:none}}
+
+.hf-wordpress-diagnostics{width:100%;box-sizing:border-box;margin-top:12px;padding:12px 14px;border:1px solid var(--border,#dce1e8);border-radius:10px;background:var(--card-bg,#fff);color:var(--text,#344054)}
+.hf-wordpress-diagnostics summary{cursor:pointer;font-size:12px;font-weight:750}
+.hf-wordpress-diagnostics pre{max-height:260px;overflow:auto;margin:10px 0 0;padding:12px;border-radius:8px;background:#17212d;color:#e8edf3;font:11px/1.6 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere}
+.hf-wordpress-preview-stage{flex-wrap:wrap}
