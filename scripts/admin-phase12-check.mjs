@@ -72,6 +72,7 @@ const wordpressPage = read("admin/wordpress-live.html");
 const wordpressNav = read("admin/shared.js");
 assert.ok(wordpressNav.includes('["wordpress","wordpress","WordPress"'), "WordPress must be the final System sidebar entry.");
 assert.ok(wordpressNav.includes("./wordpress-live.html?wp_preview=20261105-v5-diagnostics"), "The WordPress sidebar must open the current diagnostics-enabled live-preview route.");
+assert.ok(wordpressPage.includes("shared.js?v=20261105-wordpress-cache-route-v3") && wordpressPage.includes("wordpress.js?v=20261105-preview-diagnostics-v9"), "WordPress Studio must load the current admin navigation and diagnostics scripts without stale cached assets.");
 assert.ok(wordpressPage.includes('data-page="wordpress"') && wordpressPage.includes('id="wordpressLiveFrame"') && !/<iframe[^>]+\ssrc=/.test(wordpressPage) && read("admin/wordpress.js").includes('const LIVE_URL = "https://faysaltalukder.github.io/halalfood/"'), "WordPress must use the canonical live storefront through the same-origin in-page preview.");
 assert.ok(!/<iframe[^>]+\ssrc=/.test(wordpressPage) && read("admin/wordpress.js").includes("frame.srcdoc = prepareDocument(pageHtml, currentUrl)"), "WordPress must render the fetched live page through same-origin srcdoc rather than navigating the iframe to a frame-restricted URL.");
 assert.ok(read("admin/wordpress.js").includes('credentials: "same-origin"') && read("admin/wordpress.js").includes('response.headers.get("content-type")'), "The WordPress preview must fetch and validate same-origin live HTML before rendering.");
