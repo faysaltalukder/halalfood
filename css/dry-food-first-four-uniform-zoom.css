@@ -1,9 +1,12 @@
-/* HALAL FOOD — DRY FOOD FIRST-FOUR UNIFORM ZOOM EXPERIMENT
-   Scope: categories/dry-food.html only; desktop and mobile.
-   The square card frame is NOT changed.
-   Each original 4:3 photo is enlarged uniformly until the package's top/bottom
-   edges nearly touch the 1:1 frame. Equal centered left/right cropping is expected.
-   Reversible: remove the stylesheet link and experiment body class from dry-food.html. */
+/* HALAL FOOD — DRY FOOD FIRST-FOUR PACKAGE-BORDER FIT EXPERIMENT v2
+   Scope: categories/dry-food.html only; one identical rule for desktop and mobile.
+   Keep the existing 1:1 frame unchanged.
+   The source JPGs are 3:2. Do not impose a different aspect ratio.
+   Uniformly enlarge the original photo by height, letting width follow its
+   intrinsic ratio. This brings the OUTER GOLD PACKAGE BORDER close to the
+   square frame without cutting it; only equal left/right scene background is
+   cropped. A small safety gap is intentionally retained around the package.
+   Reversible by removing this stylesheet link and the page-specific body class. */
 
 html body.category-products-page.category-product-square-display.dry-food-package-zoom-experiment
 .category-page-products .product-grid > article.product-card:nth-child(1)
@@ -24,48 +27,49 @@ html body.category-products-page.category-product-square-display.dry-food-packag
   right: auto !important;
   bottom: auto !important;
   width: auto !important;
+  height: var(--dry-food-package-zoom, 121%) !important;
   min-width: 0 !important;
-  max-width: none !important;
   min-height: 0 !important;
+  max-width: none !important;
   max-height: none !important;
-  aspect-ratio: 4 / 3 !important;
+  aspect-ratio: auto !important;
   object-fit: contain !important;
   object-position: center center !important;
   transform: translate(-50%, -50%) !important;
   transform-origin: center center !important;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
-/* Individual uniform zoom values, calibrated to the four source package heights.
-   Width remains automatic so the original 4:3 photo ratio is preserved. */
+/* Per-image values preserve the full gold package trim with a small breathing
+   margin. Width is automatic: every image keeps its native 3:2 proportion. */
 html body.category-products-page.category-product-square-display.dry-food-package-zoom-experiment
 .category-page-products .product-grid > article.product-card:nth-child(1)
 > a.product-image-link > .product-image > img {
-  height: 141% !important;
+  --dry-food-package-zoom: 122%;
 }
 
 html body.category-products-page.category-product-square-display.dry-food-package-zoom-experiment
 .category-page-products .product-grid > article.product-card:nth-child(2)
 > a.product-image-link > .product-image > img {
-  height: 139% !important;
+  --dry-food-package-zoom: 120%;
 }
 
 html body.category-products-page.category-product-square-display.dry-food-package-zoom-experiment
 .category-page-products .product-grid > article.product-card:nth-child(3)
 > a.product-image-link > .product-image > img {
-  height: 141% !important;
+  --dry-food-package-zoom: 121.5%;
 }
 
 html body.category-products-page.category-product-square-display.dry-food-package-zoom-experiment
 .category-page-products .product-grid > article.product-card:nth-child(4)
 > a.product-image-link > .product-image > img {
-  height: 141% !important;
+  --dry-food-package-zoom: 122%;
 }
 
-/* The same sizing rules apply at every viewport width; no mobile-only override. */
-@media (prefers-reduced-motion: reduce) {
-  html body.category-products-page.category-product-square-display.dry-food-package-zoom-experiment
-  .category-page-products .product-grid > article.product-card:nth-child(-n+4)
-  > a.product-image-link > .product-image > img {
-    transition: none !important;
-  }
+/* No extra hover crop: the package border must stay fully visible. */
+html body.category-products-page.category-product-square-display.dry-food-package-zoom-experiment
+.category-page-products .product-grid > article.product-card:nth-child(-n+4)
+> a.product-image-link > .product-image > img:hover {
+  transform: translate(-50%, -50%) !important;
 }
