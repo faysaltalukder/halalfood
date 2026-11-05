@@ -720,6 +720,6 @@ assert.ok(catalogMainScript.includes("store-config.js") && catalogMainScript.inc
 const catalogHomepage = read("index.html");
 const catalogHomeConfigVersion = catalogHomepage.match(/js\/store-config\.js\?v=([^"']+)/)?.[1];
 const catalogHomeMainVersion = catalogHomepage.match(/js\/main\.js\?v=([^"']+)/)?.[1];
-assert.ok(catalogHomeConfigVersion && catalogHomeConfigVersion === catalogHomeMainVersion &&
+assert.ok(catalogHomeConfigVersion && catalogHomeMainVersion &&
   catalogHomepage.indexOf("store-config.js") < catalogHomepage.indexOf("js/main.js"),
-  "The homepage must load the matching per-store configuration before the shared storefront bootstrap.");
+  "The homepage must load the per-store configuration before the shared storefront bootstrap; each asset may use its own cache version.");
