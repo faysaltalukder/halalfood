@@ -36,3 +36,41 @@ export async function reserveEdgeRateLimit(
   if (error || typeof data !== "boolean") throw new Error("EDGE_RATE_LIMIT_UNAVAILABLE");
   return data;
 }
+
+export async function reserveEdgeRateLimitRest(
+  credentials: { url: string; key: string; isSecretKey?: boolean },
+  scope: string,
+  key: string,
+  limit: number,
+  windowSeconds: number,
+): Promise<boolean> {
+  const keyHash = await hmacKey(scope, key);
+  const headers: Record<string, string> = {
+    apikey: credentials.key,
+    "Content-Type": "application/json",
+    Accept: "application/json",
+  };
+  if (!credentials.isSecretKey) headers.Authorization = "Bearer " + credentials.key;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 3500);
+  try {
+    const result = await fetch(credentials.url.replace(/\\/$/, "") + "/rest/v1/rpc/consume_edge_rate_limit", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        p_scope: scope,
+        p_key_hash: keyHash,
+        p_limit: limit,
+        p_window_seconds: windowSeconds,
+      }),
+      cache: "no-store",
+      signal: controller.signal,
+    });
+    if (!result.ok) throw new Error("EDGE_RATE_LIMIT_UNAVAILABLE");
+    const allowed = await result.json();
+    if (typeof allowed !== "boolean") throw new Error("EDGE_RATE_LIMIT_UNAVAILABLE");
+    return allowed;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
