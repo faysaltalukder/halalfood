@@ -68,7 +68,7 @@ Deno.serve(async (request: Request) => {
 
   try {
     const raw = await request.text();
-    if (raw.length > 18000) return json({ success: false, error: "Request is too large." }, 413);
+    if (new TextEncoder().encode(raw).byteLength > 18000) return json({ success: false, error: "Request is too large." }, 413);
     const payload = JSON.parse(raw) as Record<string, unknown>;
     if (clean(payload.honeypot, 120)) return json({ success: true, ignored: true });
     const action = clean(payload.action, 20);
