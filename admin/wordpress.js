@@ -5,8 +5,9 @@
   const SITE_ORIGIN = new URL(LIVE_URL).origin;
   const SITE_PATH = new URL(LIVE_URL).pathname;
   const BRIDGE_CHANNEL = "halal-food-wordpress-preview";
-  const LOAD_TIMEOUT_MS = 25000;
-  const REQUEST_TIMEOUT_MS = 15000;
+  const TOTAL_TIMEOUT_MS = 30000;
+  const REQUEST_TIMEOUT_MS = 20000;
+  const BOOTSTRAP_TIMEOUT_MS = 35000;
 
   const init = () => {
     const frame = document.getElementById("wordpressLiveFrame");
@@ -20,13 +21,18 @@
     const diagnostics = document.getElementById("wpPreviewDiagnostics");
     const backButton = document.getElementById("wpGoBack");
     const forwardButton = document.getElementById("wpGoForward");
-    if (!frame || !shell || !stage) return;
+    if (!frame || !shell || !stage) {
+      showBootstrapError("The WordPress preview workspace is missing required iframe or layout elements.", ["Required: #wordpressLiveFrame, #wpDeviceShell, .hf-wordpress-preview-stage", "Check admin shell markup replacement and the current route."]);
+      return;
+    }
 
     const viewButtons = [...document.querySelectorAll("[data-wp-view]")];
     let currentView = "desktop";
     let currentUrl = LIVE_URL;
-    let loadTimer = 0;
+    let totalTimer = 0;
     let loadSequence = 0;
+    let pendingRenderSequence = 0;
+    let lastResourceErrors = [];
     let activeRequestController = null;
     let attemptStartedAt = 0;
     let attemptedUrl = LIVE_URL;
@@ -64,10 +70,13 @@
       }
       if (errorPanel) errorPanel.hidden = true;
       setStatus("Connecting securely to the live website…");
-      setDiagnostics(["Preview state: fetching storefront HTML", "Requested URL: " + attemptedUrl, "Request timeout: " + REQUEST_TIMEOUT_MS + " ms", "Started: " + new Date().toLocaleString(), ...layoutDiagnostics()]);
+      setDiagnostics(["Preview state: fetching storefront HTML", "Requested URL: " + attemptedUrl, "Total preview deadline: " + TOTAL_TIMEOUT_MS + " ms", "Storefront request deadline: " + REQUEST_TIMEOUT_MS + " ms", "Started: " + new Date().toLocaleString(), "Browser online: " + navigator.onLine, ...layoutDiagnostics()]);
     };
 
     const showError = (message, details = []) => {
+      window.clearTimeout(totalTimer);
+      pendingRenderSequence = 0;
+      if (activeRequestController) { activeRequestController.abort(); activeRequestController = null; }
       if (loading) loading.hidden = true;
       if (errorPanel) {
         errorPanel.hidden = false;
@@ -75,7 +84,7 @@
         if (paragraph) paragraph.textContent = message;
       }
       setStatus(message);
-      setDiagnostics(["Preview state: FAILED", "Failure: " + message, "Requested URL: " + attemptedUrl, "Elapsed: " + (attemptStartedAt ? Math.round(performance.now() - attemptStartedAt) + " ms" : "unknown"), ...layoutDiagnostics(), ...details]);
+      setDiagnostics(["Preview state: FAILED", "Failure: " + message, "Failure time: " + new Date().toLocaleString(), "Requested URL: " + attemptedUrl, "Elapsed: " + (attemptStartedAt ? Math.round(performance.now() - attemptStartedAt) + " ms" : "unknown"), "Browser online: " + navigator.onLine, "Page origin: " + location.origin, "Expected storefront origin: " + SITE_ORIGIN, ...lastResourceErrors.map((item, index) => "Resource error " + (index + 1) + ": " + item), ...layoutDiagnostics(), ...details]);
     };
 
     const escapeAttribute = (value) =>
@@ -90,6 +99,8 @@
       'const pageUrl = ' + safeJson(pageUrl) + ';',
       'const channel = "' + BRIDGE_CHANNEL + '";',
       'const siteOrigin = window.location.origin;',
+      'window.addEventListener("error", (event) => { const target = event.target; const resource = target && (target.src || target.href); const detail = resource ? (target.tagName + " failed: " + resource) : ("JavaScript error: " + (event.message || "unknown") + " at " + (event.filename || "inline") + ":" + (event.lineno || 0)); window.parent.postMessage({ channel, type: "preview-error", detail }, siteOrigin); }, true);',
+      'window.addEventListener("unhandledrejection", (event) => { const reason = event.reason; window.parent.postMessage({ channel, type: "preview-error", detail: "Unhandled promise rejection: " + (reason && reason.message ? reason.message : String(reason)) }, siteOrigin); });',
       'try { window.history.replaceState({ hfPreview: true }, "", pageUrl); } catch (_) {}',
       'const isSitePage = (url) => url.origin === siteOrigin && url.pathname.startsWith("/halalfood/");',
       'document.addEventListener("click", (event) => {',
@@ -228,12 +239,12 @@
       if (sequence !== loadSequence) return;
       currentUrl = finalUrl.href;
       updateAddress();
-      frame.srcdoc = prepareDocument(pageHtml, currentUrl);
       hasLoaded = false;
-      if (loading) loading.hidden = true;
+      pendingRenderSequence = sequence;
       if (errorPanel) errorPanel.hidden = true;
-      setStatus("Page received · Loading its original styles, images and scripts…");
-      setDiagnostics(["Preview state: HTML fetched; rendering into same-origin srcdoc", "Final URL: " + currentUrl, "HTTP status: " + response.status, "Content-Type: " + (response.headers.get("content-type") || "(missing)"), "HTML size: " + pageHtml.length + " characters", ...layoutDiagnostics()]);
+      setStatus("HTML received · Rendering the website inside the preview…");
+      setDiagnostics(["Preview state: HTML fetched; iframe rendering in progress", "Final URL: " + currentUrl, "HTTP status: " + response.status, "Content-Type: " + (response.headers.get("content-type") || "(missing)"), "HTML size: " + pageHtml.length + " characters", "Remaining total deadline: " + Math.max(0, TOTAL_TIMEOUT_MS - Math.round(performance.now() - attemptStartedAt)) + " ms", ...layoutDiagnostics()]);
+      frame.srcdoc = prepareDocument(pageHtml, currentUrl);
     };
 
     const fetchAndRender = async (rawUrl, options = {}) => {
@@ -245,13 +256,23 @@
       const sequence = ++loadSequence;
       attemptedUrl = url.href;
       attemptStartedAt = performance.now();
-      window.clearTimeout(loadTimer);
+      window.clearTimeout(totalTimer);
+      pendingRenderSequence = 0;
       activeRequestController?.abort();
       const requestController = new AbortController();
       activeRequestController = requestController;
       hasLoaded = false;
+      lastResourceErrors = [];
       showLoading(options.loadingMessage || "Loading the live Halal Food website…");
       setStatus("Fetching " + url.pathname + " from the live website…");
+      totalTimer = window.setTimeout(() => {
+        if (sequence !== loadSequence || hasLoaded) return;
+        const stage = pendingRenderSequence === sequence ? "iframe/srcdoc rendering" : "storefront fetch or response body";
+        let frameInfo = "Iframe document unavailable";
+        try { const doc = frame.contentDocument; frameInfo = doc ? "Iframe readyState=" + doc.readyState + ", body=" + Boolean(doc.body) + ", body children=" + (doc.body?.children.length ?? 0) : frameInfo; } catch (error) { frameInfo = "Iframe access error: " + error.name + ": " + error.message; }
+        loadSequence += 1;
+        showError("The live website could not be previewed within 30 seconds.", ["Failure stage: " + stage, "Total deadline: " + TOTAL_TIMEOUT_MS + " ms", frameInfo, "The preview stopped automatically instead of spinning indefinitely."]);
+      }, TOTAL_TIMEOUT_MS);
       const requestTimer = window.setTimeout(() => requestController.abort(), REQUEST_TIMEOUT_MS);
       try {
         const response = await fetch(url.href, {
@@ -273,29 +294,12 @@
           routeIndex = routeHistory.length - 1;
           updateHistoryControls();
         }
-        loadTimer = window.setTimeout(() => {
-          if (hasLoaded) return;
-          try {
-            const doc = frame.contentDocument;
-            if (doc && doc.documentElement && doc.documentElement.childElementCount) {
-              hasLoaded = true;
-              applyMobilePointerSimulation();
-              setStatus("Live page rendered · Some external images or scripts may still be loading.");
-              if (loading) loading.hidden = true;
-              if (errorPanel) errorPanel.hidden = true;
-              return;
-            }
-          } catch (_) {}
-          let docInfo = "Document unavailable";
-          try { const doc = frame.contentDocument; docInfo = doc ? "readyState=" + doc.readyState + ", root=" + Boolean(doc.documentElement) + ", body=" + Boolean(doc.body) : "contentDocument=null"; } catch (e) { docInfo = "Document access: " + e.name + ": " + e.message; }
-          showError("HTML was fetched, but the preview document did not finish rendering.", ["Render timeout: " + LOAD_TIMEOUT_MS + " ms", docInfo, "The request succeeded; failure is in srcdoc rendering or its scripts."]);
-        }, LOAD_TIMEOUT_MS);
       } catch (error) {
         window.clearTimeout(requestTimer);
         if (sequence !== loadSequence) return;
         if (activeRequestController === requestController) activeRequestController = null;
         if (error && error.name === "AbortError") {
-          showError("The request to the live website timed out after 15 seconds.", ["Failure stage: storefront fetch", "Abort reason: request timer expired", "Timeout: " + REQUEST_TIMEOUT_MS + " ms"]);
+          showError("The storefront request did not return within 20 seconds.", ["Failure stage: storefront fetch or response body", "Abort reason: request timer expired", "Request timeout: " + REQUEST_TIMEOUT_MS + " ms"]);
         } else {
           showError("The storefront request failed: " + (error && error.message ? error.message : String(error)), ["Failure stage: storefront fetch", "Exception: " + (error && error.name ? error.name : "unknown"), "Browser detail: " + (error && error.message ? error.message : String(error)), "Likely classes: network/DNS/TLS, same-origin policy, or request blocked; inspect this exact exception before changing code."]);
         }
@@ -303,16 +307,21 @@
     };
 
     frame.addEventListener("load", () => {
+      if (!pendingRenderSequence || pendingRenderSequence !== loadSequence) return;
       try {
-        if (!frame.contentDocument || !frame.contentDocument.documentElement) return;
+        const doc = frame.contentDocument;
+        if (!doc || !doc.documentElement || !doc.body) {
+          showError("The iframe load event fired, but the preview document has no usable HTML body.", ["Failure stage: iframe document validation", "Document available: " + Boolean(doc), "HTML root: " + Boolean(doc?.documentElement), "Body: " + Boolean(doc?.body)]);
+          return;
+        }
         hasLoaded = true;
-        window.clearTimeout(loadTimer);
+        pendingRenderSequence = 0;
+        window.clearTimeout(totalTimer);
         if (loading) loading.hidden = true;
         if (errorPanel) errorPanel.hidden = true;
         applyMobilePointerSimulation();
         setStatus("Live website loaded · Internal pages, shopping links and on-page interactions are available.");
-        const doc = frame.contentDocument;
-        setDiagnostics(["Preview state: SUCCESS — srcdoc rendered", "Document title: " + (doc.title || "(empty)"), "Document readyState: " + doc.readyState, "HTML root: " + Boolean(doc.documentElement), "Body: " + Boolean(doc.body), "Current page: " + currentUrl, "Elapsed: " + Math.round(performance.now() - attemptStartedAt) + " ms", ...layoutDiagnostics()]);
+        setDiagnostics(["Preview state: SUCCESS — srcdoc rendered", "Document title: " + (doc.title || "(empty)"), "Document readyState: " + doc.readyState, "HTML root: " + Boolean(doc.documentElement), "Body: " + Boolean(doc.body), "Body child elements: " + doc.body.children.length, "Current page: " + currentUrl, "Elapsed: " + Math.round(performance.now() - attemptStartedAt) + " ms", ...lastResourceErrors.map((item, index) => "Resource warning " + (index + 1) + ": " + item), ...layoutDiagnostics()]);
       } catch (_) {
         setStatus("Live page rendered. Some protected browser features may be unavailable in the preview.");
       }
@@ -322,6 +331,10 @@
       if (event.source !== frame.contentWindow || event.origin !== SITE_ORIGIN) return;
       const data = event.data;
       if (!data || data.channel !== BRIDGE_CHANNEL) return;
+      if (data.type === "preview-error" && typeof data.detail === "string") {
+        if (lastResourceErrors.length < 12) lastResourceErrors.push(data.detail.slice(0, 500));
+        if (hasLoaded) setDiagnostics(["Preview state: SUCCESS WITH RESOURCE WARNINGS", "Current page: " + currentUrl, "Elapsed: " + Math.round(performance.now() - attemptStartedAt) + " ms", ...lastResourceErrors.map((item, index) => "Resource warning " + (index + 1) + ": " + item), ...layoutDiagnostics()]);
+      }
       if (data.type === "navigate" && typeof data.url === "string") {
         const url = validateSiteUrl(data.url);
         if (url) fetchAndRender(url.href);
@@ -352,6 +365,7 @@
       });
       const sequence = ++loadSequence;
       showLoading("Submitting the website form…");
+      totalTimer = window.setTimeout(() => { if (sequence === loadSequence && !hasLoaded) { loadSequence += 1; showError("The form response did not finish rendering within 30 seconds.", ["Failure stage: form submission or iframe rendering", "Total deadline: " + TOTAL_TIMEOUT_MS + " ms"]); } }, TOTAL_TIMEOUT_MS);
       const response = await fetch(action.href, {
         method,
         body: formData,
@@ -402,17 +416,55 @@
     fetchAndRender(LIVE_URL, { record: false });
   };
 
+  const showBootstrapError = (message, details = []) => {
+    const adminApp = document.getElementById("adminApp");
+    const gate = document.getElementById("authGate");
+    const loading = document.getElementById("wpLoading");
+    const errorPanel = document.getElementById("wpPreviewError");
+    const status = document.getElementById("wpPreviewStatus");
+    const diagnostics = document.getElementById("wpPreviewDiagnostics");
+    if (loading) loading.hidden = true;
+    if (errorPanel) {
+      errorPanel.hidden = false;
+      const paragraph = errorPanel.querySelector("p");
+      if (paragraph) paragraph.textContent = message;
+    }
+    if (status) status.textContent = message;
+    const report = ["Preview state: FAILED BEFORE PREVIEW INITIALIZATION", "Failure: " + message, "Failure stage: secure admin initialization", "Elapsed deadline: " + BOOTSTRAP_TIMEOUT_MS + " ms", "HFAdminReady present: " + Boolean(window.HFAdminReady), "Browser online: " + navigator.onLine, "Page URL: " + location.href, ...details];
+    if (diagnostics) diagnostics.textContent = report.join("\\n");
+    if (adminApp?.hidden && gate) {
+      gate.innerHTML = '<div class="auth-gate-card"><strong>WordPress preview could not start</strong><p></p><pre style="white-space:pre-wrap;overflow-wrap:anywhere"></pre><a href="./index.html" class="hf-button hf-button-secondary">Return to sign-in</a></div>';
+      gate.querySelector("p").textContent = message;
+      gate.querySelector("pre").textContent = report.join("\\n");
+    }
+  };
+
   const startAfterAdminReady = () => {
+    let expired = false;
+    const bootstrapTimer = window.setTimeout(() => {
+      expired = true;
+      showBootstrapError("The secure admin workspace did not become ready. Preview initialization stopped instead of waiting indefinitely.", ["HFAdminReady did not resolve before the bootstrap deadline.", "Check Supabase Auth session, MFA verification and admin shell construction."]);
+    }, BOOTSTRAP_TIMEOUT_MS);
     const adminReady = window.HFAdminReady;
-    if (adminReady && typeof adminReady.then === "function") {
-      adminReady.then((admin) => {
-        if (admin) init();
-      }).catch((error) => {
-        console.error("WordPress preview could not wait for the secure admin workspace", error);
-      });
+    if (!adminReady || typeof adminReady.then !== "function") {
+      window.clearTimeout(bootstrapTimer);
+      showBootstrapError("The admin initialization signal is missing. The preview cannot safely start.", ["Expected window.HFAdminReady to be a Promise.", "Check that shared.js executes before wordpress.js."]);
       return;
     }
-    init();
+    adminReady.then((admin) => {
+      window.clearTimeout(bootstrapTimer);
+      if (expired) return;
+      if (!admin) {
+        showBootstrapError("The secure admin session was not authorized, so the preview was not started.", ["HFAdminReady resolved without an admin session.", "Sign in again and complete two-step verification."]);
+        return;
+      }
+      window.__HFWordpressPreviewInitialized = true;
+      init();
+    }).catch((error) => {
+      window.clearTimeout(bootstrapTimer);
+      if (expired) return;
+      showBootstrapError("The secure admin initialization failed: " + (error?.message || String(error)), ["Exception: " + (error?.name || "unknown"), "Stack: " + (error?.stack || "not available")]);
+    });
   };
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", startAfterAdminReady, { once: true });
