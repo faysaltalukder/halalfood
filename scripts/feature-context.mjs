@@ -365,9 +365,7 @@ const FEATURES = {
       "scripts/universal-builder-check.mjs", "scripts/admin-phase12-check.mjs",
       ".github/workflows/architecture-quality.yml"
     ],
-    anchors: [
-      { file: "admin/website-builder.js", names: ["validNode", "validDocument", "renderNode", "renderInspector", "renderLayers", "renderCanvas"] }
-    ],
+    anchors: [],
     tables: [],
     functions: [],
     tests: ["scripts/universal-builder-check.mjs", "scripts/admin-phase12-check.mjs", "scripts/architecture-check.mjs"],
