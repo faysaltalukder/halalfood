@@ -27,6 +27,8 @@
       <span class="hf-builder-save-state" id="builderSaveState" role="status" aria-live="polite"><i></i> Sandbox draft · not public</span>
       <button class="hf-builder-btn" id="builderUndo" type="button" disabled title="Undo">↶</button>
       <button class="hf-builder-btn" id="builderRedo" type="button" disabled title="Redo">↷</button>
+      <button class="hf-builder-btn" id="builderDuplicate" type="button" disabled>Duplicate</button>
+      <button class="hf-builder-btn" id="builderDelete" type="button" disabled>Delete</button>
       <button class="hf-builder-btn" id="builderReset" type="button">Reset sample</button>
       <button class="hf-builder-btn" id="builderExport" type="button">Export JSON ↓</button>
       <button class="hf-builder-btn hf-builder-btn-primary" id="builderSendPreview" type="button">Send for test review ↗</button>
@@ -38,6 +40,7 @@
   <section class="hf-builder-workspace" aria-label="Visual website editor">
     <aside class="hf-builder-left">
       <div class="hf-builder-panel-head"><div><span class="hf-builder-kicker">BUILD</span><h2>Elements</h2></div><span class="hf-builder-count" id="builderElementCount">0</span></div>
+      <div class="hf-builder-pages"><div class="hf-builder-pages-head"><strong>Pages</strong><button type="button" id="builderAddPage">+ Add page</button></div><div id="builderPageList" class="hf-builder-page-list"></div></div>
       <div class="hf-builder-tabs" role="tablist" aria-label="Builder panel">
         <button type="button" class="is-active" data-builder-tab="elements" role="tab" aria-selected="true">Add elements</button>
         <button type="button" data-builder-tab="layers" role="tab" aria-selected="false">Layers</button>
@@ -51,6 +54,14 @@
           <button type="button" data-add-component="paragraph"><span class="hf-builder-component-icon">¶</span><strong>Paragraph</strong><small>Body text</small></button>
           <button type="button" data-add-component="image"><span class="hf-builder-component-icon">▧</span><strong>Image</strong><small>Visual media</small></button>
           <button type="button" data-add-component="button"><span class="hf-builder-component-icon">▰</span><strong>Button</strong><small>Call to action</small></button>
+          <button type="button" data-add-component="columns"><span class="hf-builder-component-icon">▥</span><strong>Columns</strong><small>2-column layout</small></button>
+          <button type="button" data-add-component="card"><span class="hf-builder-component-icon">▢</span><strong>Card</strong><small>Content card</small></button>
+          <button type="button" data-add-component="list"><span class="hf-builder-component-icon">☷</span><strong>List</strong><small>Bullet list</small></button>
+          <button type="button" data-add-component="spacer"><span class="hf-builder-component-icon">↕</span><strong>Spacer</strong><small>Vertical space</small></button>
+          <button type="button" data-add-component="divider"><span class="hf-builder-component-icon">―</span><strong>Divider</strong><small>Section separator</small></button>
+          <button type="button" data-add-component="video"><span class="hf-builder-component-icon">▶</span><strong>Video</strong><small>Video embed</small></button>
+          <button type="button" data-add-component="quote"><span class="hf-builder-component-icon">“</span><strong>Quote</strong><small>Highlighted quote</small></button>
+          <button type="button" data-add-component="badge"><span class="hf-builder-component-icon">✦</span><strong>Badge</strong><small>Small label</small></button>
         </div>
         <div class="hf-builder-safe-note"><strong>Safe by design</strong><span>Blocks are schema-driven. Arbitrary scripts and unsafe HTML are not executed.</span></div>
       </div>
@@ -62,7 +73,7 @@
 
     <section class="hf-builder-center" aria-label="Page canvas">
       <div class="hf-builder-canvas-toolbar">
-        <div><span class="hf-builder-kicker">CANVAS</span><strong id="builderPageTitle">Untitled landing page</strong></div>
+        <div><span class="hf-builder-kicker">CANVAS</span><strong id="builderPageTitle">Untitled landing page</strong><span class="hf-builder-page-slug" id="builderPageSlug">/</span></div>
         <div class="hf-builder-device-switch" role="group" aria-label="Canvas viewport">
           <button type="button" data-builder-viewport="desktop" class="is-active" aria-pressed="true" title="Desktop viewport">▰ <span>Desktop</span></button>
           <button type="button" data-builder-viewport="tablet" aria-pressed="false" title="Tablet viewport">▯ <span>Tablet</span></button>
@@ -71,7 +82,7 @@
       </div>
       <div class="hf-builder-canvas-scroll">
         <div class="hf-builder-canvas-frame is-desktop" id="builderCanvasFrame">
-          <div id="builderCanvas" class="hf-builder-canvas" aria-label="Editable page canvas"></div>
+          <div id="builderCanvas" class="hf-builder-canvas" aria-label="Editable page canvas"><div class="hf-builder-drop-hint">Drag elements here or choose a block from the left panel</div></div>
         </div>
       </div>
       <div class="hf-builder-canvas-foot"><span>Draft canvas</span><span>Click an element to select · Edit properties on the right</span></div>
