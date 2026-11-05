@@ -45,6 +45,18 @@
     <a class="hf-wordpress-section" href="./website-builder.html"><span class="hf-wordpress-section-icon">✎</span><span><strong>Edit website</strong><small>Work on a separate, unpublished draft</small></span><b>EDITOR ↗</b></a>
   </nav>
 
+  <section class="hf-card hf-review-panel" id="wpReviewPanel" aria-label="Draft review and approval" hidden>
+    <div class="hf-review-heading"><div><span class="hf-review-kicker">REVIEW WORKFLOW</span><h2 id="wpReviewTitle">Draft awaiting review</h2><p id="wpReviewMeta">A draft sent from Edit Website will appear here. The published website remains unchanged.</p></div><span class="hf-review-status" id="wpReviewStatus">NO DRAFT</span></div>
+    <div class="hf-review-actions">
+      <button class="hf-button hf-button-secondary" id="wpShowDraft" type="button">View submitted draft</button>
+      <button class="hf-button hf-button-secondary" id="wpShowPublished" type="button">Back to published site</button>
+      <button class="hf-button hf-button-secondary" id="wpRejectDraft" type="button">Reject draft</button>
+      <button class="hf-button hf-button-primary" id="wpApproveDraft" type="button">Approve draft</button>
+      <button class="hf-button hf-button-primary" id="wpPublishDraft" type="button" disabled title="Secure publishing service is not connected yet">Publish to live site · unavailable</button>
+    </div>
+    <p class="hf-review-safety" id="wpReviewSafety">Approval records your review decision only. Publishing is locked until a server-side, authenticated deployment service with version backup and rollback is connected.</p>
+  </section>
+
   <section class="hf-card hf-wordpress-toolbar" aria-label="Website preview controls">
     <div class="hf-wordpress-toolbar-copy">
       <div class="hf-wordpress-toolbar-title"><span class="hf-wordpress-live-dot" aria-hidden="true"></span><strong>Live website preview</strong></div>
@@ -71,7 +83,12 @@
     <span class="hf-wordpress-browser-label">LIVE</span>
   </div>
 
-  <section class="hf-wordpress-preview-stage" aria-label="Interactive live website">
+  <section class="hf-wordpress-preview-stage hf-review-draft-stage" id="wpDraftStage" aria-label="Submitted draft preview" hidden>
+    <div class="hf-review-draft-device">
+      <iframe id="wpDraftFrame" title="Submitted website draft preview" sandbox="allow-same-origin"></iframe>
+    </div>
+  </section>
+  <section class="hf-wordpress-preview-stage" id="wpPublishedStage" aria-label="Interactive live website">
     <div class="hf-wordpress-device-shell is-desktop" id="wpDeviceShell">
       <div class="hf-wordpress-loading" id="wpLoading" role="status">
         <span class="hf-wordpress-spinner" aria-hidden="true"></span>
@@ -110,6 +127,6 @@
 <script defer src="../js/store-config.js?v=20261101-store-config-v1"></script>
 <script defer src="./shared.js?v=20261105-wordpress-cache-route-v3"></script>
 <script defer src="./app.js?v=20261105-wordpress-live-preview-v4"></script>
-<script defer src="./wordpress.js?v=20261105-preview-navigation-v10"></script>
+<script defer src="./wordpress.js?v=20261105-preview-navigation-v10"></script>\n<script defer src="./wordpress-review.js?v=20261105-review-workflow-v1"></script>
 </body>
 </html>
