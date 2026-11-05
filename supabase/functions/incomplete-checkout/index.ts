@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { reserveEdgeRateLimit, trustedClientIp } from "../_shared/rate-limit.ts";
 
 const SITE_ORIGIN = "https://faysaltalukder.github.io";
 const PRIVACY_NOTICE_VERSION = "2026-10-31-checkout-entry-v2";
@@ -73,6 +74,13 @@ Deno.serve(async (request: Request) => {
     const action = clean(payload.action, 20);
     const checkoutSessionId = uuid(payload.checkoutSessionId ?? payload.sessionId);
     if (!checkoutSessionId) return json({ success: false, error: "Invalid checkout session." }, 400);
+    const clientIp = trustedClientIp(request);
+    if (clientIp && !(await reserveEdgeRateLimit(admin, "incomplete-checkout-ip", clientIp, 120, 60))) {
+      return json({ success: false, error: "Too many checkout updates. Please wait a moment and try again." }, 429);
+    }
+    if (!(await reserveEdgeRateLimit(admin, "incomplete-checkout-session", checkoutSessionId, 90, 60))) {
+      return json({ success: false, error: "Too many checkout updates for this session. Please wait a moment." }, 429);
+    }
 
     if (action === "withdraw") {
       const { error } = await admin.from("incomplete_checkouts")
