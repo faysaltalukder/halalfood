@@ -20,7 +20,7 @@ async function hmacKey(scope: string, key: string): Promise<string> {
 }
 
 export async function reserveEdgeRateLimit(
-  admin: { rpc: (name: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }> },
+  admin: any,
   scope: string,
   key: string,
   limit: number,
