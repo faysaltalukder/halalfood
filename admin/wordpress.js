@@ -116,7 +116,6 @@
         const title = doc.title || "Halal Food";
         if (doc.readyState !== "complete" && !doc.body) throw new Error("The storefront document is not ready yet.");
         hasLoaded = true;
-        frameHistoryReady = false;
         attachFrameNavigationListeners();
         if (loading) loading.hidden = true;
         if (errorPanel) errorPanel.hidden = true;
@@ -142,7 +141,6 @@
         if (sequence !== loadSequence || hasLoaded) return;
         showError("The live website did not finish loading within 30 seconds. Check your connection or open the live website separately.");
       }, LOAD_TIMEOUT_MS);
-      frameHistoryReady = false;
       frame.src = target.href;
     };
 
