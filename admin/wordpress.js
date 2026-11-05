@@ -12,7 +12,7 @@
   const init = () => {
     const frame = document.getElementById("wordpressLiveFrame");
     const shell = document.getElementById("wpDeviceShell");
-    const stage = document.querySelector(".hf-wordpress-preview-stage");
+    const stage = document.getElementById("wpPublishedStage");
     const description = document.getElementById("wpViewDescription");
     const status = document.getElementById("wpPreviewStatus");
     const address = document.getElementById("wpPreviewAddress");
