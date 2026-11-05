@@ -54,7 +54,7 @@ export async function reserveEdgeRateLimitRest(
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 3500);
   try {
-    const result = await fetch(credentials.url.replace(/\\/$/, "") + "/rest/v1/rpc/consume_edge_rate_limit", {
+    const result = await fetch((credentials.url.endsWith("/") ? credentials.url.slice(0, -1) : credentials.url) + "/rest/v1/rpc/consume_edge_rate_limit", {
       method: "POST",
       headers,
       body: JSON.stringify({
