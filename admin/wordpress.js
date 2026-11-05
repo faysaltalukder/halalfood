@@ -1,12 +1,11 @@
 (() => {
   "use strict";
 
+  // The admin workspace and storefront are hosted on the same GitHub Pages
+  // origin. Load the real page directly instead of fetching/rebuilding it via
+  // srcdoc; this preserves the storefront's native scripts, assets and routing.
   const LIVE_URL = "https://faysaltalukder.github.io/halalfood/";
-  const SITE_ORIGIN = new URL(LIVE_URL).origin;
-  const SITE_PATH = new URL(LIVE_URL).pathname;
-  const BRIDGE_CHANNEL = "halal-food-wordpress-preview";
-  const LOAD_TIMEOUT_MS = 25000;
-  const REQUEST_TIMEOUT_MS = 15000;
+  const LOAD_TIMEOUT_MS = 30000;
 
   const init = () => {
     const frame = document.getElementById("wordpressLiveFrame");
@@ -23,35 +22,26 @@
 
     const viewButtons = [...document.querySelectorAll("[data-wp-view]")];
     let currentView = "desktop";
-    let currentUrl = LIVE_URL;
     let loadTimer = 0;
     let loadSequence = 0;
-    let activeRequestController = null;
     let hasLoaded = false;
-    let emulatedWindow = null;
-    let nativeMatchMedia = null;
-    const routeHistory = [LIVE_URL];
-    let routeIndex = 0;
+    let frameHistoryReady = false;
 
     const setStatus = (message) => {
       if (status) status.textContent = message;
     };
 
-    const updateHistoryControls = () => {
-      if (backButton) backButton.disabled = routeIndex <= 0;
-      if (forwardButton) forwardButton.disabled = routeIndex >= routeHistory.length - 1;
-    };
-
-    const showLoading = (message = "Loading the live Halal Food website…") => {
+    const showLoading = (message) => {
+      hasLoaded = false;
       if (loading) {
         loading.hidden = false;
         const strong = loading.querySelector("strong");
         const small = loading.querySelector("small");
-        if (strong) strong.textContent = message;
-        if (small) small.textContent = "Fetching the real page from the live website.";
+        if (strong) strong.textContent = message || "Opening the live website…";
+        if (small) small.textContent = "Connecting directly to the published Halal Food storefront.";
       }
       if (errorPanel) errorPanel.hidden = true;
-      setStatus("Connecting securely to the live website…");
+      setStatus("Connecting to the live Halal Food website…");
     };
 
     const showError = (message) => {
@@ -64,119 +54,28 @@
       setStatus(message);
     };
 
-    const escapeAttribute = (value) =>
-      String(value).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
-
-    const safeJson = (value) => JSON.stringify(value).replace(/</g, "\\u003c");
-
-    const createPreviewBridge = (pageUrl) => [
-      '<script data-hf-preview-bridge>',
-      '(() => {',
-      '"use strict";',
-      'const pageUrl = ' + safeJson(pageUrl) + ';',
-      'const channel = "' + BRIDGE_CHANNEL + '";',
-      'const siteOrigin = window.location.origin;',
-      'try { window.history.replaceState({ hfPreview: true }, "", pageUrl); } catch (_) {}',
-      'const isSitePage = (url) => url.origin === siteOrigin && url.pathname.startsWith("/halalfood/");',
-      'document.addEventListener("click", (event) => {',
-      '  if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;',
-      '  const anchor = event.target && event.target.closest ? event.target.closest("a[href]") : null;',
-      '  if (!anchor || anchor.hasAttribute("download")) return;',
-      '  const raw = anchor.getAttribute("href");',
-      '  if (!raw || raw.startsWith("#") || /^(mailto:|tel:|javascript:)/i.test(raw)) return;',
-      '  let url;',
-      '  try { url = new URL(anchor.href, window.location.href); } catch (_) { return; }',
-      '  if (!isSitePage(url)) { if (!anchor.target || anchor.target.toLowerCase() === "_self") anchor.target = "_blank"; return; }',
-      '  if (url.pathname === window.location.pathname && url.search === window.location.search && url.hash) return;',
-      '  if (anchor.target && anchor.target.toLowerCase() !== "_self") return;',
-      '  event.preventDefault();',
-      '  window.parent.postMessage({ channel, type: "navigate", url: url.href }, siteOrigin);',
-      '}, false);',
-      'document.addEventListener("submit", (event) => {',
-      '  if (event.defaultPrevented) return;',
-      '  const form = event.target;',
-      '  if (!form || !(form instanceof HTMLFormElement)) return;',
-      '  if (form.target && form.target.toLowerCase() !== "_self") return;',
-      '  let action;',
-      '  try { action = new URL(form.getAttribute("action") || window.location.href, window.location.href); } catch (_) { return; }',
-      '  if (!isSitePage(action)) { if (!form.target) form.target = "_blank"; return; }',
-      '  const method = String(form.method || "get").toUpperCase();',
-      '  const data = new FormData(form);',
-      '  if (event.submitter && event.submitter.name && !data.has(event.submitter.name)) data.append(event.submitter.name, event.submitter.value || "");',
-      '  event.preventDefault();',
-      '  window.parent.postMessage({ channel, type: "form-submit", method, action: action.href, entries: Array.from(data.entries()) }, siteOrigin);',
-      '}, false);',
-      '})();',
-      '</script>'
-    ].join("\n");
-
-    const prepareDocument = (source, pageUrl) => {
-      const base = '<base href="' + escapeAttribute(pageUrl) + '">';
-      const bridge = createPreviewBridge(pageUrl);
-      let documentHtml = String(source).replace(/<base\b[^>]*>/gi, "");
-      if (/<head\b[^>]*>/i.test(documentHtml)) {
-        documentHtml = documentHtml.replace(/<head\b[^>]*>/i, (headTag) => headTag + "\n" + base + "\n" + bridge);
-      } else if (/<html\b[^>]*>/i.test(documentHtml)) {
-        documentHtml = documentHtml.replace(/<html\b[^>]*>/i, (htmlTag) => htmlTag + "<head>" + base + bridge + "</head>");
-      } else {
-        documentHtml = "<!doctype html><html><head>" + base + bridge + "</head><body>" + documentHtml + "</body></html>";
-      }
-      return documentHtml;
+    const getFrameUrl = () => {
+      try {
+        const href = frame.contentWindow.location.href;
+        const url = new URL(href);
+        if (url.origin === new URL(LIVE_URL).origin && url.pathname.startsWith("/halalfood/")) return url.href;
+      } catch (_) {}
+      return LIVE_URL;
     };
 
     const updateAddress = () => {
-      if (!address) return;
-      try {
-        const url = new URL(currentUrl);
-        address.textContent = url.origin + url.pathname + url.search + url.hash;
-      } catch (_) {
-        address.textContent = "Halal Food live website";
-      }
+      if (address) address.textContent = getFrameUrl();
+      updateHistoryControls();
     };
 
-    const applyMobilePointerSimulation = () => {
+    const updateHistoryControls = () => {
       try {
-        const win = frame.contentWindow;
-        const doc = frame.contentDocument;
-        if (!win || !doc) return;
-
-        if (emulatedWindow !== win) {
-          emulatedWindow = win;
-          nativeMatchMedia = win.matchMedia.bind(win);
-        }
-
-        if (currentView === "mobile") {
-          win.matchMedia = (query) => {
-            const result = nativeMatchMedia(query);
-            if (typeof query === "string" && /\(pointer\s*:\s*coarse\)/i.test(query)) {
-              return new Proxy(result, {
-                get(target, property) {
-                  if (property === "matches") return true;
-                  const value = Reflect.get(target, property, target);
-                  return typeof value === "function" ? value.bind(target) : value;
-                }
-              });
-            }
-            return result;
-          };
-        } else if (nativeMatchMedia) {
-          win.matchMedia = nativeMatchMedia;
-        }
-
-        doc.querySelectorAll('picture source[media*="pointer: coarse"], picture source[data-wp-original-media]').forEach((source) => {
-          if (source.dataset.wpOriginalMedia === undefined) {
-            source.dataset.wpOriginalMedia = source.getAttribute("media") || "";
-          }
-          if (currentView === "mobile") {
-            const mobileMedia = source.dataset.wpOriginalMedia.replace(/\s+and\s+\(pointer\s*:\s*coarse\)/i, "").trim();
-            source.setAttribute("media", mobileMedia || "all");
-          } else {
-            source.setAttribute("media", source.dataset.wpOriginalMedia);
-          }
-        });
-
-        win.dispatchEvent(new win.Event("resize"));
-      } catch (_) {}
+        if (backButton) backButton.disabled = frame.contentWindow.history.length <= 1;
+        if (forwardButton) forwardButton.disabled = true;
+      } catch (_) {
+        if (backButton) backButton.disabled = true;
+        if (forwardButton) forwardButton.disabled = true;
+      }
     };
 
     const setView = (view) => {
@@ -193,191 +92,94 @@
       if (description) {
         description.textContent = mobile ? "Mobile view · 390px phone viewport" : "Desktop view · Full responsive website";
       }
-      if (hasLoaded) applyMobilePointerSimulation();
+      try {
+        frame.contentWindow.dispatchEvent(new frame.contentWindow.Event("resize"));
+      } catch (_) {}
     };
 
-    const validateSiteUrl = (rawUrl) => {
-      const url = new URL(rawUrl, currentUrl);
-      if (url.protocol !== "https:" || url.origin !== SITE_ORIGIN || !url.pathname.startsWith(SITE_PATH)) return null;
-      return url;
+    const attachFrameNavigationListeners = () => {
+      if (frameHistoryReady) return;
+      try {
+        const win = frame.contentWindow;
+        win.addEventListener("popstate", updateAddress);
+        win.addEventListener("hashchange", updateAddress);
+        win.addEventListener("pageshow", updateAddress);
+        frameHistoryReady = true;
+      } catch (_) {}
     };
 
-    const renderFetchedPage = async (response, requestedUrl, sequence) => {
-      const finalUrl = validateSiteUrl(response.url || requestedUrl);
-      if (!finalUrl) throw new Error("The requested page redirected outside the Halal Food website.");
-      const contentType = response.headers.get("content-type") || "";
-      if (!/text\/html|application\/xhtml\+xml/i.test(contentType)) {
-        throw new Error("This destination is not an HTML page. Open it separately from the live website.");
-      }
-      const pageHtml = await response.text();
-      if (sequence !== loadSequence) return;
-      currentUrl = finalUrl.href;
-      updateAddress();
-      frame.srcdoc = prepareDocument(pageHtml, currentUrl);
-      hasLoaded = false;
-      if (loading) loading.hidden = true;
-      if (errorPanel) errorPanel.hidden = true;
-      setStatus("Page received · Loading its original styles, images and scripts…");
-    };
-
-    const fetchAndRender = async (rawUrl, options = {}) => {
-      const url = validateSiteUrl(rawUrl);
-      if (!url) {
-        try { window.open(new URL(rawUrl, currentUrl).href, "_blank", "noopener,noreferrer"); } catch (_) {}
-        return;
-      }
-      const sequence = ++loadSequence;
+    const onFrameLoad = () => {
       window.clearTimeout(loadTimer);
-      activeRequestController?.abort();
-      const requestController = new AbortController();
-      activeRequestController = requestController;
-      hasLoaded = false;
-      showLoading(options.loadingMessage || "Loading the live Halal Food website…");
-      setStatus("Fetching " + url.pathname + " from the live website…");
-      const requestTimer = window.setTimeout(() => requestController.abort(), REQUEST_TIMEOUT_MS);
       try {
-        const response = await fetch(url.href, {
-          method: "GET",
-          credentials: "same-origin",
-          cache: "no-store",
-          redirect: "follow",
-          headers: { Accept: "text/html,application/xhtml+xml" },
-          signal: requestController.signal
-        });
-        if (sequence !== loadSequence) return;
-        if (!response.ok) throw new Error("The live website returned HTTP " + response.status + " for this page.");
-        await renderFetchedPage(response, url.href, sequence);
-        window.clearTimeout(requestTimer);
-        if (activeRequestController === requestController) activeRequestController = null;
-        if (options.record !== false) {
-          routeHistory.splice(routeIndex + 1);
-          routeHistory.push(currentUrl);
-          routeIndex = routeHistory.length - 1;
-          updateHistoryControls();
-        }
-        loadTimer = window.setTimeout(() => {
-          if (hasLoaded) return;
-          try {
-            const doc = frame.contentDocument;
-            if (doc && doc.documentElement && doc.documentElement.childElementCount) {
-              hasLoaded = true;
-              applyMobilePointerSimulation();
-              setStatus("Live page rendered · Some external images or scripts may still be loading.");
-              if (loading) loading.hidden = true;
-              if (errorPanel) errorPanel.hidden = true;
-              return;
-            }
-          } catch (_) {}
-          showError("The live HTML arrived, but the preview frame did not render it. Retry or open the live website separately.");
-        }, LOAD_TIMEOUT_MS);
-      } catch (error) {
-        window.clearTimeout(requestTimer);
-        if (sequence !== loadSequence) return;
-        if (activeRequestController === requestController) activeRequestController = null;
-        if (error && error.name === "AbortError") {
-          showError("The request to the live website timed out after 15 seconds. Retry once, or open the live website separately to confirm your connection.");
-        } else {
-          showError(error instanceof Error ? error.message : "The live website could not be loaded. Please retry.");
-        }
-      }
-    };
-
-    frame.addEventListener("load", () => {
-      try {
-        if (!frame.contentDocument || !frame.contentDocument.documentElement) return;
+        const doc = frame.contentDocument;
+        if (!doc || !doc.documentElement) throw new Error("The browser did not expose the storefront document.");
+        const title = doc.title || "Halal Food";
+        if (doc.readyState !== "complete" && !doc.body) throw new Error("The storefront document is not ready yet.");
         hasLoaded = true;
-        window.clearTimeout(loadTimer);
+        frameHistoryReady = false;
+        attachFrameNavigationListeners();
         if (loading) loading.hidden = true;
         if (errorPanel) errorPanel.hidden = true;
-        applyMobilePointerSimulation();
-        setStatus("Live website loaded · Internal pages, shopping links and on-page interactions are available.");
-      } catch (_) {
-        setStatus("Live page rendered. Some protected browser features may be unavailable in the preview.");
+        updateAddress();
+        setStatus("Live website loaded successfully · " + title);
+      } catch (error) {
+        showError("The storefront opened, but the preview could not verify its page content. Open it separately to check browser restrictions.");
       }
-    });
+    };
 
-    window.addEventListener("message", (event) => {
-      if (event.source !== frame.contentWindow || event.origin !== SITE_ORIGIN) return;
-      const data = event.data;
-      if (!data || data.channel !== BRIDGE_CHANNEL) return;
-      if (data.type === "navigate" && typeof data.url === "string") {
-        const url = validateSiteUrl(data.url);
-        if (url) fetchAndRender(url.href);
-      }
-      if (data.type === "form-submit" && typeof data.action === "string") {
-        handleNativeForm(data).catch((error) => {
-          showError(error instanceof Error ? error.message : "This form could not be submitted in the preview.");
-        });
-      }
-    });
-
-    const handleNativeForm = async (data) => {
-      const action = validateSiteUrl(data.action);
-      if (!action) return;
-      const method = String(data.method || "GET").toUpperCase();
-      const entries = Array.isArray(data.entries) ? data.entries : [];
-      if (method === "GET") {
-        entries.forEach(([key, value]) => {
-          if (typeof value === "string") action.searchParams.append(String(key), value);
-        });
-        await fetchAndRender(action.href);
+    const navigate = (url, message = "Opening the live website…") => {
+      const target = new URL(url, LIVE_URL);
+      const liveOrigin = new URL(LIVE_URL).origin;
+      if (target.origin !== liveOrigin || !target.pathname.startsWith("/halalfood/")) {
+        window.open(target.href, "_blank", "noopener,noreferrer");
         return;
       }
-      if (!["POST", "PUT", "PATCH"].includes(method)) return;
-      const formData = new FormData();
-      entries.forEach(([key, value]) => {
-        if (typeof value === "string" || (typeof File !== "undefined" && value instanceof File)) formData.append(String(key), value);
-      });
+      window.clearTimeout(loadTimer);
       const sequence = ++loadSequence;
-      showLoading("Submitting the website form…");
-      const response = await fetch(action.href, {
-        method,
-        body: formData,
-        credentials: "same-origin",
-        redirect: "follow"
-      });
-      if (!response.ok) throw new Error("The form endpoint returned HTTP " + response.status + ".");
-      await renderFetchedPage(response, action.href, sequence);
-      routeHistory.splice(routeIndex + 1);
-      routeHistory.push(currentUrl);
-      routeIndex = routeHistory.length - 1;
-      updateHistoryControls();
+      showLoading(message);
+      setStatus("Opening " + target.pathname + " from the published storefront…");
+      loadTimer = window.setTimeout(() => {
+        if (sequence !== loadSequence || hasLoaded) return;
+        showError("The live website did not finish loading within 30 seconds. Check your connection or open the live website separately.");
+      }, LOAD_TIMEOUT_MS);
+      frameHistoryReady = false;
+      frame.src = target.href;
     };
+
+    frame.addEventListener("load", onFrameLoad);
+    frame.addEventListener("error", () => {
+      window.clearTimeout(loadTimer);
+      showError("The browser could not load the live storefront. Check the connection, then retry.");
+    });
 
     viewButtons.forEach((button) => button.addEventListener("click", () => setView(button.dataset.wpView)));
 
     backButton?.addEventListener("click", () => {
-      if (routeIndex <= 0) return;
-      routeIndex -= 1;
-      updateHistoryControls();
-      fetchAndRender(routeHistory[routeIndex], { record: false, loadingMessage: "Opening previous page…" });
+      try {
+        if (frame.contentWindow.history.length > 1) frame.contentWindow.history.back();
+      } catch (_) {
+        showError("Browser history is not available for this page. Use Home to return to the storefront.");
+      }
     });
 
     forwardButton?.addEventListener("click", () => {
-      if (routeIndex >= routeHistory.length - 1) return;
-      routeIndex += 1;
-      updateHistoryControls();
-      fetchAndRender(routeHistory[routeIndex], { record: false, loadingMessage: "Opening next page…" });
+      try { frame.contentWindow.history.forward(); } catch (_) {}
     });
 
     document.getElementById("wpRefresh")?.addEventListener("click", () =>
-      fetchAndRender(currentUrl, { record: false, loadingMessage: "Refreshing the live page…" })
+      navigate(getFrameUrl(), "Refreshing the live website…")
     );
-
     document.getElementById("wpRetry")?.addEventListener("click", () =>
-      fetchAndRender(currentUrl, { record: false, loadingMessage: "Retrying the live website…" })
+      navigate(LIVE_URL, "Retrying the live website…")
     );
-
-    document.getElementById("wpGoHome")?.addEventListener("click", () => {
-      routeHistory.splice(1);
-      routeIndex = 0;
-      updateHistoryControls();
-      fetchAndRender(LIVE_URL, { record: false, loadingMessage: "Returning to the storefront home page…" });
-    });
+    document.getElementById("wpGoHome")?.addEventListener("click", () =>
+      navigate(LIVE_URL, "Returning to the storefront home page…")
+    );
 
     setView("desktop");
-    updateHistoryControls();
-    fetchAndRender(LIVE_URL, { record: false });
+    if (backButton) backButton.disabled = true;
+    if (forwardButton) forwardButton.disabled = true;
+    navigate(LIVE_URL);
   };
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true });
