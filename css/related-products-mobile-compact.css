@@ -68,9 +68,8 @@
     line-height: 1.2 !important;
   }
 
-  /* Preserve a comfortable 44px Add to Cart / quantity-control tap target. */
-  html body #related-section #related-grid > article.product-card > .product-body > .product-foot > .cart-add-btn,
-  html body #related-section #related-grid > article.product-card > .product-body > .product-foot > .cart-qty-control {
+  /* Preserve the 44px Add to Cart touch target. */
+  html body #related-section #related-grid > article.product-card > .product-body > .product-foot > .cart-add-btn {
     display: inline-flex !important;
     width: 100% !important;
     min-width: 0 !important;
@@ -83,5 +82,23 @@
     margin: 0 !important;
     padding: 6px 8px !important;
     box-sizing: border-box !important;
+  }
+
+  /* When an item is already in the cart, retain the site's 3-column stepper. */
+  html body #related-section #related-grid > article.product-card > .product-body > .product-foot > .cart-qty-control {
+    display: grid !important;
+    grid-template-columns: minmax(26px, 1fr) minmax(18px, 1fr) minmax(26px, 1fr) !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    min-height: 44px !important;
+    height: 44px !important;
+    max-height: 44px !important;
+    flex: 0 0 44px !important;
+    align-self: stretch !important;
+    margin: 0 !important;
+    padding: 3px !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
   }
 }
