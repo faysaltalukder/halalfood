@@ -16,7 +16,7 @@ assert.match(edge, /req\.method !== "POST"/);
 assert.match(edge, /"Access-Control-Allow-Methods": "POST, OPTIONS"/);
 assert.doesNotMatch(edge, /searchParams\.get\(["'](?:orderId|mobile)["']\)/);
 assert.match(edge, /JSON\.parse\(rawBody\)/);
-assert.match(edge, /rawBody\.length > 2048/);
+assert.match(edge, /TextEncoder\(\)\.encode\(rawBody\)\.byteLength > 2048/);
 assert.match(edge, /contentType\.toLowerCase\(\)\.includes\(["']application\/json["']\)/);
 
 // The customer-facing page keeps its existing form and rendering contract, changing only transport.
