@@ -3580,7 +3580,7 @@ body.category-products-page.category-product-square-display .category-page-produ
 /* HALAL FOOD — mobile-only product title refinement.
    Category listing cards: clearer hierarchy beside the price, with room
    for a second line on long product names. Desktop rules stay untouched. */
-@media screen and (max-width: 760px) {
+@media screen and (max-width: 600px) {
   html body.category-products-page .category-page-products .product-card .product-body .product-name-link {
     display: block !important;
     width: 100% !important;
