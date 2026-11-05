@@ -3370,7 +3370,7 @@ body.category-products-page .product-card .product-image img {
 
 
 
-/* HALAL FOOD — CATEGORY PRODUCT IMAGE FRAME 3:2
+/* HALAL FOOD — CATEGORY PRODUCT IMAGE FRAME 4:3
    Uniform catalog frames; show the complete original product photo with a
    soft blurred extension behind it so unlike source ratios leave no blank gaps.
 */
@@ -3382,7 +3382,7 @@ body.category-products-page .category-page-products .product-card .product-image
   min-width: 0 !important;
   min-height: 0 !important;
   max-height: none !important;
-  aspect-ratio: 3 / 2 !important;
+  aspect-ratio: 4 / 3 !important;
   overflow: hidden !important;
   padding: 0 !important;
   margin: 0 !important;
@@ -3445,7 +3445,7 @@ body.category-products-page .category-page-products .product-card .product-image
   margin: 0 !important;
   background: transparent !important;
 }
-/* Cards rendered without the anchor wrapper get the same 3:2 frame. */
+/* Cards rendered without the anchor wrapper get the same 4:3 frame. */
 body.category-products-page .category-page-products .product-card > .product-image {
   display: grid !important;
   position: relative !important;
@@ -3453,7 +3453,7 @@ body.category-products-page .category-page-products .product-card > .product-ima
   height: auto !important;
   min-height: 0 !important;
   max-height: none !important;
-  aspect-ratio: 3 / 2 !important;
+  aspect-ratio: 4 / 3 !important;
   overflow: hidden !important;
   isolation: isolate !important;
   padding: 0 !important;
