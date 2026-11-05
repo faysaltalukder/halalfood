@@ -1,0 +1,102 @@
+/* HALAL FOOD — HOMEPAGE FEATURED PRODUCTS
+   Keep this stylesheet limited to #products .featured-grid-4.
+   The product photos are nested in <picture>; direct-child image rules do not
+   reach them. Size the real image into the existing 4:3 frame without crop. */
+
+#products .featured-grid-4 > article.product-card > a.product-image-link > .product-image > picture {
+  display: contents !important;
+}
+
+#products .featured-grid-4 > article.product-card > a.product-image-link > .product-image > picture > img {
+  display: block !important;
+  position: static !important;
+  inset: auto !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  aspect-ratio: auto !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+  transform: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+}
+
+/* Featured Products always retain both purchase actions. */
+html body #products .featured-grid-4 > article.product-card > .product-body > .product-foot {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  align-items: stretch !important;
+  gap: 8px !important;
+}
+
+html body #products .featured-grid-4 > article.product-card > .product-body > .product-foot > .price {
+  grid-column: 1 / -1 !important;
+  grid-row: 1 !important;
+  min-width: 0 !important;
+}
+
+html body #products .featured-grid-4 > article.product-card > .product-body > .product-foot > a.order-btn {
+  display: inline-flex !important;
+  grid-column: 1 !important;
+  grid-row: 2 !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  min-height: 42px !important;
+  box-sizing: border-box !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  padding: 8px 7px !important;
+  white-space: nowrap !important;
+  overflow: visible !important;
+  font-size: 12px !important;
+  line-height: 1.15 !important;
+}
+
+html body #products .featured-grid-4 > article.product-card > .product-body > .product-foot > button.cart-add-btn {
+  display: inline-flex !important;
+  grid-column: 2 !important;
+  grid-row: 2 !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  min-height: 42px !important;
+  box-sizing: border-box !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  padding: 8px 7px !important;
+  white-space: nowrap !important;
+  overflow: visible !important;
+  font-size: 12px !important;
+  line-height: 1.15 !important;
+}
+
+/* At phone widths, stack both controls so neither label is squeezed or clipped. */
+@media (max-width: 600px) {
+  html body #products .featured-grid-4 > article.product-card > .product-body > .product-foot {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+  }
+
+  html body #products .featured-grid-4 > article.product-card > .product-body > .product-foot > a.order-btn,
+  html body #products .featured-grid-4 > article.product-card > .product-body > .product-foot > button.cart-add-btn {
+    display: inline-flex !important;
+    flex: 0 0 auto !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    min-height: 42px !important;
+    padding: 9px 10px !important;
+    font-size: 12px !important;
+    line-height: 1.2 !important;
+  }
+}
