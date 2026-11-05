@@ -61,19 +61,21 @@ assert.ok(celestialEngine.includes("setInterval(update,60000)") && solarJourneyC
 
 const htmlFiles = readdirSync(adminDir).filter((file) => file.endsWith(".html"));
 const unifiedPages = htmlFiles.filter((file) => /<body[^>]*\bdata-page=/.test(read(join("admin", file))));
-assert.equal(unifiedPages.length, 43, `Expected 43 unified admin pages in the current admin workspace, found ${unifiedPages.length}.`);
+assert.equal(unifiedPages.length, 44, `Expected 44 unified admin pages in the current admin workspace, found ${unifiedPages.length}.`);
 assert.ok(unifiedPages.includes("ai-knowledge.html"), "AI Knowledge Center must use the unified admin shell.");
 assert.ok(unifiedPages.includes("pos.html"), "POS import must use the unified admin shell.");
 assert.ok(unifiedPages.includes("coupons.html"), "Coupon Promotions must use the unified admin shell.");
 assert.ok(unifiedPages.includes("coupon-usage.html"), "Coupon Usage must use the unified admin shell.");
 assert.ok(unifiedPages.includes("categories.html"), "The single Categories workspace must use the unified admin shell.");
-assert.ok(unifiedPages.includes("wordpress.html"), "WordPress live preview must use the unified admin shell.");
-const wordpressPage = read("admin/wordpress.html");
+assert.ok(unifiedPages.includes("wordpress.html") && unifiedPages.includes("wordpress-live.html"), "The cache-busted WordPress Studio route must use the unified admin shell.");
+const wordpressPage = read("admin/wordpress-live.html");
 const wordpressNav = read("admin/shared.js");
 assert.ok(wordpressNav.includes('["wordpress","wordpress","WordPress"'), "WordPress must be the final System sidebar entry.");
+assert.ok(wordpressNav.includes("./wordpress-live.html?wp_preview=20261105-v4"), "The WordPress sidebar must open the cache-busted live-preview route.");
 assert.ok(wordpressPage.includes('data-page="wordpress"') && wordpressPage.includes('id="wordpressLiveFrame"') && !/<iframe[^>]+\ssrc=/.test(wordpressPage) && read("admin/wordpress.js").includes('const LIVE_URL = "https://faysaltalukder.github.io/halalfood/"'), "WordPress must use the canonical live storefront through the same-origin in-page preview.");
 assert.ok(!/<iframe[^>]+\ssrc=/.test(wordpressPage) && read("admin/wordpress.js").includes("frame.srcdoc = prepareDocument(pageHtml, currentUrl)"), "WordPress must render the fetched live page through same-origin srcdoc rather than navigating the iframe to a frame-restricted URL.");
 assert.ok(read("admin/wordpress.js").includes('credentials: "same-origin"') && read("admin/wordpress.js").includes('response.headers.get("content-type")'), "The WordPress preview must fetch and validate same-origin live HTML before rendering.");
+assert.ok(read("admin/wordpress.js").includes("REQUEST_TIMEOUT_MS = 15000") && read("admin/wordpress.js").includes("requestController.abort()") && read("admin/wordpress.js").includes("timed out after 15 seconds"), "A failed or stalled same-origin request must end in a visible timeout state instead of an infinite spinner.");
 assert.ok(read("admin/wordpress.js").includes("pointer\\s*:\\s*coarse") && read("admin/wordpress.js").includes("mobileMedia ||") && read("admin/wordpress.js").includes("source[data-wp-original-media]"), "Mobile preview must emulate coarse-pointer media and restore responsive image sources when switching devices.");
 assert.ok(read("admin/wordpress.css").includes("width:406px;min-width:406px;max-width:406px") && read("admin/wordpress.css").includes("width:390px"), "Mobile preview must preserve a 390px inner viewport instead of shrinking to the available panel width.");
 assert.ok(wordpressPage.includes('id="wpPreviewError"') && wordpressPage.includes('id="wpRetry"'), "The live preview must show a recoverable error state if loading does not complete.");

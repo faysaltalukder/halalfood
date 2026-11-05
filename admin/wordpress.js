@@ -6,6 +6,7 @@
   const SITE_PATH = new URL(LIVE_URL).pathname;
   const BRIDGE_CHANNEL = "halal-food-wordpress-preview";
   const LOAD_TIMEOUT_MS = 25000;
+  const REQUEST_TIMEOUT_MS = 15000;
 
   const init = () => {
     const frame = document.getElementById("wordpressLiveFrame");
@@ -25,6 +26,7 @@
     let currentUrl = LIVE_URL;
     let loadTimer = 0;
     let loadSequence = 0;
+    let activeRequestController = null;
     let hasLoaded = false;
     let emulatedWindow = null;
     let nativeMatchMedia = null;
@@ -226,20 +228,27 @@
       }
       const sequence = ++loadSequence;
       window.clearTimeout(loadTimer);
+      activeRequestController?.abort();
+      const requestController = new AbortController();
+      activeRequestController = requestController;
       hasLoaded = false;
       showLoading(options.loadingMessage || "Loading the live Halal Food website…");
       setStatus("Fetching " + url.pathname + " from the live website…");
+      const requestTimer = window.setTimeout(() => requestController.abort(), REQUEST_TIMEOUT_MS);
       try {
         const response = await fetch(url.href, {
           method: "GET",
           credentials: "same-origin",
           cache: "no-store",
           redirect: "follow",
-          headers: { Accept: "text/html,application/xhtml+xml" }
+          headers: { Accept: "text/html,application/xhtml+xml" },
+          signal: requestController.signal
         });
         if (sequence !== loadSequence) return;
         if (!response.ok) throw new Error("The live website returned HTTP " + response.status + " for this page.");
         await renderFetchedPage(response, url.href, sequence);
+        window.clearTimeout(requestTimer);
+        if (activeRequestController === requestController) activeRequestController = null;
         if (options.record !== false) {
           routeHistory.splice(routeIndex + 1);
           routeHistory.push(currentUrl);
@@ -254,14 +263,22 @@
               hasLoaded = true;
               applyMobilePointerSimulation();
               setStatus("Live page rendered · Some external images or scripts may still be loading.");
+              if (loading) loading.hidden = true;
+              if (errorPanel) errorPanel.hidden = true;
               return;
             }
           } catch (_) {}
-          showError("The HTML was received, but the preview document could not finish rendering. Please retry.");
+          showError("The live HTML arrived, but the preview frame did not render it. Retry or open the live website separately.");
         }, LOAD_TIMEOUT_MS);
       } catch (error) {
+        window.clearTimeout(requestTimer);
         if (sequence !== loadSequence) return;
-        showError(error instanceof Error ? error.message : "The live website could not be loaded. Please retry.");
+        if (activeRequestController === requestController) activeRequestController = null;
+        if (error && error.name === "AbortError") {
+          showError("The request to the live website timed out after 15 seconds. Retry once, or open the live website separately to confirm your connection.");
+        } else {
+          showError(error instanceof Error ? error.message : "The live website could not be loaded. Please retry.");
+        }
       }
     };
 
