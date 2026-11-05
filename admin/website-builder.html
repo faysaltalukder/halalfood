@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex,nofollow">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Universal Website Builder · Halal Food Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./shared.css?v=20261102-reports-navigation-v3&hf_sidebar=20261101-warm-jewel-v4">
+<link rel="stylesheet" href="./workspace-global-theme.css?v=20261101-merchant-fieldbook-v1">
+<link rel="stylesheet" href="./website-builder.css?v=20261105-builder-foundation-v1">
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
+</head>
+<body data-page="wordpress">
+<div id="authGate" class="auth-gate"><div class="auth-gate-card"><strong>Checking secure admin access…</strong><p>The isolated editor opens only after the authorized account and two-step verification are confirmed.</p></div></div>
+<div id="adminApp" hidden>
+<main id="pageContent" class="hf-builder-page" tabindex="-1">
+  <header class="hf-builder-topbar">
+    <div class="hf-builder-brand">
+      <a href="./wordpress-live.html" class="hf-builder-back" aria-label="Back to WordPress Studio">←</a>
+      <div><p class="page-eyebrow">UNIVERSAL WEBSITE BUILDER</p><h1>Visual Builder <span class="hf-builder-lab">FOUNDATION</span></h1></div>
+    </div>
+    <div class="hf-builder-top-actions">
+      <span class="hf-builder-save-state" id="builderSaveState" role="status" aria-live="polite"><i></i> Local draft · not published</span>
+      <button class="hf-builder-btn" id="builderUndo" type="button" disabled title="Undo">↶</button>
+      <button class="hf-builder-btn" id="builderRedo" type="button" disabled title="Redo">↷</button>
+      <button class="hf-builder-btn" id="builderReset" type="button">Reset sample</button>
+      <button class="hf-builder-btn hf-builder-btn-primary" id="builderExport" type="button">Export draft JSON ↓</button>
+    </div>
+  </header>
+
+  <section class="hf-builder-workspace" aria-label="Visual website editor">
+    <aside class="hf-builder-left">
+      <div class="hf-builder-panel-head"><div><span class="hf-builder-kicker">BUILD</span><h2>Elements</h2></div><span class="hf-builder-count" id="builderElementCount">0</span></div>
+      <div class="hf-builder-tabs" role="tablist" aria-label="Builder panel">
+        <button type="button" class="is-active" data-builder-tab="elements" role="tab" aria-selected="true">Add elements</button>
+        <button type="button" data-builder-tab="layers" role="tab" aria-selected="false">Layers</button>
+      </div>
+      <div class="hf-builder-tab-panel" id="builderElementsPanel">
+        <p class="hf-builder-panel-note">Add flexible building blocks to your page. This starter uses a controlled component library.</p>
+        <div class="hf-builder-component-grid">
+          <button type="button" data-add-component="section"><span class="hf-builder-component-icon">▱</span><strong>Section</strong><small>Full-width area</small></button>
+          <button type="button" data-add-component="container"><span class="hf-builder-component-icon">▣</span><strong>Container</strong><small>Content wrapper</small></button>
+          <button type="button" data-add-component="heading"><span class="hf-builder-component-icon">T</span><strong>Heading</strong><small>Title text</small></button>
+          <button type="button" data-add-component="paragraph"><span class="hf-builder-component-icon">¶</span><strong>Paragraph</strong><small>Body text</small></button>
+          <button type="button" data-add-component="image"><span class="hf-builder-component-icon">▧</span><strong>Image</strong><small>Visual media</small></button>
+          <button type="button" data-add-component="button"><span class="hf-builder-component-icon">▰</span><strong>Button</strong><small>Call to action</small></button>
+        </div>
+        <div class="hf-builder-safe-note"><strong>Safe by design</strong><span>Blocks are schema-driven. Arbitrary scripts and unsafe HTML are not executed.</span></div>
+      </div>
+      <div class="hf-builder-tab-panel" id="builderLayersPanel" hidden>
+        <p class="hf-builder-panel-note">Select an element to edit its properties.</p>
+        <div id="builderLayers" class="hf-builder-layers" role="tree" aria-label="Page layers"></div>
+      </div>
+    </aside>
+
+    <section class="hf-builder-center" aria-label="Page canvas">
+      <div class="hf-builder-canvas-toolbar">
+        <div><span class="hf-builder-kicker">CANVAS</span><strong id="builderPageTitle">Untitled landing page</strong></div>
+        <div class="hf-builder-device-switch" role="group" aria-label="Canvas viewport">
+          <button type="button" data-builder-viewport="desktop" class="is-active" aria-pressed="true" title="Desktop viewport">▰ <span>Desktop</span></button>
+          <button type="button" data-builder-viewport="tablet" aria-pressed="false" title="Tablet viewport">▯ <span>Tablet</span></button>
+          <button type="button" data-builder-viewport="mobile" aria-pressed="false" title="Mobile viewport">▯ <span>Mobile</span></button>
+        </div>
+      </div>
+      <div class="hf-builder-canvas-scroll">
+        <div class="hf-builder-canvas-frame is-desktop" id="builderCanvasFrame">
+          <div id="builderCanvas" class="hf-builder-canvas" aria-label="Editable page canvas"></div>
+        </div>
+      </div>
+      <div class="hf-builder-canvas-foot"><span>Draft canvas</span><span>Click an element to select · Edit properties on the right</span></div>
+    </section>
+
+    <aside class="hf-builder-right">
+      <div class="hf-builder-panel-head"><div><span class="hf-builder-kicker">CUSTOMIZE</span><h2>Properties</h2></div><span class="hf-builder-selected-tag" id="builderSelectedType">PAGE</span></div>
+      <div id="builderInspector" class="hf-builder-inspector">
+        <div class="hf-builder-inspector-empty"><span>✳</span><strong>Select an element</strong><p>Choose a block on the canvas or in Layers to edit its content and appearance.</p></div>
+      </div>
+      <div class="hf-builder-right-foot"><span>Document model v1</span><span>Preview only · no live changes</span></div>
+    </aside>
+  </section>
+  <footer class="hf-builder-footer"><span><i></i> Isolated editor environment</span><span>Changes stay in this browser until exported. Publishing is intentionally disabled in this phase.</span></footer>
+</main>
+</div>
+<script defer src="./i18n.js?v=20261102-dashboard-speed-v2"></script>
+<script defer src="../js/store-config.js?v=20261101-store-config-v1"></script>
+<script defer src="./shared.js?v=20261105-wordpress-cache-route-v3"></script>
+<script defer src="./app.js?v=20261105-wordpress-live-preview-v4"></script>
+<script defer src="./website-builder.js?v=20261105-builder-foundation-v1"></script>
+</body>
+</html>
