@@ -34,7 +34,7 @@ Deno.serve(async (req: Request) => {
   let input: Record<string, unknown>;
   try {
     const rawBody = await req.text();
-    if (rawBody.length > 2048) return json({ success: false, error: "Request is too large." }, 413);
+    if (new TextEncoder().encode(rawBody).byteLength > 2048) return json({ success: false, error: "Request is too large." }, 413);
     const parsed = JSON.parse(rawBody);
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("Invalid request body");
     input = parsed as Record<string, unknown>;
