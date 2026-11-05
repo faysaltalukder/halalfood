@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { reserveEdgeRateLimit, trustedClientIp } from "../_shared/rate-limit.ts";
 
 const allowedOrigin = "https://faysaltalukder.github.io";
 const corsHeaders = {
@@ -52,6 +53,13 @@ Deno.serve(async (req: Request) => {
 
   try {
     const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
+    const clientIp = trustedClientIp(req);
+    if (clientIp && !(await reserveEdgeRateLimit(admin, "order-track-ip", clientIp, 12, 60))) {
+      return json({ success: false, error: "অনেকবার চেষ্টা করা হয়েছে। এক মিনিট পর আবার চেষ্টা করুন।" }, 429);
+    }
+    if (!(await reserveEdgeRateLimit(admin, "order-track-lookup", orderId + ":" + mobile, 5, 60))) {
+      return json({ success: false, error: "এই অর্ডারের তথ্য খোঁজার সীমা অতিক্রম হয়েছে। এক মিনিট পর আবার চেষ্টা করুন।" }, 429);
+    }
     const { data: order, error } = await admin.from("orders")
       .select("id,order_number,customer_name,customer_phone,total,status,updated_at,ordered_at")
       .eq("order_number", orderId)
