@@ -58,7 +58,7 @@
         if (currentView === "mobile") {
           win.matchMedia = (query) => {
             const result = nativeMatchMedia(query);
-            if (typeof query === "string" && /\\(pointer\\s*:\\s*coarse\\)/i.test(query)) {
+            if (typeof query === "string" && /\(pointer\s*:\s*coarse\)/i.test(query)) {
               return new Proxy(result, {
                 get(target, property) {
                   if (property === "matches") return true;
@@ -73,13 +73,13 @@
           win.matchMedia = nativeMatchMedia;
         }
 
-        doc.querySelectorAll('picture source[media*="pointer: coarse"]').forEach((source) => {
-          if (!source.dataset.wpOriginalMedia) {
+        doc.querySelectorAll('picture source[media*="pointer: coarse"], picture source[data-wp-original-media]').forEach((source) => {
+          if (source.dataset.wpOriginalMedia === undefined) {
             source.dataset.wpOriginalMedia = source.getAttribute("media") || "";
           }
           if (currentView === "mobile") {
             const mobileMedia = source.dataset.wpOriginalMedia
-              .replace(/\\s+and\\s+\\(pointer\\s*:\\s*coarse\\)/i, "")
+              .replace(/\s+and\s+\(pointer\s*:\s*coarse\)/i, "")
               .trim();
             source.setAttribute("media", mobileMedia || "all");
           } else {
