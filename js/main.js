@@ -7,7 +7,7 @@
   try {
     const siteRoot = new URL("../", mainScript.src);
     const styleUrl = new URL("css/product-image-layout.css", siteRoot);
-    styleUrl.searchParams.set("v", "20261105-mobile-product-display-v2");
+    styleUrl.searchParams.set("v", "20261105-mobile-product-display-v3");
     const href = styleUrl.href;
     if (Array.from(document.querySelectorAll('link[rel="stylesheet"]')).some(link => link.href === href)) return;
     const link = document.createElement("link");

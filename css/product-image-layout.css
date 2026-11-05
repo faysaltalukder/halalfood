@@ -303,3 +303,96 @@
     z-index: 2 !important;
   }
 }
+
+
+/* HALAL FOOD — PERMANENT NON-GHEE CATEGORY PRODUCT IMAGE LAYOUT
+   Outer card media frame: 4:3. Inner photo viewport: 1:1, centered.
+   Complete source photos stay visible; contain prevents crop and distortion.
+   Scoped to non-Ghee category pages only. */
+body.category-products-page.category-product-square-display .category-page-products .product-card > a.product-image-link {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: relative !important;
+  inset: auto !important;
+  width: 100% !important;
+  height: auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  aspect-ratio: 4 / 3 !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  line-height: 0 !important;
+  box-sizing: border-box !important;
+  background: var(--cream, #f2f0ea) !important;
+}
+body.category-products-page.category-product-square-display .category-page-products .product-card > a.product-image-link > .product-image {
+  display: block !important;
+  flex: 0 0 75% !important;
+  position: relative !important;
+  inset: auto !important;
+  width: 75% !important;
+  height: auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: 75% !important;
+  max-height: 100% !important;
+  aspect-ratio: 1 / 1 !important;
+  overflow: hidden !important;
+  isolation: auto !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  background: var(--cream, #f2f0ea) !important;
+}
+body.category-products-page.category-product-square-display .category-page-products .product-card > a.product-image-link > .product-image::before,
+body.category-products-page.category-product-square-display .category-page-products .product-card > a.product-image-link > .product-image::after {
+  content: none !important;
+  display: none !important;
+}
+body.category-products-page.category-product-square-display .category-page-products .product-card > a.product-image-link > .product-image > img {
+  display: block !important;
+  position: static !important;
+  inset: auto !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  aspect-ratio: 1 / 1 !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+  transform: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+}
+/* Fallback for future category cards without the anchor wrapper. */
+body.category-products-page.category-product-square-display .category-page-products .product-card > .product-image {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: relative !important;
+  width: 100% !important;
+  height: auto !important;
+  aspect-ratio: 4 / 3 !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  background: var(--cream, #f2f0ea) !important;
+}
+body.category-products-page.category-product-square-display .category-page-products .product-card > .product-image > img {
+  display: block !important;
+  position: static !important;
+  width: 75% !important;
+  height: 100% !important;
+  max-width: 75% !important;
+  max-height: 100% !important;
+  aspect-ratio: 1 / 1 !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+  transform: none !important;
+}
