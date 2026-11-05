@@ -1,0 +1,48 @@
+/* HALAL FOOD — DRY FOOD FIRST-FOUR IMAGE FILL EXPERIMENT
+   Scope: categories/dry-food.html only.
+   Reversible: remove the stylesheet link from dry-food.html to restore the previous image fit.
+   Keeps the existing 1:1 media frame and enlarges only the first four opted-in photos.
+   Intentional edge cropping is limited to these four category thumbnails. */
+
+html body.category-products-page.category-product-square-display.dry-food-image-fill-experiment
+.category-page-products .product-grid > article.product-card:nth-child(-n+4)
+> a.product-image-link > .product-image[data-photo-zoom="cover"] > img {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: cover !important;
+  object-position: 50% 50% !important;
+  transform: scale(1.27) !important;
+  transform-origin: 50% 50% !important;
+  transition: transform 380ms cubic-bezier(.22, .68, .24, 1) !important;
+}
+
+/* Preserve a restrained hover/focus interaction on these four zoomed photos. */
+@media (hover: hover) and (pointer: fine) {
+  html body.category-products-page.category-product-square-display.dry-food-image-fill-experiment
+  .category-page-products .product-grid > article.product-card:nth-child(-n+4):hover
+  > a.product-image-link > .product-image[data-photo-zoom="cover"] > img,
+  html body.category-products-page.category-product-square-display.dry-food-image-fill-experiment
+  .category-page-products .product-grid > article.product-card:nth-child(-n+4):focus-within
+  > a.product-image-link > .product-image[data-photo-zoom="cover"] > img {
+    transform: scale(1.32) !important;
+  }
+}
+
+/* Touch feedback: keep the same crop and add only a slight press response. */
+html body.category-products-page.category-product-square-display.dry-food-image-fill-experiment
+.category-page-products .product-grid > article.product-card:nth-child(-n+4):active
+> a.product-image-link > .product-image[data-photo-zoom="cover"] > img {
+  transform: scale(1.30) !important;
+  transition-duration: 150ms !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html body.category-products-page.category-product-square-display.dry-food-image-fill-experiment
+  .category-page-products .product-grid > article.product-card:nth-child(-n+4)
+  > a.product-image-link > .product-image[data-photo-zoom="cover"] > img {
+    transition: none !important;
+  }
+}
