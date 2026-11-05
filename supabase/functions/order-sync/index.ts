@@ -416,6 +416,9 @@ Deno.serve(async (req: Request) => {
     const { data, error } = await admin.rpc("create_website_order", { p_order: payload });
     if (error) {
       const message = String(error.message || "");
+      if (/This checkout session was already used|orders_checkout_session_id_uidx/i.test(message)) {
+        return json({ success: false, code: "CHECKOUT_SESSION_CONFLICT", error: "এই চেকআউট সেশনটি আগেই ব্যবহার করা হয়েছে। কার্ট রিফ্রেশ করে আবার অর্ডার নিশ্চিত করুন।" }, 409);
+      }
       const clientError = /Please enter|Sorry, this product|Cash on Delivery|select a valid delivery|Not enough stock|Too many items|between 1 and 30|Too many orders|This customer is blocked|Coupon:/i.test(message);
       return json({ success: false, code: clientError ? "ORDER_VALIDATION" : "ORDER_FAILED", error: clientError ? message : "Order could not be placed. Please try again or contact us by phone." }, clientError ? 400 : 500);
     }
