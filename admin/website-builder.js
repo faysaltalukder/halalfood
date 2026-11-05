@@ -36,6 +36,16 @@
     ]
   });
   const state = { doc:null, selected:null, viewport:"desktop", undo:[], redo:[], editStart:null, dirty:false, saveTimer:0 };
+  const allowedTypes = new Set(Object.keys(defaults));
+  const validNode = (node, depth=0) => Boolean(node && typeof node==="object" && !Array.isArray(node) &&
+    typeof node.id==="string" && node.id.length>0 && allowedTypes.has(node.type) &&
+    typeof node.label==="string" && (node.text===undefined || typeof node.text==="string") &&
+    node.props && typeof node.props==="object" && !Array.isArray(node.props) &&
+    Array.isArray(node.children) && depth<=12 && node.children.length<=200 &&
+    node.children.every(child=>validNode(child,depth+1)));
+  const validDocument = (doc) => Boolean(doc && doc.schemaVersion===1 && doc.page &&
+    typeof doc.page.title==="string" && Array.isArray(doc.tree) && doc.tree.length<=200 &&
+    doc.tree.every(node=>validNode(node)));
   const findNode = (id, nodes=state.doc.tree) => {
     for (const node of nodes) { if (node.id===id) return node; const found=findNode(id,node.children||[]); if(found)return found; }
     return null;
@@ -223,7 +233,7 @@
   const init = () => {
     let saved=null;
     try{const raw=localStorage.getItem(STORAGE_KEY);if(raw){const parsed=JSON.parse(raw);if(parsed?.schemaVersion===1&&Array.isArray(parsed.tree))saved=parsed;}}catch(_error){}
-    state.doc=saved||sampleDocument();
+    state.doc=validDocument(saved)?saved:sampleDocument();
     document.querySelectorAll("[data-add-component]").forEach(button=>button.addEventListener("click",()=>addComponent(button.dataset.addComponent)));
     document.querySelectorAll("[data-builder-tab]").forEach(button=>button.addEventListener("click",()=>{
       const layers=button.dataset.builderTab==="layers";
