@@ -8,6 +8,8 @@ const analytics = readFileSync("supabase/functions/analytics-ingest/index.ts", "
 const customerCare = readFileSync("supabase/functions/customer-care-chat/index.ts", "utf8");
 const rateLimit = readFileSync("supabase/functions/_shared/rate-limit.ts", "utf8");
 const rateLimitMigration = readFileSync("supabase/migrations/20261105100000_edge_rate_limit_foundation.sql", "utf8");
+const idempotencyMigration = readFileSync("supabase/migrations/20261105103000_order_checkout_idempotency.sql", "utf8");
+const orderSync = readFileSync("supabase/functions/order-sync/index.ts", "utf8");
 const marketingEmail = readFileSync("supabase/functions/marketing-email/index.ts", "utf8");
 const marketingUnsubscribe = readFileSync("supabase/functions/marketing-unsubscribe/index.ts", "utf8");
 
@@ -34,6 +36,11 @@ assert.match(rateLimitMigration, /SECURITY DEFINER/);
 assert.match(rateLimitMigration, /SET search_path = ''/);
 assert.ok(rateLimitMigration.includes("GRANT EXECUTE ON FUNCTION public.consume_edge_rate_limit"));
 assert.ok(rateLimitMigration.includes("TO service_role"));
+assert.ok(idempotencyMigration.includes("checkout_session_id"));
+assert.ok(idempotencyMigration.includes("checkout_request_hash"));
+assert.ok(idempotencyMigration.includes("FOR v_attempt IN 1..30 LOOP"));
+assert.ok(idempotencyMigration.includes("Order reference collision"));
+assert.match(orderSync, /riskSignal\.order_number = data\.orderId/);
 assert.match(incomplete, /reserveEdgeRateLimit/);
 assert.match(incomplete, /incomplete-checkout-session/);
 assert.match(analytics, /reserveEdgeRateLimit/);
