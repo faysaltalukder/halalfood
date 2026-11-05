@@ -17,7 +17,7 @@
     function syncSource() {
       var source = img.currentSrc || img.src || img.getAttribute("src");
       if (!source) return;
-      frame.style.setProperty("--product-photo-fill", 'url("' + source.replace(/\\/g, "\\\\").replace(/"/g, '\\"') + '")');
+      frame.style.setProperty("--product-photo-fill", 'url("' + source + '")');
     }
 
     syncSource();
