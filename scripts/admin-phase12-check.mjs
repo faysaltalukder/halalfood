@@ -72,7 +72,7 @@ const wordpressPage = read("admin/wordpress-live.html");
 const wordpressNav = read("admin/shared.js");
 assert.ok(wordpressNav.includes('["wordpress","wordpress","WordPress"'), "WordPress must be the final System sidebar entry.");
 assert.ok(wordpressNav.includes("./wordpress-live.html?wp_preview=20261105-v5-diagnostics"), "The WordPress sidebar must open the current diagnostics-enabled live-preview route.");
-assert.ok(wordpressPage.includes("shared.js?v=20261105-wordpress-cache-route-v3") && wordpressPage.includes("wordpress.js?v=20261105-preview-diagnostics-v9"), "WordPress Studio must load the current admin navigation and diagnostics scripts without stale cached assets.");
+assert.ok(wordpressPage.includes("shared.js?v=20261105-wordpress-cache-route-v3") && wordpressPage.includes("wordpress.js?v=20261105-preview-navigation-v10"), "WordPress Studio must load the current admin navigation and diagnostics scripts without stale cached assets.");
 assert.ok(wordpressPage.includes('data-page="wordpress"') && wordpressPage.includes('id="wordpressLiveFrame"') && !/<iframe[^>]+\ssrc=/.test(wordpressPage) && read("admin/wordpress.js").includes('const LIVE_URL = "https://faysaltalukder.github.io/halalfood/"'), "WordPress must use the canonical live storefront through the same-origin in-page preview.");
 assert.ok(!/<iframe[^>]+\ssrc=/.test(wordpressPage) && read("admin/wordpress.js").includes("frame.srcdoc = prepareDocument(pageHtml, currentUrl)"), "WordPress must render the fetched live page through same-origin srcdoc rather than navigating the iframe to a frame-restricted URL.");
 assert.ok(read("admin/wordpress.js").includes('credentials: "same-origin"') && read("admin/wordpress.js").includes('response.headers.get("content-type")'), "The WordPress preview must fetch and validate same-origin live HTML before rendering.");
@@ -86,6 +86,12 @@ assert.ok(read("admin/wordpress.css").includes("width:406px;min-width:406px;max-
 assert.ok(wordpressPage.includes('id="wpPreviewError"') && wordpressPage.includes('id="wpRetry"'), "The live preview must show a recoverable error state if loading does not complete.");
 assert.ok(wordpressPage.includes('data-wp-view="desktop"') && wordpressPage.includes('data-wp-view="mobile"'), "WordPress live preview must expose desktop and mobile viewport controls.");
 assert.ok(read("admin/wordpress.js").includes("createPreviewBridge") && read("admin/wordpress.js").includes('type: "navigate"') && read("admin/wordpress.js").includes("fetchAndRender(url.href)"), "Internal storefront links must continue navigating inside the live preview.");
+assert.ok(read("admin/wordpress.js").includes('if (!isSitePage(url)) { anchor.target = "_self"; return; }') &&
+  !read("admin/wordpress.js").includes('if (anchor.target && anchor.target.toLowerCase() !== "_self") return;') &&
+  read("admin/wordpress.js").includes('window.parent.postMessage({ channel, type: "navigate", url: url.href }, siteOrigin);'),
+  "Same-site links must be intercepted even when their original target is _blank; external links must stay inside the preview frame.");
+assert.ok(read("admin/wordpress.js").includes('if (!isSitePage(action)) { form.target = "_self"; return; }'),
+  "External form targets must not spawn a separate browser tab from the preview.");
 assert.ok(read("admin/wordpress.js").includes("routeHistory") && read("admin/wordpress.js").includes("wpGoBack") && read("admin/wordpress.js").includes("wpGoForward"), "The live preview must support Back and Forward navigation within the preview.");
 assert.ok(read("admin/wordpress.js").includes("data.channel !== BRIDGE_CHANNEL") && read("admin/wordpress.js").includes('credentials: "same-origin"'), "The preview bridge must validate messages and preserve same-origin credentials.");
 assert.ok(read("admin/wordpress.css").includes(".hf-wordpress-device-shell.is-mobile") && read("admin/wordpress.js").includes('setView("desktop")'), "WordPress device controls must have responsive styling and interactive behavior.");
