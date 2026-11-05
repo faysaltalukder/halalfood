@@ -26,6 +26,25 @@
   background: transparent !important;
 }
 
+/* Match square source photos to a square frame on the homepage only. */
+html body #products .featured-grid-4 > article.product-card > a.product-image-link {
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  aspect-ratio: 1 / 1 !important;
+  overflow: hidden !important;
+}
+html body #products .featured-grid-4 > article.product-card > a.product-image-link > .product-image {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  aspect-ratio: 1 / 1 !important;
+  overflow: hidden !important;
+  place-items: center !important;
+}
+
 /* Featured Products always retain both purchase actions. */
 html body #products .featured-grid-4 > article.product-card > .product-body > .product-foot {
   display: grid !important;
