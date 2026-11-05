@@ -2,7 +2,11 @@
   "use strict";
 
   const LIVE_URL = "https://faysaltalukder.github.io/halalfood/";
+  const SITE_ORIGIN = new URL(LIVE_URL).origin;
+  const SITE_PATH = new URL(LIVE_URL).pathname;
+  const BRIDGE_CHANNEL = "halal-food-wordpress-preview";
   const LOAD_TIMEOUT_MS = 25000;
+  const REQUEST_TIMEOUT_MS = 15000;
 
   const init = () => {
     const frame = document.getElementById("wordpressLiveFrame");
@@ -20,103 +24,173 @@
 
     const viewButtons = [...document.querySelectorAll("[data-wp-view]")];
     let currentView = "desktop";
+    let currentUrl = LIVE_URL;
     let loadTimer = 0;
     let loadSequence = 0;
-    let hasLoaded = false;
-    let frameHistoryReady = false;
+    let activeRequestController = null;
     let attemptStartedAt = 0;
     let attemptedUrl = LIVE_URL;
+    let hasLoaded = false;
+    let emulatedWindow = null;
+    let nativeMatchMedia = null;
+    const routeHistory = [LIVE_URL];
+    let routeIndex = 0;
 
     const setStatus = (message) => {
       if (status) status.textContent = message;
     };
 
-    const setDiagnostics = (lines) => {
-      if (diagnostics) diagnostics.textContent = lines.filter(Boolean).join("\n");
+    const updateHistoryControls = () => {
+      if (backButton) backButton.disabled = routeIndex <= 0;
+      if (forwardButton) forwardButton.disabled = routeIndex >= routeHistory.length - 1;
     };
 
-    const describeError = (error) => {
-      if (!error) return "No browser exception was exposed.";
-      return [error.name || "Error", error.message || String(error)].join(": ");
-    };
+    const setDiagnostics = (lines) => { if (diagnostics) diagnostics.textContent = lines.filter(Boolean).join("\\n"); };
 
-    const getLayoutInfo = () => {
+    const layoutDiagnostics = () => {
       const rect = frame.getBoundingClientRect();
+      const shellRect = shell.getBoundingClientRect();
       const style = window.getComputedStyle(frame);
-      return {
-        iframeWidth: Math.round(rect.width) + "px",
-        iframeHeight: Math.round(rect.height) + "px",
-        iframeDisplay: style.display,
-        iframeVisibility: style.visibility,
-        shellWidth: Math.round(shell.getBoundingClientRect().width) + "px",
-        shellHeight: Math.round(shell.getBoundingClientRect().height) + "px",
-        viewport: window.innerWidth + " × " + window.innerHeight
-      };
+      return ["Preview frame: " + Math.round(rect.width) + " × " + Math.round(rect.height) + " px", "Preview shell: " + Math.round(shellRect.width) + " × " + Math.round(shellRect.height) + " px", "Frame display: " + style.display, "Frame visibility: " + style.visibility, "Parent viewport: " + window.innerWidth + " × " + window.innerHeight];
     };
 
-    const showLoading = (message) => {
-      hasLoaded = false;
+    const showLoading = (message = "Loading the live Halal Food website…") => {
       if (loading) {
         loading.hidden = false;
         const strong = loading.querySelector("strong");
         const small = loading.querySelector("small");
-        if (strong) strong.textContent = message || "Opening the live website…";
-        if (small) small.textContent = "Connecting directly to the published Halal Food storefront.";
+        if (strong) strong.textContent = message;
+        if (small) small.textContent = "Fetching the real page from the live website.";
       }
       if (errorPanel) errorPanel.hidden = true;
-      setStatus("Connecting to the live Halal Food website…");
-      setDiagnostics([
-        "Preview state: loading",
-        "Requested URL: " + attemptedUrl,
-        "Started: " + new Date(attemptStartedAt).toLocaleString(),
-        ...Object.entries(getLayoutInfo()).map(([key, value]) => key + ": " + value)
-      ]);
+      setStatus("Connecting securely to the live website…");
+      setDiagnostics(["Preview state: fetching storefront HTML", "Requested URL: " + attemptedUrl, "Request timeout: " + REQUEST_TIMEOUT_MS + " ms", "Started: " + new Date().toLocaleString(), ...layoutDiagnostics()]);
     };
 
-    const showError = (heading, explanation, extra = []) => {
-      window.clearTimeout(loadTimer);
+    const showError = (message, details = []) => {
       if (loading) loading.hidden = true;
       if (errorPanel) {
         errorPanel.hidden = false;
-        const strong = errorPanel.querySelector("strong");
         const paragraph = errorPanel.querySelector("p");
-        if (strong) strong.textContent = heading;
-        if (paragraph) paragraph.textContent = explanation;
+        if (paragraph) paragraph.textContent = message;
       }
-      setStatus(heading + " " + explanation);
-      setDiagnostics([
-        "Preview state: FAILED",
-        "Failure time: " + new Date().toLocaleString(),
-        "Requested URL: " + attemptedUrl,
-        "iframe src: " + (frame.getAttribute("src") || "(not assigned)"),
-        "Elapsed: " + (attemptStartedAt ? Math.round(performance.now() - attemptStartedAt) + " ms" : "unknown"),
-        ...Object.entries(getLayoutInfo()).map(([key, value]) => key + ": " + value),
-        ...extra
-      ]);
+      setStatus(message);
+      setDiagnostics(["Preview state: FAILED", "Failure: " + message, "Requested URL: " + attemptedUrl, "Elapsed: " + (attemptStartedAt ? Math.round(performance.now() - attemptStartedAt) + " ms" : "unknown"), ...layoutDiagnostics(), ...details]);
     };
 
-    const getFrameUrl = () => {
-      try {
-        const href = frame.contentWindow.location.href;
-        const url = new URL(href);
-        if (url.origin === new URL(LIVE_URL).origin && url.pathname.startsWith("/halalfood/")) return url.href;
-      } catch (_) {}
-      return attemptedUrl || LIVE_URL;
-    };
+    const escapeAttribute = (value) =>
+      String(value).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
 
-    const updateHistoryControls = () => {
-      try {
-        if (backButton) backButton.disabled = frame.contentWindow.history.length <= 1;
-        if (forwardButton) forwardButton.disabled = true;
-      } catch (_) {
-        if (backButton) backButton.disabled = true;
-        if (forwardButton) forwardButton.disabled = true;
+    const safeJson = (value) => JSON.stringify(value).replace(/</g, "\\u003c");
+
+    const createPreviewBridge = (pageUrl) => [
+      '<script data-hf-preview-bridge>',
+      '(() => {',
+      '"use strict";',
+      'const pageUrl = ' + safeJson(pageUrl) + ';',
+      'const channel = "' + BRIDGE_CHANNEL + '";',
+      'const siteOrigin = window.location.origin;',
+      'try { window.history.replaceState({ hfPreview: true }, "", pageUrl); } catch (_) {}',
+      'const isSitePage = (url) => url.origin === siteOrigin && url.pathname.startsWith("/halalfood/");',
+      'document.addEventListener("click", (event) => {',
+      '  if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;',
+      '  const anchor = event.target && event.target.closest ? event.target.closest("a[href]") : null;',
+      '  if (!anchor || anchor.hasAttribute("download")) return;',
+      '  const raw = anchor.getAttribute("href");',
+      '  if (!raw || raw.startsWith("#") || /^(mailto:|tel:|javascript:)/i.test(raw)) return;',
+      '  let url;',
+      '  try { url = new URL(anchor.href, window.location.href); } catch (_) { return; }',
+      '  if (!isSitePage(url)) { if (!anchor.target || anchor.target.toLowerCase() === "_self") anchor.target = "_blank"; return; }',
+      '  if (url.pathname === window.location.pathname && url.search === window.location.search && url.hash) return;',
+      '  if (anchor.target && anchor.target.toLowerCase() !== "_self") return;',
+      '  event.preventDefault();',
+      '  window.parent.postMessage({ channel, type: "navigate", url: url.href }, siteOrigin);',
+      '}, false);',
+      'document.addEventListener("submit", (event) => {',
+      '  if (event.defaultPrevented) return;',
+      '  const form = event.target;',
+      '  if (!form || !(form instanceof HTMLFormElement)) return;',
+      '  if (form.target && form.target.toLowerCase() !== "_self") return;',
+      '  let action;',
+      '  try { action = new URL(form.getAttribute("action") || window.location.href, window.location.href); } catch (_) { return; }',
+      '  if (!isSitePage(action)) { if (!form.target) form.target = "_blank"; return; }',
+      '  const method = String(form.method || "get").toUpperCase();',
+      '  const data = new FormData(form);',
+      '  if (event.submitter && event.submitter.name && !data.has(event.submitter.name)) data.append(event.submitter.name, event.submitter.value || "");',
+      '  event.preventDefault();',
+      '  window.parent.postMessage({ channel, type: "form-submit", method, action: action.href, entries: Array.from(data.entries()) }, siteOrigin);',
+      '}, false);',
+      '})();',
+      '</script>'
+    ].join("\n");
+
+    const prepareDocument = (source, pageUrl) => {
+      const base = '<base href="' + escapeAttribute(pageUrl) + '">';
+      const bridge = createPreviewBridge(pageUrl);
+      let documentHtml = String(source).replace(/<base\b[^>]*>/gi, "");
+      if (/<head\b[^>]*>/i.test(documentHtml)) {
+        documentHtml = documentHtml.replace(/<head\b[^>]*>/i, (headTag) => headTag + "\n" + base + "\n" + bridge);
+      } else if (/<html\b[^>]*>/i.test(documentHtml)) {
+        documentHtml = documentHtml.replace(/<html\b[^>]*>/i, (htmlTag) => htmlTag + "<head>" + base + bridge + "</head>");
+      } else {
+        documentHtml = "<!doctype html><html><head>" + base + bridge + "</head><body>" + documentHtml + "</body></html>";
       }
+      return documentHtml;
     };
 
     const updateAddress = () => {
-      if (address) address.textContent = getFrameUrl();
-      updateHistoryControls();
+      if (!address) return;
+      try {
+        const url = new URL(currentUrl);
+        address.textContent = url.origin + url.pathname + url.search + url.hash;
+      } catch (_) {
+        address.textContent = "Halal Food live website";
+      }
+    };
+
+    const applyMobilePointerSimulation = () => {
+      try {
+        const win = frame.contentWindow;
+        const doc = frame.contentDocument;
+        if (!win || !doc) return;
+
+        if (emulatedWindow !== win) {
+          emulatedWindow = win;
+          nativeMatchMedia = win.matchMedia.bind(win);
+        }
+
+        if (currentView === "mobile") {
+          win.matchMedia = (query) => {
+            const result = nativeMatchMedia(query);
+            if (typeof query === "string" && /\(pointer\s*:\s*coarse\)/i.test(query)) {
+              return new Proxy(result, {
+                get(target, property) {
+                  if (property === "matches") return true;
+                  const value = Reflect.get(target, property, target);
+                  return typeof value === "function" ? value.bind(target) : value;
+                }
+              });
+            }
+            return result;
+          };
+        } else if (nativeMatchMedia) {
+          win.matchMedia = nativeMatchMedia;
+        }
+
+        doc.querySelectorAll('picture source[media*="pointer: coarse"], picture source[data-wp-original-media]').forEach((source) => {
+          if (source.dataset.wpOriginalMedia === undefined) {
+            source.dataset.wpOriginalMedia = source.getAttribute("media") || "";
+          }
+          if (currentView === "mobile") {
+            const mobileMedia = source.dataset.wpOriginalMedia.replace(/\s+and\s+\(pointer\s*:\s*coarse\)/i, "").trim();
+            source.setAttribute("media", mobileMedia || "all");
+          } else {
+            source.setAttribute("media", source.dataset.wpOriginalMedia);
+          }
+        });
+
+        win.dispatchEvent(new win.Event("resize"));
+      } catch (_) {}
     };
 
     const setView = (view) => {
@@ -130,125 +204,202 @@
         button.classList.toggle("is-active", active);
         button.setAttribute("aria-pressed", String(active));
       });
-      if (description) description.textContent = mobile ? "Mobile view · 390px phone viewport" : "Desktop view · Full responsive website";
-      window.requestAnimationFrame(() => {
-        if (!hasLoaded) return;
-        setDiagnostics([
-          "Preview state: loaded",
-          "Current URL: " + getFrameUrl(),
-          ...Object.entries(getLayoutInfo()).map(([key, value]) => key + ": " + value)
-        ]);
-      });
-      try { frame.contentWindow.dispatchEvent(new frame.contentWindow.Event("resize")); } catch (_) {}
-    };
-
-    const attachFrameNavigationListeners = () => {
-      if (frameHistoryReady) return;
-      try {
-        const win = frame.contentWindow;
-        win.addEventListener("popstate", updateAddress);
-        win.addEventListener("hashchange", updateAddress);
-        win.addEventListener("pageshow", updateAddress);
-        frameHistoryReady = true;
-      } catch (_) {}
-    };
-
-    const onFrameLoad = () => {
-      window.clearTimeout(loadTimer);
-      const elapsed = Math.round(performance.now() - attemptStartedAt);
-      try {
-        const doc = frame.contentDocument;
-        if (!doc) {
-          showError("Preview loaded, but its document is inaccessible.",
-            "The iframe load event fired, but the browser returned a null document. This usually means the final page is not same-origin or the browser blocked document access.",
-            ["Document check: contentDocument is null", "Load event: fired", "Elapsed: " + elapsed + " ms"]);
-          return;
-        }
-        if (!doc.documentElement) {
-          showError("The iframe loaded an empty document.",
-            "The browser fired the load event, but the document has no HTML root element.",
-            ["Document readyState: " + doc.readyState, "Document title: " + (doc.title || "(empty)"), "Load event: fired"]);
-          return;
-        }
-        if (!doc.body) {
-          showError("The storefront document is incomplete.",
-            "The iframe loaded, but the document body is missing. Check the storefront response and its redirects.",
-            ["Document readyState: " + doc.readyState, "Document title: " + (doc.title || "(empty)"), "Load event: fired"]);
-          return;
-        }
-        const bodyText = (doc.body.innerText || "").trim();
-        const title = doc.title || "Halal Food";
-        hasLoaded = true;
-        attachFrameNavigationListeners();
-        if (loading) loading.hidden = true;
-        if (errorPanel) errorPanel.hidden = true;
-        updateAddress();
-        setStatus("Live website loaded successfully · " + title);
-        setDiagnostics([
-          "Preview state: loaded and verified",
-          "Document title: " + title,
-          "Document readyState: " + doc.readyState,
-          "Body text length: " + bodyText.length + " characters",
-          "Current URL: " + getFrameUrl(),
-          "Load event: fired",
-          "Elapsed: " + elapsed + " ms",
-          ...Object.entries(getLayoutInfo()).map(([key, value]) => key + ": " + value)
-        ]);
-      } catch (error) {
-        showError("The browser blocked access to the preview document.",
-          "The iframe load event fired, but JavaScript could not inspect the page. The exact browser exception is shown below.",
-          ["Load event: fired", "Document access exception: " + describeError(error)]);
+      if (description) {
+        description.textContent = mobile ? "Mobile view · 390px phone viewport" : "Desktop view · Full responsive website";
       }
+      if (hasLoaded) applyMobilePointerSimulation();
     };
 
-    const navigate = (url, message = "Opening the live website…") => {
-      const target = new URL(url, LIVE_URL);
-      const liveOrigin = new URL(LIVE_URL).origin;
-      if (target.origin !== liveOrigin || !target.pathname.startsWith("/halalfood/")) {
-        window.open(target.href, "_blank", "noopener,noreferrer");
+    const validateSiteUrl = (rawUrl) => {
+      const url = new URL(rawUrl, currentUrl);
+      if (url.protocol !== "https:" || url.origin !== SITE_ORIGIN || !url.pathname.startsWith(SITE_PATH)) return null;
+      return url;
+    };
+
+    const renderFetchedPage = async (response, requestedUrl, sequence) => {
+      const finalUrl = validateSiteUrl(response.url || requestedUrl);
+      if (!finalUrl) throw new Error("The requested page redirected outside the Halal Food website.");
+      const contentType = response.headers.get("content-type") || "";
+      if (!/text\/html|application\/xhtml\+xml/i.test(contentType)) {
+        throw new Error("This destination is not an HTML page. Open it separately from the live website.");
+      }
+      const pageHtml = await response.text();
+      if (!pageHtml.trim()) throw new Error("The server returned an empty HTML document.");
+      if (sequence !== loadSequence) return;
+      currentUrl = finalUrl.href;
+      updateAddress();
+      frame.srcdoc = prepareDocument(pageHtml, currentUrl);
+      hasLoaded = false;
+      if (loading) loading.hidden = true;
+      if (errorPanel) errorPanel.hidden = true;
+      setStatus("Page received · Loading its original styles, images and scripts…");
+      setDiagnostics(["Preview state: HTML fetched; rendering into same-origin srcdoc", "Final URL: " + currentUrl, "HTTP status: " + response.status, "Content-Type: " + (response.headers.get("content-type") || "(missing)"), "HTML size: " + pageHtml.length + " characters", ...layoutDiagnostics()]);
+    };
+
+    const fetchAndRender = async (rawUrl, options = {}) => {
+      const url = validateSiteUrl(rawUrl);
+      if (!url) {
+        try { window.open(new URL(rawUrl, currentUrl).href, "_blank", "noopener,noreferrer"); } catch (_) {}
         return;
       }
-      window.clearTimeout(loadTimer);
       const sequence = ++loadSequence;
-      attemptedUrl = target.href;
+      attemptedUrl = url.href;
       attemptStartedAt = performance.now();
-      showLoading(message);
-      setStatus("Opening " + target.pathname + " from the published storefront…");
-      loadTimer = window.setTimeout(() => {
-        if (sequence !== loadSequence || hasLoaded) return;
-        showError("The iframe did not report a completed load.",
-          "No iframe load event was received within 25 seconds. The storefront may be blocked by a network failure, redirect, browser frame policy, or a stalled request. Check the requested URL and layout details below.",
-          ["Load event: NOT received", "Timeout: " + LOAD_TIMEOUT_MS + " ms", "Note: browsers do not expose the underlying iframe network error to the parent page."]);
-      }, LOAD_TIMEOUT_MS);
-      frame.src = target.href;
+      window.clearTimeout(loadTimer);
+      activeRequestController?.abort();
+      const requestController = new AbortController();
+      activeRequestController = requestController;
+      hasLoaded = false;
+      showLoading(options.loadingMessage || "Loading the live Halal Food website…");
+      setStatus("Fetching " + url.pathname + " from the live website…");
+      const requestTimer = window.setTimeout(() => requestController.abort(), REQUEST_TIMEOUT_MS);
+      try {
+        const response = await fetch(url.href, {
+          method: "GET",
+          credentials: "same-origin",
+          cache: "no-store",
+          redirect: "follow",
+          headers: { Accept: "text/html,application/xhtml+xml" },
+          signal: requestController.signal
+        });
+        if (sequence !== loadSequence) return;
+        if (!response.ok) throw new Error("HTTP " + response.status + " " + response.statusText + " — server rejected the requested page.");
+        await renderFetchedPage(response, url.href, sequence);
+        window.clearTimeout(requestTimer);
+        if (activeRequestController === requestController) activeRequestController = null;
+        if (options.record !== false) {
+          routeHistory.splice(routeIndex + 1);
+          routeHistory.push(currentUrl);
+          routeIndex = routeHistory.length - 1;
+          updateHistoryControls();
+        }
+        loadTimer = window.setTimeout(() => {
+          if (hasLoaded) return;
+          try {
+            const doc = frame.contentDocument;
+            if (doc && doc.documentElement && doc.documentElement.childElementCount) {
+              hasLoaded = true;
+              applyMobilePointerSimulation();
+              setStatus("Live page rendered · Some external images or scripts may still be loading.");
+              if (loading) loading.hidden = true;
+              if (errorPanel) errorPanel.hidden = true;
+              return;
+            }
+          } catch (_) {}
+          let docInfo = "Document unavailable";
+          try { const doc = frame.contentDocument; docInfo = doc ? "readyState=" + doc.readyState + ", root=" + Boolean(doc.documentElement) + ", body=" + Boolean(doc.body) : "contentDocument=null"; } catch (e) { docInfo = "Document access: " + e.name + ": " + e.message; }
+          showError("HTML was fetched, but the preview document did not finish rendering.", ["Render timeout: " + LOAD_TIMEOUT_MS + " ms", docInfo, "The request succeeded; failure is in srcdoc rendering or its scripts."]);
+        }, LOAD_TIMEOUT_MS);
+      } catch (error) {
+        window.clearTimeout(requestTimer);
+        if (sequence !== loadSequence) return;
+        if (activeRequestController === requestController) activeRequestController = null;
+        if (error && error.name === "AbortError") {
+          showError("The request to the live website timed out after 15 seconds.", ["Failure stage: storefront fetch", "Abort reason: request timer expired", "Timeout: " + REQUEST_TIMEOUT_MS + " ms"]);
+        } else {
+          showError("The storefront request failed: " + (error && error.message ? error.message : String(error)), ["Failure stage: storefront fetch", "Exception: " + (error && error.name ? error.name : "unknown"), "Browser detail: " + (error && error.message ? error.message : String(error)), "Likely classes: network/DNS/TLS, same-origin policy, or request blocked; inspect this exact exception before changing code."]);
+        }
+      }
     };
 
-    frame.addEventListener("load", onFrameLoad);
-    frame.addEventListener("error", (event) => {
-      showError("The iframe reported a loading error.",
-        "The browser dispatched an iframe error event. Additional event information is shown below.",
-        ["Load event: error", "Event type: " + event.type]);
-    });
-
-    viewButtons.forEach((button) => button.addEventListener("click", () => setView(button.dataset.wpView)));
-    backButton?.addEventListener("click", () => {
+    frame.addEventListener("load", () => {
       try {
-        if (frame.contentWindow.history.length > 1) frame.contentWindow.history.back();
-      } catch (error) {
-        showError("Browser history is unavailable.", "The preview page did not allow history access.", ["History exception: " + describeError(error)]);
+        if (!frame.contentDocument || !frame.contentDocument.documentElement) return;
+        hasLoaded = true;
+        window.clearTimeout(loadTimer);
+        if (loading) loading.hidden = true;
+        if (errorPanel) errorPanel.hidden = true;
+        applyMobilePointerSimulation();
+        setStatus("Live website loaded · Internal pages, shopping links and on-page interactions are available.");
+        const doc = frame.contentDocument;
+        setDiagnostics(["Preview state: SUCCESS — srcdoc rendered", "Document title: " + (doc.title || "(empty)"), "Document readyState: " + doc.readyState, "HTML root: " + Boolean(doc.documentElement), "Body: " + Boolean(doc.body), "Current page: " + currentUrl, "Elapsed: " + Math.round(performance.now() - attemptStartedAt) + " ms", ...layoutDiagnostics()]);
+      } catch (_) {
+        setStatus("Live page rendered. Some protected browser features may be unavailable in the preview.");
       }
     });
-    forwardButton?.addEventListener("click", () => {
-      try { frame.contentWindow.history.forward(); } catch (_) {}
+
+    window.addEventListener("message", (event) => {
+      if (event.source !== frame.contentWindow || event.origin !== SITE_ORIGIN) return;
+      const data = event.data;
+      if (!data || data.channel !== BRIDGE_CHANNEL) return;
+      if (data.type === "navigate" && typeof data.url === "string") {
+        const url = validateSiteUrl(data.url);
+        if (url) fetchAndRender(url.href);
+      }
+      if (data.type === "form-submit" && typeof data.action === "string") {
+        handleNativeForm(data).catch((error) => {
+          showError(error instanceof Error ? error.message : "This form could not be submitted in the preview.");
+        });
+      }
     });
-    document.getElementById("wpRefresh")?.addEventListener("click", () => navigate(getFrameUrl(), "Refreshing the live website…"));
-    document.getElementById("wpRetry")?.addEventListener("click", () => navigate(LIVE_URL, "Retrying the live website…"));
-    document.getElementById("wpGoHome")?.addEventListener("click", () => navigate(LIVE_URL, "Returning to the storefront home page…"));
+
+    const handleNativeForm = async (data) => {
+      const action = validateSiteUrl(data.action);
+      if (!action) return;
+      const method = String(data.method || "GET").toUpperCase();
+      const entries = Array.isArray(data.entries) ? data.entries : [];
+      if (method === "GET") {
+        entries.forEach(([key, value]) => {
+          if (typeof value === "string") action.searchParams.append(String(key), value);
+        });
+        await fetchAndRender(action.href);
+        return;
+      }
+      if (!["POST", "PUT", "PATCH"].includes(method)) return;
+      const formData = new FormData();
+      entries.forEach(([key, value]) => {
+        if (typeof value === "string" || (typeof File !== "undefined" && value instanceof File)) formData.append(String(key), value);
+      });
+      const sequence = ++loadSequence;
+      showLoading("Submitting the website form…");
+      const response = await fetch(action.href, {
+        method,
+        body: formData,
+        credentials: "same-origin",
+        redirect: "follow"
+      });
+      if (!response.ok) throw new Error("The form endpoint returned HTTP " + response.status + ".");
+      await renderFetchedPage(response, action.href, sequence);
+      routeHistory.splice(routeIndex + 1);
+      routeHistory.push(currentUrl);
+      routeIndex = routeHistory.length - 1;
+      updateHistoryControls();
+    };
+
+    viewButtons.forEach((button) => button.addEventListener("click", () => setView(button.dataset.wpView)));
+
+    backButton?.addEventListener("click", () => {
+      if (routeIndex <= 0) return;
+      routeIndex -= 1;
+      updateHistoryControls();
+      fetchAndRender(routeHistory[routeIndex], { record: false, loadingMessage: "Opening previous page…" });
+    });
+
+    forwardButton?.addEventListener("click", () => {
+      if (routeIndex >= routeHistory.length - 1) return;
+      routeIndex += 1;
+      updateHistoryControls();
+      fetchAndRender(routeHistory[routeIndex], { record: false, loadingMessage: "Opening next page…" });
+    });
+
+    document.getElementById("wpRefresh")?.addEventListener("click", () =>
+      fetchAndRender(currentUrl, { record: false, loadingMessage: "Refreshing the live page…" })
+    );
+
+    document.getElementById("wpRetry")?.addEventListener("click", () =>
+      fetchAndRender(currentUrl, { record: false, loadingMessage: "Retrying the live website…" })
+    );
+
+    document.getElementById("wpGoHome")?.addEventListener("click", () => {
+      routeHistory.splice(1);
+      routeIndex = 0;
+      updateHistoryControls();
+      fetchAndRender(LIVE_URL, { record: false, loadingMessage: "Returning to the storefront home page…" });
+    });
 
     setView("desktop");
-    if (backButton) backButton.disabled = true;
-    if (forwardButton) forwardButton.disabled = true;
-    navigate(LIVE_URL);
+    updateHistoryControls();
+    fetchAndRender(LIVE_URL, { record: false });
   };
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true });
