@@ -18,7 +18,7 @@ for (const type of ["section","container","heading","paragraph","image","button"
 }
 assert.ok(js.includes("renderNode") && js.includes("renderInspector") && js.includes("renderLayers"), "Builder must separate rendering, layers and inspector behavior.");
 assert.ok(js.includes("containsNode") && js.includes("function moveNode"), "Drag/drop must prevent moving a parent into its own descendant.");
-assert.ok(js.includes("objectPosition") && js.includes("aspectRatio") && js.includes("Image crop position"), "Image boxes must expose crop position and aspect ratio controls.");
+assert.ok(js.includes("objectPosition") && js.includes("aspectRatio") && js.includes("Image crop position") && js.includes('el.style.height="auto"'), "Image boxes must expose crop position and aspect ratio controls.");
 assert.ok(js.includes("const validDoc=d=>") && js.includes("new Set()"), "Restored documents must be validated for duplicate IDs.");
 assert.ok(js.includes("data-builder-viewport") && js.includes('is-"+viewport'), "Desktop, tablet and mobile canvas modes must be implemented.");
 assert.ok(js.includes("state.undo") && js.includes("state.redo") && js.includes("builderUndo") && js.includes("builderRedo"), "Builder must support undo and redo.");
