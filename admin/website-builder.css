@@ -60,7 +60,7 @@
 .hf-builder-node[data-kind="heading"]{font-weight:800;line-height:1.08;letter-spacing:-.045em}
 .hf-builder-node[data-kind="paragraph"]{line-height:1.65}
 .hf-builder-node[data-kind="image"]{display:block;max-width:100%;overflow:hidden}
-.hf-builder-node[data-kind="image"] img{display:block;width:100%;height:100%;object-fit:cover}
+.hf-builder-node[data-kind="image"] img{display:block;width:100%;height:100%;min-height:inherit;object-fit:cover;object-position:50% 50%}
 .hf-builder-node[data-kind="button"]{display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:8px;background:#35486d;color:#fff;font-weight:700;text-decoration:none}
 .hf-builder-node[data-kind="card"]{border:1px solid #e7eaf0;border-radius:12px;background:#fff;box-shadow:0 8px 22px rgba(30,42,60,.06)}
 .hf-builder-node[data-kind="cardGrid"]{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
@@ -129,3 +129,7 @@
  .hf-builder-node-columns{grid-template-columns:1fr}
  .hf-builder-component-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
 }
+
+/* Image box controls: keep crop and ratio predictable across viewport sizes. */
+.hf-builder-node[data-kind="image"]{box-sizing:border-box}
+.hf-builder-node[data-kind="image"] img{max-width:100%}
