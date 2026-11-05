@@ -361,7 +361,7 @@ const FEATURES = {
     files: [
       "docs/UNIVERSAL_WEBSITE_BUILDER_AUDIT.md",
       "admin/website-builder.html", "admin/website-builder.js", "admin/website-builder.css",
-      "admin/wordpress-live.html", "admin/wordpress.js", "admin/shared.js",
+      "admin/wordpress-live.html", "admin/wordpress-sandbox.js", "admin/shared.js",
       "scripts/universal-builder-check.mjs", "scripts/admin-phase12-check.mjs",
       ".github/workflows/architecture-quality.yml"
     ],
