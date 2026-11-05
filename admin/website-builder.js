@@ -227,6 +227,16 @@
     commitInspectorEdit();if(!state.redo.length)return;
     state.undo.push(snapshot());state.doc=state.redo.pop();markDirty();renderAll();
   };
+  const sendToPreview = () => {
+    commitInspectorEdit();
+    if(!validDocument(state.doc)){setStatus("Draft validation failed · cannot send to preview","error");return;}
+    try{
+      const packageData={schemaVersion:1,reviewId:"review-"+Date.now(),status:"in_review",sentAt:new Date().toISOString(),document:snapshot()};
+      localStorage.setItem("hf-wp-review-package-v1",JSON.stringify(packageData));
+      localStorage.setItem(STORAGE_KEY,JSON.stringify(state.doc));
+      window.location.href="./wordpress-live.html?wp_review=1";
+    }catch(error){setStatus("Could not save review draft in this browser","error");}
+  };
   const exportDraft = () => {
     const blob=new Blob([JSON.stringify(state.doc,null,2)],{type:"application/json"});
     const url=URL.createObjectURL(blob);const link=document.createElement("a");link.href=url;link.download="website-draft-v1.json";document.body.append(link);link.click();link.remove();URL.revokeObjectURL(url);
@@ -248,7 +258,7 @@
       if(!window.confirm("Reset this local sample draft? Your current local draft will be replaced."))return;
       state.undo.push(snapshot());state.redo.length=0;state.doc=sampleDocument();state.selected=null;markDirty();renderAll();
     });
-    $("builderExport").addEventListener("click",exportDraft);
+    $("builderExport").addEventListener("click",exportDraft);\n    $("builderSendPreview").addEventListener("click",sendToPreview);
     changeViewport("desktop");renderAll();
     setStatus(saved?"Restored local draft · not published":"Sample draft ready · not published","saved");
   };
