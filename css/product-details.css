@@ -1,3 +1,5 @@
+@import url("./related-products-mobile-compact.css?v=20261105-related-products-compact-v1");
+
 /* Compact, opt-in product information: keeps product media and purchase controls prominent. */
 .product-description-section .product-description-inner{max-width:920px}
 .product-description-section .product-description-inner>p:first-of-type{max-width:70ch;margin:8px 0 0;font-size:.98rem;line-height:1.55}
