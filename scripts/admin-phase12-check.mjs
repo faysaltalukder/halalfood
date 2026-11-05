@@ -73,14 +73,14 @@ const wordpressNav = read("admin/shared.js");
 const wordpressSandbox = read("admin/wordpress-sandbox.js");
 const websiteBuilderPage = read("admin/website-builder.html");
 const wordpressCss = read("admin/wordpress.css");
-assert.ok(wordpressNav.includes('["wordpress","layout","Website Studio"'), "WordPress must be the final System sidebar entry.");
+assert.ok(wordpressNav.includes('["wordpress","layout","WordPress"'), "WordPress must be the final System sidebar entry.");
 assert.ok(wordpressNav.includes("./wordpress-live.html"), "The WordPress sidebar must open the dashboard-only Live Website partition.");
-assert.ok(wordpressPage.includes("shared.js?v=20261105-sandbox-partitions-v1") && wordpressPage.includes("wordpress-sandbox.js?v=20261105-sandbox-partitions-v1"), "Live Website must load the secure admin shell and isolated sandbox controller.");
+assert.ok(wordpressPage.includes("shared.js?v=20261105-wordpress-sidebar-submenu-v1") && wordpressPage.includes("wordpress-sandbox.js?v=20261105-sandbox-partitions-v1"), "Live Website must load the secure admin shell and isolated sandbox controller.");
 assert.ok(wordpressPage.includes('data-page="wordpress"') && wordpressPage.includes('id="wpSandboxFrame"') && wordpressPage.includes('id="wpSandboxReviewFrame"'), "Live Website must render both the published test version and review draft.");
 assert.ok(!wordpressPage.includes("github.io/halalfood") && !wordpressPage.includes("wordpress.js?") && !wordpressPage.includes("wordpress-review.js?"), "The sandbox Live Website must not load or link to the production storefront preview scripts.");
 assert.ok(!/<iframe[^>]+\ssrc=/.test(wordpressPage) && (wordpressPage.match(/sandbox=""/g)||[]).length>=2, "Sandbox preview iframes must be script-disabled, opaque-origin frames without external iframe destinations.");
 assert.ok(wordpressPage.includes("Publish Test Version") && wordpressPage.includes("public Halal Food website remains unchanged") && wordpressPage.includes("dashboard://sandbox/published-test-version"), "The Live Website partition must clearly identify dashboard-only Test Publish.");
-assert.ok(websiteBuilderPage.includes('href="./wordpress-live.html"') && websiteBuilderPage.includes('href="./website-builder.html"') && websiteBuilderPage.includes("Live Website") && websiteBuilderPage.includes("Edit Website"), "Both requested Website Studio partitions must be visible from the editor.");
+assert.ok(websiteBuilderPage.includes('href="./wordpress-live.html"') && websiteBuilderPage.includes("Edit Website") && wordpressNav.includes("./website-builder.html") && wordpressNav.includes("Live Website") && wordpressNav.includes("Edit Website"), "The WordPress sidebar must expose Live Website and Edit Website as separate routes.");
 assert.ok(websiteBuilderPage.includes('id="builderSendPreview"') && websiteBuilderPage.includes("Send for test review"), "Edit Website must send drafts into the sandbox review workflow.");
 assert.ok(websiteBuilderPage.includes("Test Publish never changes the public website") && websiteBuilderPage.includes("no production connection"), "Edit Website must disclose production isolation.");
 assert.ok(wordpressSandbox.includes('const PUBLISHED_KEY = "hf-wp-sandbox-published-v1"') && wordpressSandbox.includes('const HISTORY_KEY = "hf-wp-sandbox-history-v1"') && wordpressSandbox.includes('const REVIEW_KEY = "hf-wp-review-package-v1"'), "Sandbox drafts, test-published versions and history must use separate browser-local keys.");
@@ -151,7 +151,7 @@ for (const file of unifiedPages) {
   const expectedI18nVersion = i18nVersion;
   assert.ok(source.includes(`i18n.js?v=${expectedI18nVersion}`), `${file}: missing or stale shared language dictionary.`);
   assert.ok(source.includes(`shared.css?v=${sharedCssVersion}`), `${file}: stale shared UI cache version.`);
-  const expectedSharedJsVersion = file === "ai-conversations.html" ? "20261104-aiconversations-v1" : (file === "wordpress-live.html" || file === "website-builder.html") ? "20261105-sandbox-partitions-v1" : (file === "overview.html" || file === "wordpress.html") ? "20261105-wordpress-cache-route-v2" : sharedJsVersion;
+  const expectedSharedJsVersion = file === "ai-conversations.html" ? "20261104-aiconversations-v1" : (file === "wordpress-live.html" || file === "website-builder.html") ? "20261105-wordpress-sidebar-submenu-v1" : (file === "overview.html" || file === "wordpress.html") ? "20261105-wordpress-cache-route-v2" : sharedJsVersion;
   assert.ok(source.includes(`shared.js?v=${expectedSharedJsVersion}`), `${file}: missing or stale multi-theme shared JS version.`);
   assert.ok(source.includes(`workspace-global-theme.css?v=${workspaceThemeCssVersion}`), `${file}: missing or stale shared workspace theme stylesheet.`);
 
