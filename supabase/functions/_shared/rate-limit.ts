@@ -1,6 +1,6 @@
 // Shared, database-backed edge rate limiter. Client identifiers are HMACed before storage.
 export function trustedClientIp(req: Request): string | null {
-  const candidates = [req.headers.get("cf-connecting-ip"), req.headers.get("x-real-ip")];
+  const candidates = [req.headers.get("cf-connecting-ip")];
   for (const raw of candidates) {
     const value = String(raw || "").trim();
     if (!value || value.length > 64) continue;
