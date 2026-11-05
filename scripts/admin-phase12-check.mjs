@@ -75,7 +75,7 @@ const websiteBuilderPage = read("admin/website-builder.html");
 const wordpressCss = read("admin/wordpress.css");
 assert.ok(wordpressNav.includes('["wordpress","layout","WordPress"'), "WordPress must be the final System sidebar entry.");
 assert.ok(wordpressNav.includes("./wordpress-live.html"), "The WordPress sidebar must open the dashboard-only Live Website partition.");
-assert.ok(wordpressPage.includes("shared.js?v=20261105-sandbox-partitions-v1") && wordpressPage.includes("wordpress-sandbox.js?v=20261105-sandbox-partitions-v1"), "Live Website must load the secure admin shell and isolated sandbox controller.");
+assert.ok(wordpressPage.includes("shared.js?v=20261105-wordpress-sidebar-submenu-v1") && wordpressPage.includes("wordpress-sandbox.js?v=20261105-sandbox-partitions-v1"), "Live Website must load the secure admin shell and isolated sandbox controller.");
 assert.ok(wordpressPage.includes('data-page="wordpress"') && wordpressPage.includes('id="wpSandboxFrame"') && wordpressPage.includes('id="wpSandboxReviewFrame"'), "Live Website must render both the published test version and review draft.");
 assert.ok(!wordpressPage.includes("github.io/halalfood") && !wordpressPage.includes("wordpress.js?") && !wordpressPage.includes("wordpress-review.js?"), "The sandbox Live Website must not load or link to the production storefront preview scripts.");
 assert.ok(!/<iframe[^>]+\ssrc=/.test(wordpressPage) && (wordpressPage.match(/sandbox=""/g)||[]).length>=2, "Sandbox preview iframes must be script-disabled, opaque-origin frames without external iframe destinations.");
