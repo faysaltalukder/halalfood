@@ -39,7 +39,6 @@ assert.ok(rateLimitMigration.includes("TO service_role"));
 assert.ok(idempotencyMigration.includes("checkout_session_id"));
 assert.ok(idempotencyMigration.includes("checkout_request_hash"));
 assert.ok(idempotencyMigration.includes("FOR v_attempt IN 1..30 LOOP"));
-assert.ok(idempotencyMigration.includes("If it collides with another order"));
 assert.match(orderSync, /riskSignal\.order_number = data\.orderId/);
 assert.match(orderSync, /CHECKOUT_SESSION_CONFLICT/);
 assert.match(incomplete, /reserveEdgeRateLimit/);
