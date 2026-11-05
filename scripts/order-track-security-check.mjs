@@ -3,6 +3,13 @@ import { readFileSync } from "node:fs";
 
 const edge = readFileSync("supabase/functions/order-track/index.ts", "utf8");
 const page = readFileSync("track-order.html", "utf8");
+const incomplete = readFileSync("supabase/functions/incomplete-checkout/index.ts", "utf8");
+const analytics = readFileSync("supabase/functions/analytics-ingest/index.ts", "utf8");
+const customerCare = readFileSync("supabase/functions/customer-care-chat/index.ts", "utf8");
+const rateLimit = readFileSync("supabase/functions/_shared/rate-limit.ts", "utf8");
+const rateLimitMigration = readFileSync("supabase/migrations/20261105100000_edge_rate_limit_foundation.sql", "utf8");
+const marketingEmail = readFileSync("supabase/functions/marketing-email/index.ts", "utf8");
+const marketingUnsubscribe = readFileSync("supabase/functions/marketing-unsubscribe/index.ts", "utf8");
 
 // Tracking credentials must never be placed in a URL, browser history, or URL access logs.
 assert.match(edge, /req\.method !== "POST"/);
@@ -20,4 +27,21 @@ for (const selector of ["#track-form", "#r-id", "#r-name", "#r-total", "#timelin
   assert.ok(page.includes(selector), `Missing existing tracking UI contract: ${selector}`);
 }
 
-console.log("Order tracking privacy contract checks passed.");
+// Public edge entrypoints use the shared private atomic limiter without storing raw identifiers.
+assert.match(rateLimit, /HMAC/);
+assert.match(rateLimit, /consume_edge_rate_limit/);
+assert.match(rateLimitMigration, /SECURITY DEFINER/);
+assert.match(rateLimitMigration, /SET search_path = ''/);
+assert.match(rateLimitMigration, /GRANT EXECUTE ON FUNCTION public\\.consume_edge_rate_limit[\\s\\S]+TO service_role/);
+assert.match(incomplete, /reserveEdgeRateLimit/);
+assert.match(incomplete, /incomplete-checkout-session/);
+assert.match(analytics, /reserveEdgeRateLimit/);
+assert.match(analytics, /analytics-ingest-ip/);
+assert.match(customerCare, /reserveEdgeRateLimitRest/);
+assert.match(customerCare, /customer-care-visitor/);
+assert.match(marketingEmail, /async function requireAdmin/);
+assert.match(marketingEmail, /claims\\.aal !== "aal2"/);
+assert.match(marketingUnsubscribe, /unsubscribe_token_hash/);
+assert.match(marketingUnsubscribe, /token.length < 80/);
+
+console.log("Order tracking and backend rate-limit security contract checks passed.");
