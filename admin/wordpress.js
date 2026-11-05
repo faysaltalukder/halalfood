@@ -402,6 +402,19 @@
     fetchAndRender(LIVE_URL, { record: false });
   };
 
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true });
-  else init();
+  const startAfterAdminReady = () => {
+    const adminReady = window.HFAdminReady;
+    if (adminReady && typeof adminReady.then === "function") {
+      adminReady.then((admin) => {
+        if (admin) init();
+      }).catch((error) => {
+        console.error("WordPress preview could not wait for the secure admin workspace", error);
+      });
+      return;
+    }
+    init();
+  };
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", startAfterAdminReady, { once: true });
+  else startAfterAdminReady();
 })();
