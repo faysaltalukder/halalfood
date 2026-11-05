@@ -180,3 +180,29 @@ Implemented on the isolated feature branch:
 **Production impact:** none.  
 **Database impact:** none.  
 **Deployment:** none; work remains in draft PR #92.
+
+
+## 10. Implementation update — isolated Website Studio partitions (2026-11-05)
+
+The first sandbox workflow is now implemented on the feature branch:
+
+- The System navigation label is **Website Studio**.
+- Both Studio pages expose the same two partitions: **Live Website** and **Edit Website**.
+- **Edit Website** remains the schema-driven sample editor. It saves a local draft and submits it to the review flow.
+- **Live Website** now renders only the dashboard's Test Published Version. It no longer fetches, embeds, or links to the public storefront.
+- Draft review supports Approve, followed by **Publish Test Version**. That action updates only the sandbox's published-version record and a bounded local version history (20 entries maximum).
+- The legacy `admin/wordpress.html` route redirects to the sandbox Live Website page.
+- The old production preview controllers were removed. The sandbox renderer emits a restricted document from the allowlisted component schema and places it in script-disabled, opaque-origin iframes.
+- No production deployment token, GitHub Pages publishing action, production CMS write, storefront API request, Supabase data query, checkout, or payment permission is part of this workflow.
+
+### Storage boundary caveat
+
+The admin and public storefront currently share the same GitHub Pages origin. The sandbox therefore uses dedicated, namespaced browser-local storage keys rather than a separate browser origin. The current storefront code does not use these keys, and the sandbox controller does not read or write the storefront's existing data keys. This is a logical application boundary, not a hard browser-origin security boundary. A future stronger isolation milestone should move sandbox persistence and preview hosting to a separate origin before introducing shared drafts, team collaboration, or sensitive test data.
+
+### Current limitations
+
+- Drafts, approvals, Test Published Versions and history are local to one browser profile; they do not synchronize across devices or users.
+- The editor still uses its sample document and six basic components. It does not import or modify the actual Halal Food homepage or inner pages.
+- The preview is a safe rendering of the builder document, not a faithful simulation of the existing storefront's cart, checkout, products, or integrations.
+- Browser-level QA against the feature branch remains required. CI checks are necessary but do not prove the complete interactive workflow in a real browser.
+- Production publishing remains intentionally absent and must be designed as a separate, explicitly authorized release project.
