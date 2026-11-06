@@ -18,7 +18,8 @@ const EXCLUDED = [
 const ALLOWED = new Set([
   ".html", ".css", ".js", ".json", ".svg", ".txt", ".xml", ".webmanifest",
   ".png", ".jpg", ".jpeg", ".webp", ".avif", ".gif", ".ico",
-  ".woff", ".woff2", ".ttf", ".otf", ".mp4", ".webm", ".mp3"
+  ".woff", ".woff2", ".ttf", ".otf", ".mp4", ".webm", ".mp3",
+  ".pdf", ".csv", ".xlsx", ".docx", ".pptx", ".ods"
 ]);
 const cors = {
   "Access-Control-Allow-Origin": ORIGIN,
@@ -63,7 +64,12 @@ function contentType(path: string): string {
     ".webmanifest":"application/manifest+json",".png":"image/png",".jpg":"image/jpeg",".jpeg":"image/jpeg",
     ".webp":"image/webp",".avif":"image/avif",".gif":"image/gif",".ico":"image/x-icon",
     ".woff":"font/woff",".woff2":"font/woff2",".ttf":"font/ttf",".otf":"font/otf",
-    ".mp4":"video/mp4",".webm":"video/webm",".mp3":"audio/mpeg"
+    ".mp4":"video/mp4",".webm":"video/webm",".mp3":"audio/mpeg",
+    ".pdf":"application/pdf",".csv":"text/csv; charset=utf-8",
+    ".xlsx":"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    ".docx":"application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ".pptx":"application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    ".ods":"application/vnd.oasis.opendocument.spreadsheet"
   };
   return map[ext] || "application/octet-stream";
 }
