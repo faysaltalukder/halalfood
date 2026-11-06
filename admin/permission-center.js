@@ -91,22 +91,32 @@ function render() {
             <button class="hfp-btn primary" data-action="approve" data-id="${escapeHtml(r.id)}" disabled>Approve…</button>
             <button class="hfp-btn danger" data-action="deny" data-id="${escapeHtml(r.id)}" disabled>Deny…</button>
           </div>
-        </article>`).join("") : '<div class="hfp-empty">No pending requests. You can create a clearly labelled test request below to verify the approval flow.</div>'}
+        </article>`).join("") : '<div class="hfp-empty">No pending requests. Use the request form below to ask for a scoped permission.</div>'}
     </section>
     <section class="hfp-card">
-      <div class="hfp-head"><div><h2>Test the approval workflow</h2><p class="hfp-muted">Creates a test request only. It does not read or change the selected server or GitHub resource.</p></div>${chip("Safe test", "good")}</div>
+      <div class="hfp-head"><div><h2>Request a permission</h2><p class="hfp-muted">Create a scoped request for a supported provider capability. Nothing executes until a matching provider connector is configured and the request is approved.</p></div>${chip("Scoped request", "good")}</div>
       <form id="hfpTestForm" class="hfp-form">
-        <div class="hfp-field"><label for="hfpPermission">Permission to test</label><select id="hfpPermission" required>
-          <option value="github.repo.read">GitHub repository read</option><option value="github.repo.write">GitHub repository write</option>
-          <option value="supabase.project.read">Supabase project read</option><option value="supabase.database.read">Supabase database read</option>
-          <option value="supabase.database.write">Supabase database write</option><option value="supabase.storage.read">Supabase Storage read</option>
-          <option value="supabase.storage.upload">Supabase Storage upload</option><option value="backblaze.storage.read">Backblaze B2 storage read</option><option value="backblaze.storage.upload">Backblaze B2 storage upload</option>
-          <option value="filebase.storage.read">Filebase storage read</option><option value="filebase.storage.upload">Filebase storage upload</option><option value="website.deploy">Website deploy</option>
+        <div class="hfp-field"><label for="hfpPermission">Permission type</label><select id="hfpPermission" required>
+          <optgroup label="GitHub">
+            <option value="github.repo.read">Repository · Read</option><option value="github.repo.write">Repository · Write</option><option value="github.issues.read">Issues · Read</option><option value="github.issues.write">Issues · Create/update</option><option value="github.pull_requests.read">Pull requests · Read</option><option value="github.pull_requests.write">Pull requests · Create/update</option><option value="github.releases.read">Releases · Read</option><option value="github.releases.create">Releases · Create</option><option value="github.workflow.read">Workflows · Read</option><option value="github.workflow.run">Workflows · Run</option><option value="github.workflow.cancel">Workflows · Cancel</option>
+          </optgroup>
+          <optgroup label="Supabase">
+            <option value="supabase.project.read">Project · Read</option><option value="supabase.database.read">Database · Read</option><option value="supabase.database.schema.read">Database schema · Read</option><option value="supabase.database.write">Database · Scoped write</option><option value="supabase.storage.read">Storage · Read/download</option><option value="supabase.storage.upload">Storage · Upload</option><option value="supabase.storage.delete">Storage · Delete named objects</option><option value="supabase.auth.users.read">Auth users · Read</option><option value="supabase.auth.users.manage">Auth users · Manage</option><option value="supabase.edge_functions.read">Edge Functions · Read</option><option value="supabase.edge_functions.deploy">Edge Functions · Deploy</option>
+          </optgroup>
+          <optgroup label="Backblaze B2">
+            <option value="backblaze.storage.read">Storage · Read/download</option><option value="backblaze.storage.upload">Storage · Upload</option><option value="backblaze.storage.delete">Storage · Delete named objects</option><option value="backblaze.bucket.read">Bucket · Read settings</option><option value="backblaze.bucket.configure">Bucket · Configure</option>
+          </optgroup>
+          <optgroup label="Filebase">
+            <option value="filebase.storage.read">Storage · Read</option><option value="filebase.storage.upload">Storage · Upload</option><option value="filebase.storage.delete">Storage · Delete named objects</option><option value="filebase.bucket.read">Bucket · Read</option>
+          </optgroup>
+          <optgroup label="Website & Cloudflare">
+            <option value="website.content.read">Website content · Read</option><option value="website.content.write">Website content · Write</option><option value="website.deploy">Website · Deploy</option><option value="website.publish">Website · Publish</option><option value="cloudflare.dns.read">Cloudflare DNS · Read</option><option value="cloudflare.dns.write">Cloudflare DNS · Write</option><option value="cloudflare.pages.deploy">Cloudflare Pages · Deploy</option>
+          </optgroup>
         </select></div>
         <div class="hfp-field"><label for="hfpDuration">Requested duration</label><select id="hfpDuration"><option value="900">15 minutes</option><option value="3600">1 hour</option><option value="86400">24 hours</option></select></div>
         <div class="hfp-field full"><label for="hfpResource">Resource scope (JSON)</label><input id="hfpResource" value='{"repo":"faysaltalukder/halalfood"}' required></div>
-        <div class="hfp-field full"><label for="hfpReason">Reason</label><textarea id="hfpReason" required minlength="12">Testing the permission approval flow only. No external action should be executed.</textarea></div>
-        <div class="hfp-field full"><button class="hfp-btn primary" type="submit">Create test approval request</button></div>
+        <div class="hfp-field full"><label for="hfpReason">Reason</label><textarea id="hfpReason" required minlength="12">Requesting this narrowly scoped permission for an approved Halal Food maintenance task. No external action should execute before approval.</textarea></div>
+        <div class="hfp-field full"><button class="hfp-btn primary" type="submit">Submit permission request</button></div>
       </form>
     </section>
     <section class="hfp-card">
@@ -165,9 +175,12 @@ root.addEventListener("change", event => {
   if (event.target.id === "hfpFinalCheck") document.getElementById("hfpFinalButton").disabled = !event.target.checked;
   if (event.target.id === "hfpPermission") {
     const val = event.target.value;
-    document.getElementById("hfpResource").value = val.startsWith("github.") ? '{"repo":"faysaltalukder/halalfood"}' :
-      (val.startsWith("filebase.") || val.startsWith("backblaze.")) ? '{"bucket":"","prefix":"sites/halalfood/"}' :
-      '{"project_id":"'+PROJECT_ID+'"}';
+    const resource = val.startsWith("github.") ? {repo:"faysaltalukder/halalfood"} :
+      (val.startsWith("filebase.") || val.startsWith("backblaze.")) ? {bucket:"REPLACE_WITH_BUCKET",prefix:"sites/halalfood/"} :
+      val.startsWith("cloudflare.") ? {zone_id:"REPLACE_WITH_ZONE_ID",account_id:"REPLACE_WITH_ACCOUNT_ID"} :
+      val.startsWith("website.") ? {site:"https://faysaltalukder.github.io/halalfood/",path:"/*"} :
+      {project_id:PROJECT_ID};
+    document.getElementById("hfpResource").value = JSON.stringify(resource);
   }
 });
 root.addEventListener("click", async event => {
@@ -195,13 +208,13 @@ root.addEventListener("submit", async event => {
     let resource;
     try { resource = JSON.parse(document.getElementById("hfpResource").value); } catch (_) { throw new Error("Resource scope must be valid JSON."); }
     if (!resource || typeof resource !== "object" || Array.isArray(resource) || !Object.keys(resource).length) throw new Error("Provide a non-empty resource scope object.");
-    await call("create_test_request",{
+    await call("create_request",{
       permission_key:document.getElementById("hfpPermission").value,
       duration_seconds:Number(document.getElementById("hfpDuration").value),
       resource,
       reason:document.getElementById("hfpReason").value
     });
-    notify("Test request created. It is now waiting for your approval.");
+    notify("Permission request created. It is now waiting for your approval.");
     await refresh();
   } catch(error) { notify(error.message,"error"); }
   finally { if (button.isConnected) button.disabled = false; }

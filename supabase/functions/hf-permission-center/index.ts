@@ -13,12 +13,10 @@ const cors = {
 const reply = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: cors });
 const clean = (v: unknown, max = 500) => String(v ?? "").replace(/[\u0000-\u001f\u007f]/g, " ").trim().slice(0, max);
 const catalog = new Set([
-  "supabase.project.read", "supabase.database.read", "supabase.database.write",
-  "supabase.storage.read", "supabase.storage.upload", "supabase.storage.delete",
-  "filebase.storage.read", "filebase.storage.upload", "filebase.storage.delete",
-  "backblaze.storage.read", "backblaze.storage.upload", "backblaze.storage.delete",
-  "github.repo.read", "github.repo.write", "github.workflow.read", "github.workflow.run",
-  "website.deploy", "website.publish"
+  "github.repo.read","github.repo.write","github.issues.read","github.issues.write","github.pull_requests.read","github.pull_requests.write","github.releases.read","github.releases.create","github.workflow.read","github.workflow.run","github.workflow.cancel",
+  "supabase.project.read","supabase.database.read","supabase.database.write","supabase.database.schema.read","supabase.storage.read","supabase.storage.upload","supabase.storage.delete","supabase.auth.users.read","supabase.auth.users.manage","supabase.edge_functions.read","supabase.edge_functions.deploy",
+  "backblaze.storage.read","backblaze.storage.upload","backblaze.storage.delete","backblaze.bucket.read","backblaze.bucket.configure","filebase.storage.read","filebase.storage.upload","filebase.storage.delete","filebase.bucket.read",
+  "website.content.read","website.content.write","website.deploy","website.publish","cloudflare.dns.read","cloudflare.dns.write","cloudflare.pages.deploy"
 ]);
 
 function jwtClaims(token: string): Record<string, unknown> | null {
@@ -60,22 +58,44 @@ function riskForPermission(permissionKey: string) {
   return "medium";
 }
 const catalogItems = [
-  ["github.repo.read","GitHub","Read approved repository files and metadata","Read"],
-  ["github.repo.write","GitHub","Create or update approved repository files","Write"],
-  ["github.workflow.read","GitHub","Read workflow runs and logs","Read"],
-  ["github.workflow.run","GitHub","Run an approved workflow","High risk"],
-  ["supabase.project.read","Supabase","Read project metadata","Read"],
+  ["github.repo.read","GitHub","Read repository files, branches and metadata","Read"],
+  ["github.repo.write","GitHub","Create or update approved repository files","High risk"],
+  ["github.issues.read","GitHub","Read issues and comments","Read"],
+  ["github.issues.write","GitHub","Create or update issues and comments","High risk"],
+  ["github.pull_requests.read","GitHub","Read pull requests, reviews and diffs","Read"],
+  ["github.pull_requests.write","GitHub","Create or update pull requests and reviews","High risk"],
+  ["github.releases.read","GitHub","Read release metadata and assets","Read"],
+  ["github.releases.create","GitHub","Create a repository release","High risk"],
+  ["github.workflow.read","GitHub","Read workflow runs, jobs and logs","Read"],
+  ["github.workflow.run","GitHub","Run an explicitly selected workflow","High risk"],
+  ["github.workflow.cancel","GitHub","Cancel an explicitly selected workflow run","High risk"],
+  ["supabase.project.read","Supabase","Read project metadata and health","Read"],
   ["supabase.database.read","Supabase","Read explicitly scoped database records","Read"],
-  ["supabase.database.write","Supabase","Write through approved server-side operations","High risk"],
-  ["supabase.storage.read","Supabase Storage","List or read scoped objects","Read"],
-  ["supabase.storage.upload","Supabase Storage","Upload to a scoped bucket and prefix","High risk"],
-  ["filebase.storage.read","S3-compatible storage","Read scoped bucket objects","Read"],
-  ["filebase.storage.upload","S3-compatible storage","Upload to a scoped bucket and prefix","High risk"],
-  ["backblaze.storage.read","Backblaze B2","Read scoped bucket objects","Read"],
-  ["backblaze.storage.upload","Backblaze B2","Upload to a scoped bucket and prefix","High risk"],
-  ["backblaze.storage.delete","Backblaze B2","Delete an approved object only","Critical"],
+  ["supabase.database.schema.read","Supabase","Read database schema and migrations","Read"],
+  ["supabase.database.write","Supabase","Write through approved server-side operations only","High risk"],
+  ["supabase.storage.read","Supabase Storage","List or download objects in an approved bucket/prefix","Read"],
+  ["supabase.storage.upload","Supabase Storage","Upload to an approved bucket/prefix","High risk"],
+  ["supabase.storage.delete","Supabase Storage","Delete only explicitly named objects","Critical"],
+  ["supabase.auth.users.read","Supabase Auth","Read scoped user account metadata","Read"],
+  ["supabase.auth.users.manage","Supabase Auth","Manage user access and account status","Critical"],
+  ["supabase.edge_functions.read","Supabase Edge Functions","Read function metadata and deployment status","Read"],
+  ["supabase.edge_functions.deploy","Supabase Edge Functions","Deploy a reviewed function version","Critical"],
+  ["backblaze.storage.read","Backblaze B2","List and download objects in an approved bucket/prefix","Read"],
+  ["backblaze.storage.upload","Backblaze B2","Upload objects to an approved bucket/prefix","High risk"],
+  ["backblaze.storage.delete","Backblaze B2","Delete only explicitly named objects","Critical"],
+  ["backblaze.bucket.read","Backblaze B2","Read bucket metadata and lifecycle settings","Read"],
+  ["backblaze.bucket.configure","Backblaze B2","Change an explicitly scoped bucket configuration","Critical"],
+  ["filebase.storage.read","Filebase","List and download approved objects","Read"],
+  ["filebase.storage.upload","Filebase","Upload to an approved bucket/prefix","High risk"],
+  ["filebase.storage.delete","Filebase","Delete only explicitly named objects","Critical"],
+  ["filebase.bucket.read","Filebase","Read bucket metadata","Read"],
+  ["website.content.read","Website","Read approved site content and configuration","Read"],
+  ["website.content.write","Website","Update approved site content","High risk"],
   ["website.deploy","Website","Prepare a reviewed deployment","High risk"],
-  ["website.publish","Website","Publish an approved website version","High risk"]
+  ["website.publish","Website","Publish an approved website version","High risk"],
+  ["cloudflare.dns.read","Cloudflare","Read DNS records for an approved zone","Read"],
+  ["cloudflare.dns.write","Cloudflare","Create or update approved DNS records","Critical"],
+  ["cloudflare.pages.deploy","Cloudflare","Deploy a reviewed Pages build","High risk"]
 ];
 async function audit(admin: any, data: Record<string, unknown>) {
   const { error } = await admin.from("hf_permission_audit").insert(data);
@@ -153,7 +173,7 @@ Deno.serve(async (req: Request) => {
       return reply({ success: true, requests: requests.data || [], grants: grants.data || [], audit: logs.data || [] });
     }
 
-    if (action === "create_test_request") {
+    if (action === "create_test_request" || action === "create_request") {
       const permissionKey = clean(body.permission_key, 80);
       if (!catalog.has(permissionKey)) return reply({ success: false, error: "Permission is not in the allow-list." }, 400);
       const reason = clean(body.reason, 700);
@@ -162,12 +182,12 @@ Deno.serve(async (req: Request) => {
       const duration = Math.max(60, Math.min(2592000, Number(body.duration_seconds) || 900));
       const requestKey = crypto.randomUUID();
       const { data, error } = await admin.from("hf_permission_requests").insert({
-        request_key: requestKey, source: "dashboard", requester: "Admin permission test",
-        permission_key: permissionKey, resource, reason, risk_level: /delete|write|upload|deploy|publish|run|update|create|modify/i.test(permissionKey) ? "high" : "medium",
+        request_key: requestKey, source: "dashboard", requester: action === "create_request" ? "Admin permission request" : "Admin permission test",
+        permission_key: permissionKey, resource, reason, risk_level: riskForPermission(permissionKey),
         requested_duration_seconds: duration, status: "pending"
       }).select("*").single();
       if (error) return reply({ success: false, error: "Could not create the approval request.", code: error.code || "insert_failed" }, 500);
-      await audit(admin, { request_id: data.id, actor_type: "admin", actor_id: adminUser.id, event: "request_created", permission_key: permissionKey, resource, details: { source: "dashboard_test" } });
+      await audit(admin, { request_id: data.id, actor_type: "admin", actor_id: adminUser.id, event: "request_created", permission_key: permissionKey, resource, details: { source: action === "create_request" ? "dashboard_request" : "dashboard_test" } });
       return reply({ success: true, request: data });
     }
 
