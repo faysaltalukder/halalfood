@@ -61,21 +61,30 @@ assert.ok(celestialEngine.includes("setInterval(update,60000)") && solarJourneyC
 
 const htmlFiles = readdirSync(adminDir).filter((file) => file.endsWith(".html"));
 const unifiedPages = htmlFiles.filter((file) => /<body[^>]*\bdata-page=/.test(read(join("admin", file))));
-assert.equal(unifiedPages.length, 44, `Expected 44 unified admin pages in the current admin workspace, found ${unifiedPages.length}.`);
+assert.equal(unifiedPages.length, 45, `Expected 45 unified admin pages in the current admin workspace, found ${unifiedPages.length}.`);
 assert.ok(unifiedPages.includes("ai-knowledge.html"), "AI Knowledge Center must use the unified admin shell.");
 assert.ok(unifiedPages.includes("pos.html"), "POS import must use the unified admin shell.");
 assert.ok(unifiedPages.includes("coupons.html"), "Coupon Promotions must use the unified admin shell.");
 assert.ok(unifiedPages.includes("coupon-usage.html"), "Coupon Usage must use the unified admin shell.");
 assert.ok(unifiedPages.includes("categories.html"), "The single Categories workspace must use the unified admin shell.");
-assert.ok(unifiedPages.includes("wordpress-live.html") && !unifiedPages.includes("wordpress.html"), "The sandbox Live Website route must use the unified admin shell; the legacy production preview route must remain a redirect shim.");
+assert.ok(unifiedPages.includes("wordpress-live.html") && unifiedPages.includes("wordpress-templates.html") && !unifiedPages.includes("wordpress.html"), "The sandbox Live Website and template placeholder routes must use the unified admin shell; the legacy production preview route must remain a redirect shim.");
 const wordpressPage = read("admin/wordpress-live.html");
 const wordpressNav = read("admin/shared.js");
+const wordpressTemplatesPage = read("admin/wordpress-templates.html");
+const wordpressTemplatesJs = read("admin/wordpress-templates.js");
+const wordpressCategoryMatch = wordpressNav.match(/const wordpressBusinessCategories=(\\[[\\s\\S]*?\\])\\.map/);
+assert.ok(wordpressCategoryMatch, "WordPress navigation must define its business-category partitions.");
+const wordpressCategoryData = JSON.parse(wordpressCategoryMatch[1]);
+assert.equal(wordpressCategoryData.length, 20, "WordPress must expose all 20 planned business categories.");
+assert.ok(wordpressCategoryData.every(([, , label]) => typeof label === "string" && label.trim()), "Every WordPress business category must have a visible label.");
+assert.ok(wordpressTemplatesPage.includes('data-page="wordpress-templates"') && wordpressTemplatesPage.includes('id="wpTemplateSlots"'), "The WordPress template placeholder route must use the secure shell and expose its four-slot grid.");
+assert.ok(wordpressTemplatesJs.includes("Array.from({length:4}") && wordpressTemplatesJs.includes("Design not created yet"), "Template category pages must show four explicit empty placeholders without claiming designs exist.");
 const wordpressSandbox = read("admin/wordpress-sandbox.js");
 const websiteBuilderPage = read("admin/website-builder.html");
 const wordpressCss = read("admin/wordpress.css");
 assert.ok(wordpressNav.includes('["wordpress","layout","WordPress"'), "WordPress must be the final System sidebar entry.");
 assert.ok(wordpressNav.includes("./wordpress-live.html"), "The WordPress sidebar must open the dashboard-only Live Website partition.");
-assert.ok(wordpressPage.includes("shared.js?v=20261105-wordpress-sidebar-submenu-v1") && wordpressPage.includes("wordpress-sandbox.js?v=20261105-sandbox-partitions-v1"), "Live Website must load the secure admin shell and isolated sandbox controller.");
+assert.ok(wordpressPage.includes("shared.js?v=20261106-wordpress-categories-v1") && wordpressPage.includes("wordpress-sandbox.js?v=20261105-sandbox-partitions-v1"), "Live Website must load the secure admin shell and isolated sandbox controller.");
 assert.ok(wordpressPage.includes('data-page="wordpress"') && wordpressPage.includes('id="wpSandboxFrame"') && wordpressPage.includes('id="wpSandboxReviewFrame"'), "Live Website must render both the published test version and review draft.");
 assert.ok(!wordpressPage.includes("github.io/halalfood") && !wordpressPage.includes("wordpress.js?") && !wordpressPage.includes("wordpress-review.js?"), "The sandbox Live Website must not load or link to the production storefront preview scripts.");
 assert.ok(!/<iframe[^>]+\ssrc=/.test(wordpressPage) && (wordpressPage.match(/sandbox=""/g)||[]).length>=2, "Sandbox preview iframes must be script-disabled, opaque-origin frames without external iframe destinations.");
@@ -150,8 +159,9 @@ for (const file of unifiedPages) {
   const source = read(join("admin", file));
   const expectedI18nVersion = i18nVersion;
   assert.ok(source.includes(`i18n.js?v=${expectedI18nVersion}`), `${file}: missing or stale shared language dictionary.`);
-  assert.ok(source.includes(`shared.css?v=${sharedCssVersion}`), `${file}: stale shared UI cache version.`);
-  const expectedSharedJsVersion = file === "ai-conversations.html" ? "20261104-aiconversations-v1" : (file === "wordpress-live.html" || file === "website-builder.html") ? "20261105-wordpress-sidebar-submenu-v1" : (file === "overview.html" || file === "wordpress.html") ? "20261105-wordpress-cache-route-v2" : sharedJsVersion;
+  const expectedSharedCssVersion = ["wordpress-live.html", "website-builder.html", "wordpress-templates.html"].includes(file) ? "20261106-wordpress-categories-v1" : sharedCssVersion;
+  assert.ok(source.includes(`shared.css?v=${expectedSharedCssVersion}`), `${file}: stale shared UI cache version.`);
+  const expectedSharedJsVersion = file === "ai-conversations.html" ? "20261104-aiconversations-v1" : (["wordpress-live.html", "website-builder.html", "wordpress-templates.html"].includes(file)) ? "20261106-wordpress-categories-v1" : (file === "overview.html" || file === "wordpress.html") ? "20261105-wordpress-cache-route-v2" : sharedJsVersion;
   assert.ok(source.includes(`shared.js?v=${expectedSharedJsVersion}`), `${file}: missing or stale multi-theme shared JS version.`);
   assert.ok(source.includes(`workspace-global-theme.css?v=${workspaceThemeCssVersion}`), `${file}: missing or stale shared workspace theme stylesheet.`);
 
