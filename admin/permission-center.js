@@ -8,6 +8,7 @@ function getRoot() {
     const main = document.getElementById("adminMain");
     if (main) { host = document.createElement("div"); host.id = "hfPermissionRoot"; main.replaceChildren(host); }
   }
+  if (host) { root = host; bindEvents(host); }
   return host;
 }
 const PROJECT_ID = "qfwvrcfkrsydycbfjsxf";
@@ -153,16 +154,18 @@ async function refresh() {
   if (busy) return;
   busy = true;
   const host = getRoot();
+  let loaded = false;
   try {
     if (!host) throw new Error("Permission Center mount point is missing after the admin shell loaded.");
     host.innerHTML = '<div class="hfp-card"><strong>Connecting to the secure permission service…</strong><p class="hfp-muted">Your admin MFA session is verified. Loading requests, grants and transfer permissions.</p></div>';
     const [status, records] = await Promise.all([call("status"), call("list")]);
     statusData = status;
     apiData = records;
+    loaded = true;
   } catch (error) {
     if (host?.isConnected) host.innerHTML = '<div class="hfp-alert"><strong>Permission service could not be loaded</strong>'+escapeHtml(error.message)+'<p style="margin:8px 0 0">Check that the admin session is still valid and the Edge Function is deployed. Refresh after signing in again if needed.</p><button class="hfp-btn" data-action="refresh" style="margin-top:10px">Retry</button></div>';
   } finally { busy = false; }
-  if (host?.isConnected && statusData.backend) render();
+  if (loaded && host?.isConnected) render();
 }
 function openDecision(id, decision) {
   const request = apiData.requests.find(r => r.id === id);
@@ -184,7 +187,7 @@ function bindEvents(host) {
   host.addEventListener("change", event => {
   if (event.target.matches("[data-reviewed]")) {
     const id = event.target.getAttribute("data-reviewed");
-    root.querySelectorAll('[data-action="approve"][data-id="'+CSS.escape(id)+'"],[data-action="deny"][data-id="'+CSS.escape(id)+'"]').forEach(b => b.disabled = !event.target.checked);
+    host.querySelectorAll('[data-action="approve"][data-id="'+CSS.escape(id)+'"],[data-action="deny"][data-id="'+CSS.escape(id)+'"]').forEach(b => b.disabled = !event.target.checked);
   }
   if (event.target.id === "hfpFinalCheck") document.getElementById("hfpFinalButton").disabled = !event.target.checked;
   if (event.target.id === "hfpPermission") {
