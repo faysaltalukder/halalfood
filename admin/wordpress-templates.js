@@ -60,13 +60,14 @@
   function showInstallDialog(templateKey) {
     state.currentTemplate=templates.find(item=>item.key===templateKey)||templates[0];
     $('wptInstallDescription').textContent=state.currentTemplate.name+' will be installed as a new draft store in your Neon workspace.';
-    $('wptInstallName').value='My '+state.currentTemplate.name.replace('General ','')+' Store';
+    $('wptInstallName').value=state.previewOnly && state.websiteData?.website?.name ? state.websiteData.website.name : 'My '+state.currentTemplate.name.replace('General ','')+' Store';
     $('wptInstallDialog').showModal();
   }
   async function installTemplate(name) {
     if(!state.apiReady) throw new Error('Neon backend is not ready. Check the connection status and try again.');
     const template=state.currentTemplate; if(!template)throw new Error('Choose a template first.');
-    const body=await api('/websites',{method:'POST',body:JSON.stringify({name,template_key:template.key,brand:{accent:template.accent},settings:{delivery:{mode:template.key==='express-grocery'?'express':template.key==='wholesale-bulk'?'bulk':'standard'},currency:'BDT'}})});
+    const accent=state.previewOnly ? $('wptBrandColor').value : template.accent;
+    const body=await api('/websites',{method:'POST',body:JSON.stringify({name,template_key:template.key,brand:{accent},settings:{delivery:{mode:template.key==='express-grocery'?'express':template.key==='wholesale-bulk'?'bulk':'standard'},currency:'BDT'}})});
     state.currentWebsite=body.website;
     await loadWebsite(body.website.id);
     $('wptInstallDialog').close();
@@ -158,12 +159,15 @@
     $('wptProductCategory').disabled=state.previewOnly;
     $('wptProductDescription').disabled=state.previewOnly;
     $('wptProductImage').disabled=state.previewOnly;
+    $('wptLogoFile').disabled=state.previewOnly;
     renderProductList(); renderStorePreview();
   }
   async function saveWebsite() {
     if(state.previewOnly||!state.currentWebsite)return;
+    const siteName=$('wptSiteName').value.trim();
+    if(!siteName){toast('Store name cannot be empty.',true);return;}
     const brand={...(state.websiteData.website.brand||{}),accent:$('wptBrandColor').value};
-    const body=await api('/websites/'+state.currentWebsite.id,{method:'PATCH',body:JSON.stringify({name:$('wptSiteName').value.trim(),brand})});
+    const body=await api('/websites/'+state.currentWebsite.id,{method:'PATCH',body:JSON.stringify({name:siteName,brand})});
     state.websiteData.website=body.website;state.currentWebsite=body.website;
     $('wptEditorTitle').textContent=body.website.name;renderStorePreview();
     $('wptEditorStatus').textContent='Saved to Neon · '+new Date().toLocaleTimeString();
@@ -173,11 +177,11 @@
     if(!file)return null;
     if(!/^image\/(jpeg|png|webp|gif)$/.test(file.type))throw new Error('Use a JPG, PNG, WebP or GIF image.');
     if(file.size>5*1024*1024)throw new Error('Each image must be 5 MB or smaller.');
-    const presign=await api('/websites/'+state.currentWebsite.id+'/assets/presign',{method:'POST',body:JSON.stringify({file_name:file.name,mime_type:file.type,byte_size:file.size})});
-    const upload=await fetch(presign.upload_url,{method:'PUT',headers:{'content-type':file.type},body:file});
-    if(!upload.ok)throw new Error('Image upload failed. Please retry.');
-    const complete=await api('/websites/'+state.currentWebsite.id+'/assets/complete',{method:'POST',body:JSON.stringify({object_key:presign.object_key,file_name:file.name,mime_type:file.type,byte_size:file.size,alt_text:altText})});
-    return complete.asset;
+    const form=new FormData();form.append('file',file,file.name);form.append('alt_text',altText);
+    const response=await fetch(API_BASE+'/websites/'+state.currentWebsite.id+'/assets/upload',{method:'POST',headers:{authorization:'Bearer '+state.token},body:form});
+    const body=await response.json().catch(()=>({}));
+    if(!response.ok)throw new Error(body.error||'Image upload failed. Please retry.');
+    return body.asset;
   }
   async function addProduct() {
     if(state.previewOnly||!state.currentWebsite)return;
