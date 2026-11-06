@@ -21,6 +21,7 @@ const ordersAdmin = read("../admin/website-orders.js");
 const ordersHtml = read("../admin/website-orders.html");
 const ordersCss = read("../admin/website-orders.css");
 const pageExpansion = read("../database/migrations/20261107_grocery_page_expansion.sql");
+const orderWorkflow = read("../database/migrations/20261107_grocery_order_status_workflow.sql");
 
 const keys = ["general-supermarket", "fresh-produce", "express-grocery", "wholesale-bulk"];
 for (const key of keys) {
@@ -54,6 +55,8 @@ assert.ok(pagesHtml.includes("website-pages.js") && pagesAdmin.includes("seedWeb
 assert.ok(pagesCss.includes("@media(max-width:560px)"), "page manager must support small mobile screens");
 assert.ok(ordersHtml.includes("website-orders.js") && ordersAdmin.includes("loadWebsiteOrders") && ordersAdmin.includes("updateOrderStatus"), "store owner must be able to view and update Neon orders");
 assert.ok(ordersCss.includes("@media(max-width:560px)"), "order inbox must support small mobile screens");
+assert.ok(orderWorkflow.includes("update_storefront_order_status") && orderWorkflow.includes("stock=stock+v_item.quantity"), "cancellation must restore reserved inventory atomically");
+assert.ok(ordersAdmin.includes("nextStates(o.status)"), "order inbox must constrain valid status transitions");
 assert.ok(apiClient.includes("async function loadWebsiteOrders") && apiClient.includes("async function updateOrderStatus"), "Neon API must expose owner-scoped order management");
 assert.ok(apiClient.includes("length<25") && apiClient.includes("const records=missing.map"), "Neon must seed all 25 page documents efficiently");
 assert.ok(builder.includes("saveDocument(state.website,payload,PAGE_KEY)"), "editor saves must be scoped to the selected page");
