@@ -1,6 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.95.0";
-import { S3Client, PutObjectCommand, HeadBucketCommand } from "npm:@aws-sdk/client-s3@3.850.0";
+import { S3Client, PutObjectCommand, HeadBucketCommand, HeadObjectCommand } from "npm:@aws-sdk/client-s3@3.850.0";
 
 const ORIGIN = "https://faysaltalukder.github.io";
 const ADMIN_EMAIL = "halalfoodbd.official@gmail.com";
@@ -156,6 +156,10 @@ async function runPublish(userId: string) {
             CacheControl: "public, max-age=31536000, immutable",
             Metadata: { "source-commit": headBefore, "sha256": digest }
           }));
+          const stored = await s3.send(new HeadObjectCommand({ Bucket: bucket, Key: key }));
+          if (Number(stored.ContentLength) !== bytes.byteLength || String(stored.Metadata?.sha256 || "") !== digest) {
+            throw new Error("Backblaze read-back metadata/size verification failed.");
+          }
           manifestFiles.push({ path: file.path, key, bytes: bytes.byteLength, sha256: digest });
           uploadedBytes += bytes.byteLength;
         } catch (error) {
@@ -186,6 +190,12 @@ async function runPublish(userId: string) {
       ContentType: "application/json", CacheControl: "no-store",
       Metadata: { "source-commit": headBefore, "file-count": String(manifestFiles.length) }
     }));
+    const storedManifest = await s3.send(new HeadObjectCommand({ Bucket: bucket, Key: manifestKey }));
+    if (Number(storedManifest.ContentLength) !== manifestBytes.byteLength ||
+        String(storedManifest.Metadata?.["source-commit"] || "") !== headBefore ||
+        String(storedManifest.Metadata?.["file-count"] || "") !== String(manifestFiles.length)) {
+      throw new Error("The latest release manifest could not be verified after upload.");
+    }
     return {
       ok: true, status: "published", provider: "Backblaze B2", source_commit: headBefore,
       file_count: manifestFiles.length, total_bytes: uploadedBytes,
