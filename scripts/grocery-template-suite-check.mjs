@@ -17,6 +17,9 @@ const storefrontCss = read("../storefront.css");
 const pagesAdmin = read("../admin/website-pages.js");
 const pagesHtml = read("../admin/website-pages.html");
 const pagesCss = read("../admin/website-pages.css");
+const ordersAdmin = read("../admin/website-orders.js");
+const ordersHtml = read("../admin/website-orders.html");
+const ordersCss = read("../admin/website-orders.css");
 const pageExpansion = read("../database/migrations/20261107_grocery_page_expansion.sql");
 
 const keys = ["general-supermarket", "fresh-produce", "express-grocery", "wholesale-bulk"];
@@ -49,6 +52,9 @@ assert.ok(storefront.includes("offersPage") && storefront.includes("brandsPage")
 assert.ok(storefrontCss.includes("@media(max-width:720px)") && storefrontCss.includes("data-template"), "storefront must include mobile and theme-specific CSS");
 assert.ok(pagesHtml.includes("website-pages.js") && pagesAdmin.includes("seedWebsitePages") && pagesAdmin.includes("createCustomPage"), "website page manager must seed and manage page documents");
 assert.ok(pagesCss.includes("@media(max-width:560px)"), "page manager must support small mobile screens");
+assert.ok(ordersHtml.includes("website-orders.js") && ordersAdmin.includes("loadWebsiteOrders") && ordersAdmin.includes("updateOrderStatus"), "store owner must be able to view and update Neon orders");
+assert.ok(ordersCss.includes("@media(max-width:560px)"), "order inbox must support small mobile screens");
+assert.ok(apiClient.includes("async function loadWebsiteOrders") && apiClient.includes("async function updateOrderStatus"), "Neon API must expose owner-scoped order management");
 assert.ok(apiClient.includes("length<25") && apiClient.includes("const records=missing.map"), "Neon must seed all 25 page documents efficiently");
 assert.ok(builder.includes("saveDocument(state.website,payload,PAGE_KEY)"), "editor saves must be scoped to the selected page");
 for (const key of ["offers","brands","recipes","recipe-detail","journal","store-locator","bulk-enquiry"]) assert.ok(pageExpansion.includes("('" + key + "'"), "missing expanded page seed: " + key);
