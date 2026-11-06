@@ -2449,3 +2449,13 @@ html[data-admin-theme] .admin-sidebar{
 html[data-admin-theme="light"] .admin-nav-report-heading{color:#A96D43;border-bottom-color:#E6D8CA}
 html[data-admin-theme="dark"] .admin-nav-report-heading{color:#E1C7B5;border-bottom-color:rgba(225,199,181,.2)}
 @media(prefers-reduced-motion:reduce){.admin-sidebar .admin-nav-report-link{transition:none!important}}
+
+
+/* WordPress business categories with nested template slots */
+.admin-nav-category{display:block}
+.admin-nav-category-toggle{width:100%;display:flex;align-items:center;gap:9px;padding-left:25px!important;text-align:left;border:0;cursor:pointer}
+.admin-nav-category-name{flex:1;min-width:0;text-align:left}
+.admin-nav-template-children{padding:2px 0 5px 19px!important;margin-left:18px;border-left:1px solid rgba(128,132,144,.2)}
+.admin-nav-template-link{padding-left:14px!important;font-size:11px}
+.admin-nav-template-link.active{color:#a65f2c}
+@media(max-width:900px){.admin-nav-category-toggle{padding-left:22px!important}}
