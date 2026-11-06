@@ -30,11 +30,49 @@ function jwtClaims(token: string): Record<string, unknown> | null {
     return parsed && typeof parsed === "object" ? parsed : null;
   } catch { return null; }
 }
-function resourceMatches(granted: Record<string, unknown>, requested: Record<string, unknown>) {
-  const entries = Object.entries(granted);
-  if (!entries.length) return false;
-  return entries.every(([key, value]) => requested[key] === value);
+function canonical(value: unknown, depth = 0): string {
+  if (depth > 8) throw new Error("Resource scope is too deeply nested.");
+  if (value === null || typeof value === "string" || typeof value === "boolean") return JSON.stringify(value);
+  if (typeof value === "number") {
+    if (!Number.isFinite(value)) throw new Error("Invalid numeric resource scope.");
+    return JSON.stringify(value);
+  }
+  if (Array.isArray(value)) return "[" + value.map(item => canonical(item, depth + 1)).join(",") + "]";
+  if (typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    const keys = Object.keys(record).sort();
+    if (keys.length > 40) throw new Error("Resource scope contains too many fields.");
+    return "{" + keys.map(key => JSON.stringify(key) + ":" + canonical(record[key], depth + 1)).join(",") + "}";
+  }
+  throw new Error("Unsupported value in resource scope.");
 }
+function resourceMatches(granted: Record<string, unknown>, requested: Record<string, unknown>) {
+  if (!granted || !requested || !Object.keys(granted).length || !Object.keys(requested).length) return false;
+  try { return canonical(granted) === canonical(requested); } catch { return false; }
+}
+function validPermissionKey(value: string) {
+  return /^[a-z][a-z0-9_-]*(\.[a-z][a-z0-9_-]*){1,5}$/.test(value) && value.length <= 80;
+}
+function riskForPermission(permissionKey: string) {
+  if (/delete|destroy|purge|drop|revoke|secret|credential/i.test(permissionKey)) return "critical";
+  if (/write|upload|deploy|publish|run|update|create|modify/i.test(permissionKey)) return "high";
+  return "medium";
+}
+const catalogItems = [
+  ["github.repo.read","GitHub","Read approved repository files and metadata","Read"],
+  ["github.repo.write","GitHub","Create or update approved repository files","Write"],
+  ["github.workflow.read","GitHub","Read workflow runs and logs","Read"],
+  ["github.workflow.run","GitHub","Run an approved workflow","High risk"],
+  ["supabase.project.read","Supabase","Read project metadata","Read"],
+  ["supabase.database.read","Supabase","Read explicitly scoped database records","Read"],
+  ["supabase.database.write","Supabase","Write through approved server-side operations","High risk"],
+  ["supabase.storage.read","Supabase Storage","List or read scoped objects","Read"],
+  ["supabase.storage.upload","Supabase Storage","Upload to a scoped bucket and prefix","High risk"],
+  ["filebase.storage.read","S3-compatible storage","Read scoped bucket objects","Read"],
+  ["filebase.storage.upload","S3-compatible storage","Upload to a scoped bucket and prefix","High risk"],
+  ["website.deploy","Website","Prepare a reviewed deployment","High risk"],
+  ["website.publish","Website","Publish an approved website version","High risk"]
+];
 async function audit(admin: any, data: Record<string, unknown>) {
   const { error } = await admin.from("hf_permission_audit").insert(data);
   if (error) console.error("Permission audit write failed", error.code || "unknown");
@@ -94,7 +132,9 @@ Deno.serve(async (req: Request) => {
         githubOAuthConfigured: Boolean(Deno.env.get("HF_GITHUB_CLIENT_ID") && Deno.env.get("HF_GITHUB_CLIENT_SECRET")),
         githubTokenEncryptionConfigured: Boolean(Deno.env.get("HF_GITHUB_TOKEN_ENCRYPTION_KEY")),
         mcpTransport: "not_installed",
-        note: "The approval database is active. A ChatGPT MCP transport and GitHub OAuth app credentials are separate setup requirements."
+        catalog: catalogItems.map(([key, provider, description, risk]) => ({ key, provider, description, risk, builtIn: true })),
+        dynamicRequests: true,
+        note: "The approval database is active. The bridge can request additional namespaced permission keys; only installed connector handlers can execute approved work. ChatGPT MCP transport and provider authorization remain separate setup requirements."
       });
     }
 
@@ -176,14 +216,18 @@ Deno.serve(async (req: Request) => {
 
     if (action === "bridge_request") {
       if (!isBridge) return reply({ success: false, error: "Bridge authentication failed." }, 401);
-      const permissionKey = clean(body.permission_key, 80);
-      if (!catalog.has(permissionKey)) return reply({ success: false, error: "Permission is not in the allow-list." }, 400);
+      const permissionKey = clean(body.permission_key, 80).toLowerCase();
+      if (!validPermissionKey(permissionKey)) return reply({ success: false, error: "Permission key must use a namespaced format such as provider.resource.action." }, 400);
       const reason = clean(body.reason, 700);
       if (reason.length < 12) return reply({ success: false, error: "A meaningful reason is required." }, 400);
       const resource = body.resource && typeof body.resource === "object" && !Array.isArray(body.resource) ? body.resource : {};
+      if (!Object.keys(resource).length || Object.keys(resource).length > 40 || new TextEncoder().encode(JSON.stringify(resource)).length > 4096) {
+        return reply({ success: false, error: "A non-empty, bounded resource scope is required." }, 400);
+      }
+      try { canonical(resource); } catch { return reply({ success: false, error: "Resource scope is invalid or too complex." }, 400); }
       const { data, error } = await admin.from("hf_permission_requests").insert({
         request_key: crypto.randomUUID(), source: "bridge", requester: clean(body.requester || "ChatGPT Bridge", 100),
-        permission_key: permissionKey, resource, reason, risk_level: clean(body.risk_level || "medium", 20),
+        permission_key: permissionKey, resource, reason, risk_level: riskForPermission(permissionKey),
         requested_duration_seconds: Math.max(60, Math.min(2592000, Number(body.duration_seconds) || 900)), status: "pending"
       }).select("*").single();
       if (error) return reply({ success: false, error: "Bridge request could not be queued." }, 500);
@@ -196,6 +240,7 @@ Deno.serve(async (req: Request) => {
       const grantId = clean(body.grant_id, 50);
       const permissionKey = clean(body.permission_key, 80);
       const resource = body.resource && typeof body.resource === "object" && !Array.isArray(body.resource) ? body.resource : {};
+      if (!validPermissionKey(permissionKey) || !Object.keys(resource).length) return reply({ success: false, authorized: false, error: "A valid permission key and exact resource scope are required." }, 400);
       const { data: grant, error } = await admin.from("hf_permission_grants").select("*").eq("id", grantId).maybeSingle();
       const { data: parentRequest } = grant?.request_id
         ? await admin.from("hf_permission_requests").select("status").eq("id", grant.request_id).maybeSingle()

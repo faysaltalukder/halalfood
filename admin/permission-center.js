@@ -59,6 +59,11 @@ function render() {
       <p class="hfp-muted" style="margin-top:12px">The dashboard can securely manage approvals, but it cannot silently expand the permissions of the separate GitHub app already connected to ChatGPT. A one-time GitHub App/OAuth authorization is still required.</p>
     </section>
     <section class="hfp-card">
+      <div class="hfp-head"><div><h2>Permission catalogue</h2><p class="hfp-muted">Available permission types. The Bridge may request additional namespaced permissions even when they are not listed here.</p></div>${chip("Dynamic requests", "good")}</div>
+      ${(statusData.catalog || []).map(item => '<div class="hfp-row"><div><strong>'+escapeHtml(item.key)+'</strong><div class="hfp-muted">'+escapeHtml(item.provider)+' · '+escapeHtml(item.description)+'</div></div>'+chip(item.risk, item.risk==="High risk"?"warn":"")+'</div>').join("")}
+      <p class="hfp-muted" style="margin-top:10px">A newly approved permission is an authorization record only. It can execute only after a matching server-side connector handler is installed and tested. Unknown operations are never run as generic shell, SQL or unrestricted API access.</p>
+    </section>
+    <section class="hfp-card">
       <div class="hfp-head"><div><h2>Pending approval requests</h2><p class="hfp-muted">Tick the review box first. Then use the second confirmation before approving or denying.</p></div>${chip(pending.length+" pending",pending.length?"warn":"")}</div>
       ${pending.length ? pending.map(r=>`
         <article class="hfp-request" data-request="${escapeHtml(r.id)}">
