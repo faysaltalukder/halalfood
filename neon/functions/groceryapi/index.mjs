@@ -113,7 +113,14 @@ async function handle(request) {
         if (!name) return json({ error: 'Product name is required.' }, 400);
         const price = Math.max(0, Number(body.price || 0));
         const stock = Math.max(0, Number(body.stock || 0));
-        const result = await client.query(`INSERT INTO builder.products(website_id,owner_id,name,description,sku,price,compare_at_price,unit,stock,image_key,image_url,attributes,is_active,sort_order) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12::jsonb,true,$13) RETURNING *`, [websiteId,user.id,name,String(body.description||''),body.sku||null,price,body.compare_at_price===undefined?null:Math.max(0,Number(body.compare_at_price)),String(body.unit||'piece'),stock,body.image_key||null,body.image_url||null,JSON.stringify(body.attributes||{}),Number(body.sort_order||0)]);
+        let categoryId = null;
+        const categoryName = String(body.category || '').trim().slice(0,100);
+        if (categoryName) {
+          const categorySlug = slugify(categoryName);
+          const categoryResult = await client.query('INSERT INTO builder.categories(website_id,owner_id,name,slug) VALUES($1,$2,$3,$4) ON CONFLICT (website_id,slug) DO UPDATE SET name=EXCLUDED.name RETURNING id', [websiteId,user.id,categoryName,categorySlug]);
+          categoryId = categoryResult.rows[0]?.id || null;
+        }
+        const result = await client.query(`INSERT INTO builder.products(website_id,owner_id,category_id,name,description,sku,price,compare_at_price,unit,stock,image_key,image_url,attributes,is_active,sort_order) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13::jsonb,true,$14) RETURNING *`, [websiteId,user.id,categoryId,name,String(body.description||''),body.sku||null,price,body.compare_at_price===undefined?null:Math.max(0,Number(body.compare_at_price)),String(body.unit||'piece'),stock,body.image_key||null,body.image_url||null,JSON.stringify(body.attributes||{}),Number(body.sort_order||0)]);
         await client.query('UPDATE builder.websites SET updated_at=now() WHERE id=$1', [websiteId]);
         return json({ product: result.rows[0] }, 201);
       }
@@ -148,6 +155,23 @@ async function handle(request) {
         const slug = slugify(body.slug || name);
         const result = await client.query('INSERT INTO builder.categories(website_id,owner_id,name,slug,sort_order) VALUES($1,$2,$3,$4,$5) RETURNING *', [websiteId,user.id,name,slug,Number(body.sort_order||0)]);
         return json({ category: result.rows[0] }, 201);
+      }
+      if (subpath === 'assets/upload' && request.method === 'POST') {
+        const form = await request.formData();
+        const file = form.get('file');
+        if (!file || typeof file.arrayBuffer !== 'function') return json({ error: 'Choose an image file to upload.' }, 400);
+        const mimeType = String(file.type || '');
+        const byteSize = Number(file.size || 0);
+        if (!/^image\/(jpeg|png|webp|gif)$/.test(mimeType)) return json({ error: 'Only JPEG, PNG, WebP and GIF images are allowed.' }, 400);
+        if (!Number.isFinite(byteSize) || byteSize < 1 || byteSize > 5 * 1024 * 1024) return json({ error: 'Image must be 5 MB or smaller.' }, 400);
+        if (!process.env.AWS_ENDPOINT_URL_S3 || !process.env.AWS_ACCESS_KEY_ID || !process.env.AWS_SECRET_ACCESS_KEY) return json({ error: 'Neon Object Storage credentials are not available on this function branch.' }, 503);
+        const fileName = cleanName(file.name);
+        const key = `websites/${websiteId}/${user.id}/${randomUUID()}-${fileName}`;
+        await s3.send(new PutObjectCommand({ Bucket: BUCKET, Key: key, Body: Buffer.from(await file.arrayBuffer()), ContentType: mimeType }));
+        const result = await client.query('INSERT INTO builder.assets(website_id,owner_id,object_key,file_name,mime_type,byte_size,alt_text) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING id,object_key,file_name,mime_type,byte_size,alt_text,created_at', [websiteId,user.id,key,fileName,mimeType,byteSize,String(form.get('alt_text') || '').slice(0,180)]);
+        const asset = result.rows[0];
+        asset.view_url = await getSignedUrl(s3, new GetObjectCommand({ Bucket: BUCKET, Key: key }), { expiresIn: 600 });
+        return json({ asset }, 201);
       }
       if (subpath === 'assets/presign' && request.method === 'POST') {
         const body = await readBody(request);
