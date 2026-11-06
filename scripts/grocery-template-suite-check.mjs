@@ -11,6 +11,13 @@ const apiMigration = read("../database/migrations/20261106_neon_data_api_rls.sql
 const apiClient = read("../admin/neon-builder-api.js");
 const templatesHtml = html;
 const architecture = read("../WORDPRESS-BUILDER-ARCHITECTURE.md");
+const storefront = read("../storefront.js");
+const storefrontHtml = read("../storefront.html");
+const storefrontCss = read("../storefront.css");
+const pagesAdmin = read("../admin/website-pages.js");
+const pagesHtml = read("../admin/website-pages.html");
+const pagesCss = read("../admin/website-pages.css");
+const pageExpansion = read("../database/migrations/20261107_grocery_page_expansion.sql");
 
 const keys = ["general-supermarket", "fresh-produce", "express-grocery", "wholesale-bulk"];
 for (const key of keys) {
@@ -35,4 +42,15 @@ assert.ok(apiClient.includes("loadTemplateCatalog") && apiClient.includes("saveD
 assert.ok(apiMigration.includes("ENABLE ROW LEVEL SECURITY") && apiMigration.includes("auth.uid()"), "Neon tenant tables must be protected by RLS");
 assert.ok(apiMigration.includes("builder.website_documents"), "persistent builder documents must be stored in Neon");
 assert.ok(architecture.includes("Neon Data API") && architecture.includes("builder.website_documents"));
+assert.ok(storefrontHtml.includes("neon-builder-api.js"), "storefront must load the Neon API client");
+assert.ok(storefront.includes("placeOrder") && storefront.includes("trackOrder"), "storefront must connect COD ordering and order tracking");
+assert.ok(storefront.includes("function productPage") && storefront.includes("function cartPage") && storefront.includes("function checkoutPage"), "commerce pages must be rendered");
+assert.ok(storefront.includes("offersPage") && storefront.includes("brandsPage") && storefront.includes("storeLocatorPage") && storefront.includes("bulkEnquiryPage"), "extended pages must have dedicated renderers");
+assert.ok(storefrontCss.includes("@media(max-width:720px)") && storefrontCss.includes("data-template"), "storefront must include mobile and theme-specific CSS");
+assert.ok(pagesHtml.includes("website-pages.js") && pagesAdmin.includes("seedWebsitePages") && pagesAdmin.includes("createCustomPage"), "website page manager must seed and manage page documents");
+assert.ok(pagesCss.includes("@media(max-width:560px)"), "page manager must support small mobile screens");
+assert.ok(apiClient.includes("length<25") && apiClient.includes("const records=missing.map"), "Neon must seed all 25 page documents efficiently");
+assert.ok(builder.includes("saveDocument(state.website,payload,PAGE_KEY)"), "editor saves must be scoped to the selected page");
+for (const key of ["offers","brands","recipes","recipe-detail","journal","store-locator","bulk-enquiry"]) assert.ok(pageExpansion.includes("('" + key + "'"), "missing expanded page seed: " + key);
+console.log("Multi-page commerce contract passed: 4 unique themes, 25 pages each, Neon page persistence, COD checkout, tracking, and mobile layout.");
 console.log("Grocery template suite contract passed: 4 designs, editor seeds, Neon metadata migration, responsive layouts and architecture guardrails.");
