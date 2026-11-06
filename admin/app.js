@@ -3905,12 +3905,35 @@ async function refresh(){
   bindRangeControls(()=>buildReport());await buildReport();attachRefresh(buildReport);
  }
   async function initSettings(){
+  async function neonStorageHealthCheck(){
+   const status=$("neonStorageStatus"),detail=$("neonStorageDetail"),button=$("neonStorageTestBtn");
+   if(status)status.textContent="Checking secure connection…";
+   if(detail)detail.textContent="Using the current signed-in admin session. No credentials are exposed.";
+   if(button)button.disabled=true;
+   try{
+    const {data,error}=await client.functions.invoke("neon-storage-bridge",{body:{action:"healthcheck"}});
+    if(error)throw error;
+    if(!data?.ok)throw new Error(data?.error||"Neon storage health check did not return a successful result.");
+    if(status){status.textContent="Connected · reachable";status.className="hf-banner hf-banner-success";}
+    if(detail)detail.textContent="Neon Object Storage responded successfully. Bucket: "+String(data.bucket||"halal-food-assets")+" · Region: "+String(data.region||"ap-southeast-1")+".";
+    return {name:"Neon Object Storage",table:"neon-storage-bridge",count:"Reachable",error:null};
+   }catch(err){
+    const message=String(err?.message||"Storage connection check failed").slice(0,240);
+    if(status){status.textContent="Not verified";status.className="hf-banner hf-banner-warning";}
+    if(detail)detail.textContent=message;
+    return {name:"Neon Object Storage",table:"neon-storage-bridge",count:"—",error:message};
+   }finally{if(button)button.disabled=false;}
+  }
   async function healthCheck(){
    const targets=[["Products","products"],["Categories","categories"],["Orders","orders"],["Order items","order_items"],["Courier bookings","admin_shipments"],["Tracking events","analytics_events"],["Homepage content","site_content_blocks"],["Finance entries","admin_finance_entries"],["Activity log","admin_activity_log"],["Messaging conversations","messaging_conversations"],["Messaging messages","messaging_messages"]];
-   $("connectionStatus").textContent="Checking database access…";
-   const result=await Promise.all(targets.map(async item=>{try{const r=await client.from(item[1]).select("id",{count:"exact",head:true});return {name:item[0],table:item[1],count:r.count,error:r.error?.message||null};}catch(err){return {name:item[0],table:item[1],error:err.message||"Connection error"};}}));
-   $("systemHealthBody").innerHTML=result.map(r=>'<tr><td><strong>'+esc(r.name)+'</strong><small>'+esc(r.table)+'</small></td><td>'+(r.error?'<span class="hf-status hf-status-cancelled">Needs attention</span>':'<span class="hf-status hf-status-confirmed">Connected</span>')+'</td><td>'+(r.error?esc(r.error):Number(r.count||0).toLocaleString("en-BD")+" records")+'</td></tr>').join("");
-   const fails=result.filter(x=>x.error);$("connectionStatus").textContent=fails.length?fails.length+" check(s) need attention":"All checked data connections are responding.";
+   $("connectionStatus").textContent="Checking database and storage access…";
+   const [tables,storage]=await Promise.all([
+    Promise.all(targets.map(async item=>{try{const r=await client.from(item[1]).select("id",{count:"exact",head:true});return {name:item[0],table:item[1],count:r.count,error:r.error?.message||null};}catch(err){return {name:item[0],table:item[1],error:err.message||"Connection error"};}})),
+    neonStorageHealthCheck()
+   ]);
+   const result=[...tables,storage];
+   $("systemHealthBody").innerHTML=result.map(r=>'<tr><td><strong>'+esc(r.name)+'</strong><small>'+esc(r.table)+'</small></td><td>'+(r.error?'<span class="hf-status hf-status-cancelled">Needs attention</span>':'<span class="hf-status hf-status-confirmed">Connected</span>')+'</td><td>'+(r.error?esc(r.error):(r.count==="Reachable"?"Reachable":Number(r.count||0).toLocaleString("en-BD")+" records"))+'</td></tr>').join("");
+   const fails=result.filter(x=>x.error);$("connectionStatus").textContent=fails.length?fails.length+" check(s) need attention":"All checked database and storage connections are responding.";
    $("connectionStatus").className="hf-banner "+(fails.length?"":"hf-banner-success");
    return result;
   }
@@ -3923,7 +3946,8 @@ async function refresh(){
    }
   }
   async function refresh(){await Promise.all([healthCheck(),loadActivity()]);}
-  $("healthRefreshBtn")?.addEventListener("click",async()=>{try{await refresh();toast("System checks complete.");}catch(err){toast(err.message||"System check failed.","error");}});
+  $("healthRefreshBtn")?.addEventListener("click",async()=>{try{await refresh();toast("Database and Neon storage checks complete.");}catch(err){toast(err.message||"System check failed.","error");}});
+  $("neonStorageTestBtn")?.addEventListener("click",async()=>{const result=await neonStorageHealthCheck();if(result.error)toast("Neon storage check: "+result.error,"error");else toast("Neon Object Storage is reachable.");});
   const compactKey="hf_admin_compact_ui";const saved=localStorage.getItem(compactKey)==="true";$("compactModeToggle").checked=saved;document.getElementById("adminApp").classList.toggle("compact-ui",saved);
   $("compactModeToggle")?.addEventListener("change",()=>{const v=$("compactModeToggle").checked;localStorage.setItem(compactKey,String(v));document.getElementById("adminApp").classList.toggle("compact-ui",v);toast(v?"Compact tables enabled.":"Comfortable spacing enabled.");});
   $("downloadBackupBtn")?.addEventListener("click",async()=>{
