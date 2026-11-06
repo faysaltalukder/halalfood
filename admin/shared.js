@@ -1136,7 +1136,7 @@ function makeShell(){
      ["daily","calendar","দৈনিক ব্যবসায়িক রিপোর্ট","Daily business summary","reports-daily","daily business sales summary"]
     ]}
    ]]]},
-  {label:"SYSTEM",items:[["website-publisher","settings","Website Publisher","website publisher deploy code review approve publish"],["tracking","sliders","Tracking Controls","tracking meta pixel conversions api capi google analytics event routing"],["permission-center","shield","AI Permission Center","chatgpt ai permission center approvals access grants secure bridge oauth scopes audit revoke"],["settings","settings","Settings & Security","settings security preferences access"],["wordpress","layout","WordPress","wordpress website studio live website edit website sandbox",[["wordpress","layout","Live Website"],["website-builder","edit","Edit Website"],...wordpressBusinessCategories]]]}
+  {label:"SYSTEM",items:[["website-publisher","settings","Website Publisher","website publisher deploy code review approve publish"],["tracking","sliders","Tracking Controls","tracking meta pixel conversions api capi google analytics event routing"],["permission-center","shield","Permission","chatgpt ai permission center approvals access grants secure bridge oauth scopes audit revoke"],["settings","settings","Settings & Security","settings security preferences access"],["wordpress","layout","WordPress","wordpress website studio live website edit website sandbox",[["wordpress","layout","Live Website"],["website-builder","edit","Edit Website"],...wordpressBusinessCategories]]]}
  ];
  const allItems=menuGroups.flatMap(group=>group.items.map(item=>({id:item[0],icon:item[1],label:item[2],href:"./"+item[0]+".html",keys:item[3]})));
  const itemById=new Map(allItems.map(item=>[item.id,item]));
