@@ -188,6 +188,12 @@ function openDecision(id, decision) {
   document.getElementById("hfpConfirmTitle").textContent = decision === "approve" ? "Final approval required" : "Confirm request denial";
   document.getElementById("hfpConfirmDescription").textContent =
     request.permission_key+" — "+request.reason+" Resource: "+JSON.stringify(request.resource||{});
+  const grantMode = document.getElementById("hfpGrantMode");
+  const grantDuration = document.getElementById("hfpGrantDuration");
+  grantMode.value = request.permission_key === "all.access" ? "temporary" : "once";
+  grantMode.disabled = request.permission_key === "all.access";
+  grantDuration.value = String(request.permission_key === "all.access" ? Math.min(3600,Number(request.requested_duration_seconds)||900) : 900);
+  grantDuration.querySelectorAll("option").forEach(option => { option.disabled = request.permission_key === "all.access" && Number(option.value) > 3600; });
   document.getElementById("hfpFinalCheck").checked = false;
   document.getElementById("hfpFinalButton").disabled = true;
   document.getElementById("hfpFinalButton").textContent = decision === "approve" ? "Confirm approval" : "Confirm denial";
