@@ -19,6 +19,8 @@ let statusData = {};
 let selectedRequest = null;
 let selectedDecision = "approve";
 let busy = false;
+let backblazeTesting = false;
+let backblazeTestResult = null;
 
 async function call(action, payload = {}) {
   const invoke = window.HFAdmin.client.functions.invoke("hf-permission-center",{body:{action,...payload}});
@@ -48,6 +50,7 @@ function render() {
   const logs = apiData.audit || [];
   const pending = requests.filter(r => r.status === "pending");
   const activeGrants = grants.filter(active);
+  const backblazeGrant = grants.find(g => g.permission_key === "backblaze.all.access" && g.resource?.scope === "provider_noncritical" && g.resource?.provider === "backblaze" && active(g));
   const revoked = grants.filter(g => !!g.revoked_at);
   const githubReady = statusData.githubOAuthConfigured && statusData.githubTokenEncryptionConfigured;
   const bridgeReady = statusData.bridgeSecretConfigured;
@@ -111,6 +114,14 @@ function render() {
             </form>
           </div>`).join("")}
       </div>
+    </section>
+    <section class="hfp-card" id="hfpBackblazeTestCard">
+      <div class="hfp-head"><div><h2>Backblaze B2 · One-click test upload</h2><p class="hfp-muted">Generate a brand-new diagnostic file, upload it to B2, download it again and verify its SHA-256 checksum.</p></div>${chip(backblazeGrant?"Upload permission active":"Upload permission required",backblazeGrant?"good":"warn")}</div>
+      <div class="hfp-row"><div><strong>Scoped authorization</strong><div class="hfp-muted">backblaze.all.access · Backblaze B2 only · non-critical operations</div></div>${chip(backblazeGrant?"Ready until "+when(backblazeGrant.expires_at):"Not active",backblazeGrant?"good":"warn")}</div>
+      <div class="hfp-alert" style="margin:10px 0"><strong>Safe test operation</strong>Creates one new .txt file under sites/halalfood/diagnostics/. It does not copy, overwrite or delete any existing object. Upload and read-back must both succeed before the result is marked verified.</div>
+      <button class="hfp-btn primary" data-action="backblaze-test" ${backblazeTesting || !backblazeGrant?"disabled":""}>${backblazeTesting?"Uploading and verifying…":"↥ Test Upload to Backblaze B2"}</button>
+      ${!backblazeGrant?'<p class="hfp-muted" style="margin-top:9px">First request and approve <strong>Backblaze · All Access</strong> in the Provider-specific All Access section above. The button becomes available when the scoped grant is active.</p>':""}
+      ${backblazeTestResult?'<div class="hfp-request" style="margin-top:12px"><strong>'+ (backblazeTestResult.ok?'Verified upload':'Last test result') +'</strong><p>'+escapeHtml(backblazeTestResult.message||"") +'</p>'+(backblazeTestResult.key?'<p><strong>Object:</strong> <code>'+escapeHtml(backblazeTestResult.key)+'</code></p>':"")+(backblazeTestResult.sha256?'<p><strong>SHA-256:</strong> <code style="overflow-wrap:anywhere">'+escapeHtml(backblazeTestResult.sha256)+'</code></p>':"")+(backblazeTestResult.bytes?'<p><strong>Size:</strong> '+Number(backblazeTestResult.bytes)+' bytes</p>':"")+(backblazeTestResult.ok?'<p>'+chip("Upload successful","good")+' '+chip("Read-back successful","good")+' '+chip("Checksum verified","good")+'</p>':"") +'</div>':""}
     </section>
     <section class="hfp-card">
       <div class="hfp-head"><div><h2>Primary → Secondary storage transfer</h2><p class="hfp-muted">Request the two scoped permissions required to copy files from Supabase Storage to Backblaze B2.</p></div><span class="hfp-chip good">MFA protected</span></div>
@@ -250,6 +261,29 @@ host.addEventListener("click", async event => {
   if (!button) return;
   const action = button.dataset.action, id = button.dataset.id;
   try {
+    if (action === "backblaze-test") {
+      if (backblazeTesting) return;
+      const currentGrant = (apiData.grants||[]).find(g => g.permission_key === "backblaze.all.access" && g.resource?.scope === "provider_noncritical" && g.resource?.provider === "backblaze" && active(g));
+      if (!currentGrant) throw new Error("An active Backblaze-only All Access grant is required. Request and approve it above first.");
+      backblazeTesting = true; backblazeTestResult = null; render();
+      try {
+        const invoke = window.HFAdmin.client.functions.invoke("backblaze-storage",{body:{action:"create_verify_test_file"}});
+        const timeout = new Promise((_,reject)=>setTimeout(()=>reject(new Error("Backblaze test timed out after 90 seconds. Check Edge Function logs before retrying.")),90000));
+        const {data,error} = await Promise.race([invoke,timeout]);
+        if (error) {
+          let detail = error.message || "Backblaze upload request failed.";
+          try { if (error.context?.json) { const body = await error.context.json(); detail = body.error || body.message || detail; } } catch (_) {}
+          throw new Error(detail);
+        }
+        if (!data?.ok || data.upload !== "success" || data.readback !== "success" || data.checksum_verified !== true) throw new Error(data?.error || "The server did not return a verified upload result.");
+        backblazeTestResult = {ok:true,message:"A new diagnostic file was uploaded and downloaded successfully. SHA-256 matches.",key:data.key,sha256:data.sha256,bytes:data.bytes};
+        notify("Backblaze test upload and checksum verification succeeded.");
+      } catch(error) {
+        backblazeTestResult = {ok:false,message:error.message||"Backblaze test failed."};
+        notify(backblazeTestResult.message,"error");
+      } finally { backblazeTesting = false; render(); }
+      return;
+    }
     if (action === "refresh") { await refresh(); return; }
     if (action === "close-confirm") { document.getElementById("hfpConfirm").close(); return; }
     if (action === "approve" || action === "deny") { openDecision(id,action); return; }
