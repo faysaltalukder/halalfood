@@ -21,7 +21,7 @@
     return data;
   };
   const fileMime = file => {
-    if(file.type) return file.type.toLowerCase();
+    if(file.type){const type=file.type.toLowerCase();return type==="text/javascript"?"application/javascript":type;}
     const ext=(file.name.split(".").pop()||"").toLowerCase();
     return MIME_BY_EXTENSION[ext]||"";
   };
