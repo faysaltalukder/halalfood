@@ -67,3 +67,12 @@ Each template has its own visual language and layout. They share the commerce da
 - Product/category/asset/order queries are scoped by `website_id` and `owner_id`.
 - A read-after-write test from a second browser/session confirms the data is durable and shared.
 - Test publish remains sandbox-only until a separate production publishing design is approved.
+
+
+## Multi-page grocery storefronts (2026-11-07)
+
+The four grocery templates each expose 25 active page definitions from `builder.template_pages`. The additional page set includes Special Offers, Brands, Recipes & Ideas, Recipe Details, Journal, Find a Store and Bulk & Business Enquiry. The admin Website Pages workspace seeds each page as its own owner-scoped `builder.website_documents` record, using one batched Neon upsert. The editor reads and writes the selected `page_key` only.
+
+The shared storefront renderer is `storefront.html`, `storefront.css` and `storefront.js`. It provides theme-specific visual systems for General Supermarket, Fresh & Farm, Express Grocery and Wholesale & Bulk, plus mobile layouts. Product, category, search, product-detail, basket, COD checkout, order confirmation and order tracking pages are driven by the selected website's Neon catalogue and order RPCs. No illustrative inventory is inserted into a merchant's live catalogue. Preview remains private and disables order placement; public ordering requires a published website with at least one active category and product.
+
+The page catalogue expansion is recorded in `database/migrations/20261107_grocery_page_expansion.sql` and was applied additively to the dedicated `grocery-template-builder-v1` branch. The GitHub quality gate now checks the page library, editor page scoping, storefront commerce calls, theme CSS and page expansion.
