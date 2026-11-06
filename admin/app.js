@@ -3948,6 +3948,26 @@ async function refresh(){
   async function refresh(){await Promise.all([healthCheck(),loadActivity()]);}
   $("healthRefreshBtn")?.addEventListener("click",async()=>{try{await refresh();toast("Database and Neon storage checks complete.");}catch(err){toast(err.message||"System check failed.","error");}});
   $("neonStorageTestBtn")?.addEventListener("click",async()=>{const result=await neonStorageHealthCheck();if(result.error)toast("Neon storage check: "+result.error,"error");else toast("Neon Object Storage is reachable.");});
+  $("neonStorageSelfTestBtn")?.addEventListener("click",async()=>{
+   const button=$("neonStorageSelfTestBtn"),detail=$("neonStorageSelfTestDetail"),status=$("neonStorageStatus");
+   if(button)button.disabled=true;
+   if(detail)detail.textContent="Running a temporary upload, read-back and cleanup test. Please keep this page open.";
+   try{
+    const {data,error}=await client.functions.invoke("neon-storage-bridge",{body:{action:"self_test"}});
+    if(error)throw error;
+    const tests=data?.tests||{};
+    const summary="Upload: "+(tests.upload?"PASS":"FAIL")+" · Read-back: "+(tests.read?"PASS":"FAIL")+" · Delete cleanup: "+(tests.delete?"PASS":"FAIL");
+    if(!data?.ok)throw new Error((data?.error?String(data.error)+" · ":"")+summary);
+    if(status){status.textContent="Connected · file transfer verified";status.className="hf-banner hf-banner-success";}
+    if(detail)detail.textContent="End-to-end test passed. "+summary+". Temporary file: "+String(data.object_key||"created")+" (deleted). No business files were changed.";
+    if($("neonStorageSelfTestDetail"))$("neonStorageSelfTestDetail").textContent="SUCCESS · "+summary+". Temporary test file was deleted automatically; no business files were changed.";
+    toast("Neon upload, read-back and delete tests all passed.");
+   }catch(err){
+    const message=String(err?.message||"File transfer self-test failed.").slice(0,300);
+    if(detail)detail.textContent="Test not fully passed: "+message;
+    toast("Neon file transfer test: "+message,"error");
+   }finally{if(button)button.disabled=false;}
+  });
   const compactKey="hf_admin_compact_ui";const saved=localStorage.getItem(compactKey)==="true";$("compactModeToggle").checked=saved;document.getElementById("adminApp").classList.toggle("compact-ui",saved);
   $("compactModeToggle")?.addEventListener("change",()=>{const v=$("compactModeToggle").checked;localStorage.setItem(compactKey,String(v));document.getElementById("adminApp").classList.toggle("compact-ui",v);toast(v?"Compact tables enabled.":"Comfortable spacing enabled.");});
   $("downloadBackupBtn")?.addEventListener("click",async()=>{
