@@ -33,6 +33,8 @@ jobs:
         run: node scripts/feature-context.mjs --check
       - name: Run Universal Website Builder foundation checks
         run: node scripts/universal-builder-check.mjs
+      - name: Run Filebase secondary storage contract checks
+        run: node scripts/filebase-storage-check.mjs
       - name: Run existing admin integrity checks
         run: node scripts/admin-phase12-check.mjs
       - name: Run simple POS sale-entry contract checks
