@@ -8,29 +8,69 @@
   const API_BASE="https://ep-wild-lab-a1jqqu0p.apirest.ap-southeast-1.aws.neon.tech/halal_food_db/rest/v1";
   const ALLOWED_TEMPLATES=new Set(["general-supermarket","fresh-produce","express-grocery","wholesale-bulk"]);
   const $=v=>encodeURIComponent(String(v??""));
+  async function getClient(){
+    if(!window.HFNeonClientReady)throw new Error("The independent Neon authentication client did not load.");
+    return await window.HFNeonClientReady;
+  }
   async function authContext(){
-    const admin=await window.HFAdminReady;
-    if(!admin)throw new Error("Secure Halal Food admin session is unavailable.");
-    const {data,error}=await admin.client.auth.getSession(),session=data?.session;
-    if(error||!session?.access_token||!session?.user?.id)throw new Error("Please sign in again before connecting to Neon.");
-    return {admin,session,user:session.user,token:session.access_token};
+    const client=await getClient();
+    const {data,error}=await client.auth.getSession();
+    const session=data?.session;
+    if(error||!session?.user?.id)throw new Error("WordPress access requires its own Neon sign-in. Please sign in to the WordPress workspace.");
+    return {client,session,user:session.user,token:null};
+  }
+  function applyFilters(builder,params){
+    for(const [key,raw] of params.entries()){
+      if(["select","order","limit","on_conflict"].includes(key))continue;
+      const dot=raw.indexOf(".");
+      if(dot<1)continue;
+      const op=raw.slice(0,dot),value=raw.slice(dot+1);
+      if(op==="eq")builder=builder.eq(key,value);
+      else if(op==="neq")builder=builder.neq(key,value);
+      else if(op==="gt")builder=builder.gt(key,value);
+      else if(op==="gte")builder=builder.gte(key,value);
+      else if(op==="lt")builder=builder.lt(key,value);
+      else if(op==="lte")builder=builder.lte(key,value);
+      else if(op==="is")builder=builder.is(key,value==="null"?null:value);
+      else if(op==="like")builder=builder.like(key,value);
+      else if(op==="ilike")builder=builder.ilike(key,value);
+      else if(op==="in"){
+        const list=value.replace(/^\\(|\\)$/g,"").split(",").map(v=>v.replace(/^"|"$/g,""));
+        builder=builder.in(key,list);
+      }
+    }
+    const order=params.get("order");
+    if(order)for(const part of order.split(",")){
+      const [column,direction]=part.split(".");
+      if(column)builder=builder.order(column,{ascending:direction!=="desc"});
+    }
+    const limit=params.get("limit");
+    if(limit&&Number.isFinite(Number(limit)))builder=builder.limit(Number(limit));
+    return builder;
   }
   async function request(table,query="",options={}){
-    let token=options.token||null;
-    if(!options.public&&!token)token=(await authContext()).token;
-    const method=options.method||"GET";
-    const headers={"Accept-Profile":"builder","Content-Type":"application/json"};
-    if(token)headers.Authorization="Bearer "+token;
-    if(method!=="GET")headers["Content-Profile"]="builder";
-    if(options.prefer)headers.Prefer=options.prefer;
-    const response=await fetch(API_BASE+"/"+table+query,{method,headers,body:options.body?JSON.stringify(options.body):undefined,credentials:"omit",cache:"no-store"});
-    const raw=await response.text();let payload=null;
-    try{payload=raw?JSON.parse(raw):null;}catch(_){payload=raw;}
-    if(!response.ok){
-      const msg=payload?.message||payload?.hint||payload?.details||raw||("HTTP "+response.status);
-      throw new Error("Neon "+table+" request failed ("+response.status+"): "+String(msg).slice(0,260));
+    const client=await getClient(),method=options.method||"GET",params=new URLSearchParams(query);
+    let builder;
+    if(table.startsWith("rpc/")){
+      builder=client.rpc(table.slice(4),options.body||{});
+    }else if(method==="GET"){
+      builder=client.from(table).select(params.get("select")||"*");
+    }else if(method==="POST"){
+      const conflict=params.get("on_conflict");
+      builder=conflict
+        ?client.from(table).upsert(options.body,{onConflict:conflict})
+        :client.from(table).insert(options.body);
+      if(params.get("select"))builder=builder.select(params.get("select"));
+    }else if(method==="PATCH"){
+      builder=client.from(table).update(options.body||{});
+      if(params.get("select"))builder=builder.select(params.get("select"));
+    }else{
+      throw new Error("Unsupported Neon Data API method: "+method);
     }
-    return payload;
+    if(!table.startsWith("rpc/"))builder=applyFilters(builder,params);
+    const {data,error}=await builder;
+    if(error)throw new Error("Neon "+table+" request failed: "+String(error.message||error.details||"Unknown database error").slice(0,260));
+    return data;
   }
   const defaultContent={
     home:{heading:"A better way to shop, every day",description:"Discover carefully selected favourites, fresh picks and everyday essentials.",cta:"Shop now"},
