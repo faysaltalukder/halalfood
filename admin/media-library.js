@@ -4,6 +4,7 @@
   const ENDPOINT = "https://qfwvrcfkrsydycbfjsxf.supabase.co/functions/v1/filebase-storage";
   const SITE = "halalfood";
   const MAX_BYTES = 20 * 1024 * 1024;
+  const MAX_MULTIPART_BYTES = 1024 * 1024 * 1024;
   const MIME_BY_EXTENSION = {
     jpg:"image/jpeg",jpeg:"image/jpeg",png:"image/png",webp:"image/webp",gif:"image/gif",avif:"image/avif",
     mp4:"video/mp4",webm:"video/webm",pdf:"application/pdf",mp3:"audio/mpeg",wav:"audio/wav",
@@ -67,20 +68,54 @@
       });
     }catch(error){setStatus(error.message,true);$("mediaGrid").innerHTML='<div class="hf-media-empty is-error">Could not load Filebase files. Check the admin session and storage connection, then refresh.</div>';}
   };
+  const xhrUploadPart = (url,blob,onProgress) => new Promise((resolve,reject)=>{
+    const xhr=new XMLHttpRequest();xhr.open("PUT",url,true);
+    xhr.upload.addEventListener("progress",event=>{if(event.lengthComputable)onProgress(event.loaded);});
+    xhr.onload=()=>{if(xhr.status>=200&&xhr.status<300){const etag=xhr.getResponseHeader("ETag");if(!etag){reject(new Error("Filebase did not expose the uploaded part ETag. Check bucket CORS."));return;}resolve(etag);}else reject(new Error("Filebase multipart part failed (HTTP "+xhr.status+")."));};
+    xhr.onerror=()=>reject(new Error("Network error while uploading a Filebase part."));
+    xhr.send(blob);
+  });
+  const uploadMultipart = async (file,category,uploadRef) => {
+    const init=await call({action:"create_multipart",site:SITE,category,contentType:fileMime(file),size:file.size});
+    const upload=init.upload;uploadRef.key=upload.key;uploadRef.uploadId=upload.uploadId;
+    let nextPart=1,transferred=0;const lastLoaded=new Array(upload.partCount).fill(0),parts=[];
+    const updateProgress=()=>{const pct=Math.min(100,Math.round(transferred/file.size*100));$("mediaProgress").querySelector("span").style.width=pct+"%";$("mediaProgress").querySelector("span").style.animation="none";setStatus("Uploading large file · "+pct+"% ("+sizeText(transferred)+" / "+sizeText(file.size)+")");};
+    const worker=async()=>{
+      while(true){
+        const partNumber=nextPart++;if(partNumber>upload.partCount)return;
+        const start=(partNumber-1)*upload.partSize,end=Math.min(file.size,start+upload.partSize),blob=file.slice(start,end),slot=partNumber-1;
+        const signed=await call({action:"sign_multipart_part",site:SITE,key:upload.key,uploadId:upload.uploadId,partNumber});
+        const etag=await xhrUploadPart(signed.url,blob,loaded=>{transferred+=loaded-lastLoaded[slot];lastLoaded[slot]=loaded;updateProgress();});
+        parts.push({partNumber,etag});lastLoaded[slot]=0;
+      }
+    };
+    await Promise.all(Array.from({length:Math.min(4,upload.partCount)},worker));
+    parts.sort((a,b)=>a.partNumber-b.partNumber);
+    await call({action:"complete_multipart",site:SITE,key:upload.key,uploadId:upload.uploadId,parts});
+  };
   const upload = async () => {
     const file=$("mediaFile").files?.[0];if(!file)return;
-    if(file.size<1||file.size>MAX_BYTES){H.toast("File must be between 1 byte and 20 MB.","error");return;}
+    if(file.size<1||file.size>MAX_MULTIPART_BYTES){H.toast("File must be between 1 byte and 1 GB.","error");return;}
     const contentType=fileMime(file);if(!Object.values(MIME_BY_EXTENSION).includes(contentType)){H.toast("This file type is not supported by the current Filebase policy.","error");return;}
-    const button=$("mediaUpload");button.disabled=true;$("mediaProgress").hidden=false;setStatus("Preparing a secure direct upload…");
+    const button=$("mediaUpload");button.disabled=true;$("mediaProgress").hidden=false;$("mediaProgress").querySelector("span").style.width="38%";$("mediaProgress").querySelector("span").style.animation="";
+    const uploadRef={key:"",uploadId:""};
     try{
       const category=$("mediaCategory").value;
-      const prepared=await call({action:"create_upload",site:SITE,category,contentType,size:file.size});
-      const form=new FormData();Object.entries(prepared.upload.fields||{}).forEach(([key,value])=>form.append(key,value));form.append("file",file);
-      const response=await fetch(prepared.upload.url,{method:"POST",body:form});
-      if(!response.ok)throw new Error("Filebase upload failed (HTTP "+response.status+").");
+      if(file.size<=MAX_BYTES){
+        setStatus("Preparing a secure direct upload…");
+        const prepared=await call({action:"create_upload",site:SITE,category,contentType,size:file.size});
+        const form=new FormData();Object.entries(prepared.upload.fields||{}).forEach(([key,value])=>form.append(key,value));form.append("file",file);
+        const response=await fetch(prepared.upload.url,{method:"POST",body:form});
+        if(!response.ok)throw new Error("Filebase upload failed (HTTP "+response.status+").");
+      }else{
+        setStatus("Starting multipart upload…");
+        await uploadMultipart(file,category,uploadRef);
+      }
       $("mediaFile").value="";$("mediaProgress").hidden=true;H.toast("File uploaded to Filebase successfully.");await load();
-    }catch(error){$("mediaProgress").hidden=true;setStatus(error.message,true);H.toast(error.message,"error");}
-    finally{button.disabled=!$("mediaFile").files?.length;}
+    }catch(error){
+      if(uploadRef.uploadId&&uploadRef.key){try{await call({action:"abort_multipart",site:SITE,key:uploadRef.key,uploadId:uploadRef.uploadId});}catch{}}
+      $("mediaProgress").hidden=true;setStatus(error.message,true);H.toast(error.message,"error");
+    }finally{button.disabled=!$("mediaFile").files?.length;}
   };
   const init = async admin => {
     H=admin;
