@@ -73,8 +73,19 @@ function render() {
     </section>
     <section class="hfp-card">
       <div class="hfp-head"><div><h2>Permission catalogue</h2><p class="hfp-muted">Available permission types. The Bridge may request additional namespaced permissions even when they are not listed here.</p></div>${chip("Dynamic requests", "good")}</div>
+      <div class="hfp-alert" style="margin-bottom:12px"><strong>All Access · সাময়িক পূর্ণ কর্ম-অনুমতি</strong>একটি অনুমোদনে সব সাধারণ provider ও কাজের অ্যাক্সেস। মেয়াদ ১৫ মিনিট বা ১ ঘণ্টা। Delete, secret/credential, account-management এবং অন্যান্য critical action এই অনুমতির বাইরে থাকবে।</div>
       ${(statusData.catalog || []).map(item => '<div class="hfp-row"><div><strong>'+escapeHtml(item.key)+'</strong><div class="hfp-muted">'+escapeHtml(item.provider)+' · '+escapeHtml(item.description)+'</div></div>'+chip(item.risk, item.risk==="High risk"?"warn":"")+'</div>').join("")}
       <p class="hfp-muted" style="margin-top:10px">A newly approved permission is an authorization record only. It can execute only after a matching server-side connector handler is installed and tested. Unknown operations are never run as generic shell, SQL or unrestricted API access.</p>
+    </section>
+    <section class="hfp-card" style="border:1px solid #c79a62">
+      <div class="hfp-head"><div><h2>All Access</h2><p class="hfp-muted">একবার অনুমোদনেই সব সাধারণ provider-এর কাজের অনুমতি—নির্দিষ্ট সময়ের জন্য।</p></div>${chip("Temporary · MFA protected","warn")}</div>
+      <div class="hfp-alert"><strong>সীমাবদ্ধতা ও সুরক্ষা</strong>Read, write, upload, সাধারণ deployment ও অনুমোদিত workflow কাজ অন্তর্ভুক্ত। Delete/purge, secret বা credential access, account management, permission revocation এবং critical configuration পরিবর্তন অন্তর্ভুক্ত নয়। All Access সর্বোচ্চ ১ ঘণ্টা সক্রিয় থাকবে এবং যেকোনো সময় Revoke করা যাবে।</div>
+      <form id="hfpAllAccessForm" class="hfp-form" style="margin-top:12px">
+        <div class="hfp-field"><label for="hfpAllAccessDuration">Access duration</label><select id="hfpAllAccessDuration"><option value="900">15 minutes</option><option value="3600">1 hour</option></select></div>
+        <div class="hfp-field"><label>Scope</label><input value="All connected providers · non-critical actions" disabled></div>
+        <div class="hfp-field full"><label for="hfpAllAccessReason">কাজের কারণ</label><textarea id="hfpAllAccessReason" required minlength="12">Grant temporary All Access for the approved Halal Food maintenance and storage transfer task.</textarea></div>
+        <div class="hfp-field full"><button class="hfp-btn primary" type="submit">Request All Access</button></div>
+      </form>
     </section>
     <section class="hfp-card">
       <div class="hfp-head"><div><h2>Primary → Secondary storage transfer</h2><p class="hfp-muted">Request the two scoped permissions required to copy files from Supabase Storage to Backblaze B2.</p></div><span class="hfp-chip good">MFA protected</span></div>
@@ -108,6 +119,7 @@ function render() {
       <div class="hfp-head"><div><h2>Request a permission</h2><p class="hfp-muted">Create a scoped request for a supported provider capability. Nothing executes until a matching provider connector is configured and the request is approved.</p></div>${chip("Scoped request", "good")}</div>
       <form id="hfpTestForm" class="hfp-form">
         <div class="hfp-field"><label for="hfpPermission">Permission type</label><select id="hfpPermission" required>
+          <optgroup label="All Access"><option value="all.access">All Access · All providers (non-critical, time-limited)</option></optgroup>
           <optgroup label="GitHub">
             <option value="github.repo.read">Repository · Read</option><option value="github.repo.write">Repository · Write</option><option value="github.issues.read">Issues · Read</option><option value="github.issues.write">Issues · Create/update</option><option value="github.pull_requests.read">Pull requests · Read</option><option value="github.pull_requests.write">Pull requests · Create/update</option><option value="github.releases.read">Releases · Read</option><option value="github.releases.create">Releases · Create</option><option value="github.workflow.read">Workflows · Read</option><option value="github.workflow.run">Workflows · Run</option><option value="github.workflow.cancel">Workflows · Cancel</option>
           </optgroup>
@@ -192,7 +204,8 @@ function bindEvents(host) {
   if (event.target.id === "hfpFinalCheck") document.getElementById("hfpFinalButton").disabled = !event.target.checked;
   if (event.target.id === "hfpPermission") {
     const val = event.target.value;
-    const resource = val.startsWith("github.") ? {repo:"faysaltalukder/halalfood"} :
+    const resource = val === "all.access" ? {scope:"all_noncritical"} :
+      val.startsWith("github.") ? {repo:"faysaltalukder/halalfood"} :
       (val.startsWith("filebase.") || val.startsWith("backblaze.")) ? {bucket:"REPLACE_WITH_BUCKET",prefix:"sites/halalfood/"} :
       val.startsWith("cloudflare.") ? {zone_id:"REPLACE_WITH_ZONE_ID",account_id:"REPLACE_WITH_ACCOUNT_ID"} :
       val.startsWith("website.") ? {site:"https://faysaltalukder.github.io/halalfood/",path:"/*"} :
@@ -217,6 +230,24 @@ host.addEventListener("click", async event => {
   } catch(error) { notify(error.message,"error"); }
 });
 host.addEventListener("submit", async event => {
+  if (event.target.id === "hfpAllAccessForm") {
+    event.preventDefault();
+    const form = event.target;
+    const button = form.querySelector('button[type="submit"]');
+    button.disabled = true;
+    try {
+      await call("create_request",{
+        permission_key:"all.access",
+        duration_seconds:Number(document.getElementById("hfpAllAccessDuration").value),
+        resource:{scope:"all_noncritical"},
+        reason:document.getElementById("hfpAllAccessReason").value
+      });
+      notify("All Access request created. Review and approve it below.");
+      await refresh();
+    } catch(error) { notify(error.message,"error"); }
+    finally { if(button.isConnected) button.disabled=false; }
+    return;
+  }
   if (event.target.id !== "hfpTestForm") return;
   event.preventDefault();
   const button = event.target.querySelector('button[type="submit"]');
