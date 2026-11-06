@@ -12,7 +12,9 @@ let selectedDecision = "approve";
 let busy = false;
 
 async function call(action, payload = {}) {
-  const {data,error} = await window.HFAdmin.client.functions.invoke("hf-permission-center",{body:{action,...payload}});
+  const invoke = window.HFAdmin.client.functions.invoke("hf-permission-center",{body:{action,...payload}});
+  const timeout = new Promise((_,reject)=>setTimeout(()=>reject(new Error("Permission service timed out after 15 seconds. Check the Supabase Edge Function and retry.")),15000));
+  const {data,error} = await Promise.race([invoke,timeout]);
   if (error) {
     let detail = error.message || "Permission service request failed.";
     try { const context = error.context; if (context?.json) { const body = await context.json(); detail = body.error || detail; } } catch (_) {}
@@ -64,6 +66,19 @@ function render() {
       <p class="hfp-muted" style="margin-top:10px">A newly approved permission is an authorization record only. It can execute only after a matching server-side connector handler is installed and tested. Unknown operations are never run as generic shell, SQL or unrestricted API access.</p>
     </section>
     <section class="hfp-card">
+      <div class="hfp-head"><div><h2>Primary → Secondary storage transfer</h2><p class="hfp-muted">Request the two scoped permissions required to copy files from Supabase Storage to Backblaze B2.</p></div><span class="hfp-chip good">MFA protected</span></div>
+      <div class="hfp-alert"><strong>Two separate approvals are required</strong>1) Read only from the selected Supabase bucket/prefix. 2) Upload only to the selected Backblaze bucket/prefix. A verified AAL2 admin session is required. Approval creates scoped permission records; it does not start a transfer until Backblaze credentials and a tested transfer adapter are connected.</div>
+      <form id="hfpTransferForm" class="hfp-form" style="margin-top:12px">
+        <div class="hfp-field"><label for="hfpSourceBucket">Primary Supabase bucket</label><input id="hfpSourceBucket" value="store-content" required></div>
+        <div class="hfp-field"><label for="hfpSourcePrefix">Primary folder / prefix</label><input id="hfpSourcePrefix" value="sites/halalfood/" required></div>
+        <div class="hfp-field"><label for="hfpDestinationBucket">Secondary Backblaze B2 bucket</label><input id="hfpDestinationBucket" placeholder="Enter the exact B2 bucket name" required></div>
+        <div class="hfp-field"><label for="hfpDestinationPrefix">Secondary folder / prefix</label><input id="hfpDestinationPrefix" value="sites/halalfood/" required></div>
+        <div class="hfp-field"><label for="hfpTransferDuration">Permission duration</label><select id="hfpTransferDuration"><option value="900">15 minutes</option><option value="3600">1 hour</option><option value="86400">24 hours</option></select></div>
+        <div class="hfp-field full"><label for="hfpTransferReason">Transfer reason</label><textarea id="hfpTransferReason" required minlength="12">Copy approved Halal Food site files from primary Supabase Storage to the secondary Backblaze B2 bucket for backup and transfer verification.</textarea></div>
+        <div class="hfp-field full"><button class="hfp-btn primary" type="submit">Request both transfer permissions</button></div>
+      </form>
+    </section>
+    <section class="hfp-card">
       <div class="hfp-head"><div><h2>Pending approval requests</h2><p class="hfp-muted">Tick the review box first. Then use the second confirmation before approving or denying.</p></div>${chip(pending.length+" pending",pending.length?"warn":"")}</div>
       ${pending.length ? pending.map(r=>`
         <article class="hfp-request" data-request="${escapeHtml(r.id)}">
@@ -85,8 +100,8 @@ function render() {
           <option value="github.repo.read">GitHub repository read</option><option value="github.repo.write">GitHub repository write</option>
           <option value="supabase.project.read">Supabase project read</option><option value="supabase.database.read">Supabase database read</option>
           <option value="supabase.database.write">Supabase database write</option><option value="supabase.storage.read">Supabase Storage read</option>
-          <option value="supabase.storage.upload">Supabase Storage upload</option><option value="filebase.storage.read">Filebase storage read</option>
-          <option value="filebase.storage.upload">Filebase storage upload</option><option value="website.deploy">Website deploy</option>
+          <option value="supabase.storage.upload">Supabase Storage upload</option><option value="backblaze.storage.read">Backblaze B2 storage read</option><option value="backblaze.storage.upload">Backblaze B2 storage upload</option>
+          <option value="filebase.storage.read">Filebase storage read</option><option value="filebase.storage.upload">Filebase storage upload</option><option value="website.deploy">Website deploy</option>
         </select></div>
         <div class="hfp-field"><label for="hfpDuration">Requested duration</label><select id="hfpDuration"><option value="900">15 minutes</option><option value="3600">1 hour</option><option value="86400">24 hours</option></select></div>
         <div class="hfp-field full"><label for="hfpResource">Resource scope (JSON)</label><input id="hfpResource" value='{"repo":"faysaltalukder/halalfood"}' required></div>
@@ -118,6 +133,7 @@ async function refresh() {
   if (busy) return;
   busy = true;
   try {
+    root.innerHTML = '<div class="hfp-card"><strong>Connecting to the secure permission service…</strong><p class="hfp-muted">Your admin MFA session is verified. Loading requests, grants and transfer permissions.</p></div>';
     const status = await call("status");
     const records = await call("list");
     statusData = status;
@@ -150,7 +166,7 @@ root.addEventListener("change", event => {
   if (event.target.id === "hfpPermission") {
     const val = event.target.value;
     document.getElementById("hfpResource").value = val.startsWith("github.") ? '{"repo":"faysaltalukder/halalfood"}' :
-      val.startsWith("filebase.") ? '{"bucket":"halalfood-assets-bd","prefix":"sites/halalfood/"}' :
+      (val.startsWith("filebase.") || val.startsWith("backblaze.")) ? '{"bucket":"","prefix":"sites/halalfood/"}' :
       '{"project_id":"'+PROJECT_ID+'"}';
   }
 });
@@ -210,6 +226,30 @@ root.addEventListener("click", async event => {
     selectedRequest = null;
     await refresh();
   } catch(error) { notify(error.message,"error"); button.disabled = false; }
+});
+root.addEventListener("submit", async event => {
+  if (event.target.id !== "hfpTransferForm") return;
+  event.preventDefault();
+  const form = event.target;
+  const button = form.querySelector('button[type="submit"]');
+  button.disabled = true;
+  const source = { bucket: document.getElementById("hfpSourceBucket").value.trim(), prefix: document.getElementById("hfpSourcePrefix").value.trim() };
+  const destination = { bucket: document.getElementById("hfpDestinationBucket").value.trim(), prefix: document.getElementById("hfpDestinationPrefix").value.trim() };
+  const reason = document.getElementById("hfpTransferReason").value.trim();
+  const duration = Number(document.getElementById("hfpTransferDuration").value);
+  let sourceQueued = false;
+  try {
+    if (!source.bucket || !source.prefix || !destination.bucket || !destination.prefix) throw new Error("Both storage buckets and prefixes are required.");
+    if (reason.length < 12) throw new Error("Please provide a clear transfer reason.");
+    await call("create_test_request", { permission_key:"supabase.storage.read", duration_seconds:duration, resource:source, reason });
+    sourceQueued = true;
+    await call("create_test_request", { permission_key:"backblaze.storage.upload", duration_seconds:duration, resource:destination, reason });
+    notify("Both transfer permission requests are waiting for your separate approval.");
+    await refresh();
+  } catch(error) {
+    notify(sourceQueued ? "Supabase read request queued, but Backblaze upload request failed: "+error.message : error.message,"error");
+    if (sourceQueued) await refresh();
+  } finally { if (button.isConnected) button.disabled = false; }
 });
 (async () => {
   try {

@@ -16,6 +16,7 @@ const catalog = new Set([
   "supabase.project.read", "supabase.database.read", "supabase.database.write",
   "supabase.storage.read", "supabase.storage.upload", "supabase.storage.delete",
   "filebase.storage.read", "filebase.storage.upload", "filebase.storage.delete",
+  "backblaze.storage.read", "backblaze.storage.upload", "backblaze.storage.delete",
   "github.repo.read", "github.repo.write", "github.workflow.read", "github.workflow.run",
   "website.deploy", "website.publish"
 ]);
@@ -162,7 +163,7 @@ Deno.serve(async (req: Request) => {
       const requestKey = crypto.randomUUID();
       const { data, error } = await admin.from("hf_permission_requests").insert({
         request_key: requestKey, source: "dashboard", requester: "Admin permission test",
-        permission_key: permissionKey, resource, reason, risk_level: permissionKey.includes("delete") || permissionKey.includes("write") ? "high" : "medium",
+        permission_key: permissionKey, resource, reason, risk_level: /delete|write|upload|deploy|publish|run|update|create|modify/i.test(permissionKey) ? "high" : "medium",
         requested_duration_seconds: duration, status: "pending"
       }).select("*").single();
       if (error) return reply({ success: false, error: "Could not create the approval request.", code: error.code || "insert_failed" }, 500);
