@@ -59,8 +59,7 @@ Deno.serve(pipeline(
       server.registerTool("list_permission_requests", {
         title: "List permission requests",
         description: "Show recent permission requests and their approval status. This tool cannot approve or revoke.",
-        inputSchema: z.object({ limit: z.number().int().min(1).max(50).default(20) }),
-        securitySchemes: [{ type: "oauth2", scopes: ["openid", "email"] }]
+        inputSchema: { limit: z.number().int().min(1).max(50).default(20) }
       }, async ({ limit }) => {
         const { data, error } = await admin.from("hf_permission_requests")
           .select("id,permission_key,resource,reason,risk_level,status,created_at,expires_at,decided_at")
