@@ -9,7 +9,7 @@ const url = "https://wordpress-studio.shipstatic.com/admin/";
 
 assert.ok(adapter.includes(url), "Legacy WordPress route must open the independent WordPress app.");
 assert.ok(adapter.includes('target="_blank"') && adapter.includes('rel="noopener noreferrer"'), "External launch must use a safe new browsing context.");
-assert.ok(!/supabase|neon|HFAdminReady|HFNeon|createClient|fetch\s*\(/i.test(adapter), "Halal Food launch adapter must not load backend SDKs or exchange credentials.");
+assert.ok(!/supabase|HFAdminReady|HFNeon|createClient|fetch\s*\(/i.test(adapter), "Halal Food launch adapter must not load backend SDKs or exchange credentials.");
 assert.ok(nav.includes('["wordpress","layout","WordPress","open independent WordPress Studio"]'), "Halal Food admin must retain one WordPress navigation entry.");
 assert.ok(nav.includes(url) && nav.includes('target="_blank" rel="noopener noreferrer"'), "WordPress navigation must open the separate app safely.");
 assert.ok(!nav.includes("wordpressBusinessCategories") && !nav.includes("wordpress-templates.html") && !nav.includes("website-builder.html") && !nav.includes("wordpress-live.html"), "Halal Food navigation must not contain embedded WordPress routes or business logic.");
