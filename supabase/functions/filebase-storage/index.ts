@@ -1,6 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.95.0";
-import { S3Client, HeadBucketCommand, ListObjectsV2Command, GetObjectCommand, DeleteObjectCommand, GetBucketCorsCommand, PutBucketCorsCommand, CreateMultipartUploadCommand, UploadPartCommand, CompleteMultipartUploadCommand, AbortMultipartUploadCommand } from "npm:@aws-sdk/client-s3@3.850.0";
+import { S3Client, HeadBucketCommand, HeadObjectCommand, PutObjectCommand, ListObjectsV2Command, GetObjectCommand, DeleteObjectCommand, GetBucketCorsCommand, PutBucketCorsCommand, CreateMultipartUploadCommand, UploadPartCommand, CompleteMultipartUploadCommand, AbortMultipartUploadCommand } from "npm:@aws-sdk/client-s3@3.850.0";
 import { getSignedUrl } from "npm:@aws-sdk/s3-request-presigner@3.850.0";
 import { createPresignedPost } from "npm:@aws-sdk/s3-presigned-post@3.850.0";
 
@@ -67,6 +67,34 @@ Deno.serve(async(req:Request)=>{
    }
    await s3.send(new PutBucketCorsCommand({Bucket:c.bucket,CORSConfiguration:{CORSRules:rules as never}}));
    return json({ok:true,action,cors_configured:true,allowed_origin:ORIGIN,allowed_methods:["GET","POST","PUT","HEAD"],existing_rules_preserved:true});
+  }
+  if(action==="mirror_storage"){
+   const serviceKey=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+   if(!serviceKey)return json({ok:false,error:"supabase_service_role_unavailable"},503);
+   const sourceBuckets=["store-content","hf-facebook-media"];
+   const supabase=createClient(Deno.env.get("SUPABASE_URL")||"",serviceKey,{auth:{persistSession:false,autoRefreshToken:false}});
+   const {data:rows,error:queryError}=await supabase.schema("storage").from("objects").select("bucket_id,name,metadata").in("bucket_id",sourceBuckets).order("bucket_id").order("name").limit(50);
+   if(queryError)throw new Error("source_inventory_failed");
+   const results:Record<string,unknown>[]=[];
+   for(const row of (rows||[])){
+    const bucket=String(row.bucket_id||""),name=String(row.name||"");
+    if(!sourceBuckets.includes(bucket)||!name||name.split("/").includes("..")){results.push({bucket,name,status:"skipped_invalid"});continue;}
+    const sourceSize=Number((row.metadata as Record<string,unknown>|null)?.size||0);
+    if(!Number.isSafeInteger(sourceSize)||sourceSize<1||sourceSize>MAX_BYTES){results.push({bucket,name,status:"skipped_size_limit",sourceSize});continue;}
+    const {data:file,error:downloadError}=await supabase.storage.from(bucket).download(name);
+    if(downloadError||!file){results.push({bucket,name,status:"source_download_failed"});continue;}
+    const bytes=new Uint8Array(await file.arrayBuffer());
+    if(bytes.byteLength!==sourceSize){results.push({bucket,name,status:"size_mismatch",sourceSize,downloadedSize:bytes.byteLength});continue;}
+    const key="sites/halalfood/backups/supabase-mirror/"+bucket+"/"+name;
+    const contentType=String((row.metadata as Record<string,unknown>|null)?.mimetype||file.type||"application/octet-stream");
+    await s3.send(new PutObjectCommand({Bucket:c.bucket,Key:key,Body:bytes,ContentLength:bytes.byteLength,ContentType:contentType,Metadata:{"source-bucket":bucket,"source-key":name}}));
+    const head=await s3.send(new HeadObjectCommand({Bucket:c.bucket,Key:key}));
+    if(Number(head.ContentLength)!==bytes.byteLength){results.push({bucket,name,key,status:"destination_verification_failed",sourceSize:bytes.byteLength,destinationSize:head.ContentLength??null});continue;}
+    results.push({bucket,name,key,status:"copied_verified",size:bytes.byteLength,contentType});
+   }
+   const copied=results.filter(x=>x.status==="copied_verified").length;
+   const failed=results.length-copied;
+   return json({ok:failed===0,action,source_buckets:sourceBuckets,destination_prefix:"sites/halalfood/backups/supabase-mirror/",originals_deleted:false,inventory_count:results.length,copied_verified:copied,failed,results});
   }
   const prefix=sitePrefix(b.site);if(!prefix)return json({ok:false,error:"invalid_site_identifier"},400);
   const cats=["media","products","site-assets","documents","backups"];
