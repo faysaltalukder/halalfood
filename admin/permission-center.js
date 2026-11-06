@@ -1,7 +1,15 @@
 (() => {
 "use strict";
-const root = document.getElementById("hfPermissionRoot");
-if (!root) return;
+let root = null;
+const wiredRoots = new WeakSet();
+function getRoot() {
+  let host = document.getElementById("hfPermissionRoot");
+  if (!host) {
+    const main = document.getElementById("adminMain");
+    if (main) { host = document.createElement("div"); host.id = "hfPermissionRoot"; main.replaceChildren(host); }
+  }
+  return host;
+}
 const PROJECT_ID = "qfwvrcfkrsydycbfjsxf";
 const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const when = value => value ? new Date(value).toLocaleString("en-BD",{dateStyle:"medium",timeStyle:"short"}) : "—";
@@ -32,6 +40,8 @@ function active(grant) {
   return !grant.revoked_at && grant.expires_at && new Date(grant.expires_at).getTime() > Date.now() && Number(grant.uses_count) < Number(grant.max_uses);
 }
 function render() {
+  const host = getRoot();
+  if (!host) return;
   const requests = apiData.requests || [];
   const grants = apiData.grants || [];
   const logs = apiData.audit || [];
@@ -40,7 +50,7 @@ function render() {
   const revoked = grants.filter(g => !!g.revoked_at);
   const githubReady = statusData.githubOAuthConfigured && statusData.githubTokenEncryptionConfigured;
   const bridgeReady = statusData.bridgeSecretConfigured;
-  root.innerHTML = `
+  host.innerHTML = `
     <header class="page-heading hfp-head">
       <div><p class="page-eyebrow">SECURE ACCESS · SERVER APPROVALS · AUDIT</p><h1>Permission</h1><p class="hfp-muted">Review every request before access is granted. Each approval is scoped, time-limited and recorded on the server.</p></div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${chip("Approval API "+(statusData.backend==="connected"?"connected":"offline"),statusData.backend==="connected"?"good":"danger")}<button class="hfp-btn" data-action="refresh" ${busy?"disabled":""}>↻ Refresh</button></div>
@@ -142,16 +152,17 @@ function render() {
 async function refresh() {
   if (busy) return;
   busy = true;
+  const host = getRoot();
   try {
-    root.innerHTML = '<div class="hfp-card"><strong>Connecting to the secure permission service…</strong><p class="hfp-muted">Your admin MFA session is verified. Loading requests, grants and transfer permissions.</p></div>';
-    const status = await call("status");
-    const records = await call("list");
+    if (!host) throw new Error("Permission Center mount point is missing after the admin shell loaded.");
+    host.innerHTML = '<div class="hfp-card"><strong>Connecting to the secure permission service…</strong><p class="hfp-muted">Your admin MFA session is verified. Loading requests, grants and transfer permissions.</p></div>';
+    const [status, records] = await Promise.all([call("status"), call("list")]);
     statusData = status;
     apiData = records;
-    render();
   } catch (error) {
-    root.innerHTML = '<div class="hfp-alert"><strong>Permission service could not be loaded</strong>'+escapeHtml(error.message)+'<p style="margin:8px 0 0">Check that the admin session is still valid and the Edge Function is deployed. Refresh after signing in again if needed.</p><button class="hfp-btn" data-action="refresh" style="margin-top:10px">Retry</button></div>';
+    if (host?.isConnected) host.innerHTML = '<div class="hfp-alert"><strong>Permission service could not be loaded</strong>'+escapeHtml(error.message)+'<p style="margin:8px 0 0">Check that the admin session is still valid and the Edge Function is deployed. Refresh after signing in again if needed.</p><button class="hfp-btn" data-action="refresh" style="margin-top:10px">Retry</button></div>';
   } finally { busy = false; }
+  if (host?.isConnected && statusData.backend) render();
 }
 function openDecision(id, decision) {
   const request = apiData.requests.find(r => r.id === id);
@@ -167,7 +178,10 @@ function openDecision(id, decision) {
   document.getElementById("hfpFinalButton").textContent = decision === "approve" ? "Confirm approval" : "Confirm denial";
   dialog.showModal();
 }
-root.addEventListener("change", event => {
+function bindEvents(host) {
+  if (!host || wiredRoots.has(host)) return;
+  wiredRoots.add(host);
+  host.addEventListener("change", event => {
   if (event.target.matches("[data-reviewed]")) {
     const id = event.target.getAttribute("data-reviewed");
     root.querySelectorAll('[data-action="approve"][data-id="'+CSS.escape(id)+'"],[data-action="deny"][data-id="'+CSS.escape(id)+'"]').forEach(b => b.disabled = !event.target.checked);
@@ -183,7 +197,7 @@ root.addEventListener("change", event => {
     document.getElementById("hfpResource").value = JSON.stringify(resource);
   }
 });
-root.addEventListener("click", async event => {
+host.addEventListener("click", async event => {
   const button = event.target.closest("[data-action]");
   if (!button) return;
   const action = button.dataset.action, id = button.dataset.id;
@@ -199,7 +213,7 @@ root.addEventListener("click", async event => {
     }
   } catch(error) { notify(error.message,"error"); }
 });
-root.addEventListener("submit", async event => {
+host.addEventListener("submit", async event => {
   if (event.target.id !== "hfpTestForm") return;
   event.preventDefault();
   const button = event.target.querySelector('button[type="submit"]');
@@ -254,9 +268,9 @@ root.addEventListener("submit", async event => {
   try {
     if (!source.bucket || !source.prefix || !destination.bucket || !destination.prefix) throw new Error("Both storage buckets and prefixes are required.");
     if (reason.length < 12) throw new Error("Please provide a clear transfer reason.");
-    await call("create_test_request", { permission_key:"supabase.storage.read", duration_seconds:duration, resource:source, reason });
+    await call("create_request", { permission_key:"supabase.storage.read", duration_seconds:duration, resource:source, reason });
     sourceQueued = true;
-    await call("create_test_request", { permission_key:"backblaze.storage.upload", duration_seconds:duration, resource:destination, reason });
+    await call("create_request", { permission_key:"backblaze.storage.upload", duration_seconds:duration, resource:destination, reason });
     notify("Both transfer permission requests are waiting for your separate approval.");
     await refresh();
   } catch(error) {
@@ -264,13 +278,18 @@ root.addEventListener("submit", async event => {
     if (sourceQueued) await refresh();
   } finally { if (button.isConnected) button.disabled = false; }
 });
+  }
 (async () => {
   try {
     const ready = await window.HFAdminReady;
     if (!ready) return;
+    root = getRoot();
+    if (!root) throw new Error("The Admin shell loaded, but Permission Center could not mount its page content.");
+    bindEvents(root);
     await refresh();
   } catch(error) {
-    root.innerHTML = '<div class="hfp-alert"><strong>Admin authentication is not ready</strong>'+escapeHtml(error.message)+'</div>';
+    const host = getRoot();
+    if (host) host.innerHTML = '<div class="hfp-alert"><strong>Permission Center could not start</strong>'+escapeHtml(error.message)+'<p style="margin:8px 0 0">Your secure admin session has not been bypassed. Refresh the page or sign in again, then retry.</p><button class="hfp-btn" data-action="refresh" style="margin-top:10px">Retry</button></div>';
   }
 })();
 })();
