@@ -869,39 +869,6 @@
     "Line": "লাইন",
     "Bar": "বার",
     "Chart type": "চার্টের ধরন",
-  };
-
-  const reverseTranslations = Object.create(null);
-  Object.entries(translations).forEach(([source, target]) => {
-    if (target && !reverseTranslations[target]) reverseTranslations[target] = source;
-  });
-
-  function escapeRegExp(value) {
-    return String(value).split("").map(char =>
-      "\\^$.*+?()[]{}|".includes(char) ? "\\" + char : char
-    ).join("");
-  }
-
-  function buildPhraseRules(sourceMap) {
-    return Object.entries(sourceMap)
-      .filter(([source]) => /\s/.test(source.trim()) && source.trim().length > 2)
-      .sort((a, b) => b[0].length - a[0].length)
-      .map(([source, target]) => {
-        try {
-          const pattern = new RegExp("(^|[^\\p{L}\\p{N}])(" + escapeRegExp(source.trim()) + ")(?=$|[^\\p{L}\\p{N}])", "giu");
-          return { source: source.toLocaleLowerCase(), pattern, target };
-        } catch (_) {
-          return null;
-        }
-      })
-      .filter(Boolean);
-  }
-
-  const phraseRules = {
-    bn: buildPhraseRules(translations),
-    en: buildPhraseRules(reverseTranslations)
-  };
-
     "AI Permission Center": "এআই অনুমতি কেন্দ্র",
     "CHATGPT ACCESS · APPROVALS · AUDIT": "চ্যাটজিপিটি প্রবেশাধিকার · অনুমোদন · নিরীক্ষা",
     "Control exactly what the Halal Food workspace allows ChatGPT to read or change. Every future request will be shown here with its purpose, affected resource and requested duration.": "হালাল ফুড কর্মক্ষেত্রে চ্যাটজিপিটি কী পড়তে বা পরিবর্তন করতে পারবে তা নির্দিষ্টভাবে নিয়ন্ত্রণ করুন। ভবিষ্যতের প্রতিটি অনুরোধের উদ্দেশ্য, প্রভাবিত রিসোর্স ও চাওয়া সময়সীমা এখানে দেখা যাবে।",
@@ -983,6 +950,39 @@
     "Not connected": "সংযুক্ত নয়",
     "Audit log is not connected yet": "নিরীক্ষা লগ এখনো সংযুক্ত নয়",
     "No approval or execution history is being displayed because the permission backend has not been installed. Existing Halal Food admin activity logs are separate from this future ChatGPT permission audit.": "অনুমতির ব্যাকএন্ড এখনো ইনস্টল না হওয়ায় অনুমোদন বা কাজ চালানোর ইতিহাস দেখানো হচ্ছে না। হালাল ফুডের বর্তমান অ্যাডমিন কার্যক্রমের লগ ভবিষ্যতের এই ChatGPT অনুমতি নিরীক্ষা থেকে আলাদা।",
+  };
+
+  const reverseTranslations = Object.create(null);
+  Object.entries(translations).forEach(([source, target]) => {
+    if (target && !reverseTranslations[target]) reverseTranslations[target] = source;
+  });
+
+  function escapeRegExp(value) {
+    return String(value).split("").map(char =>
+      "\\^$.*+?()[]{}|".includes(char) ? "\\" + char : char
+    ).join("");
+  }
+
+  function buildPhraseRules(sourceMap) {
+    return Object.entries(sourceMap)
+      .filter(([source]) => /\s/.test(source.trim()) && source.trim().length > 2)
+      .sort((a, b) => b[0].length - a[0].length)
+      .map(([source, target]) => {
+        try {
+          const pattern = new RegExp("(^|[^\\p{L}\\p{N}])(" + escapeRegExp(source.trim()) + ")(?=$|[^\\p{L}\\p{N}])", "giu");
+          return { source: source.toLocaleLowerCase(), pattern, target };
+        } catch (_) {
+          return null;
+        }
+      })
+      .filter(Boolean);
+  }
+
+  const phraseRules = {
+    bn: buildPhraseRules(translations),
+    en: buildPhraseRules(reverseTranslations)
+  };
+
   const textState = new WeakMap();
   const attrState = new WeakMap();
   const chartState = new WeakMap();
