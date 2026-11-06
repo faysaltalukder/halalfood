@@ -17,5 +17,5 @@ assert.ok(fn.includes("aal2")&&fn.includes("admin_access_only")&&fn.includes("FI
 assert.ok(fn.includes("PutBucketCorsCommand")&&fn.includes('"GET","POST","PUT","HEAD"'),"The function must configure restricted browser CORS including multipart PUT.");
 assert.ok(fn.includes("MAX_MULTIPART_BYTES = 1024 * 1024 * 1024"),"The server must enforce the same multipart size ceiling.");
 assert.ok(css.includes("@media(max-width:760px)"),"Media Library must remain responsive.");
-assert.ok(docs.includes("GitHub remains the canonical source-code")&&docs.includes("Supabase does not proxy the bytes"),"Storage responsibility boundaries must be documented.");
+assert.ok(docs.includes("GitHub remains the canonical source-control")&&docs.includes("Supabase does not proxy the bytes"),"Storage responsibility boundaries must be documented.");
 console.log("Filebase secondary storage checks passed.");
