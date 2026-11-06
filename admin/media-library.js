@@ -124,5 +124,5 @@
     try{await call({action:"configure_cors"});}catch(error){setStatus("Bucket browser-access policy could not be confirmed: "+error.message,true);H.toast("Filebase browser access policy needs attention.","error");}
     await load();
   };
-  window.HFAdminReady?.then(admin=>{if(admin&&document.body.dataset.page==="media-library")init(admin);});
+  window.HFAdminReady?.then(admin=>{if(admin&&document.body.dataset.mediaLibrary==="true")init(admin);});
 })();
