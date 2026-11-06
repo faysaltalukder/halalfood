@@ -3973,7 +3973,8 @@ async function refresh(){
    "reports-daily":initReports,
    settings:initSettings,
    "website-publisher":()=>{if(typeof window.HFWebsitePublisherInit==="function")return window.HFWebsitePublisherInit();throw new Error("Website Publisher module did not load.");},
-    wordpress:()=>Promise.resolve()
+    wordpress:()=>Promise.resolve(),
+   "permission-center":()=>Promise.resolve() // Permission Center initializes itself in permission-center.js after the shared AAL2 shell is ready.
   };
   if(!actions[page]){toast("This section is not available yet.","error");return;}
   actions[page]().catch(err=>{console.error("Admin page failed",page,err);toast("The page could not load its data. "+(err?.message||"Please refresh and try again."),"error");});
