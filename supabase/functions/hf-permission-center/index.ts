@@ -68,7 +68,10 @@ Deno.serve(async (req: Request) => {
 
   const bridgeActions = new Set(["bridge_request", "authorize_action"]);
   let adminUser: any = null;
-  if (!bridgeActions.has(action) || !isBridge) {
+  if (bridgeActions.has(action)) {
+    if (!bridgeSecret) return reply({ success: false, error: "Secure Bridge is not configured. Add HF_PERMISSION_BRIDGE_SECRET to Edge Function secrets." }, 503);
+    if (!isBridge) return reply({ success: false, error: "Bridge authentication failed." }, 401);
+  } else {
     const auth = req.headers.get("authorization") || "";
     const token = auth.replace(/^Bearer\s+/i, "").trim();
     if (!token) return reply({ success: false, error: "Admin sign-in required." }, 401);
@@ -78,8 +81,6 @@ Deno.serve(async (req: Request) => {
     adminUser = data.user;
     if (String(adminUser.email || "").toLowerCase() !== ADMIN_EMAIL) return reply({ success: false, error: "Authorized admin account only." }, 403);
     if (jwtClaims(token)?.aal !== "aal2") return reply({ success: false, error: "MFA verification (AAL2) is required. Refresh your admin session after verification." }, 403);
-  } else if (!isBridge) {
-    return reply({ success: false, error: "Secure Bridge is not configured. Add HF_PERMISSION_BRIDGE_SECRET to Edge Function secrets." }, 503);
   }
 
   try {
@@ -196,7 +197,10 @@ Deno.serve(async (req: Request) => {
       const permissionKey = clean(body.permission_key, 80);
       const resource = body.resource && typeof body.resource === "object" && !Array.isArray(body.resource) ? body.resource : {};
       const { data: grant, error } = await admin.from("hf_permission_grants").select("*").eq("id", grantId).maybeSingle();
-      const allowed = !error && grant && grant.permission_key === permissionKey && !grant.revoked_at &&
+      const { data: parentRequest } = grant?.request_id
+        ? await admin.from("hf_permission_requests").select("status").eq("id", grant.request_id).maybeSingle()
+        : { data: null };
+      const allowed = !error && grant && parentRequest?.status === "approved" && grant.permission_key === permissionKey && !grant.revoked_at &&
         grant.expires_at && new Date(grant.expires_at).getTime() > Date.now() &&
         Number(grant.uses_count) < Number(grant.max_uses) &&
         resourceMatches(grant.resource || {}, resource);
