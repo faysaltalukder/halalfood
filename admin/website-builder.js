@@ -1,8 +1,10 @@
 /* Universal Website Builder — isolated, local-only document engine. */
 (() => {
   "use strict";
-  const TEMPLATE_KEY = new URLSearchParams(location.search).get("template") || "";
-  const STORAGE_KEY = TEMPLATE_KEY ? "hf-universal-builder-draft-" + TEMPLATE_KEY : "hf-universal-builder-draft-v1";
+  const PAGE_PARAMS = new URLSearchParams(location.search);
+  const TEMPLATE_KEY = PAGE_PARAMS.get("template") || "";
+  const PAGE_KEY = PAGE_PARAMS.get("page") || "home";
+  const STORAGE_KEY = TEMPLATE_KEY ? "hf-universal-builder-draft-" + TEMPLATE_KEY + "-" + PAGE_KEY : "hf-universal-builder-draft-v1";
   const $ = (id) => document.getElementById(id);
   const clone = (value) => JSON.parse(JSON.stringify(value));
   const uid = () => "node-" + Math.random().toString(36).slice(2, 10);
@@ -48,7 +50,11 @@
     if (!profile) return doc;
     doc.site.name = profile.name;
     doc.site.templateKey = TEMPLATE_KEY;
-    doc.page.title = profile.name + " · Home";
+    const pageTitles = {home:"Home",shop:"Shop All",category:"Category",product:"Product Details",search:"Search Results",cart:"Your Basket",checkout:"Checkout","order-confirmation":"Order Confirmation","order-tracking":"Track Order",about:"Our Story",contact:"Contact Us",faq:"FAQs",delivery:"Delivery Information",returns:"Returns & Refunds",privacy:"Privacy Policy",terms:"Terms & Conditions",account:"My Account",wishlist:"Wishlist"};
+    doc.page.id = PAGE_KEY;
+    doc.page.title = profile.name + " · " + (pageTitles[PAGE_KEY] || PAGE_KEY.replace(/^custom-/,"").replace(/-/g," ").replace(/\b\w/g,c=>c.toUpperCase()));
+    doc.page.pageType = PAGE_KEY;
+    doc.page.slug = PAGE_KEY;
     doc.theme.colors = {primary:profile.accent,text:profile.ink,muted:"#737d87"};
     const nodes = [];
     const collect = list => list.forEach(node => { nodes.push(node); collect(node.children || []); });
@@ -100,7 +106,7 @@
         setStatus("Saved in this browser · Neon unavailable","warning");
         return;
       }
-      state.saveChain=state.saveChain.catch(()=>{}).then(()=>window.HFNeonBuilderApi.saveDocument(state.website,payload));
+      state.saveChain=state.saveChain.catch(()=>{}).then(()=>window.HFNeonBuilderApi.saveDocument(state.website,payload,PAGE_KEY));
       try{
         await state.saveChain;
         if(JSON.stringify(payload)===JSON.stringify(state.doc))setStatus("Saved to Neon · draft only","saved");
@@ -284,7 +290,7 @@
       const packageData={schemaVersion:1,reviewId:"review-"+Date.now(),status:"in_review",sentAt:new Date().toISOString(),document:payload};
       localStorage.setItem("hf-wp-review-package-v1",JSON.stringify(packageData));
       localStorage.setItem(STORAGE_KEY,JSON.stringify(payload));
-      window.location.href="./wordpress-live.html?wp_review=1";
+      window.location.href="../storefront.html?site="+encodeURIComponent(state.website?.slug||("hf-"+TEMPLATE_KEY))+"&page="+encodeURIComponent(PAGE_KEY)+"&preview=1";
     }catch(error){console.error(error);setStatus("Could not save the review draft to Neon · local copy kept","error");}
   };
   const exportDraft = () => {
@@ -298,13 +304,13 @@
     if(TEMPLATE_KEY&&window.HFNeonBuilderApi){
       try{
         const profile=templateDocument();
-        const remote=await window.HFNeonBuilderApi.loadDocument(TEMPLATE_KEY,profile.site.name);
+        const remote=await window.HFNeonBuilderApi.loadDocument(TEMPLATE_KEY,profile.site.name,PAGE_KEY);
         state.website=remote.website;state.neonReady=true;remoteDocument=remote.document;
       }catch(error){console.error("Neon editor initialization failed",error);setStatus("Neon unavailable · local fallback active","warning");}
     }
     state.doc=validDocument(remoteDocument)?remoteDocument:(validDocument(saved)?saved:templateDocument());
     if(state.neonReady&&!validDocument(remoteDocument)){
-      try{await window.HFNeonBuilderApi.saveDocument(state.website,state.doc);}
+      try{await window.HFNeonBuilderApi.saveDocument(state.website,state.doc,PAGE_KEY);}
       catch(error){state.neonReady=false;console.error("Initial Neon draft save failed",error);}
     }
     document.querySelectorAll("[data-add-component]").forEach(button=>button.addEventListener("click",()=>addComponent(button.dataset.addComponent)));
@@ -322,7 +328,8 @@
     $("builderExport").addEventListener("click",exportDraft);
     $("builderSendPreview").addEventListener("click",sendToPreview);
     changeViewport("desktop");renderAll();
-    setStatus(state.neonReady?(validDocument(remoteDocument)?"Restored from Neon · draft only":"Template draft saved to Neon · not published"):(saved?"Restored local backup · Neon unavailable":"Sample draft ready · Neon unavailable"),state.neonReady?"saved":"warning");
+    $("builderPageTitle").textContent=state.doc.page.title;
+    setStatus(state.neonReady?(validDocument(remoteDocument)?"Restored "+PAGE_KEY+" from Neon · draft only":"Page draft prepared in Neon · not published"):(saved?"Restored local backup · Neon unavailable":"Sample page ready · Neon unavailable"),state.neonReady?"saved":"warning");
   };
   const waitForAdmin = () => {
     const ready=window.HFAdminReady;
