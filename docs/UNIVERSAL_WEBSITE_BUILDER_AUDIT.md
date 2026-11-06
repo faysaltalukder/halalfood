@@ -1,6 +1,6 @@
 # WordPress Builder Separation Record
 
-<badge>Superseded</badge>
+**Status: Superseded — historical record only.**
 
 This file is retained as a historical audit record only. Its earlier implementation notes describe a previous state in which WordPress/Grocery Builder code was embedded in the Halal Food repository. That implementation has been moved to the independent WordPress project.
 
