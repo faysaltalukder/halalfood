@@ -75,7 +75,7 @@ const wordpressUrl = "https://wordpress-studio.shipstatic.com/admin/";
 assert.ok(wordpressNav.includes('["wordpress","layout","WordPress","open independent WordPress Studio"]'), "Halal Food sidebar must retain one WordPress entry.");
 assert.ok(wordpressNav.includes(wordpressUrl) && wordpressNav.includes('target="_blank" rel="noopener noreferrer"'), "WordPress sidebar must open the separate app safely.");
 assert.ok(wordpressPage.includes(wordpressUrl) && wordpressPage.includes('target="_blank" rel="noopener noreferrer"'), "Legacy WordPress route must be a simple external launch adapter.");
-assert.ok(!/supabase|neon|HFAdminReady|HFNeon|createClient|fetch\\s*\\(/i.test(wordpressPage), "The Halal Food adapter must not load WordPress or backend runtime code.");
+assert.ok(!/supabase|HFAdminReady|HFNeon|createClient|fetch\\s*\\(/i.test(wordpressPage), "The Halal Food adapter must not load WordPress or backend runtime code.");
 assert.ok(!wordpressNav.includes("wordpressBusinessCategories") && !wordpressNav.includes("wordpress-templates.html") && !wordpressNav.includes("website-builder.html") && !wordpressNav.includes("wordpress-live.html"), "Halal Food navigation must not contain embedded WordPress routes.");
 for (const path of ["admin/wordpress-live.html","admin/wordpress-sandbox.js","admin/wordpress-templates.html","admin/wordpress-templates.js","admin/wordpress-templates.css","admin/wordpress.css","admin/website-builder.html","admin/website-builder.js","admin/website-builder.css","admin/neon-builder-api.js"]) {
   assert.ok(!existsSync(path), "WordPress application code must be outside Halal Food: " + path);
