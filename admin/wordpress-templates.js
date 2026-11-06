@@ -10,7 +10,7 @@
  */
 (() => {
  "use strict";
- const templates=[
+ let templates=[
   {key:"general-supermarket",name:"General Supermarket",tagline:"The complete everyday grocery store",type:"Everyday shopping",accent:"#b94f35",ink:"#273b32",paper:"#fbf8f1",soft:"#f4eadb",feature:"Advanced search · broad catalogue · promotions",description:"A confident, full-range supermarket with strong category navigation, a dense product grid, weekly offers and familiar family-basket shopping.",features:["Advanced product search","Multi-level category navigation","Weekly offers and featured deals","Saved basket and reorder pattern","Scheduled delivery or pickup"],best:"Supermarkets, mini markets and neighbourhood grocery stores",layout:"Dense catalogue · promotional merchandising",heroTitle:"Good food. Great days. All in one place.",heroText:"Your everyday favourites, fresh picks and pantry essentials — carefully selected for the whole family.",heroImage:"https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1500&q=85",heroCta:"Shop all groceries",categories:["All products","Fresh produce","Dairy & eggs","Pantry","Bakery","Beverages"],products:[["Farm fresh vegetables","Fresh produce","৳120","/kg","photo-1540420773420-3366772f4999"],["Whole milk","Dairy & eggs","৳95","/litre","photo-1563636619-e9143da7973b"],["Golden bananas","Fresh produce","৳80","/dozen","photo-1571771894821-ce9b6c11b08e"],["Artisan sourdough","Bakery","৳180","/loaf","photo-1585478259715-876acc5be8eb"],["Premium basmati rice","Pantry","৳165","/kg","photo-1586201375761-83865001e31c"],["Fresh orange juice","Beverages","৳140","/bottle","photo-1600271886742-f049cd451bba"]]},
   {key:"fresh-produce",name:"Fresh & Farm",tagline:"Freshness-led produce shopping",type:"Farm to home",accent:"#657c4a",ink:"#293c31",paper:"#f7f7ef",soft:"#e9eddf",feature:"Produce storytelling · origin details · seasonal picks",description:"An editorial, farm-led storefront that gives produce room to breathe with large photography, seasonal collections, origin notes and variable-weight buying patterns.",features:["Large editorial produce imagery","Farm and origin information","Seasonal collections and harvest notes","Variable-weight product options","Substitution preferences"],best:"Fresh produce, organic grocery, farm-to-home and local growers",layout:"Editorial storytelling · seasonal collections",heroTitle:"Closer to the farm. Fresher to your table.",heroText:"Meet the growers, discover what is in season and bring the best of the harvest home.",heroImage:"https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=1500&q=85",heroCta:"Explore this week's harvest",categories:["Harvest picks","Vegetables","Fruit","Herbs","Dairy","Farm pantry"],products:[["Heirloom tomatoes","Vegetables","৳160","/kg","photo-1546094096-0df4bcaaa337"],["Seasonal citrus","Fruit","৳220","/kg","photo-1547514701-42782101795e"],["Baby spinach","Herbs","৳90","/bunch","photo-1576045057995-568f588f82fb"],["Fresh strawberries","Fruit","৳280","/box","photo- strawberry"],["Farm eggs","Dairy","৳150","/6 pack","photo-1506976785307-8732e854ad03"],["Raw honey","Farm pantry","৳390","/jar","photo-1587049352846-4a222e784d38"]]},
   {key:"express-grocery",name:"Express Grocery",tagline:"Fast essentials, fewer steps",type:"Quick commerce",accent:"#df6b35",ink:"#27354a",paper:"#f7f8fb",soft:"#fff0e7",feature:"Quick add · sticky cart · fast local delivery",description:"A compact, high-velocity convenience experience with instant add controls, short category rails, reorder shortcuts and a persistent cart for quick local delivery.",features:["Compact, scan-friendly catalogue","One-tap quick add","Sticky basket and quantity controls","Repeat-order shortcuts","Delivery-zone messaging"],best:"Convenience stores, express grocery and local delivery shops",layout:"Compact product cards · quick-add flows",heroTitle:"Need it now? We're on the way.",heroText:"Everyday essentials, snacks and fresh favourites — added in seconds and delivered nearby.",heroImage:"https://images.unsplash.com/photo-1604719312566-8912e9c8a213?auto=format&fit=crop&w=1500&q=85",heroCta:"Start quick shopping",categories:["Popular","Snacks","Drinks","Daily needs","Fresh","Household"],products:[["Sparkling water","Drinks","৳45","/can","photo-1523362628745-0c100150b504"],["Potato crisps","Snacks","৳55","/pack","photo-1566478989037-eec170784d0b"],["Fresh milk","Daily needs","৳95","/litre","photo-1563636619-e9143da7973b"],["Bananas","Fresh","৳80","/dozen","photo-1571771894821-ce9b6c11b08e"],["Dish wash liquid","Household","৳125","/bottle","photo-1585421514738-01798e348b17"],["Chocolate bar","Snacks","৳60","/piece","photo- chocolate"]]},
@@ -35,4 +35,29 @@
  $("wpStorefront").addEventListener("input",e=>{if(e.target.id==="hfShopSearch"){query=e.target.value;filterProducts();}});
  document.querySelectorAll("[data-preview-device]").forEach(b=>b.addEventListener("click",()=>{const mobile=b.dataset.previewDevice==="mobile";$("wpTemplateViewport").classList.toggle("is-mobile",mobile);$("wpTemplateViewport").classList.toggle("is-desktop",!mobile);document.querySelectorAll("[data-preview-device]").forEach(x=>{const on=x===b;x.classList.toggle("is-active",on);x.setAttribute("aria-pressed",String(on));});}));
  render();
+ const loadNeonCatalog=async()=>{
+  const status=$("wpTemplateConnection");
+  if(status)status.textContent="CONNECTING TO NEON";
+  try{
+   await window.HFAdminReady;
+   if(!window.HFNeonBuilderApi)throw new Error("Neon Data API client did not load.");
+   const rows=await window.HFNeonBuilderApi.loadTemplateCatalog();
+   const byKey=new Map(rows.map(row=>[row.template_key,row]));
+   const selectedKey=templates[active]?.key;
+   templates=templates.filter(t=>byKey.has(t.key)).map(t=>{
+    const row=byKey.get(t.key);
+    return {...t,name:row.name||t.name,tagline:row.tagline||t.tagline,
+     description:row.description||t.description,neonDesign:row.design,
+     neonFeatureFlags:row.feature_flags||{}};
+   });
+   if(templates.length!==4)throw new Error("Neon did not return all four grocery templates.");
+   active=Math.max(0,templates.findIndex(t=>t.key===selectedKey));
+   if(status){status.textContent="NEON CONNECTED · 4 TEMPLATES";status.dataset.state="connected";status.title="Template catalog and active design specifications loaded from Neon.";}
+   render();
+  }catch(error){
+   console.error("Neon template catalog unavailable; keeping local visual previews.",error);
+   if(status){status.textContent="NEON OFFLINE · SAMPLE PREVIEW";status.dataset.state="offline";status.title=String(error?.message||error);}
+  }
+ };
+ loadNeonCatalog();
 })();
