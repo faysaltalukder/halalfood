@@ -96,7 +96,7 @@ function render() {
     <section class="hfp-card">
       <div class="hfp-head"><div><h2>Request a permission</h2><p class="hfp-muted">Create a scoped request for a supported provider capability. Nothing executes until a matching provider connector is configured and the request is approved.</p></div>${chip("Scoped request", "good")}</div>
       <form id="hfpTestForm" class="hfp-form">
-        <div class="hfp-field"><label for="hfpPermission">Permission to test</label><select id="hfpPermission" required>
+        <div class="hfp-field"><label for="hfpPermission">Permission type</label><select id="hfpPermission" required>
           <optgroup label="GitHub">
             <option value="github.repo.read">Repository · Read</option><option value="github.repo.write">Repository · Write</option><option value="github.issues.read">Issues · Read</option><option value="github.issues.write">Issues · Create/update</option><option value="github.pull_requests.read">Pull requests · Read</option><option value="github.pull_requests.write">Pull requests · Create/update</option><option value="github.releases.read">Releases · Read</option><option value="github.releases.create">Releases · Create</option><option value="github.workflow.read">Workflows · Read</option><option value="github.workflow.run">Workflows · Run</option><option value="github.workflow.cancel">Workflows · Cancel</option>
           </optgroup>
@@ -175,9 +175,12 @@ root.addEventListener("change", event => {
   if (event.target.id === "hfpFinalCheck") document.getElementById("hfpFinalButton").disabled = !event.target.checked;
   if (event.target.id === "hfpPermission") {
     const val = event.target.value;
-    document.getElementById("hfpResource").value = val.startsWith("github.") ? '{"repo":"faysaltalukder/halalfood"}' :
-      (val.startsWith("filebase.") || val.startsWith("backblaze.")) ? '{"bucket":"","prefix":"sites/halalfood/"}' :
-      '{"project_id":"'+PROJECT_ID+'"}';
+    const resource = val.startsWith("github.") ? {repo:"faysaltalukder/halalfood"} :
+      (val.startsWith("filebase.") || val.startsWith("backblaze.")) ? {bucket:"REPLACE_WITH_BUCKET",prefix:"sites/halalfood/"} :
+      val.startsWith("cloudflare.") ? {zone_id:"REPLACE_WITH_ZONE_ID",account_id:"REPLACE_WITH_ACCOUNT_ID"} :
+      val.startsWith("website.") ? {site:"https://faysaltalukder.github.io/halalfood/",path:"/*"} :
+      {project_id:PROJECT_ID};
+    document.getElementById("hfpResource").value = JSON.stringify(resource);
   }
 });
 root.addEventListener("click", async event => {
