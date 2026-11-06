@@ -9,7 +9,7 @@ const studio = read("admin/wordpress-live.html");
 
 assert.ok(page.includes('data-page="wordpress"'), "Builder must use the existing secure admin shell route.");
 assert.ok(page.includes('id="authGate"') && page.includes('id="adminApp" hidden'), "Builder must retain the secure admin gate.");
-assert.ok(page.includes('website-builder.js?v=20261105-sandbox-partitions-v1') && page.includes('website-builder.css?v=20261105-sandbox-partitions-v1'), "Builder assets must be cache-busted.");
+assert.ok(page.includes('website-builder.js?v=20261107-multipage-v2') && page.includes('website-builder.css?v=20261105-sandbox-partitions-v1'), "Builder assets must be cache-busted.");
 assert.ok(studio.includes('href="./website-builder.html"'), "WordPress Studio must expose the isolated Visual Builder entry point.");
 assert.ok(js.includes("schemaVersion:1") && js.includes("sampleDocument"), "Builder must use a versioned JSON document model.");
 for (const type of ["section","container","heading","paragraph","image","button"]) {
