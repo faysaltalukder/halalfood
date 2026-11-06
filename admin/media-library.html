@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex,nofollow">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Media Library · Halal Food Admin</title>
+<link rel="stylesheet" href="./shared.css?v=20261106-wordpress-categories-v1">
+<link rel="stylesheet" href="./workspace-global-theme.css?v=20261101-merchant-fieldbook-v1">
+<link rel="stylesheet" href="./media-library.css?v=20261106-filebase-media-v1">
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
+</head>
+<body data-page="wordpress" data-media-library="true">
+<div id="authGate" class="auth-gate"><div class="auth-gate-card"><strong>Checking secure admin access…</strong><p>The Media Library requires the authorized administrator account and two-step verification.</p></div></div>
+<div id="adminApp" hidden>
+<main id="pageContent" class="hf-media-page" tabindex="-1">
+  <header class="hf-media-header">
+    <div><p class="page-eyebrow">WEBSITE STUDIO · SECONDARY STORAGE</p><h1>Media Library</h1><p>Files are stored in your private Filebase bucket, not Supabase Storage.</p></div>
+    <div class="hf-media-actions"><a class="hf-media-button" href="./wordpress-live.html">← Back to Website Studio</a><button class="hf-media-button" id="mediaRefresh" type="button">Refresh library</button><button class="hf-media-button hf-media-primary" id="mediaMirror" type="button">Back Up Existing Files</button></div>
+  </header>
+  <section class="hf-media-summary" aria-label="Storage architecture">
+    <div><strong>Filebase</strong><span>Private object storage</span></div><div><strong>1 GB</strong><span>Maximum per file with multipart upload</span></div><div><strong>5 categories</strong><span>Site-scoped object paths</span></div><div><strong>Supabase</strong><span>Auth + signed upload permissions only</span></div>
+  </section>
+  <section class="hf-media-upload">
+    <div class="hf-media-section-heading"><div><span class="hf-media-kicker">ADD FILES</span><h2>Upload to Filebase</h2><p>Choose a category and upload images, videos, documents or approved site assets.</p></div></div>
+    <div class="hf-media-upload-row">
+      <label class="hf-media-field"><span>Storage category</span><select id="mediaCategory"><option value="media">General media</option><option value="products">Product images</option><option value="site-assets">Website assets / designs</option><option value="documents">Documents / PDFs / JSON</option><option value="backups">Backups / ZIP</option></select></label>
+      <label class="hf-media-file-picker"><span>Select file</span><input id="mediaFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/avif,video/mp4,video/webm,application/pdf,audio/mpeg,audio/wav,font/woff2,text/css,application/javascript,text/javascript,application/json,application/zip"></label>
+      <button class="hf-media-button hf-media-primary" id="mediaUpload" type="button" disabled>Upload file</button>
+    </div>
+    <p class="hf-media-hint" id="mediaUploadHint" role="status">Allowed formats include images, MP4/WebM, PDF, audio, WOFF2, CSS, JS, JSON and ZIP. Up to 20 MB uses direct form upload; larger files use multipart upload up to 1 GB.</p>
+    <div class="hf-media-progress" id="mediaProgress" hidden><span></span></div>
+  </section>
+  <section class="hf-media-library">
+    <div class="hf-media-section-heading hf-media-library-heading"><div><span class="hf-media-kicker">PRIVATE BUCKET · sites/halalfood/</span><h2>Your stored files</h2><p id="mediaStatus" role="status">Loading Filebase library…</p></div><label class="hf-media-field hf-media-filter"><span>Filter category</span><select id="mediaFilter"><option value="">All categories</option><option value="media">General media</option><option value="products">Product images</option><option value="site-assets">Website assets / designs</option><option value="documents">Documents / PDFs / JSON</option><option value="backups">Backups / ZIP</option></select></label></div>
+    <div id="mediaGrid" class="hf-media-grid" aria-live="polite"><div class="hf-media-empty">Connecting to private Filebase storage…</div></div>
+  </section>
+  <footer class="hf-media-foot">Backup copies files from the existing Supabase Storage buckets <code>store-content</code> and <code>hf-facebook-media</code> into Filebase. Every destination object is size-verified. Original Supabase files are never deleted by this action. Private files are accessed through short-lived signed URLs.</footer>
+</main>
+</div>
+<script defer src="./i18n.js?v=20261102-dashboard-speed-v2"></script>
+<script defer src="../js/store-config.js?v=20261101-store-config-v1"></script>
+<script defer src="./shared.js?v=20261106-wordpress-categories-v1"></script>
+<script defer src="./app.js?v=20261105-wordpress-live-preview-v4"></script>
+<script defer src="./media-library.js?v=20261106-filebase-media-v1"></script>
+</body>
+</html>
