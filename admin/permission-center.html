@@ -4,57 +4,28 @@
 <meta charset="utf-8">
 <meta name="robots" content="noindex,nofollow">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Permission · Halal Food Admin</title>
+<title>Publish · Halal Food Admin</title>
 <link rel="stylesheet" href="./shared.css?v=20261102-reports-navigation-v3&hf_sidebar=20261101-warm-jewel-v4">
 <link rel="stylesheet" href="./phase4-pages.css?v=20261023-admin-ultimate-v1">
 <link rel="stylesheet" href="./workspace-global-theme.css?v=20261101-merchant-fieldbook-v1">
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
 <style>
-#hfPermissionRoot{display:grid;gap:16px;min-width:0}
-.hfp-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap}
-.hfp-muted{color:var(--hf-muted,#697586);font-size:12px;line-height:1.6}
-.hfp-status{display:inline-flex;align-items:center;gap:7px;padding:7px 11px;border:1px solid var(--hf-border,#e5d9cb);border-radius:30px;font-size:11px;font-weight:750;background:var(--hf-card-bg,#fff)}
-.hfp-status:before{content:"";width:8px;height:8px;border-radius:50%;background:#b77b38}
-.hfp-status.ok:before{background:#39845b}.hfp-status.bad:before{background:#b54d3d}
-.hfp-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
-.hfp-card{min-width:0;padding:17px;border:1px solid var(--hf-border,#e5d9cb);border-radius:15px;background:var(--hf-card-bg,#fff)}
-.hfp-card h2{font-size:15px;margin:0 0 6px}.hfp-card h3{font-size:13px;margin:0 0 5px}
-.hfp-metric{font-size:25px;font-weight:800;margin-top:8px}
-.hfp-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px solid var(--hf-border,#eee)}
-.hfp-row:last-child{border-bottom:0}
-.hfp-chip{display:inline-flex;border-radius:30px;padding:5px 9px;font-size:10px;font-weight:800;background:#f1eee8;color:#75685a}
-.hfp-chip.good{background:#e8f3eb;color:#2c7045}.hfp-chip.warn{background:#fff1df;color:#89551f}.hfp-chip.danger{background:#faeae6;color:#963f32}
-.hfp-btn{border:1px solid var(--hf-border,#d9cfc3);border-radius:9px;padding:9px 12px;background:var(--hf-card-bg,#fff);color:var(--hf-text,#2b2a3d);font-size:12px;font-weight:750;cursor:pointer}
-.hfp-btn.primary{background:#8d5738;border-color:#8d5738;color:#fff}.hfp-btn.danger{color:#a34234;border-color:#dfb9ae}
-.hfp-btn:disabled{opacity:.45;cursor:not-allowed}
-.hfp-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-.hfp-field{display:grid;gap:5px}.hfp-field.full{grid-column:1/-1}
-.hfp-field label{font-size:11px;font-weight:750}.hfp-field input,.hfp-field select,.hfp-field textarea{width:100%;border:1px solid var(--hf-border,#d9cfc3);border-radius:9px;padding:10px;background:var(--hf-card-bg,#fff);color:var(--hf-text,#2b2a3d);font:inherit;font-size:12px}
-.hfp-field textarea{min-height:72px;resize:vertical}
-.hfp-request{border:1px solid var(--hf-border,#e4d8cb);border-radius:12px;padding:14px;margin-top:10px}
-.hfp-request-top{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
-.hfp-request p{font-size:12px;line-height:1.55;margin:8px 0;color:var(--hf-muted,#697586)}
-.hfp-request-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px}
-.hfp-check{display:inline-flex;align-items:center;gap:7px;font-size:11px;font-weight:700}
-.hfp-check input{width:16px;height:16px;accent-color:#8d5738}
-.hfp-empty{padding:22px;text-align:center;border:1px dashed var(--hf-border,#d9cfc3);border-radius:12px;color:var(--hf-muted,#697586);font-size:12px}
-.hfp-log{font-size:11px;line-height:1.5;padding:9px 0;border-bottom:1px solid var(--hf-border,#eee)}
-.hfp-log:last-child{border:0}
-.hfp-alert{padding:12px 14px;border:1px solid #e5cda8;border-radius:12px;background:#fff8ec;color:#76502f;font-size:12px;line-height:1.6}
-.hfp-alert strong{display:block;margin-bottom:4px}
-.hfp-tablewrap{overflow-x:auto}.hfp-table{width:100%;border-collapse:collapse;min-width:560px}.hfp-table th,.hfp-table td{padding:9px;text-align:left;border-bottom:1px solid var(--hf-border,#eee);font-size:11px}
-dialog.hfp-dialog{width:min(480px,calc(100% - 28px));border:1px solid var(--hf-border,#ddd);border-radius:16px;padding:20px;background:var(--hf-card-bg,#fff);color:var(--hf-text,#2b2a3d)}
-dialog.hfp-dialog::backdrop{background:#1e1a1680}
-@media(max-width:760px){.hfp-grid{grid-template-columns:1fr}.hfp-form{grid-template-columns:1fr}.hfp-field.full{grid-column:auto}.hfp-card{padding:14px}}
+#hfPermissionRoot{min-height:58vh;display:grid;place-items:center;padding:24px}
+.hfp-publish-wrap{width:min(680px,100%);display:grid;gap:14px;justify-items:center}
+.hfp-publish-button{width:100%;min-height:112px;border:0;border-radius:20px;background:linear-gradient(135deg,#a96b3e,#7e4a30);color:#fff;font:800 clamp(24px,4vw,34px)/1.1 Inter,system-ui,sans-serif;letter-spacing:.02em;cursor:pointer;box-shadow:0 14px 34px rgba(126,74,48,.22);transition:transform .18s ease,opacity .18s ease}
+.hfp-publish-button:hover:not(:disabled){transform:translateY(-2px)}
+.hfp-publish-button:disabled{opacity:.62;cursor:wait}
+.hfp-publish-status{min-height:22px;text-align:center;color:var(--hf-muted,#697586);font-size:13px;line-height:1.6;overflow-wrap:anywhere}
+@media(max-width:600px){#hfPermissionRoot{min-height:52vh;padding:14px}.hfp-publish-button{min-height:92px;border-radius:16px}}
 </style>
 </head>
 <body data-page="permission-center">
-<div id="authGate" class="auth-gate"><div class="auth-gate-card"><strong>Checking secure admin access…</strong><p>Permission controls require the authorized admin account and verified MFA session.</p></div></div>
-<div id="adminApp" hidden><main id="pageContent" tabindex="-1"><div id="hfPermissionRoot"><div class="hfp-card">Loading secure permission service…</div></div></main></div>
+<div id="authGate" class="auth-gate"><div class="auth-gate-card"><strong>Checking secure admin access…</strong></div></div>
+<div id="adminApp" hidden><main id="pageContent" tabindex="-1"><div id="hfPermissionRoot"></div></main></div>
 <script defer src="./i18n.js?v=20261102-dashboard-speed-v2"></script>
 <script defer src="../js/store-config.js?v=20261101-store-config-v1"></script>
 <script defer src="./shared.js?v=20261102-reports-navigation-v3"></script>
-<script defer src="./app.js?v=20261106-permission-router-v2"></script>
-<script defer src="./permission-center.js?v=20261106-backblaze-one-click-test-v1"></script>
+<script defer src="./app.js?v=20261106-publish-only-v1"></script>
+<script defer src="./permission-center.js?v=20261106-publish-only-v1"></script>
 </body>
 </html>
