@@ -11,7 +11,7 @@ const cors = {
   "Cache-Control": "no-store"
 };
 const reply = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: cors });
-const clean = (v: unknown, max = 500) => String(v ?? "").replace(/[\\u0000-\\u001f\\u007f]/g, " ").trim().slice(0, max);
+const clean = (v: unknown, max = 500) => String(v ?? "").replace(/[\u0000-\u001f\u007f]/g, " ").trim().slice(0, max);
 const catalog = new Set([
   "supabase.project.read", "supabase.database.read", "supabase.database.write",
   "supabase.storage.read", "supabase.storage.upload", "supabase.storage.delete",
@@ -70,7 +70,7 @@ Deno.serve(async (req: Request) => {
   let adminUser: any = null;
   if (!bridgeActions.has(action) || !isBridge) {
     const auth = req.headers.get("authorization") || "";
-    const token = auth.replace(/^Bearer\\s+/i, "").trim();
+    const token = auth.replace(/^Bearer\s+/i, "").trim();
     if (!token) return reply({ success: false, error: "Admin sign-in required." }, 401);
     const authClient = createClient(url, publicKey, { auth: { persistSession: false, autoRefreshToken: false } });
     const { data, error } = await authClient.auth.getUser(token);
