@@ -78,7 +78,7 @@
   async function loadTemplatePages(templateKey){
     if(!ALLOWED_TEMPLATES.has(templateKey))throw new Error("Unsupported grocery template.");
     const rows=await request("template_pages","?select=template_key,page_key,page_type,title,slug,sort_order,page_spec,is_required,is_active&template_key=eq."+$(templateKey)+"&is_active=eq.true&order=sort_order.asc",{public:true});
-    if((rows||[]).length<18)throw new Error("Neon page catalog is incomplete for "+templateKey+".");
+    if((rows||[]).length<25)throw new Error("Neon page catalog is incomplete for "+templateKey+" (expected 25 designed pages).");
     return rows;
   }
   async function ensureWebsite(templateKey,name){
@@ -98,8 +98,12 @@
     const [pages,docs]=await Promise.all([loadTemplatePages(templateKey),loadWebsiteDocuments(website.id)]);
     const existing=new Set((docs||[]).map(row=>row.page_key));
     const missing=pages.filter(page=>!existing.has(page.page_key));
-    for(const page of missing){
-      await savePageDocument(website,page.page_key,defaultPageDocument(page,templateKey));
+    if(missing.length){
+      const {user}=await authContext();
+      if(website.owner_id!==user.id)throw new Error("Website ownership check failed while preparing page documents.");
+      const records=missing.map(page=>({website_id:website.id,owner_id:user.id,page_key:page.page_key,schema_version:1,document:defaultPageDocument(page,templateKey)}));
+      const saved=await request("website_documents","?on_conflict=website_id,page_key&select=id,page_key",{method:"POST",prefer:"resolution=merge-duplicates,return=representation",body:records});
+      if(!Array.isArray(saved)||saved.length!==missing.length)throw new Error("Neon did not confirm all 25 page drafts.");
     }
     return {pages,documents:await loadWebsiteDocuments(website.id)};
   }
