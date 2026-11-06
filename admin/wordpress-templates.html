@@ -5,32 +5,63 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>Website Templates · Halal Food Admin</title>
+<title>E-commerce & Grocery Templates · Halal Food Admin</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="./shared.css?v=20261106-wordpress-categories-v1">
 <link rel="stylesheet" href="./workspace-global-theme.css?v=20261101-merchant-fieldbook-v1">
-<link rel="stylesheet" href="./wordpress-templates.css?v=20261106-wordpress-categories-v1">
+<link rel="stylesheet" href="./wordpress-templates.css?v=20261106-grocery-builder-v1">
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
 </head>
 <body data-page="wordpress-templates">
-<div id="authGate" class="auth-gate"><div class="auth-gate-card"><strong>Checking secure admin access…</strong><p>This private template library is available only to the authorized admin account.</p></div></div>
+<div id="authGate" class="auth-gate"><div class="auth-gate-card"><strong>Checking secure admin access…</strong><p>This private template studio is available only to the authorized admin account.</p></div></div>
 <div id="adminApp" hidden>
 <main id="pageContent" class="hf-wp-templates-page" tabindex="-1">
  <header class="page-heading hf-wpt-heading">
-  <div><p class="page-eyebrow">WORDPRESS · BUSINESS TEMPLATE LIBRARY</p><h1 id="wpTemplateCategoryTitle">Website Templates</h1><p id="wpTemplateIntro">Choose a template slot to prepare for a future design.</p></div>
-  <div class="page-actions"><a class="hf-button hf-button-secondary" href="./wordpress-live.html">← Back to WordPress</a></div>
+  <div><p class="page-eyebrow">WEBSITE STUDIO · E-COMMERCE & GROCERY</p><h1>Grocery Website Templates</h1><p>Choose a ready-made store, add your brand and products, then shape the storefront in the visual editor.</p></div>
+  <div class="page-actions"><a class="hf-button hf-button-secondary" href="./wordpress-live.html">← Back to Website Studio</a></div>
  </header>
- <section class="hf-wpt-notice" role="note"><span aria-hidden="true">ⓘ</span><div><strong>Template placeholders only</strong><p>These are category and template slots. No website design, demo content, business data or live publishing is connected here yet.</p></div></section>
- <section class="hf-wpt-summary"><div><span class="hf-wpt-eyebrow">SELECTED BUSINESS CATEGORY</span><strong id="wpTemplateCategoryLabel">—</strong></div><div><span class="hf-wpt-eyebrow">TEMPLATE SLOT</span><strong id="wpTemplateSelectedLabel">—</strong></div><span class="hf-wpt-status">NOT CREATED</span></section>
- <section class="hf-wpt-grid" id="wpTemplateSlots" aria-label="Template placeholders"></section>
+ <section class="hf-wpt-intro-strip" aria-label="Template builder overview">
+  <div class="hf-wpt-intro-icon">✦</div><div><strong>Four business models. One simple setup.</strong><p>Every template includes responsive storefront pages, product cards, cart and checkout foundations. Install one to open its visual workspace.</p></div>
+  <div class="hf-wpt-intro-metrics"><span><b>04</b><small>Built-in templates</small></span><span><b id="wptInstalledCount">0</b><small>Installed stores</small></span></div>
+ </section>
+ <div class="hf-wpt-section-head"><div><span class="hf-wpt-kicker">GROCERY COLLECTION</span><h2>Choose your store experience</h2><p>Each design is built around a different way customers shop for groceries.</p></div><div class="hf-wpt-backend-state" id="wptBackendState"><i></i><span>Connecting to Neon…</span></div></div>
+ <section class="hf-wpt-grid" id="wpTemplateSlots" aria-label="Four built-in grocery templates"></section>
+ <section class="hf-wpt-editor" id="wptEditor" hidden>
+  <div class="hf-wpt-editor-top"><div><button type="button" class="hf-wpt-back-link" id="wptBackToLibrary">← All four templates</button><div class="hf-wpt-editor-title"><span class="hf-wpt-kicker">VISUAL STORE EDITOR</span><h2 id="wptEditorTitle">Your grocery store</h2><p id="wptEditorSubtitle">Customize your installed template.</p></div></div><div class="hf-wpt-editor-actions"><span class="hf-wpt-installed-pill" id="wptInstalledPill">● INSTALLED DRAFT</span><button class="hf-button hf-button-secondary" type="button" id="wptInstallFromEditor" hidden>Install this template</button><button class="hf-button hf-button-secondary" type="button" id="wptSaveButton">Save changes</button><button class="hf-button hf-button-primary" type="button" id="wptPreviewButton">Preview store ↗</button></div></div>
+  <div class="hf-wpt-editor-layout">
+   <aside class="hf-wpt-controls" aria-label="Store settings and products">
+    <section class="hf-wpt-control-card"><div class="hf-wpt-control-heading"><span>01</span><div><strong>Store identity</strong><small>Your brand, your storefront</small></div></div>
+     <label class="hf-wpt-field">Store name<input id="wptSiteName" maxlength="100" placeholder="e.g. Green Basket Market"></label>
+     <label class="hf-wpt-field">Brand accent<input id="wptBrandColor" type="color" value="#2f7657"></label>
+     <div class="hf-wpt-upload-label">Store logo</div><label class="hf-wpt-drop wpt-logo-drop" id="wptLogoDrop" for="wptLogoFile"><input id="wptLogoFile" type="file" accept="image/png,image/jpeg,image/webp"><span class="hf-wpt-drop-icon">＋</span><strong>Drop logo or browse</strong><small>PNG, JPG or WebP · max 5 MB</small><img id="wptLogoPreview" alt="Store logo preview" hidden></label>
+    </section>
+    <section class="hf-wpt-control-card"><div class="hf-wpt-control-heading"><span>02</span><div><strong>Product catalogue</strong><small>Add your own products</small></div></div>
+     <label class="hf-wpt-field">Product name<input id="wptProductName" maxlength="160" placeholder="e.g. Fresh red apples"></label>
+     <div class="hf-wpt-field-row"><label class="hf-wpt-field">Price (৳)<input id="wptProductPrice" type="number" min="0" step="0.01" placeholder="120"></label><label class="hf-wpt-field">Unit<input id="wptProductUnit" maxlength="30" value="kg" placeholder="kg / pcs"></label></div>
+     <div class="hf-wpt-field-row"><label class="hf-wpt-field">Stock<input id="wptProductStock" type="number" min="0" step="0.001" value="10"></label><label class="hf-wpt-field">Category<input id="wptProductCategory" maxlength="80" placeholder="Fresh produce"></label></div>
+     <label class="hf-wpt-field">Short description<textarea id="wptProductDescription" rows="2" maxlength="400" placeholder="A short product description"></textarea></label>
+     <div class="hf-wpt-drop" id="wptProductDrop"><input id="wptProductImage" type="file" accept="image/jpeg,image/png,image/webp,image/gif"><span class="hf-wpt-drop-icon">↥</span><strong>Drag a product photo here</strong><small>or <button type="button" id="wptBrowseProductImage">browse files</button> · max 5 MB</small><img id="wptProductImagePreview" alt="Selected product preview" hidden></div>
+     <button class="hf-wpt-add-product" id="wptAddProduct" type="button">＋ Add product to store</button>
+    </section>
+    <section class="hf-wpt-control-card"><div class="hf-wpt-control-heading"><span>03</span><div><strong>Your products</strong><small>Drag rows to change display order</small></div></div><div id="wptProductList" class="hf-wpt-product-list"><p class="hf-wpt-empty-products">Your added products will appear here.</p></div></section>
+   </aside>
+   <section class="hf-wpt-preview-panel" aria-label="Live storefront preview">
+    <div class="hf-wpt-preview-toolbar"><div class="hf-wpt-browser-dots"><i></i><i></i><i></i></div><span id="wptPreviewAddress">your-store.preview</span><div class="hf-wpt-device-switch"><button type="button" class="is-active" data-wpt-device="desktop" aria-pressed="true">Desktop</button><button type="button" data-wpt-device="mobile" aria-pressed="false">Mobile</button></div></div>
+    <div class="hf-wpt-preview-stage"><div class="hf-wpt-store-preview" id="wptPreviewCanvas"></div></div>
+    <div class="hf-wpt-preview-foot"><span id="wptEditorStatus" role="status" aria-live="polite">Changes are saved to your Neon test workspace.</span><span>Storefront preview · Draft</span></div>
+   </section>
+  </div>
+ </section>
+ <dialog class="hf-wpt-install-dialog" id="wptInstallDialog"><form method="dialog" id="wptInstallForm"><button class="hf-wpt-dialog-close" value="cancel" aria-label="Close">×</button><span class="hf-wpt-kicker">INSTALL BUILT-IN TEMPLATE</span><h2>Give your store a name</h2><p id="wptInstallDescription">Your selected design will be installed as a new draft store.</p><label class="hf-wpt-field">Store name<input id="wptInstallName" maxlength="100" required placeholder="My grocery store"></label><div class="hf-wpt-dialog-actions"><button class="hf-button hf-button-secondary" value="cancel">Cancel</button><button class="hf-button hf-button-primary" id="wptConfirmInstall" value="default">Install template</button></div></form></dialog>
+ <div class="hf-wpt-toast" id="wptToast" role="status" aria-live="polite"></div>
 </main>
 </div>
 <script defer src="./i18n.js?v=20261102-dashboard-speed-v2"></script>
 <script defer src="../js/store-config.js?v=20261101-store-config-v1"></script>
 <script defer src="./shared.js?v=20261106-wordpress-categories-v1"></script>
 <script defer src="./app.js?v=20261105-wordpress-live-preview-v4"></script>
-<script defer src="./wordpress-templates.js?v=20261106-wordpress-categories-v1"></script>
+<script defer src="./wordpress-templates.js?v=20261106-grocery-builder-v1"></script>
 </body>
 </html>
