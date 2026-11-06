@@ -13,7 +13,7 @@ assert.ok(!/supabase|HFAdminReady|HFNeon|createClient|fetch\s*\(/i.test(adapter)
 assert.ok(nav.includes('["wordpress","layout","WordPress","open independent WordPress Studio"]'), "Halal Food admin must retain one WordPress navigation entry.");
 assert.ok(nav.includes(url) && nav.includes('target="_blank" rel="noopener noreferrer"'), "WordPress navigation must open the separate app safely.");
 assert.ok(!nav.includes("wordpressBusinessCategories") && !nav.includes("wordpress-templates.html") && !nav.includes("website-builder.html") && !nav.includes("wordpress-live.html"), "Halal Food navigation must not contain embedded WordPress routes or business logic.");
-assert.ok(contract.includes("Only:") && contract.includes("minimal external-launch adapter") && contract.includes("must not add WordPress renderer/editor code"), "Halal Food repository contract must permit only the external launch adapter.");
+assert.ok(contract.includes("Only:") && contract.includes("minimal external-launch adapter") && contract.includes("Do not add WordPress renderer/editor code"), "Halal Food repository contract must permit only the external launch adapter.");
 
 for (const path of [
   "admin/wordpress-live.html","admin/wordpress-sandbox.js","admin/wordpress.css",
