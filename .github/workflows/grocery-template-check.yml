@@ -11,6 +11,7 @@ on:
       - "storefront.*"
       - "database/migrations/20261106_*.sql"
       - "database/migrations/20261107_*.sql"
+      - "supabase/functions/backblaze-storage/index.ts"
       - "scripts/grocery-template-suite-check.mjs"
       - "WORDPRESS-BUILDER-ARCHITECTURE.md"
   push:
