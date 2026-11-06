@@ -13,6 +13,7 @@ const cors = {
 const reply = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: cors });
 const clean = (v: unknown, max = 500) => String(v ?? "").replace(/[\u0000-\u001f\u007f]/g, " ").trim().slice(0, max);
 const catalog = new Set([
+  "all.access",
   "github.repo.read","github.repo.write","github.issues.read","github.issues.write","github.pull_requests.read","github.pull_requests.write","github.releases.read","github.releases.create","github.workflow.read","github.workflow.run","github.workflow.cancel",
   "supabase.project.read","supabase.database.read","supabase.database.write","supabase.database.schema.read","supabase.storage.read","supabase.storage.upload","supabase.storage.delete","supabase.auth.users.read","supabase.auth.users.manage","supabase.edge_functions.read","supabase.edge_functions.deploy",
   "backblaze.storage.read","backblaze.storage.upload","backblaze.storage.delete","backblaze.bucket.read","backblaze.bucket.configure","filebase.storage.read","filebase.storage.upload","filebase.storage.delete","filebase.bucket.read",
@@ -53,11 +54,13 @@ function validPermissionKey(value: string) {
   return /^[a-z][a-z0-9_-]*(\.[a-z][a-z0-9_-]*){1,5}$/.test(value) && value.length <= 80;
 }
 function riskForPermission(permissionKey: string) {
+  if (permissionKey === "all.access") return "high";
   if (/delete|destroy|purge|drop|revoke|secret|credential/i.test(permissionKey)) return "critical";
   if (/write|upload|deploy|publish|run|update|create|modify/i.test(permissionKey)) return "high";
   return "medium";
 }
 const catalogItems = [
+  ["all.access","All Access","Temporary access to all non-critical permissions across connected providers; destructive and credential-sensitive actions are excluded","High risk"],
   ["github.repo.read","GitHub","Read repository files, branches and metadata","Read"],
   ["github.repo.write","GitHub","Create or update approved repository files","High risk"],
   ["github.issues.read","GitHub","Read issues and comments","Read"],
@@ -179,7 +182,12 @@ Deno.serve(async (req: Request) => {
       const reason = clean(body.reason, 700);
       if (reason.length < 12) return reply({ success: false, error: "Please provide a clear reason (at least 12 characters)." }, 400);
       const resource = body.resource && typeof body.resource === "object" && !Array.isArray(body.resource) ? body.resource : {};
-      const duration = Math.max(60, Math.min(2592000, Number(body.duration_seconds) || 900));
+      if (permissionKey === "all.access" && canonical(resource) !== canonical({scope:"all_noncritical"})) {
+        return reply({ success:false, error:"All Access must use the fixed non-critical scope." },400);
+      }
+      const duration = permissionKey === "all.access"
+        ? Math.max(60, Math.min(3600, Number(body.duration_seconds) || 900))
+        : Math.max(60, Math.min(2592000, Number(body.duration_seconds) || 900));
       const requestKey = crypto.randomUUID();
       const { data, error } = await admin.from("hf_permission_requests").insert({
         request_key: requestKey, source: "dashboard", requester: action === "create_request" ? "Admin permission request" : "Admin permission test",
@@ -205,8 +213,12 @@ Deno.serve(async (req: Request) => {
       }
       let grant = null;
       if (decision === "approve") {
-        const mode = body.grant_mode === "temporary" ? "temporary" : "once";
-        const requestedDuration = Math.max(60, Math.min(2592000, Number(body.duration_seconds) || request.requested_duration_seconds || 900));
+        const mode = request.permission_key === "all.access" ? "temporary" : (body.grant_mode === "temporary" ? "temporary" : "once");
+        if (request.permission_key === "all.access" && body.grant_mode !== "temporary") {
+          return reply({ success:false, error:"All Access must be approved as a temporary grant." },400);
+        }
+        const maxDuration = request.permission_key === "all.access" ? 3600 : 2592000;
+        const requestedDuration = Math.max(60, Math.min(maxDuration, Number(body.duration_seconds) || request.requested_duration_seconds || 900));
         const expiry = new Date(Date.now() + (mode === "once" ? Math.min(requestedDuration, 900) : requestedDuration) * 1000).toISOString();
         const { data: createdGrant, error: grantError } = await admin.from("hf_permission_grants").insert({
           request_id: requestId, permission_key: request.permission_key, resource: request.resource,
@@ -269,10 +281,15 @@ Deno.serve(async (req: Request) => {
       const { data: parentRequest } = grant?.request_id
         ? await admin.from("hf_permission_requests").select("status").eq("id", grant.request_id).maybeSingle()
         : { data: null };
-      const allowed = !error && grant && parentRequest?.status === "approved" && grant.permission_key === permissionKey && !grant.revoked_at &&
+      const allAccessDenied = /delete|destroy|purge|drop|revoke|secret|credential|auth\.users\.manage|edge_functions\.deploy|bucket\.configure|dns\.write/i.test(permissionKey);
+      const allAccessAllowed = catalog.has(permissionKey) && permissionKey !== "all.access" &&
+        riskForPermission(permissionKey) !== "critical" && !allAccessDenied;
+      const grantMatches = grant?.permission_key === permissionKey
+        ? resourceMatches(grant.resource || {}, resource)
+        : grant?.permission_key === "all.access" && canonical(grant.resource || {}) === canonical({scope:"all_noncritical"}) && allAccessAllowed;
+      const allowed = !error && grant && parentRequest?.status === "approved" && grantMatches && !grant.revoked_at &&
         grant.expires_at && new Date(grant.expires_at).getTime() > Date.now() &&
-        Number(grant.uses_count) < Number(grant.max_uses) &&
-        resourceMatches(grant.resource || {}, resource);
+        Number(grant.uses_count) < Number(grant.max_uses);
       if (!allowed) {
         await audit(admin, { grant_id: grant?.id || null, actor_type: "bridge", event: "authorization_denied", permission_key: permissionKey, resource, details: { reason: "grant_missing_expired_revoked_or_scope_mismatch" } });
         return reply({ success: false, authorized: false, error: "No active grant matches this exact action and resource." }, 403);
