@@ -16,7 +16,16 @@
 <div id="sfToast" class="sf-toast" role="status" aria-live="polite"></div>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
 <script defer src="./js/store-config.js?v=20261101-store-config-v1"></script>
-<script defer src="./admin/neon-builder-api.js?v=20261107-multipage-api-v4"></script>
+<script type="module">
+import { createClient } from "https://esm.sh/@neon/neon-js";
+const neonClient = createClient("https://ep-wild-lab-a1jqqu0p.ap-southeast-1.aws.neon.tech/halal_food_db", {
+  auth: { allowAnonymous: true, fetchOptions: { credentials: "include" } }
+});
+window.HFNeonClient = neonClient;
+window.HFNeonClientReady = Promise.resolve(neonClient);
+window.dispatchEvent(new Event("hf-neon-client-ready"));
+</script>
+<script defer src="./admin/neon-builder-api.js?v=20261107-neon-auth-v1"></script>
 <script defer src="./storefront.js?v=20261107-multipage-commerce-v2"></script>
 </body>
 </html>
