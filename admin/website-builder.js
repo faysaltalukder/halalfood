@@ -186,6 +186,7 @@
     state.doc.tree.forEach(node=>canvas.append(renderNode(node)));
     $("builderElementCount").textContent=String(walk(state.doc.tree).length);
     $("builderPageTitle").textContent=state.doc.page.title;
+    const backLink=$("builderBackLink");if(backLink)backLink.href="./website-pages.html?template="+encodeURIComponent(TEMPLATE_KEY);
   };
   const renderLayers = () => {
     const root=$("builderLayers");root.replaceChildren();
