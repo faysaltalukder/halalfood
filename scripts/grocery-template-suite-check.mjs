@@ -22,7 +22,7 @@ for (const token of ["hf-shop-product-grid", "hf-fresh-grid", "hf-express-grid",
   assert.ok(css.includes(token), "missing responsive design rule: " + token);
 }
 assert.ok(migration.includes("CREATE TABLE IF NOT EXISTS builder.template_designs"));
-assert.ok(architecture.includes("Neon is the data layer"));
+assert.ok(architecture.includes("Neon stores durable template definitions"));
 assert.ok(architecture.includes("Never expose Neon connection strings"));
 assert.ok(js.includes("sample preview data only"));
 console.log("Grocery template suite contract passed: 4 designs, editor seeds, Neon metadata migration, responsive layouts and architecture guardrails.");
