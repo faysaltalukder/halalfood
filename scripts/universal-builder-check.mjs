@@ -34,6 +34,8 @@ assert.ok(mediaPage.includes('data-page="media-library"') && mediaPage.includes(
 assert.ok(mediaPage.includes('media-library.css') && mediaPage.includes('id="mediaUpload"') && mediaPage.includes('id="mediaGrid"'), "Media Library must expose upload and asset listing controls.");
 assert.ok(mediaJs.includes('functions.invoke("filebase-storage"') && mediaJs.includes('action:"create_upload"') && mediaJs.includes('action:"list"') && mediaJs.includes('action:"create_download"') && mediaJs.includes('action:"delete"'), "Media Library must use the authenticated Filebase storage API for all object operations.");
 assert.ok(mediaJs.includes('action:"configure_cors"') && mediaJs.includes('fetch(prepared.upload.url'), "Media Library must configure browser CORS and upload bytes directly to Filebase.");
+assert.ok(mediaJs.includes('action:"create_multipart"') && mediaJs.includes('action:"sign_multipart_part"') && mediaJs.includes('action:"complete_multipart"') && mediaJs.includes('action:"abort_multipart"'), "Large files must use the authenticated multipart upload lifecycle.");
+assert.ok(mediaJs.includes("MAX_MULTIPART_BYTES = 1024 * 1024 * 1024") && mediaJs.includes("xhrUploadPart"), "Media Library must support chunked uploads up to the configured 1 GiB ceiling.");
 assert.ok(!/\.storage\.from\s*\(/.test(mediaJs), "Filebase media uploads must not use Supabase Storage.");
 assert.ok(storageDocs.includes("Supabase does not proxy the bytes") && storageDocs.includes("GitHub remains the canonical source-control"), "Secondary storage architecture must preserve Supabase/GitHub responsibility boundaries.");
 assert.ok(mediaCss.includes("@media(max-width:760px)"), "Media Library must be responsive.");
