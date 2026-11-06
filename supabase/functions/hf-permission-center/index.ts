@@ -70,6 +70,9 @@ const catalogItems = [
   ["supabase.storage.upload","Supabase Storage","Upload to a scoped bucket and prefix","High risk"],
   ["filebase.storage.read","S3-compatible storage","Read scoped bucket objects","Read"],
   ["filebase.storage.upload","S3-compatible storage","Upload to a scoped bucket and prefix","High risk"],
+  ["backblaze.storage.read","Backblaze B2","Read scoped bucket objects","Read"],
+  ["backblaze.storage.upload","Backblaze B2","Upload to a scoped bucket and prefix","High risk"],
+  ["backblaze.storage.delete","Backblaze B2","Delete an approved object only","Critical"],
   ["website.deploy","Website","Prepare a reviewed deployment","High risk"],
   ["website.publish","Website","Publish an approved website version","High risk"]
 ];
