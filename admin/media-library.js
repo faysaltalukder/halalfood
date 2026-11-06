@@ -46,6 +46,36 @@
     const del=document.createElement("button");del.type="button";del.className="hf-media-small-button danger";del.textContent="Delete";del.addEventListener("click",async()=>{if(!window.confirm("Permanently delete this file from Filebase?\n\n"+item.key))return;del.disabled=true;try{await call({action:"delete",site:SITE,key:item.key,confirmDelete:true});H.toast("File deleted from Filebase.");await load();}catch(error){H.toast(error.message,"error");del.disabled=false;}});actions.append(del);
     body.append(actions);card.append(preview,body);return card;
   };
+  const mirrorExistingStorage = async () => {
+    const button=$("mediaMirror");
+    if(button.disabled)return;
+    button.disabled=true;
+    const oldLabel=button.textContent;
+    button.textContent="Copying and verifying…";
+    setStatus("Copying the existing Supabase Storage files to Filebase. Original files will remain untouched.");
+    try{
+      const {data,error}=await H.client.functions.invoke("filebase-storage",{body:{action:"mirror_storage"}});
+      if(error)throw new Error(error.message||"Backup request failed");
+      if(!data||typeof data!=="object")throw new Error("The backup service returned an invalid response.");
+      const copied=Number(data.copied_verified||0),total=Number(data.inventory_count||0),failed=Number(data.failed||0);
+      const failedItems=(Array.isArray(data.results)?data.results:[]).filter(item=>item.status!=="copied_verified");
+      if(failed||data.ok!==true){
+        const detail=failedItems.slice(0,3).map(item=>item.bucket+"/"+item.name+": "+item.status).join(" · ");
+        setStatus("Backup partially completed: "+copied+"/"+total+" files verified; "+failed+" need attention. Originals were not deleted. "+detail,true);
+        H.toast("Backup incomplete: "+copied+"/"+total+" verified. Original files are safe.","error");
+      }else{
+        setStatus("Backup complete: "+copied+"/"+total+" files copied and verified in Filebase. Original Supabase files remain untouched.");
+        H.toast("Backup complete: "+copied+" files copied and verified. Originals retained.");
+      }
+      await load();
+    }catch(error){
+      setStatus("Backup could not complete: "+(error.message||"Unknown error")+". Original Supabase files remain untouched.",true);
+      H.toast("Backup did not complete. Original files are safe.","error");
+    }finally{
+      button.disabled=false;
+      button.textContent=oldLabel;
+    }
+  };
   const load = async () => {
     const category=$("mediaFilter").value;
     $("mediaGrid").replaceChildren();
@@ -120,6 +150,7 @@
     $("mediaFile").addEventListener("change",()=>{$("mediaUpload").disabled=!$("mediaFile").files?.length;const file=$("mediaFile").files?.[0];$("mediaUploadHint").textContent=file?file.name+" · "+sizeText(file.size)+" · "+(fileMime(file)||"Unknown type"):"Allowed formats include images, MP4/WebM, PDF, audio, WOFF2, CSS, JS, JSON and ZIP. Maximum 1 GB per file. Files above 20 MB use multipart upload.";});
     $("mediaUpload").addEventListener("click",upload);
     $("mediaRefresh").addEventListener("click",load);
+    $("mediaMirror").addEventListener("click",mirrorExistingStorage);
     $("mediaFilter").addEventListener("change",load);
     try{await call({action:"configure_cors"});}catch(error){setStatus("Bucket browser-access policy could not be confirmed: "+error.message,true);H.toast("Filebase browser access policy needs attention.","error");}
     await load();
