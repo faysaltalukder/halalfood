@@ -6,7 +6,10 @@ on:
       - "admin/neon-builder-api.js"
       - "admin/wordpress-templates.*"
       - "admin/website-builder.*"
+      - "admin/website-pages.*"
+      - "storefront.*"
       - "database/migrations/20261106_*.sql"
+      - "database/migrations/20261107_*.sql"
       - "scripts/grocery-template-suite-check.mjs"
       - "WORDPRESS-BUILDER-ARCHITECTURE.md"
   push:
@@ -30,5 +33,7 @@ jobs:
           node --check admin/neon-builder-api.js
           node --check admin/wordpress-templates.js
           node --check admin/website-builder.js
+          node --check admin/website-pages.js
+          node --check storefront.js
       - name: Run template and Neon integration contract
         run: node scripts/grocery-template-suite-check.mjs
