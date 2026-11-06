@@ -20,9 +20,10 @@ Status: Phase 1 implementation on the Website Studio feature branch (not product
 
 - Site prefix: `sites/{siteSlug}/`; current Website Studio site: `halalfood`.
 - Categories: `media`, `products`, `site-assets`, `documents`, `backups`.
-- Current maximum object size: 20 MiB.
+- Single-request browser POST limit: 20 MiB. Larger files use multipart uploads up to 1 GiB, with 8 MiB parts and at most four concurrent part transfers in the first Media Library.
 - MIME types are allowlisted by the deployed Edge Function. The Media Library UI must not widen that list independently.
-- Signed upload/download links expire after 300 seconds.
+- Signed upload/download and multipart-part URLs expire after 300 seconds.
+- Multipart upload is used for files larger than 20 MiB; incomplete uploads are aborted on client-side failure where possible.
 - Bucket stays private. No public bucket or permanent public file URLs are assumed.
 - The authenticated admin Media Library can apply a bucket CORS rule restricted to `https://faysaltalukder.github.io` for `GET`, `POST` and `HEAD`; existing unrelated CORS rules are preserved. CORS only enables browser cross-origin requests and does not make the bucket public.
 
