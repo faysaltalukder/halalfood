@@ -161,9 +161,9 @@ for (const file of unifiedPages) {
   const source = read(join("admin", file));
   const expectedI18nVersion = i18nVersion;
   assert.ok(source.includes(`i18n.js?v=${expectedI18nVersion}`), `${file}: missing or stale shared language dictionary.`);
-  const expectedSharedCssVersion = ["wordpress-live.html", "website-builder.html", "wordpress-templates.html"].includes(file) ? "20261106-wordpress-categories-v1" : sharedCssVersion;
+  const expectedSharedCssVersion = ["wordpress-live.html", "website-builder.html", "wordpress-templates.html", "website-pages.html", "website-orders.html"].includes(file) ? "20261106-wordpress-categories-v1" : sharedCssVersion;
   assert.ok(source.includes(`shared.css?v=${expectedSharedCssVersion}`), `${file}: stale shared UI cache version.`);
-  const expectedSharedJsVersion = file === "ai-conversations.html" ? "20261104-aiconversations-v1" : (["wordpress-live.html", "website-builder.html", "wordpress-templates.html"].includes(file)) ? "20261106-wordpress-categories-v1" : (file === "overview.html" || file === "wordpress.html") ? "20261105-wordpress-cache-route-v2" : sharedJsVersion;
+  const expectedSharedJsVersion = file === "ai-conversations.html" ? "20261104-aiconversations-v1" : (["wordpress-live.html", "website-builder.html", "wordpress-templates.html", "website-pages.html", "website-orders.html"].includes(file)) ? "20261106-wordpress-categories-v1" : (file === "overview.html" || file === "wordpress.html") ? "20261105-wordpress-cache-route-v2" : sharedJsVersion;
   assert.ok(source.includes(`shared.js?v=${expectedSharedJsVersion}`), `${file}: missing or stale multi-theme shared JS version.`);
   assert.ok(source.includes(`workspace-global-theme.css?v=${workspaceThemeCssVersion}`), `${file}: missing or stale shared workspace theme stylesheet.`);
 
