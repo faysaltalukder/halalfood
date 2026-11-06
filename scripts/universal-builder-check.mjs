@@ -5,14 +5,14 @@ const read = path => readFileSync(path, "utf8");
 const adapter = read("admin/wordpress.html");
 const nav = read("admin/shared.js");
 const contract = read("WORDPRESS-BUILDER-ARCHITECTURE.md");
-const externalUrl = "https://wordpress-studio.shipstatic.com/admin/";
+const url = "https://wordpress-studio.shipstatic.com/admin/";
 
-assert.ok(adapter.includes(externalUrl), "Legacy WordPress route must open the independent WordPress app.");
+assert.ok(adapter.includes(url), "Legacy WordPress route must open the independent WordPress app.");
 assert.ok(adapter.includes('target="_blank"') && adapter.includes('rel="noopener noreferrer"'), "External launch must use a safe new browsing context.");
-assert.ok(!/supabase|neon|HFAdminReady|HFNeon|createClient|fetch\s*\(/i.test(adapter), "Halal Food launch adapter must not load a backend SDK or exchange credentials.");
+assert.ok(!/supabase|neon|HFAdminReady|HFNeon|createClient|fetch\s*\(/i.test(adapter), "Halal Food launch adapter must not load backend SDKs or exchange credentials.");
 assert.ok(nav.includes('["wordpress","layout","WordPress","open independent WordPress Studio"]'), "Halal Food admin must retain one WordPress navigation entry.");
-assert.ok(nav.includes(externalUrl) && nav.includes('target="_blank" rel="noopener noreferrer"'), "WordPress navigation must open the separate app with safe link attributes.");
-assert.ok(!nav.includes("wordpressBusinessCategories") && !nav.includes("wordpress-templates.html") && !nav.includes("website-builder.html") && !nav.includes("wordpress-live.html"), "Halal Food navigation must not contain WordPress application routes or business logic.");
+assert.ok(nav.includes(url) && nav.includes('target="_blank" rel="noopener noreferrer"'), "WordPress navigation must open the separate app safely.");
+assert.ok(!nav.includes("wordpressBusinessCategories") && !nav.includes("wordpress-templates.html") && !nav.includes("website-builder.html") && !nav.includes("wordpress-live.html"), "Halal Food navigation must not contain embedded WordPress routes or business logic.");
 assert.ok(contract.includes("Only:") && contract.includes("minimal external-launch adapter") && contract.includes("must not add WordPress renderer/editor code"), "Halal Food repository contract must permit only the external launch adapter.");
 
 for (const path of [
