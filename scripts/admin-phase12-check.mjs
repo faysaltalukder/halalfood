@@ -61,44 +61,25 @@ assert.ok(celestialEngine.includes("setInterval(update,60000)") && solarJourneyC
 
 const htmlFiles = readdirSync(adminDir).filter((file) => file.endsWith(".html"));
 const unifiedPages = htmlFiles.filter((file) => file !== "oauth-consent.html" && /<body[^>]*\bdata-page=/.test(read(join("admin", file))));
-assert.equal(unifiedPages.length, 46, `Expected 46 unified admin pages in the current admin workspace, found ${unifiedPages.length}.`);
+assert.equal(unifiedPages.length, 43, `Expected 43 unified admin pages in the current admin workspace, found ${unifiedPages.length}.`);
 assert.ok(unifiedPages.includes("permission-center.html"), "Permission Center must use the unified admin shell.");
 assert.ok(unifiedPages.includes("ai-knowledge.html"), "AI Knowledge Center must use the unified admin shell.");
 assert.ok(unifiedPages.includes("pos.html"), "POS import must use the unified admin shell.");
 assert.ok(unifiedPages.includes("coupons.html"), "Coupon Promotions must use the unified admin shell.");
 assert.ok(unifiedPages.includes("coupon-usage.html"), "Coupon Usage must use the unified admin shell.");
 assert.ok(unifiedPages.includes("categories.html"), "The single Categories workspace must use the unified admin shell.");
-assert.ok(unifiedPages.includes("wordpress-live.html") && unifiedPages.includes("wordpress-templates.html") && !unifiedPages.includes("wordpress.html"), "The sandbox Live Website and template placeholder routes must use the unified admin shell; the legacy production preview route must remain a redirect shim.");
-const wordpressPage = read("admin/wordpress-live.html");
+assert.ok(!unifiedPages.includes("wordpress-live.html") && !unifiedPages.includes("wordpress-templates.html") && !unifiedPages.includes("website-builder.html") && !unifiedPages.includes("wordpress.html"), "WordPress must not render inside the Halal Food admin shell.");
+const wordpressPage = read("admin/wordpress.html");
 const wordpressNav = read("admin/shared.js");
-const wordpressTemplatesPage = read("admin/wordpress-templates.html");
-const wordpressTemplatesJs = read("admin/wordpress-templates.js");
-const wordpressCategoryStart = wordpressNav.indexOf("const wordpressBusinessCategories=") + "const wordpressBusinessCategories=".length;
-const wordpressCategoryEnd = wordpressNav.indexOf("].map(([slug,icon,label])", wordpressCategoryStart);
-assert.ok(wordpressCategoryStart >= "const wordpressBusinessCategories=".length && wordpressCategoryEnd > wordpressCategoryStart, "WordPress navigation must define its business-category partitions.");
-const wordpressCategoryData = JSON.parse(wordpressNav.slice(wordpressCategoryStart, wordpressCategoryEnd + 1));
-assert.equal(wordpressCategoryData.length, 20, "WordPress must expose all 20 planned business categories.");
-assert.ok(wordpressCategoryData.every(([, , label]) => typeof label === "string" && label.trim()), "Every WordPress business category must have a visible label.");
-assert.ok(wordpressTemplatesPage.includes('data-page="wordpress-templates"') && wordpressTemplatesPage.includes('id="wpTemplateSlots"'), "The WordPress template placeholder route must use the secure shell and expose its four-slot grid.");
-assert.ok(wordpressTemplatesJs.includes("Array.from({length:4}") && wordpressTemplatesJs.includes("Design not created yet"), "Template category pages must show four explicit empty placeholders without claiming designs exist.");
-const wordpressSandbox = read("admin/wordpress-sandbox.js");
-const websiteBuilderPage = read("admin/website-builder.html");
-const wordpressCss = read("admin/wordpress.css");
-assert.ok(wordpressNav.includes('["wordpress","layout","WordPress"'), "WordPress must be the final System sidebar entry.");
-assert.ok(wordpressNav.includes("./wordpress-live.html"), "The WordPress sidebar must open the dashboard-only Live Website partition.");
-assert.ok(wordpressPage.includes("shared.js?v=20261106-wordpress-categories-v1") && wordpressPage.includes("wordpress-sandbox.js?v=20261105-sandbox-partitions-v1"), "Live Website must load the secure admin shell and isolated sandbox controller.");
-assert.ok(wordpressPage.includes('data-page="wordpress"') && wordpressPage.includes('id="wpSandboxFrame"') && wordpressPage.includes('id="wpSandboxReviewFrame"'), "Live Website must render both the published test version and review draft.");
-assert.ok(!wordpressPage.includes("github.io/halalfood") && !wordpressPage.includes("wordpress.js?") && !wordpressPage.includes("wordpress-review.js?"), "The sandbox Live Website must not load or link to the production storefront preview scripts.");
-assert.ok(!/<iframe[^>]+\ssrc=/.test(wordpressPage) && (wordpressPage.match(/sandbox=""/g)||[]).length>=2, "Sandbox preview iframes must be script-disabled, opaque-origin frames without external iframe destinations.");
-assert.ok(wordpressPage.includes("Publish Test Version") && wordpressPage.includes("public Halal Food website remains unchanged") && wordpressPage.includes("dashboard://sandbox/published-test-version"), "The Live Website partition must clearly identify dashboard-only Test Publish.");
-assert.ok(websiteBuilderPage.includes('href="./wordpress-live.html"') && websiteBuilderPage.includes('aria-label="Back to WordPress Studio"') && websiteBuilderPage.includes("<h1>Edit Website"), "Edit Website must provide a clear return route to Live Website and identify its editor view.");
-assert.ok(websiteBuilderPage.includes('id="builderSendPreview"') && websiteBuilderPage.includes("Send for test review"), "Edit Website must send drafts into the sandbox review workflow.");
-assert.ok(websiteBuilderPage.includes("Test Publish never changes the public website") && websiteBuilderPage.includes("no production connection"), "Edit Website must disclose production isolation.");
-assert.ok(wordpressSandbox.includes('const PUBLISHED_KEY = "hf-wp-sandbox-published-v1"') && wordpressSandbox.includes('const HISTORY_KEY = "hf-wp-sandbox-history-v1"') && wordpressSandbox.includes('const REVIEW_KEY = "hf-wp-review-package-v1"'), "Sandbox drafts, test-published versions and history must use separate browser-local keys.");
-assert.ok(wordpressSandbox.includes("review.status !== \"approved\"") && wordpressSandbox.includes("Production unchanged") && wordpressSandbox.includes("Publish Test Version"), "Test Publish must require approval and remain dashboard-only.");
-assert.ok(wordpressSandbox.includes("sandbox only") && wordpressSandbox.includes("validDoc") && wordpressSandbox.includes("renderDocument"), "Sandbox rendering must validate the document model and never execute arbitrary HTML.");
-assert.ok(!/fetch\s*\(|XMLHttpRequest|supabase|github\.io\/halalfood/i.test(wordpressSandbox), "The sandbox controller must not call production APIs, Supabase or the live storefront.");
-assert.ok(wordpressCss.includes(".hf-sandbox-safety") && wordpressCss.includes(".hf-sandbox-device iframe[hidden]") && wordpressCss.includes(".hf-sandbox-history"), "Sandbox safety notice, preview and version history must have responsive styles.");
+const wordpressUrl = "https://wordpress-studio.shipstatic.com/admin/";
+assert.ok(wordpressNav.includes('["wordpress","layout","WordPress","open independent WordPress Studio"]'), "Halal Food sidebar must retain one WordPress entry.");
+assert.ok(wordpressNav.includes(wordpressUrl) && wordpressNav.includes('target="_blank" rel="noopener noreferrer"'), "WordPress sidebar must open the separate app safely.");
+assert.ok(wordpressPage.includes(wordpressUrl) && wordpressPage.includes('target="_blank" rel="noopener noreferrer"'), "Legacy WordPress route must be a simple external launch adapter.");
+assert.ok(!/supabase|neon|HFAdminReady|HFNeon|createClient|fetch\\s*\\(/i.test(wordpressPage), "The Halal Food adapter must not load WordPress or backend runtime code.");
+assert.ok(!wordpressNav.includes("wordpressBusinessCategories") && !wordpressNav.includes("wordpress-templates.html") && !wordpressNav.includes("website-builder.html") && !wordpressNav.includes("wordpress-live.html"), "Halal Food navigation must not contain embedded WordPress routes.");
+for (const path of ["admin/wordpress-live.html","admin/wordpress-sandbox.js","admin/wordpress-templates.html","admin/wordpress-templates.js","admin/wordpress-templates.css","admin/wordpress.css","admin/website-builder.html","admin/website-builder.js","admin/website-builder.css","admin/neon-builder-api.js"]) {
+  assert.ok(!existsSync(path), "WordPress application code must be outside Halal Food: " + path);
+}
 for (const page of ["categories-tree.html","categories-sorting.html","categories-settings.html"]) {
   assert.ok(!unifiedPages.includes(page), "Categories must not expose a separate child route: " + page);
 }
@@ -161,9 +142,9 @@ for (const file of unifiedPages) {
   const source = read(join("admin", file));
   const expectedI18nVersion = i18nVersion;
   assert.ok(source.includes(`i18n.js?v=${expectedI18nVersion}`), `${file}: missing or stale shared language dictionary.`);
-  const expectedSharedCssVersion = ["wordpress-live.html", "website-builder.html", "wordpress-templates.html"].includes(file) ? "20261106-wordpress-categories-v1" : sharedCssVersion;
+  const expectedSharedCssVersion = sharedCssVersion;
   assert.ok(source.includes(`shared.css?v=${expectedSharedCssVersion}`), `${file}: stale shared UI cache version.`);
-  const expectedSharedJsVersion = file === "ai-conversations.html" ? "20261104-aiconversations-v1" : (["wordpress-live.html", "website-builder.html", "wordpress-templates.html"].includes(file)) ? "20261106-wordpress-categories-v1" : (file === "overview.html" || file === "wordpress.html") ? "20261105-wordpress-cache-route-v2" : sharedJsVersion;
+  const expectedSharedJsVersion = file === "ai-conversations.html" ? "20261104-aiconversations-v1" : file === "overview.html" ? "20261105-wordpress-cache-route-v2" : sharedJsVersion;
   assert.ok(source.includes(`shared.js?v=${expectedSharedJsVersion}`), `${file}: missing or stale multi-theme shared JS version.`);
   assert.ok(source.includes(`workspace-global-theme.css?v=${workspaceThemeCssVersion}`), `${file}: missing or stale shared workspace theme stylesheet.`);
 
