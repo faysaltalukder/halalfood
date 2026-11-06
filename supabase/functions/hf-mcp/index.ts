@@ -29,13 +29,12 @@ Deno.serve(pipeline(
       server.registerTool("request_permission", {
         title: "Request a Halal Food permission",
         description: "Submit a new scoped permission request for owner approval. This only queues a request; it does not execute the requested platform action.",
-        inputSchema: z.object({
+        inputSchema: {
           permission_key: z.string().min(3).max(80).regex(/^[a-z][a-z0-9_-]*(\.[a-z][a-z0-9_-]*){1,5}$/),
           reason: z.string().min(12).max(700),
           resource: z.record(z.string(), z.unknown()),
           duration_seconds: z.number().int().min(60).max(2592000).default(900)
-        }),
-        securitySchemes: [{ type: "oauth2", scopes: ["openid", "email"] }]
+        }
       }, async ({ permission_key, reason, resource, duration_seconds }) => {
         if (!resource || !Object.keys(resource).length || Array.isArray(resource)) throw new Error("A non-empty exact resource scope is required.");
         if (new TextEncoder().encode(JSON.stringify(resource)).length > 4096) throw new Error("Resource scope is too large.");
