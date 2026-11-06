@@ -37,7 +37,7 @@ assert.ok(architecture.includes("Never expose Neon connection strings"));
 assert.ok(js.includes("Product photos/prices remain sample-only"));
 assert.ok(templatesHtml.includes("neon-builder-api.js"), "template page must load the Neon API client");
 assert.ok(read("../admin/website-builder.html").includes("neon-builder-api.js"), "editor must load the Neon API client");
-assert.ok(apiClient.includes("Authorization: \"Bearer \" + token"), "Neon requests must use the signed-in user JWT");
+assert.ok(apiClient.includes('headers.Authorization="Bearer "+token'), "Neon requests must use the signed-in user JWT");
 assert.ok(apiClient.includes("loadTemplateCatalog") && apiClient.includes("saveDocument"), "Neon API client must support template reads and document writes");
 assert.ok(apiMigration.includes("ENABLE ROW LEVEL SECURITY") && apiMigration.includes("auth.uid()"), "Neon tenant tables must be protected by RLS");
 assert.ok(apiMigration.includes("builder.website_documents"), "persistent builder documents must be stored in Neon");
