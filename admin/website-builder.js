@@ -1,7 +1,7 @@
 /* Universal Website Builder — isolated, local-only document engine. */
 (() => {
   "use strict";
-  const STORAGE_KEY = "hf-universal-builder-draft-v1";
+  const TEMPLATE_KEY = new URLSearchParams(location.search).get("template") || "";\n  const STORAGE_KEY = TEMPLATE_KEY ? "hf-universal-builder-draft-" + TEMPLATE_KEY : "hf-universal-builder-draft-v1";
   const $ = (id) => document.getElementById(id);
   const clone = (value) => JSON.parse(JSON.stringify(value));
   const uid = () => "node-" + Math.random().toString(36).slice(2, 10);
@@ -35,6 +35,37 @@
       ]}
     ]
   });
+  const templateDocument = () => {
+    const doc = sampleDocument();
+    const profiles = {
+      "general-supermarket": {name:"General Supermarket",title:"Everyday groceries, all in one place.",accent:"#b94f35",ink:"#273b32",paper:"#fbf8f1",soft:"#f4eadb",copy:"A complete neighbourhood supermarket with a broad catalogue, helpful search and weekly value.",button:"Shop groceries"},
+      "fresh-produce": {name:"Fresh & Farm",title:"Closer to the farm. Fresher to your table.",accent:"#657c4a",ink:"#293c31",paper:"#f7f7ef",soft:"#e9eddf",copy:"A seasonal produce shop with grower stories, origin details and fresh picks.",button:"Explore the harvest"},
+      "express-grocery": {name:"Express Grocery",title:"Need it now? We're on the way.",accent:"#df6b35",ink:"#27354a",paper:"#f7f8fb",soft:"#fff0e7",copy:"A fast local convenience store with quick add, compact categories and a persistent basket.",button:"Shop essentials"},
+      "wholesale-bulk": {name:"Wholesale & Bulk",title:"Supply that keeps your business moving.",accent:"#344b70",ink:"#25344b",paper:"#f5f7fa",soft:"#e9eef5",copy:"A B2B supply catalogue with pack sizes, minimum quantities and repeat ordering.",button:"Browse supplies"}
+    };
+    const profile = profiles[TEMPLATE_KEY];
+    if (!profile) return doc;
+    doc.site.name = profile.name;
+    doc.site.templateKey = TEMPLATE_KEY;
+    doc.page.title = profile.name + " · Home";
+    doc.theme.colors = {primary:profile.accent,text:profile.ink,muted:"#737d87"};
+    const nodes = [];
+    const collect = list => list.forEach(node => { nodes.push(node); collect(node.children || []); });
+    collect(doc.tree);
+    const hero = nodes.find(node => node.id === "hero-section");
+    const heroContainer = nodes.find(node => node.id === "hero-container");
+    const heading = nodes.find(node => node.id === "hero-heading");
+    const paragraph = nodes.find(node => node.id === "hero-paragraph");
+    const button = nodes.find(node => node.id === "hero-button");
+    const feature = nodes.find(node => node.id === "feature-heading");
+    if (hero) hero.props.background = profile.soft;
+    if (heroContainer) heroContainer.props.background = profile.paper;
+    if (heading) { heading.text = profile.title; heading.props.color = profile.ink; }
+    if (paragraph) { paragraph.text = profile.copy; paragraph.props.color = "#737d87"; }
+    if (button) { button.text = profile.button; button.props.background = profile.accent; }
+    if (feature) { feature.text = profile.name + " — designed around the way you buy."; feature.props.color = profile.ink; }
+    return doc;
+  };
   const state = { doc:null, selected:null, viewport:"desktop", undo:[], redo:[], editStart:null, dirty:false, saveTimer:0 };
   const allowedTypes = new Set(Object.keys(defaults));
   const validNode = (node, depth=0) => Boolean(node && typeof node==="object" && !Array.isArray(node) &&
@@ -245,7 +276,7 @@
   const init = () => {
     let saved=null;
     try{const raw=localStorage.getItem(STORAGE_KEY);if(raw){const parsed=JSON.parse(raw);if(parsed?.schemaVersion===1&&Array.isArray(parsed.tree))saved=parsed;}}catch(_error){}
-    state.doc=validDocument(saved)?saved:sampleDocument();
+    state.doc=validDocument(saved)?saved:templateDocument();
     document.querySelectorAll("[data-add-component]").forEach(button=>button.addEventListener("click",()=>addComponent(button.dataset.addComponent)));
     document.querySelectorAll("[data-builder-tab]").forEach(button=>button.addEventListener("click",()=>{
       const layers=button.dataset.builderTab==="layers";
@@ -256,12 +287,12 @@
     $("builderUndo").addEventListener("click",undo);$("builderRedo").addEventListener("click",redo);
     $("builderReset").addEventListener("click",()=>{
       if(!window.confirm("Reset this local sample draft? Your current local draft will be replaced."))return;
-      state.undo.push(snapshot());state.redo.length=0;state.doc=sampleDocument();state.selected=null;markDirty();renderAll();
+      state.undo.push(snapshot());state.redo.length=0;state.doc=templateDocument();state.selected=null;markDirty();renderAll();
     });
     $("builderExport").addEventListener("click",exportDraft);
     $("builderSendPreview").addEventListener("click",sendToPreview);
     changeViewport("desktop");renderAll();
-    setStatus(saved?"Restored local draft · not published":"Sample draft ready · not published","saved");
+    setStatus(saved?"Restored local draft · not published":(TEMPLATE_KEY?"Template draft prepared · temporary browser copy":"Sample draft ready · not published"),"saved");
   };
   const waitForAdmin = () => {
     const ready=window.HFAdminReady;
