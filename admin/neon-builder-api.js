@@ -152,6 +152,21 @@
     ]);
     return {products:(products||[]).length,categories:(categories||[]).length,pages:(docs||[]).length};
   }
+  async function loadWebsiteOrders(website){
+    if(!website?.id||!website?.owner_id)throw new Error("Website context is missing.");
+    const {user}=await authContext();
+    if(website.owner_id!==user.id)throw new Error("Website ownership check failed.");
+    return await request("orders","?select=id,order_number,customer,shipping_address,subtotal,delivery_fee,discount,total,payment_method,payment_status,status,notes,created_at,order_items(id,product_snapshot,quantity,unit_price,line_total)&website_id=eq."+$(website.id)+"&owner_id=eq."+$(user.id)+"&order=created_at.desc&limit=250");
+  }
+  async function updateOrderStatus(website,orderId,status){
+    const allowed=new Set(["pending","processing","shipped","delivered","cancelled"]);
+    if(!allowed.has(status))throw new Error("Unsupported order status.");
+    const {user}=await authContext();
+    if(!website?.id||website.owner_id!==user.id)throw new Error("Website ownership check failed.");
+    const rows=await request("orders","?id=eq."+$(orderId)+"&website_id=eq."+$(website.id)+"&owner_id=eq."+$(user.id)+"&select=id,order_number,status,payment_status",{method:"PATCH",prefer:"return=representation",body:{status}});
+    if(!rows?.[0])throw new Error("Neon did not confirm the order status update.");
+    return rows[0];
+  }
   async function createCustomPage(website,templateKey,title){
     const clean=String(title||"").trim().slice(0,80);
     if(clean.length<2)throw new Error("Page title must contain at least two characters.");
@@ -177,5 +192,5 @@
     if(!result?.[0])throw new Error("Neon did not confirm the publish status.");
     return result[0];
   }
-  window.HFNeonBuilderApi=Object.freeze({apiBase:API_BASE,loadTemplateCatalog,loadTemplatePages,ensureWebsite,loadWebsiteDocuments,seedWebsitePages,loadPageDocument,savePageDocument,loadDocument:loadPageDocument,saveDocument:(website,document,pageKey="home")=>savePageDocument(website,pageKey,document),loadStorefrontData,placeOrder,trackOrder,getWebsiteStats,createCustomPage,publishWebsite,defaultPageDocument});
+  window.HFNeonBuilderApi=Object.freeze({apiBase:API_BASE,loadTemplateCatalog,loadTemplatePages,ensureWebsite,loadWebsiteDocuments,seedWebsitePages,loadPageDocument,savePageDocument,loadDocument:loadPageDocument,saveDocument:(website,document,pageKey="home")=>savePageDocument(website,pageKey,document),loadStorefrontData,placeOrder,trackOrder,getWebsiteStats,loadWebsiteOrders,updateOrderStatus,createCustomPage,publishWebsite,defaultPageDocument});
 })();
