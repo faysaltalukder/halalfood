@@ -18,12 +18,23 @@
 <script defer src="./js/store-config.js?v=20261101-store-config-v1"></script>
 <script type="module">
 import { createClient } from "https://esm.sh/@neon/neon-js";
-const neonClient = createClient("https://ep-wild-lab-a1jqqu0p.ap-southeast-1.aws.neon.tech/halal_food_db", {
-  auth: { allowAnonymous: true, fetchOptions: { credentials: "include" } }
-});
-window.HFNeonClient = neonClient;
-window.HFNeonClientReady = Promise.resolve(neonClient);
+const client = createClient("https://ep-wild-lab-a1jqqu0p.ap-southeast-1.aws.neon.tech/halal_food_db", { auth: { allowAnonymous: true, fetchOptions: { credentials: "include" } } });
+window.HFNeonClient = client;
+window.HFNeonClientReady = Promise.resolve(client);
 window.dispatchEvent(new Event("hf-neon-client-ready"));
+const isPrivatePreview = new URLSearchParams(location.search).get("preview") === "1";
+if (isPrivatePreview) {
+  const { data } = await client.auth.getSession();
+  if (!data?.session?.user?.id) {
+    const gate=document.createElement("div");
+    gate.style.cssText="position:fixed;inset:0;z-index:2147483000;display:grid;place-items:center;padding:20px;background:rgba(15,23,42,.76);backdrop-filter:blur(8px);font:14px Arial,sans-serif";
+    gate.innerHTML='<form id="wp-neon-form" style="width:min(420px,100%);box-sizing:border-box;background:#fff;color:#243247;padding:28px;border-radius:18px"><h2>WordPress preview sign-in</h2><p style="color:#64748b">Use the independent Neon WordPress account. Halal Food authentication is not used for preview data.</p><label>Email<input id="wp-neon-email" type="email" required autocomplete="username" style="display:block;width:100%;box-sizing:border-box;padding:12px;margin:6px 0 14px"></label><label>Password<input id="wp-neon-password" type="password" required autocomplete="current-password" style="display:block;width:100%;box-sizing:border-box;padding:12px;margin:6px 0 14px"></label><button style="width:100%;padding:13px;background:#263b56;color:#fff;border:0;border-radius:8px">Sign in</button><button type="button" id="wp-neon-reset" style="width:100%;padding:10px;border:0;background:transparent;color:#80552f;text-decoration:underline">Forgot password? Send reset email</button><p id="wp-neon-status" role="status" style="min-height:20px;color:#b42318"></p></form>';
+    document.body.appendChild(gate);
+    const form=gate.querySelector("#wp-neon-form"),status=gate.querySelector("#wp-neon-status");
+    form.addEventListener("submit",async event=>{event.preventDefault();const email=gate.querySelector("#wp-neon-email").value.trim(),password=gate.querySelector("#wp-neon-password").value,button=form.querySelector('button[type="submit"]');button.disabled=true;status.textContent="Signing in…";try{const result=await client.auth.signIn.email({email,password});if(result.error)throw result.error;location.reload();}catch(error){status.textContent=error.message||"Sign-in failed.";button.disabled=false;}});
+    gate.querySelector("#wp-neon-reset").addEventListener("click",async()=>{const email=gate.querySelector("#wp-neon-email").value.trim();if(!email){status.textContent="Enter the WordPress account email first.";return;}status.textContent="Requesting password reset…";try{const result=await client.auth.requestPasswordReset({email,redirectTo:location.href.split("?")[0]});if(result.error)throw result.error;status.textContent="If the account exists, Neon will send a password reset email.";}catch(error){status.textContent=error.message||"Could not request reset email."; }});
+  }
+}
 </script>
 <script defer src="./admin/neon-builder-api.js?v=20261107-neon-auth-v1"></script>
 <script defer src="./storefront.js?v=20261107-multipage-commerce-v2"></script>
