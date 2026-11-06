@@ -79,8 +79,8 @@ assert.ok(wordpressCategoryStart >= "const wordpressBusinessCategories=".length 
 const wordpressCategoryData = JSON.parse(wordpressNav.slice(wordpressCategoryStart, wordpressCategoryEnd + 1));
 assert.equal(wordpressCategoryData.length, 20, "WordPress must expose all 20 planned business categories.");
 assert.ok(wordpressCategoryData.every(([, , label]) => typeof label === "string" && label.trim()), "Every WordPress business category must have a visible label.");
-assert.ok(wordpressTemplatesPage.includes('data-page="wordpress-templates"') && wordpressTemplatesPage.includes('id="wpTemplateSlots"'), "The WordPress template placeholder route must use the secure shell and expose its four-slot grid.");
-assert.ok(wordpressTemplatesJs.includes("Array.from({length:4}") && wordpressTemplatesJs.includes("Design not created yet"), "Template category pages must show four explicit empty placeholders without claiming designs exist.");
+assert.ok(wordpressTemplatesPage.includes('data-page="wordpress-templates"') && wordpressTemplatesPage.includes('id="wpTemplateTabs"') && wordpressTemplatesPage.includes('id="wpStorefront"'), "The WordPress template studio must use the secure shell and mount the interactive storefront preview.");
+assert.ok(["general-supermarket","fresh-produce","express-grocery","wholesale-bulk"].every(key=>wordpressTemplatesJs.includes('key:"'+key+'"')), "The template studio must provide four distinct grocery designs.");
 const wordpressSandbox = read("admin/wordpress-sandbox.js");
 const websiteBuilderPage = read("admin/website-builder.html");
 const wordpressCss = read("admin/wordpress.css");
