@@ -100,6 +100,10 @@ function render() {
     <dialog id="hfpConfirm" class="hfp-dialog">
       <h2 id="hfpConfirmTitle">Confirm permission decision</h2>
       <p id="hfpConfirmDescription" class="hfp-muted">Review the request before confirming.</p>
+      <div class="hfp-form" style="margin-top:12px">
+        <div class="hfp-field"><label for="hfpGrantMode">Grant type</label><select id="hfpGrantMode"><option value="once">One action only</option><option value="temporary">Temporary access</option></select></div>
+        <div class="hfp-field"><label for="hfpGrantDuration">Duration</label><select id="hfpGrantDuration"><option value="900">15 minutes</option><option value="3600">1 hour</option><option value="86400">24 hours</option><option value="604800">7 days</option></select></div>
+      </div>
       <label class="hfp-check" style="margin:14px 0"><input id="hfpFinalCheck" type="checkbox"> I understand this creates a server-side permission grant for the exact scope shown.</label>
       <div style="display:flex;justify-content:flex-end;gap:8px"><button class="hfp-btn" data-action="close-confirm">Cancel</button><button class="hfp-btn primary" id="hfpFinalButton" disabled>Confirm approval</button></div>
     </dialog>
@@ -193,8 +197,8 @@ root.addEventListener("click", async event => {
       decision:selectedDecision,
       checkbox_confirmed:true,
       final_confirm:true,
-      grant_mode:"temporary",
-      duration_seconds:900
+      grant_mode:document.getElementById("hfpGrantMode").value,
+      duration_seconds:Number(document.getElementById("hfpGrantDuration").value)
     });
     document.getElementById("hfpConfirm").close();
     notify(selectedDecision === "approve" ? "Approval saved. A scoped server-side grant has been created." : "Request denied.");
