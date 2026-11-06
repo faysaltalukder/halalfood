@@ -1,0 +1,3 @@
+[functions.hf-permission-center]
+# The function verifies admin JWT + AAL2 itself, and bridge requests with a server-only shared secret.
+verify_jwt = false
