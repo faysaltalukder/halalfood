@@ -110,10 +110,11 @@ async function runPublish(userId: string) {
   if (treeResult?.truncated || !Array.isArray(treeResult?.tree)) {
     throw new Error("The GitHub source tree is truncated or unavailable. Nothing was published.");
   }
-  const files = treeResult.tree.filter((item: any) =>
-    item?.type === "blob" && allowedPath(String(item.path || "")) &&
-    Number(item.size || 0) > 0 && Number(item.size || 0) <= MAX_FILE_BYTES
-  ).map((item: any) => ({ path: String(item.path), size: Number(item.size || 0) }));
+  const eligible = treeResult.tree.filter((item: any) => item?.type === "blob" && allowedPath(String(item.path || "")));
+  const oversized = eligible.find((item: any) => Number(item.size || 0) > MAX_FILE_BYTES);
+  if (oversized) throw new Error("Publish stopped safely: " + String(oversized.path) + " exceeds the 50 MB per-file limit.");
+  const files = eligible.filter((item: any) => Number(item.size || 0) > 0)
+    .map((item: any) => ({ path: String(item.path), size: Number(item.size || 0) }));
   if (!files.length) throw new Error("No eligible public website files were found in the source repository.");
   if (files.length > MAX_FILES) throw new Error("Publish stopped safely: eligible file count exceeds " + MAX_FILES + ".");
   const estimatedBytes = files.reduce((sum: number, file: any) => sum + file.size, 0);
