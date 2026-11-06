@@ -61,7 +61,7 @@ assert.ok(celestialEngine.includes("setInterval(update,60000)") && solarJourneyC
 
 const htmlFiles = readdirSync(adminDir).filter((file) => file.endsWith(".html"));
 const unifiedPages = htmlFiles.filter((file) => file !== "oauth-consent.html" && /<body[^>]*\bdata-page=/.test(read(join("admin", file))));
-assert.equal(unifiedPages.length, 47, `Expected 47 unified admin pages in the current admin workspace, found ${unifiedPages.length}.`);
+assert.equal(unifiedPages.length, 48, `Expected 48 unified admin pages in the current admin workspace, found ${unifiedPages.length}.`);
 assert.ok(unifiedPages.includes("permission-center.html"), "Permission Center must use the unified admin shell.");
 assert.ok(unifiedPages.includes("ai-knowledge.html"), "AI Knowledge Center must use the unified admin shell.");
 assert.ok(unifiedPages.includes("pos.html"), "POS import must use the unified admin shell.");
