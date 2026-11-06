@@ -1,7 +1,8 @@
 /* Universal Website Builder — isolated, local-only document engine. */
 (() => {
   "use strict";
-  const TEMPLATE_KEY = new URLSearchParams(location.search).get("template") || "";\n  const STORAGE_KEY = TEMPLATE_KEY ? "hf-universal-builder-draft-" + TEMPLATE_KEY : "hf-universal-builder-draft-v1";
+  const TEMPLATE_KEY = new URLSearchParams(location.search).get("template") || "";
+  const STORAGE_KEY = TEMPLATE_KEY ? "hf-universal-builder-draft-" + TEMPLATE_KEY : "hf-universal-builder-draft-v1";
   const $ = (id) => document.getElementById(id);
   const clone = (value) => JSON.parse(JSON.stringify(value));
   const uid = () => "node-" + Math.random().toString(36).slice(2, 10);
