@@ -1,29 +1,27 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 
-const read = (path) => readFileSync(new URL("../" + path, import.meta.url), "utf8");
-const page = read("admin/website-builder.html");
-const js = read("admin/website-builder.js");
-const css = read("admin/website-builder.css");
-const studio = read("admin/wordpress-live.html");
+const read = path => readFileSync(path, "utf8");
+const adapter = read("admin/wordpress.html");
+const nav = read("admin/shared.js");
+const contract = read("WORDPRESS-BUILDER-ARCHITECTURE.md");
+const url = "https://wordpress-studio.shipstatic.com/admin/";
 
-assert.ok(page.includes('data-page="wordpress"'), "Builder must use the existing secure admin shell route.");
-assert.ok(page.includes('id="authGate"') && page.includes('id="adminApp" hidden'), "Builder must retain the secure admin gate.");
-assert.ok(page.includes('website-builder.js?v=20261105-sandbox-partitions-v1') && page.includes('website-builder.css?v=20261105-sandbox-partitions-v1'), "Builder assets must be cache-busted.");
-assert.ok(studio.includes('href="./website-builder.html"'), "WordPress Studio must expose the isolated Visual Builder entry point.");
-assert.ok(js.includes("schemaVersion:1") && js.includes("sampleDocument"), "Builder must use a versioned JSON document model.");
-for (const type of ["section","container","heading","paragraph","image","button"]) {
-  assert.ok(js.includes(type + ":"), "Component defaults are missing: " + type);
-  assert.ok(page.includes('data-add-component="' + type + '"'), "Component palette is missing: " + type);
-}
-assert.ok(js.includes("renderNode") && js.includes("renderInspector") && js.includes("renderLayers"), "Builder must separate rendering, layers and inspector behavior.");
-assert.ok(js.includes("data-builder-viewport") && js.includes('is-"+viewport'), "Desktop, tablet and mobile canvas modes must be implemented.");
-assert.ok(js.includes("state.undo") && js.includes("state.redo") && js.includes("builderUndo") && js.includes("builderRedo"), "Builder must support undo and redo.");
-assert.ok(js.includes("localStorage.setItem(STORAGE_KEY") && page.includes('id="builderExport"'), "Draft persistence must stay browser-local and exportable.");
-assert.ok(js.includes("not published") && page.includes("Test Publish never changes the public website") && page.includes("no live changes"), "The first builder milestone must not publish to the live site.");
-assert.ok(!/\.from\(["']site_pages|\.from\(["']page_revisions|\.rpc\(["']publish/i.test(js), "The starter editor must not write to production CMS tables or publish.");
-assert.ok(!/fetch\s*\(|XMLHttpRequest|supabase/i.test(js), "The isolated editor engine must not make network or Supabase requests.");
-assert.ok(js.includes("textContent") && !js.includes("innerHTML=node.text") && !js.includes("insertAdjacentHTML(node.text"), "User-authored text must be rendered as text, not executable HTML.");
-assert.ok(js.includes('["https:","http:"]'), "Image nodes must reject non-web URL schemes.");
-assert.ok(css.includes("@media(max-width:900px)") && css.includes("@media(max-width:620px)") && css.includes("prefers-reduced-motion"), "Builder workspace must be responsive and respect reduced motion.");
-console.log("Universal Website Builder foundation checks passed.");
+assert.ok(adapter.includes(url), "Legacy WordPress route must open the independent WordPress app.");
+assert.ok(adapter.includes('target="_blank"') && adapter.includes('rel="noopener noreferrer"'), "External launch must use a safe new browsing context.");
+assert.ok(!/supabase|HFAdminReady|HFNeon|createClient|fetch\s*\(/i.test(adapter), "Halal Food launch adapter must not load backend SDKs or exchange credentials.");
+assert.ok(nav.includes('["wordpress","layout","WordPress","open independent WordPress Studio"]'), "Halal Food admin must retain one WordPress navigation entry.");
+assert.ok(nav.includes(url) && nav.includes('target="_blank" rel="noopener noreferrer"'), "WordPress navigation must open the separate app safely.");
+assert.ok(!nav.includes("wordpressBusinessCategories") && !nav.includes("wordpress-templates.html") && !nav.includes("website-builder.html") && !nav.includes("wordpress-live.html"), "Halal Food navigation must not contain embedded WordPress routes or business logic.");
+assert.ok(contract.includes("Only:") && contract.includes("minimal external-launch adapter") && contract.includes("Do not add WordPress renderer/editor code"), "Halal Food repository contract must permit only the external launch adapter.");
+
+for (const path of [
+  "admin/wordpress-live.html","admin/wordpress-sandbox.js","admin/wordpress.css",
+  "admin/wordpress-templates.html","admin/wordpress-templates.js","admin/wordpress-templates.css",
+  "admin/website-builder.html","admin/website-builder.js","admin/website-builder.css",
+  "admin/neon-builder-api.js","database/migrations/20261106_grocery_template_designs.sql",
+  "database/migrations/20261106_neon_data_api_rls.sql",".github/workflows/grocery-template-check.yml",
+  "scripts/grocery-template-suite-check.mjs"
+]) assert.ok(!existsSync(path), "WordPress application code must live outside Halal Food: " + path);
+
+console.log("WordPress isolation check passed: Halal Food contains only a safe external admin launch adapter; builder code, Neon client, migrations and workflows are absent.");
