@@ -42,9 +42,7 @@ function clean(value: unknown, max = 500): string {
   return String(value ?? "").replace(/[\u0000-\u001F\u007F]/g, " ").trim().slice(0, max);
 }
 async function sha256(bytes: Uint8Array): Promise<string> {
-  const copy = new ArrayBuffer(bytes.byteLength);
-  new Uint8Array(copy).set(bytes);
-  const digest = await crypto.subtle.digest("SHA-256", copy);
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
   return Array.from(new Uint8Array(digest)).map((n) => n.toString(16).padStart(2, "0")).join("");
 }
 function allowedPath(path: string): boolean {
