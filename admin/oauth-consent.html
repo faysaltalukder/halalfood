@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Authorize ChatGPT · Halal Food</title>
+<link rel="stylesheet" href="./shared.css?v=20261102-reports-navigation-v3">
+<style>
+.oauth-consent{max-width:620px;margin:8vh auto;padding:24px;border:1px solid var(--hf-border,#e5d9cb);border-radius:18px;background:var(--hf-card-bg,#fff);color:var(--hf-text,#2b2a3d);box-shadow:0 18px 55px #2b2a3d12}
+.oauth-consent h1{font-size:22px;margin:0 0 8px}.oauth-consent p,.oauth-consent li{font-size:13px;line-height:1.65;color:var(--hf-muted,#697586)}
+.oauth-actions{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:22px}
+.oauth-btn{border:1px solid var(--hf-border,#d9cfc3);border-radius:10px;padding:11px 16px;font-weight:750;cursor:pointer;background:#fff;color:#2b2a3d}
+.oauth-btn.primary{background:#8d5738;color:#fff;border-color:#8d5738}.oauth-btn:disabled{opacity:.5;cursor:not-allowed}
+.oauth-state{padding:12px;border-radius:10px;background:#f7f2ea;color:#70543c;font-size:12px;line-height:1.6;margin-top:14px}
+.oauth-scopes{padding:12px 18px;background:#faf8f4;border-radius:10px}.oauth-scopes li{margin:5px 0}
+</style>
+</head>
+<body data-page="oauth-consent">
+<main class="oauth-consent">
+  <p class="page-eyebrow">HALAL FOOD · SECURE ACCOUNT LINKING</p>
+  <h1>Authorize ChatGPT</h1>
+  <p>Connect ChatGPT to the Halal Food Permission Center. This connection authenticates your admin identity; it does not grant blanket access to GitHub, Supabase, storage or production data.</p>
+  <div id="oauthDetails" class="oauth-state" aria-live="polite">Checking your secure admin session and authorization request…</div>
+  <ul id="oauthScopes" class="oauth-scopes" hidden></ul>
+  <div class="oauth-actions">
+    <button id="oauthDeny" class="oauth-btn" disabled>Deny</button>
+    <button id="oauthApprove" class="oauth-btn primary" disabled>Authorize ChatGPT</button>
+  </div>
+</main>
+<script defer src="../js/store-config.js?v=20261101-store-config-v1"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script defer src="./oauth-consent.js?v=20261106-oauth-consent-v1"></script>
+</body>
+</html>

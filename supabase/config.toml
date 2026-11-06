@@ -1,3 +1,12 @@
 [functions.hf-permission-center]
 # The function verifies admin JWT + AAL2 itself, and bridge requests with a server-only shared secret.
 verify_jwt = false
+
+[functions.hf-mcp]
+# OAuth protected-resource middleware validates Supabase OAuth 2.1 access tokens.
+verify_jwt = false
+
+[auth.oauth_server]
+enabled = true
+authorization_url_path = "/admin/oauth-consent.html"
+allow_dynamic_registration = true
