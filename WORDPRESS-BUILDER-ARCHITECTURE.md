@@ -13,7 +13,7 @@
 - **Grocery template branch:** `grocery-template-builder-v1` (`br-muddy-lake-a1tcb0n1`)
 - **Neon data tables:** `builder.template_catalog`, `builder.template_designs`, `builder.websites`, `builder.website_documents`, `builder.categories`, `builder.products`, `builder.assets`, `builder.website_plugins`, `builder.orders`, `builder.order_items`, `builder.audit_log`.
 
-**Architecture rule:** GitHub stores all source code, renderer implementations, tests and SQL migrations. Neon stores durable template definitions, website/tenant configuration, product catalogue, categories, assets, plugin configuration, orders and audit history. Do not silently substitute Supabase, browser localStorage, static JSON, or another database for Neon as the durable WordPress commerce backend.
+**Architecture rule:** GitHub stores all source code, renderer implementations, tests and SQL migrations. The dedicated Neon project/branch owns WordPress authentication and all durable template definitions, website/tenant configuration, product catalogue, categories, assets, plugin configuration, orders and audit history. The only shared surface with Halal Food is the WordPress section embedded in the Halal Food admin dashboard; that dashboard shell is not an identity provider or data backend for WordPress. Never use Halal Food Supabase, its JWTs, Edge Functions, database, storage, or server settings for WordPress. Do not substitute browser localStorage or static JSON for Neon as durable storage.
 
 ## Environment and safety
 
@@ -42,7 +42,7 @@ Each template has its own visual language and layout. They share the commerce da
 - PR #93 contains an additional editor-engine iteration but is still an unmerged draft; inspect and reconcile before reusing.
 - This feature branch implements four responsive, interactive grocery storefront previews in `admin/wordpress-templates.{html,css,js}`.
 - Neon grocery branch contains four catalog rows in `builder.template_catalog` and four versioned design specs in `builder.template_designs`.
-- **Neon Data API:** Active on the grocery branch at `https://ep-wild-lab-a1jqqu0p.apirest.ap-southeast-1.aws.neon.tech/halal_food_db/rest/v1`. It exposes only the `builder` schema, validates Supabase Auth JWTs through the project's public ES256 JWKS, expects audience `authenticated` and role claim `.role`, and allows CORS only from `https://faysaltalukder.github.io`.
+- **Neon Data API:** Active on the grocery branch at `https://ep-wild-lab-a1jqqu0p.apirest.ap-southeast-1.aws.neon.tech/halal_food_db/rest/v1`. It exposes only the `builder` schema, validates JWTs from the branch's Neon Managed Better Auth (`auth_provider=neon_auth`), uses role claim `.role`, and allows CORS only from `https://faysaltalukder.github.io`.
 - **Database security:** RLS is enabled on every `builder` table. Template catalog/design records are read-only to anonymous/authenticated clients. Merchant data is scoped to `auth.uid()` and owned website IDs. Website Builder documents persist in `builder.website_documents`.
 - **Legacy Function:** Neon Function `groceryapi` still has its old failed deployment because its bundle is missing `pg`. It is intentionally not used by the new integration; Neon Data API replaces that route. Do not expose or rely on the failed Function.
 - Current storefront preview products/prices are illustrative only. They are not merchant data and must never be treated as real inventory or checkout.
@@ -53,14 +53,14 @@ Each template has its own visual language and layout. They share the commerce da
 2. Use the Neon project and the dedicated grocery template branch for all schema/data work. Verify the branch ID; do not infer it from a branch name.
 3. Add or update a migration in `database/migrations/`; apply it to the grocery branch with a transaction and verify the resulting schema/rows.
 4. Implement renderer/editor changes in this repository on a feature branch. Keep the four template keys stable.
-5. Use the secured Neon Data API for browser access. Keep Supabase Auth as the identity provider only; pass the user's short-lived signed JWT, never a database password or service key. Maintain RLS and owner checks for every tenant table. Do not use the legacy failed `groceryapi` Function.
+5. Use the secured Neon Data API and Neon Managed Better Auth for browser access. WordPress authentication must be provisioned and managed only on the dedicated Neon branch. Do not use Halal Food Supabase Auth, Supabase JWTs, Supabase Edge Functions, or Halal Food server settings for WordPress. The Neon SDK manages anonymous guest JWTs for public reads and signed-in WordPress sessions for owner-scoped writes. Never ship a database password or service key. Maintain RLS and owner checks for every tenant table. Do not use the legacy failed `groceryapi` Function.
 6. Add automated contract checks for all four keys, required feature flags, mobile/desktop rendering, safe input handling and no production endpoints.
 7. Run syntax checks and the repository quality gate. Test the admin-authenticated page in a real browser.
 8. Open a PR to `main`, describe the Neon branch/migration and test evidence, and wait for review. Do not merge or deploy unless explicitly authorized.
 
 ## Backend integration acceptance criteria
 
-- Neon Data API status is `active`, exposes only `builder`, and accepts signed Supabase Auth JWTs.
+- Neon Data API status is `active`, exposes only `builder`, and accepts JWTs from Neon Managed Better Auth; public guest reads use Neon's anonymous JWT flow.
 - Read API returns the four active template catalog/design rows from Neon.
 - Anonymous writes are rejected; authenticated create/update operations persist website configuration and editor documents in Neon.
 - Authenticated create/update operations persist website configuration and editor documents in Neon; anonymous writes are rejected.
