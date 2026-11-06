@@ -66,7 +66,7 @@ function render() {
       <p class="hfp-muted" style="margin-top:10px">A newly approved permission is an authorization record only. It can execute only after a matching server-side connector handler is installed and tested. Unknown operations are never run as generic shell, SQL or unrestricted API access.</p>
     </section>
     <section class="hfp-card">
-      <div class="hfp-head"><div><h2>Primary → Secondary storage transfer</h2><p class="hfp-muted">Request the two scoped permissions required to copy files from Supabase Storage to Backblaze B2.</p></div>\${chip("MFA protected","good")}</div>
+      <div class="hfp-head"><div><h2>Primary → Secondary storage transfer</h2><p class="hfp-muted">Request the two scoped permissions required to copy files from Supabase Storage to Backblaze B2.</p></div><span class="hfp-chip good">MFA protected</span></div>
       <div class="hfp-alert"><strong>Two separate approvals are required</strong>1) Read only from the selected Supabase bucket/prefix. 2) Upload only to the selected Backblaze bucket/prefix. A verified AAL2 admin session is required. Approval creates scoped permission records; it does not start a transfer until Backblaze credentials and a tested transfer adapter are connected.</div>
       <form id="hfpTransferForm" class="hfp-form" style="margin-top:12px">
         <div class="hfp-field"><label for="hfpSourceBucket">Primary Supabase bucket</label><input id="hfpSourceBucket" value="store-content" required></div>
