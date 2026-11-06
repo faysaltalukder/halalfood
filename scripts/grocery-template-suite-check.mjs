@@ -36,17 +36,20 @@ for (const token of ["hf-shop-product-grid", "hf-fresh-grid", "hf-express-grid",
   assert.ok(css.includes(token), "missing responsive design rule: " + token);
 }
 assert.ok(migration.includes("CREATE TABLE IF NOT EXISTS builder.template_designs"));
-assert.ok(architecture.includes("Neon stores durable template definitions"));
+assert.ok(architecture.includes("dedicated Neon project/branch owns WordPress authentication") || architecture.includes("Neon stores durable template definitions"));
 assert.ok(architecture.includes("Never expose Neon connection strings"));
 assert.ok(js.includes("Product photos/prices remain sample-only"));
 assert.ok(templatesHtml.includes("neon-builder-api.js"), "template page must load the Neon API client");
 assert.ok(read("../admin/website-builder.html").includes("neon-builder-api.js"), "editor must load the Neon API client");
-assert.ok(apiClient.includes('headers.Authorization="Bearer "+token'), "Neon requests must use the signed-in user JWT");
+assert.ok(apiClient.includes("client.auth.getSession") && apiClient.includes("client.from(") && apiClient.includes("client.rpc("), "Neon SDK must manage sessions and Data API requests");
+assert.ok(!apiClient.toLowerCase().includes("supabase"), "WordPress Neon API must not depend on Halal Food Supabase");
 assert.ok(apiClient.includes("loadTemplateCatalog") && apiClient.includes("saveDocument"), "Neon API client must support template reads and document writes");
 assert.ok(apiMigration.includes("ENABLE ROW LEVEL SECURITY") && apiMigration.includes("auth.uid()"), "Neon tenant tables must be protected by RLS");
 assert.ok(apiMigration.includes("builder.website_documents"), "persistent builder documents must be stored in Neon");
 assert.ok(architecture.includes("Neon Data API") && architecture.includes("builder.website_documents"));
-assert.ok(storefrontHtml.includes("neon-builder-api.js"), "storefront must load the Neon API client");
+assert.ok(storefrontHtml.includes("neon-builder-api.js") && storefrontHtml.includes("@neon/neon-js"), "storefront must load the independent Neon SDK and API client");
+assert.ok(!storefrontHtml.toLowerCase().includes("supabase"), "public WordPress storefront must not load Halal Food Supabase");
+assert.ok(!storefront.toLowerCase().includes("supabase") && !storefront.includes("HALAL_STORE_CONFIG"), "storefront preview must not depend on Halal Food auth or config");
 assert.ok(storefront.includes("placeOrder") && storefront.includes("trackOrder"), "storefront must connect COD ordering and order tracking");
 assert.ok(storefront.includes("function productPage") && storefront.includes("function cartPage") && storefront.includes("function checkoutPage"), "commerce pages must be rendered");
 assert.ok(storefront.includes("offersPage") && storefront.includes("brandsPage") && storefront.includes("storeLocatorPage") && storefront.includes("bulkEnquiryPage"), "extended pages must have dedicated renderers");
