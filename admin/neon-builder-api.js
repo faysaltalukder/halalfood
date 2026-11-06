@@ -105,6 +105,7 @@
   }
   async function loadPageDocument(templateKey,name,pageKey="home"){
     const website=await ensureWebsite(templateKey,name);
+    await seedWebsitePages(website,templateKey);
     const rows=await request("website_documents","?select=id,website_id,owner_id,page_key,schema_version,document,updated_at&website_id=eq."+$(website.id)+"&page_key=eq."+$(pageKey)+"&limit=1");
     return {website,record:rows?.[0]||null,document:rows?.[0]?.document||null};
   }
@@ -138,6 +139,28 @@
   async function trackOrder(siteSlug,orderNumber,phone){
     return await request("rpc/track_storefront_order","",{method:"POST",public:true,body:{p_website_slug:siteSlug,p_order_number:orderNumber,p_phone:phone}});
   }
+  async function getWebsiteStats(website){
+    if(!website?.id)throw new Error("Website context is missing.");
+    const [products,categories,docs]=await Promise.all([
+      request("products","?select=id&website_id=eq."+$(website.id)+"&is_active=eq.true&limit=500"),
+      request("categories","?select=id&website_id=eq."+$(website.id)+"&is_active=eq.true&limit=500"),
+      loadWebsiteDocuments(website.id)
+    ]);
+    return {products:(products||[]).length,categories:(categories||[]).length,pages:(docs||[]).length};
+  }
+  async function createCustomPage(website,templateKey,title){
+    const clean=String(title||"").trim().slice(0,80);
+    if(clean.length<2)throw new Error("Page title must contain at least two characters.");
+    const slug=clean.toLowerCase().normalize("NFKD").replace(/[\\u0300-\\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,60);
+    if(!slug)throw new Error("Please choose a page title using letters or numbers.");
+    const pageKey="custom-"+slug;
+    const docs=await loadWebsiteDocuments(website.id);
+    if((docs||[]).some(row=>row.page_key===pageKey))throw new Error("A page with this address already exists.");
+    const page={page_key:pageKey,page_type:"content",title:clean,slug,page_spec:{sections:["page-hero","rich-content","footer"]}};
+    const document=defaultPageDocument(page,templateKey);
+    await savePageDocument(website,pageKey,document);
+    return page;
+  }
   async function publishWebsite(website,brand,settings){
     const {user}=await authContext();
     if(!website?.id||website.owner_id!==user.id)throw new Error("Website ownership check failed.");
@@ -150,5 +173,5 @@
     if(!result?.[0])throw new Error("Neon did not confirm the publish status.");
     return result[0];
   }
-  window.HFNeonBuilderApi=Object.freeze({apiBase:API_BASE,loadTemplateCatalog,loadTemplatePages,ensureWebsite,loadWebsiteDocuments,seedWebsitePages,loadPageDocument,savePageDocument,loadStorefrontData,placeOrder,trackOrder,publishWebsite,defaultPageDocument});
+  window.HFNeonBuilderApi=Object.freeze({apiBase:API_BASE,loadTemplateCatalog,loadTemplatePages,ensureWebsite,loadWebsiteDocuments,seedWebsitePages,loadPageDocument,savePageDocument,loadDocument:loadPageDocument,saveDocument:(website,document,pageKey="home")=>savePageDocument(website,pageKey,document),loadStorefrontData,placeOrder,trackOrder,getWebsiteStats,createCustomPage,publishWebsite,defaultPageDocument});
 })();
