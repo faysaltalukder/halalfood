@@ -7,7 +7,7 @@ const css=read("admin/media-library.css");
 const studio=read("admin/wordpress-live.html");
 const fn=read("supabase/functions/filebase-storage/index.ts");
 const docs=read("docs/FILEBASE_STORAGE_ARCHITECTURE.md");
-assert.ok(page.includes('data-page="media-library"')&&page.includes('media-library.js'),"Media Library must use the existing admin shell.");
+assert.ok(page.includes('data-media-library="true"')&&page.includes('media-library.js'),"Media Library must use the existing admin shell.");
 assert.ok(page.includes('href="./wordpress-live.html"')&&studio.includes('href="./media-library.html"'),"Website Studio must provide a working Media Library entry and return link.");
 assert.ok(js.includes('functions.invoke("filebase-storage"')&&js.includes('fetch(prepared.upload.url'),"Small uploads must use the authenticated signer and direct browser-to-Filebase transfer.");
 for(const action of ["create_upload","create_multipart","sign_multipart_part","complete_multipart","abort_multipart","configure_cors","list","create_download","delete"])assert.ok(js.includes('action:"'+action+'"'),"Missing storage action "+action);
