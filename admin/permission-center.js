@@ -87,6 +87,31 @@ function render() {
         <div class="hfp-field full"><button class="hfp-btn primary" type="submit">Request All Access</button></div>
       </form>
     </section>
+
+    <section class="hfp-card">
+      <div class="hfp-head"><div><h2>Provider-specific All Access</h2><p class="hfp-muted">প্রতিটি provider-এর জন্য আলাদা All Access—একটির অনুমতি অন্য provider-এ প্রযোজ্য হবে না।</p></div>${chip("Separate scopes · MFA protected","warn")}</div>
+      <div class="hfp-grid">
+        ${[
+          ["github","GitHub","Repository, issues, pull requests and approved workflow actions"],
+          ["supabase","Supabase","Project, database, storage and Edge Function read/non-critical write actions"],
+          ["backblaze","Backblaze B2","Bucket metadata, object read and upload actions"],
+          ["filebase","Filebase","Bucket metadata, object read and upload actions"],
+          ["website","Website","Approved website content, build and publish actions"],
+          ["cloudflare","Cloudflare","Pages deployment and non-critical zone operations"]
+        ].map(([key,name,desc])=>`
+          <div class="hfp-card" style="padding:13px">
+            <h3>${name} · All Access</h3>
+            <p class="hfp-muted">${desc}</p>
+            <div class="hfp-alert" style="margin:8px 0">শুধু ${name}-এর non-critical কাজ। Delete, secrets, account/security management ও critical configuration বাদ। সর্বোচ্চ ১ ঘণ্টা।</div>
+            <form data-provider-all-access="${key}" class="hfp-form">
+              <div class="hfp-field"><label>সময়</label><select name="duration"><option value="900">১৫ মিনিট</option><option value="3600">১ ঘণ্টা</option></select></div>
+              <div class="hfp-field"><label>Provider scope</label><input value="${name} only" disabled></div>
+              <div class="hfp-field full"><label>কাজের কারণ</label><textarea name="reason" required minlength="12">Temporary ${name} All Access for approved Halal Food maintenance.</textarea></div>
+              <div class="hfp-field full"><button class="hfp-btn primary" type="submit">Request ${name} All Access</button></div>
+            </form>
+          </div>`).join("")}
+      </div>
+    </section>
     <section class="hfp-card">
       <div class="hfp-head"><div><h2>Primary → Secondary storage transfer</h2><p class="hfp-muted">Request the two scoped permissions required to copy files from Supabase Storage to Backblaze B2.</p></div><span class="hfp-chip good">MFA protected</span></div>
       <div class="hfp-alert"><strong>Two separate approvals are required</strong>1) Read only from the selected Supabase bucket/prefix. 2) Upload only to the selected Backblaze bucket/prefix. A verified AAL2 admin session is required. Approval creates scoped permission records; it does not start a transfer until Backblaze credentials and a tested transfer adapter are connected.</div>
@@ -190,10 +215,11 @@ function openDecision(id, decision) {
     request.permission_key+" — "+request.reason+" Resource: "+JSON.stringify(request.resource||{});
   const grantMode = document.getElementById("hfpGrantMode");
   const grantDuration = document.getElementById("hfpGrantDuration");
-  grantMode.value = request.permission_key === "all.access" ? "temporary" : "once";
-  grantMode.disabled = request.permission_key === "all.access";
-  grantDuration.value = String(request.permission_key === "all.access" ? Math.min(3600,Number(request.requested_duration_seconds)||900) : 900);
-  grantDuration.querySelectorAll("option").forEach(option => { option.disabled = request.permission_key === "all.access" && Number(option.value) > 3600; });
+  const isAllAccess = request.permission_key === "all.access" || request.permission_key.endsWith(".all.access");
+  grantMode.value = isAllAccess ? "temporary" : "once";
+  grantMode.disabled = isAllAccess;
+  grantDuration.value = String(isAllAccess ? Math.min(3600,Number(request.requested_duration_seconds)||900) : 900);
+  grantDuration.querySelectorAll("option").forEach(option => { option.disabled = isAllAccess && Number(option.value) > 3600; });
   document.getElementById("hfpFinalCheck").checked = false;
   document.getElementById("hfpFinalButton").disabled = true;
   document.getElementById("hfpFinalButton").textContent = decision === "approve" ? "Confirm approval" : "Confirm denial";
@@ -236,6 +262,25 @@ host.addEventListener("click", async event => {
   } catch(error) { notify(error.message,"error"); }
 });
 host.addEventListener("submit", async event => {
+  const providerForm = event.target.closest("form[data-provider-all-access]");
+  if (providerForm) {
+    event.preventDefault();
+    const provider = providerForm.dataset.providerAllAccess;
+    const button = providerForm.querySelector('button[type="submit"]');
+    button.disabled = true;
+    try {
+      await call("create_request",{
+        permission_key:provider+".all.access",
+        duration_seconds:Number(providerForm.elements.duration.value),
+        resource:{scope:"provider_noncritical",provider},
+        reason:providerForm.elements.reason.value
+      });
+      notify(provider.toUpperCase()+" All Access request created. Review and approve it below.");
+      await refresh();
+    } catch(error) { notify(error.message,"error"); }
+    finally { if(button.isConnected) button.disabled=false; }
+    return;
+  }
   if (event.target.id === "hfpAllAccessForm") {
     event.preventDefault();
     const form = event.target;
