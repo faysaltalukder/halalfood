@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex,nofollow">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<title>AI Permission Center · Halal Food Admin</title>
+<link rel="stylesheet" href="./shared.css?v=20261102-reports-navigation-v3&hf_sidebar=20261101-warm-jewel-v4">
+<link rel="stylesheet" href="./phase4-pages.css?v=20261023-admin-ultimate-v1">
+<link rel="stylesheet" href="./workspace-global-theme.css?v=20261101-merchant-fieldbook-v1">
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
+<style>
+.hf-permission-page{display:grid;gap:18px}
+.hf-permission-hero{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap}
+.hf-permission-hero-copy{max-width:760px}
+.hf-permission-hero-copy p:last-child{max-width:680px}
+.hf-permission-status{display:inline-flex;align-items:center;gap:8px;padding:9px 12px;border:1px solid var(--hf-border,#e5d9cb);border-radius:999px;background:var(--hf-card-bg,#fff);font-size:11px;font-weight:750;color:var(--hf-muted,#697586)}
+.hf-permission-status:before{content:"";width:8px;height:8px;border-radius:50%;background:#c28b3e;box-shadow:0 0 0 3px #c28b3e22}
+.hf-permission-banner{display:flex;gap:12px;align-items:flex-start;padding:15px 17px;border:1px solid #e6cfaa;border-radius:14px;background:linear-gradient(120deg,#fff8ed,#f7ecdc);color:#704b2f}
+.hf-permission-banner-icon{display:grid;place-items:center;width:30px;height:30px;flex:0 0 30px;border-radius:10px;background:#f0dfc5;font-size:16px}
+.hf-permission-banner strong{display:block;font-size:13px;margin-bottom:4px}
+.hf-permission-banner p{margin:0;font-size:12px;line-height:1.65;color:#805e43}
+.hf-permission-grid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(260px,.8fr);gap:16px}
+.hf-permission-card{min-width:0;padding:19px;border:1px solid var(--hf-border,#e5d9cb);border-radius:16px;background:var(--hf-card-bg,#fff)}
+.hf-permission-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:15px}
+.hf-permission-card-head h2{font-size:17px;margin:0 0 5px}
+.hf-permission-card-head p{font-size:12px;line-height:1.55;color:var(--hf-muted,#697586);margin:0}
+.hf-permission-state{white-space:nowrap;border-radius:999px;padding:6px 9px;background:#f5ead8;color:#8a5a28;font-size:10px;font-weight:800}
+.hf-permission-state.is-muted{background:#f0efec;color:#716c65}
+.hf-bridge-steps{display:grid;gap:11px;margin:0;padding:0;list-style:none}
+.hf-bridge-step{display:grid;grid-template-columns:28px minmax(0,1fr);gap:10px;align-items:start}
+.hf-bridge-step-number{display:grid;place-items:center;width:26px;height:26px;border-radius:9px;background:var(--hf-soft-bg,#f2f0ea);color:var(--hf-primary,#a65e38);font-size:11px;font-weight:800}
+.hf-bridge-step strong{display:block;font-size:12px;margin:1px 0 3px}
+.hf-bridge-step small{display:block;color:var(--hf-muted,#697586);font-size:11px;line-height:1.5}
+.hf-permission-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.hf-permission-metric{padding:13px;border-radius:12px;background:var(--hf-soft-bg,#f6f1e9);min-width:0}
+.hf-permission-metric small{display:block;color:var(--hf-muted,#697586);font-size:10px;font-weight:750;text-transform:uppercase;letter-spacing:.06em}
+.hf-permission-metric strong{display:block;font-size:22px;margin-top:5px}
+.hf-permission-list{display:grid;gap:0}
+.hf-permission-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;padding:13px 0;border-bottom:1px solid var(--hf-border,#e5d9cb)}
+.hf-permission-row:last-child{border-bottom:0;padding-bottom:0}
+.hf-permission-row:first-child{padding-top:0}
+.hf-permission-row strong{display:block;font-size:12px;margin-bottom:3px}
+.hf-permission-row small{display:block;color:var(--hf-muted,#697586);font-size:11px;line-height:1.45}
+.hf-permission-pill{display:inline-flex;align-items:center;justify-content:center;min-width:92px;padding:6px 9px;border:1px solid var(--hf-border,#e5d9cb);border-radius:999px;color:var(--hf-muted,#697586);font-size:10px;font-weight:750;background:var(--hf-card-bg,#fff)}
+.hf-permission-pill.is-restricted{background:#fbf0e8;border-color:#ead0bd;color:#8a573a}
+.hf-permission-empty{display:grid;justify-items:center;text-align:center;padding:30px 18px;border:1px dashed var(--hf-border,#d8c9b9);border-radius:13px;background:var(--hf-soft-bg,#faf7f1)}
+.hf-permission-empty-icon{display:grid;place-items:center;width:44px;height:44px;border-radius:14px;background:#eee5d8;color:#8b633e;font-size:20px;margin-bottom:11px}
+.hf-permission-empty strong{font-size:13px}
+.hf-permission-empty p{max-width:440px;margin:6px 0 0;color:var(--hf-muted,#697586);font-size:11px;line-height:1.6}
+.hf-permission-audit-note{font-size:11px;line-height:1.6;color:var(--hf-muted,#697586);margin:12px 0 0}
+.hf-permission-scope-table{width:100%;border-collapse:collapse}
+.hf-permission-scope-table th,.hf-permission-scope-table td{padding:11px 9px;border-bottom:1px solid var(--hf-border,#e5d9cb);text-align:left;font-size:11px;vertical-align:middle}
+.hf-permission-scope-table th{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--hf-muted,#697586)}
+.hf-permission-scope-table tr:last-child td{border-bottom:0}
+.hf-permission-scope-table td:last-child,.hf-permission-scope-table th:last-child{text-align:right}
+.hf-permission-danger{color:#9b4e39;font-weight:750}
+@media(max-width:760px){.hf-permission-grid{grid-template-columns:1fr}.hf-permission-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}.hf-permission-card{padding:15px}.hf-permission-scope-table{min-width:510px}.hf-permission-table-wrap{overflow-x:auto}}
+@media(max-width:430px){.hf-permission-metrics{grid-template-columns:1fr}.hf-permission-row{grid-template-columns:minmax(0,1fr);gap:7px}.hf-permission-pill{justify-self:start}}
+</style>
+</head>
+<body data-page="permission-center">
+<div id="authGate" class="auth-gate"><div class="auth-gate-card"><strong>Checking secure admin access…</strong><p>Permission settings are available only to the authorized admin account with two-step verification.</p></div></div>
+<div id="adminApp" hidden>
+<main id="pageContent" tabindex="-1" class="hf-permission-page">
+  <header class="page-heading hf-phase4-hero hf-permission-hero">
+    <div class="hf-permission-hero-copy"><p class="page-eyebrow">CHATGPT ACCESS · APPROVALS · AUDIT</p><h1>AI Permission Center</h1><p>Control exactly what the Halal Food workspace allows ChatGPT to read or change. Every future request will be shown here with its purpose, affected resource and requested duration.</p></div>
+    <span class="hf-permission-status">Secure Bridge not connected</span>
+  </header>
+
+  <section class="hf-permission-banner" role="status">
+    <span class="hf-permission-banner-icon" aria-hidden="true">⌁</span>
+    <div><strong>Approval controls are waiting for the secure connection</strong><p>This dashboard section is ready as the permission workspace, but no ChatGPT Bridge/OAuth connection has been configured yet. No access has been granted, and no approval request is currently being received. We will only enable Approve/Deny after the server-side bridge can verify and enforce each grant.</p></div>
+  </section>
+
+  <div class="hf-permission-grid">
+    <section class="hf-permission-card">
+      <div class="hf-permission-card-head"><div><h2>Connection readiness</h2><p>What must be in place before ChatGPT can request access.</p></div><span class="hf-permission-state">Setup pending</span></div>
+      <ol class="hf-bridge-steps">
+        <li class="hf-bridge-step"><span class="hf-bridge-step-number">1</span><div><strong>Secure Bridge endpoint</strong><small>A remote MCP service that exposes only approved Halal Food actions—not unrestricted database or server access.</small></div></li>
+        <li class="hf-bridge-step"><span class="hf-bridge-step-number">2</span><div><strong>OAuth 2.1 sign-in</strong><small>ChatGPT must connect through a verified admin identity using Authorization Code + PKCE. No permanent secret key is placed in the browser.</small></div></li>
+        <li class="hf-bridge-step"><span class="hf-bridge-step-number">3</span><div><strong>Server-enforced permission grants</strong><small>Every request is checked against the approved scope, resource, expiry and admin identity before it runs.</small></div></li>
+        <li class="hf-bridge-step"><span class="hf-bridge-step-number">4</span><div><strong>ChatGPT app connection</strong><small>Connect the Bridge as a custom app in a ChatGPT plan that supports the required MCP access level.</small></div></li>
+      </ol>
+    </section>
+    <section class="hf-permission-card">
+      <div class="hf-permission-card-head"><div><h2>Access overview</h2><p>Current state for this workspace.</p></div><span class="hf-permission-state is-muted">No grants</span></div>
+      <div class="hf-permission-metrics">
+        <div class="hf-permission-metric"><small>Active grants</small><strong>0</strong></div>
+        <div class="hf-permission-metric"><small>Pending</small><strong>0</strong></div>
+        <div class="hf-permission-metric"><small>Revoked</small><strong>0</strong></div>
+      </div>
+      <p class="hf-permission-audit-note">These are initial empty-state values, not live database counts. They will become live once the Bridge and approval records are connected.</p>
+    </section>
+  </div>
+
+  <section class="hf-permission-card">
+    <div class="hf-permission-card-head"><div><h2>Pending approval requests</h2><p>When ChatGPT needs access, the request will show the action, reason, data impact, risk and requested time limit here.</p></div><span class="hf-permission-state is-muted">0 requests</span></div>
+    <div class="hf-permission-empty">
+      <span class="hf-permission-empty-icon" aria-hidden="true">✓</span>
+      <strong>No approval requests yet</strong>
+      <p>There are no requests to approve or deny. Once the secure Bridge is connected, requests will appear here and you can approve once, allow for a short period, or deny them.</p>
+    </div>
+  </section>
+
+  <section class="hf-permission-card">
+    <div class="hf-permission-card-head"><div><h2>Permission catalogue</h2><p>These are the access categories the Bridge may request. All remain disabled until you approve a specific request.</p></div><span class="hf-permission-state is-muted">Default: denied</span></div>
+    <div class="hf-permission-table-wrap">
+      <table class="hf-permission-scope-table">
+        <thead><tr><th>Permission</th><th>What it allows</th><th>Current access</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Storage Read</strong></td><td>List and inspect approved storage objects</td><td><span class="hf-permission-pill">Not granted</span></td></tr>
+          <tr><td><strong>Storage Upload</strong></td><td>Upload files to an approved bucket/path</td><td><span class="hf-permission-pill">Not granted</span></td></tr>
+          <tr><td><strong>Backup Verification</strong></td><td>Compare source and backup object integrity</td><td><span class="hf-permission-pill">Not granted</span></td></tr>
+          <tr><td><strong>Product Management</strong></td><td>Read or edit specified product records</td><td><span class="hf-permission-pill">Not granted</span></td></tr>
+          <tr><td><strong>Order Management</strong></td><td>Read or update specified order fields</td><td><span class="hf-permission-pill">Not granted</span></td></tr>
+          <tr><td><strong>Database Read</strong></td><td>Read explicitly allow-listed tables and columns</td><td><span class="hf-permission-pill">Not granted</span></td></tr>
+          <tr><td><strong>Database Write</strong></td><td>Write only to approved tables through safe operations</td><td><span class="hf-permission-pill">Not granted</span></td></tr>
+          <tr><td><strong>Deploy / Publish</strong></td><td>Prepare or publish a reviewed website release</td><td><span class="hf-permission-pill is-restricted">Separate approval</span></td></tr>
+          <tr><td><strong class="hf-permission-danger">Delete / Destructive</strong></td><td>Delete data or permanently remove resources</td><td><span class="hf-permission-pill is-restricted">Blocked by default</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="hf-permission-card">
+    <div class="hf-permission-card-head"><div><h2>Approval and safety rules</h2><p>These rules will be enforced by the Bridge—not just by dashboard buttons.</p></div></div>
+    <div class="hf-permission-list">
+      <div class="hf-permission-row"><div><strong>Approve once</strong><small>Allow one specific action, then automatically expire the grant.</small></div><span class="hf-permission-pill">One action</span></div>
+      <div class="hf-permission-row"><div><strong>Temporary access</strong><small>Allow a requested scope for a short, visible period such as 15 minutes.</small></div><span class="hf-permission-pill">Time-limited</span></div>
+      <div class="hf-permission-row"><div><strong>Resource-bound access</strong><small>Bind every grant to the requested site, bucket, folder, table or record.</small></div><span class="hf-permission-pill">Narrow scope</span></div>
+      <div class="hf-permission-row"><div><strong>Revoke at any time</strong><small>Disable an active grant immediately and record who revoked it.</small></div><span class="hf-permission-pill">Revocable</span></div>
+      <div class="hf-permission-row"><div><strong>Audit every action</strong><small>Record request, decision, actor, timestamp, resource and execution result.</small></div><span class="hf-permission-pill">Audited</span></div>
+      <div class="hf-permission-row"><div><strong>Destructive actions</strong><small>Delete and production deployment require separate explicit confirmation; no blanket admin token.</small></div><span class="hf-permission-pill is-restricted">Extra approval</span></div>
+    </div>
+  </section>
+
+  <section class="hf-permission-card">
+    <div class="hf-permission-card-head"><div><h2>Permission activity log</h2><p>Approval decisions and tool execution records will be listed here after the Bridge is connected.</p></div><span class="hf-permission-state is-muted">Not connected</span></div>
+    <div class="hf-permission-empty">
+      <span class="hf-permission-empty-icon" aria-hidden="true">◷</span>
+      <strong>Audit log is not connected yet</strong>
+      <p>No approval or execution history is being displayed because the permission backend has not been installed. Existing Halal Food admin activity logs are separate from this future ChatGPT permission audit.</p>
+    </div>
+  </section>
+</main>
+</div>
+<script defer src="./i18n.js?v=20261102-dashboard-speed-v2"></script>
+<script defer src="../js/store-config.js?v=20261101-store-config-v1"></script>
+<script defer src="./shared.js?v=20261102-reports-navigation-v3"></script>
+<script defer src="./app.js?v=20261102-dashboard-speed-v2"></script>
+</body>
+</html>
