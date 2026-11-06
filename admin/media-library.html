@@ -20,7 +20,7 @@
     <div class="hf-media-actions"><a class="hf-media-button" href="./website-builder.html">← Back to Website Builder</a><button class="hf-media-button hf-media-primary" id="mediaRefresh" type="button">Refresh library</button></div>
   </header>
   <section class="hf-media-summary" aria-label="Storage architecture">
-    <div><strong>Filebase</strong><span>Private object storage</span></div><div><strong>20 MB</strong><span>Maximum per file (current API limit)</span></div><div><strong>5 categories</strong><span>Site-scoped object paths</span></div><div><strong>Supabase</strong><span>Auth + signed upload permissions only</span></div>
+    <div><strong>Filebase</strong><span>Private object storage</span></div><div><strong>1 GB</strong><span>Maximum per file with multipart upload</span></div><div><strong>5 categories</strong><span>Site-scoped object paths</span></div><div><strong>Supabase</strong><span>Auth + signed upload permissions only</span></div>
   </section>
   <section class="hf-media-upload">
     <div class="hf-media-section-heading"><div><span class="hf-media-kicker">ADD FILES</span><h2>Upload to Filebase</h2><p>Choose a category and upload images, videos, documents or approved site assets.</p></div></div>
@@ -29,7 +29,7 @@
       <label class="hf-media-file-picker"><span>Select file</span><input id="mediaFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/avif,video/mp4,video/webm,application/pdf,audio/mpeg,audio/wav,font/woff2,text/css,application/javascript,application/json,application/zip"></label>
       <button class="hf-media-button hf-media-primary" id="mediaUpload" type="button" disabled>Upload file</button>
     </div>
-    <p class="hf-media-hint" id="mediaUploadHint" role="status">Allowed formats include images, MP4/WebM, PDF, audio, WOFF2, CSS, JS, JSON and ZIP. Maximum 20 MB per file.</p>
+    <p class="hf-media-hint" id="mediaUploadHint" role="status">Allowed formats include images, MP4/WebM, PDF, audio, WOFF2, CSS, JS, JSON and ZIP. Up to 20 MB uses direct form upload; larger files use multipart upload up to 1 GB.</p>
     <div class="hf-media-progress" id="mediaProgress" hidden><span></span></div>
   </section>
   <section class="hf-media-library">
