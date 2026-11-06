@@ -13,7 +13,7 @@ const TTL = 300;
 const MIME: Record<string,string> = {
  "image/jpeg":"jpg","image/png":"png","image/webp":"webp","image/gif":"gif","image/avif":"avif",
  "video/mp4":"mp4","video/webm":"webm","application/pdf":"pdf","audio/mpeg":"mp3","audio/wav":"wav",
- "font/woff2":"woff2","text/css":"css","application/javascript":"js","application/json":"json","application/zip":"zip"
+ "font/woff2":"woff2","text/css":"css","application/javascript":"js","text/javascript":"js","application/json":"json","application/zip":"zip"
 };
 const CORS = {"Access-Control-Allow-Origin":ORIGIN,"Access-Control-Allow-Headers":"authorization, apikey, x-client-info, content-type","Access-Control-Allow-Methods":"GET, POST, OPTIONS","Access-Control-Max-Age":"86400","Vary":"Origin"};
 const json=(v:unknown,s=200)=>new Response(JSON.stringify(v),{status:s,headers:{...CORS,"Content-Type":"application/json","Cache-Control":"no-store"}});
@@ -53,7 +53,7 @@ Deno.serve(async(req:Request)=>{
   if(action==="health"){await s3.send(new HeadBucketCommand({Bucket:c.bucket}));return json({ok:true,provider:"Filebase",connection:"authenticated",bucket_access:"verified",tested_operation:"HeadBucket",read_only_test:true});}
   const a=await admin(req);if("response"in a)return a.response;
   if(action==="configure_cors"){
-   let current:{CORSRules?:Array<Record<string,unknown>>}={CORSRules:[]};
+   let current:{CORSRules?:any[]}={CORSRules:[]};
    try{current=await s3.send(new GetBucketCorsCommand({Bucket:c.bucket}));}
    catch(e){if((e as {name?:string})?.name!=="NoSuchCORSConfiguration")throw e;}
    const rules=Array.isArray(current.CORSRules)?current.CORSRules.map(rule=>({...rule})): [];
