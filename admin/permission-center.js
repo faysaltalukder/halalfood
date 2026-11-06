@@ -12,7 +12,9 @@ let selectedDecision = "approve";
 let busy = false;
 
 async function call(action, payload = {}) {
-  const {data,error} = await window.HFAdmin.client.functions.invoke("hf-permission-center",{body:{action,...payload}});
+  const invoke = window.HFAdmin.client.functions.invoke("hf-permission-center",{body:{action,...payload}});
+  const timeout = new Promise((_,reject)=>setTimeout(()=>reject(new Error("Permission service timed out after 15 seconds. Check the Supabase Edge Function and retry.")),15000));
+  const {data,error} = await Promise.race([invoke,timeout]);
   if (error) {
     let detail = error.message || "Permission service request failed.";
     try { const context = error.context; if (context?.json) { const body = await context.json(); detail = body.error || detail; } } catch (_) {}
@@ -85,8 +87,8 @@ function render() {
           <option value="github.repo.read">GitHub repository read</option><option value="github.repo.write">GitHub repository write</option>
           <option value="supabase.project.read">Supabase project read</option><option value="supabase.database.read">Supabase database read</option>
           <option value="supabase.database.write">Supabase database write</option><option value="supabase.storage.read">Supabase Storage read</option>
-          <option value="supabase.storage.upload">Supabase Storage upload</option><option value="filebase.storage.read">Filebase storage read</option>
-          <option value="filebase.storage.upload">Filebase storage upload</option><option value="website.deploy">Website deploy</option>
+          <option value="supabase.storage.upload">Supabase Storage upload</option><option value="backblaze.storage.read">Backblaze B2 storage read</option><option value="backblaze.storage.upload">Backblaze B2 storage upload</option>
+          <option value="filebase.storage.read">Filebase storage read</option><option value="filebase.storage.upload">Filebase storage upload</option><option value="website.deploy">Website deploy</option>
         </select></div>
         <div class="hfp-field"><label for="hfpDuration">Requested duration</label><select id="hfpDuration"><option value="900">15 minutes</option><option value="3600">1 hour</option><option value="86400">24 hours</option></select></div>
         <div class="hfp-field full"><label for="hfpResource">Resource scope (JSON)</label><input id="hfpResource" value='{"repo":"faysaltalukder/halalfood"}' required></div>
@@ -118,6 +120,7 @@ async function refresh() {
   if (busy) return;
   busy = true;
   try {
+    root.innerHTML = '<div class="hfp-card"><strong>Connecting to the secure permission service…</strong><p class="hfp-muted">Your admin MFA session is verified. Loading requests, grants and transfer permissions.</p></div>';
     const status = await call("status");
     const records = await call("list");
     statusData = status;
@@ -150,7 +153,7 @@ root.addEventListener("change", event => {
   if (event.target.id === "hfpPermission") {
     const val = event.target.value;
     document.getElementById("hfpResource").value = val.startsWith("github.") ? '{"repo":"faysaltalukder/halalfood"}' :
-      val.startsWith("filebase.") ? '{"bucket":"halalfood-assets-bd","prefix":"sites/halalfood/"}' :
+      (val.startsWith("filebase.") || val.startsWith("backblaze.")) ? '{"bucket":"","prefix":"sites/halalfood/"}' :
       '{"project_id":"'+PROJECT_ID+'"}';
   }
 });
