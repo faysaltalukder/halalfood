@@ -163,9 +163,9 @@
     if(!allowed.has(status))throw new Error("Unsupported order status.");
     const {user}=await authContext();
     if(!website?.id||website.owner_id!==user.id)throw new Error("Website ownership check failed.");
-    const rows=await request("orders","?id=eq."+$(orderId)+"&website_id=eq."+$(website.id)+"&owner_id=eq."+$(user.id)+"&select=id,order_number,status,payment_status",{method:"PATCH",prefer:"return=representation",body:{status}});
-    if(!rows?.[0])throw new Error("Neon did not confirm the order status update.");
-    return rows[0];
+    const result=await request("rpc/update_storefront_order_status","",{method:"POST",body:{p_website_id:website.id,p_order_id:orderId,p_status:status}});
+    if(!result?.id||result.id!==orderId)throw new Error("Neon did not confirm the order status update.");
+    return result;
   }
   async function createCustomPage(website,templateKey,title){
     const clean=String(title||"").trim().slice(0,80);
