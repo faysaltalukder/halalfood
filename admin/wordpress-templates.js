@@ -5,8 +5,9 @@
  * schema builder is the data source for template_catalog, template_designs, websites,
  * categories, products, assets, website_plugins and orders. Never use browser-local storage
  * or Supabase as the durable commerce database. Never point this sandbox at the public store.
- * Neon groceryapi currently has a failed deployment (missing pg package); until its secured
- * API is healthy, this page uses clearly-labelled sample preview data only.
+ * Neon Data API is active on the grocery branch. Supabase Auth is used only for the
+ * signed-in admin JWT; Neon stores the catalog and tenant data with RLS. The legacy
+ * groceryapi Function is not used by this page. Product photos/prices remain sample-only.
  */
 (() => {
  "use strict";
