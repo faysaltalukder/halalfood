@@ -78,3 +78,5 @@ The shared storefront renderer is `storefront.html`, `storefront.css` and `store
 The page catalogue expansion is recorded in `database/migrations/20261107_grocery_page_expansion.sql` and was applied additively to the dedicated `grocery-template-builder-v1` branch. The GitHub quality gate now checks the page library, editor page scoping, storefront commerce calls, theme CSS and page expansion.
 
 The private admin Website Orders workspace reads the selected site's Neon orders under owner-scoped RLS and permits only the supported fulfilment status transitions (pending, processing, shipped, delivered, cancelled). Customer checkout uses the public SECURITY DEFINER order RPC; order administration uses authenticated owner-scoped Data API requests.
+
+Order status updates are handled by the SECURITY DEFINER `builder.update_storefront_order_status` RPC. It checks `auth.uid()` against the website owner, enforces valid fulfilment transitions, and restores reserved stock atomically when an eligible pending/processing order is cancelled. Delivered and cancelled orders are terminal.
