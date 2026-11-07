@@ -1,16 +1,25 @@
-name: Grocery template and Neon API checks
+name: WordPress Studio isolation contract
 
 on:
   pull_request:
     paths:
-      - "admin/neon-builder-api.js"
-      - "admin/wordpress-templates.*"
-      - "admin/website-builder.*"
-      - "database/migrations/20261106_*.sql"
+      - "admin/shared.js"
+      - "admin/wordpress.html"
+      - "admin/wordpress-live.html"
+      - "admin/wordpress-templates.html"
+      - "admin/website-builder.html"
       - "scripts/grocery-template-suite-check.mjs"
       - "WORDPRESS-BUILDER-ARCHITECTURE.md"
   push:
     branches: ["main"]
+    paths:
+      - "admin/shared.js"
+      - "admin/wordpress.html"
+      - "admin/wordpress-live.html"
+      - "admin/wordpress-templates.html"
+      - "admin/website-builder.html"
+      - "scripts/grocery-template-suite-check.mjs"
+      - "WORDPRESS-BUILDER-ARCHITECTURE.md"
 
 permissions:
   contents: read
@@ -25,10 +34,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Check JavaScript syntax
-        run: |
-          node --check admin/neon-builder-api.js
-          node --check admin/wordpress-templates.js
-          node --check admin/website-builder.js
-      - name: Run template and Neon integration contract
+      - name: Check shared admin shell syntax
+        run: node --check admin/shared.js
+      - name: Verify independent WordPress Studio boundary
         run: node scripts/grocery-template-suite-check.mjs
