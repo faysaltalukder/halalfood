@@ -1094,7 +1094,6 @@ function syncGlyphSignalMode(active){
 function makeShell(){
  adminApp.classList.add("admin-app");
  const activePage=pageName==="messenger"?"messenger":pageName==="coupon-usage"?"coupons":(pageName.startsWith("products-")?"products":pageName);
- const wordpressBusinessCategories=[["ecommerce-grocery","shopping-bag","E-commerce & Grocery"],["clothing-fashion","shirt","Clothing & Fashion"],["medicine-pharmacy","pill","Medicine & Pharmacy"],["hospital-healthcare","hospital","Hospital & Healthcare"],["real-estate","building","Real Estate & Property"],["restaurant-food","utensils","Restaurant & Food"],["education-training","graduation-cap","Education & Training"],["travel-tourism","plane","Travel & Tourism"],["hotel-accommodation","hotel","Hotel & Accommodation"],["beauty-salon","sparkles","Beauty & Salon"],["fitness-gym","dumbbell","Fitness & Gym"],["automotive-services","car","Automotive & Vehicle Services"],["professional-services","briefcase","Professional & Business Services"],["construction-interior","house","Construction & Interior"],["events-weddings","calendar","Event & Wedding Services"],["portfolio-agency","palette","Portfolio & Creative Agency"],["news-media","newspaper","News & Media"],["nonprofit-organization","heart","Nonprofit & Organization"],["logistics-delivery","truck","Logistics & Delivery"],["legal-accounting","scale","Legal & Accounting"]].map(([slug,icon,label])=>["wp-"+slug,icon,label,Array.from({length:4},(_,index)=>["template-"+(index+1),"layout","Template "+(index+1)])]);
  const menuGroups=[
   {label:"WORKSPACE",items:[["overview","overview","Overview","dashboard home start"]]},
   {label:"STORE MANAGEMENT",items:[["pos","pos","POS Management","offline pos point of sale offline sales import cash register"],["orders","orders","Orders","order order management customer orders"],["incomplete-orders","orders","Incomplete Orders","incomplete checkout abandoned cart order recovery leads"],["operations","operations","Operations","operation packing fulfillment"],["suppliers","layers","Suppliers","supplier vendors procurement purchase orders grn goods received supplier bills payment history payable ledger",[[ "supplier-add","plus","Add Supplier","supplier vendor add new directory contact registration" ],[ "supplier-purchases","orders","Purchase List","purchase orders procurement invoice goods received grn stock" ],[ "supplier-payments","finance","Payment History","supplier payments accounts payable ledger due bkash bank cash" ]]],["products","products","Products","product inventory stock sku barcode scanner reviews ratings",[['products-add','plus','Add Product','add new create product'],['products','products','All Products','all products catalogue inventory'],['products-barcode','barcode','Barcode Generation','barcode generate print scan qr'],['products-reviews','star','Product Reviews','customer product reviews ratings moderation']]],["categories","layers","Categories","catalog categories hierarchy subcategories product order drag drop merchandising"],["coupons","coupons","Coupons","coupon coupon codes discounts promotion campaigns marketing",[[ "coupons","coupons","Coupon Promotions","coupon promotions offer campaigns" ],[ "coupon-usage","analytics","Coupon Usage","coupon usage redemption orders customers discounts" ]]],["content","content","Website Content","content pages blog seo"]]},
@@ -1136,7 +1135,7 @@ function makeShell(){
      ["daily","calendar","দৈনিক ব্যবসায়িক রিপোর্ট","Daily business summary","reports-daily","daily business sales summary"]
     ]}
    ]]]},
-  {label:"SYSTEM",items:[["website-publisher","settings","Website Publisher","website publisher deploy code review approve publish"],["tracking","sliders","Tracking Controls","tracking meta pixel conversions api capi google analytics event routing"],["permission-center","shield","Permission","chatgpt ai permission center approvals access grants secure bridge oauth scopes audit revoke"],["settings","settings","Settings & Security","settings security preferences access"],["wordpress","layout","WordPress","wordpress website studio live website edit website sandbox",[["wordpress","layout","Live Website"],["website-builder","edit","Edit Website"],...wordpressBusinessCategories]]]}
+  {label:"SYSTEM",items:[["website-publisher","settings","Website Publisher","website publisher deploy code review approve publish"],["tracking","sliders","Tracking Controls","tracking meta pixel conversions api capi google analytics event routing"],["permission-center","shield","Permission","chatgpt ai permission center approvals access grants secure bridge oauth scopes audit revoke"],["settings","settings","Settings & Security","settings security preferences access"]]}
  ];
  const allItems=menuGroups.flatMap(group=>group.items.map(item=>({id:item[0],icon:item[1],label:item[2],href:"./"+item[0]+".html",keys:item[3]})));
  const itemById=new Map(allItems.map(item=>[item.id,item]));
@@ -1161,7 +1160,7 @@ function makeShell(){
  };
  const renderNavigation=()=>menuGroups.map(group=>{
   const links=group.items.map(item=>{
-   if(["products","coupons","suppliers","business-health","reports","wordpress"].includes(item[0])&&Array.isArray(item[4])){
+   if(["products","coupons","suppliers","business-health","reports"].includes(item[0])&&Array.isArray(item[4])){
     const section=item[0],children=item[4];
     if(section==="reports"){
      const reportDefaults={"reports-business":"business","reports-purchase":"purchase","reports-customers":"top-customers","reports-payables":"payable","reports-inventory":"low-stock","reports-finance":"account-payments","reports-daily":"daily"};
@@ -1176,26 +1175,15 @@ function makeShell(){
      }).join("")+'</div>').join("");
      return '<div class="admin-nav-item admin-nav-parent-item" data-nav-item data-nav-keys="'+esc(item[3])+'"><div class="admin-nav-parent-row"><button class="admin-nav-link admin-nav-parent-toggle '+(open?"active":"")+'" type="button" data-nav-expand="'+section+'" aria-expanded="'+String(open)+'"><span class="nav-icon nav-icon-'+section+'">'+navPictureIcon(section)+'</span><span class="admin-nav-text">'+esc(item[2])+'</span><span class="admin-nav-expand-icon" aria-hidden="true">'+shellIcon("chevron")+'</span></button>'+favoriteStar(item[0],item[2])+'</div><div class="admin-nav-children admin-nav-report-children" data-nav-children="'+section+'" '+(open?"":"hidden")+'>'+childLinks+'</div></div>';
     }
-    const activeWpCategory=section==="wordpress"?String(new URLSearchParams(window.location.search).get("category")||""):"";
-    const open=section==="wordpress"?["wordpress","website-builder","wordpress-templates"].includes(pageName):children.some(child=>child[0]===pageName)||(section==="categories"&&pageName==="categories");
+    const open=children.some(child=>child[0]===pageName)||(section==="categories"&&pageName==="categories");
     const childLinks=children.map(child=>{
-     if(section==="wordpress"&&Array.isArray(child[3])){
-      const categorySlug=child[0].replace(/^wp-/,"");
-      const categoryOpen=activeWpCategory===categorySlug;
-      const templates=child[3].map(template=>{
-       const href="./wordpress-templates.html?category="+encodeURIComponent(categorySlug)+"&template="+(Number(String(template[0]).replace("template-",""))||1);
-       const active=pageName==="wordpress-templates"&&activeWpCategory===categorySlug&&Number(new URLSearchParams(window.location.search).get("template")||1)===Number(String(template[0]).replace("template-",""));
-       return '<a class="admin-nav-child-link admin-nav-template-link '+(active?"active":"")+'" href="'+href+'" '+(active?'aria-current="page"':'')+'><span class="admin-nav-child-icon">'+shellIcon(template[1])+'</span><span>'+esc(template[2])+'</span></a>';
-      }).join("");
-      return '<div class="admin-nav-category"><button class="admin-nav-link admin-nav-category-toggle '+(categoryOpen?"active":"")+'" type="button" data-nav-expand="'+esc(child[0])+'" aria-expanded="'+String(categoryOpen)+'"><span class="admin-nav-child-icon">'+shellIcon(child[1])+'</span><span class="admin-nav-category-name">'+esc(child[2])+'</span><span class="admin-nav-expand-icon" aria-hidden="true">'+shellIcon("chevron")+'</span></button><div class="admin-nav-children admin-nav-template-children" data-nav-children="'+esc(child[0])+'" '+(categoryOpen?"":"hidden")+'>'+templates+'</div></div>';
-     }
-     const href=section==="wordpress"?(child[0]==="wordpress"?"./wordpress-live.html":"./website-builder.html"):"./"+child[0]+".html";
-     const active=section==="wordpress"?(child[0]==="wordpress"?window.location.pathname.endsWith("/wordpress-live.html"):window.location.pathname.endsWith("/website-builder.html")):child[0]===pageName;
+     const href="./"+child[0]+".html";
+     const active=child[0]===pageName;
      return '<a class="admin-nav-child-link '+(active?"active":"")+'" href="'+href+'" '+(active?'aria-current="page"':'')+'><span class="admin-nav-child-icon">'+shellIcon(child[1])+'</span><span>'+esc(child[2]) +'</span></a>';
     }).join("");
     return '<div class="admin-nav-item admin-nav-parent-item" data-nav-item data-nav-keys="'+esc(item[3])+'"><div class="admin-nav-parent-row"><button class="admin-nav-link admin-nav-parent-toggle '+(open?"active":"")+'" type="button" data-nav-expand="'+section+'" aria-expanded="'+String(open)+'"><span class="nav-icon nav-icon-'+section+'">'+navPictureIcon(section)+'</span><span class="admin-nav-text">'+esc(item[2])+'</span><span class="admin-nav-expand-icon" aria-hidden="true">'+shellIcon("chevron")+'</span></button>'+favoriteStar(item[0],item[2])+'</div><div class="admin-nav-children" data-nav-children="'+section+'" '+(open?"":"hidden")+'>'+childLinks+'</div></div>';
    }
-   return '<div class="admin-nav-item" data-nav-item data-nav-keys="'+esc(item[3])+'"><a class="admin-nav-link '+(item[0]===activePage?"active":"")+'" href="'+(item[0]==="wordpress"?"./wordpress-live.html":"./"+item[0]+".html")+'" '+(item[0]===activePage?'aria-current="page"':'')+'><span class="nav-icon nav-icon-'+esc(item[0]==="marketing-center"?"messages":item[0]==="customer-settings"?"settings":item[0])+'">'+navPictureIcon(item[0]==="marketing-center"?"messages":item[0]==="customer-settings"?"settings":item[0])+'</span><span class="admin-nav-text">'+esc(item[2])+'</span></a>'+favoriteStar(item[0],item[2])+'</div>';
+   return '<div class="admin-nav-item" data-nav-item data-nav-keys="'+esc(item[3])+'"><a class="admin-nav-link '+(item[0]===activePage?"active":"")+'" href="'+"./"+item[0]+".html"+'" '+(item[0]===activePage?'aria-current="page"':'')+'><span class="nav-icon nav-icon-'+esc(item[0]==="marketing-center"?"messages":item[0]==="customer-settings"?"settings":item[0])+'">'+navPictureIcon(item[0]==="marketing-center"?"messages":item[0]==="customer-settings"?"settings":item[0])+'</span><span class="admin-nav-text">'+esc(item[2])+'</span></a>'+favoriteStar(item[0],item[2])+'</div>';
   }).join("");
   return '<section class="admin-nav-group" data-nav-group aria-label="'+esc(group.label)+'"><div class="admin-nav-label">'+esc(group.label)+'</div><div class="admin-nav-links">'+links+'</div></section>';
  }).join("");
