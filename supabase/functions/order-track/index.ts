@@ -1,10 +1,11 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { reserveEdgeRateLimit, trustedClientIp } from "../_shared/rate-limit.ts";
 
 const allowedOrigin = "https://faysaltalukder.github.io";
 const corsHeaders = {
   "Access-Control-Allow-Origin": allowedOrigin,
-  "Access-Control-Allow-Methods": "GET, OPTIONS",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers": "content-type",
   "Content-Type": "application/json",
   "Cache-Control": "no-store, max-age=0"
@@ -20,13 +21,28 @@ const normalizePhone = (value: string) => {
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  if (req.method !== "GET") return json({ success: false, error: "Method not allowed." }, 405);
+  if (req.method !== "POST") return json({ success: false, error: "Method not allowed." }, 405);
   const origin = req.headers.get("origin") || "";
   if (origin && origin !== allowedOrigin) return json({ success: false, error: "Origin not allowed." }, 403);
 
-  const url = new URL(req.url);
-  const orderId = (url.searchParams.get("orderId") || "").trim().toUpperCase();
-  const mobile = normalizePhone(url.searchParams.get("mobile") || "");
+  const contentType = req.headers.get("content-type") || "";
+  if (!contentType.toLowerCase().includes("application/json")) {
+    return json({ success: false, error: "JSON request body required." }, 415);
+  }
+  const contentLength = Number(req.headers.get("content-length") || 0);
+  if (contentLength > 2048) return json({ success: false, error: "Request is too large." }, 413);
+  let input: Record<string, unknown>;
+  try {
+    const rawBody = await req.text();
+    if (new TextEncoder().encode(rawBody).byteLength > 2048) return json({ success: false, error: "Request is too large." }, 413);
+    const parsed = JSON.parse(rawBody);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("Invalid request body");
+    input = parsed as Record<string, unknown>;
+  } catch {
+    return json({ success: false, error: "Invalid JSON request body." }, 400);
+  }
+  const orderId = String(input.orderId || "").trim().toUpperCase();
+  const mobile = normalizePhone(String(input.mobile || ""));
   if (!/^HF-\d{4,6}$/.test(orderId) || !/^01\d{9}$/.test(mobile)) {
     return json({ success: false, error: "সঠিক Order ID এবং মোবাইল নম্বর দিন।" }, 400);
   }
@@ -37,6 +53,13 @@ Deno.serve(async (req: Request) => {
 
   try {
     const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
+    const clientIp = trustedClientIp(req);
+    if (clientIp && !(await reserveEdgeRateLimit(admin, "order-track-ip", clientIp, 12, 60))) {
+      return json({ success: false, error: "অনেকবার চেষ্টা করা হয়েছে। এক মিনিট পর আবার চেষ্টা করুন।" }, 429);
+    }
+    if (!(await reserveEdgeRateLimit(admin, "order-track-lookup", orderId + ":" + mobile, 5, 60))) {
+      return json({ success: false, error: "এই অর্ডারের তথ্য খোঁজার সীমা অতিক্রম হয়েছে। এক মিনিট পর আবার চেষ্টা করুন।" }, 429);
+    }
     const { data: order, error } = await admin.from("orders")
       .select("id,order_number,customer_name,customer_phone,total,status,updated_at,ordered_at")
       .eq("order_number", orderId)

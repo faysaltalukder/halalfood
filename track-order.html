@@ -89,7 +89,7 @@ $("#track-form").addEventListener("submit",async e=>{
     const id=$("#order-id").value.trim().toUpperCase();
     const mobile=normalizeMobile($("#mobile").value);
     if(!id||!mobile)throw new Error("Order ID and mobile number are required.");
-    const response=await fetch(API+"?orderId="+encodeURIComponent(id)+"&mobile="+encodeURIComponent(mobile),{method:"GET",cache:"no-store"});
+    const response=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({orderId:id,mobile}),cache:"no-store"});
     const data=await response.json().catch(()=>null);
     if(!response.ok||!data?.success)throw new Error(data?.error||"অর্ডারের তথ্য পাওয়া যায়নি।");
     render(data);

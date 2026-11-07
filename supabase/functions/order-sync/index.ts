@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { reserveEdgeRateLimit, trustedClientIp } from "../_shared/rate-limit.ts";
 
 const allowedOrigin = "https://faysaltalukder.github.io";
 const cors = {
@@ -150,9 +151,17 @@ Deno.serve(async (req: Request) => {
   const origin = req.headers.get("origin") || "";
   if (origin && origin !== allowedOrigin) return json({ success: false, error: "Origin not allowed" }, 403);
 
+  const contentLength = Number(req.headers.get("content-length") || 0);
+  if (contentLength > 64000) return json({ success: false, error: "অর্ডারের তথ্য অনেক বড়। কার্ট রিফ্রেশ করে আবার চেষ্টা করুন।" }, 413);
   try {
     let d: Record<string, any>;
-    try { d = await req.json(); } catch { return json({ success: false, error: "Invalid JSON" }, 400); }
+    try {
+      const rawBody = await req.text();
+      if (new TextEncoder().encode(rawBody).byteLength > 64000) return json({ success: false, error: "অর্ডারের তথ্য অনেক বড়। কার্ট রিফ্রেশ করে আবার চেষ্টা করুন।" }, 413);
+      const parsed = JSON.parse(rawBody);
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("Invalid order payload");
+      d = parsed;
+    } catch { return json({ success: false, error: "Invalid JSON" }, 400); }
 
     // Fail closed: validate the one-time browser token before creating an order or
     // allowing the Google Sheets backup to be triggered by the checkout client.
@@ -213,6 +222,10 @@ Deno.serve(async (req: Request) => {
       return json({ success: false, error: "Order service is temporarily unavailable. Please try again." }, 503);
     }
     const admin = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+    const trustedIp = trustedClientIp(req);
+    if (trustedIp && !(await reserveEdgeRateLimit(admin, "order-sync-ip", trustedIp, 30, 600))) {
+      return json({ success: false, code: "ORDER_RATE_LIMITED", error: "এই নেটওয়ার্ক থেকে অল্প সময়ে অনেক অর্ডার এসেছে। কিছুক্ষণ পর আবার চেষ্টা করুন।" }, 429);
+    }
     // Risk checks add up several weak signals; no single IP/device match blocks an order.
     // Raw IP and device identifiers are never stored. Fingerprints are HMACed using the
     // server-only Turnstile secret, with a namespace per identifier type.
@@ -403,11 +416,18 @@ Deno.serve(async (req: Request) => {
     const { data, error } = await admin.rpc("create_website_order", { p_order: payload });
     if (error) {
       const message = String(error.message || "");
+      if (/This checkout session was already used|orders_checkout_session_id_uidx/i.test(message)) {
+        return json({ success: false, code: "CHECKOUT_SESSION_CONFLICT", error: "এই চেকআউট সেশনটি আগেই ব্যবহার করা হয়েছে। কার্ট রিফ্রেশ করে আবার অর্ডার নিশ্চিত করুন।" }, 409);
+      }
       const clientError = /Please enter|Sorry, this product|Cash on Delivery|select a valid delivery|Not enough stock|Too many items|between 1 and 30|Too many orders|This customer is blocked|Coupon:/i.test(message);
       return json({ success: false, code: clientError ? "ORDER_VALIDATION" : "ORDER_FAILED", error: clientError ? message : "Order could not be placed. Please try again or contact us by phone." }, clientError ? 400 : 500);
     }
     if (!data || data.success !== true) return json({ success: false, error: "Order could not be placed. Please try again." }, 500);
 
+    // The database may allocate a fresh public reference when the submitted six-digit ID collides.
+    if (typeof data.orderId === "string" && /^HF-[0-9]{4,6}$/.test(data.orderId)) {
+      riskSignal.order_number = data.orderId;
+    }
     if (typeof data.orderId === "string" && /^HF-[0-9]{4,6}$/.test(data.orderId)) {
       const { error: signalError } = await admin
         .from("order_security_signals")

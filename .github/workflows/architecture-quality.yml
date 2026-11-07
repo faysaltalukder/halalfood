@@ -27,6 +27,8 @@ jobs:
         run: node scripts/architecture-check.mjs
       - name: Run storefront checkout regression checks
         run: node scripts/storefront-checkout-check.mjs
+      - name: Run order tracking privacy contract checks
+        run: node scripts/order-track-security-check.mjs
       - name: Run AI Customer Care chat widget checks
         run: node scripts/customer-care-chat-check.mjs
       - name: Validate task-scoped feature context map
