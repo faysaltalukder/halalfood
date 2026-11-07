@@ -10,7 +10,7 @@ assert.ok(architecture.includes("The WordPress/Grocery Studio is not part of Hal
 assert.ok(architecture.includes("faysaltalukder/grocery-storefronts/wordpress-app/"));
 assert.ok(architecture.includes("dedicated Neon project"));
 assert.ok(architecture.includes("Halal Food's Supabase database"));
-assert.ok(architecture.includes("must not connect WordPress Studio"));
+assert.ok(architecture.includes("Do not connect WordPress Studio"));
 assert.ok(!architecture.includes("GitHub source repository:** `faysaltalukder/halalfood`"));
 assert.ok(!shared.includes('["wordpress","layout","WordPress"'));
 assert.ok(!shared.includes("wordpressBusinessCategories"));
